@@ -109,7 +109,7 @@ public final class CnpcLmDifficultyGui {
                     () -> open(player, "stats"));
         }
         row += 24;
-        navFooter(player, gui, row);
+        navFooter(player, gui, row, null);
     }
 
     private static void paintStats(ServerPlayer player, ICustomGui gui) {
@@ -141,7 +141,7 @@ public final class CnpcLmDifficultyGui {
                 "§7CR · counters · scaled kit (read-only)");
         int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 8);
         row += 8;
-        navFooter(player, gui, row);
+        navFooter(player, gui, row, "main");
     }
 
     private static String blankNone(String s) {
@@ -193,7 +193,7 @@ public final class CnpcLmDifficultyGui {
             }
         }
         row += 28;
-        navFooter(player, gui, row);
+        navFooter(player, gui, row, "main");
     }
 
     private static void paintTitles(ServerPlayer player, ICustomGui gui) {
@@ -236,7 +236,7 @@ public final class CnpcLmDifficultyGui {
                 () -> DifficultyActions.handleArg(subject, "clear_title", "0", "titles").message(),
                 () -> open(player, "titles")));
         row += 28;
-        navFooter(player, gui, row);
+        navFooter(player, gui, row, "main");
     }
 
     private static void paintTeam(ServerPlayer player, ICustomGui gui) {
@@ -257,12 +257,17 @@ public final class CnpcLmDifficultyGui {
                 () -> DifficultyTeamGuiApi.handleDo(subject, "mode", "full_team_scaling", "team"),
                 () -> open(player, "team")));
         row += 24;
-        navFooter(player, gui, row);
+        navFooter(player, gui, row, "main");
     }
 
-    private static void navFooter(ServerPlayer player, ICustomGui gui, int row) {
-        CnpcGuiSupport.navHubMain(player, gui, row, () -> open(player, "main"));
-        if (StaffAccess.isStaff(player)) {
+    /** {@code parentPage} null on difficulty main; otherwise Back reopens that page. */
+    private static void navFooter(ServerPlayer player, ICustomGui gui, int row, String parentPage) {
+        if (parentPage == null) {
+            CnpcGuiSupport.navSystemRoot(player, gui, row);
+        } else {
+            CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, parentPage), "§7« Back");
+        }
+        if (StaffAccess.isStaff(player) && parentPage == null) {
             row += 24;
             CnpcGuiSupport.buttonSmall(gui, 98, "§8Staff: /difficulty admin", CnpcGuiSupport.COL_L, row, 195, () -> {
                 player.m_213846_(net.minecraft.network.chat.Component.m_237113_(

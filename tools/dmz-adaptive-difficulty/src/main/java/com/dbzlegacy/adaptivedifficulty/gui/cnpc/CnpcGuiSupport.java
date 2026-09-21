@@ -464,10 +464,26 @@ public final class CnpcGuiSupport {
         });
     }
 
+    /** System top-level screen (e.g. Prestige main): Main → Legacy Mechanics hub. */
+    public static void navSystemRoot(ServerPlayer player, ICustomGui gui, int row) {
+        buttonSmall(gui, ID_NAV_HUB, "§7Main", COL_L, row, 95, () -> CnpcLmHubGui.open(player, "main"));
+    }
+
+    /** Submenu: Back → parent page in this system; Main → Legacy Mechanics hub. */
+    public static void navSubmenu(ServerPlayer player, ICustomGui gui, int row, Runnable back, String backLabel) {
+        if (back != null) {
+            buttonSmall(gui, ID_NAV_BACK, backLabel == null ? "§7« Back" : backLabel, COL_L, row, 95, back);
+        }
+        buttonSmall(gui, ID_NAV_HUB, "§7Main", COL_R, row, 95, () -> CnpcLmHubGui.open(player, "main"));
+    }
+
+    /** @deprecated use {@link #navSystemRoot} or {@link #navSubmenu} */
+    @Deprecated
     public static void navHubMain(ServerPlayer player, ICustomGui gui, int row, Runnable openMain) {
-        buttonSmall(gui, ID_NAV_HUB, "§7« Hub", COL_L, row, 95, () -> CnpcLmHubGui.open(player, "main"));
-        if (openMain != null) {
-            buttonSmall(gui, ID_NAV_BACK, "§7Main", COL_R, row, 95, openMain);
+        if (openMain == null) {
+            navSystemRoot(player, gui, row);
+        } else {
+            navSubmenu(player, gui, row, openMain, "§7« Back");
         }
     }
 
@@ -475,12 +491,10 @@ public final class CnpcGuiSupport {
         return StaffAccess.isStaff(player);
     }
 
-    /** Footer: Back to section hub + Hub link. */
+    /** @deprecated use {@link #navSubmenu} */
+    @Deprecated
     public static void navBackHub(ServerPlayer player, ICustomGui gui, int row, Runnable back, String backLabel) {
-        buttonSmall(gui, ID_NAV_HUB, "§7« Hub", COL_L, row, 95, () -> CnpcLmHubGui.open(player, "main"));
-        if (back != null) {
-            buttonSmall(gui, ID_NAV_BACK, backLabel == null ? "§7Back" : backLabel, COL_R, row, 95, back);
-        }
+        navSubmenu(player, gui, row, back, backLabel);
     }
 
     public static String flagOnOff(java.util.Map<String, String> ph, String key) {

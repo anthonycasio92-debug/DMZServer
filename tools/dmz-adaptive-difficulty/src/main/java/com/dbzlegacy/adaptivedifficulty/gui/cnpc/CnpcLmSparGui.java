@@ -78,7 +78,7 @@ public final class CnpcLmSparGui {
 
         if (!"true".equalsIgnoreCase(ph.get("system_enabled"))) {
             int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of("§cSparring system is disabled."), 3);
-            footer(player, gui, row + 8, "main");
+            footer(player, gui, row + 8, null);
             return;
         }
 
@@ -101,7 +101,7 @@ public final class CnpcLmSparGui {
             CnpcGuiSupport.buttonSmall(gui, 98, "§cStaff admin", CnpcGuiSupport.COL_R, row, 95, () -> open(player, "admin"));
         }
         row += 24;
-        footer(player, gui, row, "main");
+        footer(player, gui, row, null);
     }
 
     private static void paintMentor(ServerPlayer player, ICustomGui gui) {
@@ -117,7 +117,7 @@ public final class CnpcLmSparGui {
         CnpcGuiSupport.button(gui, 24, "§cLeave mentor", CnpcGuiSupport.COL_L, row, () -> act(player, "mentor_leave", "", "mentor"));
         CnpcGuiSupport.button(gui, 25, "§5Dojo home", CnpcGuiSupport.COL_R, row, () -> open(player, "dojo"));
         row += 24;
-        footer(player, gui, row, "mentor");
+        footer(player, gui, row, "main");
     }
 
     private static void paintPending(ServerPlayer player, ICustomGui gui) {
@@ -159,7 +159,7 @@ public final class CnpcLmSparGui {
         CnpcGuiSupport.button(gui, 22, "§eMembers", CnpcGuiSupport.COL_L, row, () -> open(player, "dojo_members"));
         CnpcGuiSupport.button(gui, 23, "§6Hall of fame", CnpcGuiSupport.COL_R, row, () -> open(player, "dojo_hof"));
         row += 24;
-        footer(player, gui, row, "dojo");
+        footer(player, gui, row, "mentor");
     }
 
     private static void paintDojoWar(ServerPlayer player, ICustomGui gui) {
@@ -172,7 +172,7 @@ public final class CnpcLmSparGui {
         CnpcGuiSupport.button(gui, 22, "§aAccept war", CnpcGuiSupport.COL_L, row, () -> act(player, "dojo_accept", "", "dojo_war"));
         CnpcGuiSupport.button(gui, 23, "§cDecline war", CnpcGuiSupport.COL_R, row, () -> act(player, "dojo_decline", "", "dojo_war"));
         row += 24;
-        footer(player, gui, row, "dojo_war");
+        footer(player, gui, row, "dojo");
     }
 
     private static void paintDojoWarPending(ServerPlayer player, ICustomGui gui) {
@@ -330,7 +330,12 @@ public final class CnpcLmSparGui {
         footer(player, gui, row, "main");
     }
 
-    private static void footer(ServerPlayer player, ICustomGui gui, int row, String mainPage) {
-        CnpcGuiSupport.navHubMain(player, gui, row, () -> open(player, mainPage));
+    /** {@code parentPage} null on spar main; otherwise Back reopens that page. Main always → LM hub. */
+    private static void footer(ServerPlayer player, ICustomGui gui, int row, String parentPage) {
+        if (parentPage == null) {
+            CnpcGuiSupport.navSystemRoot(player, gui, row);
+        } else {
+            CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, parentPage), "§7« Back");
+        }
     }
 }

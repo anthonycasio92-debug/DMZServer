@@ -38,6 +38,6 @@ public final class CnpcLmLogsGui {
                 () -> MechanicsGuiApi.handleDo(player, "syslog", "flush", "logs"),
                 () -> open(player, "main")));
         row += 24;
-        CnpcGuiSupport.navBackHub(player, gui, row, () -> CnpcLmAdminGui.open(player, "main"), "§7Admin");
+        CnpcGuiSupport.navSubmenu(player, gui, row, () -> CnpcLmAdminGui.open(player, "main"), "§7« Back");
     }
 }

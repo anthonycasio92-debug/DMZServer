@@ -42,6 +42,6 @@ public final class CnpcLmAdminGui {
                         player, "migrate-cnpc", "", "admin"),
                 () -> open(player, "main")));
         row += CnpcGuiSupport.ROW_STEP + 4;
-        CnpcGuiSupport.navHubMain(player, gui, row, null);
+        CnpcGuiSupport.navSystemRoot(player, gui, row);
     }
 }

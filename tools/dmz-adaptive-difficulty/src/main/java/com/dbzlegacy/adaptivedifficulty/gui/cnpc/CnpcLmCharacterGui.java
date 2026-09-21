@@ -74,7 +74,7 @@ public final class CnpcLmCharacterGui {
             gui.addLabel(4, "§cCharacter Services unavailable.", CnpcGuiSupport.M, row, 400, 14);
             row += 20;
         }
-        footer(player, gui, row);
+        footer(player, gui, row, null);
     }
 
     private static void paintRace(ServerPlayer player, ICustomGui gui) {
@@ -102,7 +102,7 @@ public final class CnpcLmCharacterGui {
                 open(player, "race_pct:" + id);
             }
         });
-        footer(player, gui, 200);
+        footer(player, gui, 200, "main");
     }
 
     private static void paintRacePct(ServerPlayer player, String raceAndMaybePct) {
@@ -124,10 +124,7 @@ public final class CnpcLmCharacterGui {
                         () -> open(player, "race_confirm:" + raceId + ":" + keep));
             }
             row += 36;
-            CnpcGuiSupport.buttonSmall(gui, 96, "§7« Back", CnpcGuiSupport.COL_L, row, 95,
-                    () -> open(player, "race"));
-            CnpcGuiSupport.buttonSmall(gui, 97, "§7Main", CnpcGuiSupport.COL_R, row, 95,
-                    () -> open(player, "main"));
+            CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "race"), "§7« Back");
         });
     }
 
@@ -140,11 +137,10 @@ public final class CnpcLmCharacterGui {
                     player,
                     () -> CharacterServicesGuiApi.handleDo(player, "race_confirm", raceAndPct, "main"),
                     () -> CnpcLmHubGui.open(player, "main")));
-            CnpcGuiSupport.buttonSmall(gui, 96, "§7« Back", CnpcGuiSupport.COL_L, 230, 95,
-                    () -> {
-                        String race = raceAndPct.split(":", 2)[0];
-                        open(player, "race_pct:" + race);
-                    });
+            CnpcGuiSupport.navSubmenu(player, gui, 230, () -> {
+                String race = raceAndPct.split(":", 2)[0];
+                open(player, "race_pct:" + race);
+            }, "§7« Back");
         });
     }
 
@@ -173,7 +169,7 @@ public final class CnpcLmCharacterGui {
                 open(player, "class_confirm:" + id);
             }
         });
-        footer(player, gui, 200);
+        footer(player, gui, 200, "main");
     }
 
     private static void paintClassConfirm(ServerPlayer player, String classId) {
@@ -185,8 +181,7 @@ public final class CnpcLmCharacterGui {
                     player,
                     () -> CharacterServicesGuiApi.handleDo(player, "class_confirm", classId, "main"),
                     () -> CnpcLmHubGui.open(player, "main")));
-            CnpcGuiSupport.buttonSmall(gui, 96, "§7« Back", CnpcGuiSupport.COL_L, 210, 95,
-                    () -> open(player, "class"));
+            CnpcGuiSupport.navSubmenu(player, gui, 210, () -> open(player, "class"), "§7« Back");
         });
     }
 
@@ -235,8 +230,7 @@ public final class CnpcLmCharacterGui {
                     () -> open(player, "bones:" + (pg + 1)));
         }
         row += 28;
-        CnpcGuiSupport.buttonSmall(gui, 96, "§7« Main", CnpcGuiSupport.COL_L, row, 95, () -> open(player, "main"));
-        CnpcGuiSupport.buttonSmall(gui, 97, "§7Hub", CnpcGuiSupport.COL_R, row, 95, () -> CnpcLmHubGui.open(player, "main"));
+        CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "main"), "§7« Back");
     }
 
     private static int parseBonePage(String page) {
@@ -260,13 +254,16 @@ public final class CnpcLmCharacterGui {
                 player,
                 () -> CharacterServicesGuiApi.handleDo(player, "reskin_confirm", "", "reskin"),
                 () -> open(player, "main")));
-        footer(player, gui, 190);
+        footer(player, gui, 190, "main");
     }
 
-    private static void footer(ServerPlayer player, ICustomGui gui, int row) {
-        CnpcGuiSupport.buttonSmall(gui, 96, "§7« Hub", CnpcGuiSupport.COL_L, row, 95,
-                () -> CnpcLmHubGui.open(player, "main"));
-        CnpcGuiSupport.buttonSmall(gui, 98, "§cClose", CnpcGuiSupport.COL_R, row, 95, () -> {});
+    /** {@code parentPage} null on character main; otherwise Back reopens that page. Main always → LM hub. */
+    private static void footer(ServerPlayer player, ICustomGui gui, int row, String parentPage) {
+        if (parentPage == null) {
+            CnpcGuiSupport.navSystemRoot(player, gui, row);
+        } else {
+            CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, parentPage), "§7« Back");
+        }
     }
 
     private static String selectedCardId(List<String> cards, IScroll scroll) {

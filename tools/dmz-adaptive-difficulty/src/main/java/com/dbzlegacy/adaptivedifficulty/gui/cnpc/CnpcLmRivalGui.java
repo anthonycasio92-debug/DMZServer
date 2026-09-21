@@ -83,7 +83,7 @@ public final class CnpcLmRivalGui {
 
         if (!"true".equalsIgnoreCase(ph.get("system_enabled"))) {
             int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of("§cRival system is disabled."), 3);
-            footer(player, gui, row + 8, "main");
+            footer(player, gui, row + 8, null);
             return;
         }
 
@@ -110,7 +110,7 @@ public final class CnpcLmRivalGui {
             CnpcGuiSupport.buttonSmall(gui, 98, "§cStaff admin", CnpcGuiSupport.COL_L, row, 195, () -> open(player, "admin"));
             row += 24;
         }
-        footer(player, gui, row, "main");
+        footer(player, gui, row, null);
     }
 
     private static void paintActions(ServerPlayer player, ICustomGui gui) {
@@ -130,7 +130,7 @@ public final class CnpcLmRivalGui {
         row += 24;
         CnpcGuiSupport.button(gui, 26, "§6Pending board", CnpcGuiSupport.COL_L, row, () -> open(player, "pending"));
         row += 24;
-        footer(player, gui, row, "actions");
+        footer(player, gui, row, "main");
     }
 
     private static void paintPending(ServerPlayer player, ICustomGui gui) {
@@ -175,7 +175,7 @@ public final class CnpcLmRivalGui {
         CnpcGuiSupport.button(gui, 24, "§bSpectate…", CnpcGuiSupport.COL_L, row, () -> open(player, "pick_spectate"));
         CnpcGuiSupport.button(gui, 25, "§8Stop spectate", CnpcGuiSupport.COL_R, row, () -> act(player, "spectate_stop", "", "challenge"));
         row += 24;
-        footer(player, gui, row, "challenge");
+        footer(player, gui, row, "main");
     }
 
     private static void openChallengeTime(ServerPlayer player, String targetArg) {
@@ -208,7 +208,7 @@ public final class CnpcLmRivalGui {
         CnpcGuiSupport.button(gui, 22, "§bQuests", CnpcGuiSupport.COL_L, row, () -> open(player, "quests"));
         CnpcGuiSupport.button(gui, 23, "§6More records", CnpcGuiSupport.COL_R, row, () -> open(player, "records"));
         row += 24;
-        footer(player, gui, row, "progress");
+        footer(player, gui, row, "main");
     }
 
     private static void paintRecords(ServerPlayer player, ICustomGui gui) {
@@ -238,7 +238,7 @@ public final class CnpcLmRivalGui {
         }
         int row = 210;
         CnpcGuiSupport.buttonSmall(gui, 95, "§aActions", CnpcGuiSupport.COL_L, row, 95, () -> open(player, "actions"));
-        footer(player, gui, row, "list");
+        footer(player, gui, row, "main");
     }
 
     private static void paintNamePick(
@@ -318,7 +318,12 @@ public final class CnpcLmRivalGui {
         footer(player, gui, row, "main");
     }
 
-    private static void footer(ServerPlayer player, ICustomGui gui, int row, String mainPage) {
-        CnpcGuiSupport.navHubMain(player, gui, row, () -> open(player, mainPage));
+    /** {@code parentPage} null on rival main; otherwise Back reopens that page. Main always → LM hub. */
+    private static void footer(ServerPlayer player, ICustomGui gui, int row, String parentPage) {
+        if (parentPage == null) {
+            CnpcGuiSupport.navSystemRoot(player, gui, row);
+        } else {
+            CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, parentPage), "§7« Back");
+        }
     }
 }

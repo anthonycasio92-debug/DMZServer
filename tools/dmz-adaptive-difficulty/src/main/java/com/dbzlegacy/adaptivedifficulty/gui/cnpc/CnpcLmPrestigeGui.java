@@ -61,7 +61,7 @@ public final class CnpcLmPrestigeGui {
         CnpcGuiSupport.button(gui, 24, "§6Difficulty tiers", CnpcGuiSupport.COL_L, row, () -> open(player, "tiers"));
         CnpcGuiSupport.button(gui, 25, "§3Cap breakthrough", CnpcGuiSupport.COL_R, row, () -> open(player, "cap"));
         row += 24;
-        footer(player, gui, row);
+        footer(player, gui, row, null);
     }
 
     private static void paintTurnIn(ServerPlayer player, ICustomGui gui) {
@@ -80,7 +80,7 @@ public final class CnpcLmPrestigeGui {
                     () -> open(player, "turnin")));
         }
         row += 36;
-        footer(player, gui, row);
+        footer(player, gui, row, "main");
     }
 
     private static void paintShop(ServerPlayer player, ICustomGui gui, int pageIndex) {
@@ -129,7 +129,7 @@ public final class CnpcLmPrestigeGui {
                     () -> open(player, "shop:" + (page + 1)));
         }
         row += 28;
-        footer(player, gui, row);
+        footer(player, gui, row, "main");
     }
 
     private static List<String> shopSkillIds(Map<String, String> ph) {
@@ -206,7 +206,7 @@ public final class CnpcLmPrestigeGui {
             gui.addLabel(42, "§7Nothing to unpurchase", CnpcGuiSupport.COL_L, row + 4, 195, 14);
         }
         row += CnpcGuiSupport.ROW_STEP;
-        footer(player, gui, row);
+        footer(player, gui, row, "main");
     }
 
     private static void paintCap(ServerPlayer player, ICustomGui gui) {
@@ -224,7 +224,7 @@ public final class CnpcLmPrestigeGui {
                     () -> ProgressionGuiApi.handlePrestigeDo(player, "breakthrough", "", "cap"),
                     () -> open(player, "cap")));
         }
-        footer(player, gui, row + 28);
+        footer(player, gui, row + 28, "main");
     }
 
     private static void paintTiers(ServerPlayer player, ICustomGui gui) {
@@ -254,11 +254,18 @@ public final class CnpcLmPrestigeGui {
             }
         }
         row += 36;
-        footer(player, gui, row);
+        footer(player, gui, row, "main");
     }
 
     private static void footer(ServerPlayer player, ICustomGui gui, int row) {
-        CnpcGuiSupport.buttonSmall(gui, 96, "§7« Hub", CnpcGuiSupport.COL_L, row, 95, () -> CnpcLmHubGui.open(player, "main"));
-        CnpcGuiSupport.buttonSmall(gui, 97, "§7Main", CnpcGuiSupport.COL_R, row, 95, () -> open(player, "main"));
+        footer(player, gui, row, null);
+    }
+
+    private static void footer(ServerPlayer player, ICustomGui gui, int row, String parentPage) {
+        if (parentPage == null || parentPage.isBlank()) {
+            CnpcGuiSupport.navSystemRoot(player, gui, row);
+        } else {
+            CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, parentPage), "§7« Back");
+        }
     }
 }

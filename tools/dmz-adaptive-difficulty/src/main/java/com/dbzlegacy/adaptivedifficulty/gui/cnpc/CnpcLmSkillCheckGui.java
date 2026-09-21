@@ -52,6 +52,10 @@ public final class CnpcLmSkillCheckGui {
             });
         }
         row += 24;
-        CnpcGuiSupport.navHubMain(player, gui, row, () -> open(player, "core"));
+        if ("saga".equals(page)) {
+            CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "core"), "§7« Back");
+        } else {
+            CnpcGuiSupport.navSystemRoot(player, gui, row);
+        }
     }
 }

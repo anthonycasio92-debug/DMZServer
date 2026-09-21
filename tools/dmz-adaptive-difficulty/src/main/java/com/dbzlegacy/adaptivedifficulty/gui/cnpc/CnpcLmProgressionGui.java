@@ -106,7 +106,7 @@ public final class CnpcLmProgressionGui {
             placeRow(gui, player, row, 30, "§dFabled subflags", CnpcGuiSupport.COL_L, () -> open(player, "flags_fabled"));
         }
         row += CnpcGuiSupport.ROW_STEP;
-        CnpcGuiSupport.navHubMain(player, gui, row, null);
+        CnpcGuiSupport.navSystemRoot(player, gui, row);
     }
 
     private static int placeRow(
@@ -153,7 +153,7 @@ public final class CnpcLmProgressionGui {
             i++;
         }
         row += CnpcGuiSupport.ROW_STEP + 8;
-        CnpcGuiSupport.navBackHub(player, gui, row, () -> open(player, "main"), "§7Main");
+        CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "main"), "§7« Back");
     }
 
     private static int paintBoostEntry(
@@ -210,7 +210,7 @@ public final class CnpcLmProgressionGui {
         CnpcGuiSupport.buttonSmall(gui, 56, "§7Refresh", CnpcGuiSupport.COL_L, row, 95,
                 () -> open(player, "boost_panel"));
         row += CnpcGuiSupport.ROW_STEP;
-        CnpcGuiSupport.navBackHub(player, gui, row, () -> open(player, "tp"), "§7TP gains");
+        CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "tp"), "§7« Back");
     }
 
     private static int boostPreset(
@@ -234,7 +234,7 @@ public final class CnpcLmProgressionGui {
         CnpcGuiSupport.button(gui, 61, "§cRemove upgrade…", CnpcGuiSupport.COL_R, row,
                 () -> open(player, "android_remove"));
         row += CnpcGuiSupport.ROW_STEP + 8;
-        CnpcGuiSupport.navBackHub(player, gui, row, () -> open(player, "race"), "§7Race");
+        CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "race"), "§7« Back");
     }
 
     private static void paintAndroidConvert(ServerPlayer player, ICustomGui gui) {
@@ -248,7 +248,7 @@ public final class CnpcLmProgressionGui {
         row += CnpcGuiSupport.ROW_STEP + 4;
         paintNameScroll(player, gui, row, "android", "android_convert");
         row += 140;
-        CnpcGuiSupport.navBackHub(player, gui, row, () -> open(player, "android_panel"), "§7Tools");
+        CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "android_panel"), "§7« Back");
     }
 
     private static void paintAndroidRemove(ServerPlayer player, ICustomGui gui) {
@@ -266,9 +266,9 @@ public final class CnpcLmProgressionGui {
         if (staff) {
             paintNameScroll(player, gui, row, "android_remove", "android_remove");
             row += 140;
-            CnpcGuiSupport.navBackHub(player, gui, row, () -> open(player, "android_panel"), "§7Tools");
+            CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "android_panel"), "§7« Back");
         } else {
-            CnpcGuiSupport.navBackHub(player, gui, row + 8, () -> CnpcLmHubGui.open(player, "main"), "§7Hub");
+            CnpcGuiSupport.navSubmenu(player, gui, row + 8, () -> open(player, "main"), "§7« Back");
         }
     }
 
@@ -306,7 +306,7 @@ public final class CnpcLmProgressionGui {
                                 staffFree ? "off" : "on", "economy"),
                         () -> open(player, "economy")));
         row += CnpcGuiSupport.ROW_STEP + 8;
-        CnpcGuiSupport.navBackHub(player, gui, row, () -> open(player, "main"), "§7Main");
+        CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "main"), "§7« Back");
     }
 
     private static void paintAllFlags(ServerPlayer player, ICustomGui gui) {
@@ -331,7 +331,8 @@ public final class CnpcLmProgressionGui {
         row += CnpcGuiSupport.ROW_STEP + 8;
         CnpcGuiSupport.buttonSmall(gui, 58, "§dFabled subflags", CnpcGuiSupport.COL_L, row, 195,
                 () -> open(player, "flags_fabled"));
-        CnpcGuiSupport.navBackHub(player, gui, row, () -> open(player, "main"), "§7Main");
+        row += CnpcGuiSupport.ROW_STEP;
+        CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "main"), "§7« Back");
     }
 
     private static void paintFabledFlags(ServerPlayer player, ICustomGui gui) {
@@ -353,7 +354,7 @@ public final class CnpcLmProgressionGui {
                             () -> open(player, "flags_fabled")));
         }
         row += CnpcGuiSupport.ROW_STEP + 8;
-        CnpcGuiSupport.navBackHub(player, gui, row, () -> open(player, "admin"), "§7All flags");
+        CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "admin"), "§7« Back");
     }
 
     private static String friendlyFlagLabel(String key, Map<String, String> ph) {
