@@ -124,7 +124,9 @@ public final class MechanicsCommands {
                                                 .executes(ctx -> adminInspect(
                                                         ctx.getSource(),
                                                         StringArgumentType.getString(ctx, "player"),
-                                                        StringArgumentType.getString(ctx, "system")))))));
+                                                        StringArgumentType.getString(ctx, "system"))))))
+                        .then(Commands.m_82127_("testgui")
+                                .executes(ctx -> adminTestGui(ctx.getSource()))));
     }
 
     private static int open(CommandSourceStack source, String page) {
@@ -141,36 +143,44 @@ public final class MechanicsCommands {
         if (player == null) {
             return 0;
         }
+        return openSystemMenu(player, system) ? 1 : 0;
+    }
+
+    /** Opens the standard LM inventory/chat menu for a system (shared with staff CNPC test GUI). */
+    public static boolean openSystemMenu(ServerPlayer player, String system) {
+        if (player == null) {
+            return false;
+        }
         String s = system == null ? "" : system.toLowerCase();
         // Prefer Bukkit companion when present; Forge opens chat/menu fallbacks.
         return switch (s) {
             case "difficulty", "diff" -> {
                 com.dbzlegacy.adaptivedifficulty.gui.DifficultyMenu.open(player, "main");
-                yield 1;
+                yield true;
             }
             case "rival" -> {
                 com.dbzlegacy.adaptivedifficulty.gui.RivalMenu.open(player, "main");
-                yield 1;
+                yield true;
             }
             case "spar", "sparring" -> {
                 com.dbzlegacy.adaptivedifficulty.gui.SparMenu.open(player, "main");
-                yield 1;
+                yield true;
             }
             case "progression", "prog" -> {
                 if (!StaffAccess.isStaff(player)) {
                     player.m_213846_(Component.m_237113_("§cStaff only."));
-                    yield 0;
+                    yield false;
                 }
                 com.dbzlegacy.adaptivedifficulty.gui.ProgressionMenu.open(player, "main");
-                yield 1;
+                yield true;
             }
             case "prestige" -> {
                 com.dbzlegacy.adaptivedifficulty.gui.PrestigeMenu.open(player, "main");
-                yield 1;
+                yield true;
             }
             case "character", "characterservices", "charservices", "char" -> {
                 com.dbzlegacy.adaptivedifficulty.gui.CharacterServicesMenu.open(player, "main");
-                yield 1;
+                yield true;
             }
             case "android_remove", "androidremove", "removeandroid" -> {
                 // Open the confirm GUI (matches Bukkit hub /lmdo lm open android_remove).
@@ -181,27 +191,36 @@ public final class MechanicsCommands {
                         player.m_213846_(Component.m_237113_(msg));
                     }
                 }
-                yield 1;
+                yield true;
             }
             case "skills", "skill" -> {
                 if (!StaffAccess.isStaff(player)) {
                     player.m_213846_(Component.m_237113_("§cStaff only."));
-                    yield 0;
+                    yield false;
                 }
                 com.dbzlegacy.adaptivedifficulty.gui.SkillsMenu.open(player, "core");
-                yield 1;
+                yield true;
             }
             case "skillcheck" -> {
                 com.dbzlegacy.adaptivedifficulty.progression.shop.SkillCheckService.open(player, "core");
-                yield 1;
+                yield true;
             }
             default -> {
                 player.m_213846_(Component.m_237113_(
                         "§cUnknown: " + s
                                 + " §8(difficulty|rival|spar|prestige|skillcheck|android_remove|progression|skills)"));
-                yield 0;
+                yield false;
             }
         };
+    }
+
+    private static int adminTestGui(CommandSourceStack source) {
+        ServerPlayer player = playerOrNull(source);
+        if (player == null) {
+            source.m_81352_(Component.m_237113_("Run /lm admin testgui in-game."));
+            return 0;
+        }
+        return com.dbzlegacy.adaptivedifficulty.gui.CnpcStaffTestGui.open(player) ? 1 : 0;
     }
 
     private static int adminHelp(CommandSourceStack source) {
@@ -218,6 +237,7 @@ public final class MechanicsCommands {
                         + "§e/lm admin open <difficulty|rival|spar|progression|prestige|skills|hub>\n"
                         + "§e/lm admin inspect <player> [hub|difficulty|rival|spar|skillcheck|…]\n"
                         + "§e/lm admin inspect clear §7— stop inspecting\n"
+                        + "§e/lm admin testgui §7— staff CNPC test hub (all LM systems)\n"
                         + "§8Also: /difficulty admin gui|inspect <player>"
         ), false);
         return 1;

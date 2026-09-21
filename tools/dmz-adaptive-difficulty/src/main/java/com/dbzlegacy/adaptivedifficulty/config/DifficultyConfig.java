@@ -358,6 +358,8 @@ public final class DifficultyConfig {
      * {@code cmi} (default), {@code auto} (CMI → chest → chat), {@code chest}, or {@code chat}.
      */
     public String guiBackend = "cmi";
+    /** Staff {@code /lm admin testgui} — CustomNPCs panel listing all LM systems (experimental). */
+    public boolean enableStaffCnpcTestGui = true;
     /**
      * If the Minecraft world is on Peaceful (no hostile spawns), restore it on server start.
      * Peaceful prevents adaptive mob scaling from doing anything.
