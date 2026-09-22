@@ -134,7 +134,6 @@ public final class CnpcLmCharacterGui {
             row = CnpcGuiLayout.paintTwoColumnButtonGrid(player, gui, row, 40, grid, () -> {});
             row += 4;
             CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "race"), "§7« Back");
-            CnpcGuiSupport.paintSubjectPreview(subject, gui, player);
         });
     }
 
@@ -154,7 +153,6 @@ public final class CnpcLmCharacterGui {
                 String race = raceAndPct.split(":", 2)[0];
                 open(player, "race_pct:" + race);
             }, "§7« Back");
-            CnpcGuiSupport.paintSubjectPreview(subject, gui, player);
         });
     }
 
@@ -192,7 +190,6 @@ public final class CnpcLmCharacterGui {
                     () -> CnpcLmHubGui.open(player, "main")));
             row += CnpcGuiSupport.ROW_STEP + 8;
             CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "class"), "§7« Back");
-            CnpcGuiSupport.paintSubjectPreview(subject, gui, player);
         });
     }
 
@@ -249,7 +246,6 @@ public final class CnpcLmCharacterGui {
         }
         row += CnpcGuiSupport.ROW_STEP + 4;
         CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "main"), "§7« Back");
-        CnpcGuiSupport.paintSubjectPreview(subject, gui, player);
     }
 
     private static int parseBonePage(String page) {
@@ -291,7 +287,9 @@ public final class CnpcLmCharacterGui {
         } else {
             CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, parentPage), "§7« Back");
         }
-        CnpcGuiSupport.paintSubjectPreview(previewSubject, gui, player);
+        if (parentPage == null) {
+            CnpcGuiSupport.paintSystemMainPreview(previewSubject, gui, player);
+        }
     }
 
     private static String[] raceClassLabels(List<String> cards) {

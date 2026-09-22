@@ -302,6 +302,11 @@ public final class CnpcGuiSupport {
         }
     }
 
+    /** Character preview on a system's top-level menu only (not subpages). */
+    public static void paintSystemMainPreview(ServerPlayer subject, ICustomGui gui, ServerPlayer layoutViewer) {
+        paintSubjectPreview(subject, gui, layoutViewer);
+    }
+
     public static void bodyLines(ICustomGui gui, int startId, int y, List<String> lines, int maxLines) {
         bodyLines(gui, startId, y, lines, maxLines, textBandWidth());
     }

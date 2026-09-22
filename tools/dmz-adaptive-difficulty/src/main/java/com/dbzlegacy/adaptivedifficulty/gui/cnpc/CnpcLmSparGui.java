@@ -169,7 +169,6 @@ public final class CnpcLmSparGui {
                     () -> act(pl, "mentor_decline", pickerArg, "pending"));
             row += CnpcGuiSupport.ROW_STEP + 4;
             CnpcGuiSupport.navSubmenu(pl, gui, row, () -> open(pl, "pending"), "§7« Back");
-            CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(pl), gui, pl);
         });
     }
 
@@ -195,7 +194,6 @@ public final class CnpcLmSparGui {
             CnpcGuiSupport.button(gui, 21, "§7Cancel", CnpcGuiSupport.COL_R, row, () -> open(pl, returnPage));
             row += CnpcGuiSupport.ROW_STEP + 4;
             CnpcGuiSupport.navSubmenu(pl, gui, row, () -> open(pl, returnPage), "§7« Back");
-            CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(pl), gui, pl);
         });
     }
 
@@ -265,7 +263,6 @@ public final class CnpcLmSparGui {
                     () -> act(pl, "dojo_war_cancel", pickerArg, "dojo_war_pending"));
             row += CnpcGuiSupport.ROW_STEP + 4;
             CnpcGuiSupport.navSubmenu(pl, gui, row, () -> open(pl, "dojo_war_pending"), "§7« Back");
-            CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(pl), gui, pl);
         });
     }
 
@@ -437,6 +434,8 @@ public final class CnpcLmSparGui {
         } else {
             CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, parentPage), "§7« Back");
         }
-        CnpcGuiSupport.paintSubjectPreview(subject(player), gui, player);
+        if (parentPage == null) {
+            CnpcGuiSupport.paintSystemMainPreview(subject(player), gui, player);
+        }
     }
 }

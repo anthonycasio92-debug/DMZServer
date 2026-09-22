@@ -113,7 +113,7 @@ public final class CnpcLmHubGui {
         }
         row += gap;
         CnpcGuiSupport.footerCloseRefresh(player, gui, row, () -> paintMain(player));
-        CnpcGuiSupport.paintPlayerPreviewSlot(who, gui, CnpcGuiSupport.previewAnchorY(player));
+        CnpcGuiSupport.paintSystemMainPreview(who, gui, player);
     }
 
     private static void systemBtn(

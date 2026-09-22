@@ -43,6 +43,5 @@ public final class CnpcLmAdminGui {
                 () -> open(player, "main")));
         row += CnpcGuiSupport.ROW_STEP + 4;
         CnpcGuiSupport.navSystemRoot(player, gui, row);
-        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, player);
     }
 }

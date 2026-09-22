@@ -44,7 +44,7 @@ public final class CnpcLmPrestigeGui {
                 case "turnin", "points" -> paintTurnIn(pl, gui);
                 case "shop", "skills" -> paintShop(pl, gui, shopPageFinal);
                 case "forms", "effects", "effect" -> paintEffects(pl, gui);
-                case "cap", "breakthrough" -> paintCap(pl, gui);
+                case "cap", "breakthrough" -> paintMain(pl, gui);
                 case "tiers", "tier" -> paintTiers(pl, gui);
                 default -> paintMain(pl, gui);
             }
@@ -66,7 +66,6 @@ public final class CnpcLmPrestigeGui {
         CnpcGuiSupport.button(gui, 23, "§5Effects", CnpcGuiSupport.COL_R, row, () -> open(player, "effects"));
         row += 24;
         CnpcGuiSupport.button(gui, 24, "§6Difficulty tiers", CnpcGuiSupport.COL_L, row, () -> open(player, "tiers"));
-        CnpcGuiSupport.button(gui, 25, "§3Cap breakthrough", CnpcGuiSupport.COL_R, row, () -> open(player, "cap"));
         row += 24;
         footer(player, gui, row, null);
     }
@@ -237,28 +236,6 @@ public final class CnpcLmPrestigeGui {
         footer(player, gui, row, "main");
     }
 
-    private static void paintCap(ServerPlayer player, ICustomGui gui) {
-        Map<String, String> ph = ProgressionGuiApi.prestigePlaceholders(player);
-        int bt = parseInt(ph.get("breakthroughs"), 0);
-        int btMax = parseInt(ph.get("breakthroughs_max"), PrestigePointsSystem.MAX_BREAKTHROUGHS);
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§d", "Prestige", "Level cap"),
-                "§7Raise your level cap with breakthroughs");
-        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, ProgressionGuiApi.prestigeLines(player, "cap"),
-                        CnpcGuiStyle.INFO_INLINE_MAX));
-        if (bt >= btMax) {
-            gui.addLabel(CnpcGuiSupport.ID_INLINE_NOTE, "§aCap fully raised §8· no more breakthroughs",
-                    CnpcGuiSupport.COL_L, row + 4, CnpcGuiSupport.textBandWidth(), 14);
-        } else {
-            String cost = ph.getOrDefault("next_breakthrough_cost", "?");
-            CnpcGuiSupport.buttonSmallFull(gui, 20, "§aBuy breakthrough · §e" + cost + " pts",
-                    CnpcGuiSupport.COL_L, row, CnpcGuiSupport.BTN_W, () -> CnpcGuiSupport.act(
-                            player,
-                            () -> ProgressionGuiApi.handlePrestigeDo(player, "breakthrough", "", "cap"),
-                            () -> open(player, "cap")));
-        }
-        footer(player, gui, row + CnpcGuiSupport.ROW_STEP, "main");
-    }
-
     private static void paintTiers(ServerPlayer player, ICustomGui gui) {
         Map<String, String> ph = ProgressionGuiApi.prestigePlaceholders(player);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§d", "Prestige", "Tiers"),
@@ -296,6 +273,8 @@ public final class CnpcLmPrestigeGui {
         } else {
             CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, parentPage), "§7« Back");
         }
-        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, player);
+        if (parentPage == null || parentPage.isBlank()) {
+            CnpcGuiSupport.paintSystemMainPreview(CnpcGuiSupport.target(player), gui, player);
+        }
     }
 }

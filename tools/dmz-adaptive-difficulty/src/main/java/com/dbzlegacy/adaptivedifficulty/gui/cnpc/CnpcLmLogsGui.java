@@ -38,6 +38,5 @@ public final class CnpcLmLogsGui {
                 () -> open(player, "main")));
         row += 24;
         CnpcGuiSupport.navSubmenu(player, gui, row, () -> CnpcLmAdminGui.open(player, "main"), "§7« Back");
-        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, player);
     }
 }

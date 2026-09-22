@@ -107,7 +107,7 @@ public final class CnpcLmProgressionGui {
         }
         row += CnpcGuiSupport.ROW_STEP;
         CnpcGuiSupport.navSystemRoot(player, gui, row);
-        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, player);
+        CnpcGuiSupport.paintSystemMainPreview(CnpcGuiSupport.target(player), gui, player);
     }
 
     private static int placeRow(
@@ -127,7 +127,6 @@ public final class CnpcLmProgressionGui {
         String[] keys = flagsForSection(page);
         if (keys == null || keys.length == 0) {
             CnpcGuiSupport.navSubmenu(player, gui, row + 8, () -> open(player, "main"), "§7« Back");
-            CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, player);
             return;
         }
 
@@ -167,7 +166,6 @@ public final class CnpcLmProgressionGui {
                 () -> open(player, page));
         row += 8;
         CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "main"), "§7« Back");
-        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, player);
     }
 
     private static int sectionHeight(String page) {
@@ -200,7 +198,6 @@ public final class CnpcLmProgressionGui {
                 () -> open(player, "boost_panel"));
         row += CnpcGuiSupport.ROW_STEP;
         CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "tp"), "§7« Back");
-        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, player);
     }
 
     private static int boostPreset(
@@ -227,7 +224,6 @@ public final class CnpcLmProgressionGui {
                 () -> open(player, "android_remove"));
         row += CnpcGuiSupport.ROW_STEP + 8;
         CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "race"), "§7« Back");
-        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, player);
     }
 
     private static void paintAndroidConvert(ServerPlayer player, ICustomGui gui) {
@@ -242,7 +238,6 @@ public final class CnpcLmProgressionGui {
         row += CnpcGuiSupport.ROW_STEP + 4;
         row = paintNameScroll(player, gui, row, "android", "android_convert");
         CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "android_panel"), "§7« Back");
-        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, player);
     }
 
     private static void paintAndroidRemove(ServerPlayer player, ICustomGui gui) {
@@ -263,7 +258,6 @@ public final class CnpcLmProgressionGui {
         } else {
             CnpcGuiSupport.navSubmenu(player, gui, row + 8, () -> open(player, "main"), "§7« Back");
         }
-        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, player);
     }
 
     /** @return Y row for footer after list (or after empty label). */
@@ -304,7 +298,6 @@ public final class CnpcLmProgressionGui {
                         () -> open(player, "economy")));
         row += CnpcGuiSupport.ROW_STEP + 8;
         CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "main"), "§7« Back");
-        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, player);
     }
 
     private static void paintAllFlags(ServerPlayer player, ICustomGui gui) {
@@ -326,7 +319,6 @@ public final class CnpcLmProgressionGui {
                 () -> open(player, "flags_fabled"));
         row += CnpcGuiSupport.ROW_STEP;
         CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "main"), "§7« Back");
-        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, player);
     }
 
     private static void paintFabledFlags(ServerPlayer player, ICustomGui gui) {
@@ -344,7 +336,6 @@ public final class CnpcLmProgressionGui {
         row = CnpcGuiLayout.paintTwoColumnButtonGrid(player, gui, row, 40, grid, () -> open(player, "flags_fabled"));
         row += 8;
         CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "admin"), "§7« Back");
-        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, player);
     }
 
     private static String friendlyFlagLabel(String key, Map<String, String> ph) {

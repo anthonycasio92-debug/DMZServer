@@ -202,7 +202,6 @@ public final class CnpcLmRivalGui {
                             CnpcGuiStyle.INFO_INLINE_MAX));
             row += 8;
             CnpcGuiSupport.navSubmenu(pl, gui, row, () -> open(pl, "pending"), "§7« Back");
-            CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(pl), gui, pl);
         });
     }
 
@@ -221,7 +220,6 @@ public final class CnpcLmRivalGui {
             CnpcGuiSupport.button(gui, 21, "§cDecline", CnpcGuiSupport.COL_R, row, () -> act(pl, "decline", pickerArg, "pending"));
             row += CnpcGuiSupport.ROW_STEP + 4;
             CnpcGuiSupport.navSubmenu(pl, gui, row, () -> open(pl, "pending"), "§7« Back");
-            CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(pl), gui, pl);
         });
     }
 
@@ -240,7 +238,6 @@ public final class CnpcLmRivalGui {
                     () -> act(pl, "remove", pickerArg, "list"));
             row += CnpcGuiSupport.ROW_STEP + 4;
             CnpcGuiSupport.navSubmenu(pl, gui, row, () -> open(pl, "list"), "§7« Back");
-            CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(pl), gui, pl);
         });
     }
 
@@ -273,7 +270,6 @@ public final class CnpcLmRivalGui {
             CnpcGuiSupport.button(gui, 21, "§7Cancel", CnpcGuiSupport.COL_R, row, () -> open(pl, returnPage));
             row += CnpcGuiSupport.ROW_STEP + 4;
             CnpcGuiSupport.navSubmenu(pl, gui, row, () -> open(pl, returnPage), "§7« Back");
-            CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(pl), gui, pl);
         });
     }
 
@@ -310,7 +306,6 @@ public final class CnpcLmRivalGui {
             row = CnpcGuiLayout.paintTwoColumnButtonGrid(pl, gui, row, 30, grid, () -> {});
             row += 4;
             CnpcGuiSupport.navSubmenu(pl, gui, row, () -> open(pl, "pick_challenge"), "§7« Back");
-            CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(pl), gui, pl);
         });
     }
 
@@ -463,6 +458,8 @@ public final class CnpcLmRivalGui {
         } else {
             CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, parentPage), "§7« Back");
         }
-        CnpcGuiSupport.paintSubjectPreview(subject(player), gui, player);
+        if (parentPage == null) {
+            CnpcGuiSupport.paintSystemMainPreview(subject(player), gui, player);
+        }
     }
 }

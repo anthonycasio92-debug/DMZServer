@@ -59,6 +59,8 @@ public final class CnpcLmSkillCheckGui {
         } else {
             CnpcGuiSupport.navSystemRoot(player, gui, row);
         }
-        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, player);
+        if ("core".equals(page)) {
+            CnpcGuiSupport.paintSystemMainPreview(CnpcGuiSupport.target(player), gui, player);
+        }
     }
 }

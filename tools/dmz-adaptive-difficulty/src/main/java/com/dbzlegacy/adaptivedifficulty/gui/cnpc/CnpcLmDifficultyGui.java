@@ -390,8 +390,8 @@ public final class CnpcLmDifficultyGui {
                 open(player, "main");
             });
         }
-        if (previewSubject != null) {
-            CnpcGuiSupport.paintSubjectPreview(previewSubject, gui, player);
+        if (previewSubject != null && parentPage == null) {
+            CnpcGuiSupport.paintSystemMainPreview(previewSubject, gui, player);
         }
     }
 }
