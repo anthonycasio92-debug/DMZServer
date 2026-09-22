@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.gui.cnpc;
 
+import java.util.Locale;
 import java.util.regex.Pattern;
 
 /** Shared CNPC menu titles, hints, and line formatting for Legacy Mechanics. */
@@ -11,14 +12,14 @@ public final class CnpcGuiStyle {
 
     public static final String SEP = " §8· ";
 
-    public static final String HINT_CLICK_ENTRY = "§7Click an entry for details";
-    public static final String HINT_CLICK_PLAYER = "§7Click a player to review";
-    public static final String HINT_CLICK_INVITE = "§7Click an invite for details";
-    public static final String HINT_SCROLL_LIST = "§7Wheel scrolls status text · drag the list bar to scroll entries";
-    public static final String HINT_DOUBLE_CLICK_PLAYER = "§7Double-click a player to select";
-    public static final String HINT_REVIEW_PAY = "§7Review the summary before you pay";
-    public static final String HINT_TOGGLE_STAFF = "§7Staff: tap a row to toggle";
-    public static final String HINT_READ_ONLY = "§7Read-only module status";
+    public static final String HINT_CLICK_ENTRY = "§7Select an entry below";
+    public static final String HINT_CLICK_PLAYER = "§7Select a player below";
+    public static final String HINT_CLICK_INVITE = "§7Select an invite to respond";
+    public static final String HINT_SCROLL_LIST = "§7Scroll the status box with your wheel · drag the list to browse";
+    public static final String HINT_DOUBLE_CLICK_PLAYER = "§7Double-click a player to choose them";
+    public static final String HINT_REVIEW_PAY = "§7Read the summary before you confirm";
+    public static final String HINT_TOGGLE_STAFF = "§7Staff: tap a row to turn a flag on or off";
+    public static final String HINT_READ_ONLY = "§7View-only — changes are made elsewhere";
 
     public static final String MSG_RIVALS_OFF = "§cRivals are turned off on this server.";
     public static final String MSG_SPAR_OFF = "§cSparring is turned off on this server.";
@@ -65,10 +66,33 @@ public final class CnpcGuiStyle {
     }
 
     public static String toggleOn(String feature) {
-        return "§a" + feature + " ON";
+        return "§a" + feature + ": on";
     }
 
     public static String toggleOff(String feature) {
-        return "§8" + feature + " off";
+        return "§7" + feature + ": off";
+    }
+
+    /** Friendly spar leaderboard tab name (replaces raw keys like tp / rp). */
+    public static String sparLeaderboardTab(String category) {
+        if (category == null || category.isBlank()) {
+            return "Training points";
+        }
+        return switch (category.toLowerCase(Locale.ROOT)) {
+            case "tp" -> "Training points";
+            case "wins" -> "Wins";
+            case "streak" -> "Win streak";
+            case "rp" -> "Dojo reputation";
+            case "wars" -> "Dojo wars";
+            default -> capitalize(category.replace('_', ' '));
+        };
+    }
+
+    private static String capitalize(String s) {
+        if (s == null || s.isBlank()) {
+            return "";
+        }
+        s = s.trim();
+        return Character.toUpperCase(s.charAt(0)) + s.substring(1);
     }
 }

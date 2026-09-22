@@ -121,12 +121,14 @@ public final class CnpcLmRivalGui {
         CnpcGuiSupport.button(gui, 25, "§bProgress", CnpcGuiSupport.COL_R, row, () -> open(player, "progress"));
         row += 24;
         boolean tpOn = "true".equalsIgnoreCase(ph.get("tpMsg"));
-        CnpcGuiSupport.button(gui, 26, tpOn ? CnpcGuiStyle.toggleOn("TP messages") : CnpcGuiStyle.toggleOff("TP messages"),
+        CnpcGuiSupport.button(gui, 26, tpOn ? CnpcGuiStyle.toggleOn("Teleport msgs")
+                : CnpcGuiStyle.toggleOff("Teleport msgs"),
                 CnpcGuiSupport.COL_L, row, () -> act(
                 player, "tpmsg", "toggle", "main"));
         if ("true".equalsIgnoreCase(ph.get("instinct_feature"))) {
             boolean instinctOn = "true".equalsIgnoreCase(ph.get("instinct"));
-            CnpcGuiSupport.button(gui, 27, instinctOn ? CnpcGuiStyle.toggleOn("Instinct") : CnpcGuiStyle.toggleOff("Instinct"),
+            CnpcGuiSupport.button(gui, 27, instinctOn ? CnpcGuiStyle.toggleOn("Rival instinct")
+                    : CnpcGuiStyle.toggleOff("Rival instinct"),
                     CnpcGuiSupport.COL_R, row,
                     () -> act(player, "instinct", "toggle", "main"));
         }
@@ -253,7 +255,7 @@ public final class CnpcLmRivalGui {
         String targetArg = parts[2];
         String display = CnpcGuiSupport.humanizePickerArg(targetArg);
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_RIVAL, CnpcGuiSupport.W, 280, (pl, gui) -> {
-            int infoY = CnpcGuiSupport.paintHeader(pl, gui, "§eConfirm target", "§7" + display);
+            int infoY = CnpcGuiSupport.paintHeader(pl, gui, "§eConfirm action", "§7" + display);
             List<String> lines = List.of(
                     "§7Player §f" + display,
                     "§8Action §7" + action.replace('_', ' '),
@@ -295,7 +297,7 @@ public final class CnpcLmRivalGui {
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_RIVAL, CnpcGuiSupport.W, 280, (pl, gui) -> {
             int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Challenge length"),
                     "§7Target §f" + CnpcGuiSupport.humanizePickerArg(targetArg));
-            int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.previewAnchorY(pl));
+            int row = CnpcGuiSupport.bodyBelowHeader(infoY);
             CnpcGuiLayout.GridButton[] grid = new CnpcGuiLayout.GridButton[10];
             for (int min = 1; min <= 10; min++) {
                 int m = min;
@@ -327,7 +329,7 @@ public final class CnpcLmRivalGui {
     private static void paintRecords(ServerPlayer player, ICustomGui gui) {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Records"),
                 "§7Titles, achievements, hall of fame, journal");
-        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.previewAnchorY(player));
+        int row = CnpcGuiSupport.bodyBelowHeader(infoY);
         CnpcGuiSupport.button(gui, 20, "§eTitle", CnpcGuiSupport.COL_L, row, () -> open(player, "title"));
         CnpcGuiSupport.button(gui, 21, "§dAchievements", CnpcGuiSupport.COL_R, row, () -> open(player, "achievements"));
         row += 24;
@@ -342,7 +344,7 @@ public final class CnpcLmRivalGui {
         List<String> cards = RivalGuiApi.currentRivalCards(who);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Your list"),
                 cards.isEmpty() ? "§7No rivals yet" : "§7" + cards.size() + " rivals · click for profile");
-        int listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.previewAnchorY(player));
+        int listY = CnpcGuiSupport.bodyBelowHeader(infoY);
         if (cards.isEmpty()) {
             listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, RivalGuiApi.listLines(who),
                             CnpcGuiStyle.INFO_INLINE_MAX));
@@ -380,7 +382,7 @@ public final class CnpcLmRivalGui {
             String returnPage
     ) {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, title, CnpcGuiStyle.HINT_CLICK_PLAYER);
-        int listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.previewAnchorY(player));
+        int listY = CnpcGuiSupport.bodyBelowHeader(infoY);
         if (names == null || names.isEmpty()) {
             gui.addLabel(50, "§cNo players available.", CnpcGuiSupport.M, listY + 4, CnpcGuiSupport.textBandWidth(), 14);
             footer(player, gui, listY + 28, returnPage);
@@ -409,7 +411,7 @@ public final class CnpcLmRivalGui {
             String returnPage
     ) {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, title, CnpcGuiStyle.HINT_CLICK_ENTRY);
-        int listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.previewAnchorY(player));
+        int listY = CnpcGuiSupport.bodyBelowHeader(infoY);
         List<String> cards = args;
         if (cards == null || cards.isEmpty()) {
             gui.addLabel(50, "§7Nothing to pick.", CnpcGuiSupport.M, listY + 4, CnpcGuiSupport.textBandWidth(), 14);
@@ -439,7 +441,7 @@ public final class CnpcLmRivalGui {
         }
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Staff Admin"),
                 "§7Save data, reload config, print status");
-        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.previewAnchorY(player));
+        int row = CnpcGuiSupport.bodyBelowHeader(infoY);
         CnpcGuiSupport.button(gui, 20, "§aSave stores", CnpcGuiSupport.COL_L, row,
                 () -> act(player, "admin", "save", "admin"));
         CnpcGuiSupport.button(gui, 21, "§eReload", CnpcGuiSupport.COL_R, row,

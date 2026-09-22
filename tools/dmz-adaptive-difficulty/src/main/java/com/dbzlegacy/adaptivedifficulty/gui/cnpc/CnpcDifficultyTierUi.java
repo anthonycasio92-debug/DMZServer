@@ -16,7 +16,7 @@ public final class CnpcDifficultyTierUi {
         }
         long cost = AncientCoinEconomy.activationCost(tier, player);
         if (cost <= 0L) {
-            return "?";
+            return "§7—";
         }
         return "§6" + AncientCoinEconomy.formatExactCost(cost);
     }
@@ -40,18 +40,18 @@ public final class CnpcDifficultyTierUi {
             return "§8—";
         }
         if (activeTier == t) {
-            return "§aT" + t + " active";
+            return "§aTier " + t + " · active";
         }
         if (!unlocked) {
             if (eligible) {
-                return "§aT" + t + " unlock · " + formatActivationCost(player, UnlockTier.byId(t));
+                return "§aUnlock T" + t + " · " + formatActivationCost(player, UnlockTier.byId(t));
             }
-            return "§8T" + t + " locked";
+            return "§8Tier " + t + " · locked";
         }
         if (t < activeTier) {
-            return "§fT" + t + " lower §8(free)";
+            return "§fUse T" + t + " §8(free)";
         }
-        return "§eT" + t + " · " + formatActivationCost(player, UnlockTier.byId(t));
+        return "§eSwitch T" + t + " · " + formatActivationCost(player, UnlockTier.byId(t));
     }
 
     public static boolean tierButtonEnabled(int t, int activeTier, boolean unlocked, boolean eligible) {

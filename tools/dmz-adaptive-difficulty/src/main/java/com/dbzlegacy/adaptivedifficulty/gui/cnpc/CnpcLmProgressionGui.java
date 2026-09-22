@@ -230,7 +230,7 @@ public final class CnpcLmProgressionGui {
         ServerPlayer subject = CnpcGuiSupport.target(player);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§d", "Progression", "Android convert"),
                 CnpcGuiStyle.HINT_DOUBLE_CLICK_PLAYER);
-        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.previewAnchorY(player));
+        int row = CnpcGuiSupport.bodyBelowHeader(infoY);
         CnpcGuiSupport.button(gui, 62, "§aConvert yourself", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> ProgressionGuiApi.handleDo(player, "android", subject.m_7755_().getString(), "android_convert"),
@@ -245,7 +245,7 @@ public final class CnpcLmProgressionGui {
         boolean staff = StaffAccess.isStaff(player);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, "§cRemove Android",
                 "§7Two-step confirm within 10 seconds");
-        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.previewAnchorY(player));
+        int row = CnpcGuiSupport.bodyBelowHeader(infoY);
         CnpcGuiSupport.button(gui, 63, "§cRemove on yourself", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> ProgressionGuiApi.handleDo(player, "android_remove", subject.m_7755_().getString(),
@@ -304,7 +304,7 @@ public final class CnpcLmProgressionGui {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, "§cAll progression flags",
                 "§7Grouped like chest UI · tap to toggle");
         Map<String, String> ph = ProgressionGuiApi.placeholders(player);
-        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.previewAnchorY(player));
+        int row = CnpcGuiSupport.bodyBelowHeader(infoY);
         CnpcGuiLayout.GridButton[] grid = new CnpcGuiLayout.GridButton[ALL_FLAG_KEYS.length];
         for (int i = 0; i < ALL_FLAG_KEYS.length; i++) {
             String key = ALL_FLAG_KEYS[i];
@@ -324,7 +324,7 @@ public final class CnpcLmProgressionGui {
     private static void paintFabledFlags(ServerPlayer player, ICustomGui gui) {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, "§dFabled subflags", "§7Soft bridge toggles");
         Map<String, String> ph = ProgressionGuiApi.placeholders(player);
-        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.previewAnchorY(player));
+        int row = CnpcGuiSupport.bodyBelowHeader(infoY);
         CnpcGuiLayout.GridButton[] grid = new CnpcGuiLayout.GridButton[FABLED_FLAG_KEYS.length];
         for (int i = 0; i < FABLED_FLAG_KEYS.length; i++) {
             String key = FABLED_FLAG_KEYS[i];

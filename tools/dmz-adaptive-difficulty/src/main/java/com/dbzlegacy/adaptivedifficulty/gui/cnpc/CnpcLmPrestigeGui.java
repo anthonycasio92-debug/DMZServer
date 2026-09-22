@@ -76,7 +76,7 @@ public final class CnpcLmPrestigeGui {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§d", "Prestige", "Turn-in"),
                 "§7Each button shows points gained before you confirm");
         List<String> info = new ArrayList<>(ProgressionGuiApi.prestigeLines(player, "turnin"));
-        info.add("§8Pack bonus · 3→4 pts · 6→9 pts · 9→15 pts");
+        info.add("§7Bulk turn-in bonus: 3 tokens → 4 pts, 6 → 9 pts, 9 → 15 pts");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, info, CnpcGuiStyle.INFO_INLINE_MAX));
         row = CnpcGuiSupport.paintSectionTag(gui, 12, row + 4, "§8Choose amount");
 
@@ -119,7 +119,7 @@ public final class CnpcLmPrestigeGui {
 
         List<String> ids = shopSkillIds(ph);
         int from = page * pageSize;
-        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.previewAnchorY(player));
+        int row = CnpcGuiSupport.bodyBelowHeader(infoY);
         int placed = 0;
         List<CnpcGuiLayout.GridButton> grid = new ArrayList<>();
         for (int i = from; i < ids.size() && placed < pageSize; i++, placed++) {
@@ -130,9 +130,9 @@ public final class CnpcLmPrestigeGui {
             int boughtN = parseInt(bought, 0);
             int maxN = parseInt(max, 0);
             String cost = ph.getOrDefault("skill_" + id + "_cost", "?");
-            String caption = label + " §7(" + bought + "/" + max + ") · §6" + cost + " pts";
+            String caption = CnpcGuiSupport.compactShopLabel(label, boughtN, maxN > 0 ? maxN : 0, cost);
             if (maxN > 0 && boughtN >= maxN) {
-                grid.add(CnpcGuiLayout.GridButton.disabled("§a" + caption + " §8· maxed"));
+                grid.add(CnpcGuiLayout.GridButton.disabled("§a" + caption + " §8· max"));
             } else {
                 String skillId = id;
                 int pageFinal = page;

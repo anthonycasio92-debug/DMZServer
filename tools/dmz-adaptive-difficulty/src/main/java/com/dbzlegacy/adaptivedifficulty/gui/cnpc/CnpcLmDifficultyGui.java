@@ -96,12 +96,12 @@ public final class CnpcLmDifficultyGui {
         CnpcGuiSupport.button(gui, 21, "§dTitles", CnpcGuiSupport.COL_R, row, () -> open(player, "titles"));
         row += 24;
         CnpcGuiSupport.button(gui, 22, "§bTeam scaling", CnpcGuiSupport.COL_L, row, () -> open(player, "team"));
-        CnpcGuiSupport.button(gui, 23, "§7Toggle personal", CnpcGuiSupport.COL_R, row, () -> CnpcGuiSupport.act(
+        CnpcGuiSupport.button(gui, 23, "§7Personal scaling", CnpcGuiSupport.COL_R, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> DifficultyActions.handleArg(subject, "toggle_personal", "0", "main").message(),
                 () -> open(player, "main")));
         row += 24;
-        CnpcGuiSupport.button(gui, 24, "§5Summon end dragon", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
+        CnpcGuiSupport.button(gui, 24, "§5Summon End Dragon", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> DifficultyActions.handleArg(subject, "summon_end_dragon", "0", "main").message(),
                 () -> open(player, "main")));
@@ -110,8 +110,8 @@ public final class CnpcLmDifficultyGui {
         row += 24;
         PlayerDifficultyData d = DifficultyCache.data(subject);
         boolean coinChat = d != null && d.isCoinDropChat();
-        CnpcGuiSupport.button(gui, 26, coinChat ? CnpcGuiStyle.toggleOn("Coin drop chat")
-                : CnpcGuiStyle.toggleOff("Coin drop chat"), CnpcGuiSupport.COL_L, row,
+        CnpcGuiSupport.button(gui, 26, coinChat ? CnpcGuiStyle.toggleOn("Coin messages")
+                : CnpcGuiStyle.toggleOff("Coin messages"), CnpcGuiSupport.COL_L, row,
                 () -> CnpcGuiSupport.act(
                         player,
                         () -> DifficultyActions.handleArg(subject, "toggle_coin_chat", "0", "main").message(),
@@ -267,8 +267,8 @@ public final class CnpcLmDifficultyGui {
         int row = CnpcGuiSupport.navRowAfterScroll(listY, scrollH);
         PlayerDifficultyData data = DifficultyCache.data(subject);
         boolean sense = data.titleProgress().titleSenseChat();
-        CnpcGuiSupport.buttonSmall(gui, 20, sense ? CnpcGuiStyle.toggleOn("Title sense")
-                : CnpcGuiStyle.toggleOff("Title sense"), CnpcGuiSupport.COL_L, row, 95,
+        CnpcGuiSupport.buttonSmall(gui, 20, sense ? CnpcGuiStyle.toggleOn("Title hints")
+                : CnpcGuiStyle.toggleOff("Title hints"), CnpcGuiSupport.COL_L, row, 95,
                 () -> CnpcGuiSupport.act(
                         player,
                         () -> DifficultyActions.handleArg(subject, "toggle_title_sense", "0", "titles").message(),
@@ -307,7 +307,7 @@ public final class CnpcLmDifficultyGui {
         lines.add("§7How to earn §f" + humanRequirement(title));
         String perk = title.perkTip(mastery).replace(" §8| ", " · ");
         lines.add("§7Bonus when worn §f" + perk);
-        lines.add("§7Score value §6+" + title.scorePoints + " §8(title score)");
+        lines.add("§7Title score §6+" + title.scorePoints);
 
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 2));
         if (earned) {
@@ -356,12 +356,12 @@ public final class CnpcLmDifficultyGui {
                 player,
                 () -> DifficultyTeamGuiApi.handleDo(subject, "mode", "personal_only", "team"),
                 () -> open(player, "team")));
-        CnpcGuiSupport.button(gui, 41, "§eThreshold bonus", CnpcGuiSupport.COL_R, row, () -> CnpcGuiSupport.act(
+        CnpcGuiSupport.button(gui, 41, "§eBonus only", CnpcGuiSupport.COL_R, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> DifficultyTeamGuiApi.handleDo(subject, "mode", "threshold_bonus_only", "team"),
                 () -> open(player, "team")));
         row += 24;
-        CnpcGuiSupport.button(gui, 42, "§aFull team scaling", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
+        CnpcGuiSupport.button(gui, 42, "§aFull team scale", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> DifficultyTeamGuiApi.handleDo(subject, "mode", "full_team_scaling", "team"),
                 () -> open(player, "team")));
@@ -383,7 +383,7 @@ public final class CnpcLmDifficultyGui {
         }
         if (StaffAccess.isStaff(player) && parentPage == null) {
             row += 24;
-            CnpcGuiSupport.buttonSmall(gui, CnpcGuiSupport.ID_STAFF_EXTRA, "§8Staff: /difficulty admin",
+            CnpcGuiSupport.buttonSmall(gui, CnpcGuiSupport.ID_STAFF_EXTRA, "§8Admin commands",
                     CnpcGuiSupport.COL_L, row, CnpcGuiSupport.BTN_W, () -> {
                 CnpcGuiSupport.pushMenuMessage(player,
                         "§7Full difficulty admin settings: §f/difficulty admin §7(chat command).");

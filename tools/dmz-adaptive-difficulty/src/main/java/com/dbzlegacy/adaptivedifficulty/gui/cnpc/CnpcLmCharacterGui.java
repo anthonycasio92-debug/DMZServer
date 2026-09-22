@@ -73,7 +73,7 @@ public final class CnpcLmCharacterGui {
                 actions.add(CnpcGuiLayout.GridButton.run("§dReskin", () -> open(player, "reskin")));
             }
             if ("true".equals(ph.get("can_head_bones"))) {
-                actions.add(CnpcGuiLayout.GridButton.run("§fHead bone shop", () -> open(player, "bones:0")));
+                actions.add(CnpcGuiLayout.GridButton.run("§fHead bones", () -> open(player, "bones:0")));
             }
             if (actions.isEmpty()) {
                 gui.addLabel(CnpcGuiSupport.ID_INLINE_NOTE, "§7No services available for your account.",
@@ -198,7 +198,7 @@ public final class CnpcLmCharacterGui {
         var ph = CharacterServicesGuiApi.placeholders(player);
         int pages = Math.max(1, CosmeticHeadBoneService.pageCount());
         int pg = Math.min(pages - 1, Math.max(0, page));
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§f", "Character", "Head bone shop"),
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§f", "Character", "Head bones"),
                 "§7Page §f" + (pg + 1) + "/" + pages + CnpcGuiStyle.SEP + "§7Active §f"
                         + ph.getOrDefault("active_head_bone", "none"));
         int listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, CharacterServicesGuiApi.linesForPage(player, "bones:" + pg), 2));

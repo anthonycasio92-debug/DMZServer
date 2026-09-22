@@ -66,7 +66,7 @@ public final class CnpcLmHubGui {
         int gap = CnpcGuiSupport.ROW_STEP;
 
         if (!"true".equals(ph.get("bridge_ok"))) {
-            gui.addLabel(CnpcGuiSupport.ID_STATUS_TAG, "§cLegacy Mechanics is not loaded on this server.",
+            gui.addLabel(CnpcGuiSupport.ID_STATUS_TAG, "§cLegacy Mechanics is not available on this server.",
                     CnpcGuiSupport.M, row, CnpcGuiSupport.textBandWidth(), 14);
             row += gap;
             CnpcGuiSupport.footerCloseRefresh(player, gui, row, () -> paintMain(player));
@@ -157,7 +157,7 @@ public final class CnpcLmHubGui {
 
         try {
             int level = DmzProgression.guiDisplayDmzLevel(who);
-            lines.add("§7Level §f" + level + " §8· §7Power scale §f" + ph.getOrDefault("overhaul_scale", "x1"));
+            lines.add("§7Level §f" + level + " §8· §7Growth pace §f" + ph.getOrDefault("overhaul_scale", "x1"));
         } catch (Throwable ignored) {
         }
 

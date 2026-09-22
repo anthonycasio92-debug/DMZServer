@@ -82,7 +82,7 @@ public final class CnpcGuiSupport {
             return false;
         }
         if (!NpcAPI.IsAvailable()) {
-            feedbackChat(player, "§cCustomNPCs is required for the LM menu (install on client + server).");
+            feedbackChat(player, "§cThis menu needs CustomNPCs on your client and the server.");
             return false;
         }
         return true;
@@ -107,7 +107,7 @@ public final class CnpcGuiSupport {
     public static void showSized(ServerPlayer player, int guiId, int width, int height, Painter painter) {
         IPlayer<?> ip = wrap(player);
         if (ip == null) {
-            feedbackChat(player, "§cCould not open LM menu (CNPC player wrap failed).");
+            feedbackChat(player, "§cCould not open the menu. Try relogging, then open it again.");
             return;
         }
         try {
@@ -117,7 +117,7 @@ public final class CnpcGuiSupport {
             ip.showCustomGui(gui);
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.warn("[{}] CNPC GUI {} failed: {}", AdaptiveDifficultyMod.MOD_ID, guiId, t);
-            feedbackChat(player, "§cMenu error: " + safeChat(t.getMessage()));
+            feedbackChat(player, "§cSomething went wrong opening the menu. Ask staff if this keeps happening.");
         }
     }
 
@@ -139,7 +139,7 @@ public final class CnpcGuiSupport {
             return y;
         }
         List<String> box = new ArrayList<>();
-        box.add("§eMessage");
+        box.add("§eNotice");
         box.addAll(raw);
         return paintInfoBlock(gui, y, box, CnpcGuiStyle.INFO_INLINE_MAX);
     }
@@ -206,7 +206,7 @@ public final class CnpcGuiSupport {
             bodyLines(gui, ID_INFO_LABEL_BASE, startY, clean, maxInline, textW);
             return startY + clean.size() * LINE_H + 10;
         }
-        gui.addLabel(ID_STATUS_TAG, "§8Status · use scroll wheel here", M, startY - 2, textW, 10);
+        gui.addLabel(ID_STATUS_TAG, "§8Details — scroll with your mouse wheel", M, startY - 2, textW, 10);
         int preferred = Math.min(112, Math.max(56, clean.size() * LINE_H));
         int scrollH = preferred;
         if (gui != null) {
@@ -284,6 +284,14 @@ public final class CnpcGuiSupport {
     /** First Y for lists, buttons, or grids directly under an info block (left column). */
     public static int bodyBelowInfo(int rowAfterBlock) {
         return rowAfterBlock + 4;
+    }
+
+    /**
+     * First Y for lists/buttons after {@link #paintHeader} — uses the header's returned {@code infoY}
+     * so flash notices and status blocks do not overlap pickers.
+     */
+    public static int bodyBelowHeader(int infoY) {
+        return bodyBelowInfo(infoY);
     }
 
     /** @see CnpcPlayerPreview#paint(ServerPlayer, ICustomGui, int) */
@@ -401,10 +409,20 @@ public final class CnpcGuiSupport {
         if (hint > 0) {
             s = s.substring(0, hint);
         }
-        if (s.length() > 28) {
-            s = s.substring(0, 25) + "…";
+        if (s.length() > 26) {
+            s = s.substring(0, 23) + "…";
         }
         return s;
+    }
+
+    /** Short shop row: skill name + progress + cost (fits CNPC button width). */
+    public static String compactShopLabel(String name, int bought, int max, String cost) {
+        String n = name == null ? "" : name.replaceAll("§.", "");
+        if (n.length() > 14) {
+            n = n.substring(0, 12) + "…";
+        }
+        String c = cost == null || cost.isBlank() ? "?" : cost.replaceAll("§.", "");
+        return "§f" + n + " §7" + bought + "/" + max + " · §6" + c;
     }
 
     public static String humanizePickerArg(String arg) {
@@ -697,7 +715,7 @@ public final class CnpcGuiSupport {
 
     /** System top-level screen (e.g. Prestige main): Main → Legacy Mechanics hub. */
     public static void navSystemRoot(ServerPlayer player, ICustomGui gui, int row) {
-        buttonSmall(gui, ID_NAV_HUB, "§7Main", COL_L, row, 95, () -> CnpcLmHubGui.open(player, "main"));
+        buttonSmall(gui, ID_NAV_HUB, "§7Hub", COL_L, row, 95, () -> CnpcLmHubGui.open(player, "main"));
     }
 
     /** Submenu: Back → parent page in this system; Main → Legacy Mechanics hub. */
@@ -705,7 +723,7 @@ public final class CnpcGuiSupport {
         if (back != null) {
             buttonSmall(gui, ID_NAV_BACK, backLabel == null ? "§7« Back" : backLabel, COL_L, row, 95, back);
         }
-        buttonSmall(gui, ID_NAV_HUB, "§7Main", COL_R, row, 95, () -> CnpcLmHubGui.open(player, "main"));
+        buttonSmall(gui, ID_NAV_HUB, "§7Hub", COL_R, row, 95, () -> CnpcLmHubGui.open(player, "main"));
     }
 
     /** @deprecated use {@link #navSystemRoot} or {@link #navSubmenu} */
@@ -730,7 +748,7 @@ public final class CnpcGuiSupport {
 
     public static String flagOnOff(java.util.Map<String, String> ph, String key) {
         boolean on = "true".equalsIgnoreCase(ph.getOrDefault("flag_" + key, "false"));
-        return on ? "§aON" : "§cOFF";
+        return on ? "§aOn" : "§cOff";
     }
 
     @FunctionalInterface
