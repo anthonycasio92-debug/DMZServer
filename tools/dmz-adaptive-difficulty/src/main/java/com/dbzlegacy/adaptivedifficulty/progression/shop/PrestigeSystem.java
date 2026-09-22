@@ -22,9 +22,8 @@ import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Port of {@code Prestige NPC.js} purchase logic as {@code /prestige} chat GUI.
- * Cost = Overhaul journey gate: reach the level cap for your current held-wallet
- * count (same ladder as Statistics / dmzrevamp), capped by personal breakthroughs.
- * Lifetime {@code completed} is for display and turn-in only — not Need.
+ * Need ladder: completed 0–4 → {@code min(100k, (completed+1)×20k)}; completed ≥5 →
+ * held-wallet gates (0→50k, 1→100k, 2→145k, 3+→150k), capped by personal breakthroughs.
  *
  * <p><b>Lifetime completed</b> never drops when held/Fabled Prestige is turned in —
  * otherwise Need would snap back to 20k after a completed prestige.
@@ -32,6 +31,12 @@ import net.minecraft.server.level.ServerPlayer;
 public final class PrestigeSystem {
     private static final int LEVELS_PER_PRESTIGE = 20_000;
     private static final int MAX_REQUIRED_LEVEL = 100_000;
+    /** At this lifetime completed count, Need switches from the 20k ladder to held gates. */
+    public static final int HELD_GATE_MIN_COMPLETED = 5;
+    private static final int HELD0_NEED = 50_000;
+    private static final int HELD1_NEED = 100_000;
+    private static final int HELD2_NEED = 145_000;
+    private static final int HELD3_PLUS_NEED = 150_000;
     private static final int MAX_HELD = 10;
     private static final long CONFIRM_MS = 10_000L;
     /** Live Prestige NPC.js — held tokens live on CNPC faction 4. */
@@ -308,24 +313,47 @@ public final class PrestigeSystem {
     }
 
     /**
-     * Next prestige DMZ level gate: Overhaul cap ladder at {@link #getHeldWallet} count,
-     * capped by personal breakthroughs. Legacy {@code (completed+1)×20k} floors are ignored
-     * when the held wallet is empty so lifetime total does not inflate Need (e.g. 6 → 140k).
+     * Next prestige DMZ level gate — see class javadoc for the completed / held ladders.
      */
     public static int requiredLevel(ServerPlayer player) {
         if (player == null) {
-            return com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulCapMath
-                    .journeyPrestigeNeed(null, 0);
+            return LEVELS_PER_PRESTIGE;
         }
         int personalCap = PrestigePointsSystem.effectiveMaxLevel(player);
-        int held = getHeldWallet(player);
-        int journey = com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulCapMath
-                .journeyPrestigeNeed(player, held);
-        if (held <= 0) {
-            return Math.min(personalCap, journey);
+        int completed = getCompleted(player);
+        int need = needForProgress(player, completed, getHeldWallet(player));
+        return Math.min(personalCap, need);
+    }
+
+    /** Pure ladder (no personal cap) — for admin previews and tests. */
+    public static int needForProgress(int completed, int heldWallet) {
+        int c = Math.max(0, completed);
+        int h = Math.max(0, Math.min(MAX_HELD, heldWallet));
+        if (c < HELD_GATE_MIN_COMPLETED) {
+            int ladder = Math.min(MAX_REQUIRED_LEVEL, (c + 1) * LEVELS_PER_PRESTIGE);
+            return ladder;
         }
-        int floor = getNeedFloor(player);
-        return Math.min(personalCap, Math.max(journey, Math.min(floor, personalCap)));
+        return requiredLevelForHeld(h);
+    }
+
+    private static int needForProgress(ServerPlayer player, int completed, int heldWallet) {
+        int need = needForProgress(completed, heldWallet);
+        if (completed < HELD_GATE_MIN_COMPLETED) {
+            int floor = getNeedFloor(player);
+            need = Math.max(need, Math.min(floor, MAX_REQUIRED_LEVEL));
+        }
+        return need;
+    }
+
+    /** Need when lifetime {@code completed ≥ 5} — depends on held wallet only. */
+    public static int requiredLevelForHeld(int held) {
+        int h = Math.max(0, Math.min(MAX_HELD, held));
+        return switch (h) {
+            case 0 -> HELD0_NEED;
+            case 1 -> HELD1_NEED;
+            case 2 -> HELD2_NEED;
+            default -> HELD3_PLUS_NEED;
+        };
     }
 
     /** @deprecated prefer {@link #requiredLevel(ServerPlayer)} — uses absolute 150k ceiling. */
@@ -388,15 +416,13 @@ public final class PrestigeSystem {
             }
             if (legacy > 0) {
                 setCompletedPublic(player, legacy);
-                raiseNeedFloor(player, com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulCapMath
-                        .journeyPrestigeNeed(player, legacy));
+                raiseNeedFloor(player, needForProgress(player, legacy, getHeldWallet(player)));
                 return legacy;
             }
             // Shop evidence of a past prestige when total was zeroed by turn-in.
             if (inferCompletedFromShop(player)) {
                 setCompletedPublic(player, 1);
-                raiseNeedFloor(player, com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulCapMath
-                        .journeyPrestigeNeed(player, 0));
+                raiseNeedFloor(player, needForProgress(player, 1, getHeldWallet(player)));
                 return 1;
             }
             return 0;
@@ -405,8 +431,7 @@ public final class PrestigeSystem {
         // DMZ prestige skill = held wallet (Fabled−1), not lifetime completed — never bump total from it.
         if (stored <= 0 && inferCompletedFromShop(player)) {
             setCompletedPublic(player, 1);
-            raiseNeedFloor(player, com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulCapMath
-                    .journeyPrestigeNeed(player, 0));
+            raiseNeedFloor(player, needForProgress(player, 1, getHeldWallet(player)));
             return 1;
         }
         return Math.max(0, stored);
@@ -483,9 +508,7 @@ public final class PrestigeSystem {
             tag.m_128473_(KEY_NEED_FLOOR);
             return;
         }
-        int cap = PrestigePointsSystem.effectiveMaxLevel(player);
-        tag.m_128405_(KEY_NEED_FLOOR, com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulCapMath
-                .journeyPrestigeNeed(player, getHeldWallet(player)));
+        tag.m_128405_(KEY_NEED_FLOOR, requiredLevel(player));
     }
 
     public static int getHeld(ServerPlayer player) {
@@ -534,9 +557,7 @@ public final class PrestigeSystem {
         }
         // Keep Need floor aligned when staff raise completed (never lower floor here).
         if (value > 0) {
-            int cap = PrestigePointsSystem.effectiveMaxLevel(player);
-            raiseNeedFloor(player, com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulCapMath
-                    .journeyPrestigeNeed(player, getHeldWallet(player)));
+            raiseNeedFloor(player, requiredLevel(player));
         }
         try {
             com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampPrestigeBridge

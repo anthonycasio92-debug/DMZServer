@@ -1244,11 +1244,12 @@ def main() -> int:
     check("completed not inflated from held skill",
           "never bump total from it" in prestige_sys
           and "High-watermark" not in prestige_sys)
-    check("prestige Need uses journey cap not completed ladder",
-          "journeyPrestigeNeed" in read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/LmOverhaulCapMath.java")
-          and "held <= 0" in prestige_sys
-          and "levelCapForOverhaulPrestigeCount" in
-          read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/LmOverhaulCapMath.java"))
+    check("prestige Need ladder completed 0-4 then held gates",
+          "HELD_GATE_MIN_COMPLETED = 5" in prestige_sys
+          and "requiredLevelForHeld" in prestige_sys
+          and "HELD0_NEED = 50_000" in prestige_sys
+          and "HELD2_NEED = 145_000" in prestige_sys
+          and "needForProgress" in prestige_sys)
     prog_gui_api = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/ProgressionGuiApi.java")
     prestige_lines_block = prog_gui_api.split("prestigeLines(", 1)[1].split("handlePrestigeDo", 1)[0]
     check("prestige main wallet lore omits cap",
