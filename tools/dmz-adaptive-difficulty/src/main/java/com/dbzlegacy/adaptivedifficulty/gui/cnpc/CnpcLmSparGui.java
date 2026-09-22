@@ -243,9 +243,16 @@ public final class CnpcLmSparGui {
         int scrollH = CnpcGuiSupport.listScrollHeight(gui, bandY, rowsBelow);
         IScroll scroll = CnpcGuiSupport.scrollPickList(gui, listY, rowsBelow, CnpcGuiSupport.cardLabels(cards, 1));
         scroll.setOnClick((g, sc) -> {
-            String arg = CnpcGuiSupport.cardField(cards, sc, 0);
-            if (arg != null) {
-                open(player, "dojo_war_pending_decide:" + arg);
+            String uuid = CnpcGuiSupport.cardField(cards, sc, 0);
+            if (uuid == null) {
+                return;
+            }
+            String dir = CnpcGuiSupport.cardField(cards, sc, 2);
+            String picker = uuid.regionMatches(true, 0, "uuid:", 0, 5) ? uuid : "uuid:" + uuid;
+            if ("OUT".equalsIgnoreCase(dir)) {
+                act(player, "dojo_war_cancel", picker, "dojo_war_pending");
+            } else {
+                open(player, "dojo_war_pending_decide:" + picker);
             }
         });
         footer(player, gui, CnpcGuiSupport.navRowAfterScroll(bandY, scrollH), "dojo_war");
@@ -257,12 +264,12 @@ public final class CnpcLmSparGui {
                     "§f" + CnpcGuiSupport.humanizePickerArg(pickerArg));
             int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of(
                     "§7Accept to start the dojo war.",
-                    "§7Decline or revoke to cancel."), 3));
+                    "§7Decline to refuse this challenge."), 3));
             row += 8;
             CnpcGuiSupport.button(gui, 20, "§aAccept", CnpcGuiSupport.COL_L, row,
                     () -> act(pl, "dojo_accept", pickerArg, "dojo_war_pending"));
-            CnpcGuiSupport.button(gui, 21, "§cDecline / revoke", CnpcGuiSupport.COL_R, row,
-                    () -> act(pl, "dojo_war_cancel", pickerArg, "dojo_war_pending"));
+            CnpcGuiSupport.button(gui, 21, "§cDecline", CnpcGuiSupport.COL_R, row,
+                    () -> act(pl, "dojo_decline", pickerArg, "dojo_war_pending"));
             row += CnpcGuiSupport.ROW_STEP + 4;
             CnpcGuiSupport.navSubmenu(pl, gui, row, () -> open(pl, "dojo_war_pending"), "§7« Back");
         });
@@ -303,7 +310,7 @@ public final class CnpcLmSparGui {
                 CnpcGuiStyle.INFO_INLINE_MAX));
         CnpcGuiLayout.GridButton[] tabs = new CnpcGuiLayout.GridButton[] {
                 CnpcGuiLayout.GridButton.run("§7Reputation", () -> open(player, "dojo_top_rp")),
-                CnpcGuiLayout.GridButton.run("§7Wars", () -> open(player, "dojo_top_wars")),
+                CnpcGuiLayout.GridButton.run("§7Wins", () -> open(player, "dojo_top_wins")),
         };
         row = CnpcGuiLayout.paintTwoColumnButtonGrid(player, gui, row + 4, 40, tabs, () -> open(player, "dojo_top_" + cat));
         row += 4;
@@ -392,7 +399,8 @@ public final class CnpcLmSparGui {
         scroll.setOnClick((g, sc) -> {
             String arg = CnpcGuiSupport.cardField(cards, sc, 0);
             if (arg != null) {
-                open(player, "pick_confirm:dojo_challenge|dojo_war|" + arg);
+                String picker = arg.regionMatches(true, 0, "uuid:", 0, 5) ? arg : "uuid:" + arg;
+                open(player, "pick_confirm:dojo_challenge|dojo_war_pending|" + picker);
             }
         });
         footer(player, gui, CnpcGuiSupport.navRowAfterScroll(bandY, scrollH), "dojo_war");

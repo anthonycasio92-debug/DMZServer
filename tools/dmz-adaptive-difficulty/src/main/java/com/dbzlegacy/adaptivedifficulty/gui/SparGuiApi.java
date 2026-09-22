@@ -692,6 +692,14 @@ public final class SparGuiApi {
                 return null;
             }
         }
+        try {
+            ServerPlayer byUuid = server.m_6846_().m_11259_(java.util.UUID.fromString(raw));
+            if (byUuid != null) {
+                return byUuid;
+            }
+        } catch (IllegalArgumentException ignored) {
+            // not a UUID — fall through to name lookup
+        }
         ServerPlayer exact = server.m_6846_().m_11255_(raw);
         if (exact != null) {
             return exact;
