@@ -680,8 +680,9 @@ public final class DojoRankings {
             return lines;
         }
         String key = homeDojoKey(player);
-        lines.add("§7Challenge rival dojos for §f2× season RP§7.");
-        lines.add("§8Wars run 24 hours once accepted.");
+        lines.add("§eDeclare war… §7→ pick a rival master §a(online only)");
+        lines.add("§6Pending wars §7— Accept / Decline / Revoke send");
+        lines.add("§8Active wars last 24h · §f2× season RP");
         SparStore.DojoChallenge pending = SparStore.get().dojoChallenges.get(
                 player.m_20148_().toString().toLowerCase(Locale.ROOT));
         if (pending != null && pending.expiresAt > System.currentTimeMillis() && !pending.active) {
@@ -810,6 +811,7 @@ public final class DojoRankings {
         }
         List<Map.Entry<String, SparStore.DojoEntry>> sorted =
                 sortedEntries(season.leaderboard, "rp", 50);
+        MinecraftServer server = player.m_20194_();
         for (Map.Entry<String, SparStore.DojoEntry> e : sorted) {
             if (e.getKey().equalsIgnoreCase(self)) {
                 continue;
@@ -818,10 +820,29 @@ public final class DojoRankings {
             if (d == null) {
                 continue;
             }
-            String name = dojoDisplayName(e.getKey()).replace('\t', ' ').replace('\n', ' ');
-            out.add(e.getKey() + "\t" + name + "\t" + (int) d.seasonRp);
+            String masterUuid = e.getKey();
+            if (!isOnline(server, masterUuid)) {
+                continue;
+            }
+            if (!isDojoMaster(server, masterUuid)) {
+                continue;
+            }
+            String name = dojoDisplayName(masterUuid).replace('\t', ' ').replace('\n', ' ');
+            out.add(masterUuid + "\t" + name + "\t" + (int) d.seasonRp);
         }
         return out;
+    }
+
+    private static boolean isDojoMaster(MinecraftServer server, String masterUuid) {
+        if (server == null || masterUuid == null || masterUuid.isBlank()) {
+            return false;
+        }
+        try {
+            ServerPlayer p = server.m_6846_().m_11259_(UUID.fromString(masterUuid.trim()));
+            return p != null && isDojoMaster(p);
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
     }
 
     public static String challengeDojo(ServerPlayer challenger, ServerPlayer target) {
@@ -937,6 +958,36 @@ public final class DojoRankings {
 
     public static int pendingDojoWarCount(ServerPlayer player) {
         return pendingDojoWarCards(player).size();
+    }
+
+    /** Mentor-style pending board copy for CNPC / chest headers. */
+    public static List<String> pendingDojoWarLines(ServerPlayer player) {
+        List<String> cards = pendingDojoWarCards(player);
+        List<String> lines = new ArrayList<>();
+        if (cards.isEmpty()) {
+            lines.add("§7No pending dojo wars.");
+            lines.add("§8Incoming: Accept or Decline.");
+            lines.add("§8Outgoing: Revoke your challenge.");
+            return lines;
+        }
+        lines.add("§e§lPending Dojo Wars");
+        for (String card : cards) {
+            String[] p = card.split("\t", -1);
+            if (p.length < 3) {
+                continue;
+            }
+            String name = p[1];
+            boolean incoming = "IN".equalsIgnoreCase(p[2]);
+            boolean online = p.length > 4 && "1".equals(p[4]);
+            if (incoming) {
+                lines.add("§a◀ Incoming §f" + name + (online ? " §a●" : " §8○")
+                        + " §8— Accept or Decline");
+            } else {
+                lines.add("§6▶ Outgoing §f" + name + (online ? " §a●" : " §8○")
+                        + " §8— Revoke send");
+            }
+        }
+        return lines;
     }
 
     public static String revokeOutgoingChallenge(ServerPlayer master, String targetMasterRaw) {

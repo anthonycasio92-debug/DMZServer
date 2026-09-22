@@ -324,10 +324,10 @@ public final class CmiSparGui {
                     "pick_dojo_challenge", "&7Pick a rival dojo",
                     "&82× RP during active wars"));
             gui.addButton(pageBtn(player, 21, "spar.dojo.war_pending", Material.CLOCK,
-                    warPending > 0 ? "&ePending &f(" + warPending + ")" : "&ePending",
+                    warPending > 0 ? "&ePending wars &f(" + warPending + ")" : "&ePending wars",
                     "dojo_war_pending",
-                    "&7Incoming + outgoing wars",
-                    warPending > 0 ? "&aAccept, decline, or revoke" : "&8No pending wars"));
+                    "&7Accept · Decline · Revoke send",
+                    warPending > 0 ? "&aTap a row on Pending" : "&8No pending wars"));
             gui.addButton(pageBtn(player, 22, "spar.dojo.banner", Material.WHITE_BANNER, "&fBanner…",
                     "pick_dojo_banner", "&7Pick banner color", "&8Shows on rankings"));
             gui.addButton(pageBtn(player, 25, "spar.dojo.war_rankings", Material.BOOKSHELF, "&6Rankings",
@@ -387,11 +387,7 @@ public final class CmiSparGui {
                 GuiBoardHelper.PendingInvite war = wars.get(i);
                 CMIGuiButton btn = new CMIGuiButton(slots[i], GuiBoardHelper.pendingInviteHead(player, war));
                 btn.lockField();
-                if (war.incoming) {
-                    btn.addCommand("lmdo spar page dojo_war_pending_decide:" + war.pickerArg());
-                } else {
-                    btn.addCommand("lmdo spar dojo_war_cancel " + war.pickerArg() + " dojo_war_pending");
-                }
+                btn.addCommand("lmdo spar page dojo_war_pending_decide:" + war.pickerArg());
                 gui.addButton(btn);
             }
         }
@@ -407,30 +403,48 @@ public final class CmiSparGui {
 
     private static void openDojoWarPendingDecide(Player player, String arg) {
         CMIGui gui = base(player, "&8Dojo War Request", 5);
-        GuiBoardHelper.PendingInvite war = findDojoWarPendingInvite(player, arg);
+        GuiBoardHelper.PendingInvite war = findDojoWarPending(player, arg);
         String display = war != null ? war.name : (arg == null || arg.isBlank() ? "?" : arg.trim());
         if (display.regionMatches(true, 0, "uuid:", 0, 5)) {
             display = display.substring(5).trim();
         }
-        CMIGuiButton info = new CMIGuiButton(4, Material.CLOCK,
-                GuiTooltips.name("spar.dojo.war_decide_info", "&e&lRespond"));
-        info.lockField();
-        info.addLore(GuiTooltips.buttonLore("spar.dojo.war_decide_info", List.of(
-                "&7Challenge from dojo &f" + display,
-                "&aAccept &7→ 24h war · &f2× RP",
-                "&cDecline &7→ refuse challenge")));
-        gui.addButton(info);
+        String pickerArg = war != null ? war.pickerArg()
+                : (arg == null || arg.isBlank() ? display : arg.trim());
+        if (war != null && war.incoming) {
+            CMIGuiButton info = new CMIGuiButton(4, Material.CLOCK,
+                    GuiTooltips.name("spar.dojo.war_decide_info", "&e&lRespond"));
+            info.lockField();
+            info.addLore(GuiTooltips.buttonLore("spar.dojo.war_decide_info", List.of(
+                    "&7Challenge from dojo &f" + display,
+                    "&aAccept &7→ 24h war · &f2× RP",
+                    "&cDecline &7→ refuse challenge")));
+            gui.addButton(info);
+        } else {
+            CMIGuiButton info = new CMIGuiButton(4, Material.CLOCK,
+                    GuiTooltips.name("spar.dojo.war_out_info", "&6&lOutgoing"));
+            info.lockField();
+            info.addLore(GuiTooltips.buttonLore("spar.dojo.war_out_info", List.of(
+                    "&7Waiting on dojo &f" + display,
+                    "&8Revoke &7to cancel your declare")));
+            gui.addButton(info);
+        }
         CMIGuiButton headBtn = new CMIGuiButton(13,
                 war != null ? GuiBoardHelper.pendingInviteHead(player, war)
                         : new ItemStack(Material.DIAMOND_SWORD));
         headBtn.lockField();
         gui.addButton(headBtn);
-        gui.addButton(actionBtn(player, 20, "spar.dojo.accept", Material.LIME_DYE, "&aAccept War",
-                "dojo_accept", "0", "dojo_war_pending",
-                List.of("&7Accept war with &f" + display), Map.of("name", display)));
-        gui.addButton(actionBtn(player, 24, "spar.dojo.decline", Material.RED_DYE, "&cDecline War",
-                "dojo_decline", "0", "dojo_war_pending",
-                List.of("&7Decline challenge from &f" + display), Map.of("name", display)));
+        if (war != null && war.incoming) {
+            gui.addButton(actionBtn(player, 20, "spar.dojo.accept", Material.LIME_DYE, "&aAccept War",
+                    "dojo_accept", pickerArg, "dojo_war_pending",
+                    List.of("&7Accept war with &f" + display), Map.of("name", display)));
+            gui.addButton(actionBtn(player, 24, "spar.dojo.decline", Material.RED_DYE, "&cDecline War",
+                    "dojo_decline", pickerArg, "dojo_war_pending",
+                    List.of("&7Decline challenge from &f" + display), Map.of("name", display)));
+        } else {
+            gui.addButton(actionBtn(player, 20, "spar.dojo.war_revoke", Material.GRAY_DYE, "&8Revoke challenge",
+                    "dojo_war_cancel", pickerArg, "dojo_war_pending",
+                    List.of("&7Cancel war declare to &f" + display)));
+        }
         gui.addButton(pageBtn(player, 36, "spar.dojo.war_decide_back", Material.ARROW, "&7Back",
                 "dojo_war_pending", "&7Pending wars"));
         gui.addButton(hubBtn(40));
@@ -439,7 +453,7 @@ public final class CmiSparGui {
         GuiFeedback.openCmi(gui);
     }
 
-    private static GuiBoardHelper.PendingInvite findDojoWarPendingInvite(Player player, String arg) {
+    private static GuiBoardHelper.PendingInvite findDojoWarPending(Player player, String arg) {
         if (arg == null || arg.isBlank()) {
             return null;
         }
@@ -452,13 +466,16 @@ public final class CmiSparGui {
         }
         for (GuiBoardHelper.PendingInvite war : GuiBoardHelper.parsePendingInvites(
                 ForgeBridge.sparPendingDojoWarCards(player))) {
-            if (war == null || !war.incoming || !war.isDojoWar()) {
+            if (war == null || !war.isDojoWar()) {
                 continue;
             }
             if (!uuid.isBlank() && uuid.equalsIgnoreCase(war.uuid)) {
                 return war;
             }
             if (!name.isBlank() && name.equalsIgnoreCase(war.name)) {
+                return war;
+            }
+            if (raw.equalsIgnoreCase(war.pickerArg())) {
                 return war;
             }
         }
@@ -472,8 +489,8 @@ public final class CmiSparGui {
         header.lockField();
         List<String> lore = new ArrayList<>();
         lore.add("");
-        lore.add(cards.isEmpty() ? "&7No rival dojos ranked yet." : "&7" + cards.size() + " rival dojos");
-        lore.addAll(GuiBoardHelper.tips(player, "&8Click to challenge", "&7Active wars earn 2× RP"));
+        lore.add(cards.isEmpty() ? "&7No rival masters online." : "&7" + cards.size() + " online rival master(s)");
+        lore.addAll(GuiBoardHelper.tips(player, "&8Masters must be online to declare", "&7Active wars earn 2× RP"));
         header.addLore(lore);
         gui.addButton(header);
         if (cards.isEmpty()) {

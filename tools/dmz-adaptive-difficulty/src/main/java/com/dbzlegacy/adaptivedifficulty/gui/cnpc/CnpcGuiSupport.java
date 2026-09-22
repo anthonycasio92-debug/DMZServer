@@ -729,8 +729,11 @@ public final class CnpcGuiSupport {
             String name = p.length > 1 && p[1] != null && !p[1].isBlank() ? p[1] : "?";
             boolean incoming = p.length >= 3 && "IN".equalsIgnoreCase(p[2]);
             boolean mutual = p.length > 5 && "mutual".equalsIgnoreCase(p[5]);
+            boolean war = p.length > 5 && "war".equalsIgnoreCase(p[5]);
             String arrow;
-            if (duel) {
+            if (war) {
+                arrow = incoming ? "§c◀ " : "§6▶ ";
+            } else if (duel) {
                 arrow = incoming ? "§c◀ " : "§6▶ ";
             } else if (mutual && incoming) {
                 arrow = "§e◀ ";

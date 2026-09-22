@@ -188,6 +188,13 @@ public final class SparGuiApi {
         return SparringSystem.rivalDojoCards(player);
     }
 
+    public static List<String> pendingDojoWarLines(ServerPlayer player) {
+        if (player == null || !DifficultyConfig.get().enableSparringSystem) {
+            return List.of("§cSparring system is disabled.");
+        }
+        return DojoRankings.pendingDojoWarLines(player);
+    }
+
     public static List<String> dojoHallOfFameLines(ServerPlayer player) {
         if (!DifficultyConfig.get().enableSparringSystem) {
             return List.of("§cSparring system is disabled.");

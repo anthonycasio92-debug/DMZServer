@@ -3,6 +3,7 @@ package com.dbzlegacy.adaptivedifficulty.gui.cnpc;
 import com.dbzlegacy.adaptivedifficulty.gui.RivalGuiApi;
 import com.dbzlegacy.adaptivedifficulty.gui.SparGuiApi;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -215,24 +216,32 @@ public final class CnpcLmSparGui {
 
     private static void paintDojoWar(ServerPlayer player, ICustomGui gui) {
         ServerPlayer who = subject(player);
+        Map<String, String> ph = SparGuiApi.placeholders(who);
+        int warPending = 0;
+        try {
+            warPending = Integer.parseInt(ph.getOrDefault("dojo_war_pending", "0"));
+        } catch (NumberFormatException ignored) {
+            warPending = 0;
+        }
+        String pendingLabel = warPending > 0
+                ? "§6Pending wars (" + warPending + ")"
+                : "§6Pending wars";
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§b", "Sparring", "Dojo war"),
-                "§7Challenge rival dojos");
+                "§7Respond on Pending · masters must be online to declare");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, SparGuiApi.dojoWarLines(who), CnpcGuiStyle.INFO_INLINE_MAX));
-        CnpcGuiSupport.button(gui, 20, "§eChallenge rival dojo…", CnpcGuiSupport.COL_L, row, () -> open(player, "pick_dojo_challenge"));
-        CnpcGuiSupport.button(gui, 21, "§6War pending", CnpcGuiSupport.COL_R, row, () -> open(player, "dojo_war_pending"));
-        row += 24;
-        CnpcGuiSupport.button(gui, 22, "§aAccept war", CnpcGuiSupport.COL_L, row, () -> act(player, "dojo_accept", "", "dojo_war"));
-        CnpcGuiSupport.button(gui, 23, "§cDecline war", CnpcGuiSupport.COL_R, row, () -> act(player, "dojo_decline", "", "dojo_war"));
+        CnpcGuiSupport.button(gui, 20, "§eDeclare war…", CnpcGuiSupport.COL_L, row, () -> open(player, "pick_dojo_challenge"));
+        CnpcGuiSupport.button(gui, 21, pendingLabel, CnpcGuiSupport.COL_R, row, () -> open(player, "dojo_war_pending"));
         row += 24;
         footer(player, gui, row, "dojo");
     }
 
     private static void paintDojoWarPending(ServerPlayer player, ICustomGui gui) {
         ServerPlayer who = subject(player);
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§b", "Sparring", "Dojo war pending"),
-                CnpcGuiStyle.HINT_CLICK_ENTRY);
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§b", "Sparring", "Pending wars"),
+                CnpcGuiStyle.HINT_PENDING_BOARD);
+        int listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBeforePickList(gui, infoY,
+                SparGuiApi.pendingDojoWarLines(who), CnpcGuiStyle.INFO_LIST_HEADER_MAX));
         List<String> cards = SparGuiApi.pendingDojoWarCards(who);
-        int listY = CnpcGuiSupport.bodyBelowHeader(infoY);
         if (cards.isEmpty()) {
             gui.addLabel(50, "§7No pending dojo wars.", CnpcGuiSupport.M, listY + 4, CnpcGuiSupport.textBandWidth(), 14);
             footer(player, gui, listY + 28, "dojo_war");
@@ -241,38 +250,83 @@ public final class CnpcLmSparGui {
         int rowsBelow = 1;
         int bandY = listY + 14;
         int scrollH = CnpcGuiSupport.listScrollHeight(gui, bandY, rowsBelow);
-        IScroll scroll = CnpcGuiSupport.scrollPickList(gui, listY, rowsBelow, CnpcGuiSupport.cardLabels(cards, 1));
+        IScroll scroll = CnpcGuiSupport.scrollPickList(gui, listY, rowsBelow,
+                CnpcGuiSupport.pendingCardLabels(cards, false));
         scroll.setOnClick((g, sc) -> {
             String uuid = CnpcGuiSupport.cardField(cards, sc, 0);
             if (uuid == null) {
                 return;
             }
-            String dir = CnpcGuiSupport.cardField(cards, sc, 2);
             String picker = uuid.regionMatches(true, 0, "uuid:", 0, 5) ? uuid : "uuid:" + uuid;
-            if ("OUT".equalsIgnoreCase(dir)) {
-                act(player, "dojo_war_cancel", picker, "dojo_war_pending");
-            } else {
-                open(player, "dojo_war_pending_decide:" + picker);
-            }
+            open(player, "dojo_war_pending_decide:" + picker);
         });
         footer(player, gui, CnpcGuiSupport.navRowAfterScroll(bandY, scrollH), "dojo_war");
     }
 
     private static void openDojoWarDecide(ServerPlayer player, String pickerArg) {
+        ServerPlayer who = subject(player);
+        List<String> cards = SparGuiApi.pendingDojoWarCards(who);
+        String card = findDojoWarCard(cards, pickerArg);
+        boolean incoming = card == null || isIncomingPendingCard(card);
+        List<String> detail = card != null ? dojoWarDetailLines(card)
+                : List.of("§7Dojo war", "§f" + CnpcGuiSupport.humanizePickerArg(pickerArg));
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_SPAR, CnpcGuiSupport.W, 300, (pl, gui) -> {
-            int infoY = CnpcGuiSupport.paintHeader(pl, gui, "§6Dojo war invite",
-                    "§f" + CnpcGuiSupport.humanizePickerArg(pickerArg));
-            int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of(
-                    "§7Accept to start the dojo war.",
-                    "§7Decline to refuse this challenge."), 3));
+            int infoY = CnpcGuiSupport.paintHeader(pl, gui,
+                    CnpcGuiStyle.subPage("§b", "Sparring", incoming ? "Incoming war" : "Outgoing war"),
+                    incoming ? "§7Review before you accept or decline" : "§7Waiting on their master");
+            int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, detail, CnpcGuiStyle.INFO_INLINE_MAX));
             row += 8;
-            CnpcGuiSupport.button(gui, 20, "§aAccept", CnpcGuiSupport.COL_L, row,
-                    () -> act(pl, "dojo_accept", pickerArg, "dojo_war_pending"));
-            CnpcGuiSupport.button(gui, 21, "§cDecline", CnpcGuiSupport.COL_R, row,
-                    () -> act(pl, "dojo_decline", pickerArg, "dojo_war_pending"));
+            if (incoming) {
+                CnpcGuiSupport.button(gui, 20, "§aAccept war", CnpcGuiSupport.COL_L, row,
+                        () -> act(pl, "dojo_accept", pickerArg, "dojo_war_pending"));
+                CnpcGuiSupport.button(gui, 21, "§cDecline", CnpcGuiSupport.COL_R, row,
+                        () -> act(pl, "dojo_decline", pickerArg, "dojo_war_pending"));
+            } else {
+                CnpcGuiSupport.button(gui, 20, "§8Revoke challenge", CnpcGuiSupport.COL_L, row,
+                        () -> act(pl, "dojo_war_cancel", pickerArg, "dojo_war_pending"));
+            }
             row += CnpcGuiSupport.ROW_STEP + 4;
             CnpcGuiSupport.navSubmenu(pl, gui, row, () -> open(pl, "dojo_war_pending"), "§7« Back");
         });
+    }
+
+    private static String findDojoWarCard(List<String> cards, String pickerArg) {
+        if (cards == null || pickerArg == null || pickerArg.isBlank()) {
+            return null;
+        }
+        String want = pickerArg.trim();
+        for (String card : cards) {
+            String picker = CnpcGuiSupport.rivalPickerArgFromCard(card);
+            if (want.equalsIgnoreCase(picker)) {
+                return card;
+            }
+        }
+        return null;
+    }
+
+    private static boolean isIncomingPendingCard(String card) {
+        if (card == null) {
+            return true;
+        }
+        String[] p = card.split("\t", -1);
+        return p.length >= 3 && "IN".equalsIgnoreCase(p[2]);
+    }
+
+    private static List<String> dojoWarDetailLines(String card) {
+        String[] p = card.split("\t", -1);
+        String name = p.length > 1 ? p[1] : "?";
+        boolean incoming = p.length >= 3 && "IN".equalsIgnoreCase(p[2]);
+        boolean online = p.length > 4 && "1".equals(p[4]);
+        List<String> lines = new ArrayList<>();
+        lines.add("§f" + name + (online ? " §a●" : " §8○"));
+        if (incoming) {
+            lines.add("§aIncoming dojo war challenge");
+            lines.add("§7Accept → 24h war · §f2× season RP");
+        } else {
+            lines.add("§6Outgoing dojo war challenge");
+            lines.add("§7Revoke to withdraw your declare.");
+        }
+        return lines;
     }
 
     private static void paintDojoMembers(ServerPlayer player, ICustomGui gui) {
@@ -383,8 +437,8 @@ public final class CnpcLmSparGui {
     }
 
     private static void paintDojoChallengePick(ServerPlayer player, ICustomGui gui) {
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§cChallenge rival dojo",
-                CnpcGuiStyle.HINT_REVIEW_DOJO);
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§cDeclare dojo war",
+                "§7Only §aonline §7rival masters appear below");
         List<String> cards = SparGuiApi.rivalDojoCards(subject(player));
         int listY = CnpcGuiSupport.bodyBelowHeader(infoY);
         if (cards.isEmpty()) {

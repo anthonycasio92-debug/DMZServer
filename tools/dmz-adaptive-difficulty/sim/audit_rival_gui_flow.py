@@ -68,13 +68,27 @@ def main() -> int:
     check("CNPC scroll labels pendingCardLabels", "pendingCardLabels" in cnpc)
     check("Copy separates declares vs duels", "Pending declares" in cnpc and "Pending duels" in cnpc)
 
-    print("\n=== Summary ===")
+    spar_cnpc = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmSparGui.java")
+    dojo = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/DojoRankings.java")
+    spar_chest = read(GUI / "com/dbzlegacy/adaptivedifficulty/bukkit/SparChestGui.java")
+
+    print("\n=== Dojo war GUI flow audit ===")
+    hub = spar_cnpc.split("private static void paintDojoWar(", 1)[1].split("private static void paintDojoWarPending", 1)[0]
+    check("CNPC dojo war hub no inline accept/decline",
+          'act(player, "dojo_accept"' not in hub and 'act(player, "dojo_decline"' not in hub)
+    check("CNPC dojo war hub has pending board",
+          "dojo_war_pending" in hub and "Pending wars" in hub and "Declare war" in hub)
+    check("rival dojo picker online-only filter", "isOnline(server, masterUuid)" in dojo)
+    check("chest dojo pending opens decide for all rows",
+          'SlotAction.page("dojo_war_pending_decide:' in spar_chest
+          and "dojo_war_cancel" not in spar_chest.split("dojoWarPending", 1)[1].split("dojoWarPendingDecide", 1)[0])
+
     if errors:
-        print(f"FAIL: {len(errors)} rival GUI flow check(s)")
+        print(f"\nFAIL: {len(errors)} GUI flow check(s)")
         for e in errors:
             print(f"  - {e}")
         return 1
-    print("PASS — rival GUI flow")
+    print("PASS — rival + dojo war GUI flow")
     return 0
 
 
