@@ -58,10 +58,7 @@ public final class RivalChestGui implements Listener {
             case "history", "past", "previous" -> history(viewer, subject);
             case "pick_declare" -> picker(viewer, subject, "declare", "actions",
                     "&6Declare Rival", "&7Click to declare this player");
-            case "pick_accept" -> pendingPicker(viewer, subject, "accept", "actions",
-                    "&aAccept Rivalry", "&7Pending declare or Declared → Mutual", true);
-            case "pick_decline" -> pendingPicker(viewer, subject, "decline", "actions",
-                    "&cDecline Declare", "&7Click to decline their declare", false);
+            case "pick_accept", "pick_decline" -> pending(viewer, subject);
             case "pick_remove" -> currentRivalPicker(viewer, subject, "remove", "actions",
                     "&cRemove Rival", "&7Click to remove this rivalry");
             case "pick_replace_mutual", "replace_mutual" -> mutualReplacePicker(viewer, subject);
@@ -383,8 +380,9 @@ public final class RivalChestGui implements Listener {
         pendingHeader.add("");
         pendingHeader.add(invites.isEmpty() ? "&7No pending declares." : "&7" + invites.size() + " pending");
         pendingHeader.addAll(GuiBoardHelper.tips(viewer,
-                "&a◀ Incoming &7— tap to accept or decline",
-                "&6▶ Outgoing &7= waiting on them"));
+                "&7Tap a name to respond",
+                "&a◀ Incoming &7— Accept or Decline",
+                "&6▶ Outgoing &7— Withdraw or keep waiting"));
         put(holder, inv, 4, item(Material.YELLOW_DYE, "&e&lPending Invites", pendingHeader));
         if (invites.isEmpty()) {
             put(holder, inv, 22, tipBtn(viewer, "rival.empty.no_pending", Material.BARRIER, "&7No pending invites",
@@ -395,12 +393,8 @@ public final class RivalChestGui implements Listener {
             for (int i = 0; i < slots.length && i < invites.size(); i++) {
                 GuiBoardHelper.PendingInvite invite = invites.get(i);
                 ItemStack head = GuiBoardHelper.pendingInviteHead(viewer, invite);
-                if (invite.incoming) {
-                    put(holder, inv, slots[i], head,
-                            SlotAction.page("pending_decide:" + invite.pickerArg()));
-                } else {
-                    put(holder, inv, slots[i], head);
-                }
+                put(holder, inv, slots[i], head,
+                        SlotAction.page("pending_decide:" + invite.pickerArg()));
             }
         }
         put(holder, inv, 39, pageBtn(viewer, "rival.pending.nav_actions", Material.EMERALD, "&aActions",
@@ -430,7 +424,18 @@ public final class RivalChestGui implements Listener {
                 : item(Material.PLAYER_HEAD, "&f" + display, List.of("&7Pending declare"));
         put(holder, inv, 13, head);
         boolean mutualConfirm = invite != null && invite.isMutualConfirm();
-        if (mutualConfirm) {
+        boolean outgoing = invite != null && !invite.incoming;
+        if (outgoing) {
+            put(holder, inv, 4, tipBtn(viewer, "rival.pending.decide_info", Material.YELLOW_DYE, "&6&lOutgoing",
+                    List.of("&7Waiting on &f" + display,
+                            "&cWithdraw &7— cancel your declare",
+                            "&7Keep waiting — close and leave pending")));
+            put(holder, inv, 20, tipBtn(viewer, "rival.pending.withdraw", Material.ORANGE_DYE, "&cWithdraw declare",
+                    List.of("&7Cancel your declare to " + display)),
+                    SlotAction.act("remove", pickerArg, "pending"));
+            put(holder, inv, 24, pageBtn(viewer, "rival.pending.keep_waiting", Material.GRAY_DYE, "&7Keep waiting",
+                    "&7Return to pending list"), SlotAction.page("pending"));
+        } else if (mutualConfirm) {
             put(holder, inv, 4, tipBtn(viewer, "rival.pending.decide_info", Material.YELLOW_DYE, "&e&lMutual Confirm",
                     List.of("&7Declared with &f" + display,
                             "&7You both Silent'd each other",
@@ -478,9 +483,6 @@ public final class RivalChestGui implements Listener {
         }
         for (GuiBoardHelper.PendingInvite invite : GuiBoardHelper.parsePendingInvites(
                 ForgeBridge.rivalPendingInviteCards(subject))) {
-            if (!invite.incoming) {
-                continue;
-            }
             if (!uuid.isBlank() && uuid.equalsIgnoreCase(invite.uuid)) {
                 return invite;
             }
@@ -513,7 +515,7 @@ public final class RivalChestGui implements Listener {
         }
         put(holder, inv, 21, pageBtn(viewer, "rival.actions.pending", Material.CLOCK,
                 pendingCount > 0 ? "&ePending &f(" + pendingCount + ")" : "&ePending",
-                "&7Incoming: click a head to Accept / Decline",
+                "&7Tap a name on the Pending board",
                 pendingCount > 0 ? "&aYou have pending invites" : "&8No pending invites"),
                 SlotAction.page("pending"));
         put(holder, inv, 23, pageBtn(viewer, "rival.actions.remove", Material.RED_DYE, "&cRemove…",

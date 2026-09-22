@@ -844,22 +844,23 @@
         ]
       },
       "pending": {
-        "name": "&ePending",
+        "name": "&6Pending board",
         "lore": [
-          "&7View incoming + outgoing invites"
+          "&7Tap a name to Accept or Decline",
+          "&7Outgoing — Withdraw or keep waiting"
         ]
       },
       "accept": {
         "name": "&eAccept…",
         "lore": [
-          "&7Accept a pending declare or upgrade to mutual",
-          "&8Silent declares from both sides appear here too"
+          "&7Use the Pending board instead",
+          "&8Tap a name there to respond"
         ]
       },
       "decline": {
         "name": "&6Decline…",
         "lore": [
-          "&7Decline a pending declare"
+          "&7Use the Pending board instead"
         ]
       },
       "remove": {
@@ -1073,6 +1074,18 @@
         "name": "&7Back",
         "lore": [
           "&7Pending invites"
+        ]
+      },
+      "withdraw": {
+        "name": "&cWithdraw declare",
+        "lore": [
+          "&7Cancel your outgoing declare"
+        ]
+      },
+      "keep_waiting": {
+        "name": "&7Keep waiting",
+        "lore": [
+          "&7Return to the pending list"
         ]
       }
     },
@@ -1891,5 +1904,5 @@
       ]
     }
   },
-  "_catalogRevision": 197
+  "_catalogRevision": 198
 }

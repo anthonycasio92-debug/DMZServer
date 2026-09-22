@@ -475,10 +475,9 @@ public final class RivalGuiApi {
             case "pending", "invites", "pendinginvites" -> RivalSystem.pendingInviteLines(player);
             case "actions" -> List.of(
                     "§6§lRival Actions",
-                    "§7Silent → only you see them",
-                    "§7Declare → on your list as Declared; they get Pending",
-                    "§7They Accept → Mutual (Decline/ignore: you keep Declared)",
-                    "§7Both Silent → Declared → both Accept (Pending) → Mutual"
+                    "§7Pending board — tap a name to Accept or Decline",
+                    "§7Declare · Remove · Silent",
+                    "§7Both Silent → Declared → Pending → Mutual"
             );
             case "stats", "statistics" -> statsLines(player);
             case "challenge", "challenges" -> challengeLines(player);
@@ -753,6 +752,43 @@ public final class RivalGuiApi {
         }
         String[] p = card.split("\t", -1);
         return p.length >= 3 && "IN".equalsIgnoreCase(p[2]);
+    }
+
+    public static boolean pendingInviteCardOutgoing(String card) {
+        if (card == null) {
+            return false;
+        }
+        String[] p = card.split("\t", -1);
+        return p.length >= 3 && "OUT".equalsIgnoreCase(p[2]);
+    }
+
+    /** Scroll row labels for the pending board (direction + name). */
+    public static String[] pendingInviteScrollLabels(List<String> cards) {
+        if (cards == null || cards.isEmpty()) {
+            return new String[0];
+        }
+        String[] out = new String[cards.size()];
+        for (int i = 0; i < cards.size(); i++) {
+            String card = cards.get(i);
+            String[] p = card == null ? new String[0] : card.split("\t", -1);
+            String name = p.length > 1 && p[1] != null && !p[1].isBlank() ? p[1].trim() : "?";
+            if (pendingInviteCardOutgoing(card)) {
+                out[i] = "§6▶ §f" + name;
+            } else if (pendingInviteCardMutualConfirm(card)) {
+                out[i] = "§e◀ §f" + name + " §8· mutual";
+            } else {
+                out[i] = "§a◀ §f" + name;
+            }
+        }
+        return out;
+    }
+
+    public static boolean pendingInviteCardMutualConfirm(String card) {
+        if (card == null || card.isBlank()) {
+            return false;
+        }
+        String[] p = card.split("\t", -1);
+        return p.length > 5 && "mutual".equalsIgnoreCase(p[5]);
     }
 
     /**

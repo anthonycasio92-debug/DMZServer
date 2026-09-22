@@ -47,10 +47,7 @@ public final class CmiRivalGui {
                 case "history", "past", "previous" -> openHistory(player);
                 case "pick_declare" -> openPicker(player, "declare", "actions",
                         "&6Declare Rival", "&7Click to declare this player");
-                case "pick_accept" -> openPendingPicker(player, "accept", "actions",
-                        "&aAccept Rivalry", "&7Pending declare or Declared → Mutual", true);
-                case "pick_decline" -> openPendingPicker(player, "decline", "actions",
-                        "&cDecline Declare", "&7Click to decline their declare", false);
+                case "pick_accept", "pick_decline" -> openPending(player);
                 case "pick_remove" -> openCurrentRivalPicker(player, "remove", "actions",
                         "&cRemove Rival", "&7Click to remove this rivalry");
                 case "pick_replace_mutual", "replace_mutual" -> openMutualReplacePicker(player);
@@ -398,8 +395,9 @@ public final class CmiRivalGui {
         pendingHeader.add("");
         pendingHeader.add(invites.isEmpty() ? "&7No pending declares." : "&7" + invites.size() + " pending");
         pendingHeader.addAll(GuiBoardHelper.tips(player,
-                "&a◀ Incoming &7— tap to accept or decline",
-                "&6▶ Outgoing &7= waiting on them"));
+                "&7Tap a name to respond",
+                "&a◀ Incoming &7— Accept or Decline",
+                "&6▶ Outgoing &7— Withdraw or keep waiting"));
         info.addLore(pendingHeader);
         gui.addButton(info);
 
@@ -418,9 +416,7 @@ public final class CmiRivalGui {
                 ItemStack head = GuiBoardHelper.pendingInviteHead(player, invite);
                 CMIGuiButton btn = new CMIGuiButton(slots[i], head);
                 btn.lockField();
-                if (invite.incoming) {
-                    btn.addCommand("lmdo rival page pending_decide:" + invite.pickerArg());
-                }
+                btn.addCommand("lmdo rival page pending_decide:" + invite.pickerArg());
                 gui.addButton(btn);
             }
         }
@@ -449,7 +445,13 @@ public final class CmiRivalGui {
                 GuiTooltips.name("rival.pending.decide_info",
                         mutualConfirm ? "&e&lMutual Confirm" : "&e&lRespond"));
         info.lockField();
-        if (mutualConfirm) {
+        boolean outgoing = invite != null && !invite.incoming;
+        if (outgoing) {
+            info.addLore(GuiTooltips.buttonLore("rival.pending.decide_info", List.of(
+                    "&7Waiting on &f" + display,
+                    "&cWithdraw &7— cancel your declare",
+                    "&7Keep waiting — return to the list")));
+        } else if (mutualConfirm) {
             info.addLore(GuiTooltips.buttonLore("rival.pending.decide_info", List.of(
                     "&7Declared with &f" + display,
                     "&7You both Silent'd each other",
@@ -470,7 +472,13 @@ public final class CmiRivalGui {
         headBtn.lockField();
         gui.addButton(headBtn);
 
-        if (mutualConfirm) {
+        if (outgoing) {
+            gui.addButton(actionBtn(player, 20, "rival.pending.withdraw", Material.ORANGE_DYE, "&cWithdraw declare",
+                    "remove", pickerArg, "pending",
+                    List.of("&7Cancel your declare to " + display)));
+            gui.addButton(pageBtn(player, 24, "rival.pending.keep_waiting", Material.GRAY_DYE, "&7Keep waiting",
+                    "pending", "&7Return to pending list"));
+        } else if (mutualConfirm) {
             gui.addButton(actionBtn(player, 20, "rival.pending.accept", Material.LIME_DYE, "&aAccept Mutual",
                     "accept", pickerArg, "pending",
                     List.of("&7Accept Mutual with " + display,
@@ -510,9 +518,6 @@ public final class CmiRivalGui {
         }
         for (GuiBoardHelper.PendingInvite invite : GuiBoardHelper.parsePendingInvites(
                 ForgeBridge.rivalPendingInviteCards(player))) {
-            if (!invite.incoming) {
-                continue;
-            }
             if (!uuid.isBlank() && uuid.equalsIgnoreCase(invite.uuid)) {
                 return invite;
             }
@@ -546,7 +551,7 @@ public final class CmiRivalGui {
         gui.addButton(pageBtn(player, 21, "rival.actions.pending", Material.CLOCK,
                 pendingCount > 0 ? "&ePending &f(" + pendingCount + ")" : "&ePending",
                 "pending",
-                "&7Incoming: click a head to Accept / Decline",
+                "&7Tap a name on the Pending board",
                 pendingCount > 0 ? "&aYou have pending invites" : "&8No pending invites"));
         gui.addButton(pageBtn(player, 23, "rival.actions.remove", Material.RED_DYE, "&cRemove…", "pick_remove",
                 "&7Pick one of your rivals to remove"));

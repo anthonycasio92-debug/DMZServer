@@ -14,7 +14,7 @@ public final class CnpcGuiStyle {
 
     public static final String HINT_CLICK_ENTRY = "§7Select an entry below";
     public static final String HINT_CLICK_PLAYER = "§7Select a player below";
-    public static final String HINT_CLICK_INVITE = "§7Select an invite to respond";
+    public static final String HINT_CLICK_INVITE = "§7Tap a name — Accept or Decline (or withdraw outgoing)";
     /** Shown above a scrollable read-only status band (mouse wheel). */
     public static final String HINT_SCROLL_STATUS = "§7Scroll this section with your mouse wheel";
     /** Shown above CNPC {@code IScroll} pick lists only when rows do not fit. */
