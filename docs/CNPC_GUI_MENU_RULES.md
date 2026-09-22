@@ -33,4 +33,4 @@ Automated checks: `python3 tools/dmz-adaptive-difficulty/sim/audit_cnpc_gui_styl
 
 ## Build
 
-- CNPC Java overlays merge onto `base/LegacyMechanics-4.5.23-direct-dmz-resource-max.jar`; ki/stamina mixin wiring stays on the base jar (see `base/README.md`).
+- CNPC Java overlays merge onto `base/LegacyMechanics-4.5.49-consolidated.jar`; ki/stamina mixin wiring stays on the base jar (see `base/README.md`).

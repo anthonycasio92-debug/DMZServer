@@ -38,10 +38,15 @@ if [[ -z "$VERSION" ]]; then
 fi
 RES="$HERE/src/main/resources"
 OUT="$HERE/build/classes"
-BASE_JAR="${LM_BASE_JAR:-$HERE/base/LegacyMechanics-4.5.23-direct-dmz-resource-max.jar}"
-# When merging onto live base, keep the base artifact name (overflow-fix line).
+CONSOLIDATED_BASE="$HERE/base/LegacyMechanics-4.5.49-consolidated.jar"
+LEGACY_BASE="$HERE/base/LegacyMechanics-4.5.23-direct-dmz-resource-max.jar"
+BASE_JAR="${LM_BASE_JAR:-$CONSOLIDATED_BASE}"
+if [[ ! -f "$BASE_JAR" && -f "$LEGACY_BASE" ]]; then
+  BASE_JAR="$LEGACY_BASE"
+fi
+# Overlay CNPC/GUI patches onto consolidated base; ship as LegacyMechanics-${VERSION}.jar
 if [[ -f "$BASE_JAR" ]]; then
-  JAR="$ROOT/mods/$(basename "$BASE_JAR")"
+  JAR="$ROOT/mods/${NAME}-${VERSION}.jar"
 else
   JAR="$ROOT/mods/${NAME}-${VERSION}.jar"
 fi
@@ -134,8 +139,7 @@ fi
 # files — mixing 2.4.115 bytecode with a fresh compile causes Java 17 VerifyError during
 # StatsData#load (mixins → DmzResourcePoolClamp) and clients see "Invalid player data".
 
-echo "Built $JAR"
-ln -sf "$(basename "$JAR")" "$ROOT/mods/${NAME}-${VERSION}.jar"
+echo "Built $JAR (base: $(basename "$BASE_JAR"))"
 jar tf "$JAR"
 
 # Fail-closed audits: product features, combat scaling sim, GUI ABI.

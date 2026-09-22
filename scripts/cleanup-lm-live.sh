@@ -22,8 +22,8 @@ if [[ -z "$HOST" || -z "$USER" || -z "$PASS" ]]; then
   exit 1
 fi
 
-KEEP_FORGE="${LM_KEEP_FORGE:-LegacyMechanics-4.5.1.jar}"
-KEEP_GUI="${LM_KEEP_GUI:-LegacyMechanicsGUI-4.5.1.jar}"
+KEEP_FORGE="${LM_KEEP_FORGE:-LegacyMechanics-4.5.49.jar}"
+KEEP_GUI="${LM_KEEP_GUI:-LegacyMechanicsGUI-4.5.49.jar}"
 KEEP_MELEE="${LM_KEEP_MELEE:-dmz_mohist_melee_fix-2.12.21.jar}"
 
 export SSHPASS="$PASS"
