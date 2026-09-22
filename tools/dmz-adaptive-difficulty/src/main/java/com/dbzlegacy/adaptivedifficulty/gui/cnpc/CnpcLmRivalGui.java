@@ -132,7 +132,7 @@ public final class CnpcLmRivalGui {
         }
         row += 24;
         if (StaffAccess.isStaff(player)) {
-            CnpcGuiSupport.buttonSmall(gui, 98, "§cStaff Admin", CnpcGuiSupport.COL_L, row, 195,
+            CnpcGuiSupport.buttonSmall(gui, 98, "§cStaff Admin", CnpcGuiSupport.COL_L, row, CnpcGuiSupport.BTN_W,
                     () -> open(player, "admin"));
             row += 24;
         }
@@ -168,7 +168,7 @@ public final class CnpcLmRivalGui {
         int listY = CnpcGuiSupport.paintInfoBlock(gui, infoY, RivalGuiApi.linesForPage(who, "pending"), 2);
         List<String> cards = RivalGuiApi.pendingInviteCards(who);
         if (cards.isEmpty()) {
-            gui.addLabel(50, "§7No pending invites.", CnpcGuiSupport.M, listY + 4, 400, 14);
+            gui.addLabel(50, "§7No pending invites.", CnpcGuiSupport.M, listY + 4, CnpcGuiSupport.textBandWidth(), 14);
             footer(player, gui, listY + 28, "actions");
         } else {
             int scrollH = CnpcGuiSupport.listScrollHeight(gui, listY, 1);
@@ -382,7 +382,7 @@ public final class CnpcLmRivalGui {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, title, CnpcGuiStyle.HINT_CLICK_PLAYER);
         int listY = infoY;
         if (names == null || names.isEmpty()) {
-            gui.addLabel(50, "§cNo players available.", CnpcGuiSupport.M, listY + 4, 400, 14);
+            gui.addLabel(50, "§cNo players available.", CnpcGuiSupport.M, listY + 4, CnpcGuiSupport.textBandWidth(), 14);
             footer(player, gui, listY + 28, returnPage);
             return;
         }
@@ -412,7 +412,7 @@ public final class CnpcLmRivalGui {
         int listY = infoY;
         List<String> cards = args;
         if (cards == null || cards.isEmpty()) {
-            gui.addLabel(50, "§7Nothing to pick.", CnpcGuiSupport.M, listY + 4, 400, 14);
+            gui.addLabel(50, "§7Nothing to pick.", CnpcGuiSupport.M, listY + 4, CnpcGuiSupport.textBandWidth(), 14);
             footer(player, gui, listY + 28, returnPage);
             return;
         }

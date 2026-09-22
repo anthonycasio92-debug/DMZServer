@@ -25,10 +25,18 @@ public final class CnpcGuiSupport {
     public static final int W = 430;
     public static final int H = 280;
     public static final int M = 14;
-    public static final int BTN_W = 195;
     public static final int BTN_H = 20;
     public static final int COL_L = M;
-    public static final int COL_R = 220;
+    /** Two-column button width — keeps {@link CnpcPlayerPreview#contentRightEdge()} clear of overlap. */
+    public static final int BTN_W;
+    public static final int COL_R;
+
+    static {
+        int right = CnpcPlayerPreview.contentRightEdge();
+        int gap = 8;
+        BTN_W = Math.max(130, (right - COL_L - gap) / 2);
+        COL_R = COL_L + BTN_W + gap;
+    }
     public static final int ROW_STEP = 24;
     public static final int LINE_H = 13;
     /** Default height for rival/spar/character player lists. */
@@ -51,10 +59,12 @@ public final class CnpcGuiSupport {
     public static final int ID_CLOSE = 98;
     public static final int ID_REFRESH = 99;
     public static final int ID_ENTITY_PREVIEW = 102;
-    public static final int ID_PREVIEW_CAPTION = 103;
 
     /** Shorter divider so labels do not wrap oddly in CNPC. */
-    private static final String DIVIDER_TEXT = "§8──────────────────────────────";
+    private static String dividerText() {
+        int chars = Math.max(14, textBandWidth() / 7);
+        return "§8" + "─".repeat(chars);
+    }
 
     private static final Pattern PACKAGE_LIKE = Pattern.compile("(?:\\b[a-z]{2,}\\.){2,}[A-Za-z0-9_$]+");
     private static final Pattern UUID_LINE = Pattern.compile(
@@ -166,9 +176,9 @@ public final class CnpcGuiSupport {
             ICustomGui gui, int listY, String[] items, int actionRowsAboveFooter, boolean searchable) {
         int h = listScrollHeight(gui, listY, actionRowsAboveFooter);
         if (searchable) {
-            return scrollSearchable(gui, ID_LIST_SCROLL, M, listY, W - M * 2, h, items);
+            return scrollSearchable(gui, ID_LIST_SCROLL, M, listY, textBandWidth(), h, items);
         }
-        return scroll(gui, ID_LIST_SCROLL, M, listY, W - M * 2, h, items);
+        return scroll(gui, ID_LIST_SCROLL, M, listY, textBandWidth(), h, items);
     }
 
     /**
@@ -177,7 +187,7 @@ public final class CnpcGuiSupport {
      */
     /** Small section caption above a button group. Returns Y for the first button row. */
     public static int paintSectionTag(ICustomGui gui, int labelId, int y, String caption) {
-        gui.addLabel(labelId, safeChat(caption), M, y, W - M * 2, 10);
+        gui.addLabel(labelId, safeChat(caption), M, y, textBandWidth(), 10);
         return y + 16;
     }
 
@@ -219,7 +229,7 @@ public final class CnpcGuiSupport {
     }
 
     public static ILabel title(ICustomGui gui, int id, String text) {
-        ILabel l = gui.addLabel(id, safeChat(text), M, 8, W - M * 2, 18);
+        ILabel l = gui.addLabel(id, safeChat(text), M, 8, textBandWidth(), 18);
         try {
             l.setScale(1.15f);
         } catch (Throwable ignored) {
@@ -228,7 +238,7 @@ public final class CnpcGuiSupport {
     }
 
     public static void subtitle(ICustomGui gui, int id, String text) {
-        gui.addLabel(id, safeChat(text), M, 28, W - M * 2, 14);
+        gui.addLabel(id, safeChat(text), M, 28, textBandWidth(), 14);
     }
 
     /** Data/actions target (inspect subject when staff is inspecting). */
@@ -239,12 +249,13 @@ public final class CnpcGuiSupport {
     public static void inspectBanner(net.minecraft.server.level.ServerPlayer viewer, ICustomGui gui) {
         String line = AdminInspectSessions.inspectBannerLine(viewer);
         if (line != null) {
-            gui.addLabel(ID_INSPECT, safeChat(line), M, 40, W - M * 2, 12);
+            gui.addLabel(ID_INSPECT, safeChat(line), M, 40, textBandWidth(), 12);
         }
     }
 
     public static void divider(ICustomGui gui, int id, int y) {
-        gui.addLabel(id, DIVIDER_TEXT, M, y, W - M * 2, 10);
+        int w = textBandWidth();
+        gui.addLabel(id, dividerText(), M, y, w, 10);
     }
 
     public static int textBandWidth() {
@@ -261,7 +272,7 @@ public final class CnpcGuiSupport {
     }
 
     public static void bodyLines(ICustomGui gui, int startId, int y, List<String> lines, int maxLines) {
-        bodyLines(gui, startId, y, lines, maxLines, W - M * 2);
+        bodyLines(gui, startId, y, lines, maxLines, textBandWidth());
     }
 
     public static void bodyLines(ICustomGui gui, int startId, int y, List<String> lines, int maxLines, int width) {

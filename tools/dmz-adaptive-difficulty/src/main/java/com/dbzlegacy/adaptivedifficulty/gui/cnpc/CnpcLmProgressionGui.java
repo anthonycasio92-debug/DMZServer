@@ -142,12 +142,12 @@ public final class CnpcLmProgressionGui {
             String label = friendlyFlagLabel(key, ph);
             if (staff) {
                 String flagKey = key;
-                CnpcGuiSupport.buttonSmall(gui, id++, label, col, row, 195, () -> CnpcGuiSupport.act(
+                CnpcGuiSupport.buttonSmall(gui, id++, label, col, row, CnpcGuiSupport.BTN_W, () -> CnpcGuiSupport.act(
                         player,
                         () -> ProgressionGuiApi.handleDo(player, "flag", flagKey, page),
                         () -> open(player, page)));
             } else {
-                gui.addLabel(id++, "§7" + label, col, row + 4, 195, 14);
+                gui.addLabel(id++, "§7" + label, col, row + 4, CnpcGuiSupport.BTN_W, 14);
             }
             i++;
         }
@@ -161,11 +161,11 @@ public final class CnpcLmProgressionGui {
         if (staff) {
             CnpcGuiSupport.button(gui, 45, "§6Global TP boost", CnpcGuiSupport.COL_L, row,
                     () -> open(player, "boost_panel"));
-            gui.addLabel(46, CnpcGuiSupport.safeChat(status), CnpcGuiSupport.COL_R, row + 4, 195, 14);
+            gui.addLabel(46, CnpcGuiSupport.safeChat(status), CnpcGuiSupport.COL_R, row + 4, CnpcGuiSupport.BTN_W, 14);
         } else {
             gui.addLabel(45, "§6Global TP boost §8· " + CnpcGuiSupport.flagOnOff(ph, "boost"),
-                    CnpcGuiSupport.M, row + 4, 400, 14);
-            gui.addLabel(46, CnpcGuiSupport.safeChat(status), CnpcGuiSupport.M, row + 18, 400, 12);
+                    CnpcGuiSupport.M, row + 4, CnpcGuiSupport.textBandWidth(), 14);
+            gui.addLabel(46, CnpcGuiSupport.safeChat(status), CnpcGuiSupport.M, row + 18, CnpcGuiSupport.textBandWidth(), 12);
             row += 8;
         }
         return row + CnpcGuiSupport.ROW_STEP;
@@ -177,10 +177,10 @@ public final class CnpcLmProgressionGui {
             CnpcGuiSupport.button(gui, 47, "§bAndroid tools", CnpcGuiSupport.COL_L, row,
                     () -> open(player, "android_panel"));
             gui.addLabel(48, "§7Module " + CnpcGuiSupport.flagOnOff(ph, "android"),
-                    CnpcGuiSupport.COL_R, row + 4, 195, 14);
+                    CnpcGuiSupport.COL_R, row + 4, CnpcGuiSupport.BTN_W, 14);
         } else {
             gui.addLabel(47, "§bAndroid §8· " + CnpcGuiSupport.flagOnOff(ph, "android"),
-                    CnpcGuiSupport.M, row + 4, 400, 14);
+                    CnpcGuiSupport.M, row + 4, CnpcGuiSupport.textBandWidth(), 14);
             row += 8;
         }
         return row + CnpcGuiSupport.ROW_STEP;
@@ -214,7 +214,7 @@ public final class CnpcLmProgressionGui {
 
     private static int boostPreset(
             ICustomGui gui, ServerPlayer player, int row, int id, String label, int col, String arg) {
-        CnpcGuiSupport.buttonSmall(gui, id, label, col, row, 195, () -> CnpcGuiSupport.act(
+        CnpcGuiSupport.buttonSmall(gui, id, label, col, row, CnpcGuiSupport.BTN_W, () -> CnpcGuiSupport.act(
                 player,
                 () -> ProgressionGuiApi.handleDo(player, "boost", arg, "boost_panel"),
                 () -> open(player, "boost_panel")));
@@ -277,7 +277,7 @@ public final class CnpcLmProgressionGui {
             ServerPlayer player, ICustomGui gui, int y, String action, String returnPage) {
         List<String> names = RivalGuiApi.onlinePlayerNames(CnpcGuiSupport.target(player));
         if (names.isEmpty()) {
-            gui.addLabel(70, "§7No other players online.", CnpcGuiSupport.M, y + 8, 400, 14);
+            gui.addLabel(70, "§7No other players online.", CnpcGuiSupport.M, y + 8, CnpcGuiSupport.textBandWidth(), 14);
             return y + 28;
         }
         int scrollH = CnpcGuiSupport.listScrollHeight(gui, y, 1);
@@ -325,14 +325,14 @@ public final class CnpcLmProgressionGui {
                 row += CnpcGuiSupport.ROW_STEP;
             }
             String flagKey = key;
-            CnpcGuiSupport.buttonSmall(gui, id++, friendlyFlagLabel(key, ph), col, row, 195,
+            CnpcGuiSupport.buttonSmall(gui, id++, friendlyFlagLabel(key, ph), col, row, CnpcGuiSupport.BTN_W,
                     () -> CnpcGuiSupport.act(
                             player,
                             () -> ProgressionGuiApi.handleDo(player, "flag", flagKey, "admin"),
                             () -> open(player, "admin")));
         }
         row += CnpcGuiSupport.ROW_STEP + 8;
-        CnpcGuiSupport.buttonSmall(gui, 58, "§dFabled subflags", CnpcGuiSupport.COL_L, row, 195,
+        CnpcGuiSupport.buttonSmall(gui, 58, "§dFabled subflags", CnpcGuiSupport.COL_L, row, CnpcGuiSupport.BTN_W,
                 () -> open(player, "flags_fabled"));
         row += CnpcGuiSupport.ROW_STEP;
         CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "main"), "§7« Back");
@@ -350,7 +350,7 @@ public final class CnpcLmProgressionGui {
                 row += CnpcGuiSupport.ROW_STEP;
             }
             String flagKey = key;
-            CnpcGuiSupport.buttonSmall(gui, id++, friendlyFlagLabel(key, ph), col, row, 195,
+            CnpcGuiSupport.buttonSmall(gui, id++, friendlyFlagLabel(key, ph), col, row, CnpcGuiSupport.BTN_W,
                     () -> CnpcGuiSupport.act(
                             player,
                             () -> ProgressionGuiApi.handleDo(player, "flag", flagKey, "flags_fabled"),

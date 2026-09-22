@@ -67,7 +67,7 @@ public final class CnpcLmHubGui {
 
         if (!"true".equals(ph.get("bridge_ok"))) {
             gui.addLabel(CnpcGuiSupport.ID_STATUS_TAG, "§cLegacy Mechanics is not loaded on this server.",
-                    CnpcGuiSupport.M, row, 400, 14);
+                    CnpcGuiSupport.M, row, CnpcGuiSupport.textBandWidth(), 14);
             row += gap;
             CnpcGuiSupport.footerCloseRefresh(player, gui, row, () -> paintMain(player));
             return;

@@ -9,14 +9,19 @@ import noppes.npcs.api.gui.IEntityDisplay;
 import noppes.npcs.api.wrapper.gui.CustomGuiEntityDisplayWrapper;
 
 /**
- * CNPC {@link IEntityDisplay} player preview (SDU-style right-column slot).
- * <p>Uses entity NBT on the client ({@code entityId = -1}) — same idea as SDU clone preview configs —
- * because server network entity ids do not match the viewing client on dedicated servers.
+ * CNPC {@link IEntityDisplay} player preview (SDU-style right column).
+ * Uses entity NBT on the client ({@code entityId = -1}) for dedicated-server sync.
  */
 public final class CnpcPlayerPreview {
-    /** Right column width reserved on hub-style screens. */
-    public static final int SLOT_W = 92;
-    public static final int SLOT_H = 118;
+    /** Right column reserved for the model (buttons must stay left of {@link #contentRightEdge()}). */
+    public static final int SLOT_W = 88;
+    public static final int SLOT_H = 110;
+    /** Gap between button columns and the preview slot. */
+    public static final int SLOT_GAP = 8;
+
+    /** CNPC yaw when {@code followCursor=false}: {@code rotation/2 + 180}. {@code 0} ≈ facing the viewer. */
+    private static final int FACE_VIEWER_ROTATION = 0;
+    private static final float PREVIEW_SCALE = 0.78f;
 
     private CnpcPlayerPreview() {}
 
@@ -24,9 +29,14 @@ public final class CnpcPlayerPreview {
         return CnpcGuiSupport.W - CnpcGuiSupport.M - SLOT_W;
     }
 
+    /** Right edge (exclusive) of text, scroll lists, and two-column buttons. */
+    public static int contentRightEdge() {
+        return slotX() - SLOT_GAP;
+    }
+
     /** Main text / scroll band width when the preview column is shown. */
     public static int textBandWidth() {
-        return CnpcGuiSupport.W - CnpcGuiSupport.M * 2 - SLOT_W - 8;
+        return contentRightEdge() - CnpcGuiSupport.M;
     }
 
     /**
@@ -38,7 +48,7 @@ public final class CnpcPlayerPreview {
     }
 
     public static void paint(ServerPlayer player, ICustomGui gui, int componentId, int anchorY) {
-        int y = anchorY + 8;
+        int y = Math.max(CnpcGuiSupport.M, anchorY);
         paint(player, gui, componentId, slotX(), y);
     }
 
@@ -54,15 +64,12 @@ public final class CnpcPlayerPreview {
             if (entity == null) {
                 return;
             }
-            String caption = CnpcGeckoPreviewBridge.geckoAvailable()
-                    ? "§8Character"
-                    : "§8Preview §7(needs CNPC Gecko)";
-            gui.addLabel(CnpcGuiSupport.ID_PREVIEW_CAPTION, caption, x, y - 10, SLOT_W, 10);
             IEntityDisplay display = gui.addEntityDisplay(componentId, x, y, entity);
             forceNbtSnapshot(display, entity);
+            tuneDisplay(display);
             display.setSize(SLOT_W, SLOT_H);
-            display.setScale(0.9f);
-            display.setRotation(215);
+            display.setScale(PREVIEW_SCALE);
+            display.setRotation(FACE_VIEWER_ROTATION);
             display.setBackground(false);
             try {
                 display.setFollowingCursor(false);
@@ -76,10 +83,16 @@ public final class CnpcPlayerPreview {
         }
     }
 
-    /**
-     * CNPC {@link CustomGuiEntityDisplayWrapper#setEntity} assigns the server's player entity id;
-     * the client then fails {@code Level.getEntity(id)}. Force NBT snapshot rendering instead.
-     */
+    private static void tuneDisplay(IEntityDisplay display) {
+        try {
+            var x = display.getClass().getField("offsetX");
+            var y = display.getClass().getField("offsetY");
+            x.setFloat(display, 0f);
+            y.setFloat(display, 8f);
+        } catch (Throwable ignored) {
+        }
+    }
+
     private static void forceNbtSnapshot(IEntityDisplay display, IEntity entity) {
         if (display instanceof CustomGuiEntityDisplayWrapper wrapper) {
             wrapper.setEntity(entity);

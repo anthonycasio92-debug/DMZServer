@@ -80,7 +80,7 @@ public final class CnpcLmCharacterGui {
                         () -> open(player, "bones:0"));
             }
         } else {
-            gui.addLabel(50, "§cCharacter Services unavailable.", CnpcGuiSupport.M, row, 400, 14);
+            gui.addLabel(50, "§cCharacter Services unavailable.", CnpcGuiSupport.M, row, CnpcGuiSupport.textBandWidth(), 14);
             row += 20;
         }
         row += CnpcGuiSupport.ROW_STEP;
@@ -216,7 +216,7 @@ public final class CnpcLmCharacterGui {
         List<String> cards = CharacterServicesGuiApi.headBoneCards(player, pg);
         int scrollBottom = listY;
         if (cards.isEmpty()) {
-            gui.addLabel(50, "§7No head parts on this page.", CnpcGuiSupport.M, listY + 4, 400, 14);
+            gui.addLabel(50, "§7No head parts on this page.", CnpcGuiSupport.M, listY + 4, CnpcGuiSupport.textBandWidth(), 14);
             scrollBottom = listY + 20;
         } else {
             int scrollH = CnpcGuiSupport.listScrollHeight(gui, listY, 3);
@@ -235,11 +235,11 @@ public final class CnpcLmCharacterGui {
             scrollBottom = listY + scrollH;
         }
         int row = scrollBottom + 8;
-        CnpcGuiSupport.buttonSmall(gui, 60, "§aEquip race default", CnpcGuiSupport.COL_L, row, 195, () -> CnpcGuiSupport.act(
+        CnpcGuiSupport.buttonSmall(gui, 60, "§aEquip race default", CnpcGuiSupport.COL_L, row, CnpcGuiSupport.BTN_W, () -> CnpcGuiSupport.act(
                 player,
                 () -> CharacterServicesGuiApi.handleDo(player, "bone_race_default", "", "bones"),
                 () -> open(player, "bones:" + pg)));
-        CnpcGuiSupport.buttonSmall(gui, 61, "§7Unequip bone", CnpcGuiSupport.COL_R, row, 195, () -> CnpcGuiSupport.act(
+        CnpcGuiSupport.buttonSmall(gui, 61, "§7Unequip bone", CnpcGuiSupport.COL_R, row, CnpcGuiSupport.BTN_W, () -> CnpcGuiSupport.act(
                 player,
                 () -> CharacterServicesGuiApi.handleDo(player, "bone_unequip", "", "bones"),
                 () -> open(player, "bones:" + pg)));

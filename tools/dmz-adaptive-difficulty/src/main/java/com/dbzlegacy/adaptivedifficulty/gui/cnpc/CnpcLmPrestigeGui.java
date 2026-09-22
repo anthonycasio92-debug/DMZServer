@@ -198,25 +198,25 @@ public final class CnpcLmPrestigeGui {
                 CnpcGuiStyle.INFO_INLINE_MAX);
 
         if (hasMajin) {
-            gui.addLabel(40, "§aPermanent Majin §8· owned", CnpcGuiSupport.COL_L, row + 4, 195, 14);
+            gui.addLabel(40, "§aPermanent Majin §8· owned", CnpcGuiSupport.COL_L, row + 4, CnpcGuiSupport.BTN_W, 14);
         } else if (canBuyMajin) {
             CnpcGuiSupport.button(gui, 40, "§dBuy Majin", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                     player,
                     () -> ProgressionGuiApi.handlePrestigeDo(player, "majin", "", "effects"),
                     () -> open(player, "effects")));
         } else {
-            gui.addLabel(40, "§8Buy Majin §7(unpurchase Mutant first)", CnpcGuiSupport.COL_L, row + 4, 195, 14);
+            gui.addLabel(40, "§8Buy Majin §7(unpurchase Mutant first)", CnpcGuiSupport.COL_L, row + 4, CnpcGuiSupport.BTN_W, 14);
         }
 
         if (hasMutant) {
-            gui.addLabel(41, "§aPermanent Mutant §8· owned", CnpcGuiSupport.COL_R, row + 4, 195, 14);
+            gui.addLabel(41, "§aPermanent Mutant §8· owned", CnpcGuiSupport.COL_R, row + 4, CnpcGuiSupport.BTN_W, 14);
         } else if (canBuyMutant) {
             CnpcGuiSupport.button(gui, 41, "§dBuy Mutant", CnpcGuiSupport.COL_R, row, () -> CnpcGuiSupport.act(
                     player,
                     () -> ProgressionGuiApi.handlePrestigeDo(player, "mutant", "", "effects"),
                     () -> open(player, "effects")));
         } else {
-            gui.addLabel(41, "§8Buy Mutant §7(unpurchase Majin first)", CnpcGuiSupport.COL_R, row + 4, 195, 14);
+            gui.addLabel(41, "§8Buy Mutant §7(unpurchase Majin first)", CnpcGuiSupport.COL_R, row + 4, CnpcGuiSupport.BTN_W, 14);
         }
         row += CnpcGuiSupport.ROW_STEP;
 
@@ -231,7 +231,7 @@ public final class CnpcLmPrestigeGui {
                     () -> ProgressionGuiApi.handlePrestigeDo(player, "unmutant", "", "effects"),
                     () -> open(player, "effects")));
         } else {
-            gui.addLabel(42, "§7Nothing to unpurchase", CnpcGuiSupport.COL_L, row + 4, 195, 14);
+            gui.addLabel(42, "§7Nothing to unpurchase", CnpcGuiSupport.COL_L, row + 4, CnpcGuiSupport.BTN_W, 14);
         }
         row += CnpcGuiSupport.ROW_STEP;
         footer(player, gui, row, "main");
@@ -246,7 +246,7 @@ public final class CnpcLmPrestigeGui {
         int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, ProgressionGuiApi.prestigeLines(player, "cap"),
                 CnpcGuiStyle.INFO_INLINE_MAX);
         if (bt >= btMax) {
-            gui.addLabel(20, "§aCap fully raised §8· no more breakthroughs", CnpcGuiSupport.COL_L, row + 4, 400, 14);
+            gui.addLabel(20, "§aCap fully raised §8· no more breakthroughs", CnpcGuiSupport.COL_L, row + 4, CnpcGuiSupport.textBandWidth(), 14);
         } else {
             String cost = ph.getOrDefault("next_breakthrough_cost", "?");
             CnpcGuiSupport.buttonSmallFull(gui, 20, "§aBuy breakthrough · §e" + cost + " pts",

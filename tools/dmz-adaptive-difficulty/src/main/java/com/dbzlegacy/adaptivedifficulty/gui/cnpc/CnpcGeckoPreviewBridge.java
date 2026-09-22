@@ -46,6 +46,12 @@ final class CnpcGeckoPreviewBridge {
             applyPlayerSkin(npc, player.m_36316_().getName());
             applyHair(npc, ch);
             npc.display.setShowName(0);
+            try {
+                npc.ais.orientation = 2;
+            } catch (Throwable ignored) {
+            }
+            npc.m_146922_(180.0f);
+            npc.m_146926_(0.0f);
             npc.updateClient();
             return NpcAPI.Instance().getIEntity(npc);
         } catch (Throwable t) {

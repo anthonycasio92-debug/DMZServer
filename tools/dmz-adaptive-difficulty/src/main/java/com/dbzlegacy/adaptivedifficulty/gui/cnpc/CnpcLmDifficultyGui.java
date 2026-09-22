@@ -210,19 +210,19 @@ public final class CnpcLmDifficultyGui {
             }
             int tier = t;
             if (CnpcDifficultyTierUi.tierButtonEnabled(t, active, unlocked, eligible)) {
-                CnpcGuiSupport.buttonSmallFull(gui, 30 + t, label, col, row, 195,
+                CnpcGuiSupport.buttonSmallFull(gui, 30 + t, label, col, row, CnpcGuiSupport.BTN_W,
                         () -> CnpcGuiSupport.act(
                                 player,
                                 () -> DifficultyActions.handleArg(subject, "activate", String.valueOf(tier), "tiers")
                                         .message(),
                                 () -> open(player, "tiers")));
             } else if (active == t) {
-                gui.addLabel(30 + t, CnpcGuiSupport.safeChat(label), col, row + 4, 195, 14);
+                gui.addLabel(30 + t, CnpcGuiSupport.safeChat(label), col, row + 4, CnpcGuiSupport.BTN_W, 14);
             } else if (!unlocked) {
                 gui.addLabel(30 + t, "§8T" + t + " · " + CnpcDifficultyTierUi.humanRequirement(ut), col, row + 2,
-                        195, 12);
+                        CnpcGuiSupport.BTN_W, 12);
             } else {
-                gui.addLabel(30 + t, CnpcGuiSupport.safeChat(label), col, row + 4, 195, 14);
+                gui.addLabel(30 + t, CnpcGuiSupport.safeChat(label), col, row + 4, CnpcGuiSupport.BTN_W, 14);
             }
             placed++;
         }
@@ -384,7 +384,7 @@ public final class CnpcLmDifficultyGui {
         }
         if (StaffAccess.isStaff(player) && parentPage == null) {
             row += 24;
-            CnpcGuiSupport.buttonSmall(gui, 98, "§8Staff: /difficulty admin", CnpcGuiSupport.COL_L, row, 195, () -> {
+            CnpcGuiSupport.buttonSmall(gui, 98, "§8Staff: /difficulty admin", CnpcGuiSupport.COL_L, row, CnpcGuiSupport.BTN_W, () -> {
                 CnpcGuiSupport.pushMenuMessage(player,
                         "§7Full difficulty admin settings: §f/difficulty admin §7(chat command).");
                 open(player, "main");
