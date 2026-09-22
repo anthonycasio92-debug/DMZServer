@@ -1536,6 +1536,11 @@ def main() -> int:
           "private static void paintTeam" in cnpc_diff
           and "DifficultyActions.prepareGui(subject)" in cnpc_diff.split("private static void paintTeam", 1)[1].split("private static void paintEndDragon", 1)[0])
     check("End Dragon summonMenuLines API", "summonMenuLines" in end_str and "canOpenSummonMenu" in end_str)
+    staff_access = read(SRC / "com/dbzlegacy/adaptivedifficulty/util/StaffAccess.java")
+    check("StaffAccess uses Bukkit entity for permissions", "getBukkitEntity" in staff_access)
+    prog_api = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/ProgressionGuiApi.java")
+    check("Progression staff flags when master off", "staffMaintenance" in prog_api)
+    check("CNPC difficulty staff admin page", "paintStaffAdmin" in cnpc_diff)
     check("natural spawn default off", "enableEndNaturalDragonSpawn = false" in
           read(SRC / "com/dbzlegacy/adaptivedifficulty/config/DifficultyConfig.java"))
     check("reject unauthorized dragon join", "rejectUnauthorizedDragonJoin" in end_str)

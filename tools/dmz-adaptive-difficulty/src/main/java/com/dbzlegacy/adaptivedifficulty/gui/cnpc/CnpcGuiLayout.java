@@ -49,8 +49,9 @@ public final class CnpcGuiLayout {
             int y = rowY(startY, i);
             int id = idBase + i;
             if (b.clickable() && b.messageAction() != null) {
+                Runnable after = b.reopenAction() != null ? b.reopenAction() : reopen;
                 CnpcGuiSupport.buttonSmallFull(gui, id, b.label(), x, y, CnpcGuiSupport.BTN_W, () ->
-                        CnpcGuiSupport.act(player, b.messageAction(), reopen));
+                        CnpcGuiSupport.act(player, b.messageAction(), after));
             } else if (b.clickable() && b.directAction() != null) {
                 CnpcGuiSupport.buttonSmallFull(gui, id, b.label(), x, y, CnpcGuiSupport.BTN_W, b.directAction());
             } else {
@@ -64,18 +65,19 @@ public final class CnpcGuiLayout {
             String label,
             Supplier<String> messageAction,
             Runnable directAction,
+            Runnable reopenAction,
             boolean clickable
     ) {
-        public static GridButton action(String label, Supplier<String> messageAction, Runnable reopenIgnored) {
-            return new GridButton(label, messageAction, null, true);
+        public static GridButton action(String label, Supplier<String> messageAction, Runnable reopen) {
+            return new GridButton(label, messageAction, null, reopen, true);
         }
 
         public static GridButton run(String label, Runnable directAction) {
-            return new GridButton(label, null, directAction, true);
+            return new GridButton(label, null, directAction, null, true);
         }
 
         public static GridButton disabled(String label) {
-            return new GridButton(label, null, null, false);
+            return new GridButton(label, null, null, null, false);
         }
     }
 }

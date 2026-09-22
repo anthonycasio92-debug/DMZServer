@@ -786,11 +786,16 @@ public final class ProgressionGuiApi {
         if (player == null) {
             return "§cPlayers only.";
         }
-        if (!DifficultyConfig.get().enableProgression) {
-            return "§cProgression system is disabled.";
-        }
         String act = action == null ? "" : action.toLowerCase(Locale.ROOT).trim();
         String a = arg == null ? "" : arg.trim();
+        boolean staff = StaffAccess.isStaff(player);
+        boolean staffMaintenance = staff && ("flag".equals(act) || "toggle".equals(act)
+                || "boost".equals(act) || "tpboost".equals(act) || "globaltpboost".equals(act)
+                || "toggle_staff_free_coins".equals(act) || "staff_free_coins".equals(act)
+                || "stafffree".equals(act) || "staff_free".equals(act));
+        if (!DifficultyConfig.get().enableProgression && !staffMaintenance) {
+            return "§cProgression system is disabled.";
+        }
         if ("page".equals(act) || "refresh".equals(act)) {
             return "";
         }

@@ -99,6 +99,10 @@ merge_onto_base_jar() {
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/gui/ProgressionGuiApi.class" \
       "$merge/com/dbzlegacy/adaptivedifficulty/gui/ProgressionGuiApi.class"
   fi
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/util/StaffAccess.class" ]]; then
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/util/StaffAccess.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/util/StaffAccess.class"
+  fi
   if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.class" ]]; then
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.class" \
       "$merge/com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.class"
