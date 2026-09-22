@@ -82,6 +82,8 @@ public final class CnpcLmRivalGui {
             case "pick_declare", "pick_silent", "pick_challenge", "pick_spectate", "pick_remove",
                     "pick_accept", "pick_decline", "pick_replace_mutual" -> 380;
             case "progress", "records" -> 300;
+            case "history", "past", "stats", "top", "leaderboard", "season", "quests",
+                    "achievements", "achs", "hof", "hall", "journal", "title", "titles" -> 420;
             default -> H;
         };
     }
@@ -434,8 +436,8 @@ public final class CnpcLmRivalGui {
     }
 
     private static void paintScroll(ServerPlayer player, ICustomGui gui, String title, List<String> body, String backPage) {
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, title, CnpcGuiStyle.HINT_SCROLL_LIST);
-        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, body, 3);
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, title, CnpcGuiStyle.HINT_READ_ONLY);
+        int row = CnpcGuiSupport.paintLongReadOnlyBody(gui, infoY, body);
         footer(player, gui, row + 8, backPage);
     }
 

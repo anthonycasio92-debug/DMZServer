@@ -193,7 +193,9 @@ public final class CnpcLmDifficultyGui {
             lines.add("§7Cost to activate §f"
                     + CnpcDifficultyTierUi.formatActivationCost(subject, nextLocked));
         }
-        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX));
+        int row = lines.size() > CnpcGuiStyle.INFO_INLINE_MAX
+                ? CnpcGuiSupport.paintLongReadOnlyBody(gui, infoY, lines)
+                : CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX));
 
         int placed = 0;
         for (int t = 1; t <= 7; t++) {

@@ -972,8 +972,7 @@ public final class ProgressionGuiApi {
         lore.add("§7Completed: §f" + ph.getOrDefault("completed", "0")
                 + " §8| §7Held: §6" + ph.getOrDefault("held", "0")
                 + "§7/§f" + ph.getOrDefault("held_max", "10"));
-        lore.add("§7Points: §e" + ph.getOrDefault("points", "0")
-                + " §8| §7Cap: §f" + ph.getOrDefault("level_cap_fmt", "100000"));
+        lore.add("§7Points: §e" + ph.getOrDefault("points", "0"));
         switch (p) {
             case "turnin", "points" -> {
                 lore.add("§7Turn in §f1§7, §f2§7, §f3§7, §f6§7, or §f9 §7at a time");
@@ -998,25 +997,6 @@ public final class ProgressionGuiApi {
                     lore.add("§8Unpurchase Majin to unlock Mutant purchase");
                 }
             }
-            case "cap", "breakthrough", "breakthroughs" -> {
-                lore.add("§7Breakthroughs: §f" + ph.getOrDefault("breakthroughs", "0")
-                        + "§7/§f" + ph.getOrDefault("breakthroughs_max", "5"));
-                lore.add("§7Your personal level cap: §f"
-                        + ph.getOrDefault("level_cap_fmt", "100000"));
-                lore.add("§8Server maxValue is §f150000 §8— soft-lock holds others at their cap");
-                int btCount = 0;
-                try {
-                    btCount = Integer.parseInt(ph.getOrDefault("breakthroughs", "0"));
-                } catch (Exception ignored) {
-                }
-                if (btCount < PrestigePointsSystem.MAX_BREAKTHROUGHS) {
-                    lore.add("§7Next cost: §e" + ph.getOrDefault("next_breakthrough_cost", "15")
-                            + " §7points (+10k cap)");
-                    lore.add("§8Raising cap also raises future prestige Need");
-                } else {
-                    lore.add("§aMax personal cap reached");
-                }
-            }
             case "tiers", "tier", "difficulty" -> {
                 lore.add("§7Buy permanent difficulty tier unlocks with prestige points");
                 lore.add("§7T1–2 §e1pt §8· §7T3–4 §e2pt §8· §7T5–6 §e3pt §8· §7T7 §e4pt");
@@ -1032,7 +1012,7 @@ public final class ProgressionGuiApi {
                 } else {
                     lore.add("§cNot ready yet");
                 }
-                lore.add("§8Turn-in · Shop · Effects · Tiers · Cap via buttons");
+                lore.add("§8Turn-in · skill shop · effects · difficulty tiers");
             }
         }
         return lore;
@@ -1080,7 +1060,7 @@ public final class ProgressionGuiApi {
             return PrestigePointsSystem.unbuyMutant(player);
         }
         if ("breakthrough".equals(act) || "cap".equals(act) || "buy_cap".equals(act)) {
-            return PrestigePointsSystem.buyBreakthrough(player);
+            return "§7Level cap breakthroughs are no longer bought here — your cap follows progression automatically.";
         }
         if ("tier".equals(act) || "buy_tier".equals(act) || "unlock_tier".equals(act)) {
             int tierId;

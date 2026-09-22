@@ -1,12 +1,12 @@
 # GUI humanization audit
 
-- Catalog keys: **272** · Referenced from Java: **249**
-- Catalog revision: **Java 195** · **JSON 195** · synced
+- Catalog keys: **277** · Referenced from Java: **252**
+- Catalog revision: **Java 197** · **JSON 197** · synced
 
 ## Summary
 
 - No blocking issues
-- **7** Java fallback lines still use robotic "Click to…" (use `&8Tap…` or catalog keys)
+- **0** Java fallback lines still use robotic "Click to…" (use `&8Tap…` or catalog keys)
 - **22** catalog warnings
 
 ## Icons (materials)
@@ -28,16 +28,6 @@
 - `REQUIRED_PLACEHOLDERS` (2):
   - ✓ `difficulty.titles.item` — has ['perk', 'rarity_line', 'req']
   - ✓ `progression.economy.staff_free` — has ['action']
-
-## Robotic fallback lore (sample)
-
-- ROBOTIC [tools/dmz-adaptive-difficulty-gui/src/main/java/com/dbzlegacy/adaptivedifficulty/bukkit/GuiBoardHelper.java]: &aUnlocked &8· click to purchase
-- ROBOTIC [tools/dmz-adaptive-difficulty-gui/src/main/java/com/dbzlegacy/adaptivedifficulty/bukkit/CmiSparGui.java]: &ePending wars — click to respond
-- ROBOTIC [tools/dmz-adaptive-difficulty-gui/src/main/java/com/dbzlegacy/adaptivedifficulty/bukkit/SparChestGui.java]: &ePending wars — click to respond
-- ROBOTIC [tools/dmz-adaptive-difficulty-gui/src/main/java/com/dbzlegacy/adaptivedifficulty/bukkit/CmiDifficultyGui.java]: &aCurrently equipped &8· click to unequip
-- ROBOTIC [tools/dmz-adaptive-difficulty-gui/src/main/java/com/dbzlegacy/adaptivedifficulty/bukkit/CmiDifficultyGui.java]: &aUnlocked &8· click to equip
-- ROBOTIC [tools/dmz-adaptive-difficulty-gui/src/main/java/com/dbzlegacy/adaptivedifficulty/bukkit/DifficultyChestGui.java]: &aCurrently equipped &8· click to unequip
-- ROBOTIC [tools/dmz-adaptive-difficulty-gui/src/main/java/com/dbzlegacy/adaptivedifficulty/bukkit/DifficultyChestGui.java]: &aUnlocked &8· click to equip
 
 ## Humanize safety
 

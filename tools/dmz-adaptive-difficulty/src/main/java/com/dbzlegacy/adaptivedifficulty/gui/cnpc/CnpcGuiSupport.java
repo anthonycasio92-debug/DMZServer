@@ -379,6 +379,16 @@ public final class CnpcGuiSupport {
         return paintInfoBlock(gui, startY, lines, 0);
     }
 
+    /** Scrollable read-only body under {@link #paintHeader}; returns Y for footer nav. */
+    public static int paintLongReadOnlyBody(ICustomGui gui, int infoY, List<String> lines) {
+        return bodyBelowInfo(paintReadOnlyScroll(gui, infoY, lines));
+    }
+
+    /** Suggested window height for a scroll body ending at {@code rowAfterBody}. */
+    public static int heightForScrollPage(int rowAfterBody) {
+        return suggestHeight(rowAfterBody + ROW_STEP);
+    }
+
     public static IScroll scrollSearchable(ICustomGui gui, int id, int x, int y, int w, int h, String[] items) {
         IScroll scroll = scroll(gui, id, x, y, w, h, items);
         try {

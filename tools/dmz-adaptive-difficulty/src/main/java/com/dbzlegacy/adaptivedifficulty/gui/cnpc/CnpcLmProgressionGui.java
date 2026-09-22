@@ -121,7 +121,10 @@ public final class CnpcLmProgressionGui {
         String title = sectionTitle(page);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, title,
                 staff ? CnpcGuiStyle.HINT_TOGGLE_STAFF : CnpcGuiStyle.HINT_READ_ONLY);
-        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, ProgressionGuiApi.linesForPage(player, page), 2));
+        List<String> sectionLines = ProgressionGuiApi.linesForPage(player, page);
+        int row = sectionLines.size() > 2
+                ? CnpcGuiSupport.paintLongReadOnlyBody(gui, infoY, sectionLines)
+                : CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, sectionLines, 2));
 
         Map<String, String> ph = ProgressionGuiApi.placeholders(player);
         String[] keys = flagsForSection(page);

@@ -30,7 +30,7 @@ public final class CmiPrestigeGui {
             switch (p) {
                 case "turnin", "points" -> openTurnIn(player);
                 case "forms", "form", "effects", "effect" -> openForms(player);
-                case "cap", "breakthrough", "breakthroughs" -> openCap(player);
+                case "cap", "breakthrough", "breakthroughs" -> openMain(player);
                 case "tiers", "tier", "difficulty" -> openTiers(player);
                 default -> {
                     if (p.startsWith("shop") || p.startsWith("skills")) {
@@ -81,9 +81,7 @@ public final class CmiPrestigeGui {
         confirm.addCommand("lmdo prestige confirm 0 main");
         gui.addButton(confirm);
 
-        Map<String, String> vars = Map.of(
-                "points", ph.getOrDefault("points", "0"),
-                "level_cap", ph.getOrDefault("level_cap_fmt", "100000"));
+        Map<String, String> vars = Map.of("points", ph.getOrDefault("points", "0"));
         gui.addButton(navBtn(22, "prestige.main.turnin", Material.GOLD_NUGGET, "&eTurn In Prestiges",
                 List.of("&7Convert held prestiges into points",
                         "&7Balance: &e" + vars.get("points")),
@@ -99,12 +97,6 @@ public final class CmiPrestigeGui {
                 List.of("&7Permanent unlocks with prestige points",
                         "&7T1–2 &e1pt &8· &7T3–4 &e2pt &8· &7T5–6 &e3pt &8· &7T7 &e4pt",
                         "&aPermanent &8· survives prestige"), null, "tiers"));
-        gui.addButton(navBtn(33, "prestige.main.cap", Material.NETHER_STAR, "&bLevel Cap Breakthrough",
-                List.of("&7Raise &fyour &7personal level cap +10k",
-                        "&7Cap: &f" + vars.get("level_cap"),
-                        "&8DMZ maxValue 150000 — soft-lock holds others at their cap"),
-                vars, "cap"));
-
         gui.addButton(hubBtn(40));
         if (ForgeBridge.isStaff(player)) {
             gui.addButton(progBtn(38));
@@ -375,46 +367,6 @@ public final class CmiPrestigeGui {
             un.addCommand("lmdo prestige unmutant 0 forms");
             gui.addButton(un);
         }
-
-        gui.addButton(backBtn(27));
-        gui.addButton(hubBtn(31));
-        gui.addButton(closeBtn(35));
-        fillEmpty(gui, 4);
-        GuiFeedback.openCmi(gui);
-    }
-
-    private static void openCap(Player player) {
-        Map<String, String> ph = ForgeBridge.prestigePlaceholders(player);
-        CMIGui gui = base(player, "&8Prestige · Level Cap", 4);
-        gui.addButton(walletBtn(player, "cap", "&e&lWallet", null));
-
-        int bt = parseInt(ph.get("breakthroughs"), 0);
-        int max = parseInt(ph.get("breakthroughs_max"), 5);
-        boolean canBuy = bt < max;
-        String levelCapFmt = ph.getOrDefault("level_cap_fmt", "100000");
-        String nextCost = ph.getOrDefault("next_breakthrough_cost", "15");
-        Map<String, String> capVars = Map.of(
-                "level_cap", levelCapFmt,
-                "breakthroughs", String.valueOf(bt),
-                "max", String.valueOf(max),
-                "cost", nextCost);
-        CMIGuiButton buy = new CMIGuiButton(22,
-                canBuy ? Material.NETHER_STAR : Material.BEACON,
-                canBuy ? GuiTooltips.name("prestige.cap.buy", "&bBuy Breakthrough", capVars) : "&aCap Maxed");
-        buy.lockField();
-        buy.addLore(List.of("",
-                "&7Your level cap: &f" + levelCapFmt,
-                "&7Breakthroughs: &f" + bt + "&7/&f" + max,
-                "&8DMZ maxValue 150000 — soft-lock holds others at their cap"));
-        if (canBuy) {
-            buy.addLore(GuiTooltips.lore("prestige.cap.buy",
-                    List.of("&7Next: &a+10,000 &7personal cap for &e{cost} &7points"),
-                    capVars));
-            buy.addCommand("lmdo prestige breakthrough 0 cap");
-        } else {
-            buy.addLore("&aMax personal cap (150000)");
-        }
-        gui.addButton(buy);
 
         gui.addButton(backBtn(27));
         gui.addButton(hubBtn(31));

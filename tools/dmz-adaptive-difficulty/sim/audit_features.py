@@ -347,7 +347,10 @@ def main() -> int:
     unlock_tier = read(SRC / "com/dbzlegacy/adaptivedifficulty/tier/UnlockTier.java")
     cmi_gui = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/CmiDifficultyGui.java")
     check("UnlockTier.requirementTip", "requirementTip" in unlock_tier and "requiredPrestige" in unlock_tier)
-    check("GUI shows DMZ or Prestige req", "Need &fDMZ" in cmi_gui and "_req_level" in bridge)
+    check("GUI shows DMZ or Prestige req",
+          "_req_level" in cmi_gui
+          and ("Need &fDMZ" in cmi_gui or "DMZ \" + reqLevel" in cmi_gui or "reqTip" in cmi_gui)
+          and "_req_level" in bridge)
     check("README unlock req UX", "Need DMZ" in readme and "Prestige" in readme)
 
     print("\n=== Ghost scaling fix (1.0.23) ===")
@@ -598,7 +601,7 @@ def main() -> int:
           "fillEmpty(gui, 6)" in cmi_sk159 and "GuiBoardHelper.centeredSlots" in cmi_sk159
           and "fillFrameOnly" not in cmi_sk159)
     check("skills.main.header short Natural · Saga",
-          '"&7Natural · Saga"' in tips_json159)
+          '"&7Train naturally or through the skill saga"' in tips_json159)
     check("Prestige main hub @40 like Spar",
           "put(holder, inv, 40, hubBtn()" in prestige
           and "gui.addButton(hubBtn(40))" in cmi_pr159)
@@ -1122,10 +1125,14 @@ def main() -> int:
           and 'SlotAction.cmd("lm")' not in prog_chest2
           and 'SlotAction.cmd("lm")' not in skills_chest
           and 'SlotAction.cmd("lm")' not in prestige_chest)
-    check("hub buttons use lmdo lm open hub", 'lmdo lm open hub' in rival_chest and 'lmdo lm open hub' in prestige_cmi)
-    check("CMI hub buttons use lmdo", 'lmdo lm open hub' in cmi_rival and 'lmdo lm open hub' in cmi_spar
-          and 'lmdo lm open hub' in cmi_diff and 'lmdo lm open hub' in cmi_skills
-          and 'lmdo lm open hub' in cmi_prog)
+    gui_nav = read(gui_root / "GuiNav.java")
+    check("hub buttons use lmdo lm open hub",
+          'lmdo lm open hub' in rival_chest and 'GuiNav.cmiHubButton' in prestige_cmi)
+    check("CMI hub buttons use lmdo",
+          'GuiNav.cmiHubButton' in cmi_rival and 'GuiNav.cmiHubButton' in cmi_spar
+          and 'GuiNav.cmiHubButton' in cmi_diff and 'GuiNav.cmiHubButton' in cmi_skills
+          and 'GuiNav.cmiHubButton' in cmi_prog
+          and 'lmdo lm open hub' in gui_nav)
     check("no Prestige SlotAction.open", "SlotAction.open(" not in prestige_chest)
     check("inspect android_remove case", 'case "android_remove"' in plugin or '"android_remove"' in plugin.split("openInspectSystem")[1].split("openInspectForUuid")[0])
     check("lmdo skills staff gate",
@@ -1426,10 +1433,10 @@ def main() -> int:
           "onStatChange" in events_pp and "maxAssignableTotal" in events_pp)
     check("Stat soft-lock uses ScreenNotify",
           "ScreenNotify.hint" in events_pp and "pp_stat_cap_title" in events_pp)
-    check("Chest lore maxValue 150000 soft-lock",
-          "DMZ maxValue 150000" in prestige_chest_pp and "Server hardcap stays" not in prestige_chest_pp)
-    check("CMI lore maxValue 150000 soft-lock",
-          "DMZ maxValue 150000" in prestige_cmi_pp and "Server hardcap stays" not in prestige_cmi_pp)
+    check("Chest prestige lore no DMZ maxValue soft-lock tip",
+          "DMZ maxValue 150000" not in prestige_chest_pp)
+    check("CMI prestige lore no DMZ maxValue soft-lock tip",
+          "DMZ maxValue 150000" not in prestige_cmi_pp)
     check("grant staff-gated",
           'if (!StaffAccess.isStaff(player))' in gui_api_pp.split('give_points')[1].split('balance')[0]
           if "give_points" in gui_api_pp else False)
@@ -1462,22 +1469,28 @@ def main() -> int:
           read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/shop/SkillUnlockService.java"))
     check("kicontrol fallback max 1", '"kicontrol", "Ki Control", "§3", 1' in
           read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/shop/SkillUnlockService.java"))
-    check("Chest pages turnin/shop/forms/cap",
+    check("Chest pages turnin/shop/forms (no player cap page)",
           'case "turnin", "points"' in prestige_chest_pp
           and 'p.startsWith("shop")' in prestige_chest_pp
           and 'case "forms", "form"' in prestige_chest_pp
-          and 'case "cap", "breakthrough"' in prestige_chest_pp)
-    check("CMI pages turnin/shop/forms/cap",
+          and 'openCap(' not in prestige_chest_pp
+          and '"Stat Cap"' not in prestige_chest_pp)
+    check("CMI pages turnin/shop/forms (no player cap page)",
           '"turnin", "points"' in prestige_cmi_pp
           and 'p.startsWith("shop")' in prestige_cmi_pp
           and '"forms", "form"' in prestige_cmi_pp
+          and 'openCap(' not in prestige_cmi_pp)
+    check("Cap routes redirect to main",
+          'case "cap", "breakthrough"' in prestige_chest_pp
           and '"cap", "breakthrough"' in prestige_cmi_pp)
     check("CMI uses lmdo prestige",
           'lmdo prestige confirm' in prestige_cmi_pp
           and 'lmdo prestige turnin' in prestige_cmi_pp
-          and 'lmdo prestige breakthrough' in prestige_cmi_pp)
-    check("Hub Prestige tip mentions points shop",
-          "skill/forms shop" in hub_pp and "skill/forms shop" in cmi_hub_pp)
+          and 'lmdo prestige skill' in prestige_cmi_pp)
+    check("Hub Prestige tip mentions skill shop",
+          ("skill shop" in hub_pp.lower() or "Turn-ins, skill shop" in hub_pp)
+          and ("skill shop" in cmi_hub_pp.lower() or "Turn in prestiges" in cmi_hub_pp)
+          and "level-cap" not in cmi_hub_pp.lower())
     check("Papi prestige_points bridge",
           "prestige_points" in forge_bridge and "prestige_level_cap" in forge_bridge)
     check("Prestige skill floor continuous pulse",
