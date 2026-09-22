@@ -240,7 +240,7 @@ public final class CnpcLmProgressionGui {
     private static void paintAndroidConvert(ServerPlayer player, ICustomGui gui) {
         ServerPlayer subject = CnpcGuiSupport.target(player);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, "§aAndroid convert", "§7Double-click a player");
-        int row = infoY;
+        int row = infoY + 4;
         CnpcGuiSupport.button(gui, 62, "§aConvert yourself", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> ProgressionGuiApi.handleDo(player, "android", subject.m_7755_().getString(), "android_convert"),
@@ -255,7 +255,7 @@ public final class CnpcLmProgressionGui {
         boolean staff = StaffAccess.isStaff(player);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, "§cRemove Android",
                 "§7Two-step confirm within 10 seconds");
-        int row = infoY;
+        int row = infoY + 4;
         CnpcGuiSupport.button(gui, 63, "§cRemove on yourself", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> ProgressionGuiApi.handleDo(player, "android_remove", subject.m_7755_().getString(),

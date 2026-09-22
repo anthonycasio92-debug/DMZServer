@@ -16,6 +16,7 @@ import noppes.npcs.api.entity.IEntity;
 import noppes.npcs.api.entity.IPlayer;
 import noppes.npcs.api.gui.IButton;
 import noppes.npcs.api.gui.ICustomGui;
+import noppes.npcs.api.gui.IComponentsScrollableWrapper;
 import noppes.npcs.api.gui.ILabel;
 import noppes.npcs.api.gui.IScroll;
 
@@ -113,14 +114,14 @@ public final class CnpcGuiSupport {
     }
 
     /**
-     * Max list scroll height that fits above footer rows. CNPC list scrolls use their own scrollbar
-     * (hover list + wheel); do not use {@link ICustomGui#getScrollingPanel()} — it breaks Y layout.
+     * Max list scroll height that fits above footer rows. {@code rowsBelowList} = button rows under
+     * the list (actions + nav, or nav only).
      */
-    public static int listScrollHeight(ICustomGui gui, int listY, int actionRowsAboveFooter) {
+    public static int listScrollHeight(ICustomGui gui, int listY, int rowsBelowList) {
         if (gui == null) {
             return SCROLL_LIST_H;
         }
-        int rows = Math.max(0, actionRowsAboveFooter) + 1;
+        int rows = Math.max(1, rowsBelowList);
         int maxBottom = gui.getHeight() - FOOTER_RESERVE - rows * ROW_STEP - 4;
         return Math.max(48, Math.min(SCROLL_LIST_H, maxBottom - listY));
     }
@@ -229,16 +230,23 @@ public final class CnpcGuiSupport {
         }
     }
 
+    /**
+     * Scroll list inside CNPC's {@link ICustomGui#getScrollingPanel()} so the mouse wheel works
+     * anywhere over the list region (main-gui scroll widgets do not receive wheel events).
+     * Buttons/labels stay on the root gui at {@code y} and below; only the list lives in the panel.
+     */
     public static IScroll scroll(ICustomGui gui, int id, int x, int y, int w, int h, String[] items) {
         String[] safe = items == null ? new String[0] : items;
         String[] copy = new String[safe.length];
         for (int i = 0; i < safe.length; i++) {
             copy[i] = safeScrollLine(safe[i]);
         }
-        return gui.addScroll(id, x, y, w, h, copy);
+        IComponentsScrollableWrapper panel = gui.getScrollingPanel();
+        panel.init(x, y, w, h);
+        return panel.addScroll(id, 0, 0, w, h, copy);
     }
 
-    /** Long read-only copy as a scroll list (use wheel while hovering the list). */
+    /** Long read-only copy as a scroll list (wheel over the status/list band). */
     public static int paintReadOnlyScroll(ICustomGui gui, int startY, List<String> lines) {
         return paintInfoBlock(gui, startY, lines, 0);
     }
