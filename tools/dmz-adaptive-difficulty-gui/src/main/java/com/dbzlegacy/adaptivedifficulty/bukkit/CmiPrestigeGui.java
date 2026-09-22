@@ -81,9 +81,7 @@ public final class CmiPrestigeGui {
         confirm.addCommand("lmdo prestige confirm 0 main");
         gui.addButton(confirm);
 
-        Map<String, String> vars = Map.of(
-                "points", ph.getOrDefault("points", "0"),
-                "level_cap", ph.getOrDefault("level_cap_fmt", "100000"));
+        Map<String, String> vars = Map.of("points", ph.getOrDefault("points", "0"));
         gui.addButton(navBtn(22, "prestige.main.turnin", Material.GOLD_NUGGET, "&eTurn In Prestiges",
                 List.of("&7Convert held prestiges into points",
                         "&7Balance: &e" + vars.get("points")),
@@ -99,12 +97,6 @@ public final class CmiPrestigeGui {
                 List.of("&7Permanent unlocks with prestige points",
                         "&7T1–2 &e1pt &8· &7T3–4 &e2pt &8· &7T5–6 &e3pt &8· &7T7 &e4pt",
                         "&aPermanent &8· survives prestige"), null, "tiers"));
-        gui.addButton(navBtn(33, "prestige.main.cap", Material.NETHER_STAR, "&bLevel Cap Breakthrough",
-                List.of("&7Raise &fyour &7personal level cap +10k",
-                        "&7Cap: &f" + vars.get("level_cap"),
-                        "&8DMZ maxValue 150000 — soft-lock holds others at their cap"),
-                vars, "cap"));
-
         gui.addButton(hubBtn(40));
         if (ForgeBridge.isStaff(player)) {
             gui.addButton(progBtn(38));

@@ -972,21 +972,22 @@ public final class ProgressionGuiApi {
         lore.add("§7Completed: §f" + ph.getOrDefault("completed", "0")
                 + " §8| §7Held: §6" + ph.getOrDefault("held", "0")
                 + "§7/§f" + ph.getOrDefault("held_max", "10"));
-        lore.add("§7Points: §e" + ph.getOrDefault("points", "0")
-                + " §8| §7Cap: §f" + ph.getOrDefault("level_cap_fmt", "100000"));
         switch (p) {
             case "turnin", "points" -> {
+                lore.add("§7Points: §e" + ph.getOrDefault("points", "0"));
                 lore.add("§7Turn in §f1§7, §f2§7, §f3§7, §f6§7, or §f9 §7at a time");
                 lore.add("§7Payout: §f3→4 §8· §f6→9 §8· §f9→15 §7points");
                 lore.add("§81–2 give 1 point each (no pack bonus)");
             }
             case "shop", "skills" -> {
+                lore.add("§7Points: §e" + ph.getOrDefault("points", "0"));
                 lore.add("§71 point → +1 skill level · §dPotential Unlock §7→ +2");
                 lore.add("§aPermanent purchases §7· Skill Check only · survive prestige");
                 lore.add("§7Catalog: §f" + ph.getOrDefault("shop_skill_count", "0")
                         + " §7skills · §f" + ph.getOrDefault("shop_pages", "1") + " §7page(s)");
             }
             case "forms", "form", "effects", "effect" -> {
+                lore.add("§7Points: §e" + ph.getOrDefault("points", "0"));
                 lore.add("§aPermanent §7Majin / Mutant: §e"
                         + ph.getOrDefault("form_cost", "5") + " §7points each");
                 lore.add("§7Only one at a time · unpurchase current before switching");
@@ -999,6 +1000,7 @@ public final class ProgressionGuiApi {
                 }
             }
             case "cap", "breakthrough", "breakthroughs" -> {
+                lore.add("§7Points: §e" + ph.getOrDefault("points", "0"));
                 lore.add("§7Breakthroughs: §f" + ph.getOrDefault("breakthroughs", "0")
                         + "§7/§f" + ph.getOrDefault("breakthroughs_max", "5"));
                 lore.add("§7Your personal level cap: §f"
@@ -1018,21 +1020,23 @@ public final class ProgressionGuiApi {
                 }
             }
             case "tiers", "tier", "difficulty" -> {
+                lore.add("§7Points: §e" + ph.getOrDefault("points", "0"));
                 lore.add("§7Buy permanent difficulty tier unlocks with prestige points");
                 lore.add("§7T1–2 §e1pt §8· §7T3–4 §e2pt §8· §7T5–6 §e3pt §8· §7T7 §e4pt");
                 lore.add("§aPermanent §7· survives prestige · unlock T(n-1) first");
                 lore.add("§7Highest purchased: §fT" + ph.getOrDefault("tier_highest_purchased", "0"));
             }
             default -> {
+                lore.add("§7Points: §e" + ph.getOrDefault("points", "0"));
                 lore.add("§7DMZ Level: §f" + ph.getOrDefault("level_fmt", "0")
                         + " §8| §7Need: §e" + ph.getOrDefault("required_fmt", "0"));
-                lore.add("§8Need = (completed+1)×20k · never drops after a completed prestige");
+                lore.add("§8Need = (completed+1)×20k · floor keeps gates after turn-in");
                 if ("true".equalsIgnoreCase(ph.get("ready"))) {
                     lore.add("§aReady to prestige");
                 } else {
                     lore.add("§cNot ready yet");
                 }
-                lore.add("§8Turn-in · Shop · Effects · Tiers · Cap via buttons");
+                lore.add("§8Turn-in · Shop · Effects · Tiers · Breakthrough via command");
             }
         }
         return lore;

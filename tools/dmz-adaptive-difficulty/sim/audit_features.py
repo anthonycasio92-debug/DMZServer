@@ -1241,6 +1241,15 @@ def main() -> int:
           "prestige_need_floor" in prestige_sys and "raiseNeedFloor" in prestige_sys)
     check("completed never from Fabled-only",
           "inferCompletedFromShop" in prestige_sys and "KEY_NEED_FLOOR" in prestige_sys)
+    check("completed not inflated from held skill",
+          "never bump total from it" in prestige_sys
+          and "High-watermark" not in prestige_sys)
+    prog_gui_api = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/ProgressionGuiApi.java")
+    prestige_lines_block = prog_gui_api.split("prestigeLines(", 1)[1].split("handlePrestigeDo", 1)[0]
+    check("prestige main wallet lore omits cap",
+          "§7Cap:" not in prestige_lines_block.split("switch (p)", 1)[0]
+          and "prestige.main.cap" not in prestige_chest_pp.split("private Inventory main")[1].split("private Inventory turnIn")[0]
+          if "private Inventory main" in prestige_chest_pp else False)
     check("prestige admin command registered",
           '"admin"' in read(SRC / "com/dbzlegacy/adaptivedifficulty/command/ProgressionCommands.java")
           and "prestigeAdminAdjust" in

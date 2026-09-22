@@ -93,9 +93,7 @@ public final class PrestigeChestGui implements Listener {
                 GuiTooltips.buttonLore("prestige.main.confirm", confirmDefaults)),
                 SlotAction.act("confirm", "0", "main"));
 
-        Map<String, String> vars = Map.of(
-                "points", ph.getOrDefault("points", "0"),
-                "level_cap", ph.getOrDefault("level_cap_fmt", "100000"));
+        Map<String, String> vars = Map.of("points", ph.getOrDefault("points", "0"));
         put(holder, inv, 22, tipBtn(viewer, "prestige.main.turnin", Material.GOLD_NUGGET, "&eTurn In Prestiges",
                 List.of("&7Convert held prestiges into points",
                         "&7Balance: &e" + vars.get("points")), vars),
@@ -114,12 +112,6 @@ public final class PrestigeChestGui implements Listener {
                         "&7T1–2 &e1pt &8· &7T3–4 &e2pt &8· &7T5–6 &e3pt &8· &7T7 &e4pt",
                         "&aPermanent &8· survives prestige")),
                 SlotAction.page("tiers"));
-        put(holder, inv, 33, tipBtn(viewer, "prestige.main.cap", Material.NETHER_STAR, "&bLevel Cap Breakthrough",
-                List.of("&7Raise &fyour &7personal level cap +10k",
-                        "&7Cap: &f" + vars.get("level_cap"),
-                        "&8DMZ maxValue 150000 — soft-lock holds others at their cap"), vars),
-                SlotAction.page("cap"));
-
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         if (ForgeBridge.isStaff(viewer)) {
             put(holder, inv, 38, tipBtn(viewer, "prestige.main.progression", Material.BREWING_STAND, "&dProgression",

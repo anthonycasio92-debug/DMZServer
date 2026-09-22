@@ -185,8 +185,7 @@ public final class PrestigeSystem {
         int nextRequired = requiredLevel(player);
         String summary = "§aPrestige Level §f" + newCompleted + " §aComplete!\n"
                 + "§7Held: §6" + newHeld + "§7/§f" + MAX_HELD + "\n"
-                + "§7Next needs §e" + DmzRewards.formatWhole(nextRequired) + " §7DMZ levels"
-                + " §8(cap §f" + DmzRewards.formatWhole(PrestigePointsSystem.effectiveMaxLevel(player)) + "§8).";
+                + "§7Next needs §e" + DmzRewards.formatWhole(nextRequired) + " §7DMZ levels.";
         if (!preferGuiFeedback()) {
             send(player, "");
             send(player, LmChat.DIVIDER);
@@ -216,13 +215,11 @@ public final class PrestigeSystem {
         int completed = getCompleted(player);
         int held = getHeld(player);
         int required = requiredLevel(player);
-        int cap = PrestigePointsSystem.effectiveMaxLevel(player);
         send(player, "");
         send(player, "§8── §6Prestige §8──");
         send(player, "§7Completed: §f" + completed + " §8| §7Held: §6" + held + "§7/§f" + MAX_HELD);
         send(player, "§7DMZ Level: §f" + DmzRewards.formatWhole(level)
-                + " §8| §7Need: §e" + DmzRewards.formatWhole(required)
-                + " §8| §7Cap: §f" + DmzRewards.formatWhole(cap));
+                + " §8| §7Need: §e" + DmzRewards.formatWhole(required));
         MutableComponent row = Component.m_237113_("§7")
                 .m_7220_(btn("§a[Prestige]", "/lmdo prestige confirm 0 main", "Confirm prestige purchase"))
                 .m_7220_(Component.m_237113_("  "))
@@ -396,18 +393,13 @@ public final class PrestigeSystem {
             return 0;
         }
 
-        // High-watermark: if DMZ/Fabled still show a higher lifetime, keep it.
-        int fromSkill = Math.max(0, DmzProgression.prestige(player));
-        int best = Math.max(stored, fromSkill);
-        if (best > stored) {
-            setCompletedPublic(player, best);
-        }
-        if (best <= 0 && inferCompletedFromShop(player)) {
+        // DMZ prestige skill = held wallet (Fabled−1), not lifetime completed — never bump total from it.
+        if (stored <= 0 && inferCompletedFromShop(player)) {
             setCompletedPublic(player, 1);
             raiseNeedFloor(player, LEVELS_PER_PRESTIGE);
             return 1;
         }
-        return best;
+        return Math.max(0, stored);
     }
 
     /** Points / breakthroughs / permanent forms imply at least one completed prestige. */
