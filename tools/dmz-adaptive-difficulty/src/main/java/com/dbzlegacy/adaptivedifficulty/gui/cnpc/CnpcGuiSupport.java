@@ -253,12 +253,17 @@ public final class CnpcGuiSupport {
             bodyLines(gui, labelBase, startY, clean, clean.size(), textW);
             return startY + clean.size() * LINE_H + 10;
         }
-        if (maxInline > 0 && clean.size() <= maxInline) {
-            bodyLines(gui, labelBase, startY, clean, maxInline, textW);
+        if (maxInline > 0) {
+            if (clean.size() > maxInline) {
+                List<String> trimmed = new ArrayList<>(clean.subList(0, Math.max(1, maxInline - 1)));
+                trimmed.add("§8…");
+                clean = trimmed;
+            }
+            bodyLines(gui, labelBase, startY, clean, clean.size(), textW);
             return startY + clean.size() * LINE_H + 10;
         }
         int scrollHintId = labelBase == ID_INFO_LABEL_BASE ? ID_STATUS_TAG : ID_NOTICE_SCROLL_HINT;
-        gui.addLabel(scrollHintId, "§8Details — scroll with your mouse wheel", M, startY - 2, textW, 10);
+        gui.addLabel(scrollHintId, "§8Details (long)", M, startY - 2, textW, 10);
         int preferred = Math.min(112, Math.max(56, clean.size() * LINE_H));
         int scrollH = preferred;
         if (gui != null) {
