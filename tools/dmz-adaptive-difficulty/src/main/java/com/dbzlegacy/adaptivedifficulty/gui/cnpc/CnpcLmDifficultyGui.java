@@ -324,8 +324,8 @@ public final class CnpcLmDifficultyGui {
                         }
                     });
         } else {
-            gui.addLabel(20, "§8Equip unlocks after you earn the title.", CnpcGuiSupport.COL_L, row + 4,
-                    CnpcGuiSupport.BTN_W, 14);
+            gui.addLabel(CnpcGuiSupport.ID_INLINE_NOTE, "§8Equip unlocks after you earn the title.",
+                    CnpcGuiSupport.COL_L, row + 4, CnpcGuiSupport.BTN_W, 14);
         }
         row += 28;
         navFooter(player, gui, row, "titles", subject, infoY);
@@ -384,7 +384,8 @@ public final class CnpcLmDifficultyGui {
         }
         if (StaffAccess.isStaff(player) && parentPage == null) {
             row += 24;
-            CnpcGuiSupport.buttonSmall(gui, 98, "§8Staff: /difficulty admin", CnpcGuiSupport.COL_L, row, CnpcGuiSupport.BTN_W, () -> {
+            CnpcGuiSupport.buttonSmall(gui, CnpcGuiSupport.ID_STAFF_EXTRA, "§8Staff: /difficulty admin",
+                    CnpcGuiSupport.COL_L, row, CnpcGuiSupport.BTN_W, () -> {
                 CnpcGuiSupport.pushMenuMessage(player,
                         "§7Full difficulty admin settings: §f/difficulty admin §7(chat command).");
                 open(player, "main");

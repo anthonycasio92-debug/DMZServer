@@ -68,7 +68,7 @@ public final class CnpcLmPrestigeGui {
         CnpcGuiSupport.button(gui, 24, "§6Difficulty tiers", CnpcGuiSupport.COL_L, row, () -> open(player, "tiers"));
         CnpcGuiSupport.button(gui, 25, "§3Cap breakthrough", CnpcGuiSupport.COL_R, row, () -> open(player, "cap"));
         row += 24;
-        footer(player, gui, row, null, player, infoY);
+        footer(player, gui, row, null, infoY);
     }
 
     private static void paintTurnIn(ServerPlayer player, ICustomGui gui) {
@@ -98,7 +98,7 @@ public final class CnpcLmPrestigeGui {
         }
         row = CnpcGuiLayout.paintTwoColumnButtonGrid(player, gui, row, 30, grid, () -> open(player, "turnin"));
         row += 4;
-        footer(player, gui, row, "main");
+        footer(player, gui, row, "main", infoY);
     }
 
     private static String turnInLabel(Map<String, String> ph, int amount, int held) {
@@ -156,7 +156,7 @@ public final class CnpcLmPrestigeGui {
                     () -> open(player, "shop:" + (page + 1)));
         }
         row += CnpcGuiSupport.ROW_STEP + 4;
-        footer(player, gui, row, "main");
+        footer(player, gui, row, "main", infoY);
     }
 
     private static List<String> shopSkillIds(Map<String, String> ph) {
@@ -234,7 +234,7 @@ public final class CnpcLmPrestigeGui {
             gui.addLabel(42, "§7Nothing to unpurchase", CnpcGuiSupport.COL_L, row + 4, CnpcGuiSupport.BTN_W, 14);
         }
         row += CnpcGuiSupport.ROW_STEP;
-        footer(player, gui, row, "main");
+        footer(player, gui, row, "main", infoY);
     }
 
     private static void paintCap(ServerPlayer player, ICustomGui gui) {
@@ -246,7 +246,8 @@ public final class CnpcLmPrestigeGui {
         int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, ProgressionGuiApi.prestigeLines(player, "cap"),
                 CnpcGuiStyle.INFO_INLINE_MAX);
         if (bt >= btMax) {
-            gui.addLabel(20, "§aCap fully raised §8· no more breakthroughs", CnpcGuiSupport.COL_L, row + 4, CnpcGuiSupport.textBandWidth(), 14);
+            gui.addLabel(CnpcGuiSupport.ID_INLINE_NOTE, "§aCap fully raised §8· no more breakthroughs",
+                    CnpcGuiSupport.COL_L, row + 4, CnpcGuiSupport.textBandWidth(), 14);
         } else {
             String cost = ph.getOrDefault("next_breakthrough_cost", "?");
             CnpcGuiSupport.buttonSmallFull(gui, 20, "§aBuy breakthrough · §e" + cost + " pts",
@@ -255,7 +256,7 @@ public final class CnpcLmPrestigeGui {
                             () -> ProgressionGuiApi.handlePrestigeDo(player, "breakthrough", "", "cap"),
                             () -> open(player, "cap")));
         }
-        footer(player, gui, row + 28, "main");
+        footer(player, gui, row + CnpcGuiSupport.ROW_STEP, "main", infoY);
     }
 
     private static void paintTiers(ServerPlayer player, ICustomGui gui) {
@@ -286,31 +287,15 @@ public final class CnpcLmPrestigeGui {
         }
         row = CnpcGuiLayout.paintTwoColumnButtonGrid(player, gui, row, 50, grid, () -> open(player, "tiers"));
         row += 4;
-        footer(player, gui, row, "main");
+        footer(player, gui, row, "main", infoY);
     }
 
-    private static void footer(ServerPlayer player, ICustomGui gui, int row) {
-        footer(player, gui, row, null);
-    }
-
-    private static void footer(
-            ServerPlayer player,
-            ICustomGui gui,
-            int row,
-            String parentPage,
-            ServerPlayer previewSubject,
-            int previewAnchorY) {
+    private static void footer(ServerPlayer player, ICustomGui gui, int row, String parentPage, int infoY) {
         if (parentPage == null || parentPage.isBlank()) {
             CnpcGuiSupport.navSystemRoot(player, gui, row);
         } else {
             CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, parentPage), "§7« Back");
         }
-        if (previewSubject != null && previewAnchorY >= 0) {
-            CnpcGuiSupport.paintPlayerPreviewSlot(previewSubject, gui, previewAnchorY);
-        }
-    }
-
-    private static void footer(ServerPlayer player, ICustomGui gui, int row, String parentPage) {
-        footer(player, gui, row, parentPage, null, -1);
+        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, infoY);
     }
 }

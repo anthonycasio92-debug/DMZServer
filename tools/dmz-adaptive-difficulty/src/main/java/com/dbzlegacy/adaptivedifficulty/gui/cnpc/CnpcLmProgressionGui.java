@@ -106,6 +106,7 @@ public final class CnpcLmProgressionGui {
         }
         row += CnpcGuiSupport.ROW_STEP;
         CnpcGuiSupport.navSystemRoot(player, gui, row);
+        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, infoY);
     }
 
     private static int placeRow(
@@ -153,6 +154,7 @@ public final class CnpcLmProgressionGui {
         }
         row += CnpcGuiSupport.ROW_STEP + 8;
         CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "main"), "§7« Back");
+        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, infoY);
     }
 
     private static int paintBoostEntry(
@@ -210,6 +212,7 @@ public final class CnpcLmProgressionGui {
                 () -> open(player, "boost_panel"));
         row += CnpcGuiSupport.ROW_STEP;
         CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "tp"), "§7« Back");
+        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, infoY);
     }
 
     private static int boostPreset(
@@ -236,6 +239,7 @@ public final class CnpcLmProgressionGui {
                 () -> open(player, "android_remove"));
         row += CnpcGuiSupport.ROW_STEP + 8;
         CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "race"), "§7« Back");
+        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, infoY);
     }
 
     private static void paintAndroidConvert(ServerPlayer player, ICustomGui gui) {
@@ -250,6 +254,7 @@ public final class CnpcLmProgressionGui {
         row += CnpcGuiSupport.ROW_STEP + 4;
         row = paintNameScroll(player, gui, row, "android", "android_convert");
         CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "android_panel"), "§7« Back");
+        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, infoY);
     }
 
     private static void paintAndroidRemove(ServerPlayer player, ICustomGui gui) {
@@ -270,6 +275,7 @@ public final class CnpcLmProgressionGui {
         } else {
             CnpcGuiSupport.navSubmenu(player, gui, row + 8, () -> open(player, "main"), "§7« Back");
         }
+        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, infoY);
     }
 
     /** @return Y row for footer after list (or after empty label). */
@@ -282,7 +288,7 @@ public final class CnpcLmProgressionGui {
         }
         int scrollH = CnpcGuiSupport.listScrollHeight(gui, y, 1);
         IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, CnpcGuiSupport.ID_LIST_SCROLL, CnpcGuiSupport.M, y,
-                CnpcGuiSupport.W - CnpcGuiSupport.M * 2, scrollH, names.toArray(String[]::new));
+                CnpcGuiSupport.textBandWidth(), scrollH, names.toArray(String[]::new));
         scroll.setOnDoubleClick((g, sc) -> {
             g.close();
             int[] sel = sc.getSelection();
@@ -310,6 +316,7 @@ public final class CnpcLmProgressionGui {
                         () -> open(player, "economy")));
         row += CnpcGuiSupport.ROW_STEP + 8;
         CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "main"), "§7« Back");
+        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, infoY);
     }
 
     private static void paintAllFlags(ServerPlayer player, ICustomGui gui) {
@@ -336,6 +343,7 @@ public final class CnpcLmProgressionGui {
                 () -> open(player, "flags_fabled"));
         row += CnpcGuiSupport.ROW_STEP;
         CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "main"), "§7« Back");
+        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, infoY);
     }
 
     private static void paintFabledFlags(ServerPlayer player, ICustomGui gui) {
@@ -358,6 +366,7 @@ public final class CnpcLmProgressionGui {
         }
         row += CnpcGuiSupport.ROW_STEP + 8;
         CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "admin"), "§7« Back");
+        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, infoY);
     }
 
     private static String friendlyFlagLabel(String key, Map<String, String> ph) {

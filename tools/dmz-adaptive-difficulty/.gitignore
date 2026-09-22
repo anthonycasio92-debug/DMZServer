@@ -2,3 +2,4 @@ build/
 base/*.jar
 *.class
 !reference/ki-pool-2.4.115/**/*.class
+libraries/ProfTools*.jar

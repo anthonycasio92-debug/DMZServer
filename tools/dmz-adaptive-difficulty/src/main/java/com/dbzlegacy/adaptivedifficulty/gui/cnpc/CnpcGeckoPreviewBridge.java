@@ -41,6 +41,15 @@ final class CnpcGeckoPreviewBridge {
                 return null;
             }
             Character ch = DmzProgression.character(player);
+            if (ch != null) {
+                try {
+                    var stats = DmzProgression.stats(player);
+                    if (stats != null && stats.getCharacter() != null) {
+                        ch = stats.getCharacter();
+                    }
+                } catch (Throwable ignored) {
+                }
+            }
             String geo = DmzPreviewGeo.resolveModelGeo(ch);
             applyDmzModel(npc, geo, DmzPreviewGeo.SAGA_BASE_ANIM, "idle", "walk", "attack1_1", "hurt", null);
             applyPlayerSkin(npc, player.m_36316_().getName());

@@ -59,6 +59,10 @@ public final class CnpcGuiSupport {
     public static final int ID_CLOSE = 98;
     public static final int ID_REFRESH = 99;
     public static final int ID_ENTITY_PREVIEW = 102;
+    /** Static note label on the same row as an action button (never reuse the button id). */
+    public static final int ID_INLINE_NOTE = 115;
+    /** Extra staff-only control (never {@link #ID_CLOSE}). */
+    public static final int ID_STAFF_EXTRA = 116;
 
     /** Shorter divider so labels do not wrap oddly in CNPC. */
     private static String dividerText() {
@@ -269,6 +273,13 @@ public final class CnpcGuiSupport {
 
     public static void paintPlayerPreviewSlot(ServerPlayer player, ICustomGui gui, int anchorY) {
         CnpcPlayerPreview.paint(player, gui, anchorY);
+    }
+
+    /** Paint preview last (ProfTools-style live player + cursor yaw). */
+    public static void paintSubjectPreview(ServerPlayer subject, ICustomGui gui, int headerInfoY) {
+        if (subject != null && headerInfoY >= 0) {
+            paintPlayerPreviewSlot(subject, gui, headerInfoY);
+        }
     }
 
     public static void bodyLines(ICustomGui gui, int startId, int y, List<String> lines, int maxLines) {

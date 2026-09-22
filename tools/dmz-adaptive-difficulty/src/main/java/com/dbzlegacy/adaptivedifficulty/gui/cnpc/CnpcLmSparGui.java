@@ -84,7 +84,7 @@ public final class CnpcLmSparGui {
         if (!"true".equalsIgnoreCase(ph.get("system_enabled"))) {
             int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of(CnpcGuiStyle.MSG_SPAR_OFF),
                     CnpcGuiStyle.INFO_INLINE_MAX);
-            footer(player, gui, row + 8, null);
+            footer(player, gui, row + 8, null, infoY);
             return;
         }
 
@@ -107,11 +107,11 @@ public final class CnpcLmSparGui {
         row += 24;
         CnpcGuiSupport.button(gui, 26, "§cEnd session", CnpcGuiSupport.COL_L, row, () -> act(player, "end", "", "main"));
         if (StaffAccess.isStaff(player)) {
-            CnpcGuiSupport.buttonSmall(gui, 98, "§cStaff Admin", CnpcGuiSupport.COL_R, row, 95,
+            CnpcGuiSupport.buttonSmall(gui, CnpcGuiSupport.ID_STAFF_EXTRA, "§cStaff Admin", CnpcGuiSupport.COL_R, row, 95,
                     () -> open(player, "admin"));
         }
         row += 24;
-        footer(player, gui, row, null);
+        footer(player, gui, row, null, infoY);
     }
 
     private static void paintMentor(ServerPlayer player, ICustomGui gui) {
@@ -431,10 +431,17 @@ public final class CnpcLmSparGui {
 
     /** {@code parentPage} null on spar main; otherwise Back reopens that page. Main always → LM hub. */
     private static void footer(ServerPlayer player, ICustomGui gui, int row, String parentPage) {
+        footer(player, gui, row, parentPage, -1);
+    }
+
+    private static void footer(ServerPlayer player, ICustomGui gui, int row, String parentPage, int infoY) {
         if (parentPage == null) {
             CnpcGuiSupport.navSystemRoot(player, gui, row);
         } else {
             CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, parentPage), "§7« Back");
+        }
+        if (infoY >= 0) {
+            CnpcGuiSupport.paintSubjectPreview(subject(player), gui, infoY);
         }
     }
 }

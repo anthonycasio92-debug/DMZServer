@@ -9,8 +9,9 @@ import noppes.npcs.api.gui.IEntityDisplay;
 import noppes.npcs.api.wrapper.gui.CustomGuiEntityDisplayWrapper;
 
 /**
- * CNPC {@link IEntityDisplay} player preview (SDU-style right column).
- * Uses entity NBT on the client ({@code entityId = -1}) for dedicated-server sync.
+ * CNPC {@link IEntityDisplay} player preview (ProfTools / SDU-style right column).
+ * Uses the live {@code IPlayer} entity when possible (armor, transforms, forms) and
+ * {@code setFollowingCursor(true)} so rotation tracks the mouse like ProfTools race studio.
  */
 public final class CnpcPlayerPreview {
     /** Right column reserved for the model (buttons must stay left of {@link #contentRightEdge()}). */
@@ -19,8 +20,6 @@ public final class CnpcPlayerPreview {
     /** Gap between button columns and the preview slot. */
     public static final int SLOT_GAP = 8;
 
-    /** CNPC yaw when {@code followCursor=false}: {@code rotation/2 + 180}. {@code 0} ≈ facing the viewer. */
-    private static final int FACE_VIEWER_ROTATION = 0;
     private static final float PREVIEW_SCALE = 0.78f;
 
     private CnpcPlayerPreview() {}
@@ -57,9 +56,9 @@ public final class CnpcPlayerPreview {
             return;
         }
         try {
-            IEntity entity = CnpcGeckoPreviewBridge.previewEntity(player);
+            IEntity entity = NpcAPI.Instance().getIEntity(player);
             if (entity == null) {
-                entity = NpcAPI.Instance().getIEntity(player);
+                entity = CnpcGeckoPreviewBridge.previewEntity(player);
             }
             if (entity == null) {
                 return;
@@ -69,10 +68,9 @@ public final class CnpcPlayerPreview {
             tuneDisplay(display);
             display.setSize(SLOT_W, SLOT_H);
             display.setScale(PREVIEW_SCALE);
-            display.setRotation(FACE_VIEWER_ROTATION);
             display.setBackground(false);
             try {
-                display.setFollowingCursor(false);
+                display.setFollowingCursor(true);
             } catch (Throwable ignored) {
             }
             display.setVisible(true);
