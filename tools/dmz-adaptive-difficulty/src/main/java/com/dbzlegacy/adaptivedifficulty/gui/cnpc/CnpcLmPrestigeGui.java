@@ -38,7 +38,7 @@ public final class CnpcLmPrestigeGui {
                 case "turnin", "points" -> paintTurnIn(pl, gui);
                 case "shop", "skills" -> paintShop(pl, gui, shopPageFinal);
                 case "forms", "effects", "effect" -> paintEffects(pl, gui);
-                case "cap", "breakthrough" -> paintCap(pl, gui);
+                case "cap", "breakthrough" -> paintMain(pl, gui);
                 case "tiers", "tier" -> paintTiers(pl, gui);
                 default -> paintMain(pl, gui);
             }
@@ -59,7 +59,6 @@ public final class CnpcLmPrestigeGui {
         CnpcGuiSupport.button(gui, 23, "§5Effects", CnpcGuiSupport.COL_R, row, () -> open(player, "effects"));
         row += 24;
         CnpcGuiSupport.button(gui, 24, "§6Difficulty tiers", CnpcGuiSupport.COL_L, row, () -> open(player, "tiers"));
-        CnpcGuiSupport.button(gui, 25, "§3Cap breakthrough", CnpcGuiSupport.COL_R, row, () -> open(player, "cap"));
         row += 24;
         footer(player, gui, row, null);
     }

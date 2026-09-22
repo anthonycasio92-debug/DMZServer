@@ -24,20 +24,17 @@ import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Prestige Points shop: turn in held prestiges for points, spend on DMZ skill levels,
- * Permanent Majin / Mutant, and personal level-cap breakthroughs.
+ * Permanent Majin / Mutant, and difficulty-tier unlocks (no level-cap breakthrough shop).
  *
  * <p>Turn-in amounts: {@code 1, 2, 3, 6, 9} only.
- * Points: {@code N + T(N/3)} where {@code T(k)=k(k+1)/2}
- * (3→4, 6→9, 9→15).
+     * Points: {@code N + T(N/3)} bulk bonus plus hoard/turn-in sweeteners (see {@link #pointsForTurnIn}).
  * Skills: 1 point = +1 permanent skill level for Skill Check skills only
  * (Natural + Saga — not ultimates / ki attacks). Survives prestige reset.
  * {@code potentialunlock} is the exception: 1 point = +2 levels.
  * Caps come from {@code skills.json} cost ladders.
  * Majin/Mutant: 5 points each, mutually exclusive; unpurchase the current form
  * before buying the other (no refund, no silent swap).
- * Breakthroughs: raise <b>your</b> DMZ level cap by +10k (max 5 → 150k) so you can
- * level normally into the new cap. Server {@code maxValue} is 150k (client UI/level
- * math); personal soft-locks keep everyone else at 100k. Costs 15, 20, 25, 30, 35.
+ * Playable DMZ level cap is {@link #ABSOLUTE_LEVEL_CAP} (150k) for everyone — Overhaul-aligned.
  * Difficulty tiers: permanent unlock with prestige points —
  * T1–2 = 1pt, T3–4 = 2pt, T5–6 = 3pt, T7 = 4pt ({@code (tier+1)/2}).
  */
@@ -47,7 +44,10 @@ public final class PrestigePointsSystem {
     public static final int MAX_BREAKTHROUGHS = 5;
     public static final int ABSOLUTE_LEVEL_CAP = BASE_LEVEL_CAP + MAX_BREAKTHROUGHS * BREAKTHROUGH_STEP;
     public static final int FORM_COST = 5;
+    /** Base prestige-point cost for the first skill floor purchase (scales up with investment). */
     public static final int SKILL_POINT_COST = 1;
+    public static final int SKILL_COST_TIER_STEP = 5;
+    public static final int SKILL_COST_MAX = 4;
     /** Levels granted per point for Potential Unlock in the prestige shop. */
     public static final int POTENTIAL_UNLOCK_LEVELS_PER_POINT = 2;
     /** Skills shown per prestige shop inventory page. */
@@ -270,10 +270,22 @@ public final class PrestigePointsSystem {
      * {@code N + triangular(N/3)} → 1→1, 2→2, 3→4, 6→9, 9→15.
      */
     public static int pointsForTurnIn(int amount) {
+        return pointsForTurnIn(amount, 0);
+    }
+
+    /**
+     * Points for turning in {@code amount} held prestiges. {@code heldBefore} is wallet size
+     * before the turn-in (rewards hoarding larger packs / higher held wallets).
+     */
+    public static int pointsForTurnIn(int amount, int heldBefore) {
         int n = Math.max(0, amount);
         int packs = n / 3;
         int bonus = packs * (packs + 1) / 2;
-        return n + bonus;
+        int base = n + bonus;
+        int bulk = n >= 9 ? 6 : (n >= 6 ? 3 : (n >= 3 ? 1 : 0));
+        int wallet = Math.max(0, heldBefore);
+        int hoardMult = wallet >= 8 ? 2 : (wallet >= 5 ? 1 : 0);
+        return base + bulk + hoardMult * n;
     }
 
     /**
@@ -295,7 +307,7 @@ public final class PrestigePointsSystem {
         if (want > held) {
             return "§cYou only hold §6" + held + " §cprestige" + (held == 1 ? "" : "s") + ".";
         }
-        int gained = pointsForTurnIn(want);
+        int gained = pointsForTurnIn(want, held);
         int newHeld = held - want;
         PrestigeSystem.setHeldPublic(player, newHeld);
         reducePrestigeClass(player, want);
@@ -446,9 +458,10 @@ public final class PrestigePointsSystem {
         if (purchased >= floorMax) {
             return "§c" + offer.label + " prestige floor is maxed (§f" + floorMax + "§c).";
         }
+        int cost = skillPointCost(offer.id, purchased);
         int points = getPoints(player);
-        if (points < SKILL_POINT_COST) {
-            return "§cNeed §e" + SKILL_POINT_COST + " §cpoint (have §e" + points + "§c).";
+        if (points < cost) {
+            return "§cNeed §e" + cost + " §cpoint" + (cost == 1 ? "" : "s") + " (have §e" + points + "§c).";
         }
         int levelsPerPoint = levelsPerPoint(offer.id);
         int room = Math.max(0, floorMax - purchased);
@@ -456,7 +469,7 @@ public final class PrestigePointsSystem {
             return "§c" + offer.label + " prestige floor is maxed (§f" + floorMax + "§c).";
         }
         int gain = Math.min(levelsPerPoint, room);
-        setPoints(player, points - SKILL_POINT_COST);
+        setPoints(player, points - cost);
         int nextPurchased = Math.min(floorMax, purchased + gain);
         ProgressionData.storedPut(player, KEY_SKILL_PREFIX + offer.id.toLowerCase(Locale.ROOT), nextPurchased);
 
@@ -486,7 +499,7 @@ public final class PrestigePointsSystem {
                 : " §8(live already §f" + liveBefore + "§8)";
         return "§a+" + gain + " §7" + offer.label + " prestige floor §f" + purchased
                 + " §7→ §f" + nextPurchased + liveNote
-                + " §8(§e" + SKILL_POINT_COST + "§8 pt)"
+                + " §8(§e" + cost + "§8 pt)"
                 + "\n§7Points left: §e" + getPoints(player);
     }
 
@@ -496,6 +509,16 @@ public final class PrestigePointsSystem {
             return POTENTIAL_UNLOCK_LEVELS_PER_POINT;
         }
         return 1;
+    }
+
+    /** Point cost for the next prestige-shop floor level (rises every {@link #SKILL_COST_TIER_STEP} levels). */
+    public static int skillPointCost(String skillId, int purchasedLevels) {
+        int bought = Math.max(0, purchasedLevels);
+        int tier = bought / SKILL_COST_TIER_STEP;
+        if (skillId != null && "potentialunlock".equalsIgnoreCase(skillId.trim())) {
+            tier = Math.max(0, tier - 1);
+        }
+        return Math.min(SKILL_COST_MAX, SKILL_POINT_COST + tier);
     }
 
     /** True when the player owns any prestige-shop skill floor ({@code pp_skill_*}). */
@@ -1002,76 +1025,20 @@ public final class PrestigePointsSystem {
         }
     }
 
-    /** Personal DMZ level cap: 100k + breakthroughs×10k (mixin + soft-locks). */
+    /** Personal DMZ level cap (Overhaul max — breakthrough shop removed). */
     public static int effectiveMaxLevel(ServerPlayer player) {
-        return Math.min(ABSOLUTE_LEVEL_CAP,
-                BASE_LEVEL_CAP + getBreakthroughs(player) * BREAKTHROUGH_STEP);
+        return ABSOLUTE_LEVEL_CAP;
     }
 
     public static int effectiveMaxLevel(int breakthroughs) {
-        int n = Math.max(0, Math.min(MAX_BREAKTHROUGHS, breakthroughs));
-        return Math.min(ABSOLUTE_LEVEL_CAP, BASE_LEVEL_CAP + n * BREAKTHROUGH_STEP);
+        return ABSOLUTE_LEVEL_CAP;
     }
 
+    /** @deprecated Level-cap breakthroughs removed — everyone plays to {@link #ABSOLUTE_LEVEL_CAP}. */
     public static String buyBreakthrough(ServerPlayer player) {
-        if (player == null) {
-            return "§cPlayers only.";
-        }
-        int current = getBreakthroughs(player);
-        if (current >= MAX_BREAKTHROUGHS) {
-            return "§cPersonal level cap fully raised (§f"
-                    + DmzRewards.formatWhole(ABSOLUTE_LEVEL_CAP) + "§c).";
-        }
-        int next = current + 1;
-        int cost = breakthroughCost(next);
-        int points = getPoints(player);
-        if (points < cost) {
-            return "§cNeed §e" + cost + " §cpoints for breakthrough §f#" + next
-                    + " §c(have §e" + points + "§c).";
-        }
-        setPoints(player, points - cost);
-        setBreakthroughs(player, next);
-        int newCap = effectiveMaxLevel(player);
-        // Force a live DMZ read so the client/stat screen picks up the raised max.
-        int liveCap = newCap;
-        int liveMaxStats = 0;
-        try {
-            var data = com.dbzlegacy.adaptivedifficulty.calc.DmzProgression.stats(player);
-            if (data != null) {
-                liveCap = Math.max(newCap, data.getConfiguredMaxValue());
-                liveMaxStats = Math.max(0, data.getConfiguredMaxTotalStats());
-                com.dbzlegacy.adaptivedifficulty.progression.DmzSkillUtil.sync(player);
-            }
-        } catch (Throwable ignored) {
-        }
-        try {
-            com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampPrestigeBridge
-                    .syncFromLegacy(player);
-        } catch (Throwable ignored) {
-        }
-        SystemTelemetry.log("prestige_points", "breakthrough", player, null, Map.of(
-                "breakthrough", next,
-                "cap", newCap,
-                "live_cap", liveCap,
-                "live_max_stats", liveMaxStats,
-                "cost", cost,
-                "points", getPoints(player)
-        ));
-        String note = liveCap >= newCap
-                ? ""
-                : "\n§cWarning: live DMZ max still §f" + DmzRewards.formatWhole(liveCap)
-                        + " §c(expected §f" + DmzRewards.formatWhole(newCap)
-                        + "§c) — remount / report if this persists.";
-        return "§aPersonal level cap raised to §f" + DmzRewards.formatWhole(newCap)
-                + " §7(§e-" + cost + " §7points)"
-                + "\n§7Keep leveling with TP / buy stats into the new cap."
-                + "\n§7Future prestige requirements now scale up to §f"
-                + DmzRewards.formatWhole(newCap) + "§7."
-                + "\n§8Others stay soft-locked at their personal cap until they breakthrough too."
-                + "\n§7Breakthrough §f" + next + "§7/§f" + MAX_BREAKTHROUGHS
-                + " · Points left: §e" + getPoints(player)
-                + "\n§7Live DMZ max now: §f" + DmzRewards.formatWhole(liveCap)
-                + note;
+        return "§7Level-cap breakthroughs were removed. Everyone can level to §f"
+                + DmzRewards.formatWhole(ABSOLUTE_LEVEL_CAP)
+                + "§7. Prestige gates use completed count (first 5) then held wallet.";
     }
 
     // ── Login / post-prestige ──────────────────────────────────────────

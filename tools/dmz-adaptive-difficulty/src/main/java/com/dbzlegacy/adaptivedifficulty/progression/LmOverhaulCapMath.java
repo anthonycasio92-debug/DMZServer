@@ -15,7 +15,7 @@ public final class LmOverhaulCapMath {
      * Overhaul Statistics / {@code PrestigeSystem.levelCap} / hex reference at 0 breakthroughs.
      * Stock Overhaul {@code initialLevelCap} is 50000 and is <b>not</b> synced to clients;
      * prestige 0 would show 50k and block Need 60k+. Pin the Overhaul floor to 100k.
-     * Breakthroughs raise the live cap toward {@link PrestigePointsSystem#ABSOLUTE_LEVEL_CAP}.
+     * Playable cap is {@link PrestigePointsSystem#ABSOLUTE_LEVEL_CAP} (no breakthrough shop).
      */
     public static final int OVERHAUL_LEVEL_CAP = PrestigePointsSystem.BASE_LEVEL_CAP;
     public static final int OVERHAUL_ABSOLUTE_LEVEL_CAP = PrestigePointsSystem.ABSOLUTE_LEVEL_CAP;
@@ -72,16 +72,9 @@ public final class LmOverhaulCapMath {
         return OVERHAUL_LEVEL_CAP;
     }
 
-    /**
-     * Live Overhaul {@code levelCap}: personal 100k + 10k×breakthroughs (max 150k).
-     * Held prestige does not change this — 0 breakthroughs stays 100k at held 0 and 1.
-     */
+    /** Live Overhaul {@code levelCap}: pinned to {@link #OVERHAUL_ABSOLUTE_LEVEL_CAP}. */
     public static int overhaulLevelCap(StatsData data) {
-        int personal = personalLevelCap(data);
-        if (personal < OVERHAUL_LEVEL_CAP) {
-            return OVERHAUL_LEVEL_CAP;
-        }
-        return Math.min(OVERHAUL_ABSOLUTE_LEVEL_CAP, personal);
+        return OVERHAUL_ABSOLUTE_LEVEL_CAP;
     }
 
     /**

@@ -904,17 +904,16 @@ public final class ProgressionGuiApi {
         out.put("required_fmt", DmzRewards.formatWhole(required));
         out.put("ready", level >= required && held < PrestigeSystem.maxHeld() ? "true" : "false");
         int points = PrestigePointsSystem.getPoints(player);
-        int breakthroughs = PrestigePointsSystem.getBreakthroughs(player);
         int levelCap = PrestigePointsSystem.effectiveMaxLevel(player);
-        int nextBt = breakthroughs + 1;
-        int nextBtCost = breakthroughs >= PrestigePointsSystem.MAX_BREAKTHROUGHS
-                ? 0 : PrestigePointsSystem.breakthroughCost(nextBt);
         out.put("points", String.valueOf(points));
-        out.put("breakthroughs", String.valueOf(breakthroughs));
-        out.put("breakthroughs_max", String.valueOf(PrestigePointsSystem.MAX_BREAKTHROUGHS));
         out.put("level_cap", String.valueOf(levelCap));
         out.put("level_cap_fmt", DmzRewards.formatWhole(levelCap));
-        out.put("next_breakthrough_cost", String.valueOf(nextBtCost));
+        out.put("prestige_ladder_max", String.valueOf(PrestigeSystem.COMPLETED_LADDER_PRESTIGES));
+        out.put("need_held_phase", completed >= PrestigeSystem.COMPLETED_LADDER_PRESTIGES ? "true" : "false");
+        out.put("need_if_held_0", String.valueOf(PrestigeSystem.requiredLevelForHeld(0)));
+        out.put("need_if_held_1", String.valueOf(PrestigeSystem.requiredLevelForHeld(1)));
+        out.put("need_if_held_2", String.valueOf(PrestigeSystem.requiredLevelForHeld(2)));
+        out.put("need_if_held_3", String.valueOf(PrestigeSystem.requiredLevelForHeld(3)));
         out.put("majin", PrestigePointsSystem.hasMajin(player) ? "true" : "false");
         out.put("mutant", PrestigePointsSystem.hasMutant(player) ? "true" : "false");
         out.put("majin_can_buy", PrestigePointsSystem.canBuyMajin(player) ? "true" : "false");
@@ -945,6 +944,8 @@ public final class ProgressionGuiApi {
             out.put("skill_" + offer.id(), String.valueOf(bought));
             out.put("skill_" + offer.id() + "_max", String.valueOf(offer.maxLevel()));
             out.put("skill_" + offer.id() + "_label", offer.label());
+            out.put("skill_" + offer.id() + "_next_cost",
+                    String.valueOf(PrestigePointsSystem.skillPointCost(offer.id(), bought)));
         }
         out.put("shop_skill_ids", ids.toString());
         out.put("shop_skill_count", String.valueOf(offers.size()));
@@ -952,7 +953,7 @@ public final class ProgressionGuiApi {
         out.put("shop_page_size", String.valueOf(PrestigePointsSystem.SKILL_SHOP_PAGE_SIZE));
         // Turn-in previews (1 / 2 / 3 / 6 / 9 only)
         for (int n : PrestigePointsSystem.TURN_IN_AMOUNTS) {
-            out.put("turnin_" + n + "_points", String.valueOf(PrestigePointsSystem.pointsForTurnIn(n)));
+            out.put("turnin_" + n + "_points", String.valueOf(PrestigePointsSystem.pointsForTurnIn(n, held)));
         }
         out.put("last_spend_ok", ProgressionData.tempGet(player, "pp_last_spend_ok", "false"));
         return out;
@@ -972,15 +973,19 @@ public final class ProgressionGuiApi {
                 + " §8| §7Held: §6" + ph.getOrDefault("held", "0")
                 + "§7/§f" + ph.getOrDefault("held_max", "10"));
         lore.add("§7Points: §e" + ph.getOrDefault("points", "0")
-                + " §8| §7Cap: §f" + ph.getOrDefault("level_cap_fmt", "100000"));
+                + " §8| §7Max level: §f" + ph.getOrDefault("level_cap_fmt", "150000"));
         switch (p) {
             case "turnin", "points" -> {
                 lore.add("§7Turn in §f1§7, §f2§7, §f3§7, §f6§7, or §f9 §7at a time");
-                lore.add("§7Payout: §f3→4 §8· §f6→9 §8· §f9→15 §7points");
-                lore.add("§81–2 give 1 point each (no pack bonus)");
+                lore.add("§7Bulk bonus + extra for high held wallets");
+                for (int n : PrestigePointsSystem.TURN_IN_AMOUNTS) {
+                    lore.add("§8×" + n + " → §e" + ph.getOrDefault("turnin_" + n + "_points", "?") + " §7pts now");
+                }
+                lore.add("§7Turn in to lower next Need (after 5 completed)");
             }
             case "shop", "skills" -> {
-                lore.add("§71 point → +1 skill level · §dPotential Unlock §7→ +2");
+                lore.add("§7Cost rises every §f5 §7floor levels (max §e4 §7pts/hit)");
+                lore.add("§dPotential Unlock §7→ +2 levels per point when affordable");
                 lore.add("§aPermanent purchases §7· Skill Check only · survive prestige");
                 lore.add("§7Catalog: §f" + ph.getOrDefault("shop_skill_count", "0")
                         + " §7skills · §f" + ph.getOrDefault("shop_pages", "1") + " §7page(s)");
@@ -998,23 +1003,9 @@ public final class ProgressionGuiApi {
                 }
             }
             case "cap", "breakthrough", "breakthroughs" -> {
-                lore.add("§7Breakthroughs: §f" + ph.getOrDefault("breakthroughs", "0")
-                        + "§7/§f" + ph.getOrDefault("breakthroughs_max", "5"));
-                lore.add("§7Your personal level cap: §f"
-                        + ph.getOrDefault("level_cap_fmt", "100000"));
-                lore.add("§8Server maxValue is §f150000 §8— soft-lock holds others at their cap");
-                int btCount = 0;
-                try {
-                    btCount = Integer.parseInt(ph.getOrDefault("breakthroughs", "0"));
-                } catch (Exception ignored) {
-                }
-                if (btCount < PrestigePointsSystem.MAX_BREAKTHROUGHS) {
-                    lore.add("§7Next cost: §e" + ph.getOrDefault("next_breakthrough_cost", "15")
-                            + " §7points (+10k cap)");
-                    lore.add("§8Raising cap also raises future prestige Need");
-                } else {
-                    lore.add("§aMax personal cap reached");
-                }
+                lore.add("§7Level-cap breakthroughs were §cremoved§7.");
+                lore.add("§7Everyone can level to §f" + ph.getOrDefault("level_cap_fmt", "150000"));
+                lore.add("§7Prestige Need uses completed ladder, then held wallet.");
             }
             case "tiers", "tier", "difficulty" -> {
                 lore.add("§7Buy permanent difficulty tier unlocks with prestige points");
@@ -1025,13 +1016,19 @@ public final class ProgressionGuiApi {
             default -> {
                 lore.add("§7DMZ Level: §f" + ph.getOrDefault("level_fmt", "0")
                         + " §8| §7Need: §e" + ph.getOrDefault("required_fmt", "0"));
-                lore.add("§8Need = (completed+1)×20k · never drops after a completed prestige");
+                if ("true".equalsIgnoreCase(ph.get("need_held_phase"))) {
+                    lore.add("§8Need by held: §f0→50k §8· §f1→100k §8· §f2→145k §8· §f3+→150k");
+                    lore.add("§7Turn in held prestiges to drop your next gate");
+                } else {
+                    lore.add("§8First §f" + ph.getOrDefault("prestige_ladder_max", "5")
+                            + " §8prestiges: §f(completed+1)×20k §8(max 100k)");
+                }
                 if ("true".equalsIgnoreCase(ph.get("ready"))) {
                     lore.add("§aReady to prestige");
                 } else {
                     lore.add("§cNot ready yet");
                 }
-                lore.add("§8Turn-in · Shop · Effects · Tiers · Cap via buttons");
+                lore.add("§8Turn-in · Shop · Effects · Tiers");
             }
         }
         return lore;

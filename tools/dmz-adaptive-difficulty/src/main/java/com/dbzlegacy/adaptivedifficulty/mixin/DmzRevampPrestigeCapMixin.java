@@ -3,7 +3,10 @@ package com.dbzlegacy.adaptivedifficulty.mixin;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulCapMath;
 import com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulPrestigeIntegration;
+import com.dbzlegacy.adaptivedifficulty.progression.LmStatsDataAccess;
+import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeSystem;
 import com.dragonminez.common.stats.StatsData;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.fml.ModList;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -12,9 +15,8 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * LM owns personal playable max stat total (100k + 10k×breakthroughs, max 150k).
- * Overhaul {@code levelCap} follows that personal cap so prestige 0 is 100k
- * (not stock 50k) and held 1 + 0 breakthroughs stays 100k (not 150k).
+ * LM pins Overhaul playable max at 150k (no breakthrough shop). Prestige eligibility
+ * uses Legacy Mechanics Need (20k ladder → held-based gates), not “must fill cap”.
  * {@code hexStatReference} follows the same cap. Playable totals stay
  * {@link com.dbzlegacy.adaptivedifficulty.mixin.StatsDataMixin} + this
  * {@code maxAssignableTotal} + TP/stat soft-locks.
@@ -60,14 +62,13 @@ public abstract class DmzRevampPrestigeCapMixin {
             cir.setReturnValue(false);
             return;
         }
-        // Native Overhaul gates on stock 50k / pinned 150k. 0-breakthrough players
-        // max at 100k and could never prestige. Use the personal cap instead.
         if (data == null) {
             return;
         }
         try {
-            int cap = LmOverhaulCapMath.overhaulLevelCap(data);
-            cir.setReturnValue(data.getLevel() >= cap);
+            ServerPlayer sp = LmStatsDataAccess.serverPlayer(data);
+            int need = sp != null ? PrestigeSystem.requiredLevel(sp) : LmOverhaulCapMath.overhaulLevelCap(data);
+            cir.setReturnValue(data.getLevel() >= need);
         } catch (Throwable ignored) {
         }
     }

@@ -22,15 +22,19 @@ import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Port of {@code Prestige NPC.js} purchase logic as {@code /prestige} chat GUI.
- * Cost = DMZ level gate {@code (completed+1) * 20000}, capped at the player's
- * personal level cap (100k base, raised by prestige-point breakthroughs toward 150k).
+ * Level gates: first five lifetime prestiges use {@code (completed+1)×20k} up to 100k;
+ * after that, Need follows held wallet (50k / 100k / 145k / 150k). Playable cap is 150k
+ * (Overhaul — no breakthrough shop).
  *
  * <p><b>Lifetime completed</b> never drops when held/Fabled Prestige is turned in —
  * otherwise Need would snap back to 20k after a completed prestige.
  */
 public final class PrestigeSystem {
     private static final int LEVELS_PER_PRESTIGE = 20_000;
-    private static final int MAX_REQUIRED_LEVEL = 100_000;
+    /** First {@value} completed prestiges use the 20k ladder (max Need 100k). */
+    public static final int COMPLETED_LADDER_PRESTIGES = 5;
+    private static final int MAX_LADDER_REQUIRED = 100_000;
+    private static final int[] HELD_REQUIRED_LEVELS = {50_000, 100_000, 145_000, 150_000};
     private static final int MAX_HELD = 10;
     private static final long CONFIRM_MS = 10_000L;
     /** Live Prestige NPC.js — held tokens live on CNPC faction 4. */
@@ -186,7 +190,7 @@ public final class PrestigeSystem {
         String summary = "§aPrestige Level §f" + newCompleted + " §aComplete!\n"
                 + "§7Held: §6" + newHeld + "§7/§f" + MAX_HELD + "\n"
                 + "§7Next needs §e" + DmzRewards.formatWhole(nextRequired) + " §7DMZ levels"
-                + " §8(cap §f" + DmzRewards.formatWhole(PrestigePointsSystem.effectiveMaxLevel(player)) + "§8).";
+                + " §8(max level §f" + DmzRewards.formatWhole(PrestigePointsSystem.effectiveMaxLevel(player)) + "§8).";
         if (!preferGuiFeedback()) {
             send(player, "");
             send(player, LmChat.DIVIDER);
@@ -216,13 +220,12 @@ public final class PrestigeSystem {
         int completed = getCompleted(player);
         int held = getHeld(player);
         int required = requiredLevel(player);
-        int cap = PrestigePointsSystem.effectiveMaxLevel(player);
         send(player, "");
         send(player, "§8── §6Prestige §8──");
         send(player, "§7Completed: §f" + completed + " §8| §7Held: §6" + held + "§7/§f" + MAX_HELD);
         send(player, "§7DMZ Level: §f" + DmzRewards.formatWhole(level)
                 + " §8| §7Need: §e" + DmzRewards.formatWhole(required)
-                + " §8| §7Cap: §f" + DmzRewards.formatWhole(cap));
+                + " §8| §7Max: §f" + DmzRewards.formatWhole(PrestigePointsSystem.effectiveMaxLevel(player)));
         MutableComponent row = Component.m_237113_("§7")
                 .m_7220_(btn("§a[Prestige]", "/lmdo prestige confirm 0 main", "Confirm prestige purchase"))
                 .m_7220_(Component.m_237113_("  "))
@@ -310,29 +313,48 @@ public final class PrestigeSystem {
     }
 
     /**
-     * Next prestige DMZ level gate for {@code player}: {@code (completed+1)×20000},
-     * raised to the lifetime Need floor (so completed prestiges never snap Need back
-     * to 20k after turn-in), then capped at personal breakthrough ceiling (100k…150k).
+     * Next prestige DMZ level gate. First five completed use {@code (completed+1)×20k}
+     * (max 100k) with a lifetime floor so turn-in does not snap Need backward. After five
+     * completed, Need follows held wallet (turn in prestiges to lower the next gate).
      */
     public static int requiredLevel(ServerPlayer player) {
         if (player == null) {
-            return requiredLevel(0, MAX_REQUIRED_LEVEL);
+            return requiredLevelForCompleted(0);
         }
         int cap = PrestigePointsSystem.effectiveMaxLevel(player);
-        int fromCompleted = requiredLevel(getCompleted(player), cap);
-        int floor = getNeedFloor(player);
-        return Math.min(cap, Math.max(fromCompleted, floor));
+        int completed = getCompleted(player);
+        if (completed < COMPLETED_LADDER_PRESTIGES) {
+            int ladder = requiredLevelForCompleted(completed);
+            int floor = getNeedFloor(player);
+            return Math.min(cap, Math.max(ladder, floor));
+        }
+        return Math.min(cap, requiredLevelForHeld(getHeld(player)));
     }
 
-    /** @deprecated prefer {@link #requiredLevel(ServerPlayer)} — uses absolute 150k ceiling. */
-    public static int requiredLevel(int currentCompleted) {
-        return requiredLevel(currentCompleted, PrestigePointsSystem.ABSOLUTE_LEVEL_CAP);
-    }
-
-    public static int requiredLevel(int currentCompleted, int personalCap) {
-        int cap = personalCap > 0 ? personalCap : MAX_REQUIRED_LEVEL;
+    /** Ladder phase only — {@code (completed+1)×20k}, max 100k. */
+    public static int requiredLevelForCompleted(int currentCompleted) {
         int required = Math.max(0, currentCompleted + 1) * LEVELS_PER_PRESTIGE;
-        return Math.min(cap, required);
+        return Math.min(MAX_LADDER_REQUIRED, required);
+    }
+
+    /** Post-ladder phase — keyed on held wallet before the next purchase. */
+    public static int requiredLevelForHeld(int held) {
+        int h = Math.max(0, Math.min(MAX_HELD, held));
+        if (h >= 3) {
+            return HELD_REQUIRED_LEVELS[3];
+        }
+        return HELD_REQUIRED_LEVELS[h];
+    }
+
+    /** @deprecated prefer {@link #requiredLevel(ServerPlayer)} */
+    public static int requiredLevel(int currentCompleted) {
+        return requiredLevelForCompleted(currentCompleted);
+    }
+
+    /** @deprecated prefer {@link #requiredLevel(ServerPlayer)} */
+    public static int requiredLevel(int currentCompleted, int personalCap) {
+        int cap = personalCap > 0 ? personalCap : PrestigePointsSystem.ABSOLUTE_LEVEL_CAP;
+        return Math.min(cap, requiredLevelForCompleted(currentCompleted));
     }
 
     public static int maxHeld() {
@@ -416,9 +438,6 @@ public final class PrestigeSystem {
             if (PrestigePointsSystem.getPoints(player) > 0) {
                 return true;
             }
-            if (PrestigePointsSystem.getBreakthroughs(player) > 0) {
-                return true;
-            }
             if (PrestigePointsSystem.hasMajin(player) || PrestigePointsSystem.hasMutant(player)) {
                 return true;
             }
@@ -482,7 +501,7 @@ public final class PrestigeSystem {
             return;
         }
         int cap = PrestigePointsSystem.effectiveMaxLevel(player);
-        tag.m_128405_(KEY_NEED_FLOOR, requiredLevel(completed, cap));
+        tag.m_128405_(KEY_NEED_FLOOR, Math.min(cap, requiredLevelForCompleted(completed)));
     }
 
     public static int getHeld(ServerPlayer player) {

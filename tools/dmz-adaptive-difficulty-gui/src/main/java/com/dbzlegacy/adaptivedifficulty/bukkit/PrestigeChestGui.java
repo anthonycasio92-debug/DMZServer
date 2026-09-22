@@ -114,11 +114,6 @@ public final class PrestigeChestGui implements Listener {
                         "&7T1–2 &e1pt &8· &7T3–4 &e2pt &8· &7T5–6 &e3pt &8· &7T7 &e4pt",
                         "&aPermanent &8· survives prestige")),
                 SlotAction.page("tiers"));
-        put(holder, inv, 33, tipBtn(viewer, "prestige.main.cap", Material.NETHER_STAR, "&bLevel Cap Breakthrough",
-                List.of("&7Raise &fyour &7personal level cap +10k",
-                        "&7Cap: &f" + vars.get("level_cap"),
-                        "&8DMZ maxValue 150000 — soft-lock holds others at their cap"), vars),
-                SlotAction.page("cap"));
 
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         if (ForgeBridge.isStaff(viewer)) {
@@ -383,36 +378,14 @@ public final class PrestigeChestGui implements Listener {
 
         putWallet(holder, inv, viewer, subject, "cap", "&e&lWallet", null);
 
-        int bt = parseInt(ph.get("breakthroughs"), 0);
-        int max = parseInt(ph.get("breakthroughs_max"), 5);
-        boolean canBuy = bt < max;
-        String levelCapFmt = ph.getOrDefault("level_cap_fmt", "100000");
-        String nextCost = ph.getOrDefault("next_breakthrough_cost", "15");
-        Map<String, String> capVars = Map.of(
-                "level_cap", levelCapFmt,
-                "breakthroughs", String.valueOf(bt),
-                "max", String.valueOf(max),
-                "cost", nextCost);
+        String levelCapFmt = ph.getOrDefault("level_cap_fmt", "150000");
         List<String> lore = new ArrayList<>();
         lore.add("");
-        lore.add("&7Your level cap: &f" + levelCapFmt);
-        lore.add("&7Breakthroughs: &f" + bt + "&7/&f" + max);
-        lore.add("&8DMZ maxValue 150000 — soft-lock holds others at their cap");
-        if (canBuy) {
-            lore.addAll(GuiTooltips.lore("prestige.cap.buy",
-                    List.of("&7Next: &a+10,000 &7personal cap for &e{cost} &7points"),
-                    capVars));
-            lore.add("&8Then keep leveling with TP into the new cap");
-            lore.add("&8Future prestige Need scales up to your new cap");
-            lore.add("&8Costs: 15 → 20 → 25 → 30 → 35");
-        } else {
-            lore.add("&aMax personal cap (150000)");
-        }
-        put(holder, inv, 22, item(
-                canBuy ? Material.NETHER_STAR : Material.BEACON,
-                canBuy ? GuiTooltips.name("prestige.cap.buy", "&bBuy Breakthrough", capVars) : "&aCap Maxed",
-                lore),
-                canBuy ? SlotAction.act("breakthrough", "0", "cap") : null);
+        lore.add("&7Max DMZ level: &f" + levelCapFmt);
+        lore.add("&8Level-cap breakthroughs were removed.");
+        lore.add("&7Prestige Need: first 5 completed use 20k ladder (max 100k),");
+        lore.add("&7then held wallet gates (50k / 100k / 145k / 150k).");
+        put(holder, inv, 22, item(Material.BEACON, "&ePrestige level gates", lore), null);
 
         put(holder, inv, 27, backBtn(), SlotAction.page("main"));
         put(holder, inv, 31, hubBtn(), SlotAction.cmd("lmdo lm open hub"));

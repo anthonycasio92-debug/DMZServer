@@ -146,18 +146,10 @@ public final class PersonalLevelCapMirror {
                 }
             }
         }
-        return PrestigePointsSystem.BASE_LEVEL_CAP;
+        return PrestigePointsSystem.ABSOLUTE_LEVEL_CAP;
     }
 
     private static int inferCapFromBreakthroughs(Player player) {
-        CompoundTag tag = PersistentDataAccess.get(player);
-        int bt = PersistentDataAccess.getInt(player, ROOT_BREAKTHROUGHS, -1);
-        if (bt < 0 && tag.m_128441_(KEY_BREAKTHROUGHS)) {
-            bt = tag.m_128451_(KEY_BREAKTHROUGHS);
-        }
-        if (bt >= 0) {
-            return PrestigePointsSystem.effectiveMaxLevel(bt);
-        }
-        return 0;
+        return PrestigePointsSystem.ABSOLUTE_LEVEL_CAP;
     }
 }
