@@ -15,7 +15,7 @@ import net.minecraft.server.level.ServerPlayer;
  * Port of {@code DMZ Energy.js} — DMZ <b>ki pool</b> ↔ Fabled mana.
  * <p>
  * Uses {@code Resources.getCurrentEnergy} and the canonical
- * {@code DmzResourcePoolClamp.actualMaxEnergy} (live ki × Overhaul scale once).
+ * {@code DmzResourcePoolClamp.actualMaxEnergy} (live ki; Overhaul scale is native only).
  * Never raises Fabled max to an overflowing current.
  * Fabled {@code updatePlayerStat} recalculates {@code maxMana} from class mana (often 0)
  * and overwrites field writes — re-apply on the next Bukkit tick.

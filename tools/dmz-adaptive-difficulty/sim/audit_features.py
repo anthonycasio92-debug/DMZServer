@@ -1383,12 +1383,13 @@ def main() -> int:
     check("ki-pool-2.4.115 reference slice present",
           (ki_ref / "com/dbzlegacy/adaptivedifficulty/progression/DmzResourcePoolClamp.class").is_file()
           and (ki_ref / "com/dbzlegacy/adaptivedifficulty/mixin/StatsDataHudPoolMaxMixin.class").is_file())
-    check("canonical actualMaxEnergy/Stamina (2.4.115 compile stub)",
+    check("canonical actualMaxEnergy/Stamina (Overhaul-only pool scale)",
           "actualMaxStamina" in pool_clamp
-          and "applyOverhaulScale" in pool_clamp
+          and "applyOverhaulScale" not in pool_clamp
           and "isReadingNativeMax" in pool_clamp
           and "displayMaxEnergy" in pool_clamp
-          and "data.getMaxEnergy()" in pool_clamp)
+          and "data.getMaxEnergy()" in pool_clamp
+          and "Overhaul owns pool scale" in pool_clamp)
     hud_pool = read(SRC / "com/dbzlegacy/adaptivedifficulty/mixin/StatsDataHudPoolMaxMixin.java")
     check("HUD mixin registers prestige-aware getMax*",
           '"StatsDataHudPoolMaxMixin"' in mixins_json

@@ -16,14 +16,15 @@ import net.minecraft.server.level.ServerPlayer;
 /**
  * One prestige-aware ki/stamina maximum used by HUD, Fabled, clamps, and Overhaul sync.
  *
- * <p>{@code actualMaxEnergy}/{@code actualMaxStamina} = native {@code getMax*} (Iron
- * {@code max_mana} rejected) × Overhaul {@code scaleMultiplier} once, with HUD-formula
- * fallback when native is stubbed (Mohist null {@code player} field). ENE/STM stay out of
- * {@code getTotalMultiplier} so prestige scale is applied only here (+ HUD mixin below).
+ * <p>{@code actualMaxEnergy}/{@code actualMaxStamina} = live native {@code getMax*} (Iron
+ * {@code max_mana} rejected), with HUD-formula fallback when native is stubbed (Mohist null
+ * {@code player} field). Overhaul {@code scaleMultiplier} applies inside dmzrevamp / DMZ
+ * getters — LM must not multiply again (2.4.85). ENE/STM stay out of combat
+ * {@code getTotalMultiplier} so prestige is not copied onto combat stats twice either.
  *
  * <p>{@link com.dbzlegacy.adaptivedifficulty.mixin.StatsDataHudPoolMaxMixin} replaces
  * {@code getMaxEnergy}/{@code getMaxStamina} returns with these canonical caps so the bar
- * matches clamp/Fabled. Native reads use {@link #isReadingNativeMax()} to avoid double scale.
+ * matches clamp/Fabled. Native reads use {@link #isReadingNativeMax()} to avoid recursion.
  *
  * <p>Currents clamp to those maxima only — never to the unscaled HUD reconstruction
  * (2.4.93) and never by raising the advertised max to the overflowing current.
@@ -43,30 +44,12 @@ public final class DmzResourcePoolClamp {
         return Boolean.TRUE.equals(READING_NATIVE.get());
     }
 
-    /** Multiply a native / HUD-formula pool by Overhaul {@code scaleMultiplier} once. */
-    public static float applyOverhaulScale(StatsData data, float base) {
-        if (!Float.isFinite(base) || base <= POWER_RELEASE_FLOOR) {
-            return base;
-        }
-        try {
-            double scale = LmOverhaulPrestigeIntegration.combatScaleMultiplier(data);
-            if (Double.isFinite(scale) && scale > 1.000_001d) {
-                float scaled = (float) (base * scale);
-                if (Float.isFinite(scaled) && scaled > POWER_RELEASE_FLOOR) {
-                    return scaled;
-                }
-            }
-        } catch (Throwable ignored) {
-        }
-        return base;
-    }
-
-    /** Authoritative prestige-aware ki cap (single scale; see {@link #actualMax}). */
+    /** Authoritative ki cap — native Overhaul-scaled {@code getMaxEnergy} (see {@link #actualMax}). */
     public static float actualMaxEnergy(StatsData data) {
         return actualMax(data, true);
     }
 
-    /** Authoritative prestige-aware stamina cap (single scale; see {@link #actualMax}). */
+    /** Authoritative stamina cap — native Overhaul-scaled {@code getMaxStamina}. */
     public static float actualMaxStamina(StatsData data) {
         return actualMax(data, false);
     }
@@ -83,7 +66,7 @@ public final class DmzResourcePoolClamp {
 
     /**
      * Live DMZ ki/stamina cap: native {@code getMax*} unless Iron-contaminated,
-     * otherwise the HUD formula. Prestige scale is applied exactly once.
+     * otherwise the HUD formula. No LM prestige multiply — Overhaul owns pool scale.
      */
     private static float actualMax(StatsData data, boolean energy) {
         if (data == null) {
@@ -94,18 +77,18 @@ public final class DmzResourcePoolClamp {
             nativeMax = 0f;
         }
         if (Float.isFinite(nativeMax) && nativeMax > POWER_RELEASE_FLOOR) {
-            return applyOverhaulScale(data, nativeMax);
+            return nativeMax;
         }
         try {
             float hud = hudFormulaMax(data, energy);
             if (Float.isFinite(hud) && hud > POWER_RELEASE_FLOOR) {
-                return applyOverhaulScale(data, hud);
+                return hud;
             }
         } catch (Throwable ignored) {
         }
         float fallback = investedFallback(data, energy);
         if (fallback > POWER_RELEASE_FLOOR) {
-            return applyOverhaulScale(data, fallback);
+            return fallback;
         }
         return 0f;
     }

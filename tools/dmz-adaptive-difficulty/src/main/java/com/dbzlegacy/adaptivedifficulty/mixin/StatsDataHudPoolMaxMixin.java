@@ -10,9 +10,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * XenoverseHUD / AlternativeHUD call {@code getMaxEnergy}/{@code getMaxStamina} locally.
- * {@code ResourceSyncS2C} only sends current. Native getters omit Overhaul
- * {@code scaleMultiplier} (ENE/STM stay out of {@code getTotalMultiplier}), so a
- * prestige-scaled current (18k) paints as 300% of an unscaled 6k bar.
+ * {@code ResourceSyncS2C} only sends current. Mohist / Iron can disagree with the HUD
+ * formula; {@link DmzResourcePoolClamp} picks one canonical max (native Overhaul-scaled
+ * {@code getMax*} when valid). LM does not apply {@code scaleMultiplier} again.
  *
  * <p>Replace DMZ return with {@link DmzResourcePoolClamp#actualMaxEnergy} /
  * {@link DmzResourcePoolClamp#actualMaxStamina} so HUD, clamps, and Fabled share one cap.
