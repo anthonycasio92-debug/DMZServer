@@ -616,18 +616,33 @@ final class GuiBoardHelper {
         final long expiresAt;
         final boolean online;
         final String kind;
+        /** Duel length in minutes when {@link #isChallenge()}. */
+        final int duelMinutes;
 
         PendingInvite(String uuid, String name, boolean incoming, long expiresAt, boolean online) {
-            this(uuid, name, incoming, expiresAt, online, "");
+            this(uuid, name, incoming, expiresAt, online, "", 0);
         }
 
         PendingInvite(String uuid, String name, boolean incoming, long expiresAt, boolean online, String kind) {
+            this(uuid, name, incoming, expiresAt, online, kind, 0);
+        }
+
+        PendingInvite(
+                String uuid,
+                String name,
+                boolean incoming,
+                long expiresAt,
+                boolean online,
+                String kind,
+                int duelMinutes
+        ) {
             this.uuid = uuid == null ? "" : uuid;
             this.name = name == null || name.isBlank() ? "?" : name;
             this.incoming = incoming;
             this.expiresAt = Math.max(0L, expiresAt);
             this.online = online;
             this.kind = kind == null ? "" : kind.trim();
+            this.duelMinutes = Math.max(0, duelMinutes);
         }
 
         boolean isMentorBond() {
@@ -667,13 +682,18 @@ final class GuiBoardHelper {
             if (p.length < 3) {
                 continue;
             }
+            String kind = p.length > 5 ? p[5] : "";
+            int mins = "challenge".equalsIgnoreCase(kind) && p.length > 6
+                    ? parseIntSafe(p[6])
+                    : 0;
             out.add(new PendingInvite(
                     p[0],
                     p[1],
                     "IN".equalsIgnoreCase(p[2]),
                     parseLongSafe(p.length > 3 ? p[3] : "0"),
                     "1".equals(p.length > 4 ? p[4] : "0"),
-                    p.length > 5 ? p[5] : ""
+                    kind,
+                    mins
             ));
         }
         return out;
@@ -696,10 +716,16 @@ final class GuiBoardHelper {
             if (inv.incoming) {
                 lore.add("&c&l◀ INCOMING DUEL");
                 lore.add("&7From &f" + inv.name);
+                if (inv.duelMinutes > 0) {
+                    lore.add("&7Length &f" + inv.duelMinutes + " min");
+                }
                 lore.addAll(tips(player, "&eClick to Accept / Decline"));
             } else {
                 lore.add("&6&l▶ OUTGOING — YOU SENT THIS");
                 lore.add("&7To &f" + inv.name);
+                if (inv.duelMinutes > 0) {
+                    lore.add("&7Length &f" + inv.duelMinutes + " min");
+                }
                 lore.add("&7Waiting for them to accept");
                 lore.addAll(tips(player, "&eClick to Cancel send"));
             }

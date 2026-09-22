@@ -156,10 +156,10 @@ public final class CnpcLmRivalGui {
             pendingCount = 0;
         }
         String pendingLabel = pendingCount > 0
-                ? "§6Pending (" + pendingCount + ")"
-                : "§6Pending requests";
+                ? "§6Pending declares (" + pendingCount + ")"
+                : "§6Pending declares";
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Actions"),
-                "§7Accept or decline from Pending · remove from your rival list");
+                "§7Respond on Pending declares · remove from rival list profile");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, RivalGuiApi.linesForPage(who, "actions"),
                         CnpcGuiStyle.INFO_INLINE_MAX));
         CnpcGuiSupport.button(gui, 20, "§eDeclare…", CnpcGuiSupport.COL_L, row, () -> open(player, "pick_declare"));
@@ -178,8 +178,8 @@ public final class CnpcLmRivalGui {
 
     private static void paintPending(ServerPlayer player, ICustomGui gui) {
         ServerPlayer who = subject(player);
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Pending"),
-                CnpcGuiStyle.HINT_CLICK_INVITE);
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Pending declares"),
+                CnpcGuiStyle.HINT_PENDING_BOARD);
         int listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBeforePickList(gui, infoY,
                 RivalGuiApi.linesForPage(who, "pending"), 2));
         List<String> cards = RivalGuiApi.pendingInviteCards(who);
@@ -190,7 +190,8 @@ public final class CnpcLmRivalGui {
             int rowsBelow = 1;
             int bandY = listY + 14;
             int scrollH = CnpcGuiSupport.listScrollHeight(gui, bandY, rowsBelow);
-            IScroll scroll = CnpcGuiSupport.scrollPickList(gui, listY, rowsBelow, CnpcGuiSupport.cardLabels(cards, 1));
+            IScroll scroll = CnpcGuiSupport.scrollPickList(gui, listY, rowsBelow,
+                    CnpcGuiSupport.pendingCardLabels(cards, false));
             scroll.setOnClick((g, sc) -> {
                 int[] sel = sc.getSelection();
                 if (sel == null || sel.length == 0 || sel[0] < 0 || sel[0] >= cards.size()) {
@@ -300,10 +301,10 @@ public final class CnpcLmRivalGui {
             pendingCount = 0;
         }
         String pendingLabel = pendingCount > 0
-                ? "§6Pending (" + pendingCount + ")"
-                : "§6Pending requests";
+                ? "§6Pending duels (" + pendingCount + ")"
+                : "§6Pending duels";
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Challenge"),
-                "§7Accept · decline · cancel from Pending");
+                "§7Duels only — rivalry declares live under Actions");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, RivalGuiApi.challengeLines(who),
                         CnpcGuiStyle.INFO_INLINE_MAX));
         CnpcGuiSupport.button(gui, 20, "§eSend challenge…", CnpcGuiSupport.COL_L, row, () -> open(player, "pick_challenge"));
@@ -318,7 +319,7 @@ public final class CnpcLmRivalGui {
     private static void paintChallengePending(ServerPlayer player, ICustomGui gui) {
         ServerPlayer who = subject(player);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Pending duels"),
-                CnpcGuiStyle.HINT_CLICK_INVITE);
+                CnpcGuiStyle.HINT_PENDING_BOARD);
         int listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBeforePickList(gui, infoY,
                 RivalGuiApi.pendingChallengeLines(who), 2));
         List<String> cards = RivalGuiApi.pendingChallengeCards(who);
@@ -329,7 +330,8 @@ public final class CnpcLmRivalGui {
             int rowsBelow = 1;
             int bandY = listY + 14;
             int scrollH = CnpcGuiSupport.listScrollHeight(gui, bandY, rowsBelow);
-            IScroll scroll = CnpcGuiSupport.scrollPickList(gui, listY, rowsBelow, CnpcGuiSupport.cardLabels(cards, 1));
+            IScroll scroll = CnpcGuiSupport.scrollPickList(gui, listY, rowsBelow,
+                    CnpcGuiSupport.pendingCardLabels(cards, true));
             scroll.setOnClick((g, sc) -> {
                 int[] sel = sc.getSelection();
                 if (sel == null || sel.length == 0 || sel[0] < 0 || sel[0] >= cards.size()) {

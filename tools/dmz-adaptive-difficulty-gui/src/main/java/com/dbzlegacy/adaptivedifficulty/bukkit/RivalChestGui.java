@@ -380,7 +380,7 @@ public final class RivalChestGui implements Listener {
 
     private Inventory pending(Player viewer, Player subject) {
         Holder holder = new Holder("pending");
-        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Pending Invites"));
+        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Pending Declares"));
         holder.bind(inv);
         frame(inv, 45);
         List<GuiBoardHelper.PendingInvite> invites = GuiBoardHelper.parsePendingInvites(
@@ -391,7 +391,7 @@ public final class RivalChestGui implements Listener {
         pendingHeader.addAll(GuiBoardHelper.tips(viewer,
                 "&a◀ Incoming &7— tap to accept or decline",
                 "&6▶ Outgoing &7= waiting on them"));
-        put(holder, inv, 4, item(Material.YELLOW_DYE, "&e&lPending Invites", pendingHeader));
+        put(holder, inv, 4, item(Material.YELLOW_DYE, "&e&lPending Declares", pendingHeader));
         if (invites.isEmpty()) {
             put(holder, inv, 22, tipBtn(viewer, "rival.empty.no_pending", Material.BARRIER, "&7No pending invites",
                     List.of("&7Declare someone to send an invite",
@@ -518,10 +518,15 @@ public final class RivalChestGui implements Listener {
             pendingCount = 0;
         }
         put(holder, inv, 21, pageBtn(viewer, "rival.actions.pending", Material.CLOCK,
-                pendingCount > 0 ? "&ePending &f(" + pendingCount + ")" : "&ePending",
-                "&7Incoming: click a head to Accept / Decline",
-                pendingCount > 0 ? "&aYou have pending invites" : "&8No pending invites"),
+                pendingCount > 0 ? "&ePending declares &f(" + pendingCount + ")" : "&ePending declares",
+                "&7Incoming: Accept / Decline · Outgoing: waiting",
+                pendingCount > 0 ? "&aYou have pending declares" : "&8No pending declares"),
                 SlotAction.page("pending"));
+        if (ForgeBridge.rivalNeedsMutualReplace(subject)) {
+            put(holder, inv, 23, pageBtn(viewer, "rival.actions.replace_mutual", Material.GOLD_NUGGET,
+                    "&eReplace mutual…", "&7Pick which Mutual slot to replace"),
+                    SlotAction.page("pick_replace_mutual"));
+        }
         put(holder, inv, 25, pageBtn(viewer, "rival.actions.silent", Material.GRAY_DYE, "&8Silent…",
                 "&7One-sided Silent (they are not told)",
                 "&8Both Silent → Declared"), SlotAction.page("pick_silent"));
@@ -579,8 +584,8 @@ public final class RivalChestGui implements Listener {
             pendingCount = 0;
         }
         String pendingLabel = pendingCount > 0
-                ? "&6Pending (" + pendingCount + ")"
-                : "&6Pending requests";
+                ? "&6Pending duels (" + pendingCount + ")"
+                : "&6Pending duels";
         put(holder, inv, 4, item(Material.IRON_SWORD, "&c&lChallenge",
                 prependBlank(toAmp(ForgeBridge.rivalLines(subject, "challenge")))));
         put(holder, inv, 19, pageBtn(viewer, "rival.challenge.send", Material.GOLDEN_SWORD, "&eSend Challenge…",

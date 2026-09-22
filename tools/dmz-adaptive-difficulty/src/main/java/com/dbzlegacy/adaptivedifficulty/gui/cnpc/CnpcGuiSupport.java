@@ -712,6 +712,42 @@ public final class CnpcGuiSupport {
         runDeferred(player, reopen);
     }
 
+    /**
+     * Scroll labels for pending invite / duel cards (tab format from {@code RivalGuiApi}).
+     * Prefix ◀ incoming vs ▶ outgoing so players see direction at a glance.
+     */
+    public static String[] pendingCardLabels(List<String> cards, boolean duel) {
+        if (cards == null || cards.isEmpty()) {
+            return new String[0];
+        }
+        List<String> labels = new ArrayList<>(cards.size());
+        for (String card : cards) {
+            if (card == null || card.isBlank()) {
+                continue;
+            }
+            String[] p = card.split("\t", -1);
+            String name = p.length > 1 && p[1] != null && !p[1].isBlank() ? p[1] : "?";
+            boolean incoming = p.length >= 3 && "IN".equalsIgnoreCase(p[2]);
+            boolean mutual = p.length > 5 && "mutual".equalsIgnoreCase(p[5]);
+            String arrow;
+            if (duel) {
+                arrow = incoming ? "§c◀ " : "§6▶ ";
+            } else if (mutual && incoming) {
+                arrow = "§e◀ ";
+            } else {
+                arrow = incoming ? "§a◀ " : "§6▶ ";
+            }
+            String suffix = "";
+            if (duel && p.length > 6 && p[6] != null && !p[6].isBlank()) {
+                suffix = " §8· §f" + p[6].trim() + "m";
+            }
+            boolean online = p.length > 4 && "1".equals(p[4]);
+            String dot = online ? " §a●" : " §8○";
+            labels.add(arrow + "§f" + safeChat(name) + suffix + dot);
+        }
+        return labels.toArray(String[]::new);
+    }
+
     /** Tab-separated GUI cards: field 0 = id/arg, field 1 = display label. */
     public static String[] cardLabels(List<String> cards, int labelField) {
         if (cards == null || cards.isEmpty()) {

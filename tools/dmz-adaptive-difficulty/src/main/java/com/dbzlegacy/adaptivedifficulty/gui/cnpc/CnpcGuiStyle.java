@@ -15,6 +15,9 @@ public final class CnpcGuiStyle {
     public static final String HINT_CLICK_ENTRY = "§7Select an entry below";
     public static final String HINT_CLICK_PLAYER = "§7Select a player below";
     public static final String HINT_CLICK_INVITE = "§7Select an invite to respond";
+    /** Pending declare / duel boards: direction shown on each row (◀ / ▶). */
+    public static final String HINT_PENDING_BOARD =
+            "§7◀ incoming · ▶ outgoing · tap a row to continue";
     public static final String HINT_SCROLL_LIST = "§7Scroll the status box with your wheel · drag the list to browse";
     /** Shown above CNPC {@code IScroll} pick lists (wheel targets the list bar). */
     public static final String HINT_PICK_LIST = "§7Drag the list edge to scroll · use search when available";

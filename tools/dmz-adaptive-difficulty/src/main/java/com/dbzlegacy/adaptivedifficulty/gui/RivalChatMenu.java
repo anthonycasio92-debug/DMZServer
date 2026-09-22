@@ -75,9 +75,9 @@ public final class RivalChatMenu {
         MutableComponent row1 = Component.m_237113_("§7")
                 .m_7220_(btn("§6[List]", "/rival do page list", "Current rivals"))
                 .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§a[Actions]", "/rival do page actions", "Declare · accept · remove"))
+                .m_7220_(btn("§a[Actions]", "/rival do page actions", "Declare · Pending declares · list"))
                 .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§c[Challenge]", "/rival do page challenge", "Challenge controls"))
+                .m_7220_(btn("§c[Challenge]", "/rival do page challenge", "Send duel · Pending duels · spectate"))
                 .m_7220_(Component.m_237113_("  "))
                 .m_7220_(btn("§f[Top]", "/rival do page top", "RP leaderboard"));
         send(player, row1);
@@ -131,14 +131,17 @@ public final class RivalChatMenu {
 
     private static void challenge(ServerPlayer player) {
         send(player, Component.m_237113_(""));
-        send(player, Component.m_237113_("§8── §cChallenge §8──"));
+        for (String line : RivalGuiApi.challengeLines(player)) {
+            send(player, Component.m_237113_(line));
+        }
         send(player, Component.m_237113_("§7Send: §e/rival challenge send <player> [min]"));
-        MutableComponent row = Component.m_237113_("§7")
-                .m_7220_(btn("§a[Accept]", "/rival do challenge accept main", "Accept pending"))
+        send(player, Component.m_237113_("§7In GUI: §6Challenge §7→ §6Pending duels §7for Accept / Decline / Cancel"));
+        MutableComponent row = Component.m_237113_("§7Quick: ")
+                .m_7220_(btn("§a[Accept]", "/rival do challenge accept main", "Accept incoming duel"))
                 .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§c[Decline]", "/rival do challenge decline main", "Decline pending"))
+                .m_7220_(btn("§c[Decline]", "/rival do challenge decline main", "Decline incoming"))
                 .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§8[Cancel]", "/rival do challenge cancel main", "Cancel yours"));
+                .m_7220_(btn("§8[Cancel send]", "/rival do challenge cancel main", "Cancel outgoing or forfeit"));
         send(player, row);
         send(player, btn("§7« Back", "/rival do page main", "Main"));
     }

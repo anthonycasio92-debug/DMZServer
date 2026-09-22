@@ -394,10 +394,10 @@ public final class CmiRivalGui {
     }
 
     private static void openPending(Player player) {
-        CMIGui gui = base(player, "&8Pending Invites", 5);
+        CMIGui gui = base(player, "&8Pending Declares", 5);
         List<GuiBoardHelper.PendingInvite> invites = GuiBoardHelper.parsePendingInvites(
                 ForgeBridge.rivalPendingInviteCards(player));
-        CMIGuiButton info = new CMIGuiButton(4, Material.YELLOW_DYE, "&e&lPending Invites");
+        CMIGuiButton info = new CMIGuiButton(4, Material.YELLOW_DYE, "&e&lPending Declares");
         info.lockField();
         List<String> pendingHeader = new ArrayList<>();
         pendingHeader.add("");
@@ -549,10 +549,14 @@ public final class CmiRivalGui {
             pendingCount = 0;
         }
         gui.addButton(pageBtn(player, 21, "rival.actions.pending", Material.CLOCK,
-                pendingCount > 0 ? "&ePending &f(" + pendingCount + ")" : "&ePending",
+                pendingCount > 0 ? "&ePending declares &f(" + pendingCount + ")" : "&ePending declares",
                 "pending",
-                "&7Incoming: click a head to Accept / Decline",
-                pendingCount > 0 ? "&aYou have pending invites" : "&8No pending invites"));
+                "&7Incoming: Accept / Decline · Outgoing: waiting",
+                pendingCount > 0 ? "&aYou have pending declares" : "&8No pending declares"));
+        if (ForgeBridge.rivalNeedsMutualReplace(player)) {
+            gui.addButton(pageBtn(player, 23, "rival.actions.replace_mutual", Material.GOLD_NUGGET,
+                    "&eReplace mutual…", "pick_replace_mutual", "&7Pick which Mutual slot to replace"));
+        }
         gui.addButton(pageBtn(player, 25, "rival.actions.silent", Material.GRAY_DYE, "&8Silent…", "pick_silent",
                 "&7One-sided Silent (they are not told)",
                 "&8Both Silent → Declared"));
@@ -622,8 +626,8 @@ public final class CmiRivalGui {
             pendingCount = 0;
         }
         String pendingLabel = pendingCount > 0
-                ? "&6Pending (" + pendingCount + ")"
-                : "&6Pending requests";
+                ? "&6Pending duels (" + pendingCount + ")"
+                : "&6Pending duels";
 
         gui.addButton(pageBtn(player, 19, "rival.challenge.send", Material.GOLDEN_SWORD, "&eSend Challenge…",
                 "pick_challenge", "&7Pick rival, then choose 1–10 minutes"));

@@ -641,13 +641,17 @@ def main() -> int:
     under_fn = prox.split("tryUnderdogEngage", 1)[1].split("handleDamagedByRival", 1)[0] if "tryUnderdogEngage" in prox else ""
     check("underdog any declaredByMe status",
           "!link.declaredByMe" in under_fn and "link.mutual" not in under_fn)
-    check("Actions is Declare Pending Remove Silent",
+    check("Actions hub Declare Pending Silent list",
           'page("pick_declare")' in rival_chest
           and 'page("pending")' in rival_chest
-          and 'page("pick_remove")' in rival_chest
           and 'page("pick_silent")' in rival_chest
+          and 'page("list")' in rival_chest.split("private Inventory actions(", 1)[1].split("private Inventory history", 1)[0]
           and "Accept Declared" not in rival_chest
           and "Accept Declared" not in cmi_rival)
+    check("Challenge hub Pending duels not inline accept",
+          'page("challenge_pending")' in rival_chest
+          and 'page("challenge_pending")' in cmi_rival
+          and 'SlotAction.act("challenge", "accept"' not in rival_chest.split("private Inventory challenge(", 1)[1].split("private Inventory challengePending", 1)[0])
     check("Spar Stats button BOOK",
           'Material.BOOK, "&eStats"' in spar)
     check("Skills admin header BOOK",

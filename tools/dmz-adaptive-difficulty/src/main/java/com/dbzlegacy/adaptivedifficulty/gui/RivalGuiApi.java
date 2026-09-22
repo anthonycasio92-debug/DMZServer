@@ -167,7 +167,8 @@ public final class RivalGuiApi {
     public static List<String> challengeLines(ServerPlayer player) {
         List<String> lines = new ArrayList<>();
         lines.add("§8── §cChallenge §8──");
-        lines.add("§7Send a duel · respond from §6Pending");
+        lines.add("§eSend challenge… §7→ pick player · length");
+        lines.add("§6Pending duels §7— Accept / Decline / Cancel send");
         if (player != null && RivalChallengeManager.get().isInChallenge(player.m_20148_())) {
             lines.add("§eChallenge active");
         } else {
@@ -540,10 +541,10 @@ public final class RivalGuiApi {
             case "pending", "invites", "pendinginvites" -> RivalSystem.pendingInviteLines(player);
             case "actions" -> List.of(
                     "§6§lRival Actions",
-                    "§7Silent → only you see them",
-                    "§7Declare → on your list as Declared; they get Pending",
-                    "§7They Accept → Mutual (Decline/ignore: you keep Declared)",
-                    "§7Both Silent → Declared → both Accept (Pending) → Mutual"
+                    "§eDeclare… §7or §8Silent… §7to start a rivalry",
+                    "§6Pending declares §7— Accept / Decline incoming",
+                    "§6Your rival list §7— open a profile to Remove",
+                    "§8Both Silent → Declared → both Accept → Mutual"
             );
             case "stats", "statistics" -> statsLines(player);
             case "challenge", "challenges" -> challengeLines(player);
