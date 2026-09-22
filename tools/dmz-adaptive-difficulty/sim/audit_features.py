@@ -1390,10 +1390,12 @@ def main() -> int:
           and "displayMaxEnergy" in pool_clamp
           and "data.getMaxEnergy()" in pool_clamp)
     hud_pool = read(SRC / "com/dbzlegacy/adaptivedifficulty/mixin/StatsDataHudPoolMaxMixin.java")
-    check("HUD mixin registers prestige-aware getMax*",
-          '"StatsDataHudPoolMaxMixin"' in mixins_json
-          and "actualMaxEnergy" in hud_pool
-          and "isReadingNativeMax" in hud_pool)
+    build_sh = read(lm_root / "build.sh")
+    check("CNPC merge keeps base mixins.json (ki/stamina wiring)",
+          "never replace mixin wiring" in build_sh
+          and "mixins.json differs from base" in build_sh)
+    check("HUD pool max mixin source (live base jar omits from mixins.json)",
+          "actualMaxEnergy" in hud_pool and "isReadingNativeMax" in hud_pool)
     check("EnergyManaSync does not raise max to overflowing current",
           "maxEnergy = currentEnergy" not in energy_mana
           and "clampCurrentToMax" in energy_mana)

@@ -103,8 +103,15 @@ merge_onto_base_jar() {
       "$merge/com/dbzlegacy/adaptivedifficulty/progression/race/AndroidConversion.class"
   fi
   cp "$RES/META-INF/mods.toml" "$merge/META-INF/mods.toml"
-  cp "$RES/legacymechanics.mixins.json" "$merge/legacymechanics.mixins.json"
+  # Ki/stamina pool fixes live in the base jar bytecode — never replace mixin wiring from src.
+  if [[ ! -f "$merge/legacymechanics.mixins.json" ]]; then
+    cp "$RES/legacymechanics.mixins.json" "$merge/legacymechanics.mixins.json"
+  fi
   (cd "$merge" && jar cfm "$dest" META-INF/MANIFEST.MF .)
+  if ! unzip -p "$dest" legacymechanics.mixins.json | cmp -s - <(unzip -p "$base" legacymechanics.mixins.json); then
+    echo "ERROR: merged jar mixins.json differs from base — ki/stamina wiring must stay on live base" >&2
+    exit 1
+  fi
   rm -rf "$tmp" "$merge"
 }
 

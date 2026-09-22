@@ -7,7 +7,6 @@
   "refmap": "legacymechanics.refmap.json",
   "mixins": [
     "StatsDataMixin",
-    "StatsDataHudPoolMaxMixin",
     "StatsDataOverhaulCombatScaleMixin",
     "StatsDataResetPrestigeSyncMixin",
     "DmzRevampPrestigeCapMixin",
