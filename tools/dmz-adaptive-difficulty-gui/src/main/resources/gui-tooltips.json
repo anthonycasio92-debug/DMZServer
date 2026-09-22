@@ -788,7 +788,7 @@
       "challenge": {
         "name": "&cChallenge",
         "lore": [
-          "&7Send · accept · decline · spectate"
+          "&7Send duels · pending board · spectate"
         ]
       },
       "top": {
@@ -901,22 +901,65 @@
           "&7Pick rival, then choose 1–10 minutes"
         ]
       },
+      "pending": {
+        "name": "&ePending Requests",
+        "lore": [
+          "&7Tap a name — Accept, Decline, or Cancel",
+          "&c◀ Incoming &7· &6▶ Outgoing"
+        ]
+      },
+      "empty_pending": {
+        "name": "&7No pending requests",
+        "lore": [
+          "&7Send a challenge from the Challenge menu"
+        ]
+      },
+      "decide_info": {
+        "name": "&eChallenge request",
+        "lore": [
+          "&7Respond on this screen"
+        ]
+      },
+      "keep_waiting": {
+        "name": "&7Keep waiting",
+        "lore": [
+          "&7Return to pending list"
+        ]
+      },
+      "nav_challenge": {
+        "name": "&cChallenge",
+        "lore": [
+          "&7Send · spectate"
+        ]
+      },
+      "pending_back": {
+        "name": "&7Back",
+        "lore": [
+          "&7Challenge menu"
+        ]
+      },
+      "decide_back": {
+        "name": "&7Back",
+        "lore": [
+          "&7Pending requests"
+        ]
+      },
       "accept": {
         "name": "&aAccept",
         "lore": [
-          "&7Accept pending challenge"
+          "&7Accept this duel — countdown starts"
         ]
       },
       "decline": {
         "name": "&cDecline",
         "lore": [
-          "&7Decline pending challenge"
+          "&7Decline this challenge request"
         ]
       },
       "cancel": {
-        "name": "&8Cancel",
+        "name": "&cCancel challenge",
         "lore": [
-          "&7Cancel your outgoing challenge"
+          "&7Withdraw your outgoing request"
         ]
       },
       "spectate": {
@@ -1934,5 +1977,5 @@
       ]
     }
   },
-  "_catalogRevision": 200
+  "_catalogRevision": 201
 }

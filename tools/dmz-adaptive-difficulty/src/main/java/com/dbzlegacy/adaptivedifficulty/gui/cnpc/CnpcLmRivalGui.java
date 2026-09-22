@@ -26,6 +26,10 @@ public final class CnpcLmRivalGui {
             openPendingDecide(player, raw.substring("pending_decide:".length()).trim());
             return;
         }
+        if (lower.startsWith("challenge_decide:")) {
+            openChallengeDecide(player, raw.substring("challenge_decide:".length()).trim());
+            return;
+        }
         if (lower.startsWith("list_detail:")) {
             openListDetail(player, raw.substring("list_detail:".length()).trim());
             return;
@@ -42,6 +46,7 @@ public final class CnpcLmRivalGui {
                 case "pending", "invites" -> paintPending(pl, gui);
                 case "history", "past" -> paintScroll(pl, gui, "§6Rival · History", RivalGuiApi.linesForPage(subject(pl), "history"), "main");
                 case "challenge", "challenges" -> paintChallenge(pl, gui);
+                case "challenge_pending", "challenge_requests" -> paintChallengePending(pl, gui);
                 case "stats" -> paintScroll(pl, gui, "§6Rival · Stats", RivalGuiApi.statsLines(subject(pl)), "progress");
                 case "top", "leaderboard" -> paintScroll(pl, gui, "§6Rival · Leaderboard", RivalGuiApi.topLines(subject(pl)), "main");
                 case "progress" -> paintProgress(pl, gui);
@@ -73,7 +78,7 @@ public final class CnpcLmRivalGui {
     private static int heightForPage(String page) {
         return switch (page) {
             case "list" -> 400;
-            case "pending", "invites" -> 400;
+            case "pending", "invites", "challenge_pending", "challenge_requests" -> 400;
             case "pick_declare", "pick_silent", "pick_challenge", "pick_spectate",
                     "pick_accept", "pick_decline", "pick_replace_mutual" -> 380;
             case "progress", "records" -> 300;
@@ -275,19 +280,81 @@ public final class CnpcLmRivalGui {
     private static void paintChallenge(ServerPlayer player, ICustomGui gui) {
         ServerPlayer who = subject(player);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Challenge"),
-                "§7Send or answer a duel");
+                "§7Send duels · pending board · spectate");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, RivalGuiApi.challengeLines(who),
                         CnpcGuiStyle.INFO_INLINE_MAX));
         CnpcGuiSupport.button(gui, 20, "§eSend challenge…", CnpcGuiSupport.COL_L, row, () -> open(player, "pick_challenge"));
-        CnpcGuiSupport.button(gui, 21, "§aAccept", CnpcGuiSupport.COL_R, row, () -> act(player, "challenge", "accept", "challenge"));
-        row += 24;
-        CnpcGuiSupport.button(gui, 22, "§cDecline", CnpcGuiSupport.COL_L, row, () -> act(player, "challenge", "decline", "challenge"));
-        CnpcGuiSupport.button(gui, 23, "§8Cancel send", CnpcGuiSupport.COL_R, row, () -> act(player, "challenge", "cancel", "challenge"));
+        int pending = RivalGuiApi.pendingChallengeCards(who).size();
+        String pendingLabel = pending > 0 ? "§ePending requests §f(" + pending + ")" : "§6Pending requests";
+        CnpcGuiSupport.button(gui, 21, pendingLabel, CnpcGuiSupport.COL_R, row, () -> open(player, "challenge_pending"));
         row += 24;
         CnpcGuiSupport.button(gui, 24, "§bSpectate…", CnpcGuiSupport.COL_L, row, () -> open(player, "pick_spectate"));
         CnpcGuiSupport.button(gui, 25, "§8Stop spectate", CnpcGuiSupport.COL_R, row, () -> act(player, "spectate_stop", "", "challenge"));
         row += 24;
         footer(player, gui, row, "main");
+    }
+
+    private static void paintChallengePending(ServerPlayer player, ICustomGui gui) {
+        ServerPlayer who = subject(player);
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Pending"),
+                CnpcGuiStyle.HINT_CLICK_INVITE);
+        int listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBeforePickList(gui, infoY,
+                RivalGuiApi.linesForPage(who, "challenge_pending"), 2));
+        List<String> cards = RivalGuiApi.pendingChallengeCards(who);
+        if (cards.isEmpty()) {
+            gui.addLabel(50, "§7No pending challenge requests.", CnpcGuiSupport.M, listY + 4,
+                    CnpcGuiSupport.textBandWidth(), 14);
+            footer(player, gui, listY + 28, "challenge");
+        } else {
+            int rowsBelow = 1;
+            int bandY = listY + 14;
+            int scrollH = CnpcGuiSupport.listScrollHeight(gui, bandY, rowsBelow);
+            IScroll scroll = CnpcGuiSupport.scrollPickList(gui, listY, rowsBelow,
+                    RivalGuiApi.pendingChallengeScrollLabels(cards));
+            scroll.setOnClick((g, sc) -> {
+                int[] sel = sc.getSelection();
+                if (sel == null || sel.length == 0 || sel[0] < 0 || sel[0] >= cards.size()) {
+                    return;
+                }
+                String card = cards.get(sel[0]);
+                String picker = CnpcGuiSupport.rivalPickerArgFromCard(card);
+                if (picker == null) {
+                    return;
+                }
+                open(player, "challenge_decide:" + picker);
+            });
+            footer(player, gui, CnpcGuiSupport.navRowAfterScroll(bandY, scrollH), "challenge");
+        }
+    }
+
+    private static void openChallengeDecide(ServerPlayer player, String pickerArg) {
+        ServerPlayer who = subject(player);
+        List<String> cards = RivalGuiApi.pendingChallengeCards(who);
+        String card = CnpcGuiSupport.findCardByPickerArg(cards, pickerArg);
+        List<String> detail = card != null ? RivalGuiApi.pendingChallengeDetailLines(card)
+                : List.of("§7Pending challenge", RivalGuiApi.displayPickerArg(player, pickerArg));
+        boolean outgoing = card != null && RivalGuiApi.pendingChallengeCardOutgoing(card);
+        String subTitle = outgoing ? "Outgoing challenge" : "Incoming challenge";
+        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_RIVAL, CnpcGuiSupport.W, 300, (pl, gui) -> {
+            int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcGuiStyle.subPage("§6", "Rivals", subTitle),
+                    outgoing ? "§7Cancel or keep waiting" : "§7Accept or decline below");
+            int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, detail,
+                    CnpcGuiStyle.INFO_INLINE_MAX));
+            row += 8;
+            if (outgoing) {
+                CnpcGuiSupport.button(gui, 20, "§cCancel challenge", CnpcGuiSupport.COL_L, row,
+                        () -> act(pl, "challenge_cancel", pickerArg, "challenge_pending"));
+                CnpcGuiSupport.button(gui, 21, "§7Keep waiting", CnpcGuiSupport.COL_R, row,
+                        () -> open(pl, "challenge_pending"));
+            } else {
+                CnpcGuiSupport.button(gui, 20, "§aAccept", CnpcGuiSupport.COL_L, row,
+                        () -> act(pl, "challenge_accept", pickerArg, "challenge_pending"));
+                CnpcGuiSupport.button(gui, 21, "§cDecline", CnpcGuiSupport.COL_R, row,
+                        () -> act(pl, "challenge_decline", pickerArg, "challenge_pending"));
+            }
+            row += CnpcGuiSupport.ROW_STEP + 4;
+            CnpcGuiSupport.navSubmenu(pl, gui, row, () -> open(pl, "challenge_pending"), "§7« Back");
+        });
     }
 
     private static void openChallengeTime(ServerPlayer player, String targetArg) {

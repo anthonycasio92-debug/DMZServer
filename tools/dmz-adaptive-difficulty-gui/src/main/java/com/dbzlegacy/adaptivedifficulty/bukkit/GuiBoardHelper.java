@@ -700,6 +700,112 @@ final class GuiBoardHelper {
         return out;
     }
 
+    static final class PendingChallenge {
+        final String uuid;
+        final String name;
+        final boolean incoming;
+        final long expiresAt;
+        final boolean online;
+        final int durationMin;
+
+        PendingChallenge(
+                String uuid,
+                String name,
+                boolean incoming,
+                long expiresAt,
+                boolean online,
+                int durationMin
+        ) {
+            this.uuid = uuid == null ? "" : uuid;
+            this.name = name == null || name.isBlank() ? "?" : name;
+            this.incoming = incoming;
+            this.expiresAt = Math.max(0L, expiresAt);
+            this.online = online;
+            this.durationMin = Math.max(1, durationMin);
+        }
+
+        String pickerArg() {
+            if (!uuid.isBlank()) {
+                return "uuid:" + uuid;
+            }
+            return name;
+        }
+    }
+
+    static List<PendingChallenge> parsePendingChallenges(List<String> encoded) {
+        List<PendingChallenge> out = new ArrayList<>();
+        if (encoded == null) {
+            return out;
+        }
+        for (String raw : encoded) {
+            if (raw == null || raw.isBlank()) {
+                continue;
+            }
+            String[] p = raw.split("\t", -1);
+            if (p.length < 3) {
+                continue;
+            }
+            int mins = 1;
+            if (p.length > 5) {
+                try {
+                    mins = Integer.parseInt(p[5].trim());
+                } catch (NumberFormatException ignored) {
+                    mins = 1;
+                }
+            }
+            out.add(new PendingChallenge(
+                    p[0],
+                    p[1],
+                    "IN".equalsIgnoreCase(p[2]),
+                    parseLongSafe(p.length > 3 ? p[3] : "0"),
+                    "1".equals(p.length > 4 ? p[4] : "0"),
+                    mins
+            ));
+        }
+        return out;
+    }
+
+    static ItemStack pendingChallengeHead(Player player, PendingChallenge req) {
+        List<String> lore = new ArrayList<>();
+        if (req.incoming) {
+            lore.add("&c&l◀ INCOMING CHALLENGE");
+            lore.add("&7From &f" + req.name);
+            lore.add("&7Length &f" + req.durationMin + " min");
+            lore.addAll(tips(player, "&eClick to Accept / Decline"));
+        } else {
+            lore.add("&6&l▶ OUTGOING — YOU SENT THIS");
+            lore.add("&7To &f" + req.name);
+            lore.add("&7Length &f" + req.durationMin + " min");
+            lore.addAll(tips(player, "&eClick to Cancel or keep waiting"));
+        }
+        if (req.expiresAt > 0L) {
+            long left = req.expiresAt - System.currentTimeMillis();
+            if (left > 0L) {
+                lore.add("&7Expires in &f" + formatDuration(left));
+            }
+        }
+        lore.add("");
+        lore.add(req.online ? "&aOnline" : "&8Offline");
+        String title = req.incoming ? "&c◀ Challenge: &f" + req.name : "&6▶ Sent: &f" + req.name;
+        if (!req.uuid.isBlank()) {
+            try {
+                java.util.UUID id = java.util.UUID.fromString(req.uuid);
+                Player online = org.bukkit.Bukkit.getPlayer(id);
+                if (online != null) {
+                    return GuiPlayerPicker.head(online, title, lore);
+                }
+                return GuiPlayerPicker.headByUuid(id, req.name, title, lore);
+            } catch (IllegalArgumentException ignored) {
+                // fall through
+            }
+        }
+        Player online = org.bukkit.Bukkit.getPlayerExact(req.name);
+        if (online != null) {
+            return GuiPlayerPicker.head(online, title, lore);
+        }
+        return GuiPlayerPicker.headByName(req.name, title, lore);
+    }
+
     static ItemStack pendingInviteHead(Player player, PendingInvite inv) {
         List<String> lore = new ArrayList<>();
         if (inv.isDojoWar()) {

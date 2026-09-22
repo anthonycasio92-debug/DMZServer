@@ -1,13 +1,13 @@
 # GUI humanization audit
 
-- Catalog keys: **284** · Referenced from Java: **258**
-- Catalog revision: **Java 200** · **JSON 200** · synced
+- Catalog keys: **291** · Referenced from Java: **265**
+- Catalog revision: **Java 200** · **JSON 201** · **MISMATCH**
 
 ## Summary
 
 - No blocking issues
 - **0** Java fallback lines still use robotic "Click to…" (use `&8Tap…` or catalog keys)
-- **22** catalog warnings
+- **23** catalog warnings
 
 ## Icons (materials)
 

@@ -635,6 +635,17 @@ def main() -> int:
           'SlotAction.page("pending_decide:' in rival_chest)
     check("CMI pending head opens decide submenu",
           'lmdo rival page pending_decide:' in cmi_rival)
+    rival_cnpc = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmRivalGui.java")
+    rival_api = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/RivalGuiApi.java")
+    check("challenge pending board + decide submenu",
+          "challenge_pending" in rival_cnpc and "challenge_decide:" in rival_cnpc
+          and "pendingChallengeCards" in rival_api
+          and "challenge_pending" in rival_chest and "challengeDecide" in rival_chest
+          and "challenge_pending" in cmi_rival and "openChallengeDecide" in cmi_rival)
+    check("challenge hub Send + Pending (not inline accept)",
+          "pick_challenge" in rival_cnpc and "Pending requests" in rival_cnpc
+          and 'act("challenge", "accept"' not in rival_cnpc.split("paintChallenge")[1].split("paintChallengePending")[0]
+          and 'SlotAction.act("challenge", "accept"' not in rival_chest.split("private Inventory challenge(")[1].split("private Inventory challengePending")[0])
     check("acceptedMutualOffer flag", "acceptedMutualOffer" in rival_link)
     check("needsMutualConfirm helper", "needsMutualConfirm" in rival_link)
     check("promoteDeclared sets inviteReceived both",
