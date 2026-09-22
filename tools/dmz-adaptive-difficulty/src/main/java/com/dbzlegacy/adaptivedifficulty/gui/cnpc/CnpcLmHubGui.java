@@ -62,7 +62,7 @@ public final class CnpcLmHubGui {
                 "§7Scaling, rivals, sparring, prestige, and character tools");
 
         List<String> lines = hubSnapshot(who, ph, staff, skillCheck);
-        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 3);
+        int row = CnpcGuiSupport.contentStartY(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 3), infoY);
         int gap = CnpcGuiSupport.ROW_STEP;
 
         if (!"true".equals(ph.get("bridge_ok"))) {

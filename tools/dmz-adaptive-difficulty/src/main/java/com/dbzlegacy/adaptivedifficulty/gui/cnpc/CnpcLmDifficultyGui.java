@@ -91,7 +91,7 @@ public final class CnpcLmDifficultyGui {
             }
             lines.add("§8Scaled enemies can hurt other players nearby.");
         }
-        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 3);
+        int row = CnpcGuiSupport.contentStartY(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 3), infoY);
         CnpcGuiSupport.button(gui, 20, "§eUnlock tiers", CnpcGuiSupport.COL_L, row, () -> open(player, "tiers"));
         CnpcGuiSupport.button(gui, 21, "§dTitles", CnpcGuiSupport.COL_R, row, () -> open(player, "titles"));
         row += 24;
@@ -152,7 +152,7 @@ public final class CnpcLmDifficultyGui {
 
         int infoY = CnpcGuiSupport.paintHeader(player, gui, "§8Staff · Details",
                 "§7Combat rating and scaled stats (read-only)");
-        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 3);
+        int row = CnpcGuiSupport.contentStartY(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 3), infoY);
         row += 8;
         navFooter(player, gui, row, "main", subject, infoY);
     }
@@ -193,7 +193,8 @@ public final class CnpcLmDifficultyGui {
             lines.add("§7Cost to activate §f"
                     + CnpcDifficultyTierUi.formatActivationCost(subject, nextLocked));
         }
-        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX);
+        int row = CnpcGuiSupport.contentStartY(
+                CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX), infoY);
 
         int placed = 0;
         for (int t = 1; t <= 7; t++) {
@@ -243,7 +244,8 @@ public final class CnpcLmDifficultyGui {
         List<String> header = new ArrayList<>();
         header.add("§7Wearing §e" + blankNone(TitleSystem.activeDisplay(subject)));
         header.add("§7Title score §6" + TitleSystem.computeTitleScore(subject));
-        int listY = CnpcGuiSupport.paintInfoBlock(gui, infoY, header, CnpcGuiStyle.INFO_LIST_HEADER_MAX);
+        int listY = CnpcGuiSupport.contentStartY(
+                CnpcGuiSupport.paintInfoBlock(gui, infoY, header, CnpcGuiStyle.INFO_LIST_HEADER_MAX), infoY);
 
         List<String> cards = new ArrayList<>();
         List<String> labels = new ArrayList<>();
@@ -257,7 +259,7 @@ public final class CnpcLmDifficultyGui {
         }
         int scrollH = CnpcGuiSupport.listScrollHeight(gui, listY, 2);
         IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, CnpcGuiSupport.ID_LIST_SCROLL, CnpcGuiSupport.M, listY,
-                CnpcGuiSupport.W - CnpcGuiSupport.M * 2, scrollH, labels.toArray(String[]::new));
+                CnpcGuiSupport.listWidth(), scrollH, labels.toArray(String[]::new));
         CnpcGuiSupport.wireScrollOpenDetail(scroll, cards, 0, id -> open(player, "title_detail:" + id));
         CnpcGuiSupport.wireScrollDoublePick(scroll, cards, 0, id -> CnpcGuiSupport.act(
                 player,
@@ -287,7 +289,8 @@ public final class CnpcLmDifficultyGui {
         DifficultyTitle title = DifficultyTitle.byId(titleIdRaw);
         if (title == null) {
             int infoY = CnpcGuiSupport.paintHeader(player, gui, "§dTitle", "§7Unknown entry");
-            int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of("§7That title could not be found."), 2);
+            int row = CnpcGuiSupport.contentStartY(
+                    CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of("§7That title could not be found."), 2), infoY);
             navFooter(player, gui, row + 8, "titles", subject, infoY);
             return;
         }
@@ -309,7 +312,7 @@ public final class CnpcLmDifficultyGui {
         lines.add("§7Bonus when worn §f" + perk);
         lines.add("§7Score value §6+" + title.scorePoints + " §8(title score)");
 
-        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 2);
+        int row = CnpcGuiSupport.contentStartY(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 2), infoY);
         if (earned) {
             CnpcGuiSupport.button(gui, 20, equipped ? "§aAlready equipped" : "§aEquip this title",
                     CnpcGuiSupport.COL_L, row, () -> {
@@ -350,8 +353,10 @@ public final class CnpcLmDifficultyGui {
         ServerPlayer subject = who(player);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§a", "Difficulty", "Teams"),
                 "§7How rival teams affect scaling");
-        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, DifficultyTeamGuiApi.linesForPage(subject, "team"),
-                CnpcGuiStyle.INFO_INLINE_MAX);
+        int row = CnpcGuiSupport.contentStartY(
+                CnpcGuiSupport.paintInfoBlock(gui, infoY, DifficultyTeamGuiApi.linesForPage(subject, "team"),
+                        CnpcGuiStyle.INFO_INLINE_MAX),
+                infoY);
         CnpcGuiSupport.button(gui, 40, "§7Personal only", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> DifficultyTeamGuiApi.handleDo(subject, "mode", "personal_only", "team"),

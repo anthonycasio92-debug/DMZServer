@@ -266,6 +266,16 @@ public final class CnpcGuiSupport {
         return CnpcPlayerPreview.textBandWidth();
     }
 
+    /** Scroll lists and full-width labels — never {@code W - 2*M} (that overlaps the preview column). */
+    public static int listWidth() {
+        return textBandWidth();
+    }
+
+    /** First Y for buttons or lists after the header/info block, below the preview slot. */
+    public static int contentStartY(int rowAfterInfo, int headerInfoY) {
+        return Math.max(rowAfterInfo, CnpcPlayerPreview.minButtonRowY(headerInfoY));
+    }
+
     /** @see CnpcPlayerPreview#paint(ServerPlayer, ICustomGui, int) */
     public static void paintPlayerPreview(ServerPlayer player, ICustomGui gui, int x, int y) {
         CnpcPlayerPreview.paint(player, gui, ID_ENTITY_PREVIEW, x, y);

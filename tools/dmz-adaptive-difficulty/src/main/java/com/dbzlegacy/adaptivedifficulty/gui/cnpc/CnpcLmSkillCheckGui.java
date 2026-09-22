@@ -37,7 +37,8 @@ public final class CnpcLmSkillCheckGui {
                 "§7Natural, Saga, and Skill Check sessions");
 
         List<String> lines = ProgressionGuiApi.skillsLines(CnpcGuiSupport.target(player), page);
-        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX);
+        int row = CnpcGuiSupport.contentStartY(
+                CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX), infoY);
         CnpcGuiSupport.button(gui, 20, "§aNatural skills", CnpcGuiSupport.COL_L, row, () -> {
             SkillCheckService.open(player, "core");
             open(player, "core");
