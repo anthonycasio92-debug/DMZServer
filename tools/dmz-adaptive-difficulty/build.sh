@@ -28,16 +28,23 @@ for dep in "$FTB_CHUNKS" "$FTB_LIBRARY" "$ARCHITECTURY" "$REVAMP" "$CNPC"; do
   fi
 done
 NAME="LegacyMechanics"
-SRC="$(cd "$(dirname "$0")" && pwd)/src/main/java"
+HERE="$(cd "$(dirname "$0")" && pwd)"
+SRC="$HERE/src/main/java"
 MOD_JAVA="$SRC/com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.java"
 VERSION="$(grep -oP 'public static final String VERSION = "\K[0-9.]+(?=")' "$MOD_JAVA")"
 if [[ -z "$VERSION" ]]; then
   echo "Could not read VERSION from $MOD_JAVA" >&2
   exit 1
 fi
-RES="$(cd "$(dirname "$0")" && pwd)/src/main/resources"
-OUT="$(cd "$(dirname "$0")" && pwd)/build/classes"
-JAR="$ROOT/mods/${NAME}-${VERSION}.jar"
+RES="$HERE/src/main/resources"
+OUT="$HERE/build/classes"
+BASE_JAR="${LM_BASE_JAR:-$HERE/base/LegacyMechanics-4.5.23-direct-dmz-resource-max.jar}"
+# When merging onto live base, keep the base artifact name (overflow-fix line).
+if [[ -f "$BASE_JAR" ]]; then
+  JAR="$ROOT/mods/$(basename "$BASE_JAR")"
+else
+  JAR="$ROOT/mods/${NAME}-${VERSION}.jar"
+fi
 
 # Replace only this version's jar (keep older LegacyMechanics-x.y.z in mods/ for history).
 rm -f "$JAR" \
@@ -67,16 +74,47 @@ mkdir -p "$OUT"
 mapfile -t SOURCES < <(find "$SRC" -name '*.java' | sort)
 javac --release 17 -proc:none -cp "$CP" -d "$OUT" "${SOURCES[@]}"
 
-(
-  cd "$OUT"
-  jar cvmf "$RES/META-INF/MANIFEST.MF" "$JAR" $(find com -name '*.class') \
-    -C "$RES" META-INF/mods.toml \
-    -C "$RES" pack.mcmeta \
-    -C "$RES" legacymechanics.mixins.json \
-    -C "$RES" legacymechanics.refmap.json
-)
+merge_onto_base_jar() {
+  local base="$1" dest="$2"
+  local tmp merge
+  tmp="$(mktemp -d)"
+  merge="$(mktemp -d)"
+  unzip -q "$base" -d "$merge"
+  # Overlay selected compiled packages (CNPC GUI work) — everything else stays from live base jar.
+  local rel
+  if [[ -d "$OUT/com/dbzlegacy/adaptivedifficulty/gui/cnpc" ]]; then
+    mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/gui/cnpc"
+    cp -a "$OUT/com/dbzlegacy/adaptivedifficulty/gui/cnpc/." "$merge/com/dbzlegacy/adaptivedifficulty/gui/cnpc/"
+  fi
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/gui/RivalGuiApi.class" ]]; then
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/gui/RivalGuiApi.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/gui/RivalGuiApi.class"
+  fi
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.class" ]]; then
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.class"
+  fi
+  cp "$RES/META-INF/mods.toml" "$merge/META-INF/mods.toml"
+  (cd "$merge" && jar cfm "$dest" META-INF/MANIFEST.MF .)
+  rm -rf "$tmp" "$merge"
+}
 
-# Ki pool ships from this compile only. Do NOT overlay reference/ki-pool-2.4.115 .class
+if [[ -f "$BASE_JAR" ]]; then
+  echo "Merging compiled CNPC overlay onto base: $(basename "$BASE_JAR")"
+  merge_onto_base_jar "$BASE_JAR" "$JAR"
+else
+  echo "WARN: Base jar missing ($BASE_JAR) — full compile jar (no live ki/stamina base)" >&2
+  (
+    cd "$OUT"
+    jar cvmf "$RES/META-INF/MANIFEST.MF" "$JAR" $(find com -name '*.class') \
+      -C "$RES" META-INF/mods.toml \
+      -C "$RES" pack.mcmeta \
+      -C "$RES" legacymechanics.mixins.json \
+      -C "$RES" legacymechanics.refmap.json
+  )
+fi
+
+# Ki pool: do NOT overlay reference/ki-pool-2.4.115 .class
 # files — mixing 2.4.115 bytecode with a fresh compile causes Java 17 VerifyError during
 # StatsData#load (mixins → DmzResourcePoolClamp) and clients see "Invalid player data".
 
