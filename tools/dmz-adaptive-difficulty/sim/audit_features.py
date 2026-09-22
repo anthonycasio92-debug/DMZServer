@@ -1527,8 +1527,15 @@ def main() -> int:
     check("orphan despawn pulse", "maybeDespawnOrphanedPlayerDragon" in end_str)
     check("DifficultyActions summon_end_dragon", "ACT_SUMMON_END_DRAGON" in diff_actions)
     check("ForgeBridge allows summon_end_dragon", "summon_end_dragon" in forge_bridge)
-    check("Chest GUI summon button", "summon_end_dragon" in chest and "Summon End Dragon" in chest)
-    check("CMI GUI summon button", "summon_end_dragon" in cmi_diff and "Summon End Dragon" in cmi_diff)
+    check("End Dragon submenu page",
+          "end_dragon" in chest and "endDragon" in chest
+          and "openEndDragon" in cmi_diff
+          and "paintEndDragon" in read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmDifficultyGui.java"))
+    cnpc_diff = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmDifficultyGui.java")
+    check("CNPC teams page refreshes snapshot",
+          "private static void paintTeam" in cnpc_diff
+          and "DifficultyActions.prepareGui(subject)" in cnpc_diff.split("private static void paintTeam", 1)[1].split("private static void paintEndDragon", 1)[0])
+    check("End Dragon summonMenuLines API", "summonMenuLines" in end_str and "canOpenSummonMenu" in end_str)
     check("natural spawn default off", "enableEndNaturalDragonSpawn = false" in
           read(SRC / "com/dbzlegacy/adaptivedifficulty/config/DifficultyConfig.java"))
     check("reject unauthorized dragon join", "rejectUnauthorizedDragonJoin" in end_str)

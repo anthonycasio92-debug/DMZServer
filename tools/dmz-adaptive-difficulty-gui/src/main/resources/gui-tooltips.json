@@ -592,15 +592,10 @@
         ]
       },
       "summon_dragon": {
-        "name": "&5&lSummon End Dragon",
+        "name": "&5End Dragon…",
         "lore": [
-          "&7Summon the End Dragon scaled to",
-          "&7your Adaptive Difficulty (T4–T7).",
-          "&8Cost: &f3 Ancient Netherite",
-          "&8Must be &fin The End",
-          "&8Only &fyou &8can damage it.",
-          "",
-          "{status}"
+          "&7Paid summon scaled to your AD",
+          "&8Opens requirements and confirm"
         ]
       },
       "personal_on": {
@@ -647,6 +642,21 @@
         "lore": [
           "&7Mutual rivals can raise how high a tier you can buy",
           "&7Team modes bring more elites, mutants, and bosses"
+        ]
+      }
+    },
+    "end_dragon": {
+      "header": {
+        "name": "&5&lEnd Dragon Summon",
+        "lore": [
+          "&7Live requirements shown on this page"
+        ]
+      },
+      "confirm": {
+        "name": "&5Confirm summon",
+        "lore": [
+          "&7Spawn near you in The End",
+          "&8Charges Ancient Netherite unless staff"
         ]
       }
     },
@@ -1924,5 +1934,5 @@
       ]
     }
   },
-  "_catalogRevision": 199
+  "_catalogRevision": 200
 }

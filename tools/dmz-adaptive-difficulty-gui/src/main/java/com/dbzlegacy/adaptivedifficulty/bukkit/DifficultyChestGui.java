@@ -58,6 +58,7 @@ public final class DifficultyChestGui implements Listener {
                  "adjust", "change", "set", "lower" -> tiers(viewer, subject);
             case "titles", "title" -> titles(viewer, subject);
             case "team", "teams" -> teams(viewer, subject);
+            case "end_dragon", "dragon", "summon_dragon" -> endDragon(viewer, subject);
             case "stats", "statistics", "details" ->
                     ForgeBridge.isStaff(viewer) ? stats(viewer, subject) : main(viewer, subject);
             default -> main(viewer, subject);
@@ -132,35 +133,11 @@ public final class DifficultyChestGui implements Listener {
                 List.of("&7Equip difficulty titles", "&8Earned from tiers and combat")),
                 SlotAction.page("titles"));
 
-        // End Dragon summon — T4–T7 AD, 3× Ancient Netherite, summoner-only damage.
-        int activeTier = 0;
-        try {
-            activeTier = Integer.parseInt(ph.getOrDefault("active_tier", "0"));
-        } catch (NumberFormatException ignored) {
-        }
-        boolean canSummon = personalOn && activeTier >= 4 && activeTier <= 7;
-        String dragonStatus;
-        if (!personalOn) {
-            dragonStatus = "&cDifficulty is OFF";
-        } else if (activeTier < 4 || activeTier > 7) {
-            dragonStatus = "&cNeed active T4–T7 (you: T" + activeTier + ")";
-        } else {
-            dragonStatus = "&aReady — tap to summon";
-        }
-        Map<String, String> dragonVars = Map.of("status", dragonStatus, "active_tier", String.valueOf(activeTier));
-        List<String> dragonDefaults = List.of(
-                "&7Summon the End Dragon scaled to",
-                "&7your Adaptive Difficulty (T4–T7).",
-                "&8Cost: &f3 Ancient Netherite",
-                "&8Must be &fin The End",
-                "&8Only &fyou &8can damage it.",
-                "",
-                dragonStatus);
         put(holder, inv, 15, tipBtn(viewer, "difficulty.main.summon_dragon",
-                canSummon ? Material.DRAGON_EGG : Material.GRAY_DYE,
-                canSummon ? "&5&lSummon End Dragon" : "&8Summon End Dragon",
-                dragonDefaults, dragonVars),
-                SlotAction.act("summon_end_dragon", "0", "main"));
+                Material.DRAGON_EGG, "&5End Dragon…",
+                List.of("&7Paid AD-scaled summon",
+                        "&8Opens requirements and confirm")),
+                SlotAction.page("end_dragon"));
 
         boolean coinChatOn = "true".equalsIgnoreCase(ph.getOrDefault("coin_drop_chat", "false"));
         put(holder, inv, 29, tipBtn(viewer,
@@ -447,6 +424,35 @@ public final class DifficultyChestGui implements Listener {
                 List.of("&7Declare, accept, or manage mutual slots")),
                 SlotAction.cmd("lmdo lm open rival"));
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),
+                SlotAction.page("main"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
+        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
+        return inv;
+    }
+
+    private Inventory endDragon(Player viewer, Player subject) {
+        Holder holder = holderFor(viewer, subject, "end_dragon");
+        Inventory inv = Bukkit.createInventory(holder, 45, titleFor(viewer, subject, "End Dragon"));
+        holder.bind(inv);
+        frame(inv, 45);
+        List<String> header = new ArrayList<>();
+        header.add("");
+        header.addAll(toAmp(ForgeBridge.endDragonMenuLines(subject)));
+        boolean canSummon = ForgeBridge.endDragonCanSummon(subject);
+        put(holder, inv, 4, item(Material.DRAGON_EGG,
+                GuiTooltips.name("difficulty.end_dragon.header", "&5&lEnd Dragon Summon"),
+                header));
+        if (canSummon) {
+            put(holder, inv, 20, tipBtn(viewer, "difficulty.end_dragon.confirm", Material.DRAGON_EGG,
+                    "&5Confirm summon",
+                    List.of("&7Spawn near you in The End",
+                            "&8Charges Ancient Netherite if not staff")),
+                    SlotAction.act("summon_end_dragon", "0", "end_dragon"));
+        } else {
+            put(holder, inv, 22, item(Material.BARRIER, "&8Cannot summon yet",
+                    List.of("", "&7See the banner for requirements")));
+        }
+        put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Difficulty"),
                 SlotAction.page("main"));
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());

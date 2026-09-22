@@ -103,6 +103,15 @@ merge_onto_base_jar() {
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.class" \
       "$merge/com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.class"
   fi
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/service/DifficultyActions.class" ]]; then
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/service/DifficultyActions.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/service/DifficultyActions.class"
+  fi
+  if [[ -d "$OUT/com/dbzlegacy/adaptivedifficulty/progression/end" ]]; then
+    mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/progression/end"
+    cp -a "$OUT/com/dbzlegacy/adaptivedifficulty/progression/end/." \
+      "$merge/com/dbzlegacy/adaptivedifficulty/progression/end/"
+  fi
   if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/progression/race/AndroidConversion.class" ]]; then
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/race/AndroidConversion.class" \
       "$merge/com/dbzlegacy/adaptivedifficulty/progression/race/AndroidConversion.class"

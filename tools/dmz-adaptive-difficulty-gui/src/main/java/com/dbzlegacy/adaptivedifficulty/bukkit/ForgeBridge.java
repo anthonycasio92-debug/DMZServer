@@ -82,6 +82,8 @@ public final class ForgeBridge {
     private static Method sparDojoTopCardsMethod;
     private static Method diffTeamLinesMethod;
     private static Method diffTeamMutualCardsMethod;
+    private static Method endDragonMenuLinesMethod;
+    private static Method endDragonCanSummonMethod;
     private static Method hubChatMenuOpen;
     private static Method hubPlaceholdersMethod;
     private static Method hubLinesMethod;
@@ -1237,6 +1239,47 @@ public final class ForgeBridge {
         return List.of();
     }
 
+    public static List<String> endDragonMenuLines(Player player) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return List.of("§cLegacyMechanics mod unreachable.");
+        }
+        try {
+            ensureEndDragonResolved(nms.getClass().getClassLoader());
+            if (endDragonMenuLinesMethod == null) {
+                return List.of("§cEnd Dragon API missing — update LegacyMechanics jar.");
+            }
+            Object raw = endDragonMenuLinesMethod.invoke(null, nms);
+            if (raw instanceof List<?> list) {
+                List<String> out = new ArrayList<>();
+                for (Object o : list) {
+                    out.add(o == null ? "" : String.valueOf(o));
+                }
+                return out;
+            }
+        } catch (Throwable t) {
+            return List.of("§cEnd Dragon menu failed: " + t.getMessage());
+        }
+        return List.of();
+    }
+
+    public static boolean endDragonCanSummon(Player player) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return false;
+        }
+        try {
+            ensureEndDragonResolved(nms.getClass().getClassLoader());
+            if (endDragonCanSummonMethod == null) {
+                return false;
+            }
+            Object raw = endDragonCanSummonMethod.invoke(null, nms);
+            return Boolean.TRUE.equals(raw);
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
     /** Encoded pending mentor invites (incoming + outgoing). */
     public static List<String> sparPendingMentorInviteCards(Player player) {
         return invokeSparStringList(player, "pendingMentorInviteCards");
@@ -2177,6 +2220,16 @@ public final class ForgeBridge {
         Class<?> sp = loadClass("net.minecraft.server.level.ServerPlayer", preferred);
         diffTeamLinesMethod = api.getMethod("linesForPage", sp, String.class);
         diffTeamMutualCardsMethod = api.getMethod("mutualRivalCards", sp);
+    }
+
+    private static synchronized void ensureEndDragonResolved(ClassLoader preferred) throws Exception {
+        if (endDragonMenuLinesMethod != null && endDragonCanSummonMethod != null) {
+            return;
+        }
+        Class<?> end = loadClass("com.dbzlegacy.adaptivedifficulty.progression.end.EndDimensionStrength", preferred);
+        Class<?> sp = loadClass("net.minecraft.server.level.ServerPlayer", preferred);
+        endDragonMenuLinesMethod = end.getMethod("summonMenuLines", sp);
+        endDragonCanSummonMethod = end.getMethod("canOpenSummonMenu", sp);
     }
 
     private static void putTeamScalingPlaceholders(Map<String, String> out, Object nms) {

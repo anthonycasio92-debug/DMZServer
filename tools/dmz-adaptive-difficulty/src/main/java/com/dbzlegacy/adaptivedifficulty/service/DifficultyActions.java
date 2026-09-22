@@ -421,7 +421,7 @@ public final class DifficultyActions {
     }
 
     private static Result summonEndDragon(ServerPlayer player, String page) {
-        String returnPage = page == null || page.isBlank() ? "main" : page;
+        String returnPage = page == null || page.isBlank() ? "end_dragon" : page;
         String msg = com.dbzlegacy.adaptivedifficulty.progression.end.EndDimensionStrength
                 .cmdPlayerSummon(player);
         openGui(player, returnPage);

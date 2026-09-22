@@ -824,6 +824,74 @@ public final class EndDimensionStrength {
                 + " §8· " + costText;
     }
 
+    /** True when tier/personal gates pass — location is checked on confirm. */
+    public static boolean canOpenSummonMenu(ServerPlayer player) {
+        if (player == null) {
+            return false;
+        }
+        if (!DifficultyConfig.get().enableEndDimensionStrength
+                || !DifficultyConfig.get().enableEndPlayerDragonSummon) {
+            return false;
+        }
+        if (!SystemGate.participates(player)) {
+            return false;
+        }
+        int tier = DifficultyCache.data(player).getActiveTier();
+        return tier >= PLAYER_SUMMON_MIN_TIER && tier <= PLAYER_SUMMON_MAX_TIER;
+    }
+
+    /** Lore for Difficulty → End Dragon submenu (CNPC / chest / CMI). */
+    public static List<String> summonMenuLines(ServerPlayer player) {
+        List<String> lines = new ArrayList<>();
+        if (!DifficultyConfig.get().enableEndDimensionStrength) {
+            lines.add("§cEnd Dimension Strength is disabled.");
+            return lines;
+        }
+        if (!DifficultyConfig.get().enableEndPlayerDragonSummon) {
+            lines.add("§cPlayer End Dragon summons are disabled.");
+            return lines;
+        }
+        if (player == null) {
+            lines.add("§7Unavailable.");
+            return lines;
+        }
+        PlayerDifficultyData data = DifficultyCache.data(player);
+        int tier = data.getActiveTier();
+        boolean personalOn = SystemGate.participates(player);
+        long cost = summonCopperCost();
+        boolean free = PaidFeatureAccess.bypassAncientCoinCost(player);
+        String costText = free ? "free (staff)" : AncientCoinEconomy.formatExactCost(cost);
+        lines.add("§7Scales to your Adaptive Difficulty boss profile.");
+        lines.add("§7Active tier §fT" + tier + " §8(need T"
+                + PLAYER_SUMMON_MIN_TIER + "–T" + PLAYER_SUMMON_MAX_TIER + ")");
+        lines.add("§7Personal AD §f" + (personalOn ? "ON" : "OFF"));
+        lines.add("§7Cost §f" + costText + " §8(" + PLAYER_SUMMON_NETHERITE_COST + " Ancient Netherite)");
+        lines.add("§7Location §fThe End §8only");
+        lines.add("§8Only you can damage your summoned dragon.");
+        if (!personalOn) {
+            lines.add("§cTurn personal difficulty ON first.");
+        } else if (tier < PLAYER_SUMMON_MIN_TIER || tier > PLAYER_SUMMON_MAX_TIER) {
+            lines.add("§cActivate an unlock tier T4–T7 first.");
+        } else if (!isTheEnd(player.m_9236_())) {
+            lines.add("§eTravel to The End, then confirm summon.");
+        } else {
+            MinecraftServer server = player.m_20194_();
+            ServerLevel end = server == null ? null : server.m_129880_(Level.f_46430_);
+            if (end != null) {
+                EnderDragon owned = findOwnedDragon(end, player);
+                if (owned != null && owned.m_6084_()) {
+                    lines.add("§eYou already have a living dragon.");
+                    lines.add("§8HP §c" + DmzRewards.formatWhole(owned.m_21233_()));
+                } else {
+                    lines.add("§aReady — confirm below to spawn near you.");
+                }
+            } else {
+                lines.add("§aRequirements met — confirm in The End.");
+            }
+        }
+        return lines;
+    }
+
     /**
      * Spawn a dragon near the summoner without clearing other players' dragons.
      * Uses orphan spawn (not EndDragonFight island create) so off-island fights work.

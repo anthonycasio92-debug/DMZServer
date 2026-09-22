@@ -48,6 +48,7 @@ public final class CmiDifficultyGui {
                      "adjust", "change", "set", "lower" -> openTiers(player);
                 case "titles", "title" -> openTitles(player);
                 case "team", "teams" -> openTeams(player);
+                case "end_dragon", "dragon", "summon_dragon" -> openEndDragon(player);
                 case "stats", "statistics", "details" -> {
                     if (ForgeBridge.isStaff(player)) {
                         openStats(player);
@@ -103,33 +104,10 @@ public final class CmiDifficultyGui {
                 "&7Equip difficulty titles",
                 "&8Earned from tiers and combat"));
 
-        int activeTier = 0;
-        try {
-            activeTier = Integer.parseInt(ph.getOrDefault("active_tier", "0"));
-        } catch (NumberFormatException ignored) {
-        }
-        boolean canSummon = personalOn && activeTier >= 4 && activeTier <= 7;
-        String dragonStatus;
-        if (!personalOn) {
-            dragonStatus = "&cDifficulty is OFF";
-        } else if (activeTier < 4 || activeTier > 7) {
-            dragonStatus = "&cNeed active T4–T7 (you: T" + activeTier + ")";
-        } else {
-            dragonStatus = "&aReady — tap to summon";
-        }
-        List<String> dragonDefaults = List.of(
-                "&7Summon the End Dragon scaled to",
-                "&7your Adaptive Difficulty (T4–T7).",
-                "&8Cost: &f3 Ancient Netherite",
-                "&8Must be &fin The End",
-                "&8Only &fyou &8can damage it.",
-                "",
-                dragonStatus);
-        gui.addButton(actionBtn(player, 15, "difficulty.main.summon_dragon",
-                canSummon ? Material.DRAGON_EGG : Material.GRAY_DYE,
-                canSummon ? "&5&lSummon End Dragon" : "&8Summon End Dragon",
-                "summon_end_dragon", "0", "main",
-                dragonDefaults, Map.of("status", dragonStatus)));
+        gui.addButton(pageBtn(player, 15, "difficulty.main.summon_dragon", Material.DRAGON_EGG,
+                "&5End Dragon…", "end_dragon",
+                "&7Paid AD-scaled summon",
+                "&8Opens requirements and confirm"));
 
         boolean coinChatOn = "true".equalsIgnoreCase(ph.getOrDefault("coin_drop_chat", "false"));
         gui.addButton(actionBtn(player, 29,
@@ -437,6 +415,36 @@ public final class CmiDifficultyGui {
         rival.setCloseInv(true);
         gui.addButton(rival);
 
+        gui.addButton(pageBtn(player, 36, "common.back", Material.ARROW, "&7Back", "main", "&7Return"));
+        gui.addButton(hubBtn(40));
+        gui.addButton(closeBtn(44));
+        fillEmpty(gui, 5);
+        GuiFeedback.openCmi(gui);
+    }
+
+    private static void openEndDragon(Player player) {
+        CMIGui gui = base(player, "&8End Dragon", 5);
+        List<String> headerLore = new ArrayList<>();
+        headerLore.add("");
+        for (String line : ForgeBridge.endDragonMenuLines(player)) {
+            headerLore.add(line == null ? "" : line.replace('§', '&'));
+        }
+        CMIGuiButton info = new CMIGuiButton(4, Material.DRAGON_EGG,
+                GuiTooltips.name("difficulty.end_dragon.header", "&5&lEnd Dragon Summon"));
+        info.lockField();
+        info.addLore(headerLore);
+        gui.addButton(info);
+        if (ForgeBridge.endDragonCanSummon(player)) {
+            gui.addButton(actionBtn(player, 20, "difficulty.end_dragon.confirm", Material.DRAGON_EGG,
+                    "&5Confirm summon", "summon_end_dragon", "0", "end_dragon",
+                    List.of("&7Spawn near you in The End",
+                            "&8Charges Ancient Netherite if not staff")));
+        } else {
+            CMIGuiButton blocked = new CMIGuiButton(22, Material.BARRIER, "&8Cannot summon yet");
+            blocked.lockField();
+            blocked.addLore(List.of("", "&7See the banner for requirements"));
+            gui.addButton(blocked);
+        }
         gui.addButton(pageBtn(player, 36, "common.back", Material.ARROW, "&7Back", "main", "&7Return"));
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
