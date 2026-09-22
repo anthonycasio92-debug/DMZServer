@@ -84,7 +84,7 @@ public final class CnpcLmCharacterGui {
             row += 20;
         }
         row += CnpcGuiSupport.ROW_STEP;
-        footer(player, gui, row, null);
+        footer(player, gui, row, null, player, infoY);
     }
 
     private static void paintRace(ServerPlayer player, ICustomGui gui) {
@@ -284,12 +284,25 @@ public final class CnpcLmCharacterGui {
     }
 
     /** {@code parentPage} null on character main; otherwise Back reopens that page. Main always → LM hub. */
-    private static void footer(ServerPlayer player, ICustomGui gui, int row, String parentPage) {
+    private static void footer(
+            ServerPlayer player,
+            ICustomGui gui,
+            int row,
+            String parentPage,
+            ServerPlayer previewSubject,
+            int previewAnchorY) {
         if (parentPage == null) {
             CnpcGuiSupport.navSystemRoot(player, gui, row);
         } else {
             CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, parentPage), "§7« Back");
         }
+        if (previewSubject != null && previewAnchorY >= 0) {
+            CnpcGuiSupport.paintPlayerPreviewSlot(previewSubject, gui, previewAnchorY);
+        }
+    }
+
+    private static void footer(ServerPlayer player, ICustomGui gui, int row, String parentPage) {
+        footer(player, gui, row, parentPage, null, -1);
     }
 
     private static String selectedCardId(List<String> cards, IScroll scroll) {

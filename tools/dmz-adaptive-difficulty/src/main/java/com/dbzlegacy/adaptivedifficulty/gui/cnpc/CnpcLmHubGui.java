@@ -60,7 +60,6 @@ public final class CnpcLmHubGui {
 
         int infoY = CnpcGuiSupport.paintHeader(player, gui, "§f§lLegacy Mechanics",
                 "§7Scaling, rivals, sparring, prestige, and character tools");
-        CnpcGuiSupport.paintPlayerPreview(who, gui, 330, infoY - 6);
 
         List<String> lines = hubSnapshot(who, ph, staff, skillCheck);
         int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 3);
@@ -114,6 +113,7 @@ public final class CnpcLmHubGui {
         }
         row += gap;
         CnpcGuiSupport.footerCloseRefresh(player, gui, row, () -> paintMain(player));
+        CnpcGuiSupport.paintPlayerPreviewSlot(who, gui, infoY);
     }
 
     private static void systemBtn(

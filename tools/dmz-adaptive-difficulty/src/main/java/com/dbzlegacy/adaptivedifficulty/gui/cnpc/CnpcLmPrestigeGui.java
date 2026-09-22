@@ -68,7 +68,7 @@ public final class CnpcLmPrestigeGui {
         CnpcGuiSupport.button(gui, 24, "§6Difficulty tiers", CnpcGuiSupport.COL_L, row, () -> open(player, "tiers"));
         CnpcGuiSupport.button(gui, 25, "§3Cap breakthrough", CnpcGuiSupport.COL_R, row, () -> open(player, "cap"));
         row += 24;
-        footer(player, gui, row, null);
+        footer(player, gui, row, null, player, infoY);
     }
 
     private static void paintTurnIn(ServerPlayer player, ICustomGui gui) {
@@ -293,11 +293,24 @@ public final class CnpcLmPrestigeGui {
         footer(player, gui, row, null);
     }
 
-    private static void footer(ServerPlayer player, ICustomGui gui, int row, String parentPage) {
+    private static void footer(
+            ServerPlayer player,
+            ICustomGui gui,
+            int row,
+            String parentPage,
+            ServerPlayer previewSubject,
+            int previewAnchorY) {
         if (parentPage == null || parentPage.isBlank()) {
             CnpcGuiSupport.navSystemRoot(player, gui, row);
         } else {
             CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, parentPage), "§7« Back");
         }
+        if (previewSubject != null && previewAnchorY >= 0) {
+            CnpcGuiSupport.paintPlayerPreviewSlot(previewSubject, gui, previewAnchorY);
+        }
+    }
+
+    private static void footer(ServerPlayer player, ICustomGui gui, int row, String parentPage) {
+        footer(player, gui, row, parentPage, null, -1);
     }
 }

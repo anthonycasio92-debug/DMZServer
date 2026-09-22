@@ -17,7 +17,6 @@ import noppes.npcs.api.entity.IPlayer;
 import noppes.npcs.api.gui.IButton;
 import noppes.npcs.api.gui.ICustomGui;
 import noppes.npcs.api.gui.IComponentsScrollableWrapper;
-import noppes.npcs.api.gui.IEntityDisplay;
 import noppes.npcs.api.gui.ILabel;
 import noppes.npcs.api.gui.IScroll;
 
@@ -52,6 +51,7 @@ public final class CnpcGuiSupport {
     public static final int ID_CLOSE = 98;
     public static final int ID_REFRESH = 99;
     public static final int ID_ENTITY_PREVIEW = 102;
+    public static final int ID_PREVIEW_CAPTION = 103;
 
     /** Shorter divider so labels do not wrap oddly in CNPC. */
     private static final String DIVIDER_TEXT = "§8──────────────────────────────";
@@ -187,11 +187,12 @@ public final class CnpcGuiSupport {
             return startY + 4;
         }
         int maxInline = inlineMax <= 0 ? 0 : Math.max(1, inlineMax);
+        int textW = textBandWidth();
         if (maxInline > 0 && clean.size() <= maxInline) {
-            bodyLines(gui, ID_INFO_LABEL_BASE, startY, clean, maxInline);
+            bodyLines(gui, ID_INFO_LABEL_BASE, startY, clean, maxInline, textW);
             return startY + clean.size() * LINE_H + 10;
         }
-        gui.addLabel(ID_STATUS_TAG, "§8Status · use scroll wheel here", M, startY - 2, W - M * 2, 10);
+        gui.addLabel(ID_STATUS_TAG, "§8Status · use scroll wheel here", M, startY - 2, textW, 10);
         int preferred = Math.min(112, Math.max(56, clean.size() * LINE_H));
         int scrollH = preferred;
         if (gui != null) {
@@ -199,7 +200,7 @@ public final class CnpcGuiSupport {
             scrollH = Math.max(48, Math.min(preferred, maxBottom - startY - 8));
         }
         int bandY = startY + 8;
-        int bandW = W - M * 2;
+        int bandW = textW;
         IComponentsScrollableWrapper panel = gui.getScrollingPanel();
         panel.init(M, bandY, bandW, scrollH);
         for (int i = 0; i < clean.size(); i++) {
@@ -246,36 +247,24 @@ public final class CnpcGuiSupport {
         gui.addLabel(id, DIVIDER_TEXT, M, y, W - M * 2, 10);
     }
 
-    /** Player model in the menu (CNPC entity display — same hook SDU-style GUIs use). */
-    public static void paintPlayerPreview(ServerPlayer player, ICustomGui gui, int x, int y) {
-        paintPlayerPreview(player, gui, ID_ENTITY_PREVIEW, x, y);
+    public static int textBandWidth() {
+        return CnpcPlayerPreview.textBandWidth();
     }
 
-    public static void paintPlayerPreview(ServerPlayer player, ICustomGui gui, int componentId, int x, int y) {
-        if (player == null || gui == null) {
-            return;
-        }
-        try {
-            IEntity entity = NpcAPI.Instance().getIEntity(player);
-            if (entity == null) {
-                return;
-            }
-            IEntityDisplay display = gui.addEntityDisplay(componentId, x, y, entity);
-            try {
-                display.setEntitySyncedById(entity);
-            } catch (Throwable ignored) {
-                display.setEntity(entity);
-            }
-            display.setScale(0.82f);
-            display.setBackground(false);
-            display.setRotation(35);
-        } catch (Throwable t) {
-            AdaptiveDifficultyMod.LOGGER.debug("[{}] CNPC player preview skipped: {}",
-                    AdaptiveDifficultyMod.MOD_ID, t.toString());
-        }
+    /** @see CnpcPlayerPreview#paint(ServerPlayer, ICustomGui, int) */
+    public static void paintPlayerPreview(ServerPlayer player, ICustomGui gui, int x, int y) {
+        CnpcPlayerPreview.paint(player, gui, ID_ENTITY_PREVIEW, x, y);
+    }
+
+    public static void paintPlayerPreviewSlot(ServerPlayer player, ICustomGui gui, int anchorY) {
+        CnpcPlayerPreview.paint(player, gui, anchorY);
     }
 
     public static void bodyLines(ICustomGui gui, int startId, int y, List<String> lines, int maxLines) {
+        bodyLines(gui, startId, y, lines, maxLines, W - M * 2);
+    }
+
+    public static void bodyLines(ICustomGui gui, int startId, int y, List<String> lines, int maxLines, int width) {
         int row = y;
         int n = 0;
         for (String line : lines) {
@@ -285,7 +274,7 @@ public final class CnpcGuiSupport {
             if (n >= maxLines) {
                 break;
             }
-            gui.addLabel(startId + n, safeChat(line), M, row, W - M * 2, 12);
+            gui.addLabel(startId + n, safeChat(line), M, row, width, 12);
             row += LINE_H;
             n++;
         }
@@ -301,9 +290,11 @@ public final class CnpcGuiSupport {
         for (int i = 0; i < safe.length; i++) {
             copy[i] = safeScrollLine(safe[i]);
         }
+        int bandW = textBandWidth();
+        int useW = Math.min(w, bandW);
         IComponentsScrollableWrapper panel = gui.getScrollingPanel();
-        panel.init(x, y, w, h);
-        return panel.addScroll(id, 0, 0, w, h, copy);
+        panel.init(x, y, useW, h);
+        return panel.addScroll(id, 0, 0, useW, h, copy);
     }
 
     /** Long read-only copy as a scroll list (wheel over the status/list band). */
