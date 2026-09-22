@@ -295,7 +295,7 @@ def main() -> int:
     print("\n=== Post-pierce soft-cap clamp (1.0.25) ===")
     check("incomingSoftCapFrac helper", "incomingSoftCapFrac" in profile)
     check("post-pierce bagCap clamp", "bagCap" in profile and "incomingSoftCapFrac()" in profile)
-    check("formula revision 45", "mix(h, 45L)" in profile)
+    check("formula revision 46", "mix(h, 46L)" in profile)
     check("README pierce clamp", "Post-pierce" in readme or "post-pierce" in readme)
 
     print("\n=== Telemetry rollback (2.3.161) ===")
@@ -312,7 +312,7 @@ def main() -> int:
     check("README 1.0.30 HP trim", "1.0.30" in readme and "0.75" in readme)
 
     print("\n=== Telemetry retune (1.0.24) ===")
-    check("formula revision 45", "mix(h, 45L)" in profile)
+    check("formula revision 46", "mix(h, 46L)" in profile)
     check("T1 landCap 0.18", "case 1 -> 0.18" in profile)
     check("T1 landFrac 0.13", "case 1 -> 0.13" in profile)
     check("T6 landFrac 0.38", "case 6 -> 0.38" in profile)
@@ -1311,6 +1311,13 @@ def main() -> int:
           read(SRC / "com/dbzlegacy/adaptivedifficulty/calc/PlayerCombatProfile.java")
           and "LmOverhaulScaledCombat.defense" in
           read(SRC / "com/dbzlegacy/adaptivedifficulty/calc/PlayerCombatProfile.java"))
+    profile_java = read(SRC / "com/dbzlegacy/adaptivedifficulty/calc/PlayerCombatProfile.java")
+    events_java = read(SRC / "com/dbzlegacy/adaptivedifficulty/event/DifficultyEvents.java")
+    check("mob paint uses post-Overhaul stat channels",
+          "offenseChannel" in scaled_helper
+          and "hp * scale(data)" in scaled_helper
+          and "effectiveInvested" in profile_java
+          and "LAST_OVERHAUL_SCALE" in events_java)
     check("spar/rival BP uses post-scale released power",
           "LmOverhaulScaledCombat.scaled" in
           read(SRC / "com/dbzlegacy/adaptivedifficulty/calc/CombatRating.java")

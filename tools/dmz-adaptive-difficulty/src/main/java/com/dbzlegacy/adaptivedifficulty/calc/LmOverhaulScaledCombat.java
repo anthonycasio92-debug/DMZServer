@@ -13,9 +13,10 @@ import net.minecraft.world.entity.player.Player;
  * Live combat numbers <b>after</b> Overhaul {@code scaleMultiplier}
  * ({@code 1 + prestige × scaleBonusPerPrestige}).
  * <p>
- * Offense getters ({@code getMeleeDamage}, strike, ki) already include that scale
- * via {@code getTotalMultiplier}. {@code getDefense}/{@code getMaxDefense} do not —
- * they skip total-multiplier — so defense is multiplied here once.
+ * Offense getters ({@code getMeleeDamage}, strike, ki) include Overhaul scale when
+ * {@link LmOverhaulPrestigeIntegration#integrationActive()} (via {@code getTotalMultiplier}
+ * mixin). {@code getDefense}, {@code getMaxHealth}, and similar secondary paths do not —
+ * those channels are multiplied here once.
  */
 public final class LmOverhaulScaledCombat {
     private LmOverhaulScaledCombat() {}
@@ -29,15 +30,15 @@ public final class LmOverhaulScaledCombat {
     }
 
     public static double melee(StatsData data) {
-        return sane(read(data, StatsData::getMeleeDamage, 1.0d), 1.0d);
+        return offenseChannel(data, StatsData::getMeleeDamage, 1.0d);
     }
 
     public static double strike(StatsData data) {
-        return sane(read(data, StatsData::getStrikeDamage, 1.0d), 1.0d);
+        return offenseChannel(data, StatsData::getStrikeDamage, 1.0d);
     }
 
     public static double ki(StatsData data) {
-        return sane(read(data, StatsData::getKiDamage, 1.0d), 1.0d);
+        return offenseChannel(data, StatsData::getKiDamage, 1.0d);
     }
 
     public static double energy(StatsData data) {
@@ -61,12 +62,13 @@ public final class LmOverhaulScaledCombat {
     }
 
     public static double health(StatsData data) {
-        return sane(read(data, d -> (double) d.getMaxHealth(), 20.0d), 20.0d);
+        double hp = read(data, d -> (double) d.getMaxHealth(), 20.0d);
+        return sane(hp * scale(data), 20.0d);
     }
 
     /**
      * Effective invested display: {@code points × race scaling × totalMult}
-     * (totalMult already includes Overhaul scale for combat keys).
+     * (totalMult includes Overhaul scale when integration mixin is active).
      */
     public static double effectiveInvested(StatsData data, String key) {
         if (data == null || key == null) {
@@ -90,6 +92,10 @@ public final class LmOverhaulScaledCombat {
             double mult = Math.max(0.0d, data.getTotalMultiplier(key));
             double out = Math.max(0.0d, invested) * (scaling > 0.0d ? scaling : 1.0d)
                     * (mult > 0.0d ? mult : 1.0d);
+            if (!LmOverhaulPrestigeIntegration.integrationActive()
+                    && !LmOverhaulPrestigeIntegration.isResourcePoolStat(key)) {
+                out *= scale(data);
+            }
             return Double.isFinite(out) ? out : 0.0d;
         } catch (Throwable ignored) {
             return 0.0d;
@@ -174,6 +180,17 @@ public final class LmOverhaulScaledCombat {
             return "x" + (long) Math.rint(s);
         }
         return String.format(java.util.Locale.ROOT, "x%.2f", s);
+    }
+
+    /**
+     * Live offense channel after Overhaul prestige scale (mob paint / CR / counters).
+     */
+    private static double offenseChannel(StatsData data, StatFn fn, double fallback) {
+        double raw = read(data, fn, fallback);
+        if (LmOverhaulPrestigeIntegration.integrationActive()) {
+            return sane(raw, fallback);
+        }
+        return sane(raw * scale(data), fallback);
     }
 
     private static double read(StatsData data, StatFn fn, double fallback) {

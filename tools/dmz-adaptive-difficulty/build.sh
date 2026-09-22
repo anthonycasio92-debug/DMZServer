@@ -103,6 +103,18 @@ merge_onto_base_jar() {
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.class" \
       "$merge/com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.class"
   fi
+  for calc_cls in LmOverhaulScaledCombat PlayerCombatProfile; do
+    if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/calc/${calc_cls}.class" ]]; then
+      mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/calc"
+      cp "$OUT/com/dbzlegacy/adaptivedifficulty/calc/${calc_cls}.class" \
+        "$merge/com/dbzlegacy/adaptivedifficulty/calc/${calc_cls}.class"
+    fi
+  done
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/event/DifficultyEvents.class" ]]; then
+    mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/event"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/event/DifficultyEvents.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/event/DifficultyEvents.class"
+  fi
   if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/progression/race/AndroidConversion.class" ]]; then
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/race/AndroidConversion.class" \
       "$merge/com/dbzlegacy/adaptivedifficulty/progression/race/AndroidConversion.class"

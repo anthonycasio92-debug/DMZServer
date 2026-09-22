@@ -93,6 +93,8 @@ public final class DifficultyEvents {
     private static final Map<UUID, String> LAST_RACE = new ConcurrentHashMap<>();
     /** Last polled form key — catches future races that swap forms without mult spikes. */
     private static final Map<UUID, String> LAST_FORM_KEY = new ConcurrentHashMap<>();
+    /** Last polled Overhaul prestige scale — repaint mobs when prestige mult changes. */
+    private static final Map<UUID, Double> LAST_OVERHAUL_SCALE = new ConcurrentHashMap<>();
 
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
@@ -111,6 +113,7 @@ public final class DifficultyEvents {
         LAST_LIVE_OFFENSE.clear();
         LAST_RACE.clear();
         LAST_FORM_KEY.clear();
+        LAST_OVERHAUL_SCALE.clear();
         RivalStore.get().load();
         SparStore.get().load();
         try {
@@ -396,6 +399,7 @@ public final class DifficultyEvents {
             LAST_LIVE_OFFENSE.remove(player.m_20148_());
             LAST_RACE.remove(player.m_20148_());
             LAST_FORM_KEY.remove(player.m_20148_());
+            LAST_OVERHAUL_SCALE.remove(player.m_20148_());
             AncientCoinEconomy.clearMigrateFlag(player.m_20148_());
             com.dbzlegacy.adaptivedifficulty.character.ReskinSessionGuard.clear(player);
             AreaDifficulty.clearCache();
@@ -672,6 +676,7 @@ public final class DifficultyEvents {
         double transform = DmzProgression.transformationPower(player);
         double formMult = PlayerCombatProfile.liveFormMultiplier(player);
         double liveOffense = liveOffensePeak(player);
+        double overhaulScale = liveOverhaulScale(player);
         String race = DmzProgression.race(player);
         String formKey = DmzProgression.activeFormKey(player);
         UUID id = player.m_20148_();
@@ -684,19 +689,23 @@ public final class DifficultyEvents {
             LAST_FORM_KEY.remove(id);
             LAST_FORM_MULT.remove(id);
             LAST_LIVE_OFFENSE.remove(id);
+            LAST_OVERHAUL_SCALE.remove(id);
         }
         String prevFormKey = LAST_FORM_KEY.put(id, formKey == null ? "" : formKey);
         Double prevForm = LAST_FORM_MULT.put(id, formMult);
         Double prevOffense = LAST_LIVE_OFFENSE.put(id, liveOffense);
+        Double prevOverhaulScale = LAST_OVERHAUL_SCALE.put(id, overhaulScale);
         boolean formKeyChanged = prevFormKey != null && formKey != null && !prevFormKey.equals(formKey);
         boolean formChanged = prevForm != null && Math.abs(prevForm - formMult) > 0.08;
         // Lower threshold — custom forms sometimes step up in smaller mastery chunks.
         boolean offenseChanged = prevOffense != null && prevOffense > 1.0 && liveOffense > 1.0
                 && Math.abs(liveOffense - prevOffense) / prevOffense > 0.08;
+        boolean overhaulScaleChanged = prevOverhaulScale != null
+                && Math.abs(prevOverhaulScale - overhaulScale) > 0.02;
         boolean progressChanged = before.dmzLevel != level
                 || before.prestige != prestige
                 || Math.abs(before.transformationPower - transform) > 0.5;
-        if (formChanged || formKeyChanged || offenseChanged
+        if (formChanged || formKeyChanged || offenseChanged || overhaulScaleChanged
                 || Math.abs(before.transformationPower - transform) > 0.5
                 || (prevRace != null && race != null && !prevRace.equals(race))) {
             com.dbzlegacy.adaptivedifficulty.service.DifficultyActions.refreshCombatPaint(player);
@@ -706,6 +715,21 @@ public final class DifficultyEvents {
             }
         } else if (progressChanged) {
             DifficultyCache.refresh(player);
+            if (before.prestige != prestige || overhaulScaleChanged) {
+                com.dbzlegacy.adaptivedifficulty.service.DifficultyActions.refreshCombatPaint(player);
+            }
+        }
+    }
+
+    private static double liveOverhaulScale(ServerPlayer player) {
+        try {
+            var data = DmzProgression.stats(player);
+            if (data == null) {
+                return 1.0;
+            }
+            return com.dbzlegacy.adaptivedifficulty.calc.LmOverhaulScaledCombat.scale(data);
+        } catch (Throwable t) {
+            return 1.0;
         }
     }
 

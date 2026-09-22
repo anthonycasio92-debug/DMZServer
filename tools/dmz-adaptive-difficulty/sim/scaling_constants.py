@@ -129,7 +129,7 @@ CONCEPT_DUMP_VS_EVEN_MIN = 0.58
 CONCEPT_GOD_LANDING_MIN: dict[int, float] = {1: 0.03, 5: 0.22, 7: 0.30}
 CONCEPT_TIER_RISE_MIN: dict[tuple[int, int], float] = {(1, 5): 1.4, (5, 7): 1.10}
 
-FORMULA_REVISION = 45
+FORMULA_REVISION = 46
 
 # Telemetry form bands — thresholds from pack form JSON peaks (see sim/out/form-band-reference.md).
 # formBoost = max live form mult across STR/SKP/PWR/ENE/VIT/RES (cap ~100).

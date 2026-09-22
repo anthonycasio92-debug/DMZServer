@@ -1205,7 +1205,7 @@ public final class PlayerCombatProfile {
             double energy,
             double formBoost
     ) {
-        // Prefer raw invested stats; strip form mult so transform doesn't reshuffle counters.
+        // Post-Overhaul effective investment; strip form mult so transform doesn't reshuffle counters.
         double peel = Math.max(1.0, formBoost);
         double str = melee;
         double skp = strike;
@@ -1214,24 +1214,12 @@ public final class PlayerCombatProfile {
         double pwr = ki;
         double ene = Math.max(1.0, energy * ENERGY_OFFENSE_FACTOR);
         if (data != null) {
-            try {
-                Stats stats = data.getStats();
-                if (stats != null) {
-                    str = Math.max(1.0, stats.getStrength())
-                            * Math.max(0.01, data.getTotalMultiplier("STR")) / peel;
-                    skp = Math.max(1.0, stats.getStrikePower())
-                            * Math.max(0.01, data.getTotalMultiplier("SKP")) / peel;
-                    res = Math.max(1.0, stats.getResistance())
-                            * Math.max(0.01, data.getTotalMultiplier("RES")) / peel;
-                    vit = Math.max(1.0, stats.getVitality())
-                            * Math.max(0.01, data.getTotalMultiplier("VIT")) / peel;
-                    pwr = Math.max(1.0, stats.getKiPower())
-                            * Math.max(0.01, data.getTotalMultiplier("PWR")) / peel;
-                    ene = Math.max(1.0, stats.getEnergy())
-                            * Math.max(0.01, data.getTotalMultiplier("ENE")) / peel;
-                }
-            } catch (Throwable ignored) {
-            }
+            str = Math.max(1.0, LmOverhaulScaledCombat.effectiveInvested(data, "STR")) / peel;
+            skp = Math.max(1.0, LmOverhaulScaledCombat.effectiveInvested(data, "SKP")) / peel;
+            res = Math.max(1.0, LmOverhaulScaledCombat.effectiveInvested(data, "RES")) / peel;
+            vit = Math.max(1.0, LmOverhaulScaledCombat.effectiveInvested(data, "VIT")) / peel;
+            pwr = Math.max(1.0, LmOverhaulScaledCombat.effectiveInvested(data, "PWR")) / peel;
+            ene = Math.max(1.0, LmOverhaulScaledCombat.effectiveInvested(data, "ENE")) / peel;
         }
         double peak = Math.max(str, Math.max(skp, Math.max(res, Math.max(vit, Math.max(pwr, ene)))));
         if (!(peak > 0.0)) {
@@ -1324,7 +1312,7 @@ public final class PlayerCombatProfile {
         h = mix(h, liveCfg.enableStrongStatCounters ? 1L : 0L);
         h = mix(h, liveCfg.paintEpoch());
         // Formula revision: Aug 29–30 early soft-cap + landing ease (2.3.57).
-        h = mix(h, 45L); // 2.3.163 KP hit-cap + DEF/enchant paint relief
+        h = mix(h, 46L); // 4.5.51 post-Overhaul HP + counter reads for mob paint
         h = mix(h, Math.round(CombatSanity.maxFormBoost() * 10.0));
         return h;
     }
