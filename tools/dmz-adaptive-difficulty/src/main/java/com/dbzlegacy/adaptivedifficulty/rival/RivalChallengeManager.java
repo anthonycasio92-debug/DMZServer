@@ -125,14 +125,21 @@ public final class RivalChallengeManager {
         requests.put(req.id, req);
         DmzRewards.msg(to, LmChat.note("Challenge", "§e" + req.fromName
                 + " §7challenged you for §f" + mins + "§7 min!"));
-        DmzRewards.msg(to, LmChat.tip("/rival", "→ Challenge → Accept or Decline"));
+        DmzRewards.msg(to, LmChat.tip("/rival", "→ Challenge → Pending → Accept or Decline"));
         return "§aChallenge sent to §f" + req.toName + "§a (" + mins + " min).";
     }
 
     public String acceptChallenge(ServerPlayer player) {
+        return acceptChallenge(player, null);
+    }
+
+    public String acceptChallenge(ServerPlayer player, String fromArg) {
         ChallengeRequest req = findIncoming(player.m_20148_());
         if (req == null) {
             return "§cNo pending challenge to accept.";
+        }
+        if (!matchesRequestParty(req.from, fromArg)) {
+            return "§cThat challenge is not pending for you.";
         }
         MinecraftServer server = player.m_20194_();
         ServerPlayer challenger = server == null ? null : server.m_6846_().m_11259_(req.from);
@@ -174,9 +181,16 @@ public final class RivalChallengeManager {
     }
 
     public String declineChallenge(ServerPlayer player) {
+        return declineChallenge(player, null);
+    }
+
+    public String declineChallenge(ServerPlayer player, String fromArg) {
         ChallengeRequest req = findIncoming(player.m_20148_());
         if (req == null) {
             return "§cNo pending challenge to decline.";
+        }
+        if (!matchesRequestParty(req.from, fromArg)) {
+            return "§cThat challenge is not pending for you.";
         }
         requests.remove(req.id);
         MinecraftServer server = player.m_20194_();
@@ -188,11 +202,33 @@ public final class RivalChallengeManager {
         return "§eDeclined challenge from " + req.fromName + ".";
     }
 
+    /** Cancel an outgoing challenge request (not an active fight). */
+    public String cancelChallengeRequest(ServerPlayer player) {
+        return cancelChallengeRequest(player, null);
+    }
+
+    public String cancelChallengeRequest(ServerPlayer player, String toArg) {
+        ChallengeRequest outgoing = findOutgoing(player.m_20148_());
+        if (outgoing == null) {
+            return "§cYou have no outgoing challenge to cancel.";
+        }
+        if (!matchesRequestParty(outgoing.to, toArg)) {
+            return "§cThat outgoing challenge is not yours.";
+        }
+        requests.remove(outgoing.id);
+        MinecraftServer server = player.m_20194_();
+        ServerPlayer to = server == null ? null : server.m_6846_().m_11259_(outgoing.to);
+        if (to != null) {
+            DmzRewards.msg(to, LmChat.fail("Challenge", "§f" + player.m_7755_().getString()
+                    + " §7cancelled their challenge."));
+        }
+        return "§eChallenge request cancelled.";
+    }
+
     public String cancelChallenge(ServerPlayer player) {
         ChallengeRequest outgoing = findOutgoing(player.m_20148_());
         if (outgoing != null) {
-            requests.remove(outgoing.id);
-            return "§eChallenge request cancelled.";
+            return cancelChallengeRequest(player, null);
         }
         RivalChallenge ch = getChallenge(player.m_20148_());
         if (ch == null || ch.status == RivalChallenge.Phase.ENDED) {
@@ -694,6 +730,28 @@ public final class RivalChallengeManager {
             }
         }
         return null;
+    }
+
+    private static boolean matchesRequestParty(UUID expected, String arg) {
+        if (expected == null) {
+            return false;
+        }
+        if (arg == null || arg.isBlank()) {
+            return true;
+        }
+        String raw = arg.trim();
+        if (raw.regionMatches(true, 0, "uuid:", 0, 5)) {
+            String id = raw.substring(5).trim();
+            if (id.isBlank()) {
+                return false;
+            }
+            try {
+                return expected.equals(UUID.fromString(id));
+            } catch (IllegalArgumentException e) {
+                return false;
+            }
+        }
+        return false;
     }
 
     private static String scoreLine(RivalChallenge ch) {

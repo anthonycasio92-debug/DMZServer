@@ -642,6 +642,10 @@ final class GuiBoardHelper {
             return "war".equalsIgnoreCase(kind);
         }
 
+        boolean isChallenge() {
+            return "challenge".equalsIgnoreCase(kind);
+        }
+
         String pickerArg() {
             if (!uuid.isBlank()) {
                 return "uuid:" + uuid;
@@ -688,6 +692,17 @@ final class GuiBoardHelper {
                 lore.add("&7Waiting for their master to accept");
                 lore.addAll(tips(player, "&eClick to Revoke challenge"));
             }
+        } else if (inv.isChallenge()) {
+            if (inv.incoming) {
+                lore.add("&c&l◀ INCOMING DUEL");
+                lore.add("&7From &f" + inv.name);
+                lore.addAll(tips(player, "&eClick to Accept / Decline"));
+            } else {
+                lore.add("&6&l▶ OUTGOING — YOU SENT THIS");
+                lore.add("&7To &f" + inv.name);
+                lore.add("&7Waiting for them to accept");
+                lore.addAll(tips(player, "&eClick to Cancel send"));
+            }
         } else if (inv.isMentorBond()) {
             String role = "mentor".equalsIgnoreCase(inv.kind) ? "Mentor" : "Apprentice";
             if (inv.incoming) {
@@ -724,6 +739,8 @@ final class GuiBoardHelper {
         lore.add(inv.online ? "&aOnline" : "&8Offline");
         String title = inv.isDojoWar()
                 ? (inv.incoming ? "&c◀ War: &f" + inv.name : "&6▶ Sent: &f" + inv.name)
+                : inv.isChallenge()
+                ? (inv.incoming ? "&c◀ Duel: &f" + inv.name : "&6▶ Sent: &f" + inv.name)
                 : (inv.incoming ? "&a◀ " : "&6▶ ") + "&f" + inv.name;
         if (!inv.uuid.isBlank()) {
             try {

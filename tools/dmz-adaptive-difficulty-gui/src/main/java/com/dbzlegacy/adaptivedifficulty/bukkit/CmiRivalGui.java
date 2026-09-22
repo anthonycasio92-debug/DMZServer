@@ -40,6 +40,10 @@ public final class CmiRivalGui {
                 openPendingDecide(player, raw.substring("pending_decide:".length()).trim());
                 return true;
             }
+            if (p.startsWith("challenge_pending_decide:")) {
+                openChallengePendingDecide(player, raw.substring("challenge_pending_decide:".length()).trim());
+                return true;
+            }
             switch (p) {
                 case "list" -> openList(player);
                 case "actions" -> openActions(player);
@@ -61,6 +65,7 @@ public final class CmiRivalGui {
                         "&8Silent Rival", "&7Click for silent rivalry");
                 case "stats", "statistics" -> openDetail(player, "stats", "&eRival Stats", Material.BOOK, "progress");
                 case "challenge", "challenges" -> openChallenge(player);
+                case "challenge_pending", "challenge_invites" -> openChallengePending(player);
                 case "top", "leaderboard" -> openTop(player);
                 case "progress" -> openProgress(player);
                 case "records", "more" -> openRecords(player);
@@ -127,7 +132,7 @@ public final class CmiRivalGui {
                 Map.of("pending", pendingLine),
                 "&7Declare · Pending · Remove · Silent", pendingLine));
         gui.addButton(pageBtn(player, 23, "rival.main.challenge", Material.DIAMOND_SWORD, "&cChallenge", "challenge",
-                "&7Send · accept · decline · spectate"));
+                "&7Send duels · Pending · spectate"));
         gui.addButton(pageBtn(player, 25, "rival.main.top", Material.GOLDEN_HELMET, "&fTop", "top",
                 "&7RP leaderboard"));
         gui.addButton(pageBtn(player, 29, "rival.main.history", Material.SKELETON_SKULL, "&8History", "history",
@@ -609,17 +614,21 @@ public final class CmiRivalGui {
         info.addLore(toAmp(ForgeBridge.rivalLines(player, "challenge")));
         gui.addButton(info);
 
+        Map<String, String> ph = ForgeBridge.rivalPlaceholders(player);
+        int pendingCount = 0;
+        try {
+            pendingCount = Integer.parseInt(ph.getOrDefault("pending_challenges", "0"));
+        } catch (NumberFormatException ignored) {
+            pendingCount = 0;
+        }
+        String pendingLabel = pendingCount > 0
+                ? "&6Pending (" + pendingCount + ")"
+                : "&6Pending requests";
+
         gui.addButton(pageBtn(player, 19, "rival.challenge.send", Material.GOLDEN_SWORD, "&eSend Challenge…",
                 "pick_challenge", "&7Pick rival, then choose 1–10 minutes"));
-        gui.addButton(actionBtn(player, 21, "rival.challenge.accept", Material.LIME_CONCRETE, "&aAccept",
-                "challenge", "accept", "challenge",
-                List.of("&7Accept pending challenge")));
-        gui.addButton(actionBtn(player, 23, "rival.challenge.decline", Material.RED_CONCRETE, "&cDecline",
-                "challenge", "decline", "challenge",
-                List.of("&7Decline pending challenge")));
-        gui.addButton(actionBtn(player, 25, "rival.challenge.cancel", Material.GRAY_CONCRETE, "&8Cancel",
-                "challenge", "cancel", "challenge",
-                List.of("&7Cancel your outgoing challenge")));
+        gui.addButton(pageBtn(player, 21, "rival.challenge.pending", Material.CLOCK, pendingLabel,
+                "challenge_pending", "&7Accept · decline · cancel"));
         gui.addButton(pageBtn(player, 29, "rival.challenge.spectate", Material.ENDER_EYE, "&bSpectate…",
                 "pick_spectate", "&7Watch an online player's challenge"));
         gui.addButton(actionBtn(player, 31, "rival.challenge.spectate_stop", Material.GRAY_DYE, "&8Stop Spectate",
@@ -631,6 +640,129 @@ public final class CmiRivalGui {
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         GuiFeedback.openCmi(gui);
+    }
+
+    private static void openChallengePending(Player player) {
+        CMIGui gui = base(player, "&8Pending Duels", 5);
+        List<GuiBoardHelper.PendingInvite> pending = GuiBoardHelper.parsePendingInvites(
+                ForgeBridge.rivalPendingChallengeCards(player));
+        CMIGuiButton info = new CMIGuiButton(4, Material.CLOCK, "&e&lPending Duels");
+        info.lockField();
+        List<String> header = new ArrayList<>();
+        header.add("");
+        header.add(pending.isEmpty() ? "&7No pending duels." : "&7" + pending.size() + " pending");
+        header.addAll(GuiBoardHelper.tips(player,
+                "&a◀ Incoming &7= Accept / Decline",
+                "&6▶ Outgoing &7= Cancel send"));
+        info.addLore(header);
+        gui.addButton(info);
+
+        if (pending.isEmpty()) {
+            CMIGuiButton empty = new CMIGuiButton(22, Material.BARRIER,
+                    GuiTooltips.name("rival.empty.no_challenge_pending", "&7No pending duels"));
+            empty.lockField();
+            empty.addLore(GuiTooltips.buttonLore("rival.empty.no_challenge_pending",
+                    GuiBoardHelper.tipsList(player, List.of("&7Send from Challenge menu"))));
+            gui.addButton(empty);
+        } else {
+            int[] slots = GuiBoardHelper.centeredSlots(Math.min(pending.size(), GuiPlayerPicker.CONTENT_SLOTS.length));
+            for (int i = 0; i < slots.length && i < pending.size(); i++) {
+                GuiBoardHelper.PendingInvite duel = pending.get(i);
+                CMIGuiButton btn = new CMIGuiButton(slots[i], GuiBoardHelper.pendingInviteHead(player, duel));
+                btn.lockField();
+                btn.addCommand("lmdo rival page challenge_pending_decide:" + duel.pickerArg());
+                gui.addButton(btn);
+            }
+        }
+
+        gui.addButton(pageBtn(player, 39, "rival.challenge.hub", Material.IRON_SWORD, "&cChallenge",
+                "challenge", "&7Send · spectate"));
+        gui.addButton(pageBtn(player, 36, "common.back", Material.ARROW, "&7Back", "challenge", "&7Challenge"));
+        gui.addButton(hubBtn(40));
+        gui.addButton(closeBtn(44));
+        fillEmpty(gui, 5);
+        GuiFeedback.openCmi(gui);
+    }
+
+    private static void openChallengePendingDecide(Player player, String arg) {
+        CMIGui gui = base(player, "&8Duel Request", 5);
+        GuiBoardHelper.PendingInvite duel = findPendingChallenge(player, arg);
+        String display = duel != null ? duel.name : (arg == null || arg.isBlank() ? "?" : arg);
+        if (display.regionMatches(true, 0, "uuid:", 0, 5)) {
+            display = display.substring(5).trim();
+        }
+        String pickerArg = duel != null ? duel.pickerArg()
+                : (arg == null || arg.isBlank() ? display : arg.trim());
+
+        CMIGuiButton headBtn = new CMIGuiButton(13, duel != null
+                ? GuiBoardHelper.pendingInviteHead(player, duel)
+                : GuiPlayerPicker.headByName(display, "&f" + display, List.of("&7Pending duel")));
+        headBtn.lockField();
+        gui.addButton(headBtn);
+
+        if (duel != null && duel.incoming) {
+            CMIGuiButton info = new CMIGuiButton(4, Material.CLOCK, "&e&lRespond");
+            info.lockField();
+            info.addLore(GuiTooltips.buttonLore("rival.challenge.decide_info",
+                    GuiBoardHelper.tipsList(player, List.of(
+                            "&7Duel from &f" + display,
+                            "&aAccept &7→ countdown",
+                            "&cDecline &7→ refuse"))));
+            gui.addButton(info);
+            gui.addButton(actionBtn(player, 20, "rival.challenge.accept", Material.LIME_DYE, "&aAccept",
+                    "challenge_accept", pickerArg, "challenge_pending",
+                    List.of("&7Accept duel with &f" + display)));
+            gui.addButton(actionBtn(player, 24, "rival.challenge.decline", Material.RED_DYE, "&cDecline",
+                    "challenge_decline", pickerArg, "challenge_pending",
+                    List.of("&7Decline duel from &f" + display)));
+        } else {
+            CMIGuiButton info = new CMIGuiButton(4, Material.CLOCK, "&6&lOutgoing");
+            info.lockField();
+            info.addLore(GuiTooltips.buttonLore("rival.challenge.out_info",
+                    GuiBoardHelper.tipsList(player, List.of(
+                            "&7Waiting on &f" + display,
+                            "&8Cancel &7to withdraw"))));
+            gui.addButton(info);
+            gui.addButton(actionBtn(player, 20, "rival.challenge.cancel", Material.GRAY_DYE, "&8Cancel send",
+                    "challenge_cancel", pickerArg, "challenge_pending",
+                    List.of("&7Cancel challenge to &f" + display)));
+        }
+
+        gui.addButton(pageBtn(player, 36, "rival.challenge.decide_back", Material.ARROW, "&7Back",
+                "challenge_pending", "&7Pending duels"));
+        gui.addButton(hubBtn(40));
+        gui.addButton(closeBtn(44));
+        fillEmpty(gui, 5);
+        GuiFeedback.openCmi(gui);
+    }
+
+    private static GuiBoardHelper.PendingInvite findPendingChallenge(Player player, String arg) {
+        if (arg == null || arg.isBlank()) {
+            return null;
+        }
+        String raw = arg.trim();
+        String uuid = "";
+        String name = raw;
+        if (raw.regionMatches(true, 0, "uuid:", 0, 5)) {
+            uuid = raw.substring(5).trim();
+            name = "";
+        }
+        for (GuiBoardHelper.PendingInvite duel : GuiBoardHelper.parsePendingInvites(
+                ForgeBridge.rivalPendingChallengeCards(player))) {
+            if (duel == null || !duel.isChallenge()) {
+                continue;
+            }
+            if (!uuid.isBlank() && uuid.equalsIgnoreCase(duel.uuid)) {
+                return duel;
+            }
+            if (!name.isBlank() && name.equalsIgnoreCase(duel.name)) {
+                return duel;
+            }
+            if (raw.equalsIgnoreCase(duel.pickerArg())) {
+                return duel;
+            }
+        }
+        return null;
     }
 
     private static void openChallengeTargetPicker(Player player) {

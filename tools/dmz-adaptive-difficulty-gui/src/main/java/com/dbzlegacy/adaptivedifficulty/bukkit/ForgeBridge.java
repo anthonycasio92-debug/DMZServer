@@ -68,6 +68,7 @@ public final class ForgeBridge {
     private static Method rivalCurrentCardsMethod;
     private static Method rivalPastCardsMethod;
     private static Method rivalPendingInviteCardsMethod;
+    private static Method rivalPendingChallengeCardsMethod;
     private static Method rivalCurrentArgsMethod;
     private static Method sparPlaceholdersMethod;
     private static Method sparLinesMethod;
@@ -1135,6 +1136,11 @@ public final class ForgeBridge {
         return invokeRivalStringList(player, "pendingInviteCards");
     }
 
+    /** Encoded pending duel challenge requests (incoming + outgoing). */
+    public static List<String> rivalPendingChallengeCards(Player player) {
+        return invokeRivalStringList(player, "pendingChallengeCards");
+    }
+
     /** True when Accept is waiting for a Mutual slot replace pick. */
     public static boolean rivalNeedsMutualReplace(Player player) {
         Map<String, String> ph = rivalPlaceholders(player);
@@ -1159,6 +1165,7 @@ public final class ForgeBridge {
                 case "currentRivalCards" -> rivalCurrentCardsMethod;
                 case "pastRivalCards" -> rivalPastCardsMethod;
                 case "pendingInviteCards" -> rivalPendingInviteCardsMethod;
+                case "pendingChallengeCards" -> rivalPendingChallengeCardsMethod;
                 case "currentRivalArgs" -> rivalCurrentArgsMethod;
                 default -> null;
             };
@@ -2290,6 +2297,13 @@ public final class ForgeBridge {
                     rivalPendingInviteCardsMethod = api.getMethod("pendingInviteCards", sp);
                 } catch (Throwable ignored) {
                     rivalPendingInviteCardsMethod = null;
+                }
+            }
+            if (rivalPendingChallengeCardsMethod == null) {
+                try {
+                    rivalPendingChallengeCardsMethod = api.getMethod("pendingChallengeCards", sp);
+                } catch (Throwable ignored) {
+                    rivalPendingChallengeCardsMethod = null;
                 }
             }
             if (rivalCurrentArgsMethod == null) {
