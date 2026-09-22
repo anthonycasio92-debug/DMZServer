@@ -22,6 +22,9 @@ public final class CnpcGuiStyle {
     public static final String HINT_REVIEW_PAY = "§7Read the summary before you confirm";
     public static final String HINT_TOGGLE_STAFF = "§7Staff: tap a row to turn a flag on or off";
     public static final String HINT_READ_ONLY = "§7View-only — changes are made elsewhere";
+    public static final String HINT_TITLE_EQUIP =
+            "§7Click a row for details · double-click to equip";
+    public static final String HINT_REVIEW_DOJO = "§7Select a rival dojo below";
 
     public static final String MSG_RIVALS_OFF = "§cRivals are turned off on this server.";
     public static final String MSG_SPAR_OFF = "§cSparring is turned off on this server.";

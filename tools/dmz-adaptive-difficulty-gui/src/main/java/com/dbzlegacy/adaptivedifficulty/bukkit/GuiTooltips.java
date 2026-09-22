@@ -31,7 +31,7 @@ import org.bukkit.plugin.java.JavaPlugin;
  */
 final class GuiTooltips {
     /** Bump when the in-jar tooltip catalog is humanized; older on-disk files are replaced on reload. */
-    private static final int CATALOG_REVISION = 195;
+    private static final int CATALOG_REVISION = 196;
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     private static final Map<String, Entry> ENTRIES = new ConcurrentHashMap<>();

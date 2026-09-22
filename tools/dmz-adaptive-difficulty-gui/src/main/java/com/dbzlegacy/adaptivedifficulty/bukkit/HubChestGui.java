@@ -189,7 +189,7 @@ public final class HubChestGui implements Listener {
                 List.of("&7Skills · TP · Race · Combat flags", "", "&eOpen")),
                 SlotAction.open("progression"));
         put(holder, inv, 24, tipBtn(player, "hub.admin.logs", Material.CLOCK, "&8Event log",
-                List.of("&7Telemetry toggle and flush", "", "&eOpen")),
+                List.of("&7Toggle event logging and save to disk", "", "&eOpen")),
                 SlotAction.page("logs"));
         put(holder, inv, 31, tipBtn(player, "hub.admin.migrate", Material.ANVIL, "&eCNPC migrate",
                 List.of("&7One-shot CNPC data migration", "", "&eRun")),

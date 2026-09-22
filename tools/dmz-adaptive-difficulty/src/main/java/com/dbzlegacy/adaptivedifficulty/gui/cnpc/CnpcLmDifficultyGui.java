@@ -239,7 +239,7 @@ public final class CnpcLmDifficultyGui {
         ServerPlayer subject = who(player);
         DifficultyActions.prepareGui(subject);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§a", "Difficulty", "Titles"),
-                "§7Click for details · double-click to equip");
+                CnpcGuiStyle.HINT_TITLE_EQUIP);
         List<String> header = new ArrayList<>();
         header.add("§7Wearing §e" + blankNone(TitleSystem.activeDisplay(subject)));
         header.add("§7Title score §6" + TitleSystem.computeTitleScore(subject));

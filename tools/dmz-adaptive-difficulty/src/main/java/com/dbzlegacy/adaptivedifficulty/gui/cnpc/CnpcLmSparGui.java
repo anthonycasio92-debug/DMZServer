@@ -353,7 +353,8 @@ public final class CnpcLmSparGui {
     }
 
     private static void paintReleasePick(ServerPlayer player, ICustomGui gui) {
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§eRelease apprentice", "§7Click to confirm release");
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§eRelease apprentice",
+                CnpcGuiStyle.HINT_CLICK_ENTRY);
         List<String> cards = SparGuiApi.apprenticeCards(subject(player));
         int listY = CnpcGuiSupport.bodyBelowHeader(infoY);
         if (cards.isEmpty()) {
@@ -375,7 +376,8 @@ public final class CnpcLmSparGui {
     }
 
     private static void paintDojoChallengePick(ServerPlayer player, ICustomGui gui) {
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§cChallenge rival dojo", "§7Click a dojo to review");
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§cChallenge rival dojo",
+                CnpcGuiStyle.HINT_REVIEW_DOJO);
         List<String> cards = SparGuiApi.rivalDojoCards(subject(player));
         int listY = CnpcGuiSupport.bodyBelowHeader(infoY);
         if (cards.isEmpty()) {

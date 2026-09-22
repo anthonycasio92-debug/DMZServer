@@ -345,7 +345,8 @@ public final class CnpcLmRivalGui {
         ServerPlayer who = subject(player);
         List<String> cards = RivalGuiApi.currentRivalCards(who);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Your list"),
-                cards.isEmpty() ? "§7No rivals yet" : "§7" + cards.size() + " rivals · click for profile");
+                cards.isEmpty() ? "§7No rivals yet"
+                        : "§7" + cards.size() + " rivals · select one below");
         int listY = CnpcGuiSupport.bodyBelowHeader(infoY);
         if (cards.isEmpty()) {
             listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, RivalGuiApi.listLines(who),

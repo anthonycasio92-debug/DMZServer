@@ -194,7 +194,7 @@ public final class CmiHubGui {
         gui.addButton(openBtn(player, 22, "hub.admin.progression", Material.BREWING_STAND, "&dProgression", "progression",
                 "&7Skills · TP · Race · Combat flags", "&eOpen"));
         gui.addButton(pageBtn(player, 24, "hub.admin.logs", Material.CLOCK, "&8Event log", "logs",
-                "&7Telemetry toggle and flush", "&eOpen"));
+                "&7Toggle event logging and save to disk", "&eOpen"));
         gui.addButton(actionBtn(player, 31, "hub.admin.migrate", Material.ANVIL, "&eCNPC migrate",
                 "migrate-cnpc", "", "admin", List.of("&7One-shot CNPC data migration", "", "&eRun")));
 

@@ -129,6 +129,46 @@
           "&8For staff"
         ]
       }
+    },
+    "admin": {
+      "reload": {
+        "name": "&aReload LM config",
+        "lore": [
+          "&7Reload Legacy Mechanics JSON from disk",
+          "&8For staff",
+          "&eReload"
+        ]
+      },
+      "progression": {
+        "name": "&dProgression",
+        "lore": [
+          "&7Skills · TP · race · combat flags",
+          "&8For staff",
+          "&eOpen"
+        ]
+      },
+      "logs": {
+        "name": "&8Event log",
+        "lore": [
+          "&7Toggle event logging and save to disk",
+          "&8For staff",
+          "&eOpen"
+        ]
+      },
+      "migrate": {
+        "name": "&eCNPC migrate",
+        "lore": [
+          "&7One-time CustomNPCs data migration",
+          "&8For staff",
+          "&eRun"
+        ]
+      },
+      "back": {
+        "name": "&7Back",
+        "lore": [
+          "&7Return to the main hub"
+        ]
+      }
     }
   },
   "character": {
@@ -502,6 +542,20 @@
         "lore": [
           "&aOwned",
           "&aPermanent purchase &8· only one at a time"
+        ]
+      },
+      "majin_locked": {
+        "name": "&8Buy Permanent Majin",
+        "lore": [
+          "&7Unlock Mutant first or you already own Majin",
+          "&8One permanent form at a time"
+        ]
+      },
+      "mutant_locked": {
+        "name": "&8Buy Permanent Mutant",
+        "lore": [
+          "&7Unlock Majin first or you already own Mutant",
+          "&8One permanent form at a time"
         ]
       },
       "unmajin": {
@@ -1898,5 +1952,5 @@
       ]
     }
   },
-  "_catalogRevision": 195
+  "_catalogRevision": 196
 }
