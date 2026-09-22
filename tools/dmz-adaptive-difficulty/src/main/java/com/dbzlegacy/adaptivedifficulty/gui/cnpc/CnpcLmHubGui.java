@@ -96,8 +96,11 @@ public final class CnpcLmHubGui {
                     () -> CnpcLmGui.open(player, "skills", "core"));
         } else {
             CnpcGuiSupport.buttonSmall(gui, 24, "§8Skill Check", CnpcGuiSupport.COL_L, row, CnpcGuiSupport.BTN_W,
-                    () -> CnpcGuiSupport.feedback(player,
-                            "§7Skill Check is a donator perk — ask staff if you want access."));
+                    () -> {
+                        CnpcGuiSupport.pushMenuMessage(player,
+                                "§7Skill Check is a donator perk — ask staff if you want access.");
+                        paintMain(player);
+                    });
         }
         CnpcGuiSupport.button(gui, 25, "§fCharacter Services", CnpcGuiSupport.COL_R, row,
                 () -> CnpcLmGui.open(player, "character", "main"));
@@ -140,8 +143,11 @@ public final class CnpcLmHubGui {
             default -> systemKey;
         };
         CnpcGuiSupport.buttonSmall(gui, id, "§8" + pretty, col, row, CnpcGuiSupport.BTN_W,
-                () -> CnpcGuiSupport.feedback(viewer,
-                        "§7" + pretty + " is off on this server. Ask staff if you think that's wrong."));
+                () -> {
+                    CnpcGuiSupport.pushMenuMessage(viewer,
+                            "§7" + pretty + " is off on this server. Ask staff if you think that's wrong.");
+                    paintMain(viewer);
+                });
     }
 
     private static List<String> hubSnapshot(

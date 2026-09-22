@@ -348,8 +348,9 @@ public final class CnpcLmDifficultyGui {
         if (StaffAccess.isStaff(player) && parentPage == null) {
             row += 24;
             CnpcGuiSupport.buttonSmall(gui, 98, "§8Staff: /difficulty admin", CnpcGuiSupport.COL_L, row, 195, () -> {
-                player.m_213846_(net.minecraft.network.chat.Component.m_237113_(
-                        "§7Staff difficulty settings: §f/difficulty admin"));
+                CnpcGuiSupport.pushMenuMessage(player,
+                        "§7Full difficulty admin settings: §f/difficulty admin §7(chat command).");
+                open(player, "main");
             });
         }
     }

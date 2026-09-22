@@ -416,11 +416,12 @@ public final class CnpcLmRivalGui {
 
     private static void paintAdmin(ServerPlayer player, ICustomGui gui) {
         if (!StaffAccess.isStaff(player)) {
+            CnpcGuiSupport.pushMenuMessage(player, "§cStaff only — rival admin is for staff.");
             open(player, "main");
             return;
         }
-        CnpcGuiSupport.title(gui, 1, "§cRival admin");
-        int row = 80;
+        int row = CnpcGuiSupport.paintHeader(player, gui, "§cRival admin", "§7Save, reload, status");
+        row += 4;
         CnpcGuiSupport.button(gui, 20, "§aSave stores", CnpcGuiSupport.COL_L, row,
                 () -> act(player, "admin", "save", "admin"));
         CnpcGuiSupport.button(gui, 21, "§eReload", CnpcGuiSupport.COL_R, row,

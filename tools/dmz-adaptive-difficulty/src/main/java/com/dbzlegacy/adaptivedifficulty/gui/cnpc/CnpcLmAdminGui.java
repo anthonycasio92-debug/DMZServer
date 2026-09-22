@@ -11,7 +11,7 @@ public final class CnpcLmAdminGui {
 
     public static void open(ServerPlayer player, String page) {
         if (!StaffAccess.isStaff(player)) {
-            player.m_213846_(net.minecraft.network.chat.Component.m_237113_("§cStaff only."));
+            CnpcGuiSupport.denyToHub(player, "§cStaff only — that panel is for staff.");
             return;
         }
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_ADMIN, CnpcGuiSupport.W, 280, (pl, gui) -> paint(pl, gui));

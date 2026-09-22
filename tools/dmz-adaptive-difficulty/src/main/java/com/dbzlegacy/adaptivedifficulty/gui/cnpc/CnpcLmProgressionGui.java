@@ -20,8 +20,7 @@ public final class CnpcLmProgressionGui {
     public static void open(ServerPlayer player, String page) {
         String p = normalizePage(page);
         if (requiresStaff(p) && !StaffAccess.isStaff(player)) {
-            player.m_213846_(net.minecraft.network.chat.Component.m_237113_("§cStaff only."));
-            open(player, "main");
+            CnpcGuiSupport.denyToHub(player, "§cStaff only — that progression page is for staff.");
             return;
         }
         int h = switch (p) {

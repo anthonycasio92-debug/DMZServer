@@ -11,19 +11,18 @@ public final class CnpcLmLogsGui {
 
     public static void open(ServerPlayer player, String page) {
         if (!StaffAccess.isStaff(player)) {
-            player.m_213846_(net.minecraft.network.chat.Component.m_237113_("§cStaff only."));
+            CnpcGuiSupport.denyToHub(player, "§cStaff only — event log is for staff.");
             return;
         }
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_LOGS, CnpcGuiSupport.W, 280, (pl, gui) -> paint(pl, gui));
     }
 
     private static void paint(ServerPlayer player, ICustomGui gui) {
-        CnpcGuiSupport.title(gui, 1, "§8Server event log");
-        CnpcGuiSupport.subtitle(gui, 2, "§7Telemetry for staff debugging");
-        CnpcGuiSupport.divider(gui, 3, 38);
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§8Server event log",
+                "§7Telemetry for staff debugging");
         List<String> lines = MechanicsGuiApi.linesForPage(player, "logs");
-        CnpcGuiSupport.bodyLines(gui, 10, 46, lines, 8);
-        int row = 150;
+        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 4);
+        row += 8;
         CnpcGuiSupport.button(gui, 20, "§aTurn logging on", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> MechanicsGuiApi.handleDo(player, "syslog", "on", "logs"),

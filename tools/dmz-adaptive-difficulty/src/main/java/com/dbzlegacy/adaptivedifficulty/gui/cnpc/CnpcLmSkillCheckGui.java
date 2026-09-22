@@ -14,7 +14,8 @@ public final class CnpcLmSkillCheckGui {
 
     public static void open(ServerPlayer player, String page) {
         if (!SkillCheckService.canUse(player) && !StaffAccess.isStaff(player)) {
-            player.m_213846_(net.minecraft.network.chat.Component.m_237113_("§cSkill Check requires donator access."));
+            CnpcGuiSupport.denyToHub(player,
+                    "§cSkill Check needs donator access.\n§7Ask staff if you think you should have it.");
             return;
         }
         String p = page == null || page.isBlank() ? "core" : page.toLowerCase();
@@ -23,7 +24,7 @@ public final class CnpcLmSkillCheckGui {
 
     public static void openSkillsAdmin(ServerPlayer player, String page) {
         if (!StaffAccess.isStaff(player)) {
-            player.m_213846_(net.minecraft.network.chat.Component.m_237113_("§cStaff only."));
+            CnpcGuiSupport.denyToHub(player, "§cStaff only.");
             return;
         }
         open(player, page == null ? "core" : page);

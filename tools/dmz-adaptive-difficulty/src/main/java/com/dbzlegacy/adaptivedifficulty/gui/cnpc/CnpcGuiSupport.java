@@ -67,7 +67,7 @@ public final class CnpcGuiSupport {
             return false;
         }
         if (!NpcAPI.IsAvailable()) {
-            player.m_213846_(Component.m_237113_("§cCustomNPCs is required for the LM menu (install on client + server)."));
+            feedbackChat(player, "§cCustomNPCs is required for the LM menu (install on client + server).");
             return false;
         }
         return true;
@@ -92,7 +92,7 @@ public final class CnpcGuiSupport {
     public static void showSized(ServerPlayer player, int guiId, int width, int height, Painter painter) {
         IPlayer<?> ip = wrap(player);
         if (ip == null) {
-            player.m_213846_(Component.m_237113_("§cCould not open LM menu (CNPC player wrap failed)."));
+            feedbackChat(player, "§cCould not open LM menu (CNPC player wrap failed).");
             return;
         }
         try {
@@ -102,7 +102,7 @@ public final class CnpcGuiSupport {
             ip.showCustomGui(gui);
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.warn("[{}] CNPC GUI {} failed: {}", AdaptiveDifficultyMod.MOD_ID, guiId, t);
-            player.m_213846_(Component.m_237113_("§cMenu error: " + safeChat(t.getMessage())));
+            feedbackChat(player, "§cMenu error: " + safeChat(t.getMessage()));
         }
     }
 
@@ -114,7 +114,29 @@ public final class CnpcGuiSupport {
         boolean inspecting = AdminInspectSessions.isInspecting(viewer.m_20148_());
         int dividerY = inspecting ? 52 : 38;
         divider(gui, ID_DIVIDER, dividerY);
-        return dividerY + 10;
+        return paintFlashNotice(viewer, gui, dividerY + 10);
+    }
+
+    /** Recent action result / error band (consumed once). Returns Y for the main info block. */
+    public static int paintFlashNotice(ServerPlayer viewer, ICustomGui gui, int y) {
+        List<String> raw = CnpcMenuFeedback.take(viewer);
+        if (raw.isEmpty()) {
+            return y;
+        }
+        List<String> box = new ArrayList<>();
+        box.add("§eMessage");
+        box.addAll(raw);
+        return paintInfoBlock(gui, y, box, 4);
+    }
+
+    public static void pushMenuMessage(ServerPlayer player, String message) {
+        CnpcMenuFeedback.set(player, message);
+    }
+
+    /** Set message and reopen the Legacy Mechanics hub (access denied, etc.). */
+    public static void denyToHub(ServerPlayer player, String message) {
+        pushMenuMessage(player, message);
+        CnpcLmHubGui.open(player, "main");
     }
 
     /**
@@ -465,7 +487,13 @@ public final class CnpcGuiSupport {
         return s;
     }
 
+    /** Show text in the next CNPC menu refresh (preferred for LM GUI actions). */
     public static void feedback(ServerPlayer player, String msg) {
+        pushMenuMessage(player, msg);
+    }
+
+    /** Chat fallback when no menu can be opened (CNPC missing, etc.). */
+    public static void feedbackChat(ServerPlayer player, String msg) {
         if (player == null || msg == null || msg.isBlank()) {
             return;
         }
@@ -477,7 +505,10 @@ public final class CnpcGuiSupport {
     }
 
     public static void act(ServerPlayer player, Supplier<String> action, Runnable reopen) {
-        feedback(player, action.get());
+        String msg = action.get();
+        if (msg != null && !msg.isBlank()) {
+            pushMenuMessage(player, msg);
+        }
         reopen.run();
     }
 
