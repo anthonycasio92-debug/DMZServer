@@ -866,7 +866,8 @@
       "remove": {
         "name": "&cRemove…",
         "lore": [
-          "&7Pick one of your rivals to remove"
+          "&7Open List and tap a rival",
+          "&8Remove is only on the rival profile"
         ]
       },
       "silent": {
@@ -1017,13 +1018,32 @@
       "nav_actions": {
         "name": "&aActions",
         "lore": [
-          "&7Declare · accept · remove · pending"
+          "&7Declare · pending · silent"
         ]
       },
       "nav_history": {
         "name": "&8History",
         "lore": [
           "&7Previous rivals"
+        ]
+      },
+      "profile_info": {
+        "name": "&6&lRival profile",
+        "lore": [
+          "&7Stats on the head · &cRemove &7below",
+          "&8Removed rivals move to History"
+        ]
+      },
+      "remove_rival": {
+        "name": "&cRemove rival",
+        "lore": [
+          "&7Ends this rivalry on your list"
+        ]
+      },
+      "detail_back": {
+        "name": "&7Back",
+        "lore": [
+          "&7Rival list"
         ]
       }
     },
@@ -1904,5 +1924,5 @@
       ]
     }
   },
-  "_catalogRevision": 198
+  "_catalogRevision": 199
 }

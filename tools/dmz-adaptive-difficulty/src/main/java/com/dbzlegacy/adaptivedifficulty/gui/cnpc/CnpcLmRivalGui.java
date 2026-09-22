@@ -57,8 +57,7 @@ public final class CnpcLmRivalGui {
                 case "pick_silent" -> paintNamePick(pl, gui, "§8Silent rival", RivalGuiApi.onlinePlayerNames(subject(pl)),
                         "silent", "actions");
                 case "pick_accept", "pick_decline" -> open(pl, "pending");
-                case "pick_remove" -> paintRivalCardPick(pl, gui, "§cRemove rival",
-                        RivalGuiApi.currentRivalCards(subject(pl)), "remove", "actions");
+                case "pick_remove" -> open(pl, "list");
                 case "pick_replace_mutual", "replace_mutual" -> paintRivalCardPick(pl, gui, "§eReplace mutual slot",
                         RivalGuiApi.currentRivalCards(subject(pl)), "accept_replace", "actions");
                 case "pick_challenge" -> paintNamePick(pl, gui, "§cChallenge rival", RivalGuiApi.onlinePlayerNames(subject(pl)),
@@ -75,7 +74,7 @@ public final class CnpcLmRivalGui {
         return switch (page) {
             case "list" -> 400;
             case "pending", "invites" -> 400;
-            case "pick_declare", "pick_silent", "pick_challenge", "pick_spectate", "pick_remove",
+            case "pick_declare", "pick_silent", "pick_challenge", "pick_spectate",
                     "pick_accept", "pick_decline", "pick_replace_mutual" -> 380;
             case "progress", "records" -> 300;
             case "history", "past", "stats", "top", "leaderboard", "season", "quests",
@@ -141,14 +140,13 @@ public final class CnpcLmRivalGui {
 
     private static void paintActions(ServerPlayer player, ICustomGui gui) {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Actions"),
-                "§7Declare, accept, remove, and manage rivals");
+                "§7Declare, pending board, and silent rivals");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, RivalGuiApi.linesForPage(subject(player), "actions"),
                         CnpcGuiStyle.INFO_INLINE_MAX));
         CnpcGuiSupport.button(gui, 20, "§eDeclare…", CnpcGuiSupport.COL_L, row, () -> open(player, "pick_declare"));
         CnpcGuiSupport.button(gui, 21, "§6Pending board", CnpcGuiSupport.COL_R, row, () -> open(player, "pending"));
         row += 24;
-        CnpcGuiSupport.button(gui, 22, "§cRemove…", CnpcGuiSupport.COL_L, row, () -> open(player, "pick_remove"));
-        CnpcGuiSupport.button(gui, 23, "§8Silent…", CnpcGuiSupport.COL_R, row, () -> open(player, "pick_silent"));
+        CnpcGuiSupport.button(gui, 22, "§8Silent…", CnpcGuiSupport.COL_L, row, () -> open(player, "pick_silent"));
         row += 24;
         if (RivalGuiApi.needsMutualReplacePick(subject(player))) {
             CnpcGuiSupport.button(gui, 24, "§eReplace mutual…", CnpcGuiSupport.COL_L, row,
@@ -343,7 +341,7 @@ public final class CnpcLmRivalGui {
         List<String> cards = RivalGuiApi.currentRivalCards(who);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Your list"),
                 cards.isEmpty() ? "§7No rivals yet"
-                        : "§7" + cards.size() + " rivals · select one below");
+                        : "§7" + cards.size() + " rivals · tap a name for profile and remove");
         int listY = CnpcGuiSupport.bodyBelowHeader(infoY);
         if (cards.isEmpty()) {
             listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, RivalGuiApi.listLines(who),

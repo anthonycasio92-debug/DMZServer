@@ -444,6 +444,31 @@ final class GuiBoardHelper {
         return out;
     }
 
+    static RivalCard findCurrentRival(List<String> encoded, String arg) {
+        if (arg == null || arg.isBlank()) {
+            return null;
+        }
+        String raw = arg.trim();
+        String uuid = "";
+        String name = raw;
+        if (raw.regionMatches(true, 0, "uuid:", 0, 5)) {
+            uuid = raw.substring(5).trim();
+            name = "";
+        }
+        for (RivalCard card : parseRivalCards(encoded)) {
+            if (!uuid.isBlank() && uuid.equalsIgnoreCase(card.uuid)) {
+                return card;
+            }
+            if (!name.isBlank() && name.equalsIgnoreCase(card.name)) {
+                return card;
+            }
+            if (raw.equalsIgnoreCase(card.pickerArg())) {
+                return card;
+            }
+        }
+        return null;
+    }
+
     /** uuid, name, status, online, optedIn, near, spare, teamMode (tab-separated). */
     static final class TeamRivalCard {
         final String uuid;

@@ -476,7 +476,7 @@ public final class RivalGuiApi {
             case "actions" -> List.of(
                     "§6§lRival Actions",
                     "§7Pending board — tap a name to Accept or Decline",
-                    "§7Declare · Remove · Silent",
+                    "§7Declare · Silent · remove rivals from List",
                     "§7Both Silent → Declared → Pending → Mutual"
             );
             case "stats", "statistics" -> statsLines(player);

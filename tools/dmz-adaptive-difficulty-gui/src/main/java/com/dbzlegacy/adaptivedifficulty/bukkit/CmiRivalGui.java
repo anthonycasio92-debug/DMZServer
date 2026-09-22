@@ -40,6 +40,10 @@ public final class CmiRivalGui {
                 openPendingDecide(player, raw.substring("pending_decide:".length()).trim());
                 return true;
             }
+            if (p.startsWith("list_detail:")) {
+                openListDetail(player, raw.substring("list_detail:".length()).trim());
+                return true;
+            }
             switch (p) {
                 case "list" -> openList(player);
                 case "actions" -> openActions(player);
@@ -48,8 +52,7 @@ public final class CmiRivalGui {
                 case "pick_declare" -> openPicker(player, "declare", "actions",
                         "&6Declare Rival", "&7Click to declare this player");
                 case "pick_accept", "pick_decline" -> openPending(player);
-                case "pick_remove" -> openCurrentRivalPicker(player, "remove", "actions",
-                        "&cRemove Rival", "&7Click to remove this rivalry");
+                case "pick_remove" -> openList(player);
                 case "pick_replace_mutual", "replace_mutual" -> openMutualReplacePicker(player);
                 case "pick_challenge" -> openChallengeTargetPicker(player);
                 case "pick_spectate" -> openPicker(player, "spectate", "challenge",
@@ -352,8 +355,8 @@ public final class CmiRivalGui {
         listHeader.add("");
         listHeader.add(cards.isEmpty() ? "&7No rivals yet." : "&7" + cards.size() + " rival(s)");
         listHeader.addAll(GuiBoardHelper.tips(player,
-                "&8Hover a head for stats",
-                "&8Manage relationships in Actions"));
+                "&7Tap a head for profile and remove",
+                "&8Declare and pending live in Actions"));
         info.addLore(listHeader);
         gui.addButton(info);
 
@@ -367,15 +370,17 @@ public final class CmiRivalGui {
         } else {
             int[] slots = GuiBoardHelper.centeredSlots(Math.min(cards.size(), 21));
             for (int i = 0; i < slots.length && i < cards.size(); i++) {
-                ItemStack head = GuiBoardHelper.rivalHead(cards.get(i));
+                GuiBoardHelper.RivalCard card = cards.get(i);
+                ItemStack head = GuiBoardHelper.rivalHead(card);
                 CMIGuiButton btn = new CMIGuiButton(slots[i], head);
                 btn.lockField();
+                btn.addCommand("lmdo rival page list_detail:" + card.pickerArg());
                 gui.addButton(btn);
             }
         }
 
         gui.addButton(pageBtn(player, 37, "rival.list.nav_actions", Material.EMERALD, "&aActions", "actions",
-                "&7Declare · accept · remove · pending"));
+                "&7Declare · pending · silent"));
         gui.addButton(pageBtn(player, 39, "rival.list.nav_history", Material.SKELETON_SKULL, "&8History", "history",
                 "&7Previous rivals"));
         gui.addButton(pageBtn(player, 36, "common.back", Material.ARROW, "&7Back", "main", "&7Return"));
@@ -505,6 +510,43 @@ public final class CmiRivalGui {
         GuiFeedback.openCmi(gui);
     }
 
+    private static void openListDetail(Player player, String arg) {
+        CMIGui gui = base(player, "&8Rival Profile", 5);
+        GuiBoardHelper.RivalCard card = GuiBoardHelper.findCurrentRival(
+                ForgeBridge.rivalCurrentCards(player), arg);
+        String pickerArg = card != null ? card.pickerArg()
+                : (arg == null || arg.isBlank() ? "?" : arg.trim());
+        String display = card != null ? card.name : pickerArg;
+        if (display.regionMatches(true, 0, "uuid:", 0, 5)) {
+            display = display.substring(5).trim();
+        }
+
+        CMIGuiButton info = new CMIGuiButton(4, Material.PLAYER_HEAD,
+                GuiTooltips.name("rival.list.profile_info", "&6&lRival profile"));
+        info.lockField();
+        info.addLore(GuiTooltips.buttonLore("rival.list.profile_info", List.of(
+                "&7Stats on the head · &cRemove &7below",
+                "&8Removed rivals move to History")));
+        gui.addButton(info);
+
+        ItemStack head = card != null
+                ? GuiBoardHelper.rivalHead(card)
+                : new ItemStack(Material.PLAYER_HEAD);
+        CMIGuiButton headBtn = new CMIGuiButton(13, head);
+        headBtn.lockField();
+        gui.addButton(headBtn);
+
+        gui.addButton(actionBtn(player, 20, "rival.list.remove_rival", Material.RED_DYE, "&cRemove rival",
+                "remove", pickerArg, "list",
+                List.of("&7Remove " + display + " from your list")));
+        gui.addButton(pageBtn(player, 36, "rival.list.detail_back", Material.ARROW, "&7Back", "list",
+                "&7Rival list"));
+        gui.addButton(hubBtn(40));
+        gui.addButton(closeBtn(44));
+        fillEmpty(gui, 5);
+        GuiFeedback.openCmi(gui);
+    }
+
     private static GuiBoardHelper.PendingInvite findPendingInvite(Player player, String arg) {
         if (arg == null || arg.isBlank()) {
             return null;
@@ -553,9 +595,7 @@ public final class CmiRivalGui {
                 "pending",
                 "&7Tap a name on the Pending board",
                 pendingCount > 0 ? "&aYou have pending invites" : "&8No pending invites"));
-        gui.addButton(pageBtn(player, 23, "rival.actions.remove", Material.RED_DYE, "&cRemove…", "pick_remove",
-                "&7Pick one of your rivals to remove"));
-        gui.addButton(pageBtn(player, 25, "rival.actions.silent", Material.GRAY_DYE, "&8Silent…", "pick_silent",
+        gui.addButton(pageBtn(player, 23, "rival.actions.silent", Material.GRAY_DYE, "&8Silent…", "pick_silent",
                 "&7One-sided Silent (they are not told)",
                 "&8Both Silent → Declared"));
 

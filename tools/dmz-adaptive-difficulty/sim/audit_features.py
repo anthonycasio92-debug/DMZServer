@@ -612,8 +612,9 @@ def main() -> int:
     rival_link = read(SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalLink.java")
     check("Silent label (not Unknown)", 'case UNKNOWN -> "Silent"' in rival_st)
     cnpc_rival = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmRivalGui.java")
-    check("CNPC rival remove uses card names",
-          "paintRivalCardPick" in cnpc_rival and "currentRivalCards" in cnpc_rival.split("pick_remove")[1].split("pick_replace")[0])
+    check("CNPC rival remove only from list detail",
+          "list_detail:" in cnpc_rival and "openListDetail" in cnpc_rival
+          and 'case "pick_remove" -> open(pl, "list")' in cnpc_rival)
     check("Rival displayPickerArg resolves uuid links",
           "displayPickerArg" in read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/RivalGuiApi.java")
           and "rivalLinkDisplayName" in read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/RivalGuiApi.java"))
@@ -650,11 +651,13 @@ def main() -> int:
     under_fn = prox.split("tryUnderdogEngage", 1)[1].split("handleDamagedByRival", 1)[0] if "tryUnderdogEngage" in prox else ""
     check("underdog any declaredByMe status",
           "!link.declaredByMe" in under_fn and "link.mutual" not in under_fn)
-    check("Actions is Declare Pending Remove Silent",
+    check("Actions is Declare Pending Silent (remove via List)",
           'page("pick_declare")' in rival_chest
           and 'page("pending")' in rival_chest
-          and 'page("pick_remove")' in rival_chest
           and 'page("pick_silent")' in rival_chest
+          and 'page("pick_remove")' not in rival_chest.split("private Inventory actions")[1].split("private Inventory history")[0]
+          and "pick_remove" not in cmi_rival.split("private static void openActions")[1].split("private static void openHistory")[0]
+          and "list_detail:" in rival_chest and "list_detail:" in cmi_rival
           and "Accept Declared" not in rival_chest
           and "Accept Declared" not in cmi_rival)
     check("Spar Stats button BOOK",
