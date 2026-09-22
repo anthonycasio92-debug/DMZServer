@@ -106,12 +106,11 @@ public final class CnpcLmSparGui {
                 : CnpcGuiStyle.toggleOff("Mentor TP"), CnpcGuiSupport.COL_R, row,
                 () -> act(player, "mentor_tpmsg", "toggle", "main"));
         row += 24;
-        CnpcGuiSupport.button(gui, 26, "§cEnd session", CnpcGuiSupport.COL_L, row, () -> act(player, "end", "", "main"));
         if (StaffAccess.isStaff(player)) {
-            CnpcGuiSupport.buttonSmall(gui, CnpcGuiSupport.ID_STAFF_EXTRA, "§cStaff Admin", CnpcGuiSupport.COL_R, row, 95,
+            CnpcGuiSupport.buttonSmall(gui, CnpcGuiSupport.ID_STAFF_EXTRA, "§cStaff Admin", CnpcGuiSupport.COL_L, row, 95,
                     () -> open(player, "admin"));
+            row += 24;
         }
-        row += 24;
         footer(player, gui, row, null);
     }
 

@@ -117,7 +117,7 @@ public final class CmiSparGui {
         status.addLore(statusLore(player, ph));
         gui.addButton(status);
 
-        // Main: Status · Stats · Top · Mentor · End Session · Hub · Close (pickers on Mentor only)
+        // Main: Status · Stats · Top · Mentor · toggles · Hub · Close (pickers on Mentor only)
         gui.addButton(pageBtn(player, 19, "spar.main.stats", Material.BOOK, "&eStats", "stats",
                 "&7Last 3 spar reports", "&8One item per spar"));
         gui.addButton(pageBtn(player, 20, "spar.main.dojo_rank", Material.BOOKSHELF, "&6Dojo Rankings",
@@ -154,13 +154,6 @@ public final class CmiSparGui {
                         "",
                         "&eSelect to switch"
                 )));
-
-        boolean session = "true".equalsIgnoreCase(ph.getOrDefault("sessionActive", "false"));
-        if (session) {
-            gui.addButton(actionBtn(player, 31, "spar.main.end_session", Material.RED_DYE, "&cEnd Session",
-                    "end", "0", "main",
-                    List.of("&7End your active spar session")));
-        }
 
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));

@@ -118,7 +118,7 @@ public final class SparChestGui implements Listener {
         }
 
         put(holder, inv, 4, item(Material.GOLDEN_SWORD, "&b&lSparring", statusLore(viewer, ph)));
-        // Main: Status · Stats · Top · Mentor · End Session · Hub · Close (pickers on Mentor only)
+        // Main: Status · Stats · Top · Mentor · toggles · Hub · Close (pickers on Mentor only)
         put(holder, inv, 19, tipBtn(viewer, "spar.main.stats", Material.BOOK, "&eStats",
                         List.of("&7Last 3 spar reports", "&8One item per spar")),
                 SlotAction.page("stats"));
@@ -157,13 +157,6 @@ public final class SparChestGui implements Listener {
                         "",
                         "&eSelect to switch"
                 )), SlotAction.act("tpmsg", "toggle", "main"));
-
-        boolean session = "true".equalsIgnoreCase(ph.getOrDefault("sessionActive", "false"));
-        if (session) {
-            put(holder, inv, 31, tipBtn(viewer, "spar.main.end_session", Material.RED_DYE, "&cEnd Session",
-                    List.of("&7End your active spar session")),
-                    SlotAction.act("end", "0", "main"));
-        }
 
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
