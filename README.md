@@ -8,6 +8,8 @@ Forge **1.20.1** server pack for **DragonMineZ 2.1.3** + your CustomNPCs script 
 
 Production deploys go to the **live** server only. The former test host is no longer used. See [`docs/DEPLOY.md`](docs/DEPLOY.md).
 
+**Legacy Mechanics:** develop on **`main`** only (4.5.x consolidated line). Local Forge builds overlay CNPC patches onto `tools/dmz-adaptive-difficulty/base/LegacyMechanics-4.5.49-consolidated.jar` — see [`docs/BRANCH_CONSOLIDATION.md`](docs/BRANCH_CONSOLIDATION.md).
+
 ## Important: hybrid runtime
 
 Most uploaded scripts call `org.bukkit.Bukkit` and Fabled/CMI. They need a **hybrid** jar (Arclight / Mohist / similar) that loads both `mods/` and `plugins/`. Plain Forge will run DMZ + CustomNPCs + KubeJS, but Fabled/CMI bridges will no-op or error.
