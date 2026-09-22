@@ -47,7 +47,7 @@ public final class CnpcLmHubGui {
     }
 
     private static void paintMain(ServerPlayer player) {
-        int height = CnpcGuiSupport.suggestHeight(300);
+        int height = CnpcGuiSupport.suggestHeight(StaffAccess.isStaff(player) ? 360 : 340);
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_HUB, CnpcGuiSupport.W, height,
                 (p, gui) -> paintMain(p, gui));
     }

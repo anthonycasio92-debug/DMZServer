@@ -18,8 +18,6 @@ import noppes.npcs.api.gui.IButton;
 import noppes.npcs.api.gui.ICustomGui;
 import noppes.npcs.api.gui.ILabel;
 import noppes.npcs.api.gui.IScroll;
-import noppes.npcs.api.gui.ITextArea;
-import noppes.npcs.api.gui.IComponentsWrapper;
 
 /** Shared CustomNPCs layout + show helpers for Legacy Mechanics UI. */
 public final class CnpcGuiSupport {
@@ -34,10 +32,8 @@ public final class CnpcGuiSupport {
     public static final int LINE_H = 13;
     /** Default height for rival/spar/character player lists. */
     public static final int SCROLL_LIST_H = 120;
-    /** Space reserved at bottom for Back + Main nav. */
-    public static final int FOOTER_RESERVE = 40;
-    /** Content below this Y is placed in CNPC wheel-scroll panel when possible. */
-    public static final int WHEEL_SCROLL_TOP_Y = 52;
+    /** Space reserved at bottom for nav / close row (pixels). */
+    public static final int FOOTER_RESERVE = 48;
 
     /** Reserved widget ids — one role per screen; never reuse on the same gui instance. */
     public static final int ID_TITLE = 1;
@@ -113,24 +109,20 @@ public final class CnpcGuiSupport {
         boolean inspecting = AdminInspectSessions.isInspecting(viewer.m_20148_());
         int dividerY = inspecting ? 52 : 38;
         divider(gui, ID_DIVIDER, dividerY);
-        ensureWheelScrollPanel(gui, dividerY + 8);
         return dividerY + 10;
     }
 
-    /** Enable mouse-wheel scrolling for long info/list areas (CNPC scrolling panel). */
-    public static void ensureWheelScrollPanel(ICustomGui gui, int contentTopY) {
+    /**
+     * Max list scroll height that fits above footer rows. CNPC list scrolls use their own scrollbar
+     * (hover list + wheel); do not use {@link ICustomGui#getScrollingPanel()} — it breaks Y layout.
+     */
+    public static int listScrollHeight(ICustomGui gui, int listY, int actionRowsAboveFooter) {
         if (gui == null) {
-            return;
+            return SCROLL_LIST_H;
         }
-        int top = Math.max(WHEEL_SCROLL_TOP_Y, contentTopY);
-        int panelH = gui.getHeight() - top - FOOTER_RESERVE;
-        if (panelH < 32) {
-            return;
-        }
-        try {
-            gui.getScrollingPanel().init(M, top, W - M * 2, panelH);
-        } catch (Throwable ignored) {
-        }
+        int rows = Math.max(0, actionRowsAboveFooter) + 1;
+        int maxBottom = gui.getHeight() - FOOTER_RESERVE - rows * ROW_STEP - 4;
+        return Math.max(48, Math.min(SCROLL_LIST_H, maxBottom - listY));
     }
 
     /** Nav row Y after a scroll list. {@code extraActionRows} = full button rows above nav. */
@@ -142,14 +134,13 @@ public final class CnpcGuiSupport {
         return navRowAfterScroll(listY, scrollH, 0);
     }
 
-    private static IComponentsWrapper componentsForY(ICustomGui gui, int y) {
-        if (y >= WHEEL_SCROLL_TOP_Y) {
-            try {
-                return gui.getScrollingPanel();
-            } catch (Throwable ignored) {
-            }
+    public static IScroll scrollList(
+            ICustomGui gui, int listY, String[] items, int actionRowsAboveFooter, boolean searchable) {
+        int h = listScrollHeight(gui, listY, actionRowsAboveFooter);
+        if (searchable) {
+            return scrollSearchable(gui, ID_LIST_SCROLL, M, listY, W - M * 2, h, items);
         }
-        return gui;
+        return scroll(gui, ID_LIST_SCROLL, M, listY, W - M * 2, h, items);
     }
 
     /**
@@ -167,21 +158,25 @@ public final class CnpcGuiSupport {
         if (clean.isEmpty()) {
             return startY + 4;
         }
-        int maxInline = Math.max(1, inlineMax);
-        if (clean.size() <= maxInline) {
+        int maxInline = inlineMax <= 0 ? 0 : Math.max(1, inlineMax);
+        if (maxInline > 0 && clean.size() <= maxInline) {
             bodyLines(gui, ID_INFO_LABEL_BASE, startY, clean, maxInline);
             return startY + clean.size() * LINE_H + 10;
         }
         gui.addLabel(ID_STATUS_TAG, "§8Status", M, startY - 2, W - M * 2, 10);
-        int scrollH = Math.min(112, Math.max(56, clean.size() * 14));
-        ensureWheelScrollPanel(gui, startY);
+        int preferred = Math.min(112, Math.max(56, clean.size() * 14));
+        int scrollH = preferred;
+        if (gui != null) {
+            int maxBottom = gui.getHeight() - FOOTER_RESERVE - ROW_STEP - 4;
+            scrollH = Math.max(48, Math.min(preferred, maxBottom - startY - 8));
+        }
         scroll(gui, ID_INFO_SCROLL, M, startY + 8, W - M * 2, scrollH,
                 clean.stream().map(CnpcGuiSupport::safeScrollLine).toArray(String[]::new));
         return startY + 8 + scrollH + 10;
     }
 
     public static int suggestHeight(int actionBottomY) {
-        return Math.max(H, Math.min(420, actionBottomY + 36));
+        return Math.max(H, Math.min(460, actionBottomY + FOOTER_RESERVE + 8));
     }
 
     public static void footerCloseRefresh(ServerPlayer player, ICustomGui gui, int row, Runnable refresh) {
@@ -240,32 +235,12 @@ public final class CnpcGuiSupport {
         for (int i = 0; i < safe.length; i++) {
             copy[i] = safeScrollLine(safe[i]);
         }
-        return componentsForY(gui, y).addScroll(id, x, y, w, h, copy);
+        return gui.addScroll(id, x, y, w, h, copy);
     }
 
-    /** Read-only multiline text (wheel-scrolls when inside the scrolling panel). */
-    public static void readOnlyTextArea(ICustomGui gui, int id, int x, int y, int w, int h, List<String> lines) {
-        if (lines == null || lines.isEmpty()) {
-            return;
-        }
-        ensureWheelScrollPanel(gui, y);
-        StringBuilder sb = new StringBuilder();
-        for (String line : lines) {
-            if (line == null || line.isBlank()) {
-                continue;
-            }
-            if (sb.length() > 0) {
-                sb.append('\n');
-            }
-            sb.append(safeChat(line));
-        }
-        try {
-            ITextArea area = componentsForY(gui, y).addTextArea(id, x, y, w, h);
-            area.setText(sb.toString());
-            area.setFocused(false);
-        } catch (Throwable ignored) {
-            bodyLines(gui, id, y, lines, Math.min(12, lines.size()));
-        }
+    /** Long read-only copy as a scroll list (use wheel while hovering the list). */
+    public static int paintReadOnlyScroll(ICustomGui gui, int startY, List<String> lines) {
+        return paintInfoBlock(gui, startY, lines, 0);
     }
 
     public static IScroll scrollSearchable(ICustomGui gui, int id, int x, int y, int w, int h, String[] items) {

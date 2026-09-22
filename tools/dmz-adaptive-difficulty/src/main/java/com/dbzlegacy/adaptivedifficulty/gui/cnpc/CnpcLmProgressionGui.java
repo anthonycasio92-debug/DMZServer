@@ -246,8 +246,7 @@ public final class CnpcLmProgressionGui {
                 () -> ProgressionGuiApi.handleDo(player, "android", subject.m_7755_().getString(), "android_convert"),
                 () -> open(player, "android_convert")));
         row += CnpcGuiSupport.ROW_STEP + 4;
-        paintNameScroll(player, gui, row, "android", "android_convert");
-        row += 140;
+        row = paintNameScroll(player, gui, row, "android", "android_convert");
         CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "android_panel"), "§7« Back");
     }
 
@@ -264,23 +263,24 @@ public final class CnpcLmProgressionGui {
                 () -> open(player, "android_remove")));
         row += CnpcGuiSupport.ROW_STEP + 4;
         if (staff) {
-            paintNameScroll(player, gui, row, "android_remove", "android_remove");
-            row += 140;
+            row = paintNameScroll(player, gui, row, "android_remove", "android_remove");
             CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "android_panel"), "§7« Back");
         } else {
             CnpcGuiSupport.navSubmenu(player, gui, row + 8, () -> open(player, "main"), "§7« Back");
         }
     }
 
-    private static void paintNameScroll(
+    /** @return Y row for footer after list (or after empty label). */
+    private static int paintNameScroll(
             ServerPlayer player, ICustomGui gui, int y, String action, String returnPage) {
         List<String> names = RivalGuiApi.onlinePlayerNames(CnpcGuiSupport.target(player));
         if (names.isEmpty()) {
             gui.addLabel(70, "§7No other players online.", CnpcGuiSupport.M, y + 8, 400, 14);
-            return;
+            return y + 28;
         }
-        IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, CnpcGuiSupport.ID_LIST_SCROLL, CnpcGuiSupport.M, y, 400,
-                120, names.toArray(String[]::new));
+        int scrollH = CnpcGuiSupport.listScrollHeight(gui, y, 1);
+        IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, CnpcGuiSupport.ID_LIST_SCROLL, CnpcGuiSupport.M, y,
+                CnpcGuiSupport.W - CnpcGuiSupport.M * 2, scrollH, names.toArray(String[]::new));
         scroll.setOnDoubleClick((g, sc) -> {
             g.close();
             int[] sel = sc.getSelection();
@@ -291,6 +291,7 @@ public final class CnpcLmProgressionGui {
                         () -> open(player, returnPage));
             }
         });
+        return CnpcGuiSupport.navRowAfterScroll(y, scrollH);
     }
 
     private static void paintEconomy(ServerPlayer player, ICustomGui gui) {

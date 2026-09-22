@@ -216,14 +216,15 @@ public final class CnpcLmDifficultyGui {
             labels.add(label);
             cards.add(t.id + "\t" + label);
         }
+        int scrollH = CnpcGuiSupport.listScrollHeight(gui, listY, 2);
         IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, CnpcGuiSupport.ID_LIST_SCROLL, CnpcGuiSupport.M, listY,
-                400, 120, labels.toArray(String[]::new));
+                CnpcGuiSupport.W - CnpcGuiSupport.M * 2, scrollH, labels.toArray(String[]::new));
         CnpcGuiSupport.wireScrollDoublePick(scroll, cards, 0, id -> CnpcGuiSupport.act(
                 player,
                 () -> DifficultyActions.handleArg(subject, "equip_title", id, "titles").message(),
                 () -> open(player, "titles")));
 
-        int row = listY + 128;
+        int row = CnpcGuiSupport.navRowAfterScroll(listY, scrollH);
         PlayerDifficultyData data = DifficultyCache.data(subject);
         boolean sense = data.titleProgress().titleSenseChat();
         CnpcGuiSupport.buttonSmall(gui, 20, sense ? "§aSense ON" : "§8Sense OFF", CnpcGuiSupport.COL_L, row, 95,

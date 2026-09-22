@@ -103,16 +103,16 @@ public final class CnpcLmCharacterGui {
                 })
                 .toArray(String[]::new);
 
+        int scrollH = CnpcGuiSupport.listScrollHeight(gui, listY, 1);
         IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, CnpcGuiSupport.ID_LIST_SCROLL, CnpcGuiSupport.M, listY,
-                400, CnpcGuiSupport.SCROLL_LIST_H, labels);
+                CnpcGuiSupport.W - CnpcGuiSupport.M * 2, scrollH, labels);
         scroll.setOnClick((g, sc) -> {
             String id = selectedCardId(cards, sc);
             if (id != null) {
                 open(player, "race_pct:" + id);
             }
         });
-        int navRow = CnpcGuiSupport.navRowAfterScroll(listY, CnpcGuiSupport.SCROLL_LIST_H);
-        footer(player, gui, navRow, "main");
+        footer(player, gui, CnpcGuiSupport.navRowAfterScroll(listY, scrollH), "main");
     }
 
     private static void paintRacePct(ServerPlayer player, String raceAndMaybePct) {
@@ -121,9 +121,9 @@ public final class CnpcLmCharacterGui {
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CHARACTER, CnpcGuiSupport.W, 320, (pl, gui) -> {
             int infoY = CnpcGuiSupport.paintHeader(pl, gui, "§eKeep progress?",
                     "§7Becoming §f" + titleRace(raceId));
-            CnpcGuiSupport.readOnlyTextArea(gui, 110, CnpcGuiSupport.M, infoY, 400, 72,
+            int row = CnpcGuiSupport.paintReadOnlyScroll(gui, infoY,
                     CharacterServicesGuiApi.linesForPage(player, "race_pct:" + raceId + ":0"));
-            int row = infoY + 80;
+            row += 8;
             for (int pct : new int[] {0, 25, 50, 75, 100}) {
                 int col = (pct == 0 || pct == 50 || pct == 100) ? CnpcGuiSupport.COL_L : CnpcGuiSupport.COL_R;
                 if (pct == 25 || pct == 75) {
@@ -141,9 +141,9 @@ public final class CnpcLmCharacterGui {
     private static void paintRaceConfirm(ServerPlayer player, String raceAndPct) {
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CHARACTER, CnpcGuiSupport.W, 320, (pl, gui) -> {
             int infoY = CnpcGuiSupport.paintHeader(pl, gui, "§cConfirm race change", "§7Review before paying");
-            CnpcGuiSupport.readOnlyTextArea(gui, 110, CnpcGuiSupport.M, infoY, 400, 100,
+            int row = CnpcGuiSupport.paintReadOnlyScroll(gui, infoY,
                     CharacterServicesGuiApi.linesForPage(player, "race_confirm:" + raceAndPct));
-            int row = infoY + 108;
+            row += 8;
             CnpcGuiSupport.button(gui, 20, "§aConfirm & pay", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                     player,
                     () -> CharacterServicesGuiApi.handleDo(player, "race_confirm", raceAndPct, "main"),
@@ -172,24 +172,24 @@ public final class CnpcLmCharacterGui {
                 })
                 .toArray(String[]::new);
 
+        int scrollH = CnpcGuiSupport.listScrollHeight(gui, listY, 1);
         IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, CnpcGuiSupport.ID_LIST_SCROLL, CnpcGuiSupport.M, listY,
-                400, CnpcGuiSupport.SCROLL_LIST_H, labels);
+                CnpcGuiSupport.W - CnpcGuiSupport.M * 2, scrollH, labels);
         scroll.setOnClick((g, sc) -> {
             String id = selectedCardId(cards, sc);
             if (id != null) {
                 open(player, "class_confirm:" + id);
             }
         });
-        int navRow = CnpcGuiSupport.navRowAfterScroll(listY, CnpcGuiSupport.SCROLL_LIST_H);
-        footer(player, gui, navRow, "main");
+        footer(player, gui, CnpcGuiSupport.navRowAfterScroll(listY, scrollH), "main");
     }
 
     private static void paintClassConfirm(ServerPlayer player, String classId) {
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CHARACTER, CnpcGuiSupport.W, 300, (pl, gui) -> {
             int infoY = CnpcGuiSupport.paintHeader(pl, gui, "§cConfirm class change", "§7Review before paying");
-            CnpcGuiSupport.readOnlyTextArea(gui, 110, CnpcGuiSupport.M, infoY, 400, 88,
+            int row = CnpcGuiSupport.paintReadOnlyScroll(gui, infoY,
                     CharacterServicesGuiApi.linesForPage(player, "class_confirm:" + classId));
-            int row = infoY + 96;
+            row += 8;
             CnpcGuiSupport.button(gui, 20, "§aConfirm & pay", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                     player,
                     () -> CharacterServicesGuiApi.handleDo(player, "class_confirm", classId, "main"),
@@ -215,8 +215,9 @@ public final class CnpcLmCharacterGui {
             gui.addLabel(50, "§7No head parts on this page.", CnpcGuiSupport.M, listY + 4, 400, 14);
             scrollBottom = listY + 20;
         } else {
+            int scrollH = CnpcGuiSupport.listScrollHeight(gui, listY, 3);
             IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, CnpcGuiSupport.ID_LIST_SCROLL, CnpcGuiSupport.M,
-                    listY, 400, CnpcGuiSupport.SCROLL_LIST_H,
+                    listY, CnpcGuiSupport.W - CnpcGuiSupport.M * 2, scrollH,
                     CnpcGuiSupport.cardLabels(cards, 1));
             scroll.setOnDoubleClick((g, sc) -> {
                 g.close();
@@ -227,7 +228,7 @@ public final class CnpcLmCharacterGui {
                             () -> open(player, "bones:" + pg));
                 }
             });
-            scrollBottom = listY + CnpcGuiSupport.SCROLL_LIST_H;
+            scrollBottom = listY + scrollH;
         }
         int row = scrollBottom + 8;
         CnpcGuiSupport.buttonSmall(gui, 60, "§aEquip race default", CnpcGuiSupport.COL_L, row, 195, () -> CnpcGuiSupport.act(

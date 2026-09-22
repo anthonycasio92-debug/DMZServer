@@ -119,6 +119,7 @@ fi
 # StatsData#load (mixins → DmzResourcePoolClamp) and clients see "Invalid player data".
 
 echo "Built $JAR"
+ln -sf "$(basename "$JAR")" "$ROOT/mods/${NAME}-${VERSION}.jar"
 jar tf "$JAR"
 
 # Fail-closed audits: product features, combat scaling sim, GUI ABI.
