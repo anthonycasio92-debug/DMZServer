@@ -362,7 +362,7 @@ public final class RivalChestGui implements Listener {
             }
         }
         put(holder, inv, 37, pageBtn(viewer, "rival.list.nav_actions", Material.EMERALD, "&aActions",
-                "&7Declare · accept · remove · pending"), SlotAction.page("actions"));
+                "&7Declare · pending · silent"), SlotAction.page("actions"));
         put(holder, inv, 39, pageBtn(viewer, "rival.list.nav_history", Material.SKELETON_SKULL, "&8History",
                 "&7Previous rivals"), SlotAction.page("history"));
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),
@@ -516,8 +516,6 @@ public final class RivalChestGui implements Listener {
                 "&7Incoming: click a head to Accept / Decline",
                 pendingCount > 0 ? "&aYou have pending invites" : "&8No pending invites"),
                 SlotAction.page("pending"));
-        put(holder, inv, 23, pageBtn(viewer, "rival.actions.remove", Material.RED_DYE, "&cRemove…",
-                "&7Pick one of your rivals to remove"), SlotAction.page("pick_remove"));
         put(holder, inv, 25, pageBtn(viewer, "rival.actions.silent", Material.GRAY_DYE, "&8Silent…",
                 "&7One-sided Silent (they are not told)",
                 "&8Both Silent → Declared"), SlotAction.page("pick_silent"));

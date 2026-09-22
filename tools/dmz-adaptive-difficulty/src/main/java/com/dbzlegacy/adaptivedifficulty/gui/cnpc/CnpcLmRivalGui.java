@@ -142,23 +142,31 @@ public final class CnpcLmRivalGui {
     }
 
     private static void paintActions(ServerPlayer player, ICustomGui gui) {
+        ServerPlayer who = subject(player);
+        Map<String, String> ph = RivalGuiApi.placeholders(who);
+        int pendingCount = 0;
+        try {
+            pendingCount = Integer.parseInt(ph.getOrDefault("pending_invites", "0"));
+        } catch (NumberFormatException ignored) {
+            pendingCount = 0;
+        }
+        String pendingLabel = pendingCount > 0
+                ? "§6Pending (" + pendingCount + ")"
+                : "§6Pending requests";
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Actions"),
-                "§7Declare, accept, remove, and manage rivals");
-        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, RivalGuiApi.linesForPage(subject(player), "actions"),
+                "§7Accept or decline from Pending · remove from your rival list");
+        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, RivalGuiApi.linesForPage(who, "actions"),
                         CnpcGuiStyle.INFO_INLINE_MAX));
         CnpcGuiSupport.button(gui, 20, "§eDeclare…", CnpcGuiSupport.COL_L, row, () -> open(player, "pick_declare"));
-        CnpcGuiSupport.button(gui, 21, "§aAccept…", CnpcGuiSupport.COL_R, row, () -> open(player, "pick_accept"));
+        CnpcGuiSupport.button(gui, 21, pendingLabel, CnpcGuiSupport.COL_R, row, () -> open(player, "pending"));
         row += 24;
-        CnpcGuiSupport.button(gui, 22, "§cDecline…", CnpcGuiSupport.COL_L, row, () -> open(player, "pick_decline"));
-        CnpcGuiSupport.button(gui, 23, "§cRemove…", CnpcGuiSupport.COL_R, row, () -> open(player, "pick_remove"));
-        row += 24;
-        CnpcGuiSupport.button(gui, 24, "§8Silent…", CnpcGuiSupport.COL_L, row, () -> open(player, "pick_silent"));
-        if (RivalGuiApi.needsMutualReplacePick(subject(player))) {
-            CnpcGuiSupport.button(gui, 25, "§eReplace mutual…", CnpcGuiSupport.COL_R, row,
+        CnpcGuiSupport.button(gui, 22, "§8Silent…", CnpcGuiSupport.COL_L, row, () -> open(player, "pick_silent"));
+        if (RivalGuiApi.needsMutualReplacePick(who)) {
+            CnpcGuiSupport.button(gui, 23, "§eReplace mutual…", CnpcGuiSupport.COL_R, row,
                     () -> open(player, "pick_replace_mutual"));
         }
         row += 24;
-        CnpcGuiSupport.button(gui, 26, "§6Pending board", CnpcGuiSupport.COL_L, row, () -> open(player, "pending"));
+        CnpcGuiSupport.button(gui, 24, "§6Your rival list", CnpcGuiSupport.COL_L, row, () -> open(player, "list"));
         row += 24;
         footer(player, gui, row, "main");
     }

@@ -548,8 +548,6 @@ public final class CmiRivalGui {
                 "pending",
                 "&7Incoming: click a head to Accept / Decline",
                 pendingCount > 0 ? "&aYou have pending invites" : "&8No pending invites"));
-        gui.addButton(pageBtn(player, 23, "rival.actions.remove", Material.RED_DYE, "&cRemove…", "pick_remove",
-                "&7Pick one of your rivals to remove"));
         gui.addButton(pageBtn(player, 25, "rival.actions.silent", Material.GRAY_DYE, "&8Silent…", "pick_silent",
                 "&7One-sided Silent (they are not told)",
                 "&8Both Silent → Declared"));
