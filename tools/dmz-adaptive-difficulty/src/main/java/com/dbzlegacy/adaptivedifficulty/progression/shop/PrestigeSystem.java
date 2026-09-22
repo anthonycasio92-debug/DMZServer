@@ -333,7 +333,28 @@ public final class PrestigeSystem {
             int floor = Math.min(getNeedFloor(player), MAX_LADDER_REQUIRED);
             return Math.min(cap, Math.max(ladder, floor));
         }
-        return Math.min(cap, requiredLevelForHeld(getHeld(player)));
+        return Math.min(cap, requiredLevelForHeld(heldForNeedGate(player)));
+    }
+
+    /** Wallet NBT for Need gates — never CNPC faction inflate (legacy faction could read as 8+). */
+    public static int heldForNeedGate(ServerPlayer player) {
+        if (player == null) {
+            return 0;
+        }
+        CompoundTag tag = PersistentDataAccess.get(player);
+        if (PersistentDataAccess.isWritable(tag) && tag.m_128441_(KEY_HELD)) {
+            return Math.max(0, Math.min(MAX_HELD, tag.m_128451_(KEY_HELD)));
+        }
+        try {
+            int fabled = com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeSkillSync
+                    .fabledPrestigeLevel(player);
+            if (fabled > 0) {
+                return Math.max(0, Math.min(MAX_HELD,
+                        fabled - com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeSkillSync.FABLED_HELD_OFFSET));
+            }
+        } catch (Throwable ignored) {
+        }
+        return Math.max(0, Math.min(MAX_HELD, getHeld(player)));
     }
 
     /**

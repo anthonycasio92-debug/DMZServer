@@ -80,20 +80,28 @@ merge_onto_base_jar() {
   tmp="$(mktemp -d)"
   merge="$(mktemp -d)"
   unzip -q "$base" -d "$merge"
-  # Overlay selected compiled packages (CNPC GUI work) — everything else stays from live base jar.
-  local rel
+  # Overlay selected compiled packages — everything else stays from live base jar (ki/stamina).
   if [[ -d "$OUT/com/dbzlegacy/adaptivedifficulty/gui/cnpc" ]]; then
     mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/gui/cnpc"
     cp -a "$OUT/com/dbzlegacy/adaptivedifficulty/gui/cnpc/." "$merge/com/dbzlegacy/adaptivedifficulty/gui/cnpc/"
   fi
-  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/gui/RivalGuiApi.class" ]]; then
-    cp "$OUT/com/dbzlegacy/adaptivedifficulty/gui/RivalGuiApi.class" \
-      "$merge/com/dbzlegacy/adaptivedifficulty/gui/RivalGuiApi.class"
+  if [[ -d "$OUT/com/dbzlegacy/adaptivedifficulty/progression/shop" ]]; then
+    mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/progression/shop"
+    cp -a "$OUT/com/dbzlegacy/adaptivedifficulty/progression/shop/." \
+      "$merge/com/dbzlegacy/adaptivedifficulty/progression/shop/"
   fi
-  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.class" ]]; then
-    cp "$OUT/com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.class" \
-      "$merge/com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.class"
-  fi
+  for rel in \
+    "com/dbzlegacy/adaptivedifficulty/gui/RivalGuiApi.class" \
+    "com/dbzlegacy/adaptivedifficulty/gui/ProgressionGuiApi.class" \
+    "com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.class" \
+    "com/dbzlegacy/adaptivedifficulty/progression/LmOverhaulCapMath.class" \
+    "com/dbzlegacy/adaptivedifficulty/progression/PersonalLevelCapMirror.class" \
+    "com/dbzlegacy/adaptivedifficulty/mixin/DmzRevampPrestigeCapMixin.class"; do
+    if [[ -f "$OUT/$rel" ]]; then
+      mkdir -p "$merge/$(dirname "$rel")"
+      cp "$OUT/$rel" "$merge/$rel"
+    fi
+  done
   cp "$RES/META-INF/mods.toml" "$merge/META-INF/mods.toml"
   (cd "$merge" && jar cfm "$dest" META-INF/MANIFEST.MF .)
   rm -rf "$tmp" "$merge"
