@@ -118,8 +118,12 @@ def main() -> int:
         st = support.read_text(encoding="utf-8")
         if "Scroll the list below for all options" in st:
             errors.append("CnpcGuiSupport.java: misleading pick-list scroll hint on info block")
+        if "ID_PICK_HINT" not in st or "ID_STATUS_TAG, CnpcGuiStyle.HINT_PICK_LIST" in st:
+            errors.append("CnpcGuiSupport.java: pick-list hint must use ID_PICK_HINT not ID_STATUS_TAG")
         if 'HINT_PICK_LIST, M, listY' in st and "safe.length > visibleRows" not in st:
             errors.append("CnpcGuiSupport.java: scrollPickList must gate HINT_PICK_LIST on overflow")
+        if "paintFlashNotice" in st and "paintInfoBlock(gui, y, box, max, true)" not in st:
+            errors.append("CnpcGuiSupport.java: flash notice must not consume scroll panel (reserve pick list)")
 
     style = CNPC / "CnpcGuiStyle.java"
     if not style.is_file():

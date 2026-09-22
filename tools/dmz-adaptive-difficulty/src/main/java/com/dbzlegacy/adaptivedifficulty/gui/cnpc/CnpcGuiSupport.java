@@ -61,6 +61,8 @@ public final class CnpcGuiSupport {
     public static final int ID_CLOSE = 98;
     public static final int ID_REFRESH = 99;
     public static final int ID_ENTITY_PREVIEW = 102;
+    /** Hint above an overflow pick list (never reuse {@link #ID_STATUS_TAG} on the same gui). */
+    public static final int ID_PICK_HINT = 117;
     /** Static note label on the same row as an action button (never reuse the button id). */
     public static final int ID_INLINE_NOTE = 115;
     /** Extra staff-only control (never {@link #ID_CLOSE}). */
@@ -118,7 +120,7 @@ public final class CnpcGuiSupport {
             painter.paint(player, gui);
             ip.showCustomGui(gui);
         } catch (Throwable t) {
-            AdaptiveDifficultyMod.LOGGER.warn("[{}] CNPC GUI {} failed: {}", AdaptiveDifficultyMod.MOD_ID, guiId, t);
+            AdaptiveDifficultyMod.LOGGER.warn("[{}] CNPC GUI {} failed: {}", AdaptiveDifficultyMod.MOD_ID, guiId, t.toString(), t);
             feedbackChat(player, "§cSomething went wrong opening the menu. Ask staff if this keeps happening.");
         }
     }
@@ -142,8 +144,18 @@ public final class CnpcGuiSupport {
         }
         List<String> box = new ArrayList<>();
         box.add("§eNotice");
-        box.addAll(raw);
-        return paintInfoBlock(gui, y, box, CnpcGuiStyle.INFO_INLINE_MAX);
+        int max = CnpcGuiStyle.INFO_INLINE_MAX;
+        for (String line : raw) {
+            if (box.size() >= max) {
+                break;
+            }
+            box.add(line);
+        }
+        if (raw.size() + 1 > max) {
+            box.set(max - 1, "§8+" + (raw.size() + 1 - max) + " more — check chat for details");
+        }
+        // Never use the scrolling panel here — the main page may need it for scrollPickList.
+        return paintInfoBlock(gui, y, box, max, true);
     }
 
     public static void pushMenuMessage(ServerPlayer player, String message) {
@@ -420,7 +432,7 @@ public final class CnpcGuiSupport {
         int scrollH = listScrollHeight(gui, bandY, rowsBelowList);
         int visibleRows = Math.max(1, scrollH / SCROLL_ROW_H);
         if (safe.length > visibleRows) {
-            gui.addLabel(ID_STATUS_TAG, CnpcGuiStyle.HINT_PICK_LIST, M, listY, textBandWidth(), 10);
+            gui.addLabel(ID_PICK_HINT, CnpcGuiStyle.HINT_PICK_LIST, M, listY, textBandWidth(), 10);
             bandY = listY + 14;
             scrollH = listScrollHeight(gui, bandY, rowsBelowList);
         }
@@ -481,6 +493,10 @@ public final class CnpcGuiSupport {
     public static String compactButton(String label) {
         if (label == null) {
             return "";
+        }
+        // Toggle captions include § codes — truncating breaks CNPC button text.
+        if (label.contains("§lON ") || label.contains("§lOFF ")) {
+            return label;
         }
         String s = label;
         int hint = s.indexOf(" §8· ");
