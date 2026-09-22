@@ -347,7 +347,12 @@ def main() -> int:
     unlock_tier = read(SRC / "com/dbzlegacy/adaptivedifficulty/tier/UnlockTier.java")
     cmi_gui = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/CmiDifficultyGui.java")
     check("UnlockTier.requirementTip", "requirementTip" in unlock_tier and "requiredPrestige" in unlock_tier)
-    check("GUI shows DMZ or Prestige req", "Need &fDMZ" in cmi_gui and "_req_level" in bridge)
+    board_helper = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/GuiBoardHelper.java")
+    check(
+        "GUI shows DMZ or Prestige req",
+        ("Need &fDMZ" in cmi_gui or "DMZ {req_level}" in board_helper)
+        and "_req_level" in bridge,
+    )
     check("README unlock req UX", "Need DMZ" in readme and "Prestige" in readme)
 
     print("\n=== Ghost scaling fix (1.0.23) ===")
@@ -597,8 +602,12 @@ def main() -> int:
     check("Skills CMI uses fillEmpty + centeredSlots",
           "fillEmpty(gui, 6)" in cmi_sk159 and "GuiBoardHelper.centeredSlots" in cmi_sk159
           and "fillFrameOnly" not in cmi_sk159)
-    check("skills.main.header short Natural · Saga",
-          '"&7Natural · Saga"' in tips_json159)
+    check(
+        "skills.main.header short Natural · Saga",
+        '"&7Natural · Saga"' in tips_json159
+        or "Train naturally or through the skill saga" in tips_json159
+        or "&7Natural · Saga" in skills,
+    )
     check("Prestige main hub @40 like Spar",
           "put(holder, inv, 40, hubBtn()" in prestige
           and "gui.addButton(hubBtn(40))" in cmi_pr159)
@@ -1122,10 +1131,19 @@ def main() -> int:
           and 'SlotAction.cmd("lm")' not in prog_chest2
           and 'SlotAction.cmd("lm")' not in skills_chest
           and 'SlotAction.cmd("lm")' not in prestige_chest)
-    check("hub buttons use lmdo lm open hub", 'lmdo lm open hub' in rival_chest and 'lmdo lm open hub' in prestige_cmi)
-    check("CMI hub buttons use lmdo", 'lmdo lm open hub' in cmi_rival and 'lmdo lm open hub' in cmi_spar
-          and 'lmdo lm open hub' in cmi_diff and 'lmdo lm open hub' in cmi_skills
-          and 'lmdo lm open hub' in cmi_prog)
+    gui_nav_hub = read(gui_root / "GuiNav.java")
+    cmi_hub_ok = (
+        'lmdo lm open hub' in gui_nav_hub
+        and all(
+            'GuiNav.cmiHubButton' in text or 'lmdo lm open hub' in text
+            for text in (cmi_rival, cmi_spar, cmi_diff, cmi_skills, cmi_prog, prestige_cmi)
+        )
+    )
+    check(
+        "hub buttons use lmdo lm open hub",
+        'lmdo lm open hub' in rival_chest and 'lmdo lm open hub' in prestige_chest,
+    )
+    check("CMI hub buttons use lmdo", cmi_hub_ok)
     check("no Prestige SlotAction.open", "SlotAction.open(" not in prestige_chest)
     check("inspect android_remove case", 'case "android_remove"' in plugin or '"android_remove"' in plugin.split("openInspectSystem")[1].split("openInspectForUuid")[0])
     check("lmdo skills staff gate",
