@@ -12,4 +12,4 @@ Refresh from production:
 bash scripts/pull-lm-base-jar.sh
 ```
 
-`build.sh` uses this when present (`LM_BASE_JAR` override optional). Compiled overlay packages default to `gui/cnpc/` plus `RivalGuiApi`.
+`build.sh` uses this when present (`LM_BASE_JAR` override optional). Compiled overlay packages default to `gui/cnpc/` plus `RivalGuiApi`. **Do not** overlay `legacymechanics.mixins.json` from source — the base jar omits `StatsDataHudPoolMaxMixin`; re-adding it double-scales ki/stamina.

@@ -1383,18 +1383,18 @@ def main() -> int:
     check("ki-pool-2.4.115 reference slice present",
           (ki_ref / "com/dbzlegacy/adaptivedifficulty/progression/DmzResourcePoolClamp.class").is_file()
           and (ki_ref / "com/dbzlegacy/adaptivedifficulty/mixin/StatsDataHudPoolMaxMixin.class").is_file())
-    check("canonical actualMaxEnergy/Stamina (Overhaul-only pool scale)",
+    check("actualMaxEnergy mirrors live base (native getMaxEnergy only)",
           "actualMaxStamina" in pool_clamp
-          and "applyOverhaulScale" not in pool_clamp
-          and "isReadingNativeMax" in pool_clamp
-          and "displayMaxEnergy" in pool_clamp
-          and "data.getMaxEnergy()" in pool_clamp
-          and "Overhaul owns pool scale" in pool_clamp)
-    hud_pool = read(SRC / "com/dbzlegacy/adaptivedifficulty/mixin/StatsDataHudPoolMaxMixin.java")
-    check("HUD mixin registers prestige-aware getMax*",
-          '"StatsDataHudPoolMaxMixin"' in mixins_json
-          and "actualMaxEnergy" in hud_pool
-          and "isReadingNativeMax" in hud_pool)
+          and "return data.getMaxEnergy()" in pool_clamp
+          and "return data.getMaxStamina()" in pool_clamp
+          and "displayMaxEnergy" in pool_clamp)
+    mixins_src = read(ROOT / "tools" / "dmz-adaptive-difficulty" / "src" / "main" / "resources" / "legacymechanics.mixins.json")
+    build_sh = read(ROOT / "tools" / "dmz-adaptive-difficulty" / "build.sh")
+    check("direct-dmz-resource-max line: no StatsDataHudPoolMaxMixin in mixins",
+          '"StatsDataHudPoolMaxMixin"' not in mixins_src)
+    check("merge build keeps base mixins.json (no HUD pool rewrite)",
+          "StatsDataHudPoolMaxMixin" in build_sh
+          and "Keep base jar mixins.json" in build_sh)
     check("EnergyManaSync does not raise max to overflowing current",
           "maxEnergy = currentEnergy" not in energy_mana
           and "clampCurrentToMax" in energy_mana)

@@ -103,7 +103,8 @@ merge_onto_base_jar() {
       "$merge/com/dbzlegacy/adaptivedifficulty/progression/race/AndroidConversion.class"
   fi
   cp "$RES/META-INF/mods.toml" "$merge/META-INF/mods.toml"
-  cp "$RES/legacymechanics.mixins.json" "$merge/legacymechanics.mixins.json"
+  # Keep base jar mixins.json — live direct-dmz-resource-max line must not register
+  # StatsDataHudPoolMaxMixin (re-enabling it double-scales ki/stamina vs Overhaul).
   (cd "$merge" && jar cfm "$dest" META-INF/MANIFEST.MF .)
   rm -rf "$tmp" "$merge"
 }

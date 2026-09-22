@@ -16,15 +16,11 @@ import net.minecraft.server.level.ServerPlayer;
 /**
  * One prestige-aware ki/stamina maximum used by HUD, Fabled, clamps, and Overhaul sync.
  *
- * <p>{@code actualMaxEnergy}/{@code actualMaxStamina} = live native {@code getMax*} (Iron
- * {@code max_mana} rejected), with HUD-formula fallback when native is stubbed (Mohist null
- * {@code player} field). Overhaul {@code scaleMultiplier} applies inside dmzrevamp / DMZ
- * getters — LM must not multiply again (2.4.85). ENE/STM stay out of combat
- * {@code getTotalMultiplier} so prestige is not copied onto combat stats twice either.
- *
- * <p>{@link com.dbzlegacy.adaptivedifficulty.mixin.StatsDataHudPoolMaxMixin} replaces
- * {@code getMaxEnergy}/{@code getMaxStamina} returns with these canonical caps so the bar
- * matches clamp/Fabled. Native reads use {@link #isReadingNativeMax()} to avoid recursion.
+ * <p>Canonical caps match live {@code direct-dmz-resource-max} base jar: {@code actualMaxEnergy}
+ * / {@code actualMaxStamina} delegate to native {@code getMaxEnergy}/{@code getMaxStamina}
+ * (Overhaul pool scale stays in DMZ/dmzrevamp — no LM HUD mixin rewrite). Mohist fallbacks
+ * live in private {@link #actualMax} for internal use only. ENE/STM stay out of combat
+ * {@code getTotalMultiplier} ({@code StatsDataOverhaulCombatScaleMixin}).
  *
  * <p>Currents clamp to those maxima only — never to the unscaled HUD reconstruction
  * (2.4.93) and never by raising the advertised max to the overflowing current.
@@ -39,19 +35,43 @@ public final class DmzResourcePoolClamp {
 
     private DmzResourcePoolClamp() {}
 
-    /** True while computing the unscaled native {@code getMax*} (HUD mixin must not scale). */
+    /** True while computing the unscaled native {@code getMax*} (internal fallback path). */
     public static boolean isReadingNativeMax() {
         return Boolean.TRUE.equals(READING_NATIVE.get());
     }
 
-    /** Authoritative ki cap — native Overhaul-scaled {@code getMaxEnergy} (see {@link #actualMax}). */
-    public static float actualMaxEnergy(StatsData data) {
-        return actualMax(data, true);
+    /** Used by private {@link #actualMax} fallbacks only — not {@link #actualMaxEnergy}. */
+    public static float applyOverhaulScale(StatsData data, float base) {
+        if (!Float.isFinite(base) || base <= POWER_RELEASE_FLOOR) {
+            return base;
+        }
+        try {
+            double scale = LmOverhaulPrestigeIntegration.combatScaleMultiplier(data);
+            if (Double.isFinite(scale) && scale > 1.000_001d) {
+                float scaled = (float) (base * scale);
+                if (Float.isFinite(scaled) && scaled > POWER_RELEASE_FLOOR) {
+                    return scaled;
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return base;
     }
 
-    /** Authoritative stamina cap — native Overhaul-scaled {@code getMaxStamina}. */
+    /** Same as live base jar — native {@code getMaxEnergy} (single Overhaul pool scale). */
+    public static float actualMaxEnergy(StatsData data) {
+        if (data == null) {
+            return 0f;
+        }
+        return data.getMaxEnergy();
+    }
+
+    /** Same as live base jar — native {@code getMaxStamina}. */
     public static float actualMaxStamina(StatsData data) {
-        return actualMax(data, false);
+        if (data == null) {
+            return 0f;
+        }
+        return data.getMaxStamina();
     }
 
     /** Alias of {@link #actualMaxEnergy(StatsData)} — one canonical ki max. */
@@ -66,7 +86,7 @@ public final class DmzResourcePoolClamp {
 
     /**
      * Live DMZ ki/stamina cap: native {@code getMax*} unless Iron-contaminated,
-     * otherwise the HUD formula. No LM prestige multiply — Overhaul owns pool scale.
+     * otherwise the HUD formula (Mohist stub path — not used by public actualMax*).
      */
     private static float actualMax(StatsData data, boolean energy) {
         if (data == null) {
@@ -77,18 +97,18 @@ public final class DmzResourcePoolClamp {
             nativeMax = 0f;
         }
         if (Float.isFinite(nativeMax) && nativeMax > POWER_RELEASE_FLOOR) {
-            return nativeMax;
+            return applyOverhaulScale(data, nativeMax);
         }
         try {
             float hud = hudFormulaMax(data, energy);
             if (Float.isFinite(hud) && hud > POWER_RELEASE_FLOOR) {
-                return hud;
+                return applyOverhaulScale(data, hud);
             }
         } catch (Throwable ignored) {
         }
         float fallback = investedFallback(data, energy);
         if (fallback > POWER_RELEASE_FLOOR) {
-            return fallback;
+            return applyOverhaulScale(data, fallback);
         }
         return 0f;
     }
