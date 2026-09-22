@@ -11,7 +11,9 @@ import com.dbzlegacy.adaptivedifficulty.gui.DifficultyTeamGuiApi;
 import com.dbzlegacy.adaptivedifficulty.service.DifficultyActions;
 import com.dbzlegacy.adaptivedifficulty.title.DifficultyTitle;
 import com.dbzlegacy.adaptivedifficulty.title.TitleSystem;
+import com.dbzlegacy.adaptivedifficulty.tier.UnlockSystem;
 import com.dbzlegacy.adaptivedifficulty.tier.UnlockTier;
+import com.dbzlegacy.adaptivedifficulty.util.PaidFeatureAccess;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import com.dbzlegacy.adaptivedifficulty.util.SystemGate;
 import java.util.ArrayList;
@@ -166,44 +168,71 @@ public final class CnpcLmDifficultyGui {
     private static void paintTiers(ServerPlayer player, ICustomGui gui) {
         ServerPlayer subject = who(player);
         DifficultyActions.prepareGui(subject);
+        UnlockSystem.syncUnlocks(subject, DifficultyCache.data(subject));
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§a", "Difficulty", "Tiers"),
-                "§7Activate unlocked tiers · step down for free");
+                "§7Costs show before you confirm · lower tiers are free");
+        CnpcGuiSupport.paintPlayerPreview(subject, gui, 330, infoY - 6);
 
         DifficultySnapshot snap = DifficultyCache.refresh(subject);
         PlayerDifficultyData data = DifficultyCache.data(subject);
         int max = Math.max(0, snap.highestUnlockedTier);
+        int active = data.getActiveTier();
         List<String> lines = new ArrayList<>();
-        lines.add("§7Active §fT" + data.getActiveTier() + CnpcGuiStyle.SEP + "§7Max unlocked §fT" + max);
-        lines.add("§6Coins §f" + AncientCoinEconomy.inventoryBreakdown(subject));
-        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 3);
-        for (int t = 0; t <= Math.min(7, max); t++) {
-            int tier = t;
-            int col = (t % 2 == 0) ? CnpcGuiSupport.COL_L : CnpcGuiSupport.COL_R;
-            if (t % 2 == 0 && t > 0) {
-                row += 24;
-            }
-            CnpcGuiSupport.buttonSmall(gui, 30 + t, "§fActivate T" + tier, col, row, 95, () -> CnpcGuiSupport.act(
-                    player,
-                    () -> DifficultyActions.handleArg(subject, "activate", String.valueOf(tier), "tiers").message(),
-                    () -> open(player, "tiers")));
+        if (active <= 0) {
+            lines.add("§7Active tier §fNone");
+        } else {
+            lines.add("§7Active tier §fT" + active + CnpcGuiStyle.SEP + snap.activeTierName);
         }
-        row += 36;
+        lines.add("§7Unlocked up to §fT" + max);
+        lines.add("§6Coins §f" + AncientCoinEconomy.inventoryBreakdown(subject));
+        if (!PaidFeatureAccess.bypassAncientCoinCost(subject)) {
+            lines.add("§8Activation cost scales with your level");
+        }
+        UnlockTier nextLocked = UnlockTier.byId(max + 1);
+        if (nextLocked != null) {
+            lines.add("§7Next tier §fT" + nextLocked.id + CnpcGuiStyle.SEP
+                    + CnpcDifficultyTierUi.humanRequirement(nextLocked));
+            lines.add("§7Cost to activate §f"
+                    + CnpcDifficultyTierUi.formatActivationCost(subject, nextLocked));
+        }
+        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX);
+
+        int placed = 0;
+        for (int t = 1; t <= 7; t++) {
+            UnlockTier ut = UnlockTier.byId(t);
+            if (ut == null) {
+                continue;
+            }
+            boolean unlocked = data.hasUnlockedTier(t) || t <= max;
+            boolean eligible = CnpcDifficultyTierUi.isEligible(subject, ut);
+            String label = CnpcDifficultyTierUi.tierActionLabel(subject, t, active, unlocked, eligible);
+            int col = (placed % 2 == 0) ? CnpcGuiSupport.COL_L : CnpcGuiSupport.COL_R;
+            if (placed > 0 && placed % 2 == 0) {
+                row += CnpcGuiSupport.ROW_STEP;
+            }
+            int tier = t;
+            if (CnpcDifficultyTierUi.tierButtonEnabled(t, active, unlocked, eligible)) {
+                CnpcGuiSupport.buttonSmallFull(gui, 30 + t, label, col, row, 195,
+                        () -> CnpcGuiSupport.act(
+                                player,
+                                () -> DifficultyActions.handleArg(subject, "activate", String.valueOf(tier), "tiers")
+                                        .message(),
+                                () -> open(player, "tiers")));
+            } else if (active == t) {
+                gui.addLabel(30 + t, CnpcGuiSupport.safeChat(label), col, row + 4, 195, 14);
+            } else if (!unlocked) {
+                gui.addLabel(30 + t, "§8T" + t + " · " + CnpcDifficultyTierUi.humanRequirement(ut), col, row + 2,
+                        195, 12);
+            } else {
+                gui.addLabel(30 + t, CnpcGuiSupport.safeChat(label), col, row + 4, 195, 14);
+            }
+            placed++;
+        }
+        row += CnpcGuiSupport.ROW_STEP + 12;
         CnpcGuiSupport.button(gui, 50, "§cClear active tier", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> DifficultyActions.handleArg(subject, "lower_tier", "0", "tiers").message(),
                 () -> open(player, "tiers")));
-        for (UnlockTier ut : UnlockTier.values()) {
-            if (ut.id > max && ut.id <= 7) {
-                int buy = ut.id;
-                CnpcGuiSupport.buttonSmall(gui, 60 + buy, "§aBuy T" + buy, CnpcGuiSupport.COL_R, row, 95,
-                        () -> CnpcGuiSupport.act(
-                                player,
-                                () -> DifficultyActions.handleArg(subject, "activate", String.valueOf(buy), "tiers")
-                                        .message(),
-                                () -> open(player, "tiers")));
-                break;
-            }
-        }
         row += 28;
         navFooter(player, gui, row, "main");
     }

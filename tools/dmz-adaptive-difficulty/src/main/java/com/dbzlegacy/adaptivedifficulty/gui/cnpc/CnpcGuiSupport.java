@@ -17,6 +17,7 @@ import noppes.npcs.api.entity.IPlayer;
 import noppes.npcs.api.gui.IButton;
 import noppes.npcs.api.gui.ICustomGui;
 import noppes.npcs.api.gui.IComponentsScrollableWrapper;
+import noppes.npcs.api.gui.IEntityDisplay;
 import noppes.npcs.api.gui.ILabel;
 import noppes.npcs.api.gui.IScroll;
 
@@ -240,16 +241,29 @@ public final class CnpcGuiSupport {
         gui.addLabel(id, DIVIDER_TEXT, M, y, W - M * 2, 10);
     }
 
-    /** Rotating player model in the menu (CustomNPCs entity display). */
+    /** Player model in the menu (CNPC entity display — same hook SDU-style GUIs use). */
     public static void paintPlayerPreview(ServerPlayer player, ICustomGui gui, int x, int y) {
+        paintPlayerPreview(player, gui, ID_ENTITY_PREVIEW, x, y);
+    }
+
+    public static void paintPlayerPreview(ServerPlayer player, ICustomGui gui, int componentId, int x, int y) {
         if (player == null || gui == null) {
             return;
         }
         try {
             IEntity entity = NpcAPI.Instance().getIEntity(player);
-            if (entity != null) {
-                gui.addEntityDisplay(ID_ENTITY_PREVIEW, x, y, entity);
+            if (entity == null) {
+                return;
             }
+            IEntityDisplay display = gui.addEntityDisplay(componentId, x, y, entity);
+            try {
+                display.setEntitySyncedById(entity);
+            } catch (Throwable ignored) {
+                display.setEntity(entity);
+            }
+            display.setScale(0.82f);
+            display.setBackground(false);
+            display.setRotation(35);
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.debug("[{}] CNPC player preview skipped: {}",
                     AdaptiveDifficultyMod.MOD_ID, t.toString());
@@ -313,6 +327,17 @@ public final class CnpcGuiSupport {
 
     public static IButton buttonSmall(ICustomGui gui, int id, String label, int x, int y, int w, Runnable onPress) {
         IButton b = gui.addButton(id, safeChat(compactButton(label)), x, y, w, BTN_H);
+        b.setOnPress((g, btn) -> {
+            g.close();
+            onPress.run();
+        });
+        return b;
+    }
+
+    /** Small button without truncating the label (tier costs, etc.). */
+    public static IButton buttonSmallFull(ICustomGui gui, int id, String label, int x, int y, int w,
+            Runnable onPress) {
+        IButton b = gui.addButton(id, safeChat(label), x, y, w, BTN_H);
         b.setOnPress((g, btn) -> {
             g.close();
             onPress.run();
