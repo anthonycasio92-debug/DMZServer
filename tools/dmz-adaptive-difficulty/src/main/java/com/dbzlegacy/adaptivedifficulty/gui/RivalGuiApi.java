@@ -373,6 +373,10 @@ public final class RivalGuiApi {
                 return online.m_7755_().getString();
             }
             String id = raw.substring(5).trim();
+            String fromLink = rivalLinkDisplayName(from, id);
+            if (!fromLink.isBlank()) {
+                return fromLink;
+            }
             RivalPlayerRecord rec = RivalStore.get().get(id);
             if (rec != null && rec.name != null && !rec.name.isBlank()) {
                 return rec.name;
@@ -380,6 +384,44 @@ public final class RivalGuiApi {
             return "";
         }
         return raw;
+    }
+
+    /** Player-facing label for CNPC pick lists ({@code uuid:…} → stored rival name). */
+    public static String displayPickerArg(ServerPlayer from, String arg) {
+        String name = resolveNameArg(from, arg);
+        if (!name.isBlank()) {
+            return "§f" + name;
+        }
+        return com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcGuiSupport.humanizePickerArg(arg);
+    }
+
+    /** Action token for {@code /rival do} from a {@link RivalSystem#currentRivalCards} row. */
+    public static String pickerArgFromRivalCard(String card) {
+        if (card == null || card.isBlank()) {
+            return "";
+        }
+        String[] p = card.split("\t", -1);
+        String uuid = p.length > 0 && p[0] != null ? p[0].trim() : "";
+        String name = p.length > 1 && p[1] != null ? p[1].trim() : "";
+        if (!uuid.isBlank()) {
+            return "uuid:" + uuid;
+        }
+        return name;
+    }
+
+    private static String rivalLinkDisplayName(ServerPlayer from, String rivalUuid) {
+        if (from == null || rivalUuid == null || rivalUuid.isBlank()) {
+            return "";
+        }
+        RivalPlayerRecord me = RivalStore.get().ensurePlayer(from);
+        if (me == null || me.rivals == null) {
+            return "";
+        }
+        RivalLink link = me.rivals.get(rivalUuid);
+        if (link != null && link.name != null && !link.name.isBlank()) {
+            return link.name;
+        }
+        return "";
     }
 
     public static List<String> seasonLines(ServerPlayer player) {

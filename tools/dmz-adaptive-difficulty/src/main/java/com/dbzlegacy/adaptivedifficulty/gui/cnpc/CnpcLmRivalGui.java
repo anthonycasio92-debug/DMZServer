@@ -60,11 +60,10 @@ public final class CnpcLmRivalGui {
                         "accept", "actions");
                 case "pick_decline" -> paintArgPick(pl, gui, "§cDecline declare", RivalGuiApi.pendingIncomingDeclareArgs(subject(pl)),
                         "decline", "actions");
-                case "pick_remove" -> paintArgPick(pl, gui, "§cRemove rival", RivalGuiApi.currentRivalArgs(subject(pl)),
-                        "remove", "actions");
-                case "pick_replace_mutual", "replace_mutual" -> paintArgPick(pl, gui, "§eReplace mutual slot",
-                        RivalGuiApi.currentRivalArgs(subject(pl)),
-                        "accept_replace", "actions");
+                case "pick_remove" -> paintRivalCardPick(pl, gui, "§cRemove rival",
+                        RivalGuiApi.currentRivalCards(subject(pl)), "remove", "actions");
+                case "pick_replace_mutual", "replace_mutual" -> paintRivalCardPick(pl, gui, "§eReplace mutual slot",
+                        RivalGuiApi.currentRivalCards(subject(pl)), "accept_replace", "actions");
                 case "pick_challenge" -> paintNamePick(pl, gui, "§cChallenge rival", RivalGuiApi.onlinePlayerNames(subject(pl)),
                         "challenge_pick", "challenge");
                 case "pick_spectate" -> paintNamePick(pl, gui, "§bSpectate", RivalGuiApi.onlinePlayerNames(subject(pl)),
@@ -216,7 +215,7 @@ public final class CnpcLmRivalGui {
         List<String> cards = RivalGuiApi.pendingInviteCards(who);
         String card = CnpcGuiSupport.findCardByPickerArg(cards, pickerArg);
         List<String> detail = card != null ? RivalGuiApi.pendingInviteDetailLines(card)
-                : List.of("§7Pending declare", "§f" + CnpcGuiSupport.humanizePickerArg(pickerArg));
+                : List.of("§7Pending declare", RivalGuiApi.displayPickerArg(player, pickerArg));
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_RIVAL, CnpcGuiSupport.W, 300, (pl, gui) -> {
             int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Incoming invite"),
                     "§7Review before you accept or decline");
@@ -234,7 +233,7 @@ public final class CnpcLmRivalGui {
         List<String> cards = RivalGuiApi.currentRivalCards(who);
         String card = CnpcGuiSupport.findCardByPickerArg(cards, pickerArg);
         List<String> detail = card != null ? RivalGuiApi.rivalCardDetailLines(card)
-                : List.of("§f" + CnpcGuiSupport.humanizePickerArg(pickerArg), "§7Rival record");
+                : List.of(RivalGuiApi.displayPickerArg(player, pickerArg), "§7Rival record");
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_RIVAL, CnpcGuiSupport.W, 300, (pl, gui) -> {
             int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Profile"),
                     "§7Stats and actions for this rival");
@@ -257,11 +256,11 @@ public final class CnpcLmRivalGui {
         String action = parts[0];
         String returnPage = parts[1];
         String targetArg = parts[2];
-        String display = CnpcGuiSupport.humanizePickerArg(targetArg);
+        String display = RivalGuiApi.displayPickerArg(player, targetArg);
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_RIVAL, CnpcGuiSupport.W, 280, (pl, gui) -> {
-            int infoY = CnpcGuiSupport.paintHeader(pl, gui, "§eConfirm action", "§7" + display);
+            int infoY = CnpcGuiSupport.paintHeader(pl, gui, "§eConfirm action", display);
             List<String> lines = List.of(
-                    "§7Player §f" + display,
+                    "§7Player " + display,
                     "§8Action §7" + action.replace('_', ' '),
                     "§7Confirm to continue.");
             int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 4));
@@ -300,7 +299,7 @@ public final class CnpcLmRivalGui {
     private static void openChallengeTime(ServerPlayer player, String targetArg) {
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_RIVAL, CnpcGuiSupport.W, 280, (pl, gui) -> {
             int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Challenge length"),
-                    "§7Target §f" + CnpcGuiSupport.humanizePickerArg(targetArg));
+                    "§7Target " + RivalGuiApi.displayPickerArg(player, targetArg));
             int row = CnpcGuiSupport.bodyBelowHeader(infoY);
             CnpcGuiLayout.GridButton[] grid = new CnpcGuiLayout.GridButton[10];
             for (int min = 1; min <= 10; min++) {
@@ -425,13 +424,50 @@ public final class CnpcLmRivalGui {
             footer(player, gui, listY + 28, returnPage);
             return;
         }
-        String[] labels = CnpcGuiSupport.cardLabels(cards, 0);
+        String[] labels = new String[cards.size()];
+        for (int i = 0; i < cards.size(); i++) {
+            labels[i] = RivalGuiApi.displayPickerArg(player, cards.get(i));
+        }
         int rowsBelow = 1;
-        int bandY = listY + 14;
+        int bandY = CnpcGuiSupport.pickListBandY(listY, rowsBelow, gui, labels.length);
         int scrollH = CnpcGuiSupport.listScrollHeight(gui, bandY, rowsBelow);
         IScroll scroll = CnpcGuiSupport.scrollPickList(gui, listY, rowsBelow, labels);
         CnpcGuiSupport.wireScrollOpenDetail(scroll, cards, 0,
                 arg -> open(player, "pick_confirm:" + action + "|" + returnPage + "|" + arg));
+        footer(player, gui, CnpcGuiSupport.navRowAfterScroll(bandY, scrollH), returnPage);
+    }
+
+    /** Remove / replace mutual — uses encoded rival cards so names show instead of raw {@code uuid:}. */
+    private static void paintRivalCardPick(
+            ServerPlayer player,
+            ICustomGui gui,
+            String title,
+            List<String> cards,
+            String action,
+            String returnPage
+    ) {
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, title, CnpcGuiStyle.HINT_CLICK_ENTRY);
+        int listY = CnpcGuiSupport.bodyBelowHeader(infoY);
+        if (cards == null || cards.isEmpty()) {
+            gui.addLabel(50, "§7Nothing to pick.", CnpcGuiSupport.M, listY + 4, CnpcGuiSupport.textBandWidth(), 14);
+            footer(player, gui, listY + 28, returnPage);
+            return;
+        }
+        String[] labels = CnpcGuiSupport.cardLabels(cards, 1);
+        int rowsBelow = 1;
+        int bandY = CnpcGuiSupport.pickListBandY(listY, rowsBelow, gui, labels.length);
+        int scrollH = CnpcGuiSupport.listScrollHeight(gui, bandY, rowsBelow);
+        IScroll scroll = CnpcGuiSupport.scrollPickList(gui, listY, rowsBelow, labels);
+        scroll.setOnClick((g, sc) -> {
+            int[] sel = sc.getSelection();
+            if (sel == null || sel.length == 0 || sel[0] < 0 || sel[0] >= cards.size()) {
+                return;
+            }
+            String arg = RivalGuiApi.pickerArgFromRivalCard(cards.get(sel[0]));
+            if (!arg.isBlank()) {
+                open(player, "pick_confirm:" + action + "|" + returnPage + "|" + arg);
+            }
+        });
         footer(player, gui, CnpcGuiSupport.navRowAfterScroll(bandY, scrollH), returnPage);
     }
 

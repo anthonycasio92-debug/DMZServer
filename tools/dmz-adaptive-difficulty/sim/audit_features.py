@@ -611,6 +611,12 @@ def main() -> int:
     rival_st = read(SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalStatus.java")
     rival_link = read(SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalLink.java")
     check("Silent label (not Unknown)", 'case UNKNOWN -> "Silent"' in rival_st)
+    cnpc_rival = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmRivalGui.java")
+    check("CNPC rival remove uses card names",
+          "paintRivalCardPick" in cnpc_rival and "currentRivalCards" in cnpc_rival.split("pick_remove")[1].split("pick_replace")[0])
+    check("Rival displayPickerArg resolves uuid links",
+          "displayPickerArg" in read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/RivalGuiApi.java")
+          and "rivalLinkDisplayName" in read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/RivalGuiApi.java"))
     check("remove demotes mutual to one-way", "demoteToOneWayDeclare" in rival_sys)
     check("remove archives remover history", "archiveRivalLink(me, them.uuid, myLink)" in rival_sys)
     check("pending excluded from rival list", "st == RivalStatus.PENDING" in rival_sys)
