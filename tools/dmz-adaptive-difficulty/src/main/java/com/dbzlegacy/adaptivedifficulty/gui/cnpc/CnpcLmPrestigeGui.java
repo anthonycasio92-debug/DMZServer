@@ -78,7 +78,7 @@ public final class CnpcLmPrestigeGui {
         List<String> info = new ArrayList<>(ProgressionGuiApi.prestigeLines(player, "turnin"));
         info.add("§7Bulk turn-in bonus: 3 tokens → 4 pts, 6 → 9 pts, 9 → 15 pts");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, info, CnpcGuiStyle.INFO_INLINE_MAX));
-        row = CnpcGuiSupport.paintSectionTag(gui, 12, row + 4, "§8Choose amount");
+        row = CnpcGuiSupport.paintSectionTag(gui, CnpcGuiSupport.ID_SECTION_TAG_1, row + 4, "§8Choose amount");
 
         int[] amounts = PrestigePointsSystem.TURN_IN_AMOUNTS;
         CnpcGuiLayout.GridButton[] grid = new CnpcGuiLayout.GridButton[amounts.length];
@@ -242,7 +242,7 @@ public final class CnpcLmPrestigeGui {
                 "§7Permanent unlocks · tiers T1 through T7");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, ProgressionGuiApi.prestigeLines(player, "tiers"),
                         CnpcGuiStyle.INFO_INLINE_MAX));
-        row = CnpcGuiSupport.paintSectionTag(gui, 11, row + 4, "§8Permanent difficulty tiers");
+        row = CnpcGuiSupport.paintSectionTag(gui, CnpcGuiSupport.ID_SECTION_TAG_1, row + 4, "§8Permanent difficulty tiers");
         CnpcGuiLayout.GridButton[] grid = new CnpcGuiLayout.GridButton[7];
         for (int t = 1; t <= 7; t++) {
             int tier = t;

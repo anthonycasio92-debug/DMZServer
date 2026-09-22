@@ -56,6 +56,13 @@ public final class CnpcGuiSupport {
     /** Flash / action feedback band in {@link #paintHeader} — must not share {@link #ID_INFO_LABEL_BASE}. */
     public static final int ID_NOTICE_LABEL_BASE = 103;
     public static final int ID_NOTICE_SCROLL_HINT = 107;
+    /**
+     * Section captions above button groups — never use {@link #ID_INFO_LABEL_BASE}+ band (10–~32)
+     * or grid button ids on the same screen.
+     */
+    public static final int ID_SECTION_TAG_1 = 108;
+    public static final int ID_SECTION_TAG_2 = 109;
+    public static final int ID_SECTION_TAG_3 = 110;
     public static final int ID_BTN_BASE = 20;
     public static final int ID_NAV_HUB = 96;
     public static final int ID_NAV_BACK = 97;
@@ -192,7 +199,11 @@ public final class CnpcGuiSupport {
      * Chest-style status block: a few inline lines, or a scroll when there is more text.
      * Returns the Y coordinate where action buttons should start (with padding).
      */
-    /** Small section caption above a button group. Returns Y for the first button row. */
+    /**
+     * Small section caption above a button group. Returns Y for the first button row.
+     * {@code labelId} must not overlap {@link #ID_INFO_LABEL_BASE} inline/scroll labels (use
+     * {@link #ID_SECTION_TAG_1}…{@link #ID_SECTION_TAG_3} or hub ids 8–9).
+     */
     public static int paintSectionTag(ICustomGui gui, int labelId, int y, String caption) {
         gui.addLabel(labelId, safeChat(caption), M, y, textBandWidth(), 10);
         return y + 16;

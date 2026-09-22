@@ -126,7 +126,7 @@ public final class CnpcLmCharacterGui {
                     "§7Becoming §f" + titleRace(raceId));
             int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintReadOnlyScroll(gui, infoY,
                             CharacterServicesGuiApi.linesForPage(player, "race_pct:" + raceId + ":0")));
-            row = CnpcGuiSupport.paintSectionTag(gui, 15, row + 4, "§8Progress kept after change");
+            row = CnpcGuiSupport.paintSectionTag(gui, CnpcGuiSupport.ID_SECTION_TAG_1, row + 4, "§8Progress kept after change");
             int[] pcts = {0, 25, 50, 75, 100};
             CnpcGuiLayout.GridButton[] grid = new CnpcGuiLayout.GridButton[pcts.length];
             for (int i = 0; i < pcts.length; i++) {

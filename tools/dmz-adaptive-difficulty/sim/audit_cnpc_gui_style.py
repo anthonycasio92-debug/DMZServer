@@ -29,6 +29,10 @@ BAD_LIST_WIDTH = re.compile(r"W\s*-\s*2\s*\*\s*M")
 ROBOTIC_HINT = re.compile(
     r'paintHeader\([^)]+,\s*"[^"]*Click (?:to|a|for)[^"]*"\s*\)'
 )
+# paintInfoBlock uses ID_INFO_LABEL_BASE (10) + line index — section tags must not reuse that band.
+BAD_SECTION_TAG_ID = re.compile(
+    r"paintSectionTag\s*\(\s*gui\s*,\s*(1[0-9]|2[0-9]|3[0-2])\s*,"
+)
 PREVIEW_CALL = re.compile(r"paintSystemMainPreview\s*\(")
 FOOTER_PREVIEW = re.compile(
     r"if\s*\(\s*parentPage\s*==\s*null(?:\s*\|\|\s*parentPage\.isBlank\(\))?\s*\)\s*\{[^}]*paintSystemMainPreview",
@@ -83,6 +87,10 @@ def main() -> int:
             errors.append(f"{rel}: call scrollPickList, not scrollSearchable")
         if BAD_LIST_WIDTH.search(text):
             errors.append(f"{rel}: use listWidth/textBandWidth, not W - 2*M")
+        if BAD_SECTION_TAG_ID.search(text):
+            errors.append(
+                f"{rel}: paintSectionTag id overlaps info labels (use CnpcGuiSupport.ID_SECTION_TAG_*)"
+            )
 
         for m in ROBOTIC_HINT.finditer(text):
             snippet = m.group(0)[:80].replace("\n", " ")
