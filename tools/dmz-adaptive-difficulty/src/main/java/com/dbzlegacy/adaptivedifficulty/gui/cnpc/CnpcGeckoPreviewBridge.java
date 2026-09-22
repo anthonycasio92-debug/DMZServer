@@ -51,7 +51,8 @@ final class CnpcGeckoPreviewBridge {
                 }
             }
             String geo = DmzPreviewGeo.resolveModelGeo(ch);
-            applyDmzModel(npc, geo, DmzPreviewGeo.SAGA_BASE_ANIM, "idle", "walk", "attack1_1", "hurt", null);
+            String anim = DmzPreviewGeo.resolveAnimFile(ch);
+            applyDmzModel(npc, geo, anim, "idle", "walk", "attack1_1", "hurt", null);
             applyPlayerSkin(npc, player.m_36316_().getName());
             applyHair(npc, ch);
             npc.display.setShowName(0);
