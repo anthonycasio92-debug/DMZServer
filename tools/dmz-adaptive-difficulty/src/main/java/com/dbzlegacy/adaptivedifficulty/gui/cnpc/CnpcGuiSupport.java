@@ -152,7 +152,15 @@ public final class CnpcGuiSupport {
         List<String> box = new ArrayList<>();
         box.add("§eNotice");
         box.addAll(raw);
-        return paintInfoBlock(gui, y, box, CnpcGuiStyle.INFO_INLINE_MAX, false, ID_NOTICE_LABEL_BASE);
+        // Never use the scrolling panel for notices — CNPC allows only one scroll region per GUI
+        // (player pick lists need it). Keep notices inline with a small line cap.
+        int maxInline = Math.min(5, box.size());
+        if (box.size() > maxInline) {
+            box = new ArrayList<>(box.subList(0, maxInline - 1));
+            box.add("§8…");
+            maxInline = box.size();
+        }
+        return paintInfoBlock(gui, y, box, maxInline, false, ID_NOTICE_LABEL_BASE);
     }
 
     public static void pushMenuMessage(ServerPlayer player, String message) {

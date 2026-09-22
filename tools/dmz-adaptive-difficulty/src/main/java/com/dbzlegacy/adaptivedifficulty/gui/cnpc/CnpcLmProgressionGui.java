@@ -18,7 +18,15 @@ public final class CnpcLmProgressionGui {
     private CnpcLmProgressionGui() {}
 
     public static void open(ServerPlayer player, String page) {
-        String p = normalizePage(page);
+        String raw = page == null || page.isBlank() ? "main" : page.trim();
+        String lowerRaw = raw.toLowerCase(Locale.ROOT);
+        if (lowerRaw.startsWith("android_remove_confirm:")) {
+            String target = raw.substring("android_remove_confirm:".length()).trim();
+            CnpcGuiSupport.showSized(player, CnpcLmGui.ID_PROGRESSION, CnpcGuiSupport.W, 300,
+                    (pl, gui) -> paintAndroidRemoveConfirm(pl, gui, target));
+            return;
+        }
+        String p = normalizePage(raw);
         if (requiresStaff(p) && !StaffAccess.isStaff(player)) {
             CnpcGuiSupport.denyToHub(player, "§cStaff only — that progression page is for staff.");
             return;
@@ -26,7 +34,8 @@ public final class CnpcLmProgressionGui {
         int h = switch (p) {
             case "admin", "flags" -> CnpcGuiSupport.suggestHeight(180 + ((ALL_FLAG_KEYS.length + 1) / 2) * CnpcGuiSupport.ROW_STEP + 48);
             case "flags_fabled" -> CnpcGuiSupport.suggestHeight(180 + ((FABLED_FLAG_KEYS.length + 1) / 2) * CnpcGuiSupport.ROW_STEP + 48);
-            case "android_convert", "android_remove" -> 320;
+            case "android_convert" -> 340;
+            case "android_remove" -> StaffAccess.isStaff(player) ? 400 : 280;
             case "skills", "tp", "race", "combat", "end", "fabled", "utility", "status" -> sectionHeight(p);
             default -> H_MAIN;
         };
@@ -244,20 +253,47 @@ public final class CnpcLmProgressionGui {
         ServerPlayer subject = CnpcGuiSupport.target(player);
         boolean staff = StaffAccess.isStaff(player);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, "§cRemove Android",
-                "§7Two-step confirm within 10 seconds");
+                staff ? CnpcGuiStyle.HINT_DOUBLE_CLICK_PLAYER : "§7Two-step confirm on the next screen");
         int row = CnpcGuiSupport.bodyBelowHeader(infoY);
-        CnpcGuiSupport.button(gui, 63, "§cRemove on yourself", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
-                player,
-                () -> ProgressionGuiApi.handleDo(player, "android_remove", subject.m_7755_().getString(),
-                        "android_remove"),
-                () -> open(player, "android_remove")));
-        row += CnpcGuiSupport.ROW_STEP + 4;
         if (staff) {
-            row = paintNameScroll(player, gui, row, "android_remove", "android_remove");
+            row = paintNameScroll(player, gui, row, "android_remove_confirm", "android_remove");
+            CnpcGuiSupport.button(gui, 63, "§cRemove on yourself…", CnpcGuiSupport.COL_L, row,
+                    () -> open(player, "android_remove_confirm:" + subject.m_7755_().getString()));
+            row += CnpcGuiSupport.ROW_STEP + 8;
             CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "android_panel"), "§7« Back");
         } else {
-            CnpcGuiSupport.navSubmenu(player, gui, row + 8, () -> open(player, "main"), "§7« Back");
+            CnpcGuiSupport.button(gui, 63, "§cRemove on yourself…", CnpcGuiSupport.COL_L, row,
+                    () -> open(player, "android_remove_confirm:" + subject.m_7755_().getString()));
+            row += CnpcGuiSupport.ROW_STEP + 8;
+            CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "main"), "§7« Back");
         }
+    }
+
+    private static void paintAndroidRemoveConfirm(ServerPlayer player, ICustomGui gui, String targetName) {
+        ServerPlayer subject = CnpcGuiSupport.target(player);
+        boolean staff = StaffAccess.isStaff(player);
+        String display = targetName == null || targetName.isBlank()
+                ? subject.m_7755_().getString()
+                : targetName.trim();
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§cConfirm Android removal",
+                "§f" + CnpcGuiSupport.humanizePickerArg(display));
+        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of(
+                "§7Removes the Android upgrade only.",
+                "§7Race, stats, skills, and progression stay.",
+                "§8Form skills are restored.",
+                "§eTap Confirm twice within 10 seconds."), 4));
+        row += 8;
+        String targetArg = display;
+        CnpcGuiSupport.button(gui, 20, "§cConfirm remove", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
+                player,
+                () -> ProgressionGuiApi.handleDo(player, "android_remove", targetArg,
+                        "android_remove_confirm:" + targetArg),
+                () -> open(player, "android_remove_confirm:" + targetArg)));
+        CnpcGuiSupport.button(gui, 21, "§7Cancel", CnpcGuiSupport.COL_R, row,
+                () -> open(player, staff ? "android_remove" : "main"));
+        row += CnpcGuiSupport.ROW_STEP + 8;
+        CnpcGuiSupport.navSubmenu(player, gui, row,
+                () -> open(player, staff ? "android_remove" : "main"), "§7« Back");
     }
 
     /** @return Y row for footer after list (or after empty label). */
@@ -276,9 +312,13 @@ public final class CnpcLmProgressionGui {
             int[] sel = sc.getSelection();
             if (sel != null && sel.length > 0 && sel[0] >= 0 && sel[0] < names.size()) {
                 String name = names.get(sel[0]);
-                CnpcGuiSupport.afterGuiClosed(g, () -> CnpcGuiSupport.act(player,
-                        () -> ProgressionGuiApi.handleDo(player, action, name, returnPage),
-                        () -> open(player, returnPage)));
+                if ("android_remove_confirm".equals(action)) {
+                    CnpcGuiSupport.afterGuiClosed(g, () -> open(player, "android_remove_confirm:" + name));
+                } else {
+                    CnpcGuiSupport.afterGuiClosed(g, () -> CnpcGuiSupport.act(player,
+                            () -> ProgressionGuiApi.handleDo(player, action, name, returnPage),
+                            () -> open(player, returnPage)));
+                }
             }
         });
         return CnpcGuiSupport.navRowAfterScroll(bandY, scrollH);
