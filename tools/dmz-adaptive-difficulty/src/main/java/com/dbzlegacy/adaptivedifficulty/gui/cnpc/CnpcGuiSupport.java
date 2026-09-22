@@ -10,6 +10,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import noppes.npcs.api.NpcAPI;
 import noppes.npcs.api.entity.IEntity;
@@ -429,19 +430,13 @@ public final class CnpcGuiSupport {
 
     public static IButton button(ICustomGui gui, int id, String label, int x, int y, Runnable onPress) {
         IButton b = gui.addButton(id, safeChat(compactButton(label)), x, y, BTN_W, BTN_H);
-        b.setOnPress((g, btn) -> {
-            g.close();
-            onPress.run();
-        });
+        b.setOnPress((g, btn) -> afterGuiClosed(g, onPress));
         return b;
     }
 
     public static IButton buttonSmall(ICustomGui gui, int id, String label, int x, int y, int w, Runnable onPress) {
         IButton b = gui.addButton(id, safeChat(compactButton(label)), x, y, w, BTN_H);
-        b.setOnPress((g, btn) -> {
-            g.close();
-            onPress.run();
-        });
+        b.setOnPress((g, btn) -> afterGuiClosed(g, onPress));
         return b;
     }
 
@@ -449,11 +444,57 @@ public final class CnpcGuiSupport {
     public static IButton buttonSmallFull(ICustomGui gui, int id, String label, int x, int y, int w,
             Runnable onPress) {
         IButton b = gui.addButton(id, safeChat(label), x, y, w, BTN_H);
-        b.setOnPress((g, btn) -> {
-            g.close();
-            onPress.run();
-        });
+        b.setOnPress((g, btn) -> afterGuiClosed(g, onPress));
         return b;
+    }
+
+    /**
+     * CNPC closes the GUI on the client asynchronously; reopening in the same server tick often fails.
+     * Run follow-up work (especially another {@link #showSized}) after close completes.
+     */
+    public static void afterGuiClosed(ICustomGui gui, Runnable task) {
+        if (task == null) {
+            return;
+        }
+        ServerPlayer player = playerFromGui(gui);
+        if (gui != null) {
+            try {
+                gui.close();
+            } catch (Throwable t) {
+                AdaptiveDifficultyMod.LOGGER.warn("[{}] CNPC gui close failed: {}", AdaptiveDifficultyMod.MOD_ID, t);
+            }
+        }
+        runDeferred(player, task);
+    }
+
+    /** Schedule on the server thread after the current tick (one tick defer). */
+    public static void runDeferred(ServerPlayer player, Runnable task) {
+        if (task == null) {
+            return;
+        }
+        MinecraftServer server = player == null ? null : player.m_20194_();
+        if (server == null) {
+            task.run();
+            return;
+        }
+        server.execute(() -> server.execute(task));
+    }
+
+    private static ServerPlayer playerFromGui(ICustomGui gui) {
+        if (gui == null) {
+            return null;
+        }
+        try {
+            IPlayer<?> ip = gui.getPlayer();
+            if (ip != null) {
+                net.minecraft.world.entity.Entity entity = ip.getMCEntity();
+                if (entity instanceof ServerPlayer sp) {
+                    return sp;
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return null;
     }
 
     /** Primary button caption without long inline hints (hints belong in the info block). */
@@ -655,7 +696,7 @@ public final class CnpcGuiSupport {
         if (msg != null && !msg.isBlank()) {
             pushMenuMessage(player, msg);
         }
-        reopen.run();
+        runDeferred(player, reopen);
     }
 
     /** Tab-separated GUI cards: field 0 = id/arg, field 1 = display label. */
@@ -707,10 +748,11 @@ public final class CnpcGuiSupport {
             return;
         }
         scroll.setOnDoubleClick((g, sc) -> {
-            g.close();
             String arg = cardField(cards, sc, argField);
             if (arg != null) {
-                onPick.accept(arg);
+                afterGuiClosed(g, () -> onPick.accept(arg));
+            } else if (g != null) {
+                g.close();
             }
         });
     }

@@ -221,12 +221,11 @@ public final class CnpcLmCharacterGui {
         } else {
             IScroll scroll = CnpcGuiSupport.scrollPickList(gui, listY, rowsBelow, CnpcGuiSupport.cardLabels(cards, 1));
             scroll.setOnDoubleClick((g, sc) -> {
-                g.close();
                 String id = selectedCardId(cards, sc);
                 if (id != null) {
-                    CnpcGuiSupport.act(player,
+                    CnpcGuiSupport.afterGuiClosed(g, () -> CnpcGuiSupport.act(player,
                             () -> CharacterServicesGuiApi.handleDo(player, "bone_unlock", id, "bones"),
-                            () -> open(player, "bones:" + pg));
+                            () -> open(player, "bones:" + pg)));
                 }
             });
         }

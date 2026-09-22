@@ -273,13 +273,12 @@ public final class CnpcLmProgressionGui {
         int scrollH = CnpcGuiSupport.listScrollHeight(gui, bandY, rowsBelow);
         IScroll scroll = CnpcGuiSupport.scrollPickList(gui, y, rowsBelow, names.toArray(String[]::new));
         scroll.setOnDoubleClick((g, sc) -> {
-            g.close();
             int[] sel = sc.getSelection();
             if (sel != null && sel.length > 0 && sel[0] >= 0 && sel[0] < names.size()) {
                 String name = names.get(sel[0]);
-                CnpcGuiSupport.act(player,
+                CnpcGuiSupport.afterGuiClosed(g, () -> CnpcGuiSupport.act(player,
                         () -> ProgressionGuiApi.handleDo(player, action, name, returnPage),
-                        () -> open(player, returnPage));
+                        () -> open(player, returnPage)));
             }
         });
         return CnpcGuiSupport.navRowAfterScroll(bandY, scrollH);
