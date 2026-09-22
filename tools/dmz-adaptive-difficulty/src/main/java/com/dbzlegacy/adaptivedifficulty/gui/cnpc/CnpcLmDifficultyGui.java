@@ -91,7 +91,7 @@ public final class CnpcLmDifficultyGui {
             }
             lines.add("§8Scaled enemies can hurt other players nearby.");
         }
-        int row = CnpcGuiSupport.contentStartY(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 3), infoY);
+        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 3));
         CnpcGuiSupport.button(gui, 20, "§eUnlock tiers", CnpcGuiSupport.COL_L, row, () -> open(player, "tiers"));
         CnpcGuiSupport.button(gui, 21, "§dTitles", CnpcGuiSupport.COL_R, row, () -> open(player, "titles"));
         row += 24;
@@ -121,7 +121,7 @@ public final class CnpcLmDifficultyGui {
                     () -> open(player, "stats"));
         }
         row += 24;
-        navFooter(player, gui, row, null, subject, infoY);
+        navFooter(player, gui, row, null, subject);
     }
 
     private static void paintStats(ServerPlayer player, ICustomGui gui) {
@@ -152,9 +152,9 @@ public final class CnpcLmDifficultyGui {
 
         int infoY = CnpcGuiSupport.paintHeader(player, gui, "§8Staff · Details",
                 "§7Combat rating and scaled stats (read-only)");
-        int row = CnpcGuiSupport.contentStartY(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 3), infoY);
+        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 3));
         row += 8;
-        navFooter(player, gui, row, "main", subject, infoY);
+        navFooter(player, gui, row, "main", subject);
     }
 
     private static String blankNone(String s) {
@@ -193,8 +193,7 @@ public final class CnpcLmDifficultyGui {
             lines.add("§7Cost to activate §f"
                     + CnpcDifficultyTierUi.formatActivationCost(subject, nextLocked));
         }
-        int row = CnpcGuiSupport.contentStartY(
-                CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX), infoY);
+        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX));
 
         int placed = 0;
         for (int t = 1; t <= 7; t++) {
@@ -233,7 +232,7 @@ public final class CnpcLmDifficultyGui {
                 () -> DifficultyActions.handleArg(subject, "lower_tier", "0", "tiers").message(),
                 () -> open(player, "tiers")));
         row += 28;
-        navFooter(player, gui, row, "main", subject, infoY);
+        navFooter(player, gui, row, "main", subject);
     }
 
     private static void paintTitles(ServerPlayer player, ICustomGui gui) {
@@ -244,8 +243,7 @@ public final class CnpcLmDifficultyGui {
         List<String> header = new ArrayList<>();
         header.add("§7Wearing §e" + blankNone(TitleSystem.activeDisplay(subject)));
         header.add("§7Title score §6" + TitleSystem.computeTitleScore(subject));
-        int listY = CnpcGuiSupport.contentStartY(
-                CnpcGuiSupport.paintInfoBlock(gui, infoY, header, CnpcGuiStyle.INFO_LIST_HEADER_MAX), infoY);
+        int listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, header, CnpcGuiStyle.INFO_LIST_HEADER_MAX));
 
         List<String> cards = new ArrayList<>();
         List<String> labels = new ArrayList<>();
@@ -280,7 +278,7 @@ public final class CnpcLmDifficultyGui {
                 () -> DifficultyActions.handleArg(subject, "clear_title", "0", "titles").message(),
                 () -> open(player, "titles")));
         row += 28;
-        navFooter(player, gui, row, "main", subject, infoY);
+        navFooter(player, gui, row, "main", subject);
     }
 
     private static void paintTitleDetail(ServerPlayer player, ICustomGui gui, String titleIdRaw) {
@@ -289,9 +287,8 @@ public final class CnpcLmDifficultyGui {
         DifficultyTitle title = DifficultyTitle.byId(titleIdRaw);
         if (title == null) {
             int infoY = CnpcGuiSupport.paintHeader(player, gui, "§dTitle", "§7Unknown entry");
-            int row = CnpcGuiSupport.contentStartY(
-                    CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of("§7That title could not be found."), 2), infoY);
-            navFooter(player, gui, row + 8, "titles", subject, infoY);
+            int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of("§7That title could not be found."), 2));
+            navFooter(player, gui, row + 8, "titles", subject);
             return;
         }
         boolean earned = TitleSystem.has(subject, title);
@@ -312,7 +309,7 @@ public final class CnpcLmDifficultyGui {
         lines.add("§7Bonus when worn §f" + perk);
         lines.add("§7Score value §6+" + title.scorePoints + " §8(title score)");
 
-        int row = CnpcGuiSupport.contentStartY(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 2), infoY);
+        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 2));
         if (earned) {
             CnpcGuiSupport.button(gui, 20, equipped ? "§aAlready equipped" : "§aEquip this title",
                     CnpcGuiSupport.COL_L, row, () -> {
@@ -331,7 +328,7 @@ public final class CnpcLmDifficultyGui {
                     CnpcGuiSupport.COL_L, row + 4, CnpcGuiSupport.BTN_W, 14);
         }
         row += 28;
-        navFooter(player, gui, row, "titles", subject, infoY);
+        navFooter(player, gui, row, "titles", subject);
     }
 
     private static String kindLabel(DifficultyTitle.Kind kind) {
@@ -353,10 +350,8 @@ public final class CnpcLmDifficultyGui {
         ServerPlayer subject = who(player);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§a", "Difficulty", "Teams"),
                 "§7How rival teams affect scaling");
-        int row = CnpcGuiSupport.contentStartY(
-                CnpcGuiSupport.paintInfoBlock(gui, infoY, DifficultyTeamGuiApi.linesForPage(subject, "team"),
-                        CnpcGuiStyle.INFO_INLINE_MAX),
-                infoY);
+        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, DifficultyTeamGuiApi.linesForPage(subject, "team"),
+                        CnpcGuiStyle.INFO_INLINE_MAX));
         CnpcGuiSupport.button(gui, 40, "§7Personal only", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> DifficultyTeamGuiApi.handleDo(subject, "mode", "personal_only", "team"),
@@ -371,7 +366,7 @@ public final class CnpcLmDifficultyGui {
                 () -> DifficultyTeamGuiApi.handleDo(subject, "mode", "full_team_scaling", "team"),
                 () -> open(player, "team")));
         row += 24;
-        navFooter(player, gui, row, "main", subject, infoY);
+        navFooter(player, gui, row, "main", subject);
     }
 
     /** {@code parentPage} null on difficulty main; otherwise Back reopens that page. */
@@ -380,8 +375,7 @@ public final class CnpcLmDifficultyGui {
             ICustomGui gui,
             int row,
             String parentPage,
-            ServerPlayer previewSubject,
-            int previewAnchorY) {
+            ServerPlayer previewSubject) {
         if (parentPage == null) {
             CnpcGuiSupport.navSystemRoot(player, gui, row);
         } else {
@@ -396,8 +390,8 @@ public final class CnpcLmDifficultyGui {
                 open(player, "main");
             });
         }
-        if (previewSubject != null && previewAnchorY >= 0) {
-            CnpcGuiSupport.paintPlayerPreviewSlot(previewSubject, gui, previewAnchorY);
+        if (previewSubject != null) {
+            CnpcGuiSupport.paintSubjectPreview(previewSubject, gui, player);
         }
     }
 }

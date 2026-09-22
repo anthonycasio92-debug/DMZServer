@@ -21,8 +21,7 @@ public final class CnpcLmLogsGui {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, "§8Server Event Log",
                 "§7Telemetry for staff debugging");
         List<String> lines = MechanicsGuiApi.linesForPage(player, "logs");
-        int row = CnpcGuiSupport.contentStartY(
-                CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX), infoY);
+        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX));
         row += 8;
         CnpcGuiSupport.button(gui, 20, "§aTurn logging on", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                 player,
@@ -39,6 +38,6 @@ public final class CnpcLmLogsGui {
                 () -> open(player, "main")));
         row += 24;
         CnpcGuiSupport.navSubmenu(player, gui, row, () -> CnpcLmAdminGui.open(player, "main"), "§7« Back");
-        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, infoY);
+        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, player);
     }
 }

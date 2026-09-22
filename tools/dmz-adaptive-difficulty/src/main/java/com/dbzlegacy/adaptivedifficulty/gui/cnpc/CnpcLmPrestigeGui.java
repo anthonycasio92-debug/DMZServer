@@ -55,8 +55,7 @@ public final class CnpcLmPrestigeGui {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, "§dPrestige",
                 "§7Turn-ins, skill shop, and permanent unlocks");
         List<String> lines = ProgressionGuiApi.prestigeLines(player, "main");
-        int row = CnpcGuiSupport.contentStartY(
-                CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX), infoY);
+        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX));
         CnpcGuiSupport.button(gui, 20, "§aPrestige now", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> ProgressionGuiApi.handlePrestigeDo(player, "confirm", "", "main"),
@@ -69,7 +68,7 @@ public final class CnpcLmPrestigeGui {
         CnpcGuiSupport.button(gui, 24, "§6Difficulty tiers", CnpcGuiSupport.COL_L, row, () -> open(player, "tiers"));
         CnpcGuiSupport.button(gui, 25, "§3Cap breakthrough", CnpcGuiSupport.COL_R, row, () -> open(player, "cap"));
         row += 24;
-        footer(player, gui, row, null, infoY);
+        footer(player, gui, row, null);
     }
 
     private static void paintTurnIn(ServerPlayer player, ICustomGui gui) {
@@ -79,8 +78,7 @@ public final class CnpcLmPrestigeGui {
                 "§7Each button shows points gained before you confirm");
         List<String> info = new ArrayList<>(ProgressionGuiApi.prestigeLines(player, "turnin"));
         info.add("§8Pack bonus · 3→4 pts · 6→9 pts · 9→15 pts");
-        int row = CnpcGuiSupport.contentStartY(
-                CnpcGuiSupport.paintInfoBlock(gui, infoY, info, CnpcGuiStyle.INFO_INLINE_MAX), infoY);
+        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, info, CnpcGuiStyle.INFO_INLINE_MAX));
         row = CnpcGuiSupport.paintSectionTag(gui, 12, row + 4, "§8Choose amount");
 
         int[] amounts = PrestigePointsSystem.TURN_IN_AMOUNTS;
@@ -100,7 +98,7 @@ public final class CnpcLmPrestigeGui {
         }
         row = CnpcGuiLayout.paintTwoColumnButtonGrid(player, gui, row, 30, grid, () -> open(player, "turnin"));
         row += 4;
-        footer(player, gui, row, "main", infoY);
+        footer(player, gui, row, "main");
     }
 
     private static String turnInLabel(Map<String, String> ph, int amount, int held) {
@@ -122,7 +120,7 @@ public final class CnpcLmPrestigeGui {
 
         List<String> ids = shopSkillIds(ph);
         int from = page * pageSize;
-        int row = CnpcGuiSupport.contentStartY(infoY + 8, infoY);
+        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.previewAnchorY(player));
         int placed = 0;
         List<CnpcGuiLayout.GridButton> grid = new ArrayList<>();
         for (int i = from; i < ids.size() && placed < pageSize; i++, placed++) {
@@ -158,7 +156,7 @@ public final class CnpcLmPrestigeGui {
                     () -> open(player, "shop:" + (page + 1)));
         }
         row += CnpcGuiSupport.ROW_STEP + 4;
-        footer(player, gui, row, "main", infoY);
+        footer(player, gui, row, "main");
     }
 
     private static List<String> shopSkillIds(Map<String, String> ph) {
@@ -196,10 +194,8 @@ public final class CnpcLmPrestigeGui {
 
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§d", "Prestige", "Effects"),
                 "§7Majin and Mutant forms · §e" + cost + " §7points each · one at a time");
-        int row = CnpcGuiSupport.contentStartY(
-                CnpcGuiSupport.paintInfoBlock(gui, infoY, ProgressionGuiApi.prestigeLines(player, "effects"),
-                        CnpcGuiStyle.INFO_INLINE_MAX),
-                infoY);
+        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, ProgressionGuiApi.prestigeLines(player, "effects"),
+                        CnpcGuiStyle.INFO_INLINE_MAX));
 
         if (hasMajin) {
             gui.addLabel(40, "§aPermanent Majin §8· owned", CnpcGuiSupport.COL_L, row + 4, CnpcGuiSupport.BTN_W, 14);
@@ -238,7 +234,7 @@ public final class CnpcLmPrestigeGui {
             gui.addLabel(42, "§7Nothing to unpurchase", CnpcGuiSupport.COL_L, row + 4, CnpcGuiSupport.BTN_W, 14);
         }
         row += CnpcGuiSupport.ROW_STEP;
-        footer(player, gui, row, "main", infoY);
+        footer(player, gui, row, "main");
     }
 
     private static void paintCap(ServerPlayer player, ICustomGui gui) {
@@ -247,10 +243,8 @@ public final class CnpcLmPrestigeGui {
         int btMax = parseInt(ph.get("breakthroughs_max"), PrestigePointsSystem.MAX_BREAKTHROUGHS);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§d", "Prestige", "Level cap"),
                 "§7Raise your level cap with breakthroughs");
-        int row = CnpcGuiSupport.contentStartY(
-                CnpcGuiSupport.paintInfoBlock(gui, infoY, ProgressionGuiApi.prestigeLines(player, "cap"),
-                        CnpcGuiStyle.INFO_INLINE_MAX),
-                infoY);
+        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, ProgressionGuiApi.prestigeLines(player, "cap"),
+                        CnpcGuiStyle.INFO_INLINE_MAX));
         if (bt >= btMax) {
             gui.addLabel(CnpcGuiSupport.ID_INLINE_NOTE, "§aCap fully raised §8· no more breakthroughs",
                     CnpcGuiSupport.COL_L, row + 4, CnpcGuiSupport.textBandWidth(), 14);
@@ -262,17 +256,15 @@ public final class CnpcLmPrestigeGui {
                             () -> ProgressionGuiApi.handlePrestigeDo(player, "breakthrough", "", "cap"),
                             () -> open(player, "cap")));
         }
-        footer(player, gui, row + CnpcGuiSupport.ROW_STEP, "main", infoY);
+        footer(player, gui, row + CnpcGuiSupport.ROW_STEP, "main");
     }
 
     private static void paintTiers(ServerPlayer player, ICustomGui gui) {
         Map<String, String> ph = ProgressionGuiApi.prestigePlaceholders(player);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§d", "Prestige", "Tiers"),
                 "§7Permanent unlocks · tiers T1 through T7");
-        int row = CnpcGuiSupport.contentStartY(
-                CnpcGuiSupport.paintInfoBlock(gui, infoY, ProgressionGuiApi.prestigeLines(player, "tiers"),
-                        CnpcGuiStyle.INFO_INLINE_MAX),
-                infoY);
+        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, ProgressionGuiApi.prestigeLines(player, "tiers"),
+                        CnpcGuiStyle.INFO_INLINE_MAX));
         row = CnpcGuiSupport.paintSectionTag(gui, 11, row + 4, "§8Permanent difficulty tiers");
         CnpcGuiLayout.GridButton[] grid = new CnpcGuiLayout.GridButton[7];
         for (int t = 1; t <= 7; t++) {
@@ -295,15 +287,15 @@ public final class CnpcLmPrestigeGui {
         }
         row = CnpcGuiLayout.paintTwoColumnButtonGrid(player, gui, row, 50, grid, () -> open(player, "tiers"));
         row += 4;
-        footer(player, gui, row, "main", infoY);
+        footer(player, gui, row, "main");
     }
 
-    private static void footer(ServerPlayer player, ICustomGui gui, int row, String parentPage, int infoY) {
+    private static void footer(ServerPlayer player, ICustomGui gui, int row, String parentPage) {
         if (parentPage == null || parentPage.isBlank()) {
             CnpcGuiSupport.navSystemRoot(player, gui, row);
         } else {
             CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, parentPage), "§7« Back");
         }
-        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, infoY);
+        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, player);
     }
 }

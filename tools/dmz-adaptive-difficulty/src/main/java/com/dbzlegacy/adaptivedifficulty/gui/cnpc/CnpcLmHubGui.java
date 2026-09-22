@@ -62,7 +62,7 @@ public final class CnpcLmHubGui {
                 "§7Scaling, rivals, sparring, prestige, and character tools");
 
         List<String> lines = hubSnapshot(who, ph, staff, skillCheck);
-        int row = CnpcGuiSupport.contentStartY(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 3), infoY);
+        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 3));
         int gap = CnpcGuiSupport.ROW_STEP;
 
         if (!"true".equals(ph.get("bridge_ok"))) {
@@ -113,7 +113,7 @@ public final class CnpcLmHubGui {
         }
         row += gap;
         CnpcGuiSupport.footerCloseRefresh(player, gui, row, () -> paintMain(player));
-        CnpcGuiSupport.paintPlayerPreviewSlot(who, gui, infoY);
+        CnpcGuiSupport.paintPlayerPreviewSlot(who, gui, CnpcGuiSupport.previewAnchorY(player));
     }
 
     private static void systemBtn(

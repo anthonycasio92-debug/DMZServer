@@ -20,10 +20,10 @@ public final class CnpcLmAdminGui {
     private static void paint(ServerPlayer player, ICustomGui gui) {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, "§cStaff Admin",
                 "§7Reload config, progression tools, and event log");
-        int row = CnpcGuiSupport.contentStartY(CnpcGuiSupport.paintInfoBlock(gui, infoY, java.util.List.of(
+        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, java.util.List.of(
                 "§7Full commands: §8/lm admin help",
                 "§8/lm admin inspect … §7· §8/difficulty admin …"
-        ), 2), infoY);
+        ), 2));
         row += 4;
         CnpcGuiSupport.button(gui, 20, "§aReload LM config", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                 player,
@@ -43,6 +43,6 @@ public final class CnpcLmAdminGui {
                 () -> open(player, "main")));
         row += CnpcGuiSupport.ROW_STEP + 4;
         CnpcGuiSupport.navSystemRoot(player, gui, row);
-        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, infoY);
+        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, player);
     }
 }

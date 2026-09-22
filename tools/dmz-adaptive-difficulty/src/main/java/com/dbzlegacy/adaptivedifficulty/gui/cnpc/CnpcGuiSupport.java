@@ -271,9 +271,19 @@ public final class CnpcGuiSupport {
         return textBandWidth();
     }
 
-    /** First Y for buttons or lists after the header/info block, below the preview slot. */
-    public static int contentStartY(int rowAfterInfo, int headerInfoY) {
-        return Math.max(rowAfterInfo, CnpcPlayerPreview.minButtonRowY(headerInfoY));
+    /**
+     * Stable Y for the right-column character preview on every LM menu (does not move when flash
+     * messages or long info blocks change {@link #paintHeader} return value).
+     */
+    public static int previewAnchorY(net.minecraft.server.level.ServerPlayer viewer) {
+        boolean inspecting = AdminInspectSessions.isInspecting(viewer.m_20148_());
+        int dividerY = inspecting ? 52 : 38;
+        return dividerY + 10;
+    }
+
+    /** First Y for lists, buttons, or grids directly under an info block (left column). */
+    public static int bodyBelowInfo(int rowAfterBlock) {
+        return rowAfterBlock + 4;
     }
 
     /** @see CnpcPlayerPreview#paint(ServerPlayer, ICustomGui, int) */
@@ -285,10 +295,10 @@ public final class CnpcGuiSupport {
         CnpcPlayerPreview.paint(player, gui, anchorY);
     }
 
-    /** Paint preview last (ProfTools-style live player + cursor yaw). */
-    public static void paintSubjectPreview(ServerPlayer subject, ICustomGui gui, int headerInfoY) {
-        if (subject != null && headerInfoY >= 0) {
-            paintPlayerPreviewSlot(subject, gui, headerInfoY);
+    /** Paint preview last at {@link #previewAnchorY(ServerPlayer)} (ProfTools-style). */
+    public static void paintSubjectPreview(ServerPlayer subject, ICustomGui gui, ServerPlayer layoutViewer) {
+        if (subject != null && layoutViewer != null) {
+            paintPlayerPreviewSlot(subject, gui, previewAnchorY(layoutViewer));
         }
     }
 

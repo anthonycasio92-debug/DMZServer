@@ -38,11 +38,6 @@ public final class CnpcPlayerPreview {
         return contentRightEdge() - CnpcGuiSupport.M;
     }
 
-    /** First Y where two-column buttons may start without crossing the preview slot. */
-    public static int minButtonRowY(int headerInfoY) {
-        return Math.max(CnpcGuiSupport.M + 8, headerInfoY + SLOT_H + 6);
-    }
-
     public static void paint(ServerPlayer player, ICustomGui gui, int anchorY) {
         paint(player, gui, CnpcGuiSupport.ID_ENTITY_PREVIEW, anchorY);
     }

@@ -58,7 +58,7 @@ public final class CnpcLmCharacterGui {
 
         List<String> lines = new ArrayList<>(CharacterServicesGuiApi.linesForPage(player, "main"));
         lines.add(0, "§6Coins §f" + ph.getOrDefault("ancient_coins", "0") + " §7Ancient Coins");
-        int row = CnpcGuiSupport.contentStartY(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 3), infoY);
+        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 3));
 
         boolean ok = "true".equals(ph.get("bridge_ok")) && "true".equals(ph.get("enabled"));
         if (ok) {
@@ -90,16 +90,14 @@ public final class CnpcLmCharacterGui {
                     CnpcGuiSupport.M, row + 4, CnpcGuiSupport.listWidth(), 14);
             row += CnpcGuiSupport.ROW_STEP;
         }
-        footer(player, gui, row, null, subject, infoY);
+        footer(player, gui, row, null, subject);
     }
 
     private static void paintRace(ServerPlayer player, ICustomGui gui) {
         ServerPlayer subject = CnpcGuiSupport.target(player);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§f", "Character", "Change race"),
                 CnpcGuiStyle.HINT_CLICK_ENTRY);
-        int listY = CnpcGuiSupport.contentStartY(
-                CnpcGuiSupport.paintInfoBlock(gui, infoY, CharacterServicesGuiApi.linesForPage(player, "race"), 2),
-                infoY);
+        int listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, CharacterServicesGuiApi.linesForPage(player, "race"), 2));
 
         List<String> cards = CharacterServicesGuiApi.raceCards(player);
         String[] labels = raceClassLabels(cards);
@@ -113,7 +111,7 @@ public final class CnpcLmCharacterGui {
                 open(player, "race_pct:" + id);
             }
         });
-        footer(player, gui, CnpcGuiSupport.navRowAfterScroll(listY, scrollH), "main", subject, infoY);
+        footer(player, gui, CnpcGuiSupport.navRowAfterScroll(listY, scrollH), "main", subject);
     }
 
     private static void paintRacePct(ServerPlayer player, String raceAndMaybePct) {
@@ -123,10 +121,8 @@ public final class CnpcLmCharacterGui {
             ServerPlayer subject = CnpcGuiSupport.target(pl);
             int infoY = CnpcGuiSupport.paintHeader(pl, gui, "§eKeep progress?",
                     "§7Becoming §f" + titleRace(raceId));
-            int row = CnpcGuiSupport.contentStartY(
-                    CnpcGuiSupport.paintReadOnlyScroll(gui, infoY,
-                            CharacterServicesGuiApi.linesForPage(player, "race_pct:" + raceId + ":0")),
-                    infoY);
+            int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintReadOnlyScroll(gui, infoY,
+                            CharacterServicesGuiApi.linesForPage(player, "race_pct:" + raceId + ":0")));
             row = CnpcGuiSupport.paintSectionTag(gui, 15, row + 4, "§8Progress kept after change");
             int[] pcts = {0, 25, 50, 75, 100};
             CnpcGuiLayout.GridButton[] grid = new CnpcGuiLayout.GridButton[pcts.length];
@@ -138,7 +134,7 @@ public final class CnpcLmCharacterGui {
             row = CnpcGuiLayout.paintTwoColumnButtonGrid(player, gui, row, 40, grid, () -> {});
             row += 4;
             CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "race"), "§7« Back");
-            CnpcGuiSupport.paintSubjectPreview(subject, gui, infoY);
+            CnpcGuiSupport.paintSubjectPreview(subject, gui, player);
         });
     }
 
@@ -147,10 +143,8 @@ public final class CnpcLmCharacterGui {
             ServerPlayer subject = CnpcGuiSupport.target(pl);
             int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcGuiStyle.subPage("§f", "Character", "Confirm race"),
                     CnpcGuiStyle.HINT_REVIEW_PAY);
-            int row = CnpcGuiSupport.contentStartY(
-                    CnpcGuiSupport.paintReadOnlyScroll(gui, infoY,
-                            CharacterServicesGuiApi.linesForPage(player, "race_confirm:" + raceAndPct)),
-                    infoY);
+            int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintReadOnlyScroll(gui, infoY,
+                            CharacterServicesGuiApi.linesForPage(player, "race_confirm:" + raceAndPct)));
             CnpcGuiSupport.button(gui, 20, "§aConfirm & pay", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                     player,
                     () -> CharacterServicesGuiApi.handleDo(player, "race_confirm", raceAndPct, "main"),
@@ -160,7 +154,7 @@ public final class CnpcLmCharacterGui {
                 String race = raceAndPct.split(":", 2)[0];
                 open(player, "race_pct:" + race);
             }, "§7« Back");
-            CnpcGuiSupport.paintSubjectPreview(subject, gui, infoY);
+            CnpcGuiSupport.paintSubjectPreview(subject, gui, player);
         });
     }
 
@@ -168,9 +162,7 @@ public final class CnpcLmCharacterGui {
         ServerPlayer subject = CnpcGuiSupport.target(player);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§f", "Character", "Change class"),
                 CnpcGuiStyle.HINT_CLICK_ENTRY);
-        int listY = CnpcGuiSupport.contentStartY(
-                CnpcGuiSupport.paintInfoBlock(gui, infoY, CharacterServicesGuiApi.linesForPage(player, "class"), 2),
-                infoY);
+        int listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, CharacterServicesGuiApi.linesForPage(player, "class"), 2));
 
         List<String> cards = CharacterServicesGuiApi.classCards(player);
         String[] labels = raceClassLabels(cards);
@@ -184,7 +176,7 @@ public final class CnpcLmCharacterGui {
                 open(player, "class_confirm:" + id);
             }
         });
-        footer(player, gui, CnpcGuiSupport.navRowAfterScroll(listY, scrollH), "main", subject, infoY);
+        footer(player, gui, CnpcGuiSupport.navRowAfterScroll(listY, scrollH), "main", subject);
     }
 
     private static void paintClassConfirm(ServerPlayer player, String classId) {
@@ -192,17 +184,15 @@ public final class CnpcLmCharacterGui {
             ServerPlayer subject = CnpcGuiSupport.target(pl);
             int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcGuiStyle.subPage("§f", "Character", "Confirm class"),
                     CnpcGuiStyle.HINT_REVIEW_PAY);
-            int row = CnpcGuiSupport.contentStartY(
-                    CnpcGuiSupport.paintReadOnlyScroll(gui, infoY,
-                            CharacterServicesGuiApi.linesForPage(player, "class_confirm:" + classId)),
-                    infoY);
+            int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintReadOnlyScroll(gui, infoY,
+                            CharacterServicesGuiApi.linesForPage(player, "class_confirm:" + classId)));
             CnpcGuiSupport.button(gui, 20, "§aConfirm & pay", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                     player,
                     () -> CharacterServicesGuiApi.handleDo(player, "class_confirm", classId, "main"),
                     () -> CnpcLmHubGui.open(player, "main")));
             row += CnpcGuiSupport.ROW_STEP + 8;
             CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "class"), "§7« Back");
-            CnpcGuiSupport.paintSubjectPreview(subject, gui, infoY);
+            CnpcGuiSupport.paintSubjectPreview(subject, gui, player);
         });
     }
 
@@ -214,9 +204,7 @@ public final class CnpcLmCharacterGui {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§f", "Character", "Head bone shop"),
                 "§7Page §f" + (pg + 1) + "/" + pages + CnpcGuiStyle.SEP + "§7Active §f"
                         + ph.getOrDefault("active_head_bone", "none"));
-        int listY = CnpcGuiSupport.contentStartY(
-                CnpcGuiSupport.paintInfoBlock(gui, infoY, CharacterServicesGuiApi.linesForPage(player, "bones:" + pg), 2),
-                infoY);
+        int listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, CharacterServicesGuiApi.linesForPage(player, "bones:" + pg), 2));
 
         List<String> cards = CharacterServicesGuiApi.headBoneCards(player, pg);
         int scrollBottom = listY;
@@ -261,7 +249,7 @@ public final class CnpcLmCharacterGui {
         }
         row += CnpcGuiSupport.ROW_STEP + 4;
         CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "main"), "§7« Back");
-        CnpcGuiSupport.paintSubjectPreview(subject, gui, infoY);
+        CnpcGuiSupport.paintSubjectPreview(subject, gui, player);
     }
 
     private static int parseBonePage(String page) {
@@ -282,16 +270,14 @@ public final class CnpcLmCharacterGui {
         ServerPlayer subject = CnpcGuiSupport.target(player);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§f", "Character", "Reskin"),
                 "§7Opens the in-game editor");
-        int row = CnpcGuiSupport.contentStartY(
-                CnpcGuiSupport.paintInfoBlock(gui, infoY, CharacterServicesGuiApi.linesForPage(player, "reskin"),
-                        CnpcGuiStyle.INFO_INLINE_MAX),
-                infoY);
+        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, CharacterServicesGuiApi.linesForPage(player, "reskin"),
+                        CnpcGuiStyle.INFO_INLINE_MAX));
         CnpcGuiSupport.button(gui, 20, "§aOpen reskin editor", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> CharacterServicesGuiApi.handleDo(player, "reskin_confirm", "", "reskin"),
                 () -> open(player, "main")));
         row += CnpcGuiSupport.ROW_STEP + 4;
-        footer(player, gui, row, "main", subject, infoY);
+        footer(player, gui, row, "main", subject);
     }
 
     private static void footer(
@@ -299,14 +285,13 @@ public final class CnpcLmCharacterGui {
             ICustomGui gui,
             int row,
             String parentPage,
-            ServerPlayer previewSubject,
-            int previewAnchorY) {
+            ServerPlayer previewSubject) {
         if (parentPage == null) {
             CnpcGuiSupport.navSystemRoot(player, gui, row);
         } else {
             CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, parentPage), "§7« Back");
         }
-        CnpcGuiSupport.paintSubjectPreview(previewSubject, gui, previewAnchorY);
+        CnpcGuiSupport.paintSubjectPreview(previewSubject, gui, player);
     }
 
     private static String[] raceClassLabels(List<String> cards) {

@@ -84,7 +84,7 @@ public final class CnpcLmProgressionGui {
         if (!staff) {
             info.add(0, "§7Ask staff to change server modules.");
         }
-        int row = CnpcGuiSupport.contentStartY(CnpcGuiSupport.paintInfoBlock(gui, infoY, info, 3), infoY);
+        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, info, 3));
 
         row = placeRow(gui, player, row, 20, "§eSkills", CnpcGuiSupport.COL_L, () -> open(player, "skills"));
         placeRow(gui, player, row, 21, "§6TP gains", CnpcGuiSupport.COL_R, () -> open(player, "tp"));
@@ -107,7 +107,7 @@ public final class CnpcLmProgressionGui {
         }
         row += CnpcGuiSupport.ROW_STEP;
         CnpcGuiSupport.navSystemRoot(player, gui, row);
-        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, infoY);
+        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, player);
     }
 
     private static int placeRow(
@@ -121,14 +121,13 @@ public final class CnpcLmProgressionGui {
         String title = sectionTitle(page);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, title,
                 staff ? CnpcGuiStyle.HINT_TOGGLE_STAFF : CnpcGuiStyle.HINT_READ_ONLY);
-        int row = CnpcGuiSupport.contentStartY(
-                CnpcGuiSupport.paintInfoBlock(gui, infoY, ProgressionGuiApi.linesForPage(player, page), 2), infoY);
+        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, ProgressionGuiApi.linesForPage(player, page), 2));
 
         Map<String, String> ph = ProgressionGuiApi.placeholders(player);
         String[] keys = flagsForSection(page);
         if (keys == null || keys.length == 0) {
             CnpcGuiSupport.navSubmenu(player, gui, row + 8, () -> open(player, "main"), "§7« Back");
-            CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, infoY);
+            CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, player);
             return;
         }
 
@@ -168,7 +167,7 @@ public final class CnpcLmProgressionGui {
                 () -> open(player, page));
         row += 8;
         CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "main"), "§7« Back");
-        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, infoY);
+        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, player);
     }
 
     private static int sectionHeight(String page) {
@@ -183,7 +182,7 @@ public final class CnpcLmProgressionGui {
         List<String> lines = new ArrayList<>();
         lines.add(ph.getOrDefault("boost", "§7Global TP boost: §cOFF"));
         lines.add("§8Presets start a boost · End stops it");
-        int row = CnpcGuiSupport.contentStartY(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 3), infoY);
+        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 3));
 
         row = boostPreset(gui, player, row, 50, "§e1.25× · 30m", CnpcGuiSupport.COL_L, "1.25:30");
         boostPreset(gui, player, row, 51, "§e1.5× · 30m", CnpcGuiSupport.COL_R, "1.5:30");
@@ -201,7 +200,7 @@ public final class CnpcLmProgressionGui {
                 () -> open(player, "boost_panel"));
         row += CnpcGuiSupport.ROW_STEP;
         CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "tp"), "§7« Back");
-        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, infoY);
+        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, player);
     }
 
     private static int boostPreset(
@@ -216,26 +215,26 @@ public final class CnpcLmProgressionGui {
     private static void paintAndroidPanel(ServerPlayer player, ICustomGui gui) {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, "§bAndroid tools",
                 "§7Dr. Gero convert · remove upgrade");
-        int row = CnpcGuiSupport.contentStartY(CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of(
+        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of(
                 "§7Convert keeps race · unlocks Android path",
                 "§8Eligible: §7Human · Frost Demon · Viltrumite",
                 "§8Saiyan races cannot take the Gero upgrade",
                 "§7Remove restores prior forms (confirm within 10s)"
-        ), 2), infoY);
+        ), 2));
         CnpcGuiSupport.button(gui, 60, "§aConvert player…", CnpcGuiSupport.COL_L, row,
                 () -> open(player, "android_convert"));
         CnpcGuiSupport.button(gui, 61, "§cRemove upgrade…", CnpcGuiSupport.COL_R, row,
                 () -> open(player, "android_remove"));
         row += CnpcGuiSupport.ROW_STEP + 8;
         CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "race"), "§7« Back");
-        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, infoY);
+        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, player);
     }
 
     private static void paintAndroidConvert(ServerPlayer player, ICustomGui gui) {
         ServerPlayer subject = CnpcGuiSupport.target(player);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§d", "Progression", "Android convert"),
                 CnpcGuiStyle.HINT_DOUBLE_CLICK_PLAYER);
-        int row = CnpcGuiSupport.contentStartY(infoY + 4, infoY);
+        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.previewAnchorY(player));
         CnpcGuiSupport.button(gui, 62, "§aConvert yourself", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> ProgressionGuiApi.handleDo(player, "android", subject.m_7755_().getString(), "android_convert"),
@@ -243,7 +242,7 @@ public final class CnpcLmProgressionGui {
         row += CnpcGuiSupport.ROW_STEP + 4;
         row = paintNameScroll(player, gui, row, "android", "android_convert");
         CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "android_panel"), "§7« Back");
-        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, infoY);
+        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, player);
     }
 
     private static void paintAndroidRemove(ServerPlayer player, ICustomGui gui) {
@@ -251,7 +250,7 @@ public final class CnpcLmProgressionGui {
         boolean staff = StaffAccess.isStaff(player);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, "§cRemove Android",
                 "§7Two-step confirm within 10 seconds");
-        int row = CnpcGuiSupport.contentStartY(infoY + 4, infoY);
+        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.previewAnchorY(player));
         CnpcGuiSupport.button(gui, 63, "§cRemove on yourself", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> ProgressionGuiApi.handleDo(player, "android_remove", subject.m_7755_().getString(),
@@ -264,7 +263,7 @@ public final class CnpcLmProgressionGui {
         } else {
             CnpcGuiSupport.navSubmenu(player, gui, row + 8, () -> open(player, "main"), "§7« Back");
         }
-        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, infoY);
+        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, player);
     }
 
     /** @return Y row for footer after list (or after empty label). */
@@ -296,8 +295,7 @@ public final class CnpcLmProgressionGui {
         boolean staffFree = "true".equalsIgnoreCase(ph.getOrDefault("staff_free_ancient_coin_costs", "false"));
         int infoY = CnpcGuiSupport.paintHeader(player, gui, "§6Ancient coin economy",
                 "§7Staff pricing for LM paid features");
-        int row = CnpcGuiSupport.contentStartY(
-                CnpcGuiSupport.paintInfoBlock(gui, infoY, ProgressionGuiApi.linesForPage(player, "economy"), 4), infoY);
+        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, ProgressionGuiApi.linesForPage(player, "economy"), 4));
         CnpcGuiSupport.button(gui, 20, staffFree ? "§aStaff free costs ON" : "§7Staff free costs OFF",
                 CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                         player,
@@ -306,14 +304,14 @@ public final class CnpcLmProgressionGui {
                         () -> open(player, "economy")));
         row += CnpcGuiSupport.ROW_STEP + 8;
         CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "main"), "§7« Back");
-        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, infoY);
+        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, player);
     }
 
     private static void paintAllFlags(ServerPlayer player, ICustomGui gui) {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, "§cAll progression flags",
                 "§7Grouped like chest UI · tap to toggle");
         Map<String, String> ph = ProgressionGuiApi.placeholders(player);
-        int row = CnpcGuiSupport.contentStartY(infoY + 4, infoY);
+        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.previewAnchorY(player));
         CnpcGuiLayout.GridButton[] grid = new CnpcGuiLayout.GridButton[ALL_FLAG_KEYS.length];
         for (int i = 0; i < ALL_FLAG_KEYS.length; i++) {
             String key = ALL_FLAG_KEYS[i];
@@ -328,13 +326,13 @@ public final class CnpcLmProgressionGui {
                 () -> open(player, "flags_fabled"));
         row += CnpcGuiSupport.ROW_STEP;
         CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "main"), "§7« Back");
-        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, infoY);
+        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, player);
     }
 
     private static void paintFabledFlags(ServerPlayer player, ICustomGui gui) {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, "§dFabled subflags", "§7Soft bridge toggles");
         Map<String, String> ph = ProgressionGuiApi.placeholders(player);
-        int row = CnpcGuiSupport.contentStartY(infoY + 4, infoY);
+        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.previewAnchorY(player));
         CnpcGuiLayout.GridButton[] grid = new CnpcGuiLayout.GridButton[FABLED_FLAG_KEYS.length];
         for (int i = 0; i < FABLED_FLAG_KEYS.length; i++) {
             String key = FABLED_FLAG_KEYS[i];
@@ -346,7 +344,7 @@ public final class CnpcLmProgressionGui {
         row = CnpcGuiLayout.paintTwoColumnButtonGrid(player, gui, row, 40, grid, () -> open(player, "flags_fabled"));
         row += 8;
         CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "admin"), "§7« Back");
-        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, infoY);
+        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, player);
     }
 
     private static String friendlyFlagLabel(String key, Map<String, String> ph) {

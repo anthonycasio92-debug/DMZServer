@@ -37,8 +37,7 @@ public final class CnpcLmSkillCheckGui {
                 "§7Natural, Saga, and Skill Check sessions");
 
         List<String> lines = ProgressionGuiApi.skillsLines(CnpcGuiSupport.target(player), page);
-        int row = CnpcGuiSupport.contentStartY(
-                CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX), infoY);
+        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX));
         CnpcGuiSupport.button(gui, 20, "§aNatural skills", CnpcGuiSupport.COL_L, row, () -> {
             SkillCheckService.open(player, "core");
             open(player, "core");
@@ -60,6 +59,6 @@ public final class CnpcLmSkillCheckGui {
         } else {
             CnpcGuiSupport.navSystemRoot(player, gui, row);
         }
-        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, infoY);
+        CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, player);
     }
 }
