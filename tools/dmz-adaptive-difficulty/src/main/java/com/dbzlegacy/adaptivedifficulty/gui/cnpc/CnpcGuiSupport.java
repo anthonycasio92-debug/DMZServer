@@ -50,6 +50,10 @@ public final class CnpcGuiSupport {
     public static final int ID_NAV_BACK = 97;
     public static final int ID_CLOSE = 98;
     public static final int ID_REFRESH = 99;
+    public static final int ID_ENTITY_PREVIEW = 102;
+
+    /** Shorter divider so labels do not wrap oddly in CNPC. */
+    private static final String DIVIDER_TEXT = "§8──────────────────────────────";
 
     private static final Pattern PACKAGE_LIKE = Pattern.compile("(?:\\b[a-z]{2,}\\.){2,}[A-Za-z0-9_$]+");
     private static final Pattern UUID_LINE = Pattern.compile(
@@ -164,7 +168,7 @@ public final class CnpcGuiSupport {
             bodyLines(gui, ID_INFO_LABEL_BASE, startY, clean, maxInline);
             return startY + clean.size() * LINE_H + 10;
         }
-        gui.addLabel(ID_STATUS_TAG, "§8Status", M, startY - 2, W - M * 2, 10);
+        gui.addLabel(ID_STATUS_TAG, "§8Status · use scroll wheel here", M, startY - 2, W - M * 2, 10);
         int preferred = Math.min(112, Math.max(56, clean.size() * 14));
         int scrollH = preferred;
         if (gui != null) {
@@ -211,7 +215,23 @@ public final class CnpcGuiSupport {
     }
 
     public static void divider(ICustomGui gui, int id, int y) {
-        gui.addLabel(id, "§8────────────────────────────────────────", M, y, W - M * 2, 10);
+        gui.addLabel(id, DIVIDER_TEXT, M, y, W - M * 2, 10);
+    }
+
+    /** Rotating player model in the menu (CustomNPCs entity display). */
+    public static void paintPlayerPreview(ServerPlayer player, ICustomGui gui, int x, int y) {
+        if (player == null || gui == null) {
+            return;
+        }
+        try {
+            IEntity entity = NpcAPI.Instance().getIEntity(player);
+            if (entity != null) {
+                gui.addEntityDisplay(ID_ENTITY_PREVIEW, x, y, entity);
+            }
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.debug("[{}] CNPC player preview skipped: {}",
+                    AdaptiveDifficultyMod.MOD_ID, t.toString());
+        }
     }
 
     public static void bodyLines(ICustomGui gui, int startId, int y, List<String> lines, int maxLines) {
@@ -438,6 +458,7 @@ public final class CnpcGuiSupport {
 
     private static String safeScrollLine(String line) {
         String s = safeChat(line);
+        s = s.replace(" §8| ", " · ").replace(" | ", " · ");
         if (s.length() > 64) {
             return s.substring(0, 61) + "…";
         }

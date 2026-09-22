@@ -29,7 +29,14 @@ public final class CnpcLmDifficultyGui {
     private CnpcLmDifficultyGui() {}
 
     public static void open(ServerPlayer player, String page) {
-        String p = page == null || page.isBlank() ? "main" : page.toLowerCase(Locale.ROOT);
+        String raw = page == null || page.isBlank() ? "main" : page.trim();
+        String p = raw.toLowerCase(Locale.ROOT);
+        if (p.startsWith("title_detail:")) {
+            String titleId = raw.substring("title_detail:".length()).trim();
+            CnpcGuiSupport.showSized(player, CnpcLmGui.ID_DIFFICULTY, CnpcGuiSupport.W, 320, (pl, gui) ->
+                    paintTitleDetail(pl, gui, titleId));
+            return;
+        }
         if (("stats".equals(p) || "statistics".equals(p) || "details".equals(p)) && !StaffAccess.isStaff(player)) {
             p = "main";
         }
@@ -59,28 +66,31 @@ public final class CnpcLmDifficultyGui {
         ServerPlayer subject = who(player);
         DifficultyActions.prepareGui(subject);
         DifficultySnapshot snap = DifficultyCache.refresh(subject);
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§aDifficulty", "§7Adaptive scaling & unlock tiers");
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§aDifficulty",
+                "§7Tougher mobs, tiers, and optional titles");
+        CnpcGuiSupport.paintPlayerPreview(subject, gui, 330, infoY - 6);
 
         List<String> lines = new ArrayList<>();
         if (!DifficultyConfig.isEnabled()) {
-            lines.add("§cSystem disabled.");
+            lines.add("§cDifficulty is turned off on this server.");
         } else if (!SystemGate.allows(subject)) {
-            lines.add("§eNot available on this account.");
+            lines.add("§eThis account cannot use personal difficulty.");
         } else {
             PlayerDifficultyData data = DifficultyCache.data(subject);
             if (!data.isPersonalEnabled()) {
-                lines.add("§cPersonal difficulty OFF");
+                lines.add("§cYour personal difficulty is off.");
             } else {
-                lines.add("§7Tier §f" + snap.activeTierName + "  §8·  §7T" + snap.highestUnlockedTier);
+                lines.add("§7Active tier §f" + snap.activeTierName + " §8· §7Unlocked up to §fT"
+                        + snap.highestUnlockedTier);
             }
-            lines.add("§6Coins §f" + AncientCoinEconomy.inventoryBreakdown(subject));
+            lines.add("§6Ancient Coins §f" + AncientCoinEconomy.inventoryBreakdown(subject));
             String title = TitleSystem.activeDisplay(subject);
             if (title != null && !"None".equals(title)) {
-                lines.add("§7Title §e" + title);
+                lines.add("§7Equipped title §e" + title);
             }
-            lines.add("§8Scaled mobs may hit other players.");
+            lines.add("§8Scaled enemies can hurt other players nearby.");
         }
-        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 4);
+        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 3);
         CnpcGuiSupport.button(gui, 20, "§eUnlock tiers", CnpcGuiSupport.COL_L, row, () -> open(player, "tiers"));
         CnpcGuiSupport.button(gui, 21, "§dTitles", CnpcGuiSupport.COL_R, row, () -> open(player, "titles"));
         row += 24;
@@ -138,8 +148,8 @@ public final class CnpcLmDifficultyGui {
         lines.add("§6Coins §f" + AncientCoinEconomy.inventoryBreakdown(subject));
 
         int infoY = CnpcGuiSupport.paintHeader(player, gui, "§8Staff · Details",
-                "§7CR · counters · scaled kit (read-only)");
-        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 8);
+                "§7Combat rating and scaled stats (read-only)");
+        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 3);
         row += 8;
         navFooter(player, gui, row, "main");
     }
@@ -200,10 +210,10 @@ public final class CnpcLmDifficultyGui {
         ServerPlayer subject = who(player);
         DifficultyActions.prepareGui(subject);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, "§dDifficulty · Titles",
-                "§7Double-click unlocked title to equip");
+                "§7Click a title for details · double-click to equip");
         List<String> header = new ArrayList<>();
-        header.add("§7Equipped §e" + TitleSystem.activeDisplay(subject));
-        header.add("§7Score §6" + TitleSystem.computeTitleScore(subject));
+        header.add("§7Wearing §e" + blankNone(TitleSystem.activeDisplay(subject)));
+        header.add("§7Title score §6" + TitleSystem.computeTitleScore(subject));
         int listY = CnpcGuiSupport.paintInfoBlock(gui, infoY, header, 2);
 
         List<String> cards = new ArrayList<>();
@@ -219,6 +229,7 @@ public final class CnpcLmDifficultyGui {
         int scrollH = CnpcGuiSupport.listScrollHeight(gui, listY, 2);
         IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, CnpcGuiSupport.ID_LIST_SCROLL, CnpcGuiSupport.M, listY,
                 CnpcGuiSupport.W - CnpcGuiSupport.M * 2, scrollH, labels.toArray(String[]::new));
+        CnpcGuiSupport.wireScrollOpenDetail(scroll, cards, 0, id -> open(player, "title_detail:" + id));
         CnpcGuiSupport.wireScrollDoublePick(scroll, cards, 0, id -> CnpcGuiSupport.act(
                 player,
                 () -> DifficultyActions.handleArg(subject, "equip_title", id, "titles").message(),
@@ -238,6 +249,72 @@ public final class CnpcLmDifficultyGui {
                 () -> open(player, "titles")));
         row += 28;
         navFooter(player, gui, row, "main");
+    }
+
+    private static void paintTitleDetail(ServerPlayer player, ICustomGui gui, String titleIdRaw) {
+        ServerPlayer subject = who(player);
+        DifficultyActions.prepareGui(subject);
+        DifficultyTitle title = DifficultyTitle.byId(titleIdRaw);
+        if (title == null) {
+            int infoY = CnpcGuiSupport.paintHeader(player, gui, "§dTitle", "§7Unknown entry");
+            int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of("§7That title could not be found."), 2);
+            navFooter(player, gui, row + 8, "titles");
+            return;
+        }
+        boolean earned = TitleSystem.has(subject, title);
+        boolean equipped = title.id.equals(TitleSystem.activeId(subject));
+        int mastery = DifficultyCache.data(subject).titleProgress().masteryLevel(title.id);
+
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§d" + title.masteryDisplay(mastery),
+                earned ? "§7Unlocked · tap Equip to wear" : "§7Locked · see how to earn it");
+        CnpcGuiSupport.paintPlayerPreview(subject, gui, 330, infoY - 6);
+
+        List<String> lines = new ArrayList<>();
+        lines.add(title.rarity.coloredLabel() + " §8· §7" + kindLabel(title.kind));
+        lines.add(earned ? "§aYou have this title." : "§8You do not have this yet.");
+        if (equipped) {
+            lines.add("§eCurrently equipped.");
+        }
+        lines.add("§7How to earn §f" + humanRequirement(title));
+        String perk = title.perkTip(mastery).replace(" §8| ", " · ");
+        lines.add("§7Bonus when worn §f" + perk);
+        lines.add("§7Score value §6+" + title.scorePoints + " §8(title score)");
+
+        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 2);
+        if (earned) {
+            CnpcGuiSupport.button(gui, 20, equipped ? "§aAlready equipped" : "§aEquip this title",
+                    CnpcGuiSupport.COL_L, row, () -> {
+                        if (!equipped) {
+                            CnpcGuiSupport.act(
+                                    player,
+                                    () -> DifficultyActions.handleArg(subject, "equip_title", title.id, "titles")
+                                            .message(),
+                                    () -> open(player, "title_detail:" + title.id));
+                        } else {
+                            open(player, "title_detail:" + title.id);
+                        }
+                    });
+        } else {
+            gui.addLabel(20, "§8Equip unlocks after you earn the title.", CnpcGuiSupport.COL_L, row + 4,
+                    CnpcGuiSupport.BTN_W, 14);
+        }
+        row += 28;
+        navFooter(player, gui, row, "titles");
+    }
+
+    private static String kindLabel(DifficultyTitle.Kind kind) {
+        return switch (kind) {
+            case TIER -> "Tier milestone";
+            case COMBAT -> "Combat challenge";
+            case CHALLENGE -> "Special challenge";
+        };
+    }
+
+    private static String humanRequirement(DifficultyTitle title) {
+        String raw = title.requirementTip();
+        return raw.replace("DMZ ", "Level ")
+                .replace(" or Prestige ", " or prestige ")
+                .replace(" §8(keeps after lowering tier)", " (stays unlocked if you lower tier)");
     }
 
     private static void paintTeam(ServerPlayer player, ICustomGui gui) {

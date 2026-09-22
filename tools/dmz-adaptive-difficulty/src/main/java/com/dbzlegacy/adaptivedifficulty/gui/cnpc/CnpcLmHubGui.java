@@ -59,10 +59,11 @@ public final class CnpcLmHubGui {
         boolean skillCheck = SkillCheckService.canUse(player);
 
         int infoY = CnpcGuiSupport.paintHeader(player, gui, "§f§lLegacy Mechanics",
-                "§7Your hub for scaling, rivals, training, and character services");
+                "§7Scaling, rivals, sparring, prestige, and character tools");
+        CnpcGuiSupport.paintPlayerPreview(who, gui, 330, infoY - 6);
 
         List<String> lines = hubSnapshot(who, ph, staff, skillCheck);
-        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 4);
+        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 3);
         int gap = CnpcGuiSupport.ROW_STEP;
 
         if (!"true".equals(ph.get("bridge_ok"))) {
@@ -146,18 +147,18 @@ public final class CnpcLmHubGui {
     private static List<String> hubSnapshot(
             ServerPlayer who, Map<String, String> ph, boolean staff, boolean skillCheck) {
         List<String> lines = new ArrayList<>();
-        lines.add("§7Welcome, §f" + who.m_7755_().getString() + "§7.");
+        lines.add("§7Hi §f" + who.m_7755_().getString() + "§7 — here is a quick snapshot.");
 
         try {
             int level = DmzProgression.guiDisplayDmzLevel(who);
-            lines.add("§7Level §f" + level + " §8· §7Prestige scale §f" + ph.getOrDefault("overhaul_scale", "x1"));
+            lines.add("§7Level §f" + level + " §8· §7Power scale §f" + ph.getOrDefault("overhaul_scale", "x1"));
         } catch (Throwable ignored) {
         }
 
         try {
             if (DifficultyConfig.isEnabled()) {
                 DifficultySnapshot snap = DifficultyCache.refresh(who);
-                lines.add("§7Difficulty §f" + snap.activeTierName);
+                lines.add("§7Difficulty tier §f" + snap.activeTierName);
             }
         } catch (Throwable ignored) {
         }
@@ -165,9 +166,9 @@ public final class CnpcLmHubGui {
         try {
             var rph = RivalGuiApi.placeholders(who);
             if ("true".equals(rph.get("system_enabled"))) {
-                lines.add("§7Rivals §f" + rph.getOrDefault("mutual", "0") + "/"
+                lines.add("§7Rivals §f" + rph.getOrDefault("mutual", "0") + " of "
                         + rph.getOrDefault("mutual_max", "3")
-                        + " §8· §7" + rph.getOrDefault("wins", "0") + "W "
+                        + " §8· §7Record §f" + rph.getOrDefault("wins", "0") + "W "
                         + rph.getOrDefault("losses", "0") + "L");
             }
         } catch (Throwable ignored) {
@@ -177,16 +178,16 @@ public final class CnpcLmHubGui {
             var sph = SparGuiApi.placeholders(who);
             if ("true".equals(sph.get("session_active"))) {
                 String partner = sph.getOrDefault("partner", "");
-                lines.add("§7Spar §aactive"
+                lines.add("§7Sparring §ais active"
                         + (partner.isBlank() ? "" : " §8· §7with §f" + partner));
             }
         } catch (Throwable ignored) {
         }
 
         if (skillCheck && "true".equals(ph.get("skillcheck_session"))) {
-            lines.add("§7Skill Check session is open.");
+            lines.add("§7Skill Check session is open on this account.");
         } else if (staff) {
-            lines.add("§7Staff tools live under §fStaff admin§7.");
+            lines.add("§7Staff: use §fStaff admin §7for server tools.");
         }
 
         return lines;
