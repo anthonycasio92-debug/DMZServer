@@ -23,9 +23,13 @@ def main() -> None:
         if got != want:
             errors.append(f"completed {c}: want {want}, got {got}")
     for h, want in [(0, 50_000), (1, 100_000), (2, 145_000), (3, 150_000), (9, 150_000)]:
-        got = need_for_progress(6, h)
-        if got != want:
-            errors.append(f"completed 6 held {h}: want {want}, got {got}")
+        for c in (5, 6, 8):
+            got = need_for_progress(c, h)
+            if got != want:
+                errors.append(f"completed {c} held {h}: want {want}, got {got}")
+    # Must not use (completed+1)×20k in veteran band
+    if need_for_progress(8, 0) == 150_000:
+        errors.append("completed 8 held 0 must not be 150k (old completed ladder)")
     if errors:
         print("FAIL prestige need ladder:")
         for e in errors:

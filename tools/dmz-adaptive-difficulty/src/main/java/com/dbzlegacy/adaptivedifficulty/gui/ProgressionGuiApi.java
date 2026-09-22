@@ -893,7 +893,7 @@ public final class ProgressionGuiApi {
             }
         }
         int completed = PrestigeSystem.getCompleted(player);
-        int held = PrestigeSystem.getHeld(player);
+        int held = PrestigeSystem.heldCountForNeed(player);
         int required = PrestigeSystem.requiredLevel(player);
         out.put("level", String.valueOf(level));
         out.put("level_fmt", DmzRewards.formatWhole(level));

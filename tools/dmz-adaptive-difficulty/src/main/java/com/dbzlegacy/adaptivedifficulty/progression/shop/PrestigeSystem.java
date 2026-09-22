@@ -321,7 +321,15 @@ public final class PrestigeSystem {
         }
         int personalCap = PrestigePointsSystem.effectiveMaxLevel(player);
         int completed = getCompleted(player);
-        int need = needForProgress(player, completed, getHeldWallet(player));
+        int heldForNeed = heldCountForNeed(player);
+        int need;
+        if (completed >= HELD_GATE_MIN_COMPLETED) {
+            // Veteran band — held table only; legacy (completed+1)×20k floors must not apply.
+            need = requiredLevelForHeld(heldForNeed);
+            clampVeteranNeedFloor(player, need);
+        } else {
+            need = needForProgress(player, completed, heldForNeed);
+        }
         return Math.min(personalCap, need);
     }
 
@@ -376,6 +384,11 @@ public final class PrestigeSystem {
      * is always {@code wallet + 1}.
      */
     public static int getHeldWallet(ServerPlayer player) {
+        return heldCountForNeed(player);
+    }
+
+    /** Wallet NBT for Need / Fabled sync — never CNPC faction (avoids 150k held≥3 gates). */
+    public static int heldCountForNeed(ServerPlayer player) {
         if (player == null) {
             return 0;
         }
@@ -383,7 +396,30 @@ public final class PrestigeSystem {
         if (PersistentDataAccess.isWritable(tag) && tag.m_128441_(KEY_HELD)) {
             return Math.max(0, Math.min(MAX_HELD, tag.m_128451_(KEY_HELD)));
         }
-        return getHeld(player);
+        return 0;
+    }
+
+    /** Drop legacy need floors above the veteran held-table gate (e.g. old 140k/150k ladders). */
+    public static void reconcileNeedFloor(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        if (getCompleted(player) < HELD_GATE_MIN_COMPLETED) {
+            return;
+        }
+        int need = requiredLevelForHeld(heldCountForNeed(player));
+        clampVeteranNeedFloor(player, need);
+    }
+
+    private static void clampVeteranNeedFloor(ServerPlayer player, int veteranNeed) {
+        CompoundTag tag = PersistentDataAccess.get(player);
+        if (!PersistentDataAccess.isWritable(tag) || !tag.m_128441_(KEY_NEED_FLOOR)) {
+            return;
+        }
+        int floor = Math.max(0, readStoredInt(tag, KEY_NEED_FLOOR));
+        if (floor > veteranNeed) {
+            tag.m_128405_(KEY_NEED_FLOOR, veteranNeed);
+        }
     }
 
     public static int levelsPerPrestige() {

@@ -1103,6 +1103,10 @@ public final class PrestigePointsSystem {
                     .syncLmWalletFromOverhaulCount(player);
         } catch (Throwable ignored) {
         }
+        try {
+            PrestigeSystem.reconcileNeedFloor(player);
+        } catch (Throwable ignored) {
+        }
         // Stagger reapply so DMZ / Fabled finish loading (Character attach can lag).
         ProgressionData.tempPut(player, KEY_REAPPLY_AT, System.currentTimeMillis() + 12_000L);
         reapplyAllShopPurchases(player);

@@ -1249,7 +1249,9 @@ def main() -> int:
           and "requiredLevelForHeld" in prestige_sys
           and "HELD0_NEED = 50_000" in prestige_sys
           and "HELD2_NEED = 145_000" in prestige_sys
-          and "needForProgress" in prestige_sys)
+          and "needForProgress" in prestige_sys
+          and "heldCountForNeed" in prestige_sys
+          and "reconcileNeedFloor" in prestige_sys)
     prog_gui_api = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/ProgressionGuiApi.java")
     prestige_lines_block = prog_gui_api.split("prestigeLines(", 1)[1].split("handlePrestigeDo", 1)[0]
     check("prestige main wallet lore omits cap",
