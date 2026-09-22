@@ -145,6 +145,7 @@ jar tf "$JAR"
 # Fail-closed audits: product features, combat scaling sim, GUI ABI.
 HERE_SIM="$(cd "$(dirname "$0")" && pwd)/sim"
 python3 "$HERE_SIM/audit_cnpc_gui_style.py"
+python3 "$HERE_SIM/audit_forge_gui_backend.py"
 python3 "$HERE_SIM/audit_scaling_sync.py"
 python3 "$HERE_SIM/audit_features.py"
 python3 "$HERE_SIM/audit_gui_tooltips.py"

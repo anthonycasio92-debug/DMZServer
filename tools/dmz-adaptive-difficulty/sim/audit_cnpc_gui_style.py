@@ -29,6 +29,11 @@ BAD_LIST_WIDTH = re.compile(r"W\s*-\s*2\s*\*\s*M")
 ROBOTIC_HINT = re.compile(
     r'paintHeader\([^)]+,\s*"[^"]*Click (?:to|a|for)[^"]*"\s*\)'
 )
+FALSE_ON_CHECK = re.compile(r'\.contains\s*\(\s*"ON"\s*\)')
+STATIC_EVENT_LOG = re.compile(r'"§aEvent log on"')
+PAINT_INFO_INLINE_ZERO = re.compile(
+    r"paintInfoBlock\s*\([^)]+,\s*0\s*\)"
+)
 PREVIEW_CALL = re.compile(r"paintSystemMainPreview\s*\(")
 FOOTER_PREVIEW = re.compile(
     r"if\s*\(\s*parentPage\s*==\s*null(?:\s*\|\|\s*parentPage\.isBlank\(\))?\s*\)\s*\{[^}]*paintSystemMainPreview",
@@ -102,6 +107,19 @@ def main() -> int:
                 errors.append(
                     f"{rel}::{name}(): paintInfoBlock + scrollPickList (use paintInfoBeforePickList)"
                 )
+
+        if FALSE_ON_CHECK.search(text):
+            errors.append(f"{rel}: flag ON check must use flagOnOff §a prefix, not contains(\"ON\")")
+        if STATIC_EVENT_LOG.search(text):
+            errors.append(f"{rel}: event log toggle must reflect live state (CnpcGuiStyle.toggleOn/Off)")
+
+    support = CNPC / "CnpcGuiSupport.java"
+    if support.is_file():
+        st = support.read_text(encoding="utf-8")
+        if "Scroll the list below for all options" in st:
+            errors.append("CnpcGuiSupport.java: misleading pick-list scroll hint on info block")
+        if 'HINT_PICK_LIST, M, listY' in st and "safe.length > visibleRows" not in st:
+            errors.append("CnpcGuiSupport.java: scrollPickList must gate HINT_PICK_LIST on overflow")
 
     style = CNPC / "CnpcGuiStyle.java"
     if not style.is_file():

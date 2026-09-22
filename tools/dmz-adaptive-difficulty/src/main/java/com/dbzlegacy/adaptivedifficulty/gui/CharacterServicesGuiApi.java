@@ -106,7 +106,7 @@ public final class CharacterServicesGuiApi {
             }
             int bonePage = parseBonePage(p);
             lines.add("§7Unlock parts from any race · yours are free, others cost coins.");
-            lines.add("§7Double-click a row to unlock · use buttons below to equip or clear.");
+            lines.add("§7Click a row to unlock or equip · search filters the list · drag the scrollbar.");
             return lines;
         }
         if ("reskin".equals(p)) {

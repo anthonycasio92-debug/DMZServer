@@ -40,7 +40,9 @@ public final class CnpcGuiSupport {
     public static final int ROW_STEP = 24;
     public static final int LINE_H = 13;
     /** Default height for rival/spar/character player lists. */
-    public static final int SCROLL_LIST_H = 120;
+    public static final int SCROLL_LIST_H = 160;
+    /** Approximate CNPC scroll row height for overflow detection. */
+    private static final int SCROLL_ROW_H = 14;
     /** Space reserved at bottom for nav / close row (pixels). */
     public static final int FOOTER_RESERVE = 48;
 
@@ -218,7 +220,7 @@ public final class CnpcGuiSupport {
         if (reservePickListScroll && maxInline > 0) {
             if (clean.size() > maxInline) {
                 List<String> trimmed = new ArrayList<>(clean.subList(0, maxInline));
-                trimmed.add("§8Scroll the list below for all options.");
+                trimmed.add("§8More summary text is hidden above the list.");
                 clean = trimmed;
             }
             bodyLines(gui, ID_INFO_LABEL_BASE, startY, clean, clean.size(), textW);
@@ -228,7 +230,12 @@ public final class CnpcGuiSupport {
             bodyLines(gui, ID_INFO_LABEL_BASE, startY, clean, maxInline, textW);
             return startY + clean.size() * LINE_H + 10;
         }
-        gui.addLabel(ID_STATUS_TAG, "§8Details — scroll with your mouse wheel", M, startY - 2, textW, 10);
+        int visibleStatusRows = Math.max(1, (112 / LINE_H));
+        if (clean.size() <= visibleStatusRows) {
+            bodyLines(gui, ID_INFO_LABEL_BASE, startY, clean, clean.size(), textW);
+            return startY + clean.size() * LINE_H + 10;
+        }
+        gui.addLabel(ID_STATUS_TAG, CnpcGuiStyle.HINT_SCROLL_STATUS, M, startY - 2, textW, 10);
         int preferred = Math.min(112, Math.max(56, clean.size() * LINE_H));
         int scrollH = preferred;
         if (gui != null) {
@@ -374,14 +381,18 @@ public final class CnpcGuiSupport {
         return panel.addScroll(id, 0, 0, useW, h, copy);
     }
 
-    /** Long read-only copy as a scroll list (wheel over the status/list band). */
+    /** Long read-only copy — inline when short, scroll band only when needed. */
     public static int paintReadOnlyScroll(ICustomGui gui, int startY, List<String> lines) {
-        return paintInfoBlock(gui, startY, lines, 0);
+        return paintInfoBlock(gui, startY, lines, CnpcGuiStyle.INFO_INLINE_MAX);
     }
 
     /** Scrollable read-only body under {@link #paintHeader}; returns Y for footer nav. */
     public static int paintLongReadOnlyBody(ICustomGui gui, int infoY, List<String> lines) {
-        return bodyBelowInfo(paintReadOnlyScroll(gui, infoY, lines));
+        List<String> clean = normalizeInfoLines(lines);
+        if (clean.size() <= CnpcGuiStyle.INFO_INLINE_MAX) {
+            return bodyBelowInfo(paintInfoBlock(gui, infoY, clean, CnpcGuiStyle.INFO_INLINE_MAX));
+        }
+        return bodyBelowInfo(paintReadOnlyScroll(gui, infoY, clean));
     }
 
     /** Suggested window height for a scroll body ending at {@code rowAfterBody}. */
@@ -404,16 +415,37 @@ public final class CnpcGuiSupport {
      */
     public static IScroll scrollPickList(
             ICustomGui gui, int listY, int rowsBelowList, String[] items) {
-        gui.addLabel(ID_STATUS_TAG, CnpcGuiStyle.HINT_PICK_LIST, M, listY, textBandWidth(), 10);
-        int bandY = listY + 14;
+        String[] safe = items == null ? new String[0] : items;
+        int bandY = listY;
         int scrollH = listScrollHeight(gui, bandY, rowsBelowList);
-        return scrollSearchable(gui, ID_LIST_SCROLL, M, bandY, textBandWidth(), scrollH, items);
+        int visibleRows = Math.max(1, scrollH / SCROLL_ROW_H);
+        if (safe.length > visibleRows) {
+            gui.addLabel(ID_STATUS_TAG, CnpcGuiStyle.HINT_PICK_LIST, M, listY, textBandWidth(), 10);
+            bandY = listY + 14;
+            scrollH = listScrollHeight(gui, bandY, rowsBelowList);
+        }
+        return scrollSearchable(gui, ID_LIST_SCROLL, M, bandY, textBandWidth(), scrollH, safe);
+    }
+
+    /** Y of the scroll list band (below optional pick-list hint). */
+    public static int pickListBandY(int listY, int rowsBelowList, ICustomGui gui, int itemCount) {
+        int bandY = listY;
+        int scrollH = listScrollHeight(gui, bandY, rowsBelowList);
+        int visibleRows = Math.max(1, scrollH / SCROLL_ROW_H);
+        if (itemCount > visibleRows) {
+            bandY = listY + 14;
+        }
+        return bandY;
+    }
+
+    public static int pickListScrollBottom(int listY, int rowsBelowList, ICustomGui gui, int itemCount) {
+        int bandY = pickListBandY(listY, rowsBelowList, gui, itemCount);
+        return bandY + listScrollHeight(gui, bandY, rowsBelowList);
     }
 
     /** Y coordinate just below a {@link #scrollPickList} widget. */
-    public static int belowPickList(int listY, int rowsBelowList, ICustomGui gui) {
-        int bandY = listY + 14;
-        return bandY + listScrollHeight(gui, bandY, rowsBelowList) + 8;
+    public static int belowPickList(int listY, int rowsBelowList, ICustomGui gui, int itemCount) {
+        return pickListScrollBottom(listY, rowsBelowList, gui, itemCount) + 8;
     }
 
     public static IButton button(ICustomGui gui, int id, String label, int x, int y, Runnable onPress) {

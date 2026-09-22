@@ -14,7 +14,7 @@ import net.minecraft.server.level.ServerPlayer;
 
 /** Global head-bone unlock shop and equip (cross-race cosmetics). */
 public final class CosmeticHeadBoneService {
-    public static final int CARDS_PER_PAGE = 28;
+    public static final int CARDS_PER_PAGE = 14;
 
     private CosmeticHeadBoneService() {}
 

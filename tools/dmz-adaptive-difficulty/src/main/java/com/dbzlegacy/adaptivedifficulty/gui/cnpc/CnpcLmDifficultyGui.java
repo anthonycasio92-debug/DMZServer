@@ -96,7 +96,11 @@ public final class CnpcLmDifficultyGui {
         CnpcGuiSupport.button(gui, 21, "§dTitles", CnpcGuiSupport.COL_R, row, () -> open(player, "titles"));
         row += 24;
         CnpcGuiSupport.button(gui, 22, "§bTeam scaling", CnpcGuiSupport.COL_L, row, () -> open(player, "team"));
-        CnpcGuiSupport.button(gui, 23, "§7Personal scaling", CnpcGuiSupport.COL_R, row, () -> CnpcGuiSupport.act(
+        PlayerDifficultyData personalData = DifficultyCache.data(subject);
+        boolean personalOn = personalData != null && personalData.isPersonalEnabled();
+        CnpcGuiSupport.button(gui, 23,
+                personalOn ? CnpcGuiStyle.toggleOn("Personal scaling") : CnpcGuiStyle.toggleOff("Personal scaling"),
+                CnpcGuiSupport.COL_R, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> DifficultyActions.handleArg(subject, "toggle_personal", "0", "main").message(),
                 () -> open(player, "main")));

@@ -31,7 +31,7 @@ public final class CnpcLmCharacterGui {
         if (p.startsWith("bones:") || "bones".equals(p)) {
             int bonePage = parseBonePage(p);
             CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CHARACTER, CnpcGuiSupport.W,
-                    CnpcGuiSupport.suggestHeight(400),
+                    CnpcGuiSupport.heightForScrollPage(420),
                     (pl, gui) -> paintBones(pl, gui, bonePage));
             return;
         }
@@ -105,7 +105,7 @@ public final class CnpcLmCharacterGui {
         String[] labels = raceClassLabels(cards);
 
         int rowsBelow = 1;
-        int bandY = listY + 14;
+        int bandY = CnpcGuiSupport.pickListBandY(listY, rowsBelow, gui, labels.length);
         int scrollH = CnpcGuiSupport.listScrollHeight(gui, bandY, rowsBelow);
         IScroll scroll = CnpcGuiSupport.scrollPickList(gui, listY, rowsBelow, labels);
         scroll.setOnClick((g, sc) -> {
@@ -170,7 +170,7 @@ public final class CnpcLmCharacterGui {
         String[] labels = raceClassLabels(cards);
 
         int rowsBelow = 1;
-        int bandY = listY + 14;
+        int bandY = CnpcGuiSupport.pickListBandY(listY, rowsBelow, gui, labels.length);
         int scrollH = CnpcGuiSupport.listScrollHeight(gui, bandY, rowsBelow);
         IScroll scroll = CnpcGuiSupport.scrollPickList(gui, listY, rowsBelow, labels);
         scroll.setOnClick((g, sc) -> {
@@ -211,16 +211,16 @@ public final class CnpcLmCharacterGui {
 
         List<String> cards = CharacterServicesGuiApi.headBoneCards(player, pg);
         int rowsBelow = 3;
-        int bandY = listY + 14;
-        int scrollH = CnpcGuiSupport.listScrollHeight(gui, bandY, rowsBelow);
-        int scrollBottom = bandY + scrollH;
+        String[] labels = CnpcGuiSupport.cardLabels(cards, 1);
+        int bandY = CnpcGuiSupport.pickListBandY(listY, rowsBelow, gui, labels.length);
+        int scrollBottom = CnpcGuiSupport.pickListScrollBottom(listY, rowsBelow, gui, labels.length);
         if (cards.isEmpty()) {
             gui.addLabel(CnpcGuiSupport.ID_INLINE_NOTE, "§7No head parts on this page.",
                     CnpcGuiSupport.M, bandY + 4, CnpcGuiSupport.listWidth(), 14);
             scrollBottom = bandY + 20;
         } else {
-            IScroll scroll = CnpcGuiSupport.scrollPickList(gui, listY, rowsBelow, CnpcGuiSupport.cardLabels(cards, 1));
-            scroll.setOnDoubleClick((g, sc) -> {
+            IScroll scroll = CnpcGuiSupport.scrollPickList(gui, listY, rowsBelow, labels);
+            scroll.setOnClick((g, sc) -> {
                 g.close();
                 String id = selectedCardId(cards, sc);
                 if (id != null) {

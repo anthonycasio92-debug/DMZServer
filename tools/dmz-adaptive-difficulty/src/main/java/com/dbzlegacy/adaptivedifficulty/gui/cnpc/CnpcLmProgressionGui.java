@@ -294,7 +294,8 @@ public final class CnpcLmProgressionGui {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, "§6Ancient coin economy",
                 "§7Staff pricing for LM paid features");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, ProgressionGuiApi.linesForPage(player, "economy"), 4));
-        CnpcGuiSupport.button(gui, 20, staffFree ? "§aStaff free costs ON" : "§7Staff free costs OFF",
+        CnpcGuiSupport.button(gui, 20,
+                staffFree ? CnpcGuiStyle.toggleOn("Staff free costs") : CnpcGuiStyle.toggleOff("Staff free costs"),
                 CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                         player,
                         () -> ProgressionGuiApi.handleDo(player, "toggle_staff_free_coins",
@@ -376,7 +377,7 @@ public final class CnpcLmProgressionGui {
             case "classperm" -> "Class perm";
             default -> key;
         };
-        return (CnpcGuiSupport.flagOnOff(ph, key).contains("ON") ? "§a" : "§8") + name;
+        return (CnpcGuiSupport.flagOnOff(ph, key).startsWith("§a") ? "§a" : "§8") + name;
     }
 
     private static final String[] ALL_FLAG_KEYS = {

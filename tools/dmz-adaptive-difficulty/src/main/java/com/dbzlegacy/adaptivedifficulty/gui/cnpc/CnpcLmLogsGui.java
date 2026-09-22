@@ -21,15 +21,15 @@ public final class CnpcLmLogsGui {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, "§8Server Event Log",
                 "§7Staff event log — toggle or save to disk");
         List<String> lines = MechanicsGuiApi.linesForPage(player, "logs");
+        var ph = MechanicsGuiApi.placeholders(player);
+        boolean syslogOn = "true".equalsIgnoreCase(ph.getOrDefault("syslog", "false"));
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX));
         row += 8;
-        CnpcGuiSupport.button(gui, 20, "§aEvent log on", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
+        CnpcGuiSupport.button(gui, 20,
+                syslogOn ? CnpcGuiStyle.toggleOn("Event log") : CnpcGuiStyle.toggleOff("Event log"),
+                CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                 player,
-                () -> MechanicsGuiApi.handleDo(player, "syslog", "on", "logs"),
-                () -> open(player, "main")));
-        CnpcGuiSupport.button(gui, 21, "§eEvent log off", CnpcGuiSupport.COL_R, row, () -> CnpcGuiSupport.act(
-                player,
-                () -> MechanicsGuiApi.handleDo(player, "syslog", "off", "logs"),
+                () -> MechanicsGuiApi.handleDo(player, "syslog", syslogOn ? "off" : "on", "logs"),
                 () -> open(player, "main")));
         row += 24;
         CnpcGuiSupport.button(gui, 22, "§7Flush to disk", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
