@@ -98,7 +98,12 @@ merge_onto_base_jar() {
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.class" \
       "$merge/com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.class"
   fi
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/progression/race/AndroidConversion.class" ]]; then
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/race/AndroidConversion.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/progression/race/AndroidConversion.class"
+  fi
   cp "$RES/META-INF/mods.toml" "$merge/META-INF/mods.toml"
+  cp "$RES/legacymechanics.mixins.json" "$merge/legacymechanics.mixins.json"
   (cd "$merge" && jar cfm "$dest" META-INF/MANIFEST.MF .)
   rm -rf "$tmp" "$merge"
 }

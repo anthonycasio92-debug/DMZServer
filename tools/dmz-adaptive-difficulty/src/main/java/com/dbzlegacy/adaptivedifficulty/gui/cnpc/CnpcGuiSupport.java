@@ -192,15 +192,20 @@ public final class CnpcGuiSupport {
             return startY + clean.size() * LINE_H + 10;
         }
         gui.addLabel(ID_STATUS_TAG, "§8Status · use scroll wheel here", M, startY - 2, W - M * 2, 10);
-        int preferred = Math.min(112, Math.max(56, clean.size() * 14));
+        int preferred = Math.min(112, Math.max(56, clean.size() * LINE_H));
         int scrollH = preferred;
         if (gui != null) {
             int maxBottom = gui.getHeight() - FOOTER_RESERVE - ROW_STEP - 4;
             scrollH = Math.max(48, Math.min(preferred, maxBottom - startY - 8));
         }
-        scroll(gui, ID_INFO_SCROLL, M, startY + 8, W - M * 2, scrollH,
-                clean.stream().map(CnpcGuiSupport::safeScrollLine).toArray(String[]::new));
-        return startY + 8 + scrollH + 10;
+        int bandY = startY + 8;
+        int bandW = W - M * 2;
+        IComponentsScrollableWrapper panel = gui.getScrollingPanel();
+        panel.init(M, bandY, bandW, scrollH);
+        for (int i = 0; i < clean.size(); i++) {
+            panel.addLabel(ID_INFO_LABEL_BASE + i, safeScrollLine(clean.get(i)), 0, i * LINE_H, bandW, LINE_H);
+        }
+        return bandY + scrollH + 10;
     }
 
     public static int suggestHeight(int actionBottomY) {
@@ -287,9 +292,8 @@ public final class CnpcGuiSupport {
     }
 
     /**
-     * Scroll list inside CNPC's {@link ICustomGui#getScrollingPanel()} so the mouse wheel works
-     * anywhere over the list region (main-gui scroll widgets do not receive wheel events).
-     * Buttons/labels stay on the root gui at {@code y} and below; only the list lives in the panel.
+     * Interactive pick list inside the scrolling panel (clicks work). Mouse wheel on the list uses
+     * the on-screen scroll bar; {@link #paintInfoBlock} status bands use wheel via label stacks.
      */
     public static IScroll scroll(ICustomGui gui, int id, int x, int y, int w, int h, String[] items) {
         String[] safe = items == null ? new String[0] : items;

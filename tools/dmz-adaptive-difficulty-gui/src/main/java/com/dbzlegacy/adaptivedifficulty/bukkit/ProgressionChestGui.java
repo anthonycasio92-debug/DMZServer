@@ -438,7 +438,7 @@ public final class ProgressionChestGui implements Listener {
         put(holder, inv, 20, tipBtn("progression.android.convert_entry", Material.NETHERITE_INGOT, "&aConvert to Android",
                 List.of("&7Gero upgrade — keeps your race",
                         "&7Unlocks the Android form path",
-                        "&8Human · Saiyan · Frost Demon · Viltrumite",
+                        "&8Human · Frost Demon · Viltrumite &7(Saiyan excluded)",
                         "", "&eClick · choose player")),
                 SlotAction.page("android_convert"));
         put(holder, inv, 24, tipBtn("progression.android.remove_entry", Material.REDSTONE, "&cRemove Android",
@@ -515,7 +515,7 @@ public final class ProgressionChestGui implements Listener {
                 GuiTooltips.buttonLore("progression.android.convert_header", List.of(
                         "&7Gero upgrade — keeps your race",
                         "&7Unlocks the Android form path",
-                        "&8Human · Saiyan · Frost Demon · Viltrumite",
+                        "&8Human · Frost Demon · Viltrumite &7(Saiyan excluded)",
                         "&8/progression android [player]"))));
         put(holder, inv, 8, tipBtn("progression.android.convert_self", Material.NETHERITE_INGOT,
                 "&aConvert Yourself",

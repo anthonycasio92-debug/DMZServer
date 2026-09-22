@@ -14,7 +14,7 @@ public final class CnpcGuiStyle {
     public static final String HINT_CLICK_ENTRY = "§7Click an entry for details";
     public static final String HINT_CLICK_PLAYER = "§7Click a player to review";
     public static final String HINT_CLICK_INVITE = "§7Click an invite for details";
-    public static final String HINT_SCROLL_LIST = "§7Use the scroll wheel on the list below";
+    public static final String HINT_SCROLL_LIST = "§7Wheel scrolls status text · drag the list bar to scroll entries";
     public static final String HINT_DOUBLE_CLICK_PLAYER = "§7Double-click a player to select";
     public static final String HINT_REVIEW_PAY = "§7Review the summary before you pay";
     public static final String HINT_TOGGLE_STAFF = "§7Staff: tap a row to toggle";

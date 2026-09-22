@@ -226,6 +226,8 @@ public final class CnpcLmProgressionGui {
                 "§7Dr. Gero convert · remove upgrade");
         int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of(
                 "§7Convert keeps race · unlocks Android path",
+                "§8Eligible: §7Human · Frost Demon · Viltrumite",
+                "§8Saiyan races cannot take the Gero upgrade",
                 "§7Remove restores prior forms (confirm within 10s)"
         ), 2);
         CnpcGuiSupport.button(gui, 60, "§aConvert player…", CnpcGuiSupport.COL_L, row,
