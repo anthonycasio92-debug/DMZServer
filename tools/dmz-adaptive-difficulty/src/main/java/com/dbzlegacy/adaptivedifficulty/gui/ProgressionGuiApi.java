@@ -1030,7 +1030,7 @@ public final class ProgressionGuiApi {
                 lore.add("§7Points: §e" + ph.getOrDefault("points", "0"));
                 lore.add("§7DMZ Level: §f" + ph.getOrDefault("level_fmt", "0")
                         + " §8| §7Need: §e" + ph.getOrDefault("required_fmt", "0"));
-                lore.add("§8Need = (completed+1)×20k · floor keeps gates after turn-in");
+                lore.add("§8Need = journey level cap (held count) · not lifetime completed");
                 if ("true".equalsIgnoreCase(ph.get("ready"))) {
                     lore.add("§aReady to prestige");
                 } else {

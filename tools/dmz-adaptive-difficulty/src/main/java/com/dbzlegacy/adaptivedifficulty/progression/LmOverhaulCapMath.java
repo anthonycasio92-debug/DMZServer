@@ -85,6 +85,72 @@ public final class LmOverhaulCapMath {
     }
 
     /**
+     * Overhaul Statistics ladder: {@code initialLevelCap} → {@code maxLevel} across
+     * {@code maxPrestigeCount} steps. {@code prestigeCount} matches LM held wallet /
+     * Overhaul count (0 before the next rebirth).
+     */
+    public static int levelCapForOverhaulPrestigeCount(int prestigeCount) {
+        int initial = configuredInitialLevelCap();
+        int maxLevel = configuredMaxLevel();
+        int maxPrestige = Math.max(1, configuredMaxPrestigeCount());
+        int count = Math.max(0, Math.min(maxPrestige, prestigeCount));
+        if (count >= maxPrestige) {
+            return maxLevel;
+        }
+        double span = (maxLevel - initial) * (count / (double) maxPrestige);
+        long cap = (long) initial + Math.round(span);
+        return (int) Math.min(maxLevel, Math.max(initial, cap));
+    }
+
+    /** Journey gate for the next LM prestige — capped by personal breakthrough ceiling. */
+    public static int journeyPrestigeNeed(ServerPlayer player, int heldWallet) {
+        int personal = player == null
+                ? PrestigePointsSystem.BASE_LEVEL_CAP
+                : PrestigePointsSystem.effectiveMaxLevel(player);
+        int ladder = levelCapForOverhaulPrestigeCount(heldWallet);
+        return Math.min(personal, ladder);
+    }
+
+    private static int configuredInitialLevelCap() {
+        if (ModList.get().isLoaded("dmzrevamp")) {
+            try {
+                Class<?> cfg = Class.forName("com.dmzrevamp.config.LevelingRevampConfig");
+                Object revampCfg = cfg.getMethod("get").invoke(null);
+                Object prestige = revampCfg.getClass().getField("Prestige").get(revampCfg);
+                return Math.max(1, prestige.getClass().getField("initialLevelCap").getInt(prestige));
+            } catch (Throwable ignored) {
+            }
+        }
+        return OVERHAUL_LEVEL_CAP;
+    }
+
+    private static int configuredMaxLevel() {
+        if (ModList.get().isLoaded("dmzrevamp")) {
+            try {
+                Class<?> cfg = Class.forName("com.dmzrevamp.config.LevelingRevampConfig");
+                Object revampCfg = cfg.getMethod("get").invoke(null);
+                Object levels = revampCfg.getClass().getField("levelsAndAttributes").get(revampCfg);
+                return Math.max(1, levels.getClass().getField("maxLevel").getInt(levels));
+            } catch (Throwable ignored) {
+            }
+        }
+        return OVERHAUL_ABSOLUTE_LEVEL_CAP;
+    }
+
+    private static int configuredMaxPrestigeCount() {
+        if (ModList.get().isLoaded("dmzrevamp")) {
+            try {
+                Class<?> cfg = Class.forName("com.dmzrevamp.config.LevelingRevampConfig");
+                Object revampCfg = cfg.getMethod("get").invoke(null);
+                Object prestige = revampCfg.getClass().getField("Prestige").get(revampCfg);
+                return Math.max(1, prestige.getClass().getField("maxPrestigeCount").getInt(prestige));
+            } catch (Throwable ignored) {
+            }
+        }
+        return LmOverhaulPrestigeIntegration.OVERHAUL_MAX_PRESTIGE;
+    }
+
+    /**
      * Force live Overhaul {@code initialLevelCap} to 100k and {@code maxLevel} to 150k
      * so prestige 0 is not stock 50k and 0-breakthrough players can reach Need 60k+.
      */
