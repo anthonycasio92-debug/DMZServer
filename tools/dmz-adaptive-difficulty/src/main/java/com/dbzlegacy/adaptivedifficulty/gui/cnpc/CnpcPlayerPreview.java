@@ -47,11 +47,17 @@ public final class CnpcPlayerPreview {
             return;
         }
         try {
-            IEntity entity = NpcAPI.Instance().getIEntity(player);
+            IEntity entity = CnpcGeckoPreviewBridge.previewEntity(player);
+            if (entity == null) {
+                entity = NpcAPI.Instance().getIEntity(player);
+            }
             if (entity == null) {
                 return;
             }
-            gui.addLabel(CnpcGuiSupport.ID_PREVIEW_CAPTION, "§8Character", x, y - 10, SLOT_W, 10);
+            String caption = CnpcGeckoPreviewBridge.geckoAvailable()
+                    ? "§8Character"
+                    : "§8Preview §7(needs CNPC Gecko)";
+            gui.addLabel(CnpcGuiSupport.ID_PREVIEW_CAPTION, caption, x, y - 10, SLOT_W, 10);
             IEntityDisplay display = gui.addEntityDisplay(componentId, x, y, entity);
             forceNbtSnapshot(display, entity);
             display.setSize(SLOT_W, SLOT_H);
