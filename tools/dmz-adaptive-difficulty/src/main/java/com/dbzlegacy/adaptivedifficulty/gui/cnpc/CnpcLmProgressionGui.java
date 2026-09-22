@@ -118,7 +118,7 @@ public final class CnpcLmProgressionGui {
         boolean staff = StaffAccess.isStaff(player);
         String title = sectionTitle(page);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, title,
-                staff ? "§7Tap to toggle · special tools where noted" : "§7Read-only status");
+                staff ? CnpcGuiStyle.HINT_TOGGLE_STAFF : CnpcGuiStyle.HINT_READ_ONLY);
         int row = CnpcGuiSupport.paintInfoBlock(gui, infoY,
                 ProgressionGuiApi.linesForPage(player, page), 2);
 
@@ -238,7 +238,8 @@ public final class CnpcLmProgressionGui {
 
     private static void paintAndroidConvert(ServerPlayer player, ICustomGui gui) {
         ServerPlayer subject = CnpcGuiSupport.target(player);
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§aAndroid convert", "§7Double-click a player");
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§d", "Progression", "Android convert"),
+                CnpcGuiStyle.HINT_DOUBLE_CLICK_PLAYER);
         int row = infoY + 4;
         CnpcGuiSupport.button(gui, 62, "§aConvert yourself", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                 player,
@@ -407,14 +408,14 @@ public final class CnpcLmProgressionGui {
 
     private static String sectionTitle(String page) {
         return switch (page) {
-            case "skills" -> "§eSkills";
-            case "tp" -> "§6TP gains";
-            case "race" -> "§bRace & form";
-            case "combat" -> "§cCombat";
-            case "end" -> "§5End";
-            case "fabled" -> "§dFabled bridges";
-            case "utility" -> "§7Utility";
-            case "status" -> "§eStatus snapshot";
+            case "skills" -> CnpcGuiStyle.subPage("§d", "Progression", "Skills");
+            case "tp" -> CnpcGuiStyle.subPage("§d", "Progression", "TP gains");
+            case "race" -> CnpcGuiStyle.subPage("§d", "Progression", "Race and form");
+            case "combat" -> CnpcGuiStyle.subPage("§d", "Progression", "Combat");
+            case "end" -> CnpcGuiStyle.subPage("§d", "Progression", "End");
+            case "fabled" -> CnpcGuiStyle.subPage("§d", "Progression", "Fabled bridges");
+            case "utility" -> CnpcGuiStyle.subPage("§d", "Progression", "Utility");
+            case "status" -> CnpcGuiStyle.subPage("§d", "Progression", "Status");
             default -> "§dProgression";
         };
     }

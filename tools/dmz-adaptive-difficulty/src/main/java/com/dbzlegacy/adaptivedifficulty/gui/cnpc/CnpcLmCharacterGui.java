@@ -53,8 +53,8 @@ public final class CnpcLmCharacterGui {
     private static void paintMain(ServerPlayer player, ICustomGui gui) {
         var ph = CharacterServicesGuiApi.placeholders(player);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, "§fCharacter Services",
-                "§7Race §f" + ph.getOrDefault("current_race", "?")
-                        + "  §8·  §7Class §f" + ph.getOrDefault("current_class", "?"));
+                "§7Race §f" + ph.getOrDefault("current_race", "?") + CnpcGuiStyle.SEP + "§7Class §f"
+                        + ph.getOrDefault("current_class", "?"));
 
         List<String> lines = new ArrayList<>(CharacterServicesGuiApi.linesForPage(player, "main"));
         lines.add(0, "§6Coins §f" + ph.getOrDefault("ancient_coins", "0") + " §7Ancient Coins");
@@ -88,7 +88,8 @@ public final class CnpcLmCharacterGui {
     }
 
     private static void paintRace(ServerPlayer player, ICustomGui gui) {
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§eChange race", "§7Click a race to continue");
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§f", "Character", "Change race"),
+                CnpcGuiStyle.HINT_CLICK_ENTRY);
         int listY = CnpcGuiSupport.paintInfoBlock(gui, infoY,
                 CharacterServicesGuiApi.linesForPage(player, "race"), 2);
 
@@ -140,7 +141,8 @@ public final class CnpcLmCharacterGui {
 
     private static void paintRaceConfirm(ServerPlayer player, String raceAndPct) {
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CHARACTER, CnpcGuiSupport.W, 320, (pl, gui) -> {
-            int infoY = CnpcGuiSupport.paintHeader(pl, gui, "§cConfirm race change", "§7Review before paying");
+            int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcGuiStyle.subPage("§f", "Character", "Confirm race"),
+                    CnpcGuiStyle.HINT_REVIEW_PAY);
             int row = CnpcGuiSupport.paintReadOnlyScroll(gui, infoY,
                     CharacterServicesGuiApi.linesForPage(player, "race_confirm:" + raceAndPct));
             row += 8;
@@ -157,7 +159,8 @@ public final class CnpcLmCharacterGui {
     }
 
     private static void paintClass(ServerPlayer player, ICustomGui gui) {
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§bChange class", "§7Click a class to continue");
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§f", "Character", "Change class"),
+                CnpcGuiStyle.HINT_CLICK_ENTRY);
         int listY = CnpcGuiSupport.paintInfoBlock(gui, infoY,
                 CharacterServicesGuiApi.linesForPage(player, "class"), 2);
 
@@ -186,7 +189,8 @@ public final class CnpcLmCharacterGui {
 
     private static void paintClassConfirm(ServerPlayer player, String classId) {
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CHARACTER, CnpcGuiSupport.W, 300, (pl, gui) -> {
-            int infoY = CnpcGuiSupport.paintHeader(pl, gui, "§cConfirm class change", "§7Review before paying");
+            int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcGuiStyle.subPage("§f", "Character", "Confirm class"),
+                    CnpcGuiStyle.HINT_REVIEW_PAY);
             int row = CnpcGuiSupport.paintReadOnlyScroll(gui, infoY,
                     CharacterServicesGuiApi.linesForPage(player, "class_confirm:" + classId));
             row += 8;
@@ -203,9 +207,9 @@ public final class CnpcLmCharacterGui {
         var ph = CharacterServicesGuiApi.placeholders(player);
         int pages = Math.max(1, CosmeticHeadBoneService.pageCount());
         int pg = Math.min(pages - 1, Math.max(0, page));
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§fHead bone shop",
-                "§7Page §f" + (pg + 1) + "/" + pages
-                        + "  §8·  §7Active §f" + ph.getOrDefault("active_head_bone", "none"));
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§f", "Character", "Head bone shop"),
+                "§7Page §f" + (pg + 1) + "/" + pages + CnpcGuiStyle.SEP + "§7Active §f"
+                        + ph.getOrDefault("active_head_bone", "none"));
         int listY = CnpcGuiSupport.paintInfoBlock(gui, infoY,
                 CharacterServicesGuiApi.linesForPage(player, "bones:" + pg), 2);
 
@@ -267,8 +271,10 @@ public final class CnpcLmCharacterGui {
     }
 
     private static void paintReskin(ServerPlayer player, ICustomGui gui) {
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§dReskin", "§7Opens the in-game editor");
-        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, CharacterServicesGuiApi.linesForPage(player, "reskin"), 4);
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§f", "Character", "Reskin"),
+                "§7Opens the in-game editor");
+        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, CharacterServicesGuiApi.linesForPage(player, "reskin"),
+                CnpcGuiStyle.INFO_INLINE_MAX);
         CnpcGuiSupport.button(gui, 20, "§aOpen reskin editor", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> CharacterServicesGuiApi.handleDo(player, "reskin_confirm", "", "reskin"),

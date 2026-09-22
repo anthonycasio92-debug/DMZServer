@@ -109,7 +109,8 @@ public final class CnpcLmDifficultyGui {
         row += 24;
         PlayerDifficultyData d = DifficultyCache.data(subject);
         boolean coinChat = d != null && d.isCoinDropChat();
-        CnpcGuiSupport.button(gui, 26, coinChat ? "§aCoin chat ON" : "§8Coin chat OFF", CnpcGuiSupport.COL_L, row,
+        CnpcGuiSupport.button(gui, 26, coinChat ? CnpcGuiStyle.toggleOn("Coin drop chat")
+                : CnpcGuiStyle.toggleOff("Coin drop chat"), CnpcGuiSupport.COL_L, row,
                 () -> CnpcGuiSupport.act(
                         player,
                         () -> DifficultyActions.handleArg(subject, "toggle_coin_chat", "0", "main").message(),
@@ -132,13 +133,14 @@ public final class CnpcLmDifficultyGui {
 
         long cr = snap.combatRating > 0 ? snap.combatRating : snap.calculated;
         List<String> lines = new ArrayList<>();
-        lines.add("§7Tier §f" + snap.activeTierName + "  §8·  §7State §" + snap.stateColorCode() + snap.state());
-        lines.add("§7Combat CR §f" + cr + "  §8·  §7Unlocked §fT" + snap.highestUnlockedTier);
-        lines.add("§7DMZ §f" + snap.dmzLevel + "  §7Prestige §f" + snap.prestige);
+        lines.add("§7Tier §f" + snap.activeTierName + CnpcGuiStyle.SEP + "§7State §" + snap.stateColorCode()
+                + snap.state());
+        lines.add("§7Combat CR §f" + cr + CnpcGuiStyle.SEP + "§7Unlocked §fT" + snap.highestUnlockedTier);
+        lines.add("§7Level §f" + snap.dmzLevel + CnpcGuiStyle.SEP + "§7Prestige §f" + snap.prestige);
         lines.add("§7Title §e" + blankNone(TitleSystem.activeDisplay(subject)));
-        lines.add("§7Overhaul §f" + ph.getOrDefault("overhaul_scale", "x1")
-                + "  §8·  §7Melee §f" + ph.getOrDefault("melee_scaled", "?")
-                + "  §7Strike §f" + ph.getOrDefault("strike_scaled", "?"));
+        lines.add("§7Overhaul §f" + ph.getOrDefault("overhaul_scale", "x1") + CnpcGuiStyle.SEP + "§7Melee §f"
+                + ph.getOrDefault("melee_scaled", "?") + CnpcGuiStyle.SEP + "§7Strike §f"
+                + ph.getOrDefault("strike_scaled", "?"));
         lines.add("§7Ki §f" + ph.getOrDefault("ki_scaled", "?")
                 + "  §7Defense §f" + ph.getOrDefault("defense_scaled", "?"));
         String fightingClass = profile.fightingClass == null ? "" : profile.fightingClass;
@@ -164,14 +166,14 @@ public final class CnpcLmDifficultyGui {
     private static void paintTiers(ServerPlayer player, ICustomGui gui) {
         ServerPlayer subject = who(player);
         DifficultyActions.prepareGui(subject);
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§eDifficulty · Tiers",
-                "§7Activate unlocked tiers · step down free");
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§a", "Difficulty", "Tiers"),
+                "§7Activate unlocked tiers · step down for free");
 
         DifficultySnapshot snap = DifficultyCache.refresh(subject);
         PlayerDifficultyData data = DifficultyCache.data(subject);
         int max = Math.max(0, snap.highestUnlockedTier);
         List<String> lines = new ArrayList<>();
-        lines.add("§7Active §fT" + data.getActiveTier() + "  §8·  §7Max unlocked §fT" + max);
+        lines.add("§7Active §fT" + data.getActiveTier() + CnpcGuiStyle.SEP + "§7Max unlocked §fT" + max);
         lines.add("§6Coins §f" + AncientCoinEconomy.inventoryBreakdown(subject));
         int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 3);
         for (int t = 0; t <= Math.min(7, max); t++) {
@@ -209,12 +211,12 @@ public final class CnpcLmDifficultyGui {
     private static void paintTitles(ServerPlayer player, ICustomGui gui) {
         ServerPlayer subject = who(player);
         DifficultyActions.prepareGui(subject);
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§dDifficulty · Titles",
-                "§7Click a title for details · double-click to equip");
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§a", "Difficulty", "Titles"),
+                "§7Click for details · double-click to equip");
         List<String> header = new ArrayList<>();
         header.add("§7Wearing §e" + blankNone(TitleSystem.activeDisplay(subject)));
         header.add("§7Title score §6" + TitleSystem.computeTitleScore(subject));
-        int listY = CnpcGuiSupport.paintInfoBlock(gui, infoY, header, 2);
+        int listY = CnpcGuiSupport.paintInfoBlock(gui, infoY, header, CnpcGuiStyle.INFO_LIST_HEADER_MAX);
 
         List<String> cards = new ArrayList<>();
         List<String> labels = new ArrayList<>();
@@ -238,7 +240,8 @@ public final class CnpcLmDifficultyGui {
         int row = CnpcGuiSupport.navRowAfterScroll(listY, scrollH);
         PlayerDifficultyData data = DifficultyCache.data(subject);
         boolean sense = data.titleProgress().titleSenseChat();
-        CnpcGuiSupport.buttonSmall(gui, 20, sense ? "§aSense ON" : "§8Sense OFF", CnpcGuiSupport.COL_L, row, 95,
+        CnpcGuiSupport.buttonSmall(gui, 20, sense ? CnpcGuiStyle.toggleOn("Title sense")
+                : CnpcGuiStyle.toggleOff("Title sense"), CnpcGuiSupport.COL_L, row, 95,
                 () -> CnpcGuiSupport.act(
                         player,
                         () -> DifficultyActions.handleArg(subject, "toggle_title_sense", "0", "titles").message(),
@@ -319,8 +322,10 @@ public final class CnpcLmDifficultyGui {
 
     private static void paintTeam(ServerPlayer player, ICustomGui gui) {
         ServerPlayer subject = who(player);
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§bDifficulty · Teams", "§7Mutual rival team bonuses");
-        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, DifficultyTeamGuiApi.linesForPage(subject, "team"), 4);
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§a", "Difficulty", "Teams"),
+                "§7How rival teams affect scaling");
+        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, DifficultyTeamGuiApi.linesForPage(subject, "team"),
+                CnpcGuiStyle.INFO_INLINE_MAX);
         CnpcGuiSupport.button(gui, 40, "§7Personal only", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> DifficultyTeamGuiApi.handleDo(subject, "mode", "personal_only", "team"),

@@ -126,7 +126,7 @@ public final class CnpcGuiSupport {
         List<String> box = new ArrayList<>();
         box.add("§eMessage");
         box.addAll(raw);
-        return paintInfoBlock(gui, y, box, 4);
+        return paintInfoBlock(gui, y, box, CnpcGuiStyle.INFO_INLINE_MAX);
     }
 
     public static void pushMenuMessage(ServerPlayer player, String message) {
@@ -463,7 +463,7 @@ public final class CnpcGuiSupport {
             if (line == null || line.isBlank()) {
                 continue;
             }
-            out.add(safeChat(line));
+            out.add(safeChat(CnpcGuiStyle.normalizeLine(line)));
         }
         return out;
     }

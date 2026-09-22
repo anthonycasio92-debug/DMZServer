@@ -19,7 +19,7 @@ public final class CnpcMenuFeedback {
         List<String> lines = new ArrayList<>();
         for (String line : message.split("\n")) {
             if (line != null && !line.isBlank()) {
-                lines.add(CnpcGuiSupport.safeChat(line.trim()));
+                lines.add(CnpcGuiSupport.safeChat(CnpcGuiStyle.normalizeLine(line)));
             }
         }
         if (!lines.isEmpty()) {

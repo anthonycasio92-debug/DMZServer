@@ -1,0 +1,74 @@
+package com.dbzlegacy.adaptivedifficulty.gui.cnpc;
+
+import java.util.regex.Pattern;
+
+/** Shared CNPC menu titles, hints, and line formatting for Legacy Mechanics. */
+public final class CnpcGuiStyle {
+    /** Default max lines before status uses scroll wheel. */
+    public static final int INFO_INLINE_MAX = 3;
+    /** Short header above a scroll list (equipped title, etc.). */
+    public static final int INFO_LIST_HEADER_MAX = 2;
+
+    public static final String SEP = " §8· ";
+
+    public static final String HINT_CLICK_ENTRY = "§7Click an entry for details";
+    public static final String HINT_CLICK_PLAYER = "§7Click a player to review";
+    public static final String HINT_CLICK_INVITE = "§7Click an invite for details";
+    public static final String HINT_SCROLL_LIST = "§7Use the scroll wheel on the list below";
+    public static final String HINT_DOUBLE_CLICK_PLAYER = "§7Double-click a player to select";
+    public static final String HINT_REVIEW_PAY = "§7Review the summary before you pay";
+    public static final String HINT_TOGGLE_STAFF = "§7Staff: tap a row to toggle";
+    public static final String HINT_READ_ONLY = "§7Read-only module status";
+
+    public static final String MSG_RIVALS_OFF = "§cRivals are turned off on this server.";
+    public static final String MSG_SPAR_OFF = "§cSparring is turned off on this server.";
+
+    private static final Pattern MULTI_SPACE = Pattern.compile(" {2,}");
+    private static final Pattern SEP_PIPE = Pattern.compile(" ?\\| ?");
+
+    private CnpcGuiStyle() {}
+
+    /** Colored system name + optional subpage (Title Case segment after middle dot). */
+    public static String subPage(String colorPrefix, String system, String sub) {
+        if (sub == null || sub.isBlank()) {
+            return colorPrefix + system;
+        }
+        return colorPrefix + system + " · " + sub;
+    }
+
+    public static String subGray(String sentence) {
+        if (sentence == null || sentence.isBlank()) {
+            return "";
+        }
+        String s = sentence.trim();
+        if (s.startsWith("§")) {
+            return s;
+        }
+        return "§7" + s;
+    }
+
+    /** Collapse duplicate spaces and normalize separators for CNPC labels/scroll rows. */
+    public static String normalizeLine(String line) {
+        if (line == null || line.isBlank()) {
+            return "";
+        }
+        String s = line.trim();
+        s = SEP_PIPE.matcher(s).replaceAll(" · ");
+        s = s.replace(" §8| ", SEP).replace(" | ", " · ");
+        while (s.contains("§8··")) {
+            s = s.replace("§8··", "§8·");
+        }
+        s = s.replace("§8·§8·", "§8·");
+        s = s.replace("  §8·  ", SEP).replace(" §8·  ", SEP).replace("  §8· ", SEP);
+        s = MULTI_SPACE.matcher(s).replaceAll(" ");
+        return s;
+    }
+
+    public static String toggleOn(String feature) {
+        return "§a" + feature + " ON";
+    }
+
+    public static String toggleOff(String feature) {
+        return "§8" + feature + " off";
+    }
+}

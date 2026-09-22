@@ -109,7 +109,7 @@ public final class CnpcLmHubGui {
         CnpcGuiSupport.button(gui, 26, "§cRemove Android", CnpcGuiSupport.COL_L, row,
                 () -> CnpcLmGui.open(player, "android_remove", "main"));
         if (staff) {
-            CnpcGuiSupport.button(gui, 27, "§cStaff admin", CnpcGuiSupport.COL_R, row,
+            CnpcGuiSupport.button(gui, 27, "§cStaff Admin", CnpcGuiSupport.COL_R, row,
                     () -> CnpcLmAdminGui.open(player, "main"));
         }
         row += gap;
@@ -193,7 +193,7 @@ public final class CnpcLmHubGui {
         if (skillCheck && "true".equals(ph.get("skillcheck_session"))) {
             lines.add("§7Skill Check session is open on this account.");
         } else if (staff) {
-            lines.add("§7Staff: use §fStaff admin §7for server tools.");
+            lines.add("§7Staff: open §fStaff Admin §7for server tools.");
         }
 
         return lines;

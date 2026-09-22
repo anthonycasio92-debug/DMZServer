@@ -18,10 +18,10 @@ public final class CnpcLmLogsGui {
     }
 
     private static void paint(ServerPlayer player, ICustomGui gui) {
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§8Server event log",
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§8Server Event Log",
                 "§7Telemetry for staff debugging");
         List<String> lines = MechanicsGuiApi.linesForPage(player, "logs");
-        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 4);
+        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX);
         row += 8;
         CnpcGuiSupport.button(gui, 20, "§aTurn logging on", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                 player,
