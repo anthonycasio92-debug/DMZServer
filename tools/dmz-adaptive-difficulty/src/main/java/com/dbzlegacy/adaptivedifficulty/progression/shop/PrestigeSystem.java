@@ -130,7 +130,11 @@ public final class PrestigeSystem {
         setHeld(player, newHeld);
         setCompleted(player, newCompleted);
         // Lock Need so turn-in / Fabled spend cannot snap the next gate back to 20k.
-        raiseNeedFloor(player, required);
+        if (newCompleted < COMPLETED_LADDER_PRESTIGES) {
+            raiseNeedFloor(player, Math.min(required, MAX_LADDER_REQUIRED));
+        } else {
+            clearNeedFloor(player);
+        }
         resetPrestigeProgress(player);
 
         String name = player.m_6302_();
@@ -321,14 +325,53 @@ public final class PrestigeSystem {
         if (player == null) {
             return requiredLevelForCompleted(0);
         }
+        sanitizeNeedFloor(player);
         int cap = PrestigePointsSystem.effectiveMaxLevel(player);
         int completed = getCompleted(player);
         if (completed < COMPLETED_LADDER_PRESTIGES) {
             int ladder = requiredLevelForCompleted(completed);
-            int floor = getNeedFloor(player);
+            int floor = Math.min(getNeedFloor(player), MAX_LADDER_REQUIRED);
             return Math.min(cap, Math.max(ladder, floor));
         }
         return Math.min(cap, requiredLevelForHeld(getHeld(player)));
+    }
+
+    /**
+     * Legacy {@code prestige_need_floor} could be pinned at 150k from the removed breakthrough
+     * cap shop — that must not override held-based Need or the 100k ladder ceiling.
+     */
+    private static void sanitizeNeedFloor(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        CompoundTag tag = PersistentDataAccess.get(player);
+        if (!PersistentDataAccess.isWritable(tag) || !tag.m_128441_(KEY_NEED_FLOOR)) {
+            return;
+        }
+        int completed = readStoredInt(tag, KEY_TOTAL);
+        if (staffOverrideActive(tag)) {
+            completed = Math.max(0, completed);
+        } else {
+            completed = getCompleted(player);
+        }
+        if (completed >= COMPLETED_LADDER_PRESTIGES) {
+            tag.m_128473_(KEY_NEED_FLOOR);
+            return;
+        }
+        int floor = readStoredInt(tag, KEY_NEED_FLOOR);
+        if (floor > MAX_LADDER_REQUIRED) {
+            tag.m_128405_(KEY_NEED_FLOOR, MAX_LADDER_REQUIRED);
+        }
+    }
+
+    private static void clearNeedFloor(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        CompoundTag tag = PersistentDataAccess.get(player);
+        if (PersistentDataAccess.isWritable(tag)) {
+            tag.m_128473_(KEY_NEED_FLOOR);
+        }
     }
 
     /** Ladder phase only — {@code (completed+1)×20k}, max 100k. */
@@ -406,7 +449,7 @@ public final class PrestigeSystem {
             }
             if (legacy > 0) {
                 setCompletedPublic(player, legacy);
-                raiseNeedFloor(player, requiredLevel(legacy, PrestigePointsSystem.effectiveMaxLevel(player)));
+                raiseNeedFloor(player, requiredLevelForCompleted(legacy));
                 return legacy;
             }
             // Shop evidence of a past prestige when total was zeroed by turn-in.
@@ -460,8 +503,9 @@ public final class PrestigeSystem {
             return;
         }
         int cur = Math.max(0, readStoredInt(tag, KEY_NEED_FLOOR));
-        if (requiredMet > cur) {
-            tag.m_128405_(KEY_NEED_FLOOR, requiredMet);
+        int met = Math.min(requiredMet, MAX_LADDER_REQUIRED);
+        if (met > cur) {
+            tag.m_128405_(KEY_NEED_FLOOR, met);
         }
     }
 
@@ -549,9 +593,10 @@ public final class PrestigeSystem {
             tag.m_128359_(KEY_TOTAL, Integer.toString(Math.max(0, value)));
         }
         // Keep Need floor aligned when staff raise completed (never lower floor here).
-        if (value > 0) {
-            int cap = PrestigePointsSystem.effectiveMaxLevel(player);
-            raiseNeedFloor(player, requiredLevel(value, cap));
+        if (value > 0 && value < COMPLETED_LADDER_PRESTIGES) {
+            raiseNeedFloor(player, requiredLevelForCompleted(value));
+        } else if (value >= COMPLETED_LADDER_PRESTIGES) {
+            clearNeedFloor(player);
         }
         try {
             com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampPrestigeBridge
