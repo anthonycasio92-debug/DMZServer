@@ -296,17 +296,15 @@ public final class CnpcLmRivalGui {
             int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Challenge length"),
                     "§7Target §f" + CnpcGuiSupport.humanizePickerArg(targetArg));
             int row = infoY + 8;
+            CnpcGuiLayout.GridButton[] grid = new CnpcGuiLayout.GridButton[10];
             for (int min = 1; min <= 10; min++) {
                 int m = min;
-                int col = (min % 2 == 1) ? CnpcGuiSupport.COL_L : CnpcGuiSupport.COL_R;
-                if (min > 1 && min % 2 == 1) {
-                    row += 24;
-                }
                 String sendArg = targetArg + "@" + m;
-                CnpcGuiSupport.buttonSmall(gui, 30 + min, "§f" + m + " min", col, row, 95,
-                        () -> act(pl, "challenge_send", sendArg, "challenge"));
+                grid[min - 1] = CnpcGuiLayout.GridButton.run(
+                        "§f" + m + " min", () -> act(pl, "challenge_send", sendArg, "challenge"));
             }
-            row += 36;
+            row = CnpcGuiLayout.paintTwoColumnButtonGrid(pl, gui, row, 30, grid, () -> {});
+            row += 4;
             CnpcGuiSupport.navSubmenu(pl, gui, row, () -> open(pl, "pick_challenge"), "§7« Back");
         });
     }
@@ -365,9 +363,9 @@ public final class CnpcLmRivalGui {
             }
         });
         int actionRow = CnpcGuiSupport.navRowAfterScroll(listY, scrollH);
-        CnpcGuiSupport.buttonSmall(gui, 94, "§aActions", CnpcGuiSupport.COL_L, actionRow, 95,
+        CnpcGuiSupport.buttonSmallFull(gui, 94, "§aActions", CnpcGuiSupport.COL_L, actionRow, CnpcGuiSupport.BTN_W,
                 () -> open(player, "actions"));
-        CnpcGuiSupport.buttonSmall(gui, 95, "§8History", CnpcGuiSupport.COL_R, actionRow, 95,
+        CnpcGuiSupport.buttonSmallFull(gui, 95, "§8History", CnpcGuiSupport.COL_R, actionRow, CnpcGuiSupport.BTN_W,
                 () -> open(player, "history"));
         int navRow = actionRow + CnpcGuiSupport.ROW_STEP;
         footer(player, gui, navRow, "main");

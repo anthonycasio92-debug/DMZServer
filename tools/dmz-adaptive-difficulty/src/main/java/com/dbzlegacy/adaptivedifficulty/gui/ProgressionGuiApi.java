@@ -944,6 +944,7 @@ public final class ProgressionGuiApi {
             int bought = PrestigePointsSystem.getPurchasedSkillLevels(player, offer.id());
             out.put("skill_" + offer.id(), String.valueOf(bought));
             out.put("skill_" + offer.id() + "_max", String.valueOf(offer.maxLevel()));
+            out.put("skill_" + offer.id() + "_cost", String.valueOf(PrestigePointsSystem.SKILL_POINT_COST));
             out.put("skill_" + offer.id() + "_label", offer.label());
         }
         out.put("shop_skill_ids", ids.toString());

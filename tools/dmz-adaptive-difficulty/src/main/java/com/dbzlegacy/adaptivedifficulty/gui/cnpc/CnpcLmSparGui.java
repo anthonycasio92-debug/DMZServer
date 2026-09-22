@@ -282,10 +282,13 @@ public final class CnpcLmSparGui {
         int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, SparGuiApi.topLines(subject(player), cat),
                 CnpcGuiStyle.INFO_INLINE_MAX);
         row += 8;
-        CnpcGuiSupport.buttonSmall(gui, 40, "§7TP", CnpcGuiSupport.COL_L, row, 60, () -> open(player, "top_tp"));
-        CnpcGuiSupport.buttonSmall(gui, 41, "§7Wins", 130, row, 60, () -> open(player, "top_wins"));
-        CnpcGuiSupport.buttonSmall(gui, 42, "§7Streak", 200, row, 60, () -> open(player, "top_streak"));
-        row += 28;
+        CnpcGuiLayout.GridButton[] tabs = new CnpcGuiLayout.GridButton[] {
+                CnpcGuiLayout.GridButton.run("§7TP", () -> open(player, "top_tp")),
+                CnpcGuiLayout.GridButton.run("§7Wins", () -> open(player, "top_wins")),
+                CnpcGuiLayout.GridButton.run("§7Streak", () -> open(player, "top_streak")),
+        };
+        row = CnpcGuiLayout.paintTwoColumnButtonGrid(player, gui, row, 40, tabs, () -> open(player, "top_" + cat));
+        row += 4;
         footer(player, gui, row, "main");
     }
 
@@ -296,9 +299,13 @@ public final class CnpcLmSparGui {
         int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, SparGuiApi.dojoTopLines(subject(player), cat),
                 CnpcGuiStyle.INFO_INLINE_MAX);
         row += 8;
-        CnpcGuiSupport.buttonSmall(gui, 40, "§7RP", CnpcGuiSupport.COL_L, row, 60, () -> open(player, "dojo_top_rp"));
-        CnpcGuiSupport.buttonSmall(gui, 41, "§7Wars", 130, row, 60, () -> open(player, "dojo_top_wars"));
-        footer(player, gui, row + 28, "dojo");
+        CnpcGuiLayout.GridButton[] tabs = new CnpcGuiLayout.GridButton[] {
+                CnpcGuiLayout.GridButton.run("§7RP", () -> open(player, "dojo_top_rp")),
+                CnpcGuiLayout.GridButton.run("§7Wars", () -> open(player, "dojo_top_wars")),
+        };
+        row = CnpcGuiLayout.paintTwoColumnButtonGrid(player, gui, row, 40, tabs, () -> open(player, "dojo_top_" + cat));
+        row += 4;
+        footer(player, gui, row, "dojo");
     }
 
     private static void paintScroll(ServerPlayer player, ICustomGui gui, String title, List<String> body, String back) {

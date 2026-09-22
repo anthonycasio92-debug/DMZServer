@@ -125,16 +125,16 @@ public final class CnpcLmCharacterGui {
             int row = CnpcGuiSupport.paintReadOnlyScroll(gui, infoY,
                     CharacterServicesGuiApi.linesForPage(player, "race_pct:" + raceId + ":0"));
             row += 8;
-            for (int pct : new int[] {0, 25, 50, 75, 100}) {
-                int col = (pct == 0 || pct == 50 || pct == 100) ? CnpcGuiSupport.COL_L : CnpcGuiSupport.COL_R;
-                if (pct == 25 || pct == 75) {
-                    row += CnpcGuiSupport.ROW_STEP;
-                }
-                int keep = pct;
-                CnpcGuiSupport.buttonSmall(gui, 40 + pct, "§f" + pct + "%", col, row, 95,
+            row = CnpcGuiSupport.paintSectionTag(gui, 15, row, "§8Progress kept after change");
+            int[] pcts = {0, 25, 50, 75, 100};
+            CnpcGuiLayout.GridButton[] grid = new CnpcGuiLayout.GridButton[pcts.length];
+            for (int i = 0; i < pcts.length; i++) {
+                int keep = pcts[i];
+                grid[i] = CnpcGuiLayout.GridButton.run("§fKeep " + keep + "% progress",
                         () -> open(player, "race_confirm:" + raceId + ":" + keep));
             }
-            row += CnpcGuiSupport.ROW_STEP + 12;
+            row = CnpcGuiLayout.paintTwoColumnButtonGrid(player, gui, row, 40, grid, () -> {});
+            row += 4;
             CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "race"), "§7« Back");
         });
     }

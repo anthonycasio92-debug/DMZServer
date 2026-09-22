@@ -33,7 +33,13 @@ public final class CnpcLmPrestigeGui {
         }
         final int shopPageFinal = Math.max(0, shopPage);
         final String pageKey = p;
-        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_PRESTIGE, CnpcGuiSupport.W, 320, (pl, gui) -> {
+        int height = switch (p) {
+            case "turnin", "points" -> 340;
+            case "shop", "skills" -> 360;
+            case "tiers", "tier" -> 360;
+            default -> 320;
+        };
+        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_PRESTIGE, CnpcGuiSupport.W, height, (pl, gui) -> {
             switch (pageKey) {
                 case "turnin", "points" -> paintTurnIn(pl, gui);
                 case "shop", "skills" -> paintShop(pl, gui, shopPageFinal);
@@ -66,24 +72,41 @@ public final class CnpcLmPrestigeGui {
     }
 
     private static void paintTurnIn(ServerPlayer player, ICustomGui gui) {
+        Map<String, String> ph = ProgressionGuiApi.prestigePlaceholders(player);
+        int held = parseInt(ph.get("held"), 0);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§d", "Prestige", "Turn-in"),
-                "§7Exchange held prestiges for points");
-        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, ProgressionGuiApi.prestigeLines(player, "turnin"),
-                CnpcGuiStyle.INFO_INLINE_MAX);
-        row += 8;
-        for (int n : PrestigePointsSystem.TURN_IN_AMOUNTS) {
-            int amount = n;
-            int col = (amount == 1 || amount == 3 || amount == 9) ? CnpcGuiSupport.COL_L : CnpcGuiSupport.COL_R;
-            if (amount == 2 || amount == 6) {
-                row += 24;
+                "§7Each button shows points gained before you confirm");
+        List<String> info = new ArrayList<>(ProgressionGuiApi.prestigeLines(player, "turnin"));
+        info.add("§8Pack bonus · 3→4 pts · 6→9 pts · 9→15 pts");
+        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, info, CnpcGuiStyle.INFO_INLINE_MAX);
+        row = CnpcGuiSupport.paintSectionTag(gui, 12, row + 4, "§8Choose amount");
+
+        int[] amounts = PrestigePointsSystem.TURN_IN_AMOUNTS;
+        CnpcGuiLayout.GridButton[] grid = new CnpcGuiLayout.GridButton[amounts.length];
+        for (int i = 0; i < amounts.length; i++) {
+            int amount = amounts[i];
+            String label = turnInLabel(ph, amount, held);
+            if (held >= amount) {
+                int n = amount;
+                grid[i] = CnpcGuiLayout.GridButton.action(
+                        label,
+                        () -> ProgressionGuiApi.handlePrestigeDo(player, "turnin", String.valueOf(n), "turnin"),
+                        () -> open(player, "turnin"));
+            } else {
+                grid[i] = CnpcGuiLayout.GridButton.disabled(label);
             }
-            CnpcGuiSupport.buttonSmall(gui, 30 + amount, "§f×" + amount, col, row, 95, () -> CnpcGuiSupport.act(
-                    player,
-                    () -> ProgressionGuiApi.handlePrestigeDo(player, "turnin", String.valueOf(amount), "turnin"),
-                    () -> open(player, "turnin")));
         }
-        row += 36;
+        row = CnpcGuiLayout.paintTwoColumnButtonGrid(player, gui, row, 30, grid, () -> open(player, "turnin"));
+        row += 4;
         footer(player, gui, row, "main");
+    }
+
+    private static String turnInLabel(Map<String, String> ph, int amount, int held) {
+        String gain = ph.getOrDefault("turnin_" + amount + "_points", "0");
+        if (held >= amount) {
+            return "§eTurn in ×" + amount + " §7(+" + gain + " pts)";
+        }
+        return "§8×" + amount + " §7(need " + amount + " held · +" + gain + " pts)";
     }
 
     private static void paintShop(ServerPlayer player, ICustomGui gui, int pageIndex) {
@@ -97,42 +120,42 @@ public final class CnpcLmPrestigeGui {
 
         List<String> ids = shopSkillIds(ph);
         int from = page * pageSize;
-        int row = infoY + 4;
+        int row = infoY + 8;
         int placed = 0;
+        List<CnpcGuiLayout.GridButton> grid = new ArrayList<>();
         for (int i = from; i < ids.size() && placed < pageSize; i++, placed++) {
             String id = ids.get(i);
             String label = CnpcGuiSupport.humanizeSkillLabel(id, ph.getOrDefault("skill_" + id + "_label", id));
             String bought = ph.getOrDefault("skill_" + id, "0");
             String max = ph.getOrDefault("skill_" + id + "_max", "?");
-            int col = (placed % 2 == 0) ? CnpcGuiSupport.COL_L : CnpcGuiSupport.COL_R;
-            if (placed > 0 && placed % 2 == 0) {
-                row += 24;
-            }
             int boughtN = parseInt(bought, 0);
             int maxN = parseInt(max, 0);
-            String caption = label + " §7(" + bought + "/" + max + ")";
+            String cost = ph.getOrDefault("skill_" + id + "_cost", "?");
+            String caption = label + " §7(" + bought + "/" + max + ") · §6" + cost + " pts";
             if (maxN > 0 && boughtN >= maxN) {
-                gui.addLabel(30 + placed, "§a" + caption + " §8· maxed", col, row + 4, 195, 14);
+                grid.add(CnpcGuiLayout.GridButton.disabled("§a" + caption + " §8· maxed"));
             } else {
                 String skillId = id;
-                CnpcGuiSupport.buttonSmall(gui, 30 + placed, caption, col, row, 195,
-                        () -> CnpcGuiSupport.act(
-                                player,
-                                () -> ProgressionGuiApi.handlePrestigeDo(player, "skill", skillId, "shop"),
-                                () -> open(player, "shop:" + page)));
+                int pageFinal = page;
+                grid.add(CnpcGuiLayout.GridButton.action(
+                        caption,
+                        () -> ProgressionGuiApi.handlePrestigeDo(player, "skill", skillId, "shop"),
+                        () -> open(player, "shop:" + pageFinal)));
             }
         }
-        row += 36;
+        row = CnpcGuiLayout.paintTwoColumnButtonGrid(
+                player, gui, row, 30, grid.toArray(CnpcGuiLayout.GridButton[]::new),
+                () -> open(player, "shop:" + page));
         if (page > 0) {
             int prev = page - 1;
-            CnpcGuiSupport.buttonSmall(gui, 90, "§7« Prev", CnpcGuiSupport.COL_L, row, 95,
+            CnpcGuiSupport.buttonSmallFull(gui, 90, "§7« Prev", CnpcGuiSupport.COL_L, row, CnpcGuiSupport.BTN_W,
                     () -> open(player, "shop:" + prev));
         }
         if (page + 1 < pages) {
-            CnpcGuiSupport.buttonSmall(gui, 91, "§7Next »", CnpcGuiSupport.COL_R, row, 95,
+            CnpcGuiSupport.buttonSmallFull(gui, 91, "§7Next »", CnpcGuiSupport.COL_R, row, CnpcGuiSupport.BTN_W,
                     () -> open(player, "shop:" + (page + 1)));
         }
-        row += 28;
+        row += CnpcGuiSupport.ROW_STEP + 4;
         footer(player, gui, row, "main");
     }
 
@@ -225,11 +248,12 @@ public final class CnpcLmPrestigeGui {
         if (bt >= btMax) {
             gui.addLabel(20, "§aCap fully raised §8· no more breakthroughs", CnpcGuiSupport.COL_L, row + 4, 400, 14);
         } else {
-            CnpcGuiSupport.button(gui, 20, "§aBuy breakthrough §7(§e" + ph.getOrDefault("next_breakthrough_cost", "?")
-                    + "§7 pts)", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
-                    player,
-                    () -> ProgressionGuiApi.handlePrestigeDo(player, "breakthrough", "", "cap"),
-                    () -> open(player, "cap")));
+            String cost = ph.getOrDefault("next_breakthrough_cost", "?");
+            CnpcGuiSupport.buttonSmallFull(gui, 20, "§aBuy breakthrough · §e" + cost + " pts",
+                    CnpcGuiSupport.COL_L, row, CnpcGuiSupport.BTN_W, () -> CnpcGuiSupport.act(
+                            player,
+                            () -> ProgressionGuiApi.handlePrestigeDo(player, "breakthrough", "", "cap"),
+                            () -> open(player, "cap")));
         }
         footer(player, gui, row + 28, "main");
     }
@@ -240,29 +264,28 @@ public final class CnpcLmPrestigeGui {
                 "§7Permanent unlocks · tiers T1 through T7");
         int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, ProgressionGuiApi.prestigeLines(player, "tiers"),
                 CnpcGuiStyle.INFO_INLINE_MAX);
+        row = CnpcGuiSupport.paintSectionTag(gui, 11, row + 4, "§8Permanent difficulty tiers");
+        CnpcGuiLayout.GridButton[] grid = new CnpcGuiLayout.GridButton[7];
         for (int t = 1; t <= 7; t++) {
             int tier = t;
-            int col = (t % 2 == 1) ? CnpcGuiSupport.COL_L : CnpcGuiSupport.COL_R;
-            if (t > 1 && t % 2 == 1) {
-                row += 24;
-            }
             boolean owned = "true".equalsIgnoreCase(ph.get("tier_" + t + "_owned"));
             boolean canBuy = "true".equalsIgnoreCase(ph.get("tier_" + t + "_can_buy"));
-            String label = ph.getOrDefault("tier_" + t + "_label", "T" + t);
+            String cost = ph.getOrDefault("tier_" + t + "_cost", "?");
             if (owned) {
-                gui.addLabel(50 + t, "§aT" + tier + " §8· owned", col, row + 4, 95, 14);
+                grid[t - 1] = CnpcGuiLayout.GridButton.disabled("§aT" + tier + " §8· owned");
             } else if (canBuy) {
-                CnpcGuiSupport.buttonSmall(gui, 50 + t, "§fBuy T" + tier, col, row, 95, () -> CnpcGuiSupport.act(
-                        player,
+                grid[t - 1] = CnpcGuiLayout.GridButton.action(
+                        "§fBuy T" + tier + " · §6" + cost + " pts",
                         () -> ProgressionGuiApi.handlePrestigeDo(player, "tier", String.valueOf(tier), "tiers"),
-                        () -> open(player, "tiers")));
+                        () -> open(player, "tiers"));
             } else {
                 int prev = tier - 1;
-                String hint = tier > 1 ? "§8Buy T" + prev + " first" : "§8Unavailable";
-                gui.addLabel(50 + t, "§7T" + tier + " " + label + " §8· " + hint, col, row + 2, 195, 12);
+                String hint = tier > 1 ? "Buy T" + prev + " first" : "Unavailable";
+                grid[t - 1] = CnpcGuiLayout.GridButton.disabled("§8T" + tier + " · " + hint);
             }
         }
-        row += 36;
+        row = CnpcGuiLayout.paintTwoColumnButtonGrid(player, gui, row, 50, grid, () -> open(player, "tiers"));
+        row += 4;
         footer(player, gui, row, "main");
     }
 
