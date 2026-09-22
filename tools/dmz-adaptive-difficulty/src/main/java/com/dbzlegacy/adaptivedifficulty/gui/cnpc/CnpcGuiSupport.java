@@ -196,12 +196,34 @@ public final class CnpcGuiSupport {
     }
 
     public static int paintInfoBlock(ICustomGui gui, int startY, List<String> lines, int inlineMax) {
+        return paintInfoBlock(gui, startY, lines, inlineMax, false);
+    }
+
+    /**
+     * Short status above a pick list. Does not use {@link #getScrollingPanel()} — CNPC only supports
+     * one scroll region; {@link #scrollSearchable} must own it or the list will not scroll.
+     */
+    public static int paintInfoBeforePickList(ICustomGui gui, int startY, List<String> lines, int maxInlineLines) {
+        return paintInfoBlock(gui, startY, lines, maxInlineLines, true);
+    }
+
+    private static int paintInfoBlock(
+            ICustomGui gui, int startY, List<String> lines, int inlineMax, boolean reservePickListScroll) {
         List<String> clean = normalizeInfoLines(lines);
         if (clean.isEmpty()) {
             return startY + 4;
         }
         int maxInline = inlineMax <= 0 ? 0 : Math.max(1, inlineMax);
         int textW = textBandWidth();
+        if (reservePickListScroll && maxInline > 0) {
+            if (clean.size() > maxInline) {
+                List<String> trimmed = new ArrayList<>(clean.subList(0, maxInline));
+                trimmed.add("§8Scroll the list below for all options.");
+                clean = trimmed;
+            }
+            bodyLines(gui, ID_INFO_LABEL_BASE, startY, clean, clean.size(), textW);
+            return startY + clean.size() * LINE_H + 10;
+        }
         if (maxInline > 0 && clean.size() <= maxInline) {
             bodyLines(gui, ID_INFO_LABEL_BASE, startY, clean, maxInline, textW);
             return startY + clean.size() * LINE_H + 10;
@@ -364,6 +386,24 @@ public final class CnpcGuiSupport {
         } catch (Throwable ignored) {
         }
         return scroll;
+    }
+
+    /**
+     * Player pick list with hint label and height clamped above footer rows.
+     * {@code rowsBelowList} = full button rows under the list (nav, actions, paging).
+     */
+    public static IScroll scrollPickList(
+            ICustomGui gui, int listY, int rowsBelowList, String[] items) {
+        gui.addLabel(ID_STATUS_TAG, CnpcGuiStyle.HINT_PICK_LIST, M, listY, textBandWidth(), 10);
+        int bandY = listY + 14;
+        int scrollH = listScrollHeight(gui, bandY, rowsBelowList);
+        return scrollSearchable(gui, ID_LIST_SCROLL, M, bandY, textBandWidth(), scrollH, items);
+    }
+
+    /** Y coordinate just below a {@link #scrollPickList} widget. */
+    public static int belowPickList(int listY, int rowsBelowList, ICustomGui gui) {
+        int bandY = listY + 14;
+        return bandY + listScrollHeight(gui, bandY, rowsBelowList) + 8;
     }
 
     public static IButton button(ICustomGui gui, int id, String label, int x, int y, Runnable onPress) {

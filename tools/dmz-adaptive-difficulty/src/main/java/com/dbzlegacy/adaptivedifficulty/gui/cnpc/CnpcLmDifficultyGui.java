@@ -243,7 +243,8 @@ public final class CnpcLmDifficultyGui {
         List<String> header = new ArrayList<>();
         header.add("§7Wearing §e" + blankNone(TitleSystem.activeDisplay(subject)));
         header.add("§7Title score §6" + TitleSystem.computeTitleScore(subject));
-        int listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, header, CnpcGuiStyle.INFO_LIST_HEADER_MAX));
+        int listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBeforePickList(gui, infoY, header,
+                CnpcGuiStyle.INFO_LIST_HEADER_MAX));
 
         List<String> cards = new ArrayList<>();
         List<String> labels = new ArrayList<>();
@@ -255,16 +256,17 @@ public final class CnpcLmDifficultyGui {
             labels.add(label);
             cards.add(t.id + "\t" + label);
         }
-        int scrollH = CnpcGuiSupport.listScrollHeight(gui, listY, 2);
-        IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, CnpcGuiSupport.ID_LIST_SCROLL, CnpcGuiSupport.M, listY,
-                CnpcGuiSupport.listWidth(), scrollH, labels.toArray(String[]::new));
+        int rowsBelow = 2;
+        int bandY = listY + 14;
+        int scrollH = CnpcGuiSupport.listScrollHeight(gui, bandY, rowsBelow);
+        IScroll scroll = CnpcGuiSupport.scrollPickList(gui, listY, rowsBelow, labels.toArray(String[]::new));
         CnpcGuiSupport.wireScrollOpenDetail(scroll, cards, 0, id -> open(player, "title_detail:" + id));
         CnpcGuiSupport.wireScrollDoublePick(scroll, cards, 0, id -> CnpcGuiSupport.act(
                 player,
                 () -> DifficultyActions.handleArg(subject, "equip_title", id, "titles").message(),
                 () -> open(player, "titles")));
 
-        int row = CnpcGuiSupport.navRowAfterScroll(listY, scrollH);
+        int row = CnpcGuiSupport.navRowAfterScroll(bandY, scrollH);
         PlayerDifficultyData data = DifficultyCache.data(subject);
         boolean sense = data.titleProgress().titleSenseChat();
         CnpcGuiSupport.buttonSmall(gui, 20, sense ? CnpcGuiStyle.toggleOn("Title hints")

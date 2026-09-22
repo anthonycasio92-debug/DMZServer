@@ -268,9 +268,10 @@ public final class CnpcLmProgressionGui {
             gui.addLabel(70, "§7No other players online.", CnpcGuiSupport.M, y + 8, CnpcGuiSupport.textBandWidth(), 14);
             return y + 28;
         }
-        int scrollH = CnpcGuiSupport.listScrollHeight(gui, y, 1);
-        IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, CnpcGuiSupport.ID_LIST_SCROLL, CnpcGuiSupport.M, y,
-                CnpcGuiSupport.textBandWidth(), scrollH, names.toArray(String[]::new));
+        int rowsBelow = 1;
+        int bandY = y + 14;
+        int scrollH = CnpcGuiSupport.listScrollHeight(gui, bandY, rowsBelow);
+        IScroll scroll = CnpcGuiSupport.scrollPickList(gui, y, rowsBelow, names.toArray(String[]::new));
         scroll.setOnDoubleClick((g, sc) -> {
             g.close();
             int[] sel = sc.getSelection();
@@ -281,7 +282,7 @@ public final class CnpcLmProgressionGui {
                         () -> open(player, returnPage));
             }
         });
-        return CnpcGuiSupport.navRowAfterScroll(y, scrollH);
+        return CnpcGuiSupport.navRowAfterScroll(bandY, scrollH);
     }
 
     private static void paintEconomy(ServerPlayer player, ICustomGui gui) {

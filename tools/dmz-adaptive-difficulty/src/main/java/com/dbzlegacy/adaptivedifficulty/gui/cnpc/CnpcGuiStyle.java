@@ -16,6 +16,8 @@ public final class CnpcGuiStyle {
     public static final String HINT_CLICK_PLAYER = "§7Select a player below";
     public static final String HINT_CLICK_INVITE = "§7Select an invite to respond";
     public static final String HINT_SCROLL_LIST = "§7Scroll the status box with your wheel · drag the list to browse";
+    /** Shown above CNPC {@code IScroll} pick lists (wheel targets the list bar). */
+    public static final String HINT_PICK_LIST = "§7Drag the list edge to scroll · use search when available";
     public static final String HINT_DOUBLE_CLICK_PLAYER = "§7Double-click a player to choose them";
     public static final String HINT_REVIEW_PAY = "§7Read the summary before you confirm";
     public static final String HINT_TOGGLE_STAFF = "§7Staff: tap a row to turn a flag on or off";

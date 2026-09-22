@@ -135,13 +135,14 @@ public final class CnpcLmSparGui {
         ServerPlayer who = subject(player);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§b", "Sparring", "Mentor pending"),
                 CnpcGuiStyle.HINT_CLICK_INVITE);
-        int listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, SparGuiApi.pendingMentorLines(who),
-                CnpcGuiStyle.INFO_LIST_HEADER_MAX));
+        int listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBeforePickList(gui, infoY,
+                SparGuiApi.pendingMentorLines(who), CnpcGuiStyle.INFO_LIST_HEADER_MAX));
         List<String> cards = SparGuiApi.pendingMentorInviteCards(who);
         if (!cards.isEmpty()) {
-            int scrollH = CnpcGuiSupport.listScrollHeight(gui, listY, 1);
-            IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, CnpcGuiSupport.ID_LIST_SCROLL, CnpcGuiSupport.M,
-                    listY, CnpcGuiSupport.listWidth(), scrollH, CnpcGuiSupport.cardLabels(cards, 1));
+            int rowsBelow = 1;
+            int bandY = listY + 14;
+            int scrollH = CnpcGuiSupport.listScrollHeight(gui, bandY, rowsBelow);
+            IScroll scroll = CnpcGuiSupport.scrollPickList(gui, listY, rowsBelow, CnpcGuiSupport.cardLabels(cards, 1));
             scroll.setOnClick((g, sc) -> {
                 String arg = CnpcGuiSupport.cardField(cards, sc, 0);
                 if (arg != null) {
@@ -149,7 +150,7 @@ public final class CnpcLmSparGui {
                     open(player, "pending_decide:" + picker);
                 }
             });
-            footer(player, gui, CnpcGuiSupport.navRowAfterScroll(listY, scrollH), "mentor");
+            footer(player, gui, CnpcGuiSupport.navRowAfterScroll(bandY, scrollH), "mentor");
         } else {
             footer(player, gui, listY + 8, "mentor");
         }
@@ -237,16 +238,17 @@ public final class CnpcLmSparGui {
             footer(player, gui, listY + 28, "dojo_war");
             return;
         }
-        int scrollH = CnpcGuiSupport.listScrollHeight(gui, listY, 1);
-        IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, CnpcGuiSupport.ID_LIST_SCROLL, CnpcGuiSupport.M, listY,
-                CnpcGuiSupport.listWidth(), scrollH, CnpcGuiSupport.cardLabels(cards, 1));
+        int rowsBelow = 1;
+        int bandY = listY + 14;
+        int scrollH = CnpcGuiSupport.listScrollHeight(gui, bandY, rowsBelow);
+        IScroll scroll = CnpcGuiSupport.scrollPickList(gui, listY, rowsBelow, CnpcGuiSupport.cardLabels(cards, 1));
         scroll.setOnClick((g, sc) -> {
             String arg = CnpcGuiSupport.cardField(cards, sc, 0);
             if (arg != null) {
                 open(player, "dojo_war_pending_decide:" + arg);
             }
         });
-        footer(player, gui, CnpcGuiSupport.navRowAfterScroll(listY, scrollH), "dojo_war");
+        footer(player, gui, CnpcGuiSupport.navRowAfterScroll(bandY, scrollH), "dojo_war");
     }
 
     private static void openDojoWarDecide(ServerPlayer player, String pickerArg) {
@@ -323,16 +325,17 @@ public final class CnpcLmSparGui {
             footer(player, gui, listY + 28, back);
             return;
         }
-        int scrollH = CnpcGuiSupport.listScrollHeight(gui, listY, 1);
-        IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, CnpcGuiSupport.ID_LIST_SCROLL, CnpcGuiSupport.M, listY,
-                CnpcGuiSupport.listWidth(), scrollH, names.toArray(String[]::new));
+        int rowsBelow = 1;
+        int bandY = listY + 14;
+        int scrollH = CnpcGuiSupport.listScrollHeight(gui, bandY, rowsBelow);
+        IScroll scroll = CnpcGuiSupport.scrollPickList(gui, listY, rowsBelow, names.toArray(String[]::new));
         scroll.setOnClick((g, sc) -> {
             int[] sel = sc.getSelection();
             if (sel != null && sel.length > 0 && sel[0] >= 0 && sel[0] < names.size()) {
                 open(player, "pick_confirm:" + action + "|" + back + "|" + names.get(sel[0]));
             }
         });
-        footer(player, gui, CnpcGuiSupport.navRowAfterScroll(listY, scrollH), back);
+        footer(player, gui, CnpcGuiSupport.navRowAfterScroll(bandY, scrollH), back);
     }
 
     private static void paintMentorArgPick(ServerPlayer player, ICustomGui gui, String title, String action, String back) {
@@ -358,16 +361,17 @@ public final class CnpcLmSparGui {
             footer(player, gui, listY + 28, "mentor");
             return;
         }
-        int scrollH = CnpcGuiSupport.listScrollHeight(gui, listY, 1);
-        IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, CnpcGuiSupport.ID_LIST_SCROLL, CnpcGuiSupport.M, listY,
-                CnpcGuiSupport.listWidth(), scrollH, CnpcGuiSupport.cardLabels(cards, 1));
+        int rowsBelow = 1;
+        int bandY = listY + 14;
+        int scrollH = CnpcGuiSupport.listScrollHeight(gui, bandY, rowsBelow);
+        IScroll scroll = CnpcGuiSupport.scrollPickList(gui, listY, rowsBelow, CnpcGuiSupport.cardLabels(cards, 1));
         scroll.setOnClick((g, sc) -> {
             String arg = CnpcGuiSupport.cardField(cards, sc, 0);
             if (arg != null) {
                 open(player, "pick_confirm:mentor_release|mentor|" + arg);
             }
         });
-        footer(player, gui, CnpcGuiSupport.navRowAfterScroll(listY, scrollH), "mentor");
+        footer(player, gui, CnpcGuiSupport.navRowAfterScroll(bandY, scrollH), "mentor");
     }
 
     private static void paintDojoChallengePick(ServerPlayer player, ICustomGui gui) {
@@ -379,16 +383,17 @@ public final class CnpcLmSparGui {
             footer(player, gui, listY + 28, "dojo_war");
             return;
         }
-        int scrollH = CnpcGuiSupport.listScrollHeight(gui, listY, 1);
-        IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, CnpcGuiSupport.ID_LIST_SCROLL, CnpcGuiSupport.M, listY,
-                CnpcGuiSupport.listWidth(), scrollH, CnpcGuiSupport.cardLabels(cards, 1));
+        int rowsBelow = 1;
+        int bandY = listY + 14;
+        int scrollH = CnpcGuiSupport.listScrollHeight(gui, bandY, rowsBelow);
+        IScroll scroll = CnpcGuiSupport.scrollPickList(gui, listY, rowsBelow, CnpcGuiSupport.cardLabels(cards, 1));
         scroll.setOnClick((g, sc) -> {
             String arg = CnpcGuiSupport.cardField(cards, sc, 0);
             if (arg != null) {
                 open(player, "pick_confirm:dojo_challenge|dojo_war|" + arg);
             }
         });
-        footer(player, gui, CnpcGuiSupport.navRowAfterScroll(listY, scrollH), "dojo_war");
+        footer(player, gui, CnpcGuiSupport.navRowAfterScroll(bandY, scrollH), "dojo_war");
     }
 
     /** @return Y row for footer nav after the list */
@@ -402,17 +407,18 @@ public final class CnpcLmSparGui {
         if (args == null || args.isEmpty()) {
             return listY + 8;
         }
-        int scrollH = CnpcGuiSupport.listScrollHeight(gui, listY, 1);
+        int rowsBelow = 1;
+        int bandY = listY + 14;
+        int scrollH = CnpcGuiSupport.listScrollHeight(gui, bandY, rowsBelow);
         String[] labels = CnpcGuiSupport.cardLabels(args, 0);
-        IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, CnpcGuiSupport.ID_LIST_SCROLL, CnpcGuiSupport.M, listY,
-                CnpcGuiSupport.listWidth(), scrollH, labels);
+        IScroll scroll = CnpcGuiSupport.scrollPickList(gui, listY, rowsBelow, labels);
         scroll.setOnClick((g, sc) -> {
             int[] sel = sc.getSelection();
             if (sel != null && sel.length > 0 && sel[0] >= 0 && sel[0] < args.size()) {
                 onPick.accept(args.get(sel[0]));
             }
         });
-        return CnpcGuiSupport.navRowAfterScroll(listY, scrollH);
+        return CnpcGuiSupport.navRowAfterScroll(bandY, scrollH);
     }
 
     private static void paintAdmin(ServerPlayer player, ICustomGui gui) {

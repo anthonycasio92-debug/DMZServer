@@ -167,15 +167,17 @@ public final class CnpcLmRivalGui {
         ServerPlayer who = subject(player);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Pending"),
                 CnpcGuiStyle.HINT_CLICK_INVITE);
-        int listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, RivalGuiApi.linesForPage(who, "pending"), 2));
+        int listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBeforePickList(gui, infoY,
+                RivalGuiApi.linesForPage(who, "pending"), 2));
         List<String> cards = RivalGuiApi.pendingInviteCards(who);
         if (cards.isEmpty()) {
             gui.addLabel(50, "§7No pending invites.", CnpcGuiSupport.M, listY + 4, CnpcGuiSupport.textBandWidth(), 14);
             footer(player, gui, listY + 28, "actions");
         } else {
-            int scrollH = CnpcGuiSupport.listScrollHeight(gui, listY, 1);
-            IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, CnpcGuiSupport.ID_LIST_SCROLL, CnpcGuiSupport.M,
-                    listY, CnpcGuiSupport.listWidth(), scrollH, CnpcGuiSupport.cardLabels(cards, 1));
+            int rowsBelow = 1;
+            int bandY = listY + 14;
+            int scrollH = CnpcGuiSupport.listScrollHeight(gui, bandY, rowsBelow);
+            IScroll scroll = CnpcGuiSupport.scrollPickList(gui, listY, rowsBelow, CnpcGuiSupport.cardLabels(cards, 1));
             scroll.setOnClick((g, sc) -> {
                 int[] sel = sc.getSelection();
                 if (sel == null || sel.length == 0 || sel[0] < 0 || sel[0] >= cards.size()) {
@@ -192,7 +194,7 @@ public final class CnpcLmRivalGui {
                     openPendingInfo(player, picker, card);
                 }
             });
-            footer(player, gui, CnpcGuiSupport.navRowAfterScroll(listY, scrollH), "actions");
+            footer(player, gui, CnpcGuiSupport.navRowAfterScroll(bandY, scrollH), "actions");
         }
     }
 
@@ -351,9 +353,10 @@ public final class CnpcLmRivalGui {
             footer(player, gui, listY + 8, "main");
             return;
         }
-        int scrollH = CnpcGuiSupport.listScrollHeight(gui, listY, 2);
-        IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, CnpcGuiSupport.ID_LIST_SCROLL, CnpcGuiSupport.M, listY,
-                CnpcGuiSupport.listWidth(), scrollH, CnpcGuiSupport.cardLabels(cards, 1));
+        int rowsBelow = 2;
+        int bandY = listY + 14;
+        int scrollH = CnpcGuiSupport.listScrollHeight(gui, bandY, rowsBelow);
+        IScroll scroll = CnpcGuiSupport.scrollPickList(gui, listY, rowsBelow, CnpcGuiSupport.cardLabels(cards, 1));
         scroll.setOnClick((g, sc) -> {
             int[] sel = sc.getSelection();
             if (sel == null || sel.length == 0 || sel[0] < 0 || sel[0] >= cards.size()) {
@@ -364,7 +367,7 @@ public final class CnpcLmRivalGui {
                 open(player, "list_detail:" + picker);
             }
         });
-        int actionRow = CnpcGuiSupport.navRowAfterScroll(listY, scrollH);
+        int actionRow = CnpcGuiSupport.navRowAfterScroll(bandY, scrollH);
         CnpcGuiSupport.buttonSmallFull(gui, 94, "§aActions", CnpcGuiSupport.COL_L, actionRow, CnpcGuiSupport.BTN_W,
                 () -> open(player, "actions"));
         CnpcGuiSupport.buttonSmallFull(gui, 95, "§8History", CnpcGuiSupport.COL_R, actionRow, CnpcGuiSupport.BTN_W,
@@ -389,9 +392,10 @@ public final class CnpcLmRivalGui {
             return;
         }
         String[] items = names.toArray(String[]::new);
-        int scrollH = CnpcGuiSupport.listScrollHeight(gui, listY, 1);
-        IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, CnpcGuiSupport.ID_LIST_SCROLL, CnpcGuiSupport.M, listY,
-                CnpcGuiSupport.listWidth(), scrollH, items);
+        int rowsBelow = 1;
+        int bandY = listY + 14;
+        int scrollH = CnpcGuiSupport.listScrollHeight(gui, bandY, rowsBelow);
+        IScroll scroll = CnpcGuiSupport.scrollPickList(gui, listY, rowsBelow, items);
         scroll.setOnClick((g, sc) -> {
             int[] sel = sc.getSelection();
             if (sel != null && sel.length > 0 && sel[0] >= 0 && sel[0] < items.length) {
@@ -399,7 +403,7 @@ public final class CnpcLmRivalGui {
                 open(player, "pick_confirm:" + action + "|" + returnPage + "|" + name);
             }
         });
-        footer(player, gui, CnpcGuiSupport.navRowAfterScroll(listY, scrollH), returnPage);
+        footer(player, gui, CnpcGuiSupport.navRowAfterScroll(bandY, scrollH), returnPage);
     }
 
     private static void paintArgPick(
@@ -419,12 +423,13 @@ public final class CnpcLmRivalGui {
             return;
         }
         String[] labels = CnpcGuiSupport.cardLabels(cards, 0);
-        int scrollH = CnpcGuiSupport.listScrollHeight(gui, listY, 1);
-        IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, CnpcGuiSupport.ID_LIST_SCROLL, CnpcGuiSupport.M, listY,
-                CnpcGuiSupport.listWidth(), scrollH, labels);
+        int rowsBelow = 1;
+        int bandY = listY + 14;
+        int scrollH = CnpcGuiSupport.listScrollHeight(gui, bandY, rowsBelow);
+        IScroll scroll = CnpcGuiSupport.scrollPickList(gui, listY, rowsBelow, labels);
         CnpcGuiSupport.wireScrollOpenDetail(scroll, cards, 0,
                 arg -> open(player, "pick_confirm:" + action + "|" + returnPage + "|" + arg));
-        footer(player, gui, CnpcGuiSupport.navRowAfterScroll(listY, scrollH), returnPage);
+        footer(player, gui, CnpcGuiSupport.navRowAfterScroll(bandY, scrollH), returnPage);
     }
 
     private static void paintScroll(ServerPlayer player, ICustomGui gui, String title, List<String> body, String backPage) {

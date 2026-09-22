@@ -105,11 +105,8 @@ public final class CharacterServicesGuiApi {
                 return lines;
             }
             int bonePage = parseBonePage(p);
-            lines.add("§7Unlock head parts from §fany race §7for your model.");
-            lines.add("§7Your race's parts are free; cross-race parts cost Ancient Coins.");
-            lines.add("§7Page §f" + (bonePage + 1) + "§7/§f" + CosmeticHeadBoneService.pageCount());
-            lines.add("§8Equipped: §f" + titleBone(CosmeticHeadBoneService.activeBone(player)));
-            lines.add("§7Use §fRace default §7or §fUnequip §7to clear cross-race parts.");
+            lines.add("§7Unlock parts from any race · yours are free, others cost coins.");
+            lines.add("§7Double-click a row to unlock · use buttons below to equip or clear.");
             return lines;
         }
         if ("reskin".equals(p)) {

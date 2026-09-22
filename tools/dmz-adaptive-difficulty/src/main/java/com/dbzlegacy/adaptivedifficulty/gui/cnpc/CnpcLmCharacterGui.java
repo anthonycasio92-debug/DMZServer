@@ -30,7 +30,8 @@ public final class CnpcLmCharacterGui {
         }
         if (p.startsWith("bones:") || "bones".equals(p)) {
             int bonePage = parseBonePage(p);
-            CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CHARACTER, CnpcGuiSupport.W, 380,
+            CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CHARACTER, CnpcGuiSupport.W,
+                    CnpcGuiSupport.suggestHeight(400),
                     (pl, gui) -> paintBones(pl, gui, bonePage));
             return;
         }
@@ -97,21 +98,23 @@ public final class CnpcLmCharacterGui {
         ServerPlayer subject = CnpcGuiSupport.target(player);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§f", "Character", "Change race"),
                 CnpcGuiStyle.HINT_CLICK_ENTRY);
-        int listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, CharacterServicesGuiApi.linesForPage(player, "race"), 2));
+        int listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBeforePickList(gui, infoY,
+                CharacterServicesGuiApi.linesForPage(player, "race"), 2));
 
         List<String> cards = CharacterServicesGuiApi.raceCards(player);
         String[] labels = raceClassLabels(cards);
 
-        int scrollH = CnpcGuiSupport.listScrollHeight(gui, listY, 1);
-        IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, CnpcGuiSupport.ID_LIST_SCROLL, CnpcGuiSupport.M, listY,
-                CnpcGuiSupport.listWidth(), scrollH, labels);
+        int rowsBelow = 1;
+        int bandY = listY + 14;
+        int scrollH = CnpcGuiSupport.listScrollHeight(gui, bandY, rowsBelow);
+        IScroll scroll = CnpcGuiSupport.scrollPickList(gui, listY, rowsBelow, labels);
         scroll.setOnClick((g, sc) -> {
             String id = selectedCardId(cards, sc);
             if (id != null) {
                 open(player, "race_pct:" + id);
             }
         });
-        footer(player, gui, CnpcGuiSupport.navRowAfterScroll(listY, scrollH), "main", subject);
+        footer(player, gui, CnpcGuiSupport.navRowAfterScroll(bandY, scrollH), "main", subject);
     }
 
     private static void paintRacePct(ServerPlayer player, String raceAndMaybePct) {
@@ -160,21 +163,23 @@ public final class CnpcLmCharacterGui {
         ServerPlayer subject = CnpcGuiSupport.target(player);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§f", "Character", "Change class"),
                 CnpcGuiStyle.HINT_CLICK_ENTRY);
-        int listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, CharacterServicesGuiApi.linesForPage(player, "class"), 2));
+        int listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBeforePickList(gui, infoY,
+                CharacterServicesGuiApi.linesForPage(player, "class"), 2));
 
         List<String> cards = CharacterServicesGuiApi.classCards(player);
         String[] labels = raceClassLabels(cards);
 
-        int scrollH = CnpcGuiSupport.listScrollHeight(gui, listY, 1);
-        IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, CnpcGuiSupport.ID_LIST_SCROLL, CnpcGuiSupport.M, listY,
-                CnpcGuiSupport.listWidth(), scrollH, labels);
+        int rowsBelow = 1;
+        int bandY = listY + 14;
+        int scrollH = CnpcGuiSupport.listScrollHeight(gui, bandY, rowsBelow);
+        IScroll scroll = CnpcGuiSupport.scrollPickList(gui, listY, rowsBelow, labels);
         scroll.setOnClick((g, sc) -> {
             String id = selectedCardId(cards, sc);
             if (id != null) {
                 open(player, "class_confirm:" + id);
             }
         });
-        footer(player, gui, CnpcGuiSupport.navRowAfterScroll(listY, scrollH), "main", subject);
+        footer(player, gui, CnpcGuiSupport.navRowAfterScroll(bandY, scrollH), "main", subject);
     }
 
     private static void paintClassConfirm(ServerPlayer player, String classId) {
@@ -201,18 +206,20 @@ public final class CnpcLmCharacterGui {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§f", "Character", "Head bones"),
                 "§7Page §f" + (pg + 1) + "/" + pages + CnpcGuiStyle.SEP + "§7Active §f"
                         + ph.getOrDefault("active_head_bone", "none"));
-        int listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, CharacterServicesGuiApi.linesForPage(player, "bones:" + pg), 2));
+        int listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBeforePickList(gui, infoY,
+                CharacterServicesGuiApi.linesForPage(player, "bones:" + pg), 2));
 
         List<String> cards = CharacterServicesGuiApi.headBoneCards(player, pg);
-        int scrollBottom = listY;
+        int rowsBelow = 3;
+        int bandY = listY + 14;
+        int scrollH = CnpcGuiSupport.listScrollHeight(gui, bandY, rowsBelow);
+        int scrollBottom = bandY + scrollH;
         if (cards.isEmpty()) {
             gui.addLabel(CnpcGuiSupport.ID_INLINE_NOTE, "§7No head parts on this page.",
-                    CnpcGuiSupport.M, listY + 4, CnpcGuiSupport.listWidth(), 14);
-            scrollBottom = listY + 20;
+                    CnpcGuiSupport.M, bandY + 4, CnpcGuiSupport.listWidth(), 14);
+            scrollBottom = bandY + 20;
         } else {
-            int scrollH = CnpcGuiSupport.listScrollHeight(gui, listY, 3);
-            IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, CnpcGuiSupport.ID_LIST_SCROLL, CnpcGuiSupport.M,
-                    listY, CnpcGuiSupport.listWidth(), scrollH, CnpcGuiSupport.cardLabels(cards, 1));
+            IScroll scroll = CnpcGuiSupport.scrollPickList(gui, listY, rowsBelow, CnpcGuiSupport.cardLabels(cards, 1));
             scroll.setOnDoubleClick((g, sc) -> {
                 g.close();
                 String id = selectedCardId(cards, sc);
@@ -222,7 +229,6 @@ public final class CnpcLmCharacterGui {
                             () -> open(player, "bones:" + pg));
                 }
             });
-            scrollBottom = listY + scrollH;
         }
         int row = scrollBottom + 8;
         CnpcGuiSupport.buttonSmall(gui, 60, "§aEquip race default", CnpcGuiSupport.COL_L, row, CnpcGuiSupport.BTN_W,
