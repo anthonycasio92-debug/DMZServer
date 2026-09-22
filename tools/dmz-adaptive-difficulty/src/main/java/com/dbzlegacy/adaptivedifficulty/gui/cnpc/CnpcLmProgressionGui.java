@@ -25,8 +25,9 @@ public final class CnpcLmProgressionGui {
         }
         int h = switch (p) {
             case "admin", "flags" -> CnpcGuiSupport.suggestHeight(180 + ((ALL_FLAG_KEYS.length + 1) / 2) * CnpcGuiSupport.ROW_STEP + 48);
-            case "flags_fabled" -> 320;
+            case "flags_fabled" -> CnpcGuiSupport.suggestHeight(180 + ((FABLED_FLAG_KEYS.length + 1) / 2) * CnpcGuiSupport.ROW_STEP + 48);
             case "android_convert", "android_remove" -> 320;
+            case "skills", "tp", "race", "combat", "end", "fabled", "utility", "status" -> sectionHeight(p);
             default -> H_MAIN;
         };
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_PROGRESSION, CnpcGuiSupport.W, h,
@@ -84,6 +85,7 @@ public final class CnpcLmProgressionGui {
             info.add(0, "§7Ask staff to change server modules.");
         }
         int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, info, 3);
+        row = Math.max(row, CnpcPlayerPreview.minButtonRowY(infoY));
 
         row = placeRow(gui, player, row, 20, "§eSkills", CnpcGuiSupport.COL_L, () -> open(player, "skills"));
         placeRow(gui, player, row, 21, "§6TP gains", CnpcGuiSupport.COL_R, () -> open(player, "tp"));
@@ -122,70 +124,59 @@ public final class CnpcLmProgressionGui {
                 staff ? CnpcGuiStyle.HINT_TOGGLE_STAFF : CnpcGuiStyle.HINT_READ_ONLY);
         int row = CnpcGuiSupport.paintInfoBlock(gui, infoY,
                 ProgressionGuiApi.linesForPage(player, page), 2);
+        row = Math.max(row, CnpcPlayerPreview.minButtonRowY(infoY));
 
         Map<String, String> ph = ProgressionGuiApi.placeholders(player);
         String[] keys = flagsForSection(page);
-        int id = 40;
-        int i = 0;
+        if (keys == null || keys.length == 0) {
+            CnpcGuiSupport.navSubmenu(player, gui, row + 8, () -> open(player, "main"), "§7« Back");
+            CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, infoY);
+            return;
+        }
+
+        List<CnpcGuiLayout.GridButton> grid = new ArrayList<>();
         for (String key : keys) {
             if ("tp".equals(page) && "boost".equals(key)) {
-                row = paintBoostEntry(player, gui, row, ph, staff);
+                if (staff) {
+                    grid.add(CnpcGuiLayout.GridButton.run("§6Global TP boost", () -> open(player, "boost_panel")));
+                } else {
+                    grid.add(CnpcGuiLayout.GridButton.disabled(
+                            "§6Global TP boost §8· " + CnpcGuiSupport.flagOnOff(ph, "boost")));
+                }
                 continue;
             }
             if ("race".equals(page) && "android".equals(key)) {
-                row = paintAndroidEntry(player, gui, row, ph, staff);
+                if (staff) {
+                    grid.add(CnpcGuiLayout.GridButton.run("§bAndroid tools", () -> open(player, "android_panel")));
+                } else {
+                    grid.add(CnpcGuiLayout.GridButton.disabled(
+                            "§bAndroid §8· " + CnpcGuiSupport.flagOnOff(ph, "android")));
+                }
                 continue;
-            }
-            int col = (i % 2 == 0) ? CnpcGuiSupport.COL_L : CnpcGuiSupport.COL_R;
-            if (i > 0 && i % 2 == 0) {
-                row += CnpcGuiSupport.ROW_STEP;
             }
             String label = friendlyFlagLabel(key, ph);
             if (staff) {
                 String flagKey = key;
-                CnpcGuiSupport.buttonSmall(gui, id++, label, col, row, CnpcGuiSupport.BTN_W, () -> CnpcGuiSupport.act(
-                        player,
+                grid.add(CnpcGuiLayout.GridButton.action(
+                        label,
                         () -> ProgressionGuiApi.handleDo(player, "flag", flagKey, page),
                         () -> open(player, page)));
             } else {
-                gui.addLabel(id++, "§7" + label, col, row + 4, CnpcGuiSupport.BTN_W, 14);
+                grid.add(CnpcGuiLayout.GridButton.disabled(label));
             }
-            i++;
         }
-        row += CnpcGuiSupport.ROW_STEP + 8;
+        row = CnpcGuiLayout.paintTwoColumnButtonGrid(
+                player, gui, row + 4, 40, grid.toArray(CnpcGuiLayout.GridButton[]::new),
+                () -> open(player, page));
+        row += 8;
         CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "main"), "§7« Back");
         CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, infoY);
     }
 
-    private static int paintBoostEntry(
-            ServerPlayer player, ICustomGui gui, int row, Map<String, String> ph, boolean staff) {
-        String status = ph.getOrDefault("boost", "§7Global TP boost: §cOFF");
-        if (staff) {
-            CnpcGuiSupport.button(gui, 45, "§6Global TP boost", CnpcGuiSupport.COL_L, row,
-                    () -> open(player, "boost_panel"));
-            gui.addLabel(46, CnpcGuiSupport.safeChat(status), CnpcGuiSupport.COL_R, row + 4, CnpcGuiSupport.BTN_W, 14);
-        } else {
-            gui.addLabel(45, "§6Global TP boost §8· " + CnpcGuiSupport.flagOnOff(ph, "boost"),
-                    CnpcGuiSupport.M, row + 4, CnpcGuiSupport.textBandWidth(), 14);
-            gui.addLabel(46, CnpcGuiSupport.safeChat(status), CnpcGuiSupport.M, row + 18, CnpcGuiSupport.textBandWidth(), 12);
-            row += 8;
-        }
-        return row + CnpcGuiSupport.ROW_STEP;
-    }
-
-    private static int paintAndroidEntry(
-            ServerPlayer player, ICustomGui gui, int row, Map<String, String> ph, boolean staff) {
-        if (staff) {
-            CnpcGuiSupport.button(gui, 47, "§bAndroid tools", CnpcGuiSupport.COL_L, row,
-                    () -> open(player, "android_panel"));
-            gui.addLabel(48, "§7Module " + CnpcGuiSupport.flagOnOff(ph, "android"),
-                    CnpcGuiSupport.COL_R, row + 4, CnpcGuiSupport.BTN_W, 14);
-        } else {
-            gui.addLabel(47, "§bAndroid §8· " + CnpcGuiSupport.flagOnOff(ph, "android"),
-                    CnpcGuiSupport.M, row + 4, CnpcGuiSupport.textBandWidth(), 14);
-            row += 8;
-        }
-        return row + CnpcGuiSupport.ROW_STEP;
+    private static int sectionHeight(String page) {
+        String[] keys = flagsForSection(page);
+        int n = keys == null ? 0 : keys.length;
+        return CnpcGuiSupport.suggestHeight(200 + ((n + 1) / 2) * CnpcGuiSupport.ROW_STEP + 64);
     }
 
     private static void paintBoostPanel(ServerPlayer player, ICustomGui gui) {
@@ -323,22 +314,17 @@ public final class CnpcLmProgressionGui {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, "§cAll progression flags",
                 "§7Grouped like chest UI · tap to toggle");
         Map<String, String> ph = ProgressionGuiApi.placeholders(player);
-        int row = infoY + 4;
-        int id = 40;
+        int row = Math.max(infoY + 4, CnpcPlayerPreview.minButtonRowY(infoY));
+        CnpcGuiLayout.GridButton[] grid = new CnpcGuiLayout.GridButton[ALL_FLAG_KEYS.length];
         for (int i = 0; i < ALL_FLAG_KEYS.length; i++) {
             String key = ALL_FLAG_KEYS[i];
-            int col = (i % 2 == 0) ? CnpcGuiSupport.COL_L : CnpcGuiSupport.COL_R;
-            if (i > 0 && i % 2 == 0) {
-                row += CnpcGuiSupport.ROW_STEP;
-            }
-            String flagKey = key;
-            CnpcGuiSupport.buttonSmall(gui, id++, friendlyFlagLabel(key, ph), col, row, CnpcGuiSupport.BTN_W,
-                    () -> CnpcGuiSupport.act(
-                            player,
-                            () -> ProgressionGuiApi.handleDo(player, "flag", flagKey, "admin"),
-                            () -> open(player, "admin")));
+            grid[i] = CnpcGuiLayout.GridButton.action(
+                    friendlyFlagLabel(key, ph),
+                    () -> ProgressionGuiApi.handleDo(player, "flag", key, "admin"),
+                    () -> open(player, "admin"));
         }
-        row += CnpcGuiSupport.ROW_STEP + 8;
+        row = CnpcGuiLayout.paintTwoColumnButtonGrid(player, gui, row, 40, grid, () -> open(player, "admin"));
+        row += 4;
         CnpcGuiSupport.buttonSmall(gui, 58, "§dFabled subflags", CnpcGuiSupport.COL_L, row, CnpcGuiSupport.BTN_W,
                 () -> open(player, "flags_fabled"));
         row += CnpcGuiSupport.ROW_STEP;
@@ -349,22 +335,17 @@ public final class CnpcLmProgressionGui {
     private static void paintFabledFlags(ServerPlayer player, ICustomGui gui) {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, "§dFabled subflags", "§7Soft bridge toggles");
         Map<String, String> ph = ProgressionGuiApi.placeholders(player);
-        int row = infoY + 4;
-        int id = 40;
+        int row = Math.max(infoY + 4, CnpcPlayerPreview.minButtonRowY(infoY));
+        CnpcGuiLayout.GridButton[] grid = new CnpcGuiLayout.GridButton[FABLED_FLAG_KEYS.length];
         for (int i = 0; i < FABLED_FLAG_KEYS.length; i++) {
             String key = FABLED_FLAG_KEYS[i];
-            int col = (i % 2 == 0) ? CnpcGuiSupport.COL_L : CnpcGuiSupport.COL_R;
-            if (i > 0 && i % 2 == 0) {
-                row += CnpcGuiSupport.ROW_STEP;
-            }
-            String flagKey = key;
-            CnpcGuiSupport.buttonSmall(gui, id++, friendlyFlagLabel(key, ph), col, row, CnpcGuiSupport.BTN_W,
-                    () -> CnpcGuiSupport.act(
-                            player,
-                            () -> ProgressionGuiApi.handleDo(player, "flag", flagKey, "flags_fabled"),
-                            () -> open(player, "flags_fabled")));
+            grid[i] = CnpcGuiLayout.GridButton.action(
+                    friendlyFlagLabel(key, ph),
+                    () -> ProgressionGuiApi.handleDo(player, "flag", key, "flags_fabled"),
+                    () -> open(player, "flags_fabled"));
         }
-        row += CnpcGuiSupport.ROW_STEP + 8;
+        row = CnpcGuiLayout.paintTwoColumnButtonGrid(player, gui, row, 40, grid, () -> open(player, "flags_fabled"));
+        row += 8;
         CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "admin"), "§7« Back");
         CnpcGuiSupport.paintSubjectPreview(CnpcGuiSupport.target(player), gui, infoY);
     }

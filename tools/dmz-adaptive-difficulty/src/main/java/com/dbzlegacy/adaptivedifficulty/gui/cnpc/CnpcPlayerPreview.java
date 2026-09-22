@@ -9,9 +9,9 @@ import noppes.npcs.api.gui.IEntityDisplay;
 import noppes.npcs.api.wrapper.gui.CustomGuiEntityDisplayWrapper;
 
 /**
- * CNPC {@link IEntityDisplay} player preview (ProfTools / SDU-style right column).
- * Uses the live {@code IPlayer} entity when possible (armor, transforms, forms) and
- * {@code setFollowingCursor(true)} so rotation tracks the mouse like ProfTools race studio.
+ * CNPC {@link IEntityDisplay} player preview (ProfTools cursor yaw + SDU Gecko model).
+ * Gecko clone first (visible on dedicated servers); live {@code IPlayer} fallback for armor/forms
+ * when Gecko is unavailable.
  */
 public final class CnpcPlayerPreview {
     /** Right column reserved for the model (buttons must stay left of {@link #contentRightEdge()}). */
@@ -38,10 +38,11 @@ public final class CnpcPlayerPreview {
         return contentRightEdge() - CnpcGuiSupport.M;
     }
 
-    /**
-     * Paint the subject in the top-right preview slot. Call <b>last</b> on the screen (after footer
-     * buttons) so this component is last in CNPC's main layer.
-     */
+    /** First Y where two-column buttons may start without crossing the preview slot. */
+    public static int minButtonRowY(int headerInfoY) {
+        return Math.max(CnpcGuiSupport.M + 8, headerInfoY + SLOT_H + 6);
+    }
+
     public static void paint(ServerPlayer player, ICustomGui gui, int anchorY) {
         paint(player, gui, CnpcGuiSupport.ID_ENTITY_PREVIEW, anchorY);
     }
@@ -56,15 +57,26 @@ public final class CnpcPlayerPreview {
             return;
         }
         try {
-            IEntity entity = NpcAPI.Instance().getIEntity(player);
+            IEntity gecko = CnpcGeckoPreviewBridge.previewEntity(player);
+            IEntity entity = gecko;
+            boolean snapshotNbt = gecko != null;
             if (entity == null) {
-                entity = CnpcGeckoPreviewBridge.previewEntity(player);
+                entity = NpcAPI.Instance().getIEntity(player);
+                snapshotNbt = true;
             }
             if (entity == null) {
                 return;
             }
             IEntityDisplay display = gui.addEntityDisplay(componentId, x, y, entity);
-            forceNbtSnapshot(display, entity);
+            if (snapshotNbt) {
+                forceNbtSnapshot(display, entity);
+            } else {
+                try {
+                    display.setEntitySyncedById(entity);
+                } catch (Throwable ignored) {
+                    forceNbtSnapshot(display, entity);
+                }
+            }
             tuneDisplay(display);
             display.setSize(SLOT_W, SLOT_H);
             display.setScale(PREVIEW_SCALE);
