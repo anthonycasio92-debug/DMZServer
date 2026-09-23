@@ -559,7 +559,7 @@ public final class RivalGuiApi {
                 lore.add("§7Record §a" + ph.getOrDefault("wins", "0")
                         + "§7/§c" + ph.getOrDefault("losses", "0")
                         + "§7/§e" + ph.getOrDefault("draws", "0"));
-                lore.add("§7TP msg §f"
+                lore.add("§7TP §f"
                         + ("true".equalsIgnoreCase(ph.get("tpMsg")) ? "ON" : "OFF"));
                 if ("true".equalsIgnoreCase(ph.get("challengeActive"))) {
                     lore.add("§eChallenge active");

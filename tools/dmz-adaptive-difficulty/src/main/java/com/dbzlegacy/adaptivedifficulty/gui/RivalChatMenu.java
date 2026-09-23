@@ -66,7 +66,7 @@ public final class RivalChatMenu {
                 + " §8(§" + tier.color() + tier.name() + "§8)"
                 + "  §7Mutual §f" + me.countMutual() + "§8/§f" + RivalConstants.MAX_MUTUAL_RIVALS));
         send(player, Component.m_237113_("§7Record §a" + me.officialWins + "§7/§c" + me.officialLosses
-                + "§7/§e" + me.officialDraws + "  §7TP msg §f" + (me.tpMessages ? "ON" : "OFF")));
+                + "§7/§e" + me.officialDraws + "  §7TP §f" + (me.tpMessages ? "ON" : "OFF")));
         boolean inCh = RivalChallengeManager.get().isInChallenge(player.m_20148_());
         if (inCh) {
             send(player, Component.m_237113_("§eChallenge active"));
@@ -100,8 +100,8 @@ public final class RivalChatMenu {
                 .m_7220_(Component.m_237113_("  "))
                 .m_7220_(btn("§e[Title]", "/rival do page title", "Rival title"))
                 .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn(me.tpMessages ? "§a[TP Msg ON]" : "§8[TP Msg OFF]",
-                        "/rival do tpmsg toggle main", "Toggle TP messages"));
+                .m_7220_(btn(me.tpMessages ? "§a[TP ON]" : "§8[TP OFF]",
+                        "/rival do tpmsg toggle main", "Toggle TP chat"));
         if (DifficultyConfig.get().rivalInstinct) {
             boolean instinctOn = RivalInstinct.isEnabled(player);
             row3.m_7220_(Component.m_237113_("  "))

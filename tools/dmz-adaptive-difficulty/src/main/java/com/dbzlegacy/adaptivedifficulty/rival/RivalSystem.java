@@ -970,7 +970,7 @@ public final class RivalSystem {
                 + " §8| combo §f" + me.careerHighestCombo
                 + " §8| hits §f" + me.careerHits);
         lines.add("§7Mutual slots §f" + me.countMutual() + "§8/§f" + RivalConstants.MAX_MUTUAL_RIVALS);
-        lines.add("§7TP messages §f" + (me.tpMessages ? "ON" : "OFF") + " §8(/rival tpmsg)");
+        lines.add("§7TP chat §f" + (me.tpMessages ? "ON" : "OFF") + " §8(/rival tpmsg)");
         ServerPlayer combatSrc = viewer;
         if (targetName != null && !targetName.isBlank() && viewer != null) {
             ServerPlayer online = findOnline(viewer.m_20194_(), targetName);
@@ -988,11 +988,11 @@ public final class RivalSystem {
     public static String setTpMsg(ServerPlayer player, Boolean on) {
         RivalPlayerRecord me = RivalStore.get().ensurePlayer(player);
         if (on == null) {
-            return "§7Rival TP messages: §f" + (me.tpMessages ? "ON" : "OFF");
+            return "§7Rival TP chat: §f" + (me.tpMessages ? "ON" : "OFF");
         }
         me.tpMessages = on;
         RivalStore.get().markDirty();
-        return "§aRival TP messages §f" + (on ? "ON" : "OFF");
+        return "§aRival TP chat §f" + (on ? "ON" : "OFF");
     }
 
     public static List<String> topLines(int limit) {

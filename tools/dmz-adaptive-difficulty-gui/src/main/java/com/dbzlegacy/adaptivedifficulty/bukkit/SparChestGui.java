@@ -149,7 +149,7 @@ public final class SparChestGui implements Listener {
         put(holder, inv, 25, tipBtn(viewer,
                 tpOn ? "spar.main.tpmsg_on" : "spar.main.tpmsg_off",
                 tpOn ? Material.BELL : Material.GRAY_DYE,
-                tpOn ? "&aTP Msg ON" : "&8TP Msg OFF",
+                tpOn ? "&aTP ON" : "&8TP OFF",
                 List.of(
                         tpOn ? "&8Hides spar TP in chat" : "&8Shows spar TP in chat while fighting",
                         "&8Players: +TP (style)",

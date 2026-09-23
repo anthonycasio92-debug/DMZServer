@@ -100,8 +100,8 @@ public final class CnpcLmSparGui {
         CnpcGuiSupport.button(gui, 23, "§bMentor & dojo", CnpcGuiSupport.COL_R, row, () -> open(player, "mentor"));
         row += 24;
         boolean tpOn = "true".equalsIgnoreCase(ph.get("tpMsg"));
-        CnpcGuiSupport.button(gui, 24, tpOn ? CnpcGuiStyle.toggleOn("Spar teleports")
-                : CnpcGuiStyle.toggleOff("Spar teleports"), CnpcGuiSupport.COL_L, row,
+        CnpcGuiSupport.button(gui, 24, tpOn ? CnpcGuiStyle.toggleOn("TP")
+                : CnpcGuiStyle.toggleOff("TP"), CnpcGuiSupport.COL_L, row,
                 () -> act(player, "tpmsg", "toggle", "main"));
         boolean mentorTpOn = "true".equalsIgnoreCase(ph.get("mentorTpMsg"));
         CnpcGuiSupport.button(gui, 25, mentorTpOn ? CnpcGuiStyle.toggleOn("Mentor TP")

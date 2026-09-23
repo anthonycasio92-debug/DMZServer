@@ -90,7 +90,7 @@ public final class SparChatMenu {
                 .m_7220_(Component.m_237113_("  "))
                 .m_7220_(btn("§b[Mentor]", "/spar do page mentor", "Mentor controls"))
                 .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn(tpOn ? "§a[TP Msg ON]" : "§8[TP Msg OFF]",
+                .m_7220_(btn(tpOn ? "§a[TP ON]" : "§8[TP OFF]",
                         "/spar do tpmsg toggle main",
                         tpOn ? "Mute spar TP chat while fighting" : "Show spar TP chat while fighting"));
         row.m_7220_(Component.m_237113_("  "))

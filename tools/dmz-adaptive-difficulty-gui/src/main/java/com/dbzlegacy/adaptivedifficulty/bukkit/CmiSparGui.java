@@ -145,7 +145,7 @@ public final class CmiSparGui {
         gui.addButton(actionBtn(player, 25,
                 tpOn ? "spar.main.tpmsg_on" : "spar.main.tpmsg_off",
                 tpOn ? Material.BELL : Material.GRAY_DYE,
-                tpOn ? "&aTP Msg ON" : "&8TP Msg OFF",
+                tpOn ? "&aTP ON" : "&8TP OFF",
                 "tpmsg", "toggle", "main",
                 List.of(
                         tpOn ? "&8Hides spar TP in chat" : "&8Shows spar TP in chat while fighting",

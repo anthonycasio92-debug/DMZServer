@@ -752,7 +752,7 @@ public final class EndDimensionStrength {
                     + PLAYER_SUMMON_MIN_TIER + " eligibility — buy/activate it first.";
         }
         if (!isTheEnd(player.m_9236_())) {
-            return "§cYou must be in The End to summon the dragon. §7Use a teleport to reach it.";
+            return "§cYou must be in The End to summon the dragon. §7Use TP to reach it.";
         }
         MinecraftServer server = player.m_20194_();
         if (server == null) {

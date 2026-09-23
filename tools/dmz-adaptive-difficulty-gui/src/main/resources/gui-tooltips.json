@@ -814,14 +814,14 @@
       "tpmsg_on": {
         "name": "&aTP ON",
         "lore": [
-          "&7Hide rival TP messages",
+          "&7Hide rival TP in chat",
           "&8Only affects rivalry TP chat"
         ]
       },
       "tpmsg_off": {
         "name": "&8TP OFF",
         "lore": [
-          "&7Show rival TP messages again",
+          "&7Show rival TP in chat again",
           "&8Only affects rivalry TP chat"
         ]
       },
@@ -1231,7 +1231,7 @@
         ]
       },
       "tpmsg_on": {
-        "name": "&aTP Messages ON",
+        "name": "&aTP ON",
         "lore": [
           "&7You see spar TP gains in chat",
           "",
@@ -1239,7 +1239,7 @@
         ]
       },
       "tpmsg_off": {
-        "name": "&8TP Messages OFF",
+        "name": "&8TP OFF",
         "lore": [
           "&7Spar TP chat is hidden",
           "",

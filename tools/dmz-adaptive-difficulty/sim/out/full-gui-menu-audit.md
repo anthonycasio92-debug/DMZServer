@@ -1,7 +1,7 @@
 # Full GUI menu audit
 
-- **OK checks:** 122
-- **Errors:** 1
+- **OK checks:** 123
+- **Errors:** 0
 - **Warnings:** 0
 
 ## Menus covered
@@ -19,6 +19,6 @@
 | logs | CnpcLmLogsGui | — | — |
 | admin | CnpcLmAdminGui | — | — |
 
-## Failures
+## Result
 
-- Forge↔Bukkit ABI
+**PASS** — all blocking menu/system checks passed.

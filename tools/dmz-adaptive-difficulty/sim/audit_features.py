@@ -858,8 +858,8 @@ def main() -> int:
     check("flushTpMessage respects prefs", "tpMessagesOn" in spar_combat)
     check("SparringSystem.setTpMsg", "setTpMsg" in spar_sys)
     check("SparGuiApi tpmsg action", '"tpmsg"' in spar_api)
-    check("Spar GUI TP Msg toggle", 'SlotAction.act("tpmsg"' in spar_chest)
-    check("CMI Spar TP Msg toggle", '"tpmsg"' in spar_cmi and "TP Msg" in spar_cmi)
+    check("Spar GUI TP toggle", 'SlotAction.act("tpmsg"' in spar_chest and '"&aTP ON"' in spar_chest)
+    check("CMI Spar TP toggle", '"tpmsg"' in spar_cmi and '"&aTP ON"' in spar_cmi)
     check("no public Forge /spar tpmsg", 'm_82127_("tpmsg")' not in spar_cmds)
     check("no public Bukkit /spar tpmsg",
           'ForgeBridge.sparHandleDo(player, "tpmsg"' not in bukkit_plugin)

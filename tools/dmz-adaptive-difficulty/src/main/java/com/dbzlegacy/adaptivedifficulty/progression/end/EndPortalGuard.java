@@ -31,9 +31,9 @@ public final class EndPortalGuard {
     private static final String TEMP_MSG = "end.portal.msg";
     private static final long MSG_COOLDOWN_MS = 20_000L;
     private static final String TITLE_PORTAL = "End portals disabled";
-    private static final String SUB_PORTAL = "Use a teleport to reach The End";
+    private static final String SUB_PORTAL = "Use TP to reach The End";
     private static final String TITLE_EYE = "Cannot activate portal";
-    private static final String SUB_EYE = "Use a teleport to reach The End";
+    private static final String SUB_EYE = "Use TP to reach The End";
 
     private EndPortalGuard() {}
 

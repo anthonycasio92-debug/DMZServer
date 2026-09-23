@@ -63,6 +63,7 @@ def main() -> int:
         "audit_prestige_need_ladder.py",
         "audit_prestige_gui_flow.py",
         "audit_gui_menus_comprehensive.py",
+        "audit_gui_tp_copy.py",
     ):
         run_py(script)
 
@@ -110,6 +111,10 @@ def main() -> int:
     cnpc_rival = read(SRC / "gui/cnpc/CnpcLmRivalGui.java")
     check("rival CNPC TP toggle label", 'toggleOn("TP")' in cnpc_rival and "Teleport msgs" not in cnpc_rival)
     check("rival chest TP toggle label", '"&aTP ON"' in rival_chest and "TP Msg ON" not in rival_chest)
+    spar_chest = read(BUKKIT / "SparChestGui.java")
+    cnpc_spar = read(SRC / "gui/cnpc/CnpcLmSparGui.java")
+    check("spar chest TP toggle label", '"&aTP ON"' in spar_chest and "TP Msg ON" not in spar_chest)
+    check("spar CNPC TP toggle label", 'toggleOn("TP")' in cnpc_spar and "teleport" not in cnpc_spar.lower())
 
     print("\n--- § spar ---")
     spar_chest = read(BUKKIT / "SparChestGui.java")
