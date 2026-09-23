@@ -146,6 +146,19 @@ def main() -> int:
         forge_jar = ROOT / "mods" / f"LegacyMechanics-{v_mod}.jar"
         gui_jar = ROOT / "plugins" / f"LegacyMechanicsGUI-{v_mod}.jar"
         check(f"built jars exist for {v_mod}", forge_jar.is_file() and gui_jar.is_file())
+        if forge_jar.is_file():
+            r = subprocess.run(
+                ["javap", "-classpath", str(forge_jar), "-public",
+                 "com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeSystem"],
+                capture_output=True,
+                text=True,
+            )
+            prestige_abi = (r.stdout or "") + (r.stderr or "")
+            check(
+                "shipped PrestigeSystem.heldCountForNeed(ServerPlayer)",
+                r.returncode == 0 and "heldCountForNeed(net.minecraft.server.level.ServerPlayer)" in prestige_abi,
+                "rebuild overlay — ProgressionGuiApi calls method missing from base jar merge",
+            )
 
     out = SIM / "out/ship-manifest-audit.md"
     out.parent.mkdir(parents=True, exist_ok=True)
