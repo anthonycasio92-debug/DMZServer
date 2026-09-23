@@ -189,19 +189,20 @@ public final class CnpcLmProgressionGui {
         lines.add("§8Presets start a boost · End stops it");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 3));
 
-        row = boostPreset(gui, player, row, 50, "§e1.25× · 30m", CnpcGuiSupport.COL_L, "1.25:30");
-        boostPreset(gui, player, row, 51, "§e1.5× · 30m", CnpcGuiSupport.COL_R, "1.5:30");
+        int b = CnpcGuiSupport.ID_BOOST_PRESET_BASE;
+        row = boostPreset(gui, player, row, b, "§e1.25× · 30m", CnpcGuiSupport.COL_L, "1.25:30");
+        boostPreset(gui, player, row, b + 1, "§e1.5× · 30m", CnpcGuiSupport.COL_R, "1.5:30");
         row += CnpcGuiSupport.ROW_STEP;
-        boostPreset(gui, player, row, 52, "§62× · 30m", CnpcGuiSupport.COL_L, "2:30");
-        boostPreset(gui, player, row, 53, "§62× · 60m", CnpcGuiSupport.COL_R, "2:60");
+        boostPreset(gui, player, row, b + 2, "§62× · 30m", CnpcGuiSupport.COL_L, "2:30");
+        boostPreset(gui, player, row, b + 3, "§62× · 60m", CnpcGuiSupport.COL_R, "2:60");
         row += CnpcGuiSupport.ROW_STEP;
-        boostPreset(gui, player, row, 54, "§e3× · 30m", CnpcGuiSupport.COL_L, "3:30");
-        CnpcGuiSupport.button(gui, 55, "§cEnd boost", CnpcGuiSupport.COL_R, row, () -> CnpcGuiSupport.act(
+        boostPreset(gui, player, row, b + 4, "§e3× · 30m", CnpcGuiSupport.COL_L, "3:30");
+        CnpcGuiSupport.button(gui, b + 5, "§cEnd boost", CnpcGuiSupport.COL_R, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> ProgressionGuiApi.handleDo(player, "boost", "end", "boost_panel"),
                 () -> open(player, "boost_panel")));
         row += CnpcGuiSupport.ROW_STEP;
-        CnpcGuiSupport.buttonSmall(gui, 56, "§7Refresh", CnpcGuiSupport.COL_L, row, 95,
+        CnpcGuiSupport.buttonSmall(gui, b + 6, "§7Refresh", CnpcGuiSupport.COL_L, row, 95,
                 () -> open(player, "boost_panel"));
         row += CnpcGuiSupport.ROW_STEP;
         CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "tp"), "§7« Back");

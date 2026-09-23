@@ -81,6 +81,8 @@ public final class CnpcGuiSupport {
     public static final int ID_GRID_BASE = 120;
     /** Prestige permanent tier shop (7 buttons — must not overlap flash band 50–59). */
     public static final int ID_PRESTIGE_TIER_GRID = 200;
+    /** Progression TP boost presets (must not overlap {@link #ID_FLASH_LABEL_BASE}). */
+    public static final int ID_BOOST_PRESET_BASE = 120;
 
     /** Shorter divider so labels do not wrap oddly in CNPC. */
     private static String dividerText() {
