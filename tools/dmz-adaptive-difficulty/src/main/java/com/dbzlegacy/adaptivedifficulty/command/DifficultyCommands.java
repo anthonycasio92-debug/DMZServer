@@ -42,7 +42,17 @@ public final class DifficultyCommands {
 
     @SubscribeEvent
     public void onRegister(RegisterCommandsEvent event) {
-        LiteralArgumentBuilder<CommandSourceStack> root = Commands.m_82127_("difficulty")
+        event.getDispatcher().register(buildDifficulty("difficulty"));
+        event.getDispatcher().register(buildDifficulty("diff"));
+        AdaptiveDifficultyMod.LOGGER.info(
+                "[{}] registered /difficulty /diff (GUI + admin for staff)",
+                AdaptiveDifficultyMod.MOD_ID
+        );
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> buildDifficulty(String name) {
+        return Commands.m_82127_(name)
+                .requires(CommandAccess::isPlayerSlashUser)
                 .executes(ctx -> openGui(ctx.getSource()))
                 // Hidden GUI action handler used by clickable chat buttons
                 .then(Commands.m_82127_("do")
@@ -73,6 +83,7 @@ public final class DifficultyCommands {
                 .then(vanillaDifficultyLiteral("normal"))
                 .then(vanillaDifficultyLiteral("hard"))
                 .then(Commands.m_82127_("admin")
+                        .requires(StaffAccess::isStaffSource)
                         .executes(ctx -> adminHelpOrDeny(ctx.getSource()))
                         .then(Commands.m_82127_("help")
                                 .executes(ctx -> adminHelpOrDeny(ctx.getSource())))
@@ -151,12 +162,6 @@ public final class DifficultyCommands {
                                                         ctx.getSource(),
                                                         StringArgumentType.getString(ctx, "key"),
                                                         StringArgumentType.getString(ctx, "value")))))));
-
-        event.getDispatcher().register(root);
-        AdaptiveDifficultyMod.LOGGER.info(
-                "[{}] registered /difficulty (GUI + vanilla hard/normal/easy/peaceful for ops)",
-                AdaptiveDifficultyMod.MOD_ID
-        );
     }
 
     private static LiteralArgumentBuilder<CommandSourceStack> vanillaDifficultyLiteral(String level) {
@@ -250,6 +255,13 @@ public final class DifficultyCommands {
             return 0;
         }
         String act = action == null ? "" : action.toLowerCase();
+        if (DifficultyActions.ACT_CHARACTER_RESET.equals(act)
+                || "char_reset".equals(act)
+                || "characterreset".equals(act)) {
+            if (StaffAccess.denyUnlessStaff(source) == 0) {
+                return 0;
+            }
+        }
         if ("page".equals(act)) {
             String targetPage = arg == null || arg.isBlank() ? "main" : arg;
             DifficultyActions.Result result =

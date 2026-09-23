@@ -26,15 +26,19 @@ public final class MechanicsCommands {
 
     @SubscribeEvent
     public void onRegister(RegisterCommandsEvent event) {
-        LiteralArgumentBuilder<CommandSourceStack> root = build("legacymechanics");
-        event.getDispatcher().register(root);
+        event.getDispatcher().register(build("legacymechanics"));
         event.getDispatcher().register(build("lm"));
         AdaptiveDifficultyMod.LOGGER.info("[{}] registered /legacymechanics /lm", AdaptiveDifficultyMod.MOD_ID);
     }
 
     private static LiteralArgumentBuilder<CommandSourceStack> build(String name) {
-        return Commands.m_82127_(name)
-                .executes(ctx -> open(ctx.getSource(), "main"))
+        LiteralArgumentBuilder<CommandSourceStack> root = Commands.m_82127_(name);
+        if ("lm".equals(name)) {
+            root.requires(CommandAccess::isPlayerSlashUser);
+        } else if ("legacymechanics".equals(name)) {
+            root.requires(StaffAccess::isStaffSource);
+        }
+        return root.executes(ctx -> open(ctx.getSource(), "main"))
                 .then(Commands.m_82127_("gui").executes(ctx -> open(ctx.getSource(), "main")))
                 .then(Commands.m_82127_("help").executes(ctx -> open(ctx.getSource(), "main")))
                 .then(Commands.m_82127_("open")
@@ -59,6 +63,7 @@ public final class MechanicsCommands {
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "system")))))
                         .then(Commands.m_82127_("syslog")
+                                .requires(StaffAccess::isStaffSource)
                                 .then(LmCommandSuggestions.word("mode", LmCommandSuggestions.SYSLOG_MODES)
                                         .executes(ctx -> {
                                             ServerPlayer p = playerOrNull(ctx.getSource());
@@ -73,6 +78,7 @@ public final class MechanicsCommands {
                                             return open(ctx.getSource(), "logs");
                                         }))))
                 .then(Commands.m_82127_("admin")
+                        .requires(StaffAccess::isStaffSource)
                         .executes(ctx -> adminHelp(ctx.getSource()))
                         .then(Commands.m_82127_("help").executes(ctx -> adminHelp(ctx.getSource())))
                         .then(Commands.m_82127_("reload").executes(ctx -> adminReload(ctx.getSource())))
@@ -209,6 +215,11 @@ public final class MechanicsCommands {
                 yield true;
             }
             case "skillcheck" -> {
+                if (!StaffAccess.hasSkillCheck(player)) {
+                    player.m_213846_(Component.m_237113_(
+                            "§cSkill Check requires donator access."));
+                    yield false;
+                }
                 com.dbzlegacy.adaptivedifficulty.progression.shop.SkillCheckService.open(player, "core");
                 yield true;
             }

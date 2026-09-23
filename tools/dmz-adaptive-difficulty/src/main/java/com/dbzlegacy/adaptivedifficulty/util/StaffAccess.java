@@ -68,6 +68,28 @@ public final class StaffAccess {
      * (default {@code legacymechanics.skillcheck}). Staff are <b>not</b> auto-granted —
      * without the node they use {@code /skills} (admin) and do not see Skill Check in the hub.
      */
+    /** Donator Skill Check ({@code /skillcheck}) — staff are not auto-granted; console may use staff op. */
+    public static boolean hasSkillCheckSource(CommandSourceStack src) {
+        if (src == null) {
+            return false;
+        }
+        ServerPlayer player = src.m_230896_();
+        if (player != null) {
+            return hasSkillCheck(player);
+        }
+        return isStaffSource(src);
+    }
+
+    public static int denyUnlessSkillCheck(CommandSourceStack source) {
+        if (hasSkillCheckSource(source)) {
+            return 1;
+        }
+        source.m_288197_(() -> Component.m_237113_(
+                "§cSkill Check requires donator access (legacymechanics.skillcheck)."
+        ), false);
+        return 0;
+    }
+
     public static boolean hasSkillCheck(ServerPlayer player) {
         if (player == null) {
             return false;

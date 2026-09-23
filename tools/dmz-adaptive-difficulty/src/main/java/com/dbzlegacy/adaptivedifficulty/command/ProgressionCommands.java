@@ -38,7 +38,7 @@ public final class ProgressionCommands {
 
         // Prestige — staff slash only; players use /lm → Prestige (GUI).
         event.getDispatcher().register(Commands.m_82127_("prestige")
-                .requires(ProgressionCommands::staff)
+                .requires(StaffAccess::isStaffSource)
                 .executes(ctx -> prestigeGui(ctx.getSource(), "main"))
                 .then(Commands.m_82127_("gui").executes(ctx -> prestigeGui(ctx.getSource(), "main")))
                 .then(Commands.m_82127_("admin")
@@ -115,7 +115,7 @@ public final class ProgressionCommands {
 
         // SkillUnlock admin browser — staff only (not aliased to skillcheck)
         event.getDispatcher().register(Commands.m_82127_("skills")
-                .requires(ProgressionCommands::staff)
+                .requires(StaffAccess::isStaffSource)
                 .executes(ctx -> skillsPage(ctx.getSource(), "core"))
                 .then(Commands.m_82127_("gui").executes(ctx -> skillsPage(ctx.getSource(), "core")))
                 .then(Commands.m_82127_("check").executes(ctx -> skillsPage(ctx.getSource(), "core")))
@@ -128,7 +128,7 @@ public final class ProgressionCommands {
 
         // Donator Skill Check
         event.getDispatcher().register(Commands.m_82127_("skillcheck")
-                .requires(ProgressionCommands::skillCheck)
+                .requires(StaffAccess::hasSkillCheckSource)
                 .executes(ctx -> skillCheckPage(ctx.getSource(), "core"))
                 .then(Commands.m_82127_("gui").executes(ctx -> skillCheckPage(ctx.getSource(), "core")))
                 .then(Commands.m_82127_("do")
@@ -144,20 +144,20 @@ public final class ProgressionCommands {
 
         // End Dimension Strength — staff clear/repair only (players summon via Difficulty GUI)
         event.getDispatcher().register(Commands.m_82127_("enddragon")
-                .requires(ProgressionCommands::staff)
+                .requires(StaffAccess::isStaffSource)
                 .executes(ctx -> endDragonHelp(ctx.getSource()))
                 .then(Commands.m_82127_("spawn").executes(ctx -> endSpawnDenied(ctx.getSource())))
                 .then(Commands.m_82127_("repair").executes(ctx -> endRepair(ctx.getSource())))
                 .then(Commands.m_82127_("clear").executes(ctx -> endClear(ctx.getSource())))
                 .then(Commands.m_82127_("cleanup").executes(ctx -> endClear(ctx.getSource()))));
         event.getDispatcher().register(Commands.m_82127_("spawndragon")
-                .requires(ProgressionCommands::staff)
+                .requires(StaffAccess::isStaffSource)
                 .executes(ctx -> endSpawnDenied(ctx.getSource())));
         event.getDispatcher().register(Commands.m_82127_("cleardragons")
-                .requires(ProgressionCommands::staff)
+                .requires(StaffAccess::isStaffSource)
                 .executes(ctx -> endClear(ctx.getSource())));
         event.getDispatcher().register(Commands.m_82127_("killdragons")
-                .requires(ProgressionCommands::staff)
+                .requires(StaffAccess::isStaffSource)
                 .executes(ctx -> endClear(ctx.getSource())));
 
         // Console / Saga aliases — Mohist Bukkit /progression blocks console except boost.
@@ -174,7 +174,7 @@ public final class ProgressionCommands {
     private static void registerAndroidify(RegisterCommandsEvent event, String name) {
         event.getDispatcher().register(
                 Commands.m_82127_(name)
-                        .requires(src -> src.m_6761_(2) || staff(src))
+                        .requires(StaffAccess::isStaffSource)
                         .then(LmCommandSuggestions.playerWord("player")
                                 .executes(ctx -> androidPlayer(
                                         ctx.getSource(),
@@ -358,6 +358,7 @@ public final class ProgressionCommands {
         // Root is open so players can run meditation status + android remove.
         // Staff-only leaves keep .requires(staff) / handler checks.
         return Commands.m_82127_(name)
+                .requires(StaffAccess::isStaffSource)
                 .executes(ctx -> helpOrGui(ctx.getSource()))
                 .then(Commands.m_82127_("gui")
                         .requires(ProgressionCommands::staff)
@@ -446,15 +447,6 @@ public final class ProgressionCommands {
 
     private static boolean staff(CommandSourceStack src) {
         return StaffAccess.isStaffSource(src);
-    }
-
-    private static boolean skillCheck(CommandSourceStack src) {
-        ServerPlayer p = src.m_230896_();
-        if (p == null) {
-            return false;
-        }
-        // NPC Skill Check sessions can page Natural↔Saga without the donator node.
-        return SkillCheckService.canUse(p) || SkillCheckService.inSession(p);
     }
 
     private static int progressionAdmin(CommandSourceStack source, String page) {

@@ -2,6 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.command;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.gui.CharacterServicesMenu;
+import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -20,12 +21,16 @@ public final class CharacterCommands {
 
     @SubscribeEvent
     public void onRegister(RegisterCommandsEvent event) {
-        LiteralArgumentBuilder<CommandSourceStack> root = Commands.m_82127_("character")
-                .executes(ctx -> open(ctx.getSource(), "main"));
-        event.getDispatcher().register(root);
-        event.getDispatcher().register(Commands.m_82127_("characterservices").executes(ctx -> open(ctx.getSource(), "main")));
-        event.getDispatcher().register(Commands.m_82127_("charservices").executes(ctx -> open(ctx.getSource(), "main")));
+        event.getDispatcher().register(staffCharacterRoot("character"));
+        event.getDispatcher().register(staffCharacterRoot("characterservices"));
+        event.getDispatcher().register(staffCharacterRoot("charservices"));
         AdaptiveDifficultyMod.LOGGER.info("[{}] registered /character", AdaptiveDifficultyMod.MOD_ID);
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> staffCharacterRoot(String name) {
+        return Commands.m_82127_(name)
+                .requires(StaffAccess::isStaffSource)
+                .executes(ctx -> open(ctx.getSource(), "main"));
     }
 
     private static int open(CommandSourceStack source, String page) {

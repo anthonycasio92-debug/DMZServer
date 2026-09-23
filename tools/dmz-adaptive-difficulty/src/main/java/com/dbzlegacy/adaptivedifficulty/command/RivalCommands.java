@@ -35,6 +35,7 @@ public final class RivalCommands {
     @SubscribeEvent
     public void onRegister(RegisterCommandsEvent event) {
         LiteralArgumentBuilder<CommandSourceStack> root = Commands.m_82127_("rival")
+                .requires(CommandAccess::isPlayerSlashUser)
                 .executes(ctx -> gui(ctx.getSource(), "main"))
                 .then(Commands.m_82127_("gui").executes(ctx -> gui(ctx.getSource(), "main")))
                 .then(Commands.m_82127_("help").executes(ctx -> gui(ctx.getSource(), "help")))
@@ -118,10 +119,13 @@ public final class RivalCommands {
                         .then(Commands.m_82127_("decline").executes(ctx -> challengeDecline(ctx.getSource())))
                         .then(Commands.m_82127_("cancel").executes(ctx -> challengeCancel(ctx.getSource()))))
                 .then(Commands.m_82127_("refresh")
+                        .requires(RivalCommands::staff)
                         .executes(ctx -> refresh(ctx.getSource())))
                 .then(Commands.m_82127_("save")
+                        .requires(RivalCommands::staff)
                         .executes(ctx -> save(ctx.getSource())))
                 .then(Commands.m_82127_("admin")
+                        .requires(RivalCommands::staff)
                         .executes(ctx -> adminHelp(ctx.getSource()))
                         .then(Commands.m_82127_("help").executes(ctx -> adminHelp(ctx.getSource())))
                         .then(Commands.m_82127_("save").executes(ctx -> save(ctx.getSource())))

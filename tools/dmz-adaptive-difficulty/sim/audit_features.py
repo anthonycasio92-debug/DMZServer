@@ -768,7 +768,7 @@ def main() -> int:
           "Staff only" not in prestige_sys.split("public static void open")[1].split("public static void confirmOrPrompt")[0]
           if "public static void open" in prestige_sys else False)
     check("Forge /prestige slash staff-only",
-          '.requires(ProgressionCommands::staff)' in prog_cmds.split('m_82127_("prestige")')[1].split('m_82127_("skills")')[0]
+          '.requires(StaffAccess::isStaffSource)' in prog_cmds.split('m_82127_("prestige")')[1].split('m_82127_("skills")')[0]
           if 'm_82127_("prestige")' in prog_cmds else False)
     check("Prestige chat uses Forge /prestige do confirm",
           "/prestige do confirm" in prestige_sys and "/lmdo prestige confirm" not in prestige_sys)
@@ -1203,8 +1203,10 @@ def main() -> int:
     check("npcscripter id listed",
           "customnpcs:npcscripter" in read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/CnpcGuiOpener.java"))
     check("android_remove inventory force", "isAndroidRemovePage" in plugin)
-    check("enddragon uses StaffAccess", "ProgressionCommands::staff" in prog_cmds and "enddragon" in prog_cmds)
-    check("skillcheck no level-2 grant", "src.m_6761_(2)" not in prog_cmds.split("skillCheck(")[1].split("helpOrGui")[0])
+    check("enddragon uses StaffAccess",
+          "StaffAccess::isStaffSource" in prog_cmds and "enddragon" in prog_cmds)
+    check("skillcheck donator gate",
+          "StaffAccess::hasSkillCheckSource" in prog_cmds and 'm_82127_("skillcheck")' in prog_cmds)
     check("progression helpOrGui", "helpOrGui" in prog_cmds)
     check("DifficultyCommands StaffAccess", "StaffAccess.isStaff" in diff_cmds)
     check("chat hub prestige + android_remove",
