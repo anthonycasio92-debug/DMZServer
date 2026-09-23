@@ -102,7 +102,7 @@ public final class DifficultyCommands {
                         .then(syslogRoot("syslog"))
                         .then(syslogRoot("systemlog"))
                         .then(Commands.m_82127_("gamedifficulty")
-                                .then(Commands.m_82129_("level", StringArgumentType.word())
+                                .then(LmCommandSuggestions.word("level", LmCommandSuggestions.VANILLA_DIFFICULTY)
                                         .executes(ctx -> setVanillaDifficultyOrDeny(
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "level")))))
@@ -114,13 +114,13 @@ public final class DifficultyCommands {
                                 .executes(ctx -> adminCharacterResetOrDeny(ctx.getSource())))
                         .then(Commands.m_82127_("resynclevel")
                                 .executes(ctx -> adminResyncLevelOrDeny(ctx.getSource(), null))
-                                .then(Commands.m_82129_("player", StringArgumentType.word())
+                                .then(LmCommandSuggestions.playerWord("player")
                                         .executes(ctx -> adminResyncLevelOrDeny(
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "player")))))
                         .then(Commands.m_82127_("gui")
                                 .executes(ctx -> adminInspectGuiOrDeny(ctx.getSource(), null, "main"))
-                                .then(Commands.m_82129_("player", StringArgumentType.word())
+                                .then(LmCommandSuggestions.playerWord("player")
                                         .executes(ctx -> adminInspectGuiOrDeny(
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "player"),
@@ -132,7 +132,9 @@ public final class DifficultyCommands {
                                                         StringArgumentType.getString(ctx, "page"))))))
                         .then(Commands.m_82127_("inspect")
                                 .executes(ctx -> adminInspectGuiOrDeny(ctx.getSource(), null, "main"))
-                                .then(Commands.m_82129_("player", StringArgumentType.word())
+                                .then(Commands.m_82127_("clear")
+                                        .executes(ctx -> adminInspectGuiOrDeny(ctx.getSource(), "clear", "main")))
+                                .then(LmCommandSuggestions.playerWord("player")
                                         .executes(ctx -> adminInspectGuiOrDeny(
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "player"),
@@ -143,7 +145,7 @@ public final class DifficultyCommands {
                                                         StringArgumentType.getString(ctx, "player"),
                                                         StringArgumentType.getString(ctx, "page"))))))
                         .then(Commands.m_82127_("set")
-                                .then(Commands.m_82129_("key", StringArgumentType.word())
+                                .then(LmCommandSuggestions.word("key", LmCommandSuggestions.DIFFICULTY_ADMIN_SET_KEYS)
                                         .then(Commands.m_82129_("value", StringArgumentType.greedyString())
                                                 .executes(ctx -> adminSetOrDeny(
                                                         ctx.getSource(),
@@ -178,7 +180,7 @@ public final class DifficultyCommands {
                 .then(Commands.m_82127_("list")
                         .executes(ctx -> whitelistList(ctx.getSource())))
                 .then(Commands.m_82127_("add")
-                        .then(Commands.m_82129_("player", StringArgumentType.word())
+                        .then(LmCommandSuggestions.playerWord("player")
                                 .executes(ctx -> whitelistAdd(
                                         ctx.getSource(),
                                         StringArgumentType.getString(ctx, "player")))))

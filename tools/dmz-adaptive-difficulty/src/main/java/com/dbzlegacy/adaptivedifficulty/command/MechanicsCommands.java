@@ -38,7 +38,7 @@ public final class MechanicsCommands {
                 .then(Commands.m_82127_("gui").executes(ctx -> open(ctx.getSource(), "main")))
                 .then(Commands.m_82127_("help").executes(ctx -> open(ctx.getSource(), "main")))
                 .then(Commands.m_82127_("open")
-                        .then(Commands.m_82129_("system", StringArgumentType.word())
+                        .then(LmCommandSuggestions.word("system", LmCommandSuggestions.LM_OPEN_SYSTEMS)
                                 .executes(ctx -> openSystem(
                                         ctx.getSource(),
                                         StringArgumentType.getString(ctx, "system")))))
@@ -54,12 +54,12 @@ public final class MechanicsCommands {
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "page")))))
                         .then(Commands.m_82127_("open")
-                                .then(Commands.m_82129_("system", StringArgumentType.word())
+                                .then(LmCommandSuggestions.word("system", LmCommandSuggestions.LM_OPEN_SYSTEMS)
                                         .executes(ctx -> openSystem(
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "system")))))
                         .then(Commands.m_82127_("syslog")
-                                .then(Commands.m_82129_("mode", StringArgumentType.word())
+                                .then(LmCommandSuggestions.word("mode", LmCommandSuggestions.SYSLOG_MODES)
                                         .executes(ctx -> {
                                             ServerPlayer p = playerOrNull(ctx.getSource());
                                             if (p == null) {
@@ -81,12 +81,12 @@ public final class MechanicsCommands {
                                 .then(Commands.m_82127_("force")
                                         .executes(ctx -> adminMigrateCnpc(ctx.getSource(), true))))
                         .then(Commands.m_82127_("clear")
-                                .then(Commands.m_82129_("player", StringArgumentType.string())
+                                .then(LmCommandSuggestions.playerString("player")
                                         .executes(ctx -> adminClear(
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "player"),
                                                 "all"))
-                                        .then(Commands.m_82129_("scope", StringArgumentType.word())
+                                        .then(LmCommandSuggestions.word("scope", LmCommandSuggestions.LM_CLEAR_SCOPES)
                                                 .executes(ctx -> adminClear(
                                                         ctx.getSource(),
                                                         StringArgumentType.getString(ctx, "player"),
@@ -94,36 +94,40 @@ public final class MechanicsCommands {
                         .then(Commands.m_82127_("character")
                                 .then(Commands.m_82127_("cooldown")
                                         .then(Commands.m_82127_("clear")
-                                                .then(Commands.m_82129_("player", StringArgumentType.string())
+                                                .then(LmCommandSuggestions.playerString("player")
                                                         .executes(ctx -> adminCharacterCooldownClear(
                                                                 ctx.getSource(),
                                                                 StringArgumentType.getString(ctx, "player"),
                                                                 "all"))
-                                                        .then(Commands.m_82129_("kind", StringArgumentType.word())
+                                                        .then(LmCommandSuggestions.word(
+                                                                        "kind", LmCommandSuggestions.LM_CHARACTER_COOLDOWN_KINDS)
                                                                 .executes(ctx -> adminCharacterCooldownClear(
                                                                         ctx.getSource(),
                                                                         StringArgumentType.getString(ctx, "player"),
                                                                         StringArgumentType.getString(ctx, "kind"))))))))
                         .then(Commands.m_82127_("syslog")
                                 .executes(ctx -> adminSyslog(ctx.getSource(), "status"))
-                                .then(Commands.m_82129_("mode", StringArgumentType.word())
+                                .then(LmCommandSuggestions.word("mode", LmCommandSuggestions.SYSLOG_MODES)
                                         .executes(ctx -> adminSyslog(
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "mode")))))
                         .then(Commands.m_82127_("open")
                                 .executes(ctx -> adminOpen(ctx.getSource(), "hub"))
-                                .then(Commands.m_82129_("system", StringArgumentType.word())
+                                .then(LmCommandSuggestions.word("system", LmCommandSuggestions.LM_OPEN_SYSTEMS)
                                         .executes(ctx -> adminOpen(
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "system")))))
                         .then(Commands.m_82127_("inspect")
                                 .executes(ctx -> adminInspect(ctx.getSource(), null, "hub"))
-                                .then(Commands.m_82129_("player", StringArgumentType.string())
+                                .then(Commands.m_82127_("clear")
+                                        .executes(ctx -> adminInspect(ctx.getSource(), "clear", "hub")))
+                                .then(LmCommandSuggestions.playerString("player")
                                         .executes(ctx -> adminInspect(
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "player"),
                                                 "hub"))
-                                        .then(Commands.m_82129_("system", StringArgumentType.word())
+                                        .then(LmCommandSuggestions.word(
+                                                        "system", LmCommandSuggestions.LM_INSPECT_SYSTEMS)
                                                 .executes(ctx -> adminInspect(
                                                         ctx.getSource(),
                                                         StringArgumentType.getString(ctx, "player"),

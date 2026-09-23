@@ -41,13 +41,13 @@ public final class RivalCommands {
                 .then(Commands.m_82127_("list").executes(ctx -> list(ctx.getSource())))
                 .then(Commands.m_82127_("stats")
                         .executes(ctx -> stats(ctx.getSource(), null))
-                        .then(Commands.m_82129_("player", StringArgumentType.word())
+                        .then(LmCommandSuggestions.playerWord("player")
                                 .executes(ctx -> stats(
                                         ctx.getSource(),
                                         StringArgumentType.getString(ctx, "player")))))
                 .then(Commands.m_82127_("top")
                         .executes(ctx -> top(ctx.getSource(), "rp"))
-                        .then(Commands.m_82129_("category", StringArgumentType.word())
+                        .then(LmCommandSuggestions.word("category", LmCommandSuggestions.RIVAL_TOP_CATEGORIES)
                                 .executes(ctx -> top(
                                         ctx.getSource(),
                                         StringArgumentType.getString(ctx, "category")))))
@@ -60,7 +60,7 @@ public final class RivalCommands {
                 .then(Commands.m_82127_("spectate")
                         .executes(ctx -> spectate(ctx.getSource(), null))
                         .then(Commands.m_82127_("stop").executes(ctx -> spectateStop(ctx.getSource())))
-                        .then(Commands.m_82129_("player", StringArgumentType.word())
+                        .then(LmCommandSuggestions.playerWord("player")
                                 .executes(ctx -> spectate(
                                         ctx.getSource(),
                                         StringArgumentType.getString(ctx, "player")))))
@@ -79,22 +79,22 @@ public final class RivalCommands {
                                                 StringArgumentType.getString(ctx, "action"),
                                                 StringArgumentType.getString(ctx, "rest"))))))
                 .then(Commands.m_82127_("declare")
-                        .then(Commands.m_82129_("player", StringArgumentType.word())
+                        .then(LmCommandSuggestions.playerWord("player")
                                 .executes(ctx -> declare(
                                         ctx.getSource(),
                                         StringArgumentType.getString(ctx, "player")))))
                 .then(Commands.m_82127_("accept")
-                        .then(Commands.m_82129_("player", StringArgumentType.word())
+                        .then(LmCommandSuggestions.playerWord("player")
                                 .executes(ctx -> accept(
                                         ctx.getSource(),
                                         StringArgumentType.getString(ctx, "player")))))
                 .then(Commands.m_82127_("decline")
-                        .then(Commands.m_82129_("player", StringArgumentType.word())
+                        .then(LmCommandSuggestions.playerWord("player")
                                 .executes(ctx -> decline(
                                         ctx.getSource(),
                                         StringArgumentType.getString(ctx, "player")))))
                 .then(Commands.m_82127_("remove")
-                        .then(Commands.m_82129_("player", StringArgumentType.word())
+                        .then(LmCommandSuggestions.playerWord("player")
                                 .executes(ctx -> remove(
                                         ctx.getSource(),
                                         StringArgumentType.getString(ctx, "player")))))
@@ -104,7 +104,7 @@ public final class RivalCommands {
                         .then(Commands.m_82127_("off").executes(ctx -> tpmsg(ctx.getSource(), false))))
                 .then(Commands.m_82127_("challenge")
                         .then(Commands.m_82127_("send")
-                                .then(Commands.m_82129_("player", StringArgumentType.word())
+                                .then(LmCommandSuggestions.playerWord("player")
                                         .executes(ctx -> challengeSend(
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "player"),
@@ -118,13 +118,10 @@ public final class RivalCommands {
                         .then(Commands.m_82127_("decline").executes(ctx -> challengeDecline(ctx.getSource())))
                         .then(Commands.m_82127_("cancel").executes(ctx -> challengeCancel(ctx.getSource()))))
                 .then(Commands.m_82127_("refresh")
-                        .requires(RivalCommands::staff)
                         .executes(ctx -> refresh(ctx.getSource())))
                 .then(Commands.m_82127_("save")
-                        .requires(RivalCommands::staff)
                         .executes(ctx -> save(ctx.getSource())))
                 .then(Commands.m_82127_("admin")
-                        .requires(RivalCommands::staff)
                         .executes(ctx -> adminHelp(ctx.getSource()))
                         .then(Commands.m_82127_("help").executes(ctx -> adminHelp(ctx.getSource())))
                         .then(Commands.m_82127_("save").executes(ctx -> save(ctx.getSource())))
@@ -137,7 +134,7 @@ public final class RivalCommands {
                                         .executes(ctx -> gui(
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "page"))))))
-                .then(Commands.m_82129_("player", StringArgumentType.word())
+                .then(LmCommandSuggestions.playerWord("player")
                         .executes(ctx -> silent(
                                 ctx.getSource(),
                                 StringArgumentType.getString(ctx, "player"))));
@@ -383,6 +380,9 @@ public final class RivalCommands {
     }
 
     private static int refresh(CommandSourceStack source) {
+        if (StaffAccess.denyUnlessStaff(source) == 0) {
+            return 0;
+        }
         RivalStore.get().load();
         RivalProgression.get().load();
         source.m_288197_(() -> Component.m_237113_("§aRival store + progression reloaded."), true);
@@ -390,6 +390,9 @@ public final class RivalCommands {
     }
 
     private static int save(CommandSourceStack source) {
+        if (StaffAccess.denyUnlessStaff(source) == 0) {
+            return 0;
+        }
         RivalStore.get().markDirty();
         RivalStore.get().save();
         RivalProgression.get().save();
@@ -398,6 +401,9 @@ public final class RivalCommands {
     }
 
     private static int adminHelp(CommandSourceStack source) {
+        if (StaffAccess.denyUnlessStaff(source) == 0) {
+            return 0;
+        }
         source.m_288197_(() -> Component.m_237113_(
                 "§6§l/rival admin\n"
                         + "§e/rival admin save §7— save rivalry and progress data to disk\n"
@@ -409,6 +415,9 @@ public final class RivalCommands {
     }
 
     private static int adminStatus(CommandSourceStack source) {
+        if (StaffAccess.denyUnlessStaff(source) == 0) {
+            return 0;
+        }
         boolean on = DifficultyConfig.get().enableRivalSystem;
         int players = RivalStore.get().players.size();
         source.m_288197_(() -> Component.m_237113_(

@@ -34,14 +34,14 @@ public final class SparCommands {
                 .then(Commands.m_82127_("help").executes(ctx -> gui(ctx.getSource(), "help")))
                 .then(Commands.m_82127_("stats")
                         .executes(ctx -> stats(ctx.getSource(), null))
-                        .then(Commands.m_82129_("player", StringArgumentType.word())
+                        .then(LmCommandSuggestions.playerWord("player")
                                 .executes(ctx -> stats(
                                         ctx.getSource(),
                                         StringArgumentType.getString(ctx, "player")))))
                 .then(Commands.m_82127_("end").executes(ctx -> end(ctx.getSource())))
                 .then(Commands.m_82127_("top")
                         .executes(ctx -> top(ctx.getSource(), "tp"))
-                        .then(Commands.m_82129_("category", StringArgumentType.word())
+                        .then(LmCommandSuggestions.word("category", LmCommandSuggestions.SPAR_TOP_CATEGORIES)
                                 .executes(ctx -> top(
                                         ctx.getSource(),
                                         StringArgumentType.getString(ctx, "category")))))
@@ -49,7 +49,7 @@ public final class SparCommands {
                         .executes(ctx -> dojoInfo(ctx.getSource()))
                         .then(Commands.m_82127_("top")
                                 .executes(ctx -> dojoTop(ctx.getSource(), "rp"))
-                                .then(Commands.m_82129_("category", StringArgumentType.word())
+                                .then(LmCommandSuggestions.word("category", LmCommandSuggestions.SPAR_TOP_CATEGORIES)
                                         .executes(ctx -> dojoTop(
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "category")))))
@@ -68,7 +68,7 @@ public final class SparCommands {
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "material")))))
                         .then(Commands.m_82127_("challenge")
-                                .then(Commands.m_82129_("player", StringArgumentType.word())
+                                .then(LmCommandSuggestions.playerWord("player")
                                         .executes(ctx -> dojoChallenge(
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "player"))))))
@@ -93,7 +93,7 @@ public final class SparCommands {
                         .then(Commands.m_82127_("leave").executes(ctx -> mentorRemove(ctx.getSource())))
                         .then(Commands.m_82127_("remove").executes(ctx -> mentorRemove(ctx.getSource())))
                         .then(Commands.m_82127_("clear").executes(ctx -> mentorRemove(ctx.getSource())))
-                        .then(Commands.m_82129_("player", StringArgumentType.word())
+                        .then(LmCommandSuggestions.playerWord("player")
                                 .executes(ctx -> mentorInvite(
                                         ctx.getSource(),
                                         StringArgumentType.getString(ctx, "player")))))
@@ -101,28 +101,27 @@ public final class SparCommands {
                         .executes(ctx -> mentorStatus(ctx.getSource()))
                         .then(Commands.m_82127_("remove")
                                 .executes(ctx -> apprenticeRemove(ctx.getSource(), null))
-                                .then(Commands.m_82129_("player", StringArgumentType.word())
+                                .then(LmCommandSuggestions.playerWord("player")
                                         .executes(ctx -> apprenticeRemove(
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "player")))))
                         .then(Commands.m_82127_("release")
                                 .executes(ctx -> apprenticeRemove(ctx.getSource(), null))
-                                .then(Commands.m_82129_("player", StringArgumentType.word())
+                                .then(LmCommandSuggestions.playerWord("player")
                                         .executes(ctx -> apprenticeRemove(
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "player")))))
                         .then(Commands.m_82127_("clear")
                                 .executes(ctx -> apprenticeRemove(ctx.getSource(), null))
-                                .then(Commands.m_82129_("player", StringArgumentType.word())
+                                .then(LmCommandSuggestions.playerWord("player")
                                         .executes(ctx -> apprenticeRemove(
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "player")))))
-                        .then(Commands.m_82129_("player", StringArgumentType.word())
+                        .then(LmCommandSuggestions.playerWord("player")
                                 .executes(ctx -> apprenticeInvite(
                                         ctx.getSource(),
                                         StringArgumentType.getString(ctx, "player")))))
                 .then(Commands.m_82127_("admin")
-                        .requires(SparCommands::staff)
                         .executes(ctx -> sparAdminHelp(ctx.getSource()))
                         .then(Commands.m_82127_("help").executes(ctx -> sparAdminHelp(ctx.getSource())))
                         .then(Commands.m_82127_("save").executes(ctx -> save(ctx.getSource())))
@@ -130,12 +129,11 @@ public final class SparCommands {
                         .then(Commands.m_82127_("mentor")
                                 .then(Commands.m_82127_("resetcd")
                                         .executes(ctx -> resetCd(ctx.getSource(), null))
-                                        .then(Commands.m_82129_("player", StringArgumentType.word())
+                                        .then(LmCommandSuggestions.playerWord("player")
                                                 .executes(ctx -> resetCd(
                                                         ctx.getSource(),
                                                         StringArgumentType.getString(ctx, "player")))))))
                 .then(Commands.m_82127_("save")
-                        .requires(SparCommands::staff)
                         .executes(ctx -> save(ctx.getSource())));
 
         event.getDispatcher().register(root);
@@ -394,6 +392,9 @@ public final class SparCommands {
     }
 
     private static int resetCd(CommandSourceStack source, String name) {
+        if (StaffAccess.denyUnlessStaff(source) == 0) {
+            return 0;
+        }
         ServerPlayer admin = playerOrNull(source);
         ServerPlayer target = name == null ? admin : RivalSystem.findOnline(source.m_81377_(), name);
         if (target == null) {
@@ -406,6 +407,9 @@ public final class SparCommands {
     }
 
     private static int save(CommandSourceStack source) {
+        if (StaffAccess.denyUnlessStaff(source) == 0) {
+            return 0;
+        }
         SparStore.get().markDirty();
         SparStore.get().save();
         source.m_288197_(() -> Component.m_237113_("§aSpar store saved."), true);
@@ -413,6 +417,9 @@ public final class SparCommands {
     }
 
     private static int sparAdminHelp(CommandSourceStack source) {
+        if (StaffAccess.denyUnlessStaff(source) == 0) {
+            return 0;
+        }
         source.m_288197_(() -> Component.m_237113_(
                 "§6§l/spar admin\n"
                         + "§e/spar admin save §7— save sparring data to disk\n"
@@ -424,6 +431,9 @@ public final class SparCommands {
     }
 
     private static int sparAdminStatus(CommandSourceStack source) {
+        if (StaffAccess.denyUnlessStaff(source) == 0) {
+            return 0;
+        }
         boolean on = DifficultyConfig.get().enableSparringSystem;
         source.m_288197_(() -> Component.m_237113_(
                 "§6Spar admin status\n"

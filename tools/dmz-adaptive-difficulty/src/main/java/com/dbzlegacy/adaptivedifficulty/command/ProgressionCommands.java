@@ -46,18 +46,18 @@ public final class ProgressionCommands {
                         .then(Commands.m_82127_("help").executes(ctx -> prestigeAdminHelp(ctx.getSource())))
                         .then(Commands.m_82127_("info")
                                 .executes(ctx -> prestigeAdminInfo(ctx.getSource(), null))
-                                .then(Commands.m_82129_("player", StringArgumentType.word())
+                                .then(LmCommandSuggestions.playerWord("player")
                                         .executes(ctx -> prestigeAdminInfo(
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "player")))))
                         .then(Commands.m_82127_("sync")
-                                .then(Commands.m_82129_("player", StringArgumentType.word())
+                                .then(LmCommandSuggestions.playerWord("player")
                                         .executes(ctx -> prestigeAdminSync(
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "player")))))
                         .then(Commands.m_82127_("held")
-                                .then(Commands.m_82129_("player", StringArgumentType.word())
-                                        .then(Commands.m_82129_("mode", StringArgumentType.word())
+                                .then(LmCommandSuggestions.playerWord("player")
+                                        .then(LmCommandSuggestions.word("mode", LmCommandSuggestions.PRESTIGE_ADJUST_MODES)
                                                 .then(Commands.m_82129_("amount", IntegerArgumentType.integer())
                                                         .executes(ctx -> prestigeAdminAdjust(
                                                                 ctx.getSource(), "held",
@@ -65,8 +65,8 @@ public final class ProgressionCommands {
                                                                 StringArgumentType.getString(ctx, "mode"),
                                                                 IntegerArgumentType.getInteger(ctx, "amount")))))))
                         .then(Commands.m_82127_("completed")
-                                .then(Commands.m_82129_("player", StringArgumentType.word())
-                                        .then(Commands.m_82129_("mode", StringArgumentType.word())
+                                .then(LmCommandSuggestions.playerWord("player")
+                                        .then(LmCommandSuggestions.word("mode", LmCommandSuggestions.PRESTIGE_ADJUST_MODES)
                                                 .then(Commands.m_82129_("amount", IntegerArgumentType.integer())
                                                         .executes(ctx -> prestigeAdminAdjust(
                                                                 ctx.getSource(), "completed",
@@ -74,8 +74,8 @@ public final class ProgressionCommands {
                                                                 StringArgumentType.getString(ctx, "mode"),
                                                                 IntegerArgumentType.getInteger(ctx, "amount")))))))
                         .then(Commands.m_82127_("points")
-                                .then(Commands.m_82129_("player", StringArgumentType.word())
-                                        .then(Commands.m_82129_("mode", StringArgumentType.word())
+                                .then(LmCommandSuggestions.playerWord("player")
+                                        .then(LmCommandSuggestions.word("mode", LmCommandSuggestions.PRESTIGE_ADJUST_MODES)
                                                 .then(Commands.m_82129_("amount", IntegerArgumentType.integer())
                                                         .executes(ctx -> prestigeAdminAdjust(
                                                                 ctx.getSource(), "points",
@@ -83,8 +83,8 @@ public final class ProgressionCommands {
                                                                 StringArgumentType.getString(ctx, "mode"),
                                                                 IntegerArgumentType.getInteger(ctx, "amount")))))))
                         .then(Commands.m_82127_("breakthroughs")
-                                .then(Commands.m_82129_("player", StringArgumentType.word())
-                                        .then(Commands.m_82129_("mode", StringArgumentType.word())
+                                .then(LmCommandSuggestions.playerWord("player")
+                                        .then(LmCommandSuggestions.word("mode", LmCommandSuggestions.PRESTIGE_ADJUST_MODES)
                                                 .then(Commands.m_82129_("amount", IntegerArgumentType.integer())
                                                         .executes(ctx -> prestigeAdminAdjust(
                                                                 ctx.getSource(), "breakthroughs",
@@ -92,8 +92,8 @@ public final class ProgressionCommands {
                                                                 StringArgumentType.getString(ctx, "mode"),
                                                                 IntegerArgumentType.getInteger(ctx, "amount")))))))
                         .then(Commands.m_82127_("fabled")
-                                .then(Commands.m_82129_("player", StringArgumentType.word())
-                                        .then(Commands.m_82129_("mode", StringArgumentType.word())
+                                .then(LmCommandSuggestions.playerWord("player")
+                                        .then(LmCommandSuggestions.word("mode", LmCommandSuggestions.PRESTIGE_ADJUST_MODES)
                                                 .then(Commands.m_82129_("amount", IntegerArgumentType.integer())
                                                         .executes(ctx -> prestigeAdminAdjust(
                                                                 ctx.getSource(), "fabled",
@@ -175,7 +175,7 @@ public final class ProgressionCommands {
         event.getDispatcher().register(
                 Commands.m_82127_(name)
                         .requires(src -> src.m_6761_(2) || staff(src))
-                        .then(Commands.m_82129_("player", StringArgumentType.word())
+                        .then(LmCommandSuggestions.playerWord("player")
                                 .executes(ctx -> androidPlayer(
                                         ctx.getSource(),
                                         StringArgumentType.getString(ctx, "player"))))
@@ -424,19 +424,18 @@ public final class ProgressionCommands {
                         .executes(ctx -> androidSelfOrHint(ctx.getSource()))
                         .then(Commands.m_82127_("remove")
                                 .executes(ctx -> androidRemoveGuiHint(ctx.getSource()))
-                                .then(Commands.m_82129_("player", StringArgumentType.word())
+                                .then(LmCommandSuggestions.playerWord("player")
                                         .requires(ProgressionCommands::staff)
                                         .executes(ctx -> androidRemovePlayer(
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "player")))))
-                        .then(Commands.m_82129_("player", StringArgumentType.word())
+                        .then(LmCommandSuggestions.playerWord("player")
                                 .requires(ProgressionCommands::staff)
                                 .executes(ctx -> androidPlayer(
                                         ctx.getSource(),
                                         StringArgumentType.getString(ctx, "player")))))
                 .then(Commands.m_82127_("admin")
-                        .requires(ProgressionCommands::staff)
-                        .executes(ctx -> gui(ctx.getSource(), "admin"))
+                        .executes(ctx -> progressionAdmin(ctx.getSource(), "admin"))
                         .then(Commands.m_82129_("flag", StringArgumentType.word())
                                 .then(Commands.m_82129_("value", StringArgumentType.word())
                                         .executes(ctx -> adminToggle(
@@ -450,16 +449,19 @@ public final class ProgressionCommands {
     }
 
     private static boolean skillCheck(CommandSourceStack src) {
-        try {
-            ServerPlayer p = src.m_81375_();
-            if (p == null) {
-                return false;
-            }
-            // NPC Skill Check sessions can page Natural↔Saga without the donator node.
-            return SkillCheckService.canUse(p) || SkillCheckService.inSession(p);
-        } catch (Exception e) {
+        ServerPlayer p = src.m_230896_();
+        if (p == null) {
             return false;
         }
+        // NPC Skill Check sessions can page Natural↔Saga without the donator node.
+        return SkillCheckService.canUse(p) || SkillCheckService.inSession(p);
+    }
+
+    private static int progressionAdmin(CommandSourceStack source, String page) {
+        if (StaffAccess.denyUnlessStaff(source) == 0) {
+            return 0;
+        }
+        return gui(source, page);
     }
 
     private static int helpOrGui(CommandSourceStack source) {
@@ -624,6 +626,9 @@ public final class ProgressionCommands {
     }
 
     private static int adminToggle(CommandSourceStack source, String flag, String value) {
+        if (StaffAccess.denyUnlessStaff(source) == 0) {
+            return 0;
+        }
         boolean on = "on".equalsIgnoreCase(value) || "true".equalsIgnoreCase(value) || "1".equals(value);
         boolean off = "off".equalsIgnoreCase(value) || "false".equalsIgnoreCase(value) || "0".equals(value);
         if (!on && !off) {
