@@ -6,6 +6,7 @@ Writes sim/out/ship-manifest-audit.md
 """
 from __future__ import annotations
 
+import os
 import re
 import subprocess
 import sys
@@ -60,13 +61,19 @@ def main() -> int:
     check("manifest android-saiyan-eligible row", "android-saiyan-eligible" in manifest)
     check("manifest cnpc-preview-live-player row", "cnpc-preview-live-player" in manifest)
 
+    skip_gui = os.environ.get("LM_SKIP_GUI", "0") == "1"
     print("\n--- Sub-audits (must PASS) ---")
-    for script in (
+    sub_audits = (
         "audit_prestige_need_ladder.py",
         "audit_prestige_gui_flow.py",
         "audit_gui_menus_comprehensive.py",
         "audit_gui_tp_copy.py",
-    ):
+    )
+    for script in sub_audits:
+        if skip_gui and script == "audit_gui_menus_comprehensive.py":
+            print(f"  SKIP {script} (LM_SKIP_GUI=1 Forge-only deploy)")
+            ok.append(f"skipped {script}")
+            continue
         run_py(script)
 
     print("\n--- § prestige (source markers) ---")
@@ -224,11 +231,17 @@ def main() -> int:
     v_mod = ver_m.group(1) if ver_m else None
     v_toml = ver_t.group(1) if ver_t else None
     v_yml = ver_y.group(1).strip() if ver_y else None
-    check("VERSION == mods.toml == plugin.yml", v_mod == v_toml == v_yml, f"{v_mod!r} / {v_toml!r} / {v_yml!r}")
+    if skip_gui:
+        check("VERSION == mods.toml", v_mod == v_toml, f"{v_mod!r} / {v_toml!r}")
+    else:
+        check("VERSION == mods.toml == plugin.yml", v_mod == v_toml == v_yml, f"{v_mod!r} / {v_toml!r} / {v_yml!r}")
     if v_mod:
         forge_jar = ROOT / "mods" / f"LegacyMechanics-{v_mod}.jar"
         gui_jar = ROOT / "plugins" / f"LegacyMechanicsGUI-{v_mod}.jar"
-        check(f"built jars exist for {v_mod}", forge_jar.is_file() and gui_jar.is_file())
+        if skip_gui:
+            check(f"Forge jar exists for {v_mod}", forge_jar.is_file())
+        else:
+            check(f"built jars exist for {v_mod}", forge_jar.is_file() and gui_jar.is_file())
         if forge_jar.is_file():
             r = subprocess.run(
                 ["javap", "-classpath", str(forge_jar), "-public",
