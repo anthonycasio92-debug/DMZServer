@@ -22,8 +22,9 @@ if [[ -z "$HOST" || -z "$USER" || -z "$PASS" ]]; then
   exit 1
 fi
 
-KEEP_FORGE="${LM_KEEP_FORGE:-LegacyMechanics-4.5.49.jar}"
-KEEP_GUI="${LM_KEEP_GUI:-LegacyMechanicsGUI-4.5.49.jar}"
+KEEP_FORGE="${LM_KEEP_FORGE:-LegacyMechanics-4.5.94.jar}"
+KEEP_GUI="${LM_KEEP_GUI:-}"
+RECYCLE_ALL_GUI="${LM_RECYCLE_ALL_GUI:-0}"
 KEEP_MELEE="${LM_KEEP_MELEE:-dmz_mohist_melee_fix-2.12.21.jar}"
 
 export SSHPASS="$PASS"
@@ -53,12 +54,20 @@ done < <(list_names "$REMOTE_MODS" 'LegacyMechanics-*')
 while IFS= read -r name; do
   [[ -z "$name" ]] && continue
   base="${name##*/}"
-  [[ "$base" == "$KEEP_GUI" ]] && continue
-  case "$base" in
-    LegacyMechanicsGUI-*.jar|LegacyMechanicsGUI-*.jar.pending)
-      DEL_CMDS+="rename $REMOTE_PLUGINS/$base $RECYCLE/$base"$'\n'
-      ;;
-  esac
+  if [[ "$RECYCLE_ALL_GUI" == "1" ]]; then
+    case "$base" in
+      LegacyMechanicsGUI-*.jar|LegacyMechanicsGUI-*.jar.pending)
+        DEL_CMDS+="rename $REMOTE_PLUGINS/$base $RECYCLE/$base"$'\n'
+        ;;
+    esac
+  elif [[ -n "$KEEP_GUI" ]]; then
+    [[ "$base" == "$KEEP_GUI" ]] && continue
+    case "$base" in
+      LegacyMechanicsGUI-*.jar|LegacyMechanicsGUI-*.jar.pending)
+        DEL_CMDS+="rename $REMOTE_PLUGINS/$base $RECYCLE/$base"$'\n'
+        ;;
+    esac
+  fi
 done < <(list_names "$REMOTE_PLUGINS" 'LegacyMechanicsGUI-*')
 
 while IFS= read -r name; do

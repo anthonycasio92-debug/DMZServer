@@ -37,7 +37,7 @@ public final class CnpcLmHubGui {
         }
         if ("progression".equalsIgnoreCase(page) || "prog".equalsIgnoreCase(page)) {
             if (StaffAccess.isStaff(player)) {
-                CnpcLmAdminGui.open(player, "main");
+                CnpcLmProgressionGui.open(player, "main");
             } else {
                 paintMain(player);
             }

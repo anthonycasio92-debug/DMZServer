@@ -37,6 +37,16 @@ public final class MechanicsCommands {
                 .executes(ctx -> open(ctx.getSource(), "main"))
                 .then(Commands.m_82127_("gui").executes(ctx -> open(ctx.getSource(), "main")))
                 .then(Commands.m_82127_("help").executes(ctx -> open(ctx.getSource(), "main")))
+                .then(Commands.m_82127_("open")
+                        .then(Commands.m_82129_("system", StringArgumentType.word())
+                                .executes(ctx -> openSystem(
+                                        ctx.getSource(),
+                                        StringArgumentType.getString(ctx, "system")))))
+                .then(Commands.m_82127_("page")
+                        .then(Commands.m_82129_("page", StringArgumentType.word())
+                                .executes(ctx -> open(
+                                        ctx.getSource(),
+                                        StringArgumentType.getString(ctx, "page")))))
                 .then(Commands.m_82127_("do")
                         .then(Commands.m_82127_("page")
                                 .then(Commands.m_82129_("page", StringArgumentType.word())
@@ -196,6 +206,10 @@ public final class MechanicsCommands {
             }
             case "skillcheck" -> {
                 com.dbzlegacy.adaptivedifficulty.progression.shop.SkillCheckService.open(player, "core");
+                yield true;
+            }
+            case "hub", "main", "help", "lm", "legacymechanics" -> {
+                MechanicsMenu.open(player, "main");
                 yield true;
             }
             default -> {

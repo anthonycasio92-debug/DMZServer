@@ -90,7 +90,7 @@ public final class ProgressionChatMenu {
         }
         if ("shop".equals(page)) {
             send(player, Component.m_237113_("§7")
-                    .m_7220_(btn("§6[Open Prestige]", "/lmdo lm open prestige", "Prestige GUI"))
+                    .m_7220_(btn("§6[Open Prestige]", "/prestige", "Prestige GUI"))
                     .m_7220_(Component.m_237113_("  "))
                     .m_7220_(btn("§f[Open Skills]", "/skills", "Skills GUI")));
         }

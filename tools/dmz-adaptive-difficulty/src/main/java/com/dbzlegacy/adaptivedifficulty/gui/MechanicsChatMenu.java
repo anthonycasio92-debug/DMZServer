@@ -46,11 +46,11 @@ public final class MechanicsChatMenu {
         send(player, Component.m_237113_("§7Choose a system"));
         send(player, Component.m_237113_(""));
         MutableComponent row = Component.m_237113_("§7")
-                .m_7220_(btn("§a[Difficulty]", "/lmdo lm open difficulty", "Unlock tiers & scaling"))
+                .m_7220_(btn("§a[Difficulty]", "/difficulty", "Unlock tiers & scaling"))
                 .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§6[Rival]", "/lmdo lm open rival", "Rivalry & challenges"))
+                .m_7220_(btn("§6[Rival]", "/rival", "Rivalry & challenges"))
                 .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§b[Spar]", "/lmdo lm open spar", "Sparring TP & mentor"));
+                .m_7220_(btn("§b[Spar]", "/spar", "Sparring TP & mentor"));
         send(player, row);
         boolean staff = StaffAccess.isStaff(player);
         boolean skillCheck = SkillCheckService.canUse(player);
@@ -58,26 +58,26 @@ public final class MechanicsChatMenu {
         boolean row2Used = false;
         if (skillCheck || staff) {
             row2.m_7220_(btn(staff && !skillCheck ? "§e[Skills]" : "§e[Skill Check]",
-                    staff && !skillCheck ? "/lmdo lm open skills" : "/lmdo lm open skillcheck",
+                    staff && !skillCheck ? "/skills" : "/skillcheck",
                     staff && !skillCheck ? "Skill unlock admin" : "Donator skill progress"));
             row2Used = true;
         }
         if (row2Used) {
             row2.m_7220_(Component.m_237113_("  "));
         }
-        row2.m_7220_(btn("§6[Prestige]", "/lmdo lm open prestige",
+        row2.m_7220_(btn("§6[Prestige]", "/prestige",
                 "Turn in · skill/forms shop · level-cap"));
         row2.m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§c[Remove Android]", "/lmdo lm open android_remove",
+                .m_7220_(btn("§c[Remove Android]", "/lm open android_remove",
                         "Remove Android upgrade"));
         send(player, row2);
         if (staff) {
             MutableComponent row3 = Component.m_237113_("§7")
-                    .m_7220_(btn("§d[Progression]", "/lmdo lm open progression", "Natural progression"))
+                    .m_7220_(btn("§d[Progression]", "/progression", "Natural progression"))
                     .m_7220_(Component.m_237113_("  "))
                     .m_7220_(btn("§c[Admin]", "/lm admin help", "Admin commands"))
                     .m_7220_(Component.m_237113_("  "))
-                    .m_7220_(btn("§8[Logs]", "/lmdo lm page logs", "Server event logs"));
+                    .m_7220_(btn("§8[Logs]", "/lm page logs", "Server event logs"));
             send(player, row3);
         }
         send(player, Component.m_237113_("§8────────────────"));
@@ -91,12 +91,12 @@ public final class MechanicsChatMenu {
         send(player, Component.m_237113_("§8" + com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry.statusLine()));
         MutableComponent toggles = Component.m_237113_("§7")
                 .m_7220_(btn(on ? "§c[Event Log OFF]" : "§a[Event Log ON]",
-                        "/lmdo lm syslog " + (on ? "off" : "on") + " logs",
+                        "/lm do syslog " + (on ? "off" : "on"),
                         "Toggle server event logging"))
                 .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§e[Flush]", "/lmdo lm syslog flush logs", "Write buffered logs to disk"));
+                .m_7220_(btn("§e[Flush]", "/lm do syslog flush", "Write buffered logs to disk"));
         send(player, toggles);
-        send(player, btn("§7« Back", "/lmdo lm page main", "Main menu"));
+        send(player, btn("§7« Back", "/lm", "Main menu"));
         send(player, Component.m_237113_("§8────────────────"));
     }
 

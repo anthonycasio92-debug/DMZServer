@@ -754,8 +754,8 @@ def main() -> int:
     check("Forge /prestige slash staff-only",
           '.requires(ProgressionCommands::staff)' in prog_cmds.split('m_82127_("prestige")')[1].split('m_82127_("skills")')[0]
           if 'm_82127_("prestige")' in prog_cmds else False)
-    check("Prestige chat uses lmdo not /prestige",
-          "/lmdo prestige confirm" in prestige_sys and "/prestige do confirm" not in prestige_sys)
+    check("Prestige chat uses Forge /prestige do confirm",
+          "/prestige do confirm" in prestige_sys and "/lmdo prestige confirm" not in prestige_sys)
     check("Hub Prestige for everyone",
           'SlotAction.open("prestige")' in hub
           and hub.count('SlotAction.open("prestige")') >= 1)
@@ -1191,9 +1191,10 @@ def main() -> int:
     check("skillcheck no level-2 grant", "src.m_6761_(2)" not in prog_cmds.split("skillCheck(")[1].split("helpOrGui")[0])
     check("progression helpOrGui", "helpOrGui" in prog_cmds)
     check("DifficultyCommands StaffAccess", "StaffAccess.isStaff" in diff_cmds)
-    check("chat hub prestige + android_remove", 'lm open prestige' in mech_chat and 'android_remove' in mech_chat)
-    check("rival/spar chat hub lmdo", 'lmdo lm open hub' in rival_chat and 'lmdo lm open hub' in spar_chat)
-    check("difficulty chat hub button", 'lmdo lm open hub' in diff_chat)
+    check("chat hub prestige + android_remove",
+          '"/prestige"' in mech_chat and 'android_remove' in mech_chat)
+    check("rival/spar chat hub /lm", '"/lm"' in rival_chat and '"/lm"' in spar_chat)
+    check("difficulty chat hub button", '"/lm"' in diff_chat and 'lmdo lm open hub' not in diff_chat)
     check("ProgressionMenu allows android_remove", "isAndroidRemovePage" in prog_menu)
     check(
         "MechanicsCommands android_remove opens GUI",

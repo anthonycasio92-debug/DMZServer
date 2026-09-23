@@ -140,7 +140,7 @@ public final class DifficultyChatMenu {
         if (isStaff(player)) {
             send(player, btn("§8[Details]", "/difficulty do page stats", "Staff breakdown"));
         }
-        send(player, btn("§7« Hub", "/lmdo lm open hub", "Main menu"));
+        send(player, btn("§7« Hub", "/lm", "Main menu"));
         send(player, Component.m_237113_("§8────────────────"));
     }
 
@@ -237,7 +237,7 @@ public final class DifficultyChatMenu {
         send(player, btn("§7Personal", "/difficulty do team personal team", "Solo ceiling only"));
         send(player, btn("§aThreshold", "/difficulty do team threshold team", "Extra max + harder spawns"));
         send(player, btn("§2Full", "/difficulty do team full team", "Threshold + nearby spare + best spawn boost"));
-        send(player, btn("§6Open Rival", "/lmdo lm open rival", "Manage mutual rivals"));
+        send(player, btn("§6Open Rival", "/rival", "Manage mutual rivals"));
         send(player, btn("§7« Back", "/difficulty do page main", "Return"));
     }
 
