@@ -56,6 +56,8 @@ public final class CnpcGuiSupport {
     public static final int ID_INFO_SCROLL = 100;
     public static final int ID_LIST_SCROLL = 101;
     public static final int ID_INFO_LABEL_BASE = 10;
+    /** Flash notices under the header — must not share {@link #ID_INFO_LABEL_BASE} on the same gui. */
+    public static final int ID_FLASH_LABEL_BASE = 50;
     public static final int ID_BTN_BASE = 20;
     public static final int ID_NAV_HUB = 96;
     public static final int ID_NAV_BACK = 97;
@@ -156,7 +158,7 @@ public final class CnpcGuiSupport {
             box.set(max - 1, "§8+" + (raw.size() + 1 - max) + " more — check chat for details");
         }
         // Never use the scrolling panel here — the main page may need it for scrollPickList.
-        return paintInfoBlock(gui, y, box, max, true);
+        return paintInfoBlock(gui, y, box, max, true, ID_FLASH_LABEL_BASE);
     }
 
     public static void pushMenuMessage(ServerPlayer player, String message) {
@@ -211,7 +213,7 @@ public final class CnpcGuiSupport {
     }
 
     public static int paintInfoBlock(ICustomGui gui, int startY, List<String> lines, int inlineMax) {
-        return paintInfoBlock(gui, startY, lines, inlineMax, false);
+        return paintInfoBlock(gui, startY, lines, inlineMax, false, ID_INFO_LABEL_BASE);
     }
 
     /**
@@ -219,11 +221,16 @@ public final class CnpcGuiSupport {
      * one scroll region; {@link #scrollSearchable} must own it or the list will not scroll.
      */
     public static int paintInfoBeforePickList(ICustomGui gui, int startY, List<String> lines, int maxInlineLines) {
-        return paintInfoBlock(gui, startY, lines, maxInlineLines, true);
+        return paintInfoBlock(gui, startY, lines, maxInlineLines, true, ID_INFO_LABEL_BASE);
     }
 
     private static int paintInfoBlock(
-            ICustomGui gui, int startY, List<String> lines, int inlineMax, boolean reservePickListScroll) {
+            ICustomGui gui,
+            int startY,
+            List<String> lines,
+            int inlineMax,
+            boolean reservePickListScroll,
+            int labelBase) {
         List<String> clean = normalizeInfoLines(lines);
         if (clean.isEmpty()) {
             return startY + 4;
@@ -236,19 +243,20 @@ public final class CnpcGuiSupport {
                 trimmed.add("§8More summary text is hidden above the list.");
                 clean = trimmed;
             }
-            bodyLines(gui, ID_INFO_LABEL_BASE, startY, clean, clean.size(), textW);
+            bodyLines(gui, labelBase, startY, clean, clean.size(), textW);
             return startY + clean.size() * LINE_H + 10;
         }
         if (maxInline > 0 && clean.size() <= maxInline) {
-            bodyLines(gui, ID_INFO_LABEL_BASE, startY, clean, maxInline, textW);
+            bodyLines(gui, labelBase, startY, clean, maxInline, textW);
             return startY + clean.size() * LINE_H + 10;
         }
         int visibleStatusRows = Math.max(1, (112 / LINE_H));
         if (clean.size() <= visibleStatusRows) {
-            bodyLines(gui, ID_INFO_LABEL_BASE, startY, clean, clean.size(), textW);
+            bodyLines(gui, labelBase, startY, clean, clean.size(), textW);
             return startY + clean.size() * LINE_H + 10;
         }
-        gui.addLabel(ID_STATUS_TAG, CnpcGuiStyle.HINT_SCROLL_STATUS, M, startY - 2, textW, 10);
+        int statusTagId = labelBase == ID_FLASH_LABEL_BASE ? ID_FLASH_LABEL_BASE + 40 : ID_STATUS_TAG;
+        gui.addLabel(statusTagId, CnpcGuiStyle.HINT_SCROLL_STATUS, M, startY - 2, textW, 10);
         int preferred = Math.min(112, Math.max(56, clean.size() * LINE_H));
         int scrollH = preferred;
         if (gui != null) {
@@ -260,7 +268,7 @@ public final class CnpcGuiSupport {
         IComponentsScrollableWrapper panel = gui.getScrollingPanel();
         panel.init(M, bandY, bandW, scrollH);
         for (int i = 0; i < clean.size(); i++) {
-            panel.addLabel(ID_INFO_LABEL_BASE + i, safeScrollLine(clean.get(i)), 0, i * LINE_H, bandW, LINE_H);
+            panel.addLabel(labelBase + i, safeScrollLine(clean.get(i)), 0, i * LINE_H, bandW, LINE_H);
         }
         return bandY + scrollH + 10;
     }
