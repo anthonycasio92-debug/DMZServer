@@ -106,8 +106,7 @@ public final class CmiHubGui {
                     "&7Skill unlock admin browser", "&8No Skill Check perm", "&eOpen"));
         }
         gui.addButton(openBtn(player, 23, "hub.main.prestige", Material.GOLDEN_APPLE, "&6Prestige", "prestige",
-                "&7Turn in prestiges · skill/forms shop · level-cap",
-                "&eOpen"));
+                "&7Turn-ins, skill shop, forms, tier unlocks"));
 
         // Row 4 — Character Services · Android remove + staff tools
         gui.addButton(openBtn(player, 30, "hub.main.character", Material.PLAYER_HEAD, "&dCharacter Services", "character",

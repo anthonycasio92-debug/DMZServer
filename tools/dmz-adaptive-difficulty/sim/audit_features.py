@@ -617,6 +617,13 @@ def main() -> int:
     rival_st = read(SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalStatus.java")
     rival_link = read(SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalLink.java")
     check("Silent label (not Unknown)", 'case UNKNOWN -> "Silent"' in rival_st)
+    cnpc_rival = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmRivalGui.java")
+    check("CNPC rival remove only from list detail",
+          "list_detail:" in cnpc_rival and "openListDetail" in cnpc_rival
+          and 'case "pick_remove" -> open(pl, "list")' in cnpc_rival)
+    check("Rival displayPickerArg resolves uuid links",
+          "displayPickerArg" in read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/RivalGuiApi.java")
+          and "rivalLinkDisplayName" in read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/RivalGuiApi.java"))
     check("remove demotes mutual to one-way", "demoteToOneWayDeclare" in rival_sys)
     check("remove archives remover history", "archiveRivalLink(me, them.uuid, myLink)" in rival_sys)
     check("pending excluded from rival list", "st == RivalStatus.PENDING" in rival_sys)
@@ -634,6 +641,17 @@ def main() -> int:
           'SlotAction.page("pending_decide:' in rival_chest)
     check("CMI pending head opens decide submenu",
           'lmdo rival page pending_decide:' in cmi_rival)
+    rival_cnpc = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmRivalGui.java")
+    rival_api = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/RivalGuiApi.java")
+    check("challenge pending board + decide submenu",
+          "challenge_pending" in rival_cnpc and "challenge_decide:" in rival_cnpc
+          and "pendingChallengeCards" in rival_api
+          and "challenge_pending" in rival_chest and "challengeDecide" in rival_chest
+          and "challenge_pending" in cmi_rival and "openChallengeDecide" in cmi_rival)
+    check("challenge hub Send + Pending (not inline accept)",
+          "pick_challenge" in rival_cnpc and "Pending requests" in rival_cnpc
+          and 'act("challenge", "accept"' not in rival_cnpc.split("paintChallenge")[1].split("paintChallengePending")[0]
+          and 'SlotAction.act("challenge", "accept"' not in rival_chest.split("private Inventory challenge(")[1].split("private Inventory challengePending")[0])
     check("acceptedMutualOffer flag", "acceptedMutualOffer" in rival_link)
     check("needsMutualConfirm helper", "needsMutualConfirm" in rival_link)
     check("promoteDeclared sets inviteReceived both",
@@ -650,11 +668,13 @@ def main() -> int:
     under_fn = prox.split("tryUnderdogEngage", 1)[1].split("handleDamagedByRival", 1)[0] if "tryUnderdogEngage" in prox else ""
     check("underdog any declaredByMe status",
           "!link.declaredByMe" in under_fn and "link.mutual" not in under_fn)
-    check("Actions is Declare Pending Remove Silent",
+    check("Actions is Declare Pending Silent (remove via List)",
           'page("pick_declare")' in rival_chest
           and 'page("pending")' in rival_chest
-          and 'page("pick_remove")' in rival_chest
           and 'page("pick_silent")' in rival_chest
+          and 'page("pick_remove")' not in rival_chest.split("private Inventory actions")[1].split("private Inventory history")[0]
+          and "pick_remove" not in cmi_rival.split("private static void openActions")[1].split("private static void openHistory")[0]
+          and "list_detail:" in rival_chest and "list_detail:" in cmi_rival
           and "Accept Declared" not in rival_chest
           and "Accept Declared" not in cmi_rival)
     check("Spar Stats button BOOK",
@@ -1464,10 +1484,10 @@ def main() -> int:
           "onStatChange" in events_pp and "maxAssignableTotal" in events_pp)
     check("Stat soft-lock uses ScreenNotify",
           "ScreenNotify.hint" in events_pp and "pp_stat_cap_title" in events_pp)
-    check("Chest lore maxValue 150000 soft-lock",
-          "DMZ maxValue 150000" in prestige_chest_pp and "Server hardcap stays" not in prestige_chest_pp)
-    check("CMI lore maxValue 150000 soft-lock",
-          "DMZ maxValue 150000" in prestige_cmi_pp and "Server hardcap stays" not in prestige_cmi_pp)
+    check("Chest prestige lore no DMZ maxValue soft-lock tip",
+          "DMZ maxValue 150000" not in prestige_chest_pp)
+    check("CMI prestige lore no DMZ maxValue soft-lock tip",
+          "DMZ maxValue 150000" not in prestige_cmi_pp)
     check("grant staff-gated",
           'if (!StaffAccess.isStaff(player))' in gui_api_pp.split('give_points')[1].split('balance')[0]
           if "give_points" in gui_api_pp else False)
@@ -1500,22 +1520,28 @@ def main() -> int:
           read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/shop/SkillUnlockService.java"))
     check("kicontrol fallback max 1", '"kicontrol", "Ki Control", "§3", 1' in
           read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/shop/SkillUnlockService.java"))
-    check("Chest pages turnin/shop/forms/cap",
+    check("Chest pages turnin/shop/forms (no player cap page)",
           'case "turnin", "points"' in prestige_chest_pp
           and 'p.startsWith("shop")' in prestige_chest_pp
           and 'case "forms", "form"' in prestige_chest_pp
-          and 'case "cap", "breakthrough"' in prestige_chest_pp)
-    check("CMI pages turnin/shop/forms/cap",
+          and 'openCap(' not in prestige_chest_pp
+          and '"Stat Cap"' not in prestige_chest_pp)
+    check("CMI pages turnin/shop/forms (no player cap page)",
           '"turnin", "points"' in prestige_cmi_pp
           and 'p.startsWith("shop")' in prestige_cmi_pp
           and '"forms", "form"' in prestige_cmi_pp
+          and 'openCap(' not in prestige_cmi_pp)
+    check("Cap routes redirect to main",
+          'case "cap", "breakthrough"' in prestige_chest_pp
           and '"cap", "breakthrough"' in prestige_cmi_pp)
     check("CMI uses lmdo prestige",
           'lmdo prestige confirm' in prestige_cmi_pp
           and 'lmdo prestige turnin' in prestige_cmi_pp
-          and 'lmdo prestige breakthrough' in prestige_cmi_pp)
-    check("Hub Prestige tip mentions points shop",
-          "skill/forms shop" in hub_pp and "skill/forms shop" in cmi_hub_pp)
+          and 'lmdo prestige skill' in prestige_cmi_pp)
+    check("Hub Prestige tip mentions skill shop",
+          ("skill shop" in hub_pp.lower() or "Turn-ins, skill shop" in hub_pp)
+          and ("skill shop" in cmi_hub_pp.lower() or "Turn in prestiges" in cmi_hub_pp)
+          and "level-cap" not in cmi_hub_pp.lower())
     check("Papi prestige_points bridge",
           "prestige_points" in forge_bridge and "prestige_level_cap" in forge_bridge)
     check("Prestige skill floor continuous pulse",
@@ -1543,8 +1569,20 @@ def main() -> int:
     check("orphan despawn pulse", "maybeDespawnOrphanedPlayerDragon" in end_str)
     check("DifficultyActions summon_end_dragon", "ACT_SUMMON_END_DRAGON" in diff_actions)
     check("ForgeBridge allows summon_end_dragon", "summon_end_dragon" in forge_bridge)
-    check("Chest GUI summon button", "summon_end_dragon" in chest and "Summon End Dragon" in chest)
-    check("CMI GUI summon button", "summon_end_dragon" in cmi_diff and "Summon End Dragon" in cmi_diff)
+    check("End Dragon submenu page",
+          "end_dragon" in chest and "endDragon" in chest
+          and "openEndDragon" in cmi_diff
+          and "paintEndDragon" in read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmDifficultyGui.java"))
+    cnpc_diff = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmDifficultyGui.java")
+    check("CNPC teams page refreshes snapshot",
+          "private static void paintTeam" in cnpc_diff
+          and "DifficultyActions.prepareGui(subject)" in cnpc_diff.split("private static void paintTeam", 1)[1].split("private static void paintEndDragon", 1)[0])
+    check("End Dragon summonMenuLines API", "summonMenuLines" in end_str and "canOpenSummonMenu" in end_str)
+    staff_access = read(SRC / "com/dbzlegacy/adaptivedifficulty/util/StaffAccess.java")
+    check("StaffAccess uses Bukkit entity for permissions", "getBukkitEntity" in staff_access)
+    prog_api = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/ProgressionGuiApi.java")
+    check("Progression staff flags when master off", "staffMaintenance" in prog_api)
+    check("CNPC difficulty staff admin page", "paintStaffAdmin" in cnpc_diff)
     check("natural spawn default off", "enableEndNaturalDragonSpawn = false" in
           read(SRC / "com/dbzlegacy/adaptivedifficulty/config/DifficultyConfig.java"))
     check("reject unauthorized dragon join", "rejectUnauthorizedDragonJoin" in end_str)

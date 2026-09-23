@@ -51,6 +51,14 @@ public final class RivalChestGui implements Listener {
             GuiFeedback.openChest(viewer, pendingDecide(viewer, subject, raw.substring("pending_decide:".length()).trim()));
             return;
         }
+        if (lower.startsWith("challenge_decide:")) {
+            GuiFeedback.openChest(viewer, challengeDecide(viewer, subject, raw.substring("challenge_decide:".length()).trim()));
+            return;
+        }
+        if (lower.startsWith("list_detail:")) {
+            GuiFeedback.openChest(viewer, listDetail(viewer, subject, raw.substring("list_detail:".length()).trim()));
+            return;
+        }
         Inventory inv = switch (lower) {
             case "list" -> list(viewer, subject);
             case "actions" -> actions(viewer, subject);
@@ -58,12 +66,8 @@ public final class RivalChestGui implements Listener {
             case "history", "past", "previous" -> history(viewer, subject);
             case "pick_declare" -> picker(viewer, subject, "declare", "actions",
                     "&6Declare Rival", "&7Click to declare this player");
-            case "pick_accept" -> pendingPicker(viewer, subject, "accept", "actions",
-                    "&aAccept Rivalry", "&7Pending declare or Declared → Mutual", true);
-            case "pick_decline" -> pendingPicker(viewer, subject, "decline", "actions",
-                    "&cDecline Declare", "&7Click to decline their declare", false);
-            case "pick_remove" -> currentRivalPicker(viewer, subject, "remove", "actions",
-                    "&cRemove Rival", "&7Click to remove this rivalry");
+            case "pick_accept", "pick_decline" -> pending(viewer, subject);
+            case "pick_remove" -> list(viewer, subject);
             case "pick_replace_mutual", "replace_mutual" -> mutualReplacePicker(viewer, subject);
             case "pick_challenge" -> challengeTargetPicker(viewer, subject);
             case "pick_spectate" -> picker(viewer, subject, "spectate", "challenge",
@@ -72,6 +76,7 @@ public final class RivalChestGui implements Listener {
                     "&8Silent Rival", "&7Click for silent rivalry");
             case "stats", "statistics" -> detailBoard(viewer, subject, "stats", "&eRival Stats", Material.BOOK, "progress");
             case "challenge", "challenges" -> challenge(viewer, subject);
+            case "challenge_pending", "challenge_requests" -> challengePending(viewer, subject);
             case "top", "leaderboard" -> topBoard(viewer, subject, "top", "&fRP Top", "main");
             case "progress" -> progress(viewer, subject);
             case "records", "more" -> records(viewer, subject);
@@ -349,8 +354,8 @@ public final class RivalChestGui implements Listener {
         listHeader.add("");
         listHeader.add(cards.isEmpty() ? "&7No rivals yet." : "&7" + cards.size() + " rival(s)");
         listHeader.addAll(GuiBoardHelper.tips(viewer,
-                "&8Hover a head for stats",
-                "&8Manage relationships in Actions"));
+                "&7Tap a head for profile and remove",
+                "&8Declare and pending live in Actions"));
         put(holder, inv, 4, item(Material.PLAYER_HEAD, "&6&lCurrent Rivals", listHeader));
         if (cards.isEmpty()) {
             put(holder, inv, 22, tipBtn(viewer, "rival.empty.no_rivals", Material.BARRIER, "&7No rivals yet",
@@ -358,11 +363,13 @@ public final class RivalChestGui implements Listener {
         } else {
             int[] slots = GuiBoardHelper.centeredSlots(Math.min(cards.size(), 21));
             for (int i = 0; i < slots.length && i < cards.size(); i++) {
-                put(holder, inv, slots[i], GuiBoardHelper.rivalHead(cards.get(i)));
+                GuiBoardHelper.RivalCard card = cards.get(i);
+                put(holder, inv, slots[i], GuiBoardHelper.rivalHead(card),
+                        SlotAction.page("list_detail:" + card.pickerArg()));
             }
         }
         put(holder, inv, 37, pageBtn(viewer, "rival.list.nav_actions", Material.EMERALD, "&aActions",
-                "&7Declare · accept · remove · pending"), SlotAction.page("actions"));
+                "&7Declare · pending · silent"), SlotAction.page("actions"));
         put(holder, inv, 39, pageBtn(viewer, "rival.list.nav_history", Material.SKELETON_SKULL, "&8History",
                 "&7Previous rivals"), SlotAction.page("history"));
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),
@@ -383,8 +390,9 @@ public final class RivalChestGui implements Listener {
         pendingHeader.add("");
         pendingHeader.add(invites.isEmpty() ? "&7No pending declares." : "&7" + invites.size() + " pending");
         pendingHeader.addAll(GuiBoardHelper.tips(viewer,
-                "&a◀ Incoming &7— tap to accept or decline",
-                "&6▶ Outgoing &7= waiting on them"));
+                "&7Tap a name to respond",
+                "&a◀ Incoming &7— Accept or Decline",
+                "&6▶ Outgoing &7— Withdraw or keep waiting"));
         put(holder, inv, 4, item(Material.YELLOW_DYE, "&e&lPending Invites", pendingHeader));
         if (invites.isEmpty()) {
             put(holder, inv, 22, tipBtn(viewer, "rival.empty.no_pending", Material.BARRIER, "&7No pending invites",
@@ -395,12 +403,8 @@ public final class RivalChestGui implements Listener {
             for (int i = 0; i < slots.length && i < invites.size(); i++) {
                 GuiBoardHelper.PendingInvite invite = invites.get(i);
                 ItemStack head = GuiBoardHelper.pendingInviteHead(viewer, invite);
-                if (invite.incoming) {
-                    put(holder, inv, slots[i], head,
-                            SlotAction.page("pending_decide:" + invite.pickerArg()));
-                } else {
-                    put(holder, inv, slots[i], head);
-                }
+                put(holder, inv, slots[i], head,
+                        SlotAction.page("pending_decide:" + invite.pickerArg()));
             }
         }
         put(holder, inv, 39, pageBtn(viewer, "rival.pending.nav_actions", Material.EMERALD, "&aActions",
@@ -430,7 +434,18 @@ public final class RivalChestGui implements Listener {
                 : item(Material.PLAYER_HEAD, "&f" + display, List.of("&7Pending declare"));
         put(holder, inv, 13, head);
         boolean mutualConfirm = invite != null && invite.isMutualConfirm();
-        if (mutualConfirm) {
+        boolean outgoing = invite != null && !invite.incoming;
+        if (outgoing) {
+            put(holder, inv, 4, tipBtn(viewer, "rival.pending.decide_info", Material.YELLOW_DYE, "&6&lOutgoing",
+                    List.of("&7Waiting on &f" + display,
+                            "&cWithdraw &7— cancel your declare",
+                            "&7Keep waiting — close and leave pending")));
+            put(holder, inv, 20, tipBtn(viewer, "rival.pending.withdraw", Material.ORANGE_DYE, "&cWithdraw declare",
+                    List.of("&7Cancel your declare to " + display)),
+                    SlotAction.act("remove", pickerArg, "pending"));
+            put(holder, inv, 24, pageBtn(viewer, "rival.pending.keep_waiting", Material.GRAY_DYE, "&7Keep waiting",
+                    "&7Return to pending list"), SlotAction.page("pending"));
+        } else if (mutualConfirm) {
             put(holder, inv, 4, tipBtn(viewer, "rival.pending.decide_info", Material.YELLOW_DYE, "&e&lMutual Confirm",
                     List.of("&7Declared with &f" + display,
                             "&7You both Silent'd each other",
@@ -465,6 +480,37 @@ public final class RivalChestGui implements Listener {
         return inv;
     }
 
+    /** Per-rival profile — remove only from List (not Actions). */
+    private Inventory listDetail(Player viewer, Player subject, String arg) {
+        Holder holder = new Holder("list_detail");
+        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Rival Profile"));
+        holder.bind(inv);
+        frame(inv, 45);
+        GuiBoardHelper.RivalCard card = GuiBoardHelper.findCurrentRival(
+                ForgeBridge.rivalCurrentCards(subject), arg);
+        String pickerArg = card != null ? card.pickerArg()
+                : (arg == null || arg.isBlank() ? "?" : arg.trim());
+        String display = card != null ? card.name : pickerArg;
+        if (display.regionMatches(true, 0, "uuid:", 0, 5)) {
+            display = display.substring(5).trim();
+        }
+        ItemStack head = card != null
+                ? GuiBoardHelper.rivalHead(card)
+                : item(Material.PLAYER_HEAD, "&f" + display, List.of("&7Rival record"));
+        put(holder, inv, 13, head);
+        put(holder, inv, 4, tipBtn(viewer, "rival.list.profile_info", Material.PLAYER_HEAD, "&6&lRival profile",
+                List.of("&7Stats on the head · &cRemove &7below",
+                        "&8Removed rivals move to History")));
+        put(holder, inv, 20, tipBtn(viewer, "rival.list.remove_rival", Material.RED_DYE, "&cRemove rival",
+                List.of("&7Remove " + display + " from your list")),
+                SlotAction.act("remove", pickerArg, "list"));
+        put(holder, inv, 36, pageBtn(viewer, "rival.list.detail_back", Material.ARROW, "&7Back",
+                "&7Rival list"), SlotAction.page("list"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
+        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
+        return inv;
+    }
+
     private static GuiBoardHelper.PendingInvite findPendingInvite(Player subject, String arg) {
         if (arg == null || arg.isBlank()) {
             return null;
@@ -478,9 +524,6 @@ public final class RivalChestGui implements Listener {
         }
         for (GuiBoardHelper.PendingInvite invite : GuiBoardHelper.parsePendingInvites(
                 ForgeBridge.rivalPendingInviteCards(subject))) {
-            if (!invite.incoming) {
-                continue;
-            }
             if (!uuid.isBlank() && uuid.equalsIgnoreCase(invite.uuid)) {
                 return invite;
             }
@@ -513,12 +556,10 @@ public final class RivalChestGui implements Listener {
         }
         put(holder, inv, 21, pageBtn(viewer, "rival.actions.pending", Material.CLOCK,
                 pendingCount > 0 ? "&ePending &f(" + pendingCount + ")" : "&ePending",
-                "&7Incoming: click a head to Accept / Decline",
+                "&7Tap a name on the Pending board",
                 pendingCount > 0 ? "&aYou have pending invites" : "&8No pending invites"),
                 SlotAction.page("pending"));
-        put(holder, inv, 23, pageBtn(viewer, "rival.actions.remove", Material.RED_DYE, "&cRemove…",
-                "&7Pick one of your rivals to remove"), SlotAction.page("pick_remove"));
-        put(holder, inv, 25, pageBtn(viewer, "rival.actions.silent", Material.GRAY_DYE, "&8Silent…",
+        put(holder, inv, 23, pageBtn(viewer, "rival.actions.silent", Material.GRAY_DYE, "&8Silent…",
                 "&7One-sided Silent (they are not told)",
                 "&8Both Silent → Declared"), SlotAction.page("pick_silent"));
         put(holder, inv, 37, pageBtn(viewer, "rival.actions.nav_list", Material.PLAYER_HEAD, "&6List",
@@ -571,15 +612,13 @@ public final class RivalChestGui implements Listener {
                 prependBlank(toAmp(ForgeBridge.rivalLines(subject, "challenge")))));
         put(holder, inv, 19, pageBtn(viewer, "rival.challenge.send", Material.GOLDEN_SWORD, "&eSend Challenge…",
                 "&7Pick rival, then choose 1–10 minutes"), SlotAction.page("pick_challenge"));
-        put(holder, inv, 21, tipBtn(viewer, "rival.challenge.accept", Material.LIME_CONCRETE, "&aAccept",
-                List.of("&7Accept pending challenge")),
-                SlotAction.act("challenge", "accept", "challenge"));
-        put(holder, inv, 23, tipBtn(viewer, "rival.challenge.decline", Material.RED_CONCRETE, "&cDecline",
-                List.of("&7Decline pending challenge")),
-                SlotAction.act("challenge", "decline", "challenge"));
-        put(holder, inv, 25, tipBtn(viewer, "rival.challenge.cancel", Material.GRAY_CONCRETE, "&8Cancel",
-                List.of("&7Cancel your outgoing challenge")),
-                SlotAction.act("challenge", "cancel", "challenge"));
+        List<GuiBoardHelper.PendingChallenge> pendingCh =
+                GuiBoardHelper.parsePendingChallenges(ForgeBridge.rivalPendingChallengeCards(subject));
+        put(holder, inv, 21, pageBtn(viewer, "rival.challenge.pending",
+                Material.CLOCK,
+                pendingCh.isEmpty() ? "&ePending Requests" : "&ePending &f(" + pendingCh.size() + ")",
+                "&7Tap a name — Accept, Decline, or Cancel"),
+                SlotAction.page("challenge_pending"));
         put(holder, inv, 29, pageBtn(viewer, "rival.challenge.spectate", Material.ENDER_EYE, "&bSpectate…",
                 "&7Watch an online player's challenge"), SlotAction.page("pick_spectate"));
         put(holder, inv, 31, tipBtn(viewer, "rival.challenge.spectate_stop", Material.GRAY_DYE, "&8Stop Spectate",
@@ -590,6 +629,117 @@ public final class RivalChestGui implements Listener {
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
+    }
+
+    private Inventory challengePending(Player viewer, Player subject) {
+        Holder holder = new Holder("challenge_pending");
+        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Rival"));
+        holder.bind(inv);
+        frame(inv, 45);
+        List<GuiBoardHelper.PendingChallenge> requests = GuiBoardHelper.parsePendingChallenges(
+                ForgeBridge.rivalPendingChallengeCards(subject));
+        List<String> pendingHeader = new ArrayList<>();
+        pendingHeader.add("");
+        pendingHeader.add(requests.isEmpty() ? "&7No pending challenge requests." : "&7" + requests.size() + " pending");
+        pendingHeader.addAll(GuiBoardHelper.tips(viewer,
+                "&7Tap a name to respond",
+                "&c◀ Incoming &7— Accept or Decline",
+                "&6▶ Outgoing &7— Cancel or keep waiting"));
+        put(holder, inv, 4, item(Material.IRON_SWORD, "&c&lPending Requests", pendingHeader));
+        if (requests.isEmpty()) {
+            put(holder, inv, 22, tipBtn(viewer, "rival.challenge.empty_pending", Material.BARRIER,
+                    "&7No pending requests",
+                    List.of("&7Send a challenge from the Challenge menu")),
+                    SlotAction.page("challenge"));
+        } else {
+            int[] slots = GuiBoardHelper.centeredSlots(Math.min(requests.size(), 21));
+            for (int i = 0; i < slots.length && i < requests.size(); i++) {
+                GuiBoardHelper.PendingChallenge req = requests.get(i);
+                ItemStack head = GuiBoardHelper.pendingChallengeHead(viewer, req);
+                put(holder, inv, slots[i], head,
+                        SlotAction.page("challenge_decide:" + req.pickerArg()));
+            }
+        }
+        put(holder, inv, 39, pageBtn(viewer, "rival.challenge.nav_challenge", Material.GOLDEN_SWORD, "&cChallenge",
+                "&7Send · spectate"), SlotAction.page("challenge"));
+        put(holder, inv, 36, pageBtn(viewer, "rival.challenge.pending_back", Material.ARROW, "&7Back",
+                "&7Challenge menu"), SlotAction.page("challenge"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
+        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
+        return inv;
+    }
+
+    private Inventory challengeDecide(Player viewer, Player subject, String arg) {
+        Holder holder = new Holder("challenge_decide");
+        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Rival"));
+        holder.bind(inv);
+        frame(inv, 45);
+        GuiBoardHelper.PendingChallenge req = findPendingChallenge(subject, arg);
+        String display = req != null ? req.name : (arg == null || arg.isBlank() ? "?" : arg.trim());
+        if (display.regionMatches(true, 0, "uuid:", 0, 5)) {
+            display = display.substring(5).trim();
+        }
+        String pickerArg = req != null ? req.pickerArg()
+                : (arg == null || arg.isBlank() ? display : arg.trim());
+        boolean outgoing = req != null && !req.incoming;
+
+        put(holder, inv, 4, tipBtn(viewer, "rival.challenge.decide_info", Material.IRON_SWORD,
+                outgoing ? "&6&lOutgoing Challenge" : "&c&lIncoming Challenge",
+                outgoing
+                        ? List.of("&7Waiting on &f" + display, "&7Cancel to withdraw the request")
+                        : List.of("&7Challenge from &f" + display,
+                                "&7Length &f" + (req != null ? req.durationMin : "?") + " min",
+                                "&aAccept &7starts countdown · &cDecline &7refuses")));
+        ItemStack head = req != null
+                ? GuiBoardHelper.pendingChallengeHead(viewer, req)
+                : item(Material.PLAYER_HEAD, "&f" + display, List.of());
+        put(holder, inv, 13, head, SlotAction.dismiss());
+
+        if (outgoing) {
+            put(holder, inv, 20, tipBtn(viewer, "rival.challenge.cancel", Material.ORANGE_DYE, "&cCancel challenge",
+                    List.of("&7Withdraw request to " + display)),
+                    SlotAction.act("challenge_cancel", pickerArg, "challenge_pending"));
+            put(holder, inv, 24, pageBtn(viewer, "rival.challenge.keep_waiting", Material.GRAY_DYE, "&7Keep waiting",
+                    "&7Return to pending list"), SlotAction.page("challenge_pending"));
+        } else {
+            put(holder, inv, 20, tipBtn(viewer, "rival.challenge.accept", Material.LIME_DYE, "&aAccept",
+                    List.of("&7Accept duel vs " + display)),
+                    SlotAction.act("challenge_accept", pickerArg, "challenge_pending"));
+            put(holder, inv, 24, tipBtn(viewer, "rival.challenge.decline", Material.ORANGE_DYE, "&cDecline",
+                    List.of("&7Decline challenge from " + display)),
+                    SlotAction.act("challenge_decline", pickerArg, "challenge_pending"));
+        }
+        put(holder, inv, 36, pageBtn(viewer, "rival.challenge.decide_back", Material.ARROW, "&7Back",
+                "&7Pending requests"), SlotAction.page("challenge_pending"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
+        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
+        return inv;
+    }
+
+    private static GuiBoardHelper.PendingChallenge findPendingChallenge(Player subject, String arg) {
+        if (arg == null || arg.isBlank()) {
+            return null;
+        }
+        String raw = arg.trim();
+        String uuid = "";
+        String name = raw;
+        if (raw.regionMatches(true, 0, "uuid:", 0, 5)) {
+            uuid = raw.substring(5).trim();
+            name = "";
+        }
+        for (GuiBoardHelper.PendingChallenge req : GuiBoardHelper.parsePendingChallenges(
+                ForgeBridge.rivalPendingChallengeCards(subject))) {
+            if (!uuid.isBlank() && uuid.equalsIgnoreCase(req.uuid)) {
+                return req;
+            }
+            if (!name.isBlank() && name.equalsIgnoreCase(req.name)) {
+                return req;
+            }
+            if (raw.equalsIgnoreCase(req.pickerArg())) {
+                return req;
+            }
+        }
+        return null;
     }
 
     /** Step 1: pick who to challenge — opens duration picker next. */

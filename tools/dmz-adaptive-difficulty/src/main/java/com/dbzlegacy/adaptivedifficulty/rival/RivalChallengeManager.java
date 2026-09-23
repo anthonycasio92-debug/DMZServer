@@ -4,7 +4,9 @@ import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import com.dbzlegacy.adaptivedifficulty.util.LmChat;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -70,6 +72,46 @@ public final class RivalChallengeManager {
         return null;
     }
 
+    /**
+     * Pending duel requests for GUI boards (incoming + outgoing).
+     * Tab-separated: counterpartyUuid, name, IN|OUT, expiresAtMs, online(0/1), durationMin, reqId.
+     */
+    public List<String> pendingRequestCards(ServerPlayer viewer) {
+        List<String> out = new ArrayList<>();
+        if (viewer == null) {
+            return out;
+        }
+        UUID id = viewer.m_20148_();
+        long now = System.currentTimeMillis();
+        MinecraftServer server = viewer.m_20194_();
+        ChallengeRequest incoming = findIncoming(id);
+        if (incoming != null && now <= incoming.expiresAt) {
+            out.add(encodePendingCard(incoming, true, server));
+        }
+        ChallengeRequest outgoing = findOutgoing(id);
+        if (outgoing != null && now <= outgoing.expiresAt) {
+            out.add(encodePendingCard(outgoing, false, server));
+        }
+        return out;
+    }
+
+    /** Resolve a pending card for {@code viewer} by counterparty picker ({@code uuid:…} or name). */
+    public ChallengeRequest findPendingRequestForViewer(ServerPlayer viewer, String pickerArg) {
+        if (viewer == null) {
+            return null;
+        }
+        UUID self = viewer.m_20148_();
+        ChallengeRequest incoming = findIncoming(self);
+        if (incoming != null && matchesCounterparty(incoming.from, pickerArg)) {
+            return incoming;
+        }
+        ChallengeRequest outgoing = findOutgoing(self);
+        if (outgoing != null && matchesCounterparty(outgoing.to, pickerArg)) {
+            return outgoing;
+        }
+        return null;
+    }
+
     public String sendChallenge(ServerPlayer from, ServerPlayer to, int minutes) {
         if (from == null || to == null) {
             return "§cInvalid players.";
@@ -125,14 +167,22 @@ public final class RivalChallengeManager {
         requests.put(req.id, req);
         DmzRewards.msg(to, LmChat.note("Challenge", "§e" + req.fromName
                 + " §7challenged you for §f" + mins + "§7 min!"));
-        DmzRewards.msg(to, LmChat.tip("/rival", "→ Challenge → Accept or Decline"));
+        DmzRewards.msg(to, LmChat.tip("/rival", "→ Challenge → Pending requests"));
         return "§aChallenge sent to §f" + req.toName + "§a (" + mins + " min).";
     }
 
     public String acceptChallenge(ServerPlayer player) {
+        return acceptChallenge(player, null);
+    }
+
+    public String acceptChallenge(ServerPlayer player, String counterpartyPicker) {
         ChallengeRequest req = findIncoming(player.m_20148_());
         if (req == null) {
             return "§cNo pending challenge to accept.";
+        }
+        if (counterpartyPicker != null && !counterpartyPicker.isBlank()
+                && !matchesCounterparty(req.from, counterpartyPicker)) {
+            return "§cNo pending challenge from that player.";
         }
         MinecraftServer server = player.m_20194_();
         ServerPlayer challenger = server == null ? null : server.m_6846_().m_11259_(req.from);
@@ -174,9 +224,17 @@ public final class RivalChallengeManager {
     }
 
     public String declineChallenge(ServerPlayer player) {
+        return declineChallenge(player, null);
+    }
+
+    public String declineChallenge(ServerPlayer player, String counterpartyPicker) {
         ChallengeRequest req = findIncoming(player.m_20148_());
         if (req == null) {
             return "§cNo pending challenge to decline.";
+        }
+        if (counterpartyPicker != null && !counterpartyPicker.isBlank()
+                && !matchesCounterparty(req.from, counterpartyPicker)) {
+            return "§cNo pending challenge from that player.";
         }
         requests.remove(req.id);
         MinecraftServer server = player.m_20194_();
@@ -189,8 +247,16 @@ public final class RivalChallengeManager {
     }
 
     public String cancelChallenge(ServerPlayer player) {
+        return cancelChallenge(player, null);
+    }
+
+    public String cancelChallenge(ServerPlayer player, String counterpartyPicker) {
         ChallengeRequest outgoing = findOutgoing(player.m_20148_());
         if (outgoing != null) {
+            if (counterpartyPicker != null && !counterpartyPicker.isBlank()
+                    && !matchesCounterparty(outgoing.to, counterpartyPicker)) {
+                return "§cNo outgoing challenge to that player.";
+            }
             requests.remove(outgoing.id);
             return "§eChallenge request cancelled.";
         }
@@ -694,6 +760,46 @@ public final class RivalChallengeManager {
             }
         }
         return null;
+    }
+
+    private static String encodePendingCard(ChallengeRequest req, boolean incoming, MinecraftServer server) {
+        UUID counterparty = incoming ? req.from : req.to;
+        String name = incoming ? req.fromName : req.toName;
+        if (name == null) {
+            name = "";
+        }
+        name = name.replace('\t', ' ').replace('\n', ' ');
+        boolean online = false;
+        if (server != null && counterparty != null) {
+            online = server.m_6846_().m_11259_(counterparty) != null;
+        }
+        int mins = (int) Math.max(1L, req.durationMs / 60_000L);
+        return String.join("\t",
+                counterparty == null ? "" : counterparty.toString(),
+                name,
+                incoming ? "IN" : "OUT",
+                String.valueOf(Math.max(0L, req.expiresAt)),
+                online ? "1" : "0",
+                String.valueOf(mins),
+                req.id == null ? "" : req.id);
+    }
+
+    private static boolean matchesCounterparty(UUID counterparty, String pickerArg) {
+        if (counterparty == null) {
+            return false;
+        }
+        if (pickerArg == null || pickerArg.isBlank()) {
+            return true;
+        }
+        String raw = pickerArg.trim();
+        if (raw.regionMatches(true, 0, "uuid:", 0, 5)) {
+            try {
+                return counterparty.equals(UUID.fromString(raw.substring(5).trim()));
+            } catch (IllegalArgumentException e) {
+                return false;
+            }
+        }
+        return false;
     }
 
     private static String scoreLine(RivalChallenge ch) {

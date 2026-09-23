@@ -11,9 +11,20 @@ Automated checks: `python3 tools/dmz-adaptive-difficulty/sim/audit_cnpc_gui_styl
 
 ## Scroll (CustomNPCs single panel)
 
-- Long status on **button-only** pages: `paintInfoBlock` (wheel on status band).
+- Long status on **button-only** pages: `paintInfoBlock` (wheel on status band **only when** lines exceed inline max).
 - Status **above a pick list:** `paintInfoBeforePickList` then `scrollPickList` — never `paintInfoBlock` + `scrollPickList` on the same scroll panel.
 - Pick lists: `scrollPickList` only (not raw `scrollSearchable` in menu classes).
+- **Hints:** `HINT_PICK_LIST` appears only when list rows overflow the visible band; pick lists scroll via **search + scrollbar drag** (not the status-band wheel). Head bones: 14 cards/page, single-click row to unlock/equip.
+
+## Toggles
+
+- On/off controls: `CnpcGuiStyle.toggleOn` / `toggleOff` (`§2§lON` / `§8§lOFF` prefix) so state is obvious at a glance.
+- Flag grids: use `flagOnOff` / `startsWith("§a")`, not `contains("ON")`.
+
+## Forge-only GUI (no Bukkit plugin)
+
+- `GuiBackend.fromConfig()` defaults to **CNPC**; legacy `cmi` / `chest` / `bukkit` config values map to CNPC.
+- Player `*Menu.java` classes open `CnpcLmGui` — not `CmiGuiBridge`. Audit: `sim/audit_forge_gui_backend.py`.
 
 ## Copy
 

@@ -164,13 +164,54 @@ public final class RivalGuiApi {
     public static List<String> challengeLines(ServerPlayer player) {
         List<String> lines = new ArrayList<>();
         lines.add("§8── §cChallenge §8──");
-        lines.add("§7Click §eSend Challenge §7to pick a player");
+        lines.add("§7Send a duel · respond on §ePending requests");
         if (player != null && RivalChallengeManager.get().isInChallenge(player.m_20148_())) {
             lines.add("§eChallenge active");
         } else {
-            lines.add("§7No active challenge.");
+            lines.add("§7No active fight right now.");
         }
-        lines.add("§8Accept · Decline · Cancel below");
+        int pending = pendingChallengeCards(player).size();
+        if (pending > 0) {
+            lines.add("§e" + pending + " pending request" + (pending == 1 ? "" : "s"));
+        }
+        return lines;
+    }
+
+    /** Encoded pending duel requests (incoming + outgoing). */
+    public static List<String> pendingChallengeCards(ServerPlayer player) {
+        if (player == null || !DifficultyConfig.get().rivalChallenges) {
+            return List.of();
+        }
+        return RivalChallengeManager.get().pendingRequestCards(player);
+    }
+
+    public static List<String> pendingChallengeLines(ServerPlayer player) {
+        List<String> cards = pendingChallengeCards(player);
+        List<String> lines = new ArrayList<>();
+        if (cards.isEmpty()) {
+            lines.add("§7No pending challenge requests.");
+            lines.add("§8Incoming: Accept or Decline on the board.");
+            lines.add("§8Outgoing: Cancel or keep waiting.");
+            return lines;
+        }
+        lines.add("§e§lPending Requests");
+        for (String card : cards) {
+            String[] p = card.split("\t", -1);
+            if (p.length < 3) {
+                continue;
+            }
+            String name = p[1];
+            String dir = p[2];
+            boolean online = p.length > 4 && "1".equals(p[4]);
+            String mins = p.length > 5 ? p[5] : "?";
+            if ("IN".equalsIgnoreCase(dir)) {
+                lines.add("§a◀ §f" + name + " §8· §f" + mins + " min"
+                        + (online ? " §a●" : " §8○"));
+            } else {
+                lines.add("§6▶ §f" + name + " §8· §f" + mins + " min"
+                        + (online ? " §a●" : " §8○"));
+            }
+        }
         return lines;
     }
 
@@ -373,6 +414,10 @@ public final class RivalGuiApi {
                 return online.m_7755_().getString();
             }
             String id = raw.substring(5).trim();
+            String fromLink = rivalLinkDisplayName(from, id);
+            if (!fromLink.isBlank()) {
+                return fromLink;
+            }
             RivalPlayerRecord rec = RivalStore.get().get(id);
             if (rec != null && rec.name != null && !rec.name.isBlank()) {
                 return rec.name;
@@ -380,6 +425,44 @@ public final class RivalGuiApi {
             return "";
         }
         return raw;
+    }
+
+    /** Player-facing label for CNPC pick lists ({@code uuid:…} → stored rival name). */
+    public static String displayPickerArg(ServerPlayer from, String arg) {
+        String name = resolveNameArg(from, arg);
+        if (!name.isBlank()) {
+            return "§f" + name;
+        }
+        return com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcGuiSupport.humanizePickerArg(arg);
+    }
+
+    /** Action token for {@code /rival do} from a {@link RivalSystem#currentRivalCards} row. */
+    public static String pickerArgFromRivalCard(String card) {
+        if (card == null || card.isBlank()) {
+            return "";
+        }
+        String[] p = card.split("\t", -1);
+        String uuid = p.length > 0 && p[0] != null ? p[0].trim() : "";
+        String name = p.length > 1 && p[1] != null ? p[1].trim() : "";
+        if (!uuid.isBlank()) {
+            return "uuid:" + uuid;
+        }
+        return name;
+    }
+
+    private static String rivalLinkDisplayName(ServerPlayer from, String rivalUuid) {
+        if (from == null || rivalUuid == null || rivalUuid.isBlank()) {
+            return "";
+        }
+        RivalPlayerRecord me = RivalStore.get().ensurePlayer(from);
+        if (me == null || me.rivals == null) {
+            return "";
+        }
+        RivalLink link = me.rivals.get(rivalUuid);
+        if (link != null && link.name != null && !link.name.isBlank()) {
+            return link.name;
+        }
+        return "";
     }
 
     public static List<String> seasonLines(ServerPlayer player) {
@@ -433,13 +516,13 @@ public final class RivalGuiApi {
             case "pending", "invites", "pendinginvites" -> RivalSystem.pendingInviteLines(player);
             case "actions" -> List.of(
                     "§6§lRival Actions",
-                    "§7Silent → only you see them",
-                    "§7Declare → on your list as Declared; they get Pending",
-                    "§7They Accept → Mutual (Decline/ignore: you keep Declared)",
-                    "§7Both Silent → Declared → both Accept (Pending) → Mutual"
+                    "§7Pending board — tap a name to Accept or Decline",
+                    "§7Declare · Silent · remove rivals from List",
+                    "§7Both Silent → Declared → Pending → Mutual"
             );
             case "stats", "statistics" -> statsLines(player);
             case "challenge", "challenges" -> challengeLines(player);
+            case "challenge_pending", "challenge_requests", "challengepending" -> pendingChallengeLines(player);
             case "top", "leaderboard" -> topLines(player);
             case "progress" -> List.of(
                     "§b§lRival Progress",
@@ -538,6 +621,15 @@ public final class RivalGuiApi {
                 case "cancel" -> RivalChallengeManager.get().cancelChallenge(player);
                 default -> "§cUsage: rival do challenge accept|decline|cancel";
             };
+        }
+        if ("challenge_accept".equals(act) || "challengeaccept".equals(act)) {
+            return RivalChallengeManager.get().acceptChallenge(player, a);
+        }
+        if ("challenge_decline".equals(act) || "challengedecline".equals(act)) {
+            return RivalChallengeManager.get().declineChallenge(player, a);
+        }
+        if ("challenge_cancel".equals(act) || "challengecancel".equals(act)) {
+            return RivalChallengeManager.get().cancelChallenge(player, a);
         }
         if ("declare".equals(act)) {
             if (a.isBlank()) {
@@ -711,6 +803,115 @@ public final class RivalGuiApi {
         }
         String[] p = card.split("\t", -1);
         return p.length >= 3 && "IN".equalsIgnoreCase(p[2]);
+    }
+
+    public static boolean pendingInviteCardOutgoing(String card) {
+        if (card == null) {
+            return false;
+        }
+        String[] p = card.split("\t", -1);
+        return p.length >= 3 && "OUT".equalsIgnoreCase(p[2]);
+    }
+
+    /** Scroll row labels for the pending board (direction + name). */
+    public static String[] pendingInviteScrollLabels(List<String> cards) {
+        if (cards == null || cards.isEmpty()) {
+            return new String[0];
+        }
+        String[] out = new String[cards.size()];
+        for (int i = 0; i < cards.size(); i++) {
+            String card = cards.get(i);
+            String[] p = card == null ? new String[0] : card.split("\t", -1);
+            String name = p.length > 1 && p[1] != null && !p[1].isBlank() ? p[1].trim() : "?";
+            if (pendingInviteCardOutgoing(card)) {
+                out[i] = "§6▶ §f" + name;
+            } else if (pendingInviteCardMutualConfirm(card)) {
+                out[i] = "§e◀ §f" + name + " §8· mutual";
+            } else {
+                out[i] = "§a◀ §f" + name;
+            }
+        }
+        return out;
+    }
+
+    public static boolean pendingInviteCardMutualConfirm(String card) {
+        if (card == null || card.isBlank()) {
+            return false;
+        }
+        String[] p = card.split("\t", -1);
+        return p.length > 5 && "mutual".equalsIgnoreCase(p[5]);
+    }
+
+    public static List<String> pendingChallengeDetailLines(String card) {
+        if (card == null || card.isBlank()) {
+            return List.of("§7Unknown challenge request.");
+        }
+        String[] p = card.split("\t", -1);
+        String name = p.length > 1 && p[1] != null && !p[1].isBlank() ? p[1] : "?";
+        String dir = p.length > 2 ? p[2] : "?";
+        boolean online = p.length > 4 && "1".equals(p[4]);
+        String mins = p.length > 5 ? p[5] : "?";
+        List<String> lines = new ArrayList<>();
+        lines.add("§f" + name + (online ? " §a● online" : " §8○ offline"));
+        if ("IN".equalsIgnoreCase(dir)) {
+            lines.add("§aIncoming challenge");
+            lines.add("§7Length §f" + mins + " min");
+            lines.add("§7Accept to start countdown · Decline to refuse.");
+        } else {
+            lines.add("§6Outgoing challenge");
+            lines.add("§7Length §f" + mins + " min");
+            lines.add("§7Waiting for them · Cancel to withdraw.");
+        }
+        if (p.length > 3) {
+            long exp = 0L;
+            try {
+                exp = Long.parseLong(p[3].trim());
+            } catch (NumberFormatException ignored) {
+                exp = 0L;
+            }
+            if (exp > 0L) {
+                long left = exp - System.currentTimeMillis();
+                if (left > 0L) {
+                    lines.add("§7Expires in §f" + (left / 1000L) + "s");
+                }
+            }
+        }
+        return lines;
+    }
+
+    public static boolean pendingChallengeCardIncoming(String card) {
+        if (card == null) {
+            return false;
+        }
+        String[] p = card.split("\t", -1);
+        return p.length >= 3 && "IN".equalsIgnoreCase(p[2]);
+    }
+
+    public static boolean pendingChallengeCardOutgoing(String card) {
+        if (card == null) {
+            return false;
+        }
+        String[] p = card.split("\t", -1);
+        return p.length >= 3 && "OUT".equalsIgnoreCase(p[2]);
+    }
+
+    public static String[] pendingChallengeScrollLabels(List<String> cards) {
+        if (cards == null || cards.isEmpty()) {
+            return new String[0];
+        }
+        String[] out = new String[cards.size()];
+        for (int i = 0; i < cards.size(); i++) {
+            String card = cards.get(i);
+            String[] p = card == null ? new String[0] : card.split("\t", -1);
+            String name = p.length > 1 && p[1] != null && !p[1].isBlank() ? p[1].trim() : "?";
+            String mins = p.length > 5 ? p[5] : "?";
+            if (pendingChallengeCardOutgoing(card)) {
+                out[i] = "§6▶ §f" + name + " §8· " + mins + "m";
+            } else {
+                out[i] = "§c◀ §f" + name + " §8· " + mins + "m";
+            }
+        }
+        return out;
     }
 
     /**

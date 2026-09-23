@@ -51,9 +51,12 @@ public final class StaffAccess {
     }
 
     private static boolean hasBukkitIsOp(ServerPlayer player) {
+        Object bukkit = bukkitEntity(player);
+        if (bukkit == null) {
+            return false;
+        }
         try {
-            var method = player.getClass().getMethod("isOp");
-            Object result = method.invoke(player);
+            Object result = bukkit.getClass().getMethod("isOp").invoke(bukkit);
             return result instanceof Boolean b && b;
         } catch (Throwable ignored) {
         }
@@ -64,12 +67,27 @@ public final class StaffAccess {
         if (player == null || node == null || node.isBlank()) {
             return false;
         }
+        Object bukkit = bukkitEntity(player);
+        if (bukkit == null) {
+            return false;
+        }
         try {
-            var method = player.getClass().getMethod("hasPermission", String.class);
-            Object result = method.invoke(player, node);
+            Object result = bukkit.getClass().getMethod("hasPermission", String.class).invoke(bukkit, node);
             return result instanceof Boolean b && b;
         } catch (Throwable ignored) {
         }
         return false;
+    }
+
+    /** Mohist/CraftBukkit bridge — NMS {@code ServerPlayer} often lacks {@code hasPermission} directly. */
+    private static Object bukkitEntity(ServerPlayer player) {
+        if (player == null) {
+            return null;
+        }
+        try {
+            return player.getClass().getMethod("getBukkitEntity").invoke(player);
+        } catch (Throwable ignored) {
+        }
+        return player;
     }
 }

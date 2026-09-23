@@ -7,7 +7,10 @@ import com.dbzlegacy.adaptivedifficulty.calc.PlayerCombatProfile;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
+import com.dbzlegacy.adaptivedifficulty.data.TeamMode;
+import com.dbzlegacy.adaptivedifficulty.progression.end.EndDimensionStrength;
 import com.dbzlegacy.adaptivedifficulty.gui.DifficultyTeamGuiApi;
+import com.dbzlegacy.adaptivedifficulty.gui.MechanicsGuiApi;
 import com.dbzlegacy.adaptivedifficulty.service.DifficultyActions;
 import com.dbzlegacy.adaptivedifficulty.title.DifficultyTitle;
 import com.dbzlegacy.adaptivedifficulty.title.TitleSystem;
@@ -46,6 +49,8 @@ public final class CnpcLmDifficultyGui {
         int height = switch (pageFinal) {
             case "stats", "statistics", "details" -> 340;
             case "titles", "title" -> 360;
+            case "end_dragon", "dragon", "summon_dragon" -> 340;
+            case "admin" -> 300;
             default -> H;
         };
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_DIFFICULTY, CnpcGuiSupport.W, height, (pl, gui) -> {
@@ -54,6 +59,8 @@ public final class CnpcLmDifficultyGui {
                         paintTiers(pl, gui);
                 case "titles", "title" -> paintTitles(pl, gui);
                 case "team", "teams" -> paintTeam(pl, gui);
+                case "end_dragon", "dragon", "summon_dragon" -> paintEndDragon(pl, gui);
+                case "admin" -> paintStaffAdmin(pl, gui);
                 case "stats", "statistics", "details" -> paintStats(pl, gui);
                 default -> paintMain(pl, gui);
             }
@@ -96,15 +103,17 @@ public final class CnpcLmDifficultyGui {
         CnpcGuiSupport.button(gui, 21, "§dTitles", CnpcGuiSupport.COL_R, row, () -> open(player, "titles"));
         row += 24;
         CnpcGuiSupport.button(gui, 22, "§bTeam scaling", CnpcGuiSupport.COL_L, row, () -> open(player, "team"));
-        CnpcGuiSupport.button(gui, 23, "§7Personal scaling", CnpcGuiSupport.COL_R, row, () -> CnpcGuiSupport.act(
+        PlayerDifficultyData personalData = DifficultyCache.data(subject);
+        boolean personalOn = personalData != null && personalData.isPersonalEnabled();
+        CnpcGuiSupport.button(gui, 23,
+                personalOn ? CnpcGuiStyle.toggleOn("Personal scaling") : CnpcGuiStyle.toggleOff("Personal scaling"),
+                CnpcGuiSupport.COL_R, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> DifficultyActions.handleArg(subject, "toggle_personal", "0", "main").message(),
                 () -> open(player, "main")));
         row += 24;
-        CnpcGuiSupport.button(gui, 24, "§5Summon End Dragon", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
-                player,
-                () -> DifficultyActions.handleArg(subject, "summon_end_dragon", "0", "main").message(),
-                () -> open(player, "main")));
+        CnpcGuiSupport.button(gui, 24, "§5End Dragon…", CnpcGuiSupport.COL_L, row,
+                () -> open(player, "end_dragon"));
         CnpcGuiSupport.button(gui, 25, "§6Rival system", CnpcGuiSupport.COL_R, row,
                 () -> CnpcLmGui.open(player, "rival", "main"));
         row += 24;
@@ -193,7 +202,9 @@ public final class CnpcLmDifficultyGui {
             lines.add("§7Cost to activate §f"
                     + CnpcDifficultyTierUi.formatActivationCost(subject, nextLocked));
         }
-        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX));
+        int row = lines.size() > CnpcGuiStyle.INFO_INLINE_MAX
+                ? CnpcGuiSupport.paintLongReadOnlyBody(gui, infoY, lines)
+                : CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX));
 
         int placed = 0;
         for (int t = 1; t <= 7; t++) {
@@ -350,23 +361,82 @@ public final class CnpcLmDifficultyGui {
 
     private static void paintTeam(ServerPlayer player, ICustomGui gui) {
         ServerPlayer subject = who(player);
+        DifficultyActions.prepareGui(subject);
+        TeamMode mode = DifficultyCache.data(subject).getTeamMode();
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§a", "Difficulty", "Teams"),
                 "§7How rival teams affect scaling");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, DifficultyTeamGuiApi.linesForPage(subject, "team"),
                         CnpcGuiStyle.INFO_INLINE_MAX));
-        CnpcGuiSupport.button(gui, 40, "§7Personal only", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
+        CnpcGuiSupport.button(gui, 40,
+                mode == TeamMode.PERSONAL_ONLY ? CnpcGuiStyle.toggleOn("Personal") : "§7Personal",
+                CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                 player,
-                () -> DifficultyTeamGuiApi.handleDo(subject, "mode", "personal_only", "team"),
+                () -> DifficultyTeamGuiApi.handleDo(subject, "mode", "personal", "team"),
                 () -> open(player, "team")));
-        CnpcGuiSupport.button(gui, 41, "§eBonus only", CnpcGuiSupport.COL_R, row, () -> CnpcGuiSupport.act(
+        CnpcGuiSupport.button(gui, 41,
+                mode == TeamMode.THRESHOLD_BONUS_ONLY ? CnpcGuiStyle.toggleOn("Threshold") : "§eThreshold",
+                CnpcGuiSupport.COL_R, row, () -> CnpcGuiSupport.act(
                 player,
-                () -> DifficultyTeamGuiApi.handleDo(subject, "mode", "threshold_bonus_only", "team"),
+                () -> DifficultyTeamGuiApi.handleDo(subject, "mode", "threshold", "team"),
                 () -> open(player, "team")));
         row += 24;
-        CnpcGuiSupport.button(gui, 42, "§aFull team scale", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
+        CnpcGuiSupport.button(gui, 42,
+                mode == TeamMode.FULL_TEAM_SCALING ? CnpcGuiStyle.toggleOn("Full team") : "§aFull team",
+                CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                 player,
-                () -> DifficultyTeamGuiApi.handleDo(subject, "mode", "full_team_scaling", "team"),
+                () -> DifficultyTeamGuiApi.handleDo(subject, "mode", "full", "team"),
                 () -> open(player, "team")));
+        row += 24;
+        navFooter(player, gui, row, "main", subject);
+    }
+
+    private static void paintStaffAdmin(ServerPlayer player, ICustomGui gui) {
+        if (!StaffAccess.isStaff(player)) {
+            CnpcGuiSupport.pushMenuMessage(player, "§cStaff only.");
+            open(player, "main");
+            return;
+        }
+        DifficultyActions.prepareGui(who(player));
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§c", "Difficulty", "Staff Admin"),
+                "§7Server tools · typed admin: §f/difficulty admin");
+        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of(
+                "§7Reload config, event log, and LM Staff Admin hub",
+                "§8Whitelist · tier costs · coin rates: §f/difficulty admin …"
+        ), 3));
+        row += 8;
+        CnpcGuiSupport.button(gui, 20, "§aReload LM config", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
+                player,
+                () -> MechanicsGuiApi.handleDo(player, "reload", "", "admin"),
+                () -> open(player, "admin")));
+        CnpcGuiSupport.button(gui, 21, "§8Staff details", CnpcGuiSupport.COL_R, row, () -> open(player, "stats"));
+        row += 24;
+        CnpcGuiSupport.button(gui, 22, "§cLM Staff Admin", CnpcGuiSupport.COL_L, row,
+                () -> CnpcLmAdminGui.open(player, "main"));
+        CnpcGuiSupport.button(gui, 23, "§8Event log", CnpcGuiSupport.COL_R, row,
+                () -> CnpcLmLogsGui.open(player, "main"));
+        row += 24;
+        navFooter(player, gui, row, "main", who(player));
+    }
+
+    private static void paintEndDragon(ServerPlayer player, ICustomGui gui) {
+        ServerPlayer subject = who(player);
+        DifficultyActions.prepareGui(subject);
+        boolean canSummon = EndDimensionStrength.canOpenSummonMenu(subject);
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§5", "Difficulty", "End Dragon"),
+                "§7Paid summon · AD boss profile · summoner-only damage");
+        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY,
+                EndDimensionStrength.summonMenuLines(subject), CnpcGuiStyle.INFO_INLINE_MAX));
+        row += 8;
+        if (canSummon) {
+            CnpcGuiSupport.button(gui, 20, "§5Confirm summon", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
+                    player,
+                    () -> DifficultyActions.handleArg(subject, "summon_end_dragon", "0", "end_dragon").message(),
+                    () -> open(player, "end_dragon")));
+        } else {
+            gui.addLabel(CnpcGuiSupport.ID_INLINE_NOTE, "§8Fix requirements above to summon.",
+                    CnpcGuiSupport.COL_L, row + 4, CnpcGuiSupport.BTN_W, 14);
+            row += 8;
+        }
         row += 24;
         navFooter(player, gui, row, "main", subject);
     }
@@ -385,12 +455,8 @@ public final class CnpcLmDifficultyGui {
         }
         if (StaffAccess.isStaff(player) && parentPage == null) {
             row += 24;
-            CnpcGuiSupport.buttonSmall(gui, CnpcGuiSupport.ID_STAFF_EXTRA, "§8Admin commands",
-                    CnpcGuiSupport.COL_L, row, CnpcGuiSupport.BTN_W, () -> {
-                CnpcGuiSupport.pushMenuMessage(player,
-                        "§7Full difficulty admin settings: §f/difficulty admin §7(chat command).");
-                open(player, "main");
-            });
+            CnpcGuiSupport.buttonSmall(gui, CnpcGuiSupport.ID_STAFF_EXTRA, "§cStaff Admin…",
+                    CnpcGuiSupport.COL_L, row, CnpcGuiSupport.BTN_W, () -> open(player, "admin"));
         }
         if (previewSubject != null && parentPage == null) {
             CnpcGuiSupport.paintSystemMainPreview(previewSubject, gui, player);

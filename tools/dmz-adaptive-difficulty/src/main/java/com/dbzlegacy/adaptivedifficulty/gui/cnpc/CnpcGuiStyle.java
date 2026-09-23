@@ -14,10 +14,12 @@ public final class CnpcGuiStyle {
 
     public static final String HINT_CLICK_ENTRY = "§7Select an entry below";
     public static final String HINT_CLICK_PLAYER = "§7Select a player below";
-    public static final String HINT_CLICK_INVITE = "§7Select an invite to respond";
-    public static final String HINT_SCROLL_LIST = "§7Scroll the status box with your wheel · drag the list to browse";
-    /** Shown above CNPC {@code IScroll} pick lists (wheel targets the list bar). */
-    public static final String HINT_PICK_LIST = "§7Drag the list edge to scroll · use search when available";
+    public static final String HINT_CLICK_INVITE = "§7Tap a name — Accept or Decline (or withdraw outgoing)";
+    /** Shown above a scrollable read-only status band (mouse wheel). */
+    public static final String HINT_SCROLL_STATUS = "§7Scroll this section with your mouse wheel";
+    /** Shown above CNPC {@code IScroll} pick lists only when rows do not fit. */
+    public static final String HINT_PICK_LIST =
+            "§7Use search to filter · drag the list scrollbar to browse";
     public static final String HINT_DOUBLE_CLICK_PLAYER = "§7Double-click a player to choose them";
     public static final String HINT_REVIEW_PAY = "§7Read the summary before you confirm";
     public static final String HINT_TOGGLE_STAFF = "§7Staff: tap a row to turn a flag on or off";
@@ -71,11 +73,11 @@ public final class CnpcGuiStyle {
     }
 
     public static String toggleOn(String feature) {
-        return "§a" + feature + ": on";
+        return "§2§lON §r§a" + feature;
     }
 
     public static String toggleOff(String feature) {
-        return "§7" + feature + ": off";
+        return "§8§lOFF §r§7" + feature;
     }
 
     /** Friendly spar leaderboard tab name (replaces raw keys like tp / rp). */

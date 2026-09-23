@@ -95,13 +95,30 @@ merge_onto_base_jar() {
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/gui/RivalGuiApi.class" \
       "$merge/com/dbzlegacy/adaptivedifficulty/gui/RivalGuiApi.class"
   fi
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/rival/RivalChallengeManager.class" ]]; then
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/rival/RivalChallengeManager.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/rival/RivalChallengeManager.class"
+  fi
   if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/gui/ProgressionGuiApi.class" ]]; then
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/gui/ProgressionGuiApi.class" \
       "$merge/com/dbzlegacy/adaptivedifficulty/gui/ProgressionGuiApi.class"
   fi
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/util/StaffAccess.class" ]]; then
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/util/StaffAccess.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/util/StaffAccess.class"
+  fi
   if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.class" ]]; then
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.class" \
       "$merge/com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.class"
+  fi
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/service/DifficultyActions.class" ]]; then
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/service/DifficultyActions.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/service/DifficultyActions.class"
+  fi
+  if [[ -d "$OUT/com/dbzlegacy/adaptivedifficulty/progression/end" ]]; then
+    mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/progression/end"
+    cp -a "$OUT/com/dbzlegacy/adaptivedifficulty/progression/end/." \
+      "$merge/com/dbzlegacy/adaptivedifficulty/progression/end/"
   fi
   if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/progression/race/AndroidConversion.class" ]]; then
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/race/AndroidConversion.class" \
@@ -145,6 +162,7 @@ jar tf "$JAR"
 # Fail-closed audits: product features, combat scaling sim, GUI ABI.
 HERE_SIM="$(cd "$(dirname "$0")" && pwd)/sim"
 python3 "$HERE_SIM/audit_cnpc_gui_style.py"
+python3 "$HERE_SIM/audit_forge_gui_backend.py"
 python3 "$HERE_SIM/audit_scaling_sync.py"
 python3 "$HERE_SIM/audit_features.py"
 python3 "$HERE_SIM/audit_prestige_need_ladder.py"

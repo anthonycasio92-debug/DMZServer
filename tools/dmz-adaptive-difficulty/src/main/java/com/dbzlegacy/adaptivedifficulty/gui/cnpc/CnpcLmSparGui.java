@@ -30,7 +30,10 @@ public final class CnpcLmSparGui {
             openPickConfirm(player, raw.substring("pick_confirm:".length()).trim());
             return;
         }
-        int height = lower.startsWith("pick_") ? 380 : H;
+        int height = switch (lower) {
+            case "stats", "dojo_hof" -> 420;
+            default -> lower.startsWith("pick_") ? 380 : H;
+        };
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_SPAR, CnpcGuiSupport.W, height, (pl, gui) -> {
             if (lower.startsWith("top_")) {
                 paintTop(pl, gui, lower.substring(4).trim());
@@ -311,8 +314,8 @@ public final class CnpcLmSparGui {
     }
 
     private static void paintScroll(ServerPlayer player, ICustomGui gui, String title, List<String> body, String back) {
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, title, "§7Details");
-        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, body, CnpcGuiStyle.INFO_INLINE_MAX));
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, title, CnpcGuiStyle.HINT_READ_ONLY);
+        int row = CnpcGuiSupport.paintLongReadOnlyBody(gui, infoY, body);
         footer(player, gui, row + 8, back);
     }
 

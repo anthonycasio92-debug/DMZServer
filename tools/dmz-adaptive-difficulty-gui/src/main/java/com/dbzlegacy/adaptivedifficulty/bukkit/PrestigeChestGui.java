@@ -44,7 +44,7 @@ public final class PrestigeChestGui implements Listener {
         Inventory inv = switch (p) {
             case "turnin", "points" -> turnIn(viewer, subject);
             case "forms", "form", "effects", "effect" -> forms(viewer, subject);
-            case "cap", "breakthrough", "breakthroughs" -> cap(viewer, subject);
+            case "cap", "breakthrough", "breakthroughs" -> main(viewer, subject);
             case "tiers", "tier", "difficulty" -> tiers(viewer, subject);
             default -> {
                 if (p.startsWith("shop") || p.startsWith("skills")) {
@@ -359,52 +359,6 @@ public final class PrestigeChestGui implements Listener {
                     List.of("&7Removes Mutant · &cno point refund")),
                     SlotAction.act("unmutant", "0", "forms"));
         }
-
-        put(holder, inv, 27, backBtn(), SlotAction.page("main"));
-        put(holder, inv, 31, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
-        put(holder, inv, 35, closeBtn(), SlotAction.dismiss());
-        return inv;
-    }
-
-    private Inventory cap(Player viewer, Player subject) {
-        Map<String, String> ph = ForgeBridge.prestigePlaceholders(subject);
-        Holder holder = new Holder("cap");
-        Inventory inv = Bukkit.createInventory(holder, 36, invTitle(viewer, subject, "&8Prestige · Level Cap"));
-        holder.bind(inv);
-        frame(inv, 36);
-
-        putWallet(holder, inv, viewer, subject, "cap", "&e&lWallet", null);
-
-        int bt = parseInt(ph.get("breakthroughs"), 0);
-        int max = parseInt(ph.get("breakthroughs_max"), 5);
-        boolean canBuy = bt < max;
-        String levelCapFmt = ph.getOrDefault("level_cap_fmt", "100000");
-        String nextCost = ph.getOrDefault("next_breakthrough_cost", "15");
-        Map<String, String> capVars = Map.of(
-                "level_cap", levelCapFmt,
-                "breakthroughs", String.valueOf(bt),
-                "max", String.valueOf(max),
-                "cost", nextCost);
-        List<String> lore = new ArrayList<>();
-        lore.add("");
-        lore.add("&7Your level cap: &f" + levelCapFmt);
-        lore.add("&7Breakthroughs: &f" + bt + "&7/&f" + max);
-        lore.add("&8DMZ maxValue 150000 — soft-lock holds others at their cap");
-        if (canBuy) {
-            lore.addAll(GuiTooltips.lore("prestige.cap.buy",
-                    List.of("&7Next: &a+10,000 &7personal cap for &e{cost} &7points"),
-                    capVars));
-            lore.add("&8Then keep leveling with TP into the new cap");
-            lore.add("&8Future prestige Need scales up to your new cap");
-            lore.add("&8Costs: 15 → 20 → 25 → 30 → 35");
-        } else {
-            lore.add("&aMax personal cap (150000)");
-        }
-        put(holder, inv, 22, item(
-                canBuy ? Material.NETHER_STAR : Material.BEACON,
-                canBuy ? GuiTooltips.name("prestige.cap.buy", "&bBuy Breakthrough", capVars) : "&aCap Maxed",
-                lore),
-                canBuy ? SlotAction.act("breakthrough", "0", "cap") : null);
 
         put(holder, inv, 27, backBtn(), SlotAction.page("main"));
         put(holder, inv, 31, hubBtn(), SlotAction.cmd("lmdo lm open hub"));

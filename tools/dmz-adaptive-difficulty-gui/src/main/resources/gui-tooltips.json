@@ -5,8 +5,7 @@
       "header": {
         "name": "&f&lLegacy Mechanics",
         "lore": [
-          "&7Pick what you want to do",
-          "&8Open with &f/lm"
+          "&7Pick what you want to do"
         ]
       },
       "difficulty": {
@@ -14,31 +13,27 @@
         "lore": [
           "&7Earn Ancient Coins from scaled mobs and spend them on tiers",
           "&7Tiers reset when you die — higher tiers mean tougher fights",
-          "&cNote: &7Scaled mobs can hurt other players nearby",
-          "&8Opens this menu"
+          "&cNote: &7Scaled mobs can hurt other players nearby"
         ]
       },
       "rival": {
         "name": "&6Rival",
         "lore": [
           "&7Rivalries earn bonus training TP and ranking points",
-          "&7Declare rivals, run challenges, and track seasons",
-          "&8Opens this menu"
+          "&7Declare rivals, run challenges, and track seasons"
         ]
       },
       "spar": {
         "name": "&bSpar",
         "lore": [
           "&7Spar for training TP and mentor bonds",
-          "&7Dojo seasons, apprentices, and rankings",
-          "&8Opens this menu"
+          "&7Dojo seasons, apprentices, and rankings"
         ]
       },
       "skillcheck": {
         "name": "&eSkill Check",
         "lore": [
-          "&7Story progress and natural training",
-          "&8Opens this menu"
+          "&7Story progress and natural training"
         ]
       },
       "skills": {
@@ -51,8 +46,8 @@
       "prestige": {
         "name": "&6Prestige",
         "lore": [
-          "&7Prestige up and visit the shop",
-          "&8Opens this menu"
+          "&7Turn in prestiges, skill shop, forms, and tier unlocks",
+          "&7Points survive death — stats reset when you prestige"
         ]
       },
       "character": {
@@ -60,23 +55,20 @@
         "lore": [
           "&7Change race, class, look, or head parts",
           "&7without wiping your whole character",
-          "&8Uses Ancient Coins",
-          "&8Opens this menu"
+          "&8Uses Ancient Coins"
         ]
       },
       "android_remove": {
         "name": "&cRemove Android",
         "lore": [
           "&7Remove your Android upgrade",
-          "&8Two-step confirm inside the menu",
-          "&8Opens this menu"
+          "&8Two-step confirm inside the menu"
         ]
       },
       "progression": {
         "name": "&dProgression",
         "lore": [
-          "&7Skills · TP · Race · Combat flags",
-          "&8Opens this menu"
+          "&7Skills · TP · Race · Combat flags"
         ]
       },
       "admin": {
@@ -89,8 +81,7 @@
       "logs": {
         "name": "&8Logs",
         "lore": [
-          "&7Server event logs",
-          "&8Opens this menu"
+          "&7Server event logs"
         ]
       }
     },
@@ -143,16 +134,14 @@
         "name": "&dProgression",
         "lore": [
           "&7Skills · TP · race · combat flags",
-          "&8For staff",
-          "&eOpen"
+          "&8For staff"
         ]
       },
       "logs": {
         "name": "&8Event log",
         "lore": [
           "&7Toggle event logging and save to disk",
-          "&8For staff",
-          "&eOpen"
+          "&8For staff"
         ]
       },
       "migrate": {
@@ -453,14 +442,6 @@
           "&aPermanent &8· survives prestige"
         ]
       },
-      "cap": {
-        "name": "&bLevel Cap Breakthrough",
-        "lore": [
-          "&7Raise &fyour &7personal level cap by 10k",
-          "&7Cap: &f{level_cap}",
-          "&8Max LVL cap is 150000"
-        ]
-      },
       "wallet": {
         "name": "&e&lWallet",
         "lore": [
@@ -470,8 +451,7 @@
       "progression": {
         "name": "&dProgression",
         "lore": [
-          "&7Skills · TP · Race · Combat flags",
-          "&eOpen"
+          "&7Skills · TP · Race · Combat flags"
         ]
       }
     },
@@ -571,20 +551,6 @@
         ]
       }
     },
-    "cap": {
-      "buy": {
-        "name": "&bBuy Breakthrough",
-        "lore": [
-          "&7Your level cap: &f{level_cap}",
-          "&7Breakthroughs: &f{breakthroughs}&7/&f{max}",
-          "&8Max LVL cap is 150000",
-          "&7Next: &a+10,000 &7personal cap for &e{cost} &7points",
-          "&8Then keep leveling with TP into the new cap",
-          "&8Future prestige Need scales up to your new cap",
-          "&8Costs: 15 → 20 → 25 → 30 → 35"
-        ]
-      }
-    },
     "shop": {
       "skill": {
         "name": "&a{label}",
@@ -626,15 +592,10 @@
         ]
       },
       "summon_dragon": {
-        "name": "&5&lSummon End Dragon",
+        "name": "&5End Dragon…",
         "lore": [
-          "&7Summon the End Dragon scaled to",
-          "&7your Adaptive Difficulty (T4–T7).",
-          "&8Cost: &f3 Ancient Netherite",
-          "&8Must be &fin The End",
-          "&8Only &fyou &8can damage it.",
-          "",
-          "{status}"
+          "&7Paid summon scaled to your AD",
+          "&8Opens requirements and confirm"
         ]
       },
       "personal_on": {
@@ -680,8 +641,22 @@
         "name": "&bRival Teams",
         "lore": [
           "&7Mutual rivals can raise how high a tier you can buy",
-          "&7Team modes bring more elites, mutants, and bosses",
-          "&eOpen"
+          "&7Team modes bring more elites, mutants, and bosses"
+        ]
+      }
+    },
+    "end_dragon": {
+      "header": {
+        "name": "&5&lEnd Dragon Summon",
+        "lore": [
+          "&7Live requirements shown on this page"
+        ]
+      },
+      "confirm": {
+        "name": "&5Confirm summon",
+        "lore": [
+          "&7Spawn near you in The End",
+          "&8Charges Ancient Netherite unless staff"
         ]
       }
     },
@@ -721,8 +696,7 @@
       "open_rival": {
         "name": "&6Open Rival",
         "lore": [
-          "&7Declare, accept, or manage mutual slots",
-          "&eOpen"
+          "&7Declare, accept, or manage mutual slots"
         ]
       }
     },
@@ -814,7 +788,7 @@
       "challenge": {
         "name": "&cChallenge",
         "lore": [
-          "&7Send · accept · decline · spectate"
+          "&7Send duels · pending board · spectate"
         ]
       },
       "top": {
@@ -880,28 +854,30 @@
         ]
       },
       "pending": {
-        "name": "&ePending",
+        "name": "&6Pending board",
         "lore": [
-          "&7View incoming + outgoing invites"
+          "&7Tap a name to Accept or Decline",
+          "&7Outgoing — Withdraw or keep waiting"
         ]
       },
       "accept": {
         "name": "&eAccept…",
         "lore": [
-          "&7Accept a pending declare or upgrade to mutual",
-          "&8Silent declares from both sides appear here too"
+          "&7Use the Pending board instead",
+          "&8Tap a name there to respond"
         ]
       },
       "decline": {
         "name": "&6Decline…",
         "lore": [
-          "&7Decline a pending declare"
+          "&7Use the Pending board instead"
         ]
       },
       "remove": {
         "name": "&cRemove…",
         "lore": [
-          "&7Pick one of your rivals to remove"
+          "&7Open List and tap a rival",
+          "&8Remove is only on the rival profile"
         ]
       },
       "silent": {
@@ -925,22 +901,65 @@
           "&7Pick rival, then choose 1–10 minutes"
         ]
       },
+      "pending": {
+        "name": "&ePending Requests",
+        "lore": [
+          "&7Tap a name — Accept, Decline, or Cancel",
+          "&c◀ Incoming &7· &6▶ Outgoing"
+        ]
+      },
+      "empty_pending": {
+        "name": "&7No pending requests",
+        "lore": [
+          "&7Send a challenge from the Challenge menu"
+        ]
+      },
+      "decide_info": {
+        "name": "&eChallenge request",
+        "lore": [
+          "&7Respond on this screen"
+        ]
+      },
+      "keep_waiting": {
+        "name": "&7Keep waiting",
+        "lore": [
+          "&7Return to pending list"
+        ]
+      },
+      "nav_challenge": {
+        "name": "&cChallenge",
+        "lore": [
+          "&7Send · spectate"
+        ]
+      },
+      "pending_back": {
+        "name": "&7Back",
+        "lore": [
+          "&7Challenge menu"
+        ]
+      },
+      "decide_back": {
+        "name": "&7Back",
+        "lore": [
+          "&7Pending requests"
+        ]
+      },
       "accept": {
         "name": "&aAccept",
         "lore": [
-          "&7Accept pending challenge"
+          "&7Accept this duel — countdown starts"
         ]
       },
       "decline": {
         "name": "&cDecline",
         "lore": [
-          "&7Decline pending challenge"
+          "&7Decline this challenge request"
         ]
       },
       "cancel": {
-        "name": "&8Cancel",
+        "name": "&cCancel challenge",
         "lore": [
-          "&7Cancel your outgoing challenge"
+          "&7Withdraw your outgoing request"
         ]
       },
       "spectate": {
@@ -1052,13 +1071,32 @@
       "nav_actions": {
         "name": "&aActions",
         "lore": [
-          "&7Declare · accept · remove · pending"
+          "&7Declare · pending · silent"
         ]
       },
       "nav_history": {
         "name": "&8History",
         "lore": [
           "&7Previous rivals"
+        ]
+      },
+      "profile_info": {
+        "name": "&6&lRival profile",
+        "lore": [
+          "&7Stats on the head · &cRemove &7below",
+          "&8Removed rivals move to History"
+        ]
+      },
+      "remove_rival": {
+        "name": "&cRemove rival",
+        "lore": [
+          "&7Ends this rivalry on your list"
+        ]
+      },
+      "detail_back": {
+        "name": "&7Back",
+        "lore": [
+          "&7Rival list"
         ]
       }
     },
@@ -1109,6 +1147,18 @@
         "name": "&7Back",
         "lore": [
           "&7Pending invites"
+        ]
+      },
+      "withdraw": {
+        "name": "&cWithdraw declare",
+        "lore": [
+          "&7Cancel your outgoing declare"
+        ]
+      },
+      "keep_waiting": {
+        "name": "&7Keep waiting",
+        "lore": [
+          "&7Return to the pending list"
         ]
       }
     },
@@ -1583,74 +1633,56 @@
       "skills": {
         "name": "&eSkills",
         "lore": [
-          "&7Flight · Sprint · Meditation · Potential",
-          "",
-          "&eOpen"
+          "&7Flight · Sprint · Meditation · Potential"
         ]
       },
       "tp": {
         "name": "&6TP Gains",
         "lore": [
-          "&7Farming · Building · Boost · Bio",
-          "",
-          "&eOpen"
+          "&7Farming · Building · Boost · Bio"
         ]
       },
       "race": {
         "name": "&bRace & Form",
         "lore": [
-          "&7Race lock, Yardrat, Spiritualist, and Android",
-          "",
-          "&eOpen"
+          "&7Race lock, Yardrat, Spiritualist, and Android"
         ]
       },
       "combat": {
         "name": "&cCombat",
         "lore": [
-          "&7Ki weapons, piercing, damage over time, and Apothic tweaks",
-          "",
-          "&eOpen"
+          "&7Ki weapons, piercing, damage over time, and Apothic tweaks"
         ]
       },
       "end": {
         "name": "&5End",
         "lore": [
-          "&7End strength · Portal guard",
-          "",
-          "&eOpen"
+          "&7End strength · Portal guard"
         ]
       },
       "fabled": {
         "name": "&dFabled",
         "lore": [
-          "&7Fabled race and transformation options",
-          "",
-          "&eOpen"
+          "&7Fabled race and transformation options"
         ]
       },
       "utility": {
         "name": "&7Utility",
         "lore": [
-          "&7Shadow dummy · Stat checker",
-          "",
-          "&eOpen"
+          "&7Shadow dummy · Stat checker"
         ]
       },
       "admin": {
         "name": "&cAll Flags",
         "lore": [
-          "&7Full flag board",
-          "",
-          "&8Opens this menu"
+          "&7Full flag board"
         ]
       },
       "economy": {
         "name": "&6Ancient Coins",
         "lore": [
           "&7Staff pricing for anything that charges Ancient Coins",
-          "&8Tiers · Character Services · End dragon · more",
-          "",
-          "&8Opens this menu"
+          "&8Tiers · Character Services · End dragon · more"
         ]
       }
     },
@@ -1795,9 +1827,7 @@
         "name": "&aConvert to Android",
         "lore": [
           "&7Pick a player to convert",
-          "&8Applies the Android transformation",
-          "",
-          "&eOpen"
+          "&8Applies the Android transformation"
         ]
       },
       "remove": {
@@ -1805,9 +1835,7 @@
         "lore": [
           "&7Pick a player to remove the upgrade",
           "&8Restores their previous form path",
-          "&8Two-click confirm within 10s",
-          "",
-          "&eOpen"
+          "&8Two-click confirm within 10s"
         ]
       },
       "convert_self": {
@@ -1866,9 +1894,7 @@
       "boost_panel": {
         "name": "&6Global TP Boost",
         "lore": [
-          "&7Timed global TP multiplier",
-          "",
-          "&eOpen"
+          "&7Timed global TP multiplier"
         ]
       }
     },
@@ -1911,8 +1937,7 @@
       "progression": {
         "name": "&dProgression",
         "lore": [
-          "&7Skills · TP · Race · Combat flags",
-          "&eOpen"
+          "&7Skills · TP · Race · Combat flags"
         ]
       }
     },
@@ -1952,5 +1977,5 @@
       ]
     }
   },
-  "_catalogRevision": 196
+  "_catalogRevision": 201
 }

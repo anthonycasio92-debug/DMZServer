@@ -30,7 +30,7 @@ public final class CmiPrestigeGui {
             switch (p) {
                 case "turnin", "points" -> openTurnIn(player);
                 case "forms", "form", "effects", "effect" -> openForms(player);
-                case "cap", "breakthrough", "breakthroughs" -> openCap(player);
+                case "cap", "breakthrough", "breakthroughs" -> openMain(player);
                 case "tiers", "tier", "difficulty" -> openTiers(player);
                 default -> {
                     if (p.startsWith("shop") || p.startsWith("skills")) {
@@ -367,46 +367,6 @@ public final class CmiPrestigeGui {
             un.addCommand("lmdo prestige unmutant 0 forms");
             gui.addButton(un);
         }
-
-        gui.addButton(backBtn(27));
-        gui.addButton(hubBtn(31));
-        gui.addButton(closeBtn(35));
-        fillEmpty(gui, 4);
-        GuiFeedback.openCmi(gui);
-    }
-
-    private static void openCap(Player player) {
-        Map<String, String> ph = ForgeBridge.prestigePlaceholders(player);
-        CMIGui gui = base(player, "&8Prestige · Level Cap", 4);
-        gui.addButton(walletBtn(player, "cap", "&e&lWallet", null));
-
-        int bt = parseInt(ph.get("breakthroughs"), 0);
-        int max = parseInt(ph.get("breakthroughs_max"), 5);
-        boolean canBuy = bt < max;
-        String levelCapFmt = ph.getOrDefault("level_cap_fmt", "100000");
-        String nextCost = ph.getOrDefault("next_breakthrough_cost", "15");
-        Map<String, String> capVars = Map.of(
-                "level_cap", levelCapFmt,
-                "breakthroughs", String.valueOf(bt),
-                "max", String.valueOf(max),
-                "cost", nextCost);
-        CMIGuiButton buy = new CMIGuiButton(22,
-                canBuy ? Material.NETHER_STAR : Material.BEACON,
-                canBuy ? GuiTooltips.name("prestige.cap.buy", "&bBuy Breakthrough", capVars) : "&aCap Maxed");
-        buy.lockField();
-        buy.addLore(List.of("",
-                "&7Your level cap: &f" + levelCapFmt,
-                "&7Breakthroughs: &f" + bt + "&7/&f" + max,
-                "&8DMZ maxValue 150000 — soft-lock holds others at their cap"));
-        if (canBuy) {
-            buy.addLore(GuiTooltips.lore("prestige.cap.buy",
-                    List.of("&7Next: &a+10,000 &7personal cap for &e{cost} &7points"),
-                    capVars));
-            buy.addCommand("lmdo prestige breakthrough 0 cap");
-        } else {
-            buy.addLore("&aMax personal cap (150000)");
-        }
-        gui.addButton(buy);
 
         gui.addButton(backBtn(27));
         gui.addButton(hubBtn(31));
