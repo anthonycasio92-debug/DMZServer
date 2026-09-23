@@ -110,6 +110,30 @@ if [[ "${DEPLOY_LIVE_CONFIRM:-}" != "LIVE" ]]; then
   fi
 fi
 
+# Owner manifest — block live upload if agreed behaviors are missing from this tree.
+MANIFEST_AUDIT="$ROOT/tools/dmz-adaptive-difficulty/sim/audit_ship_manifest.py"
+if [[ -f "$MANIFEST_AUDIT" ]]; then
+  echo "Running ship manifest audit before upload..."
+  if ! python3 "$MANIFEST_AUDIT"; then
+    echo "DEPLOY ABORTED: audit_ship_manifest.py failed (see docs/LM_SHIP_MANIFEST.md)." >&2
+    exit 1
+  fi
+else
+  echo "WARN: missing audit_ship_manifest.py — deploy not gated" >&2
+fi
+
+# Version in jars must match source pin when LM_DEPLOY_VERSION is set.
+FORGE_VER="$(unzip -p "$FORGE_JAR" META-INF/mods.toml 2>/dev/null | rg '^version\s*=' | head -1 | rg -o '[0-9]+\.[0-9]+\.[0-9]+' || true)"
+GUI_VER="$(unzip -p "$GUI_JAR" plugin.yml 2>/dev/null | rg '^version:' | head -1 | rg -o '[0-9]+\.[0-9]+\.[0-9]+' || true)"
+if [[ -n "${LM_DEPLOY_VERSION:-}" && -n "$FORGE_VER" && "$FORGE_VER" != "$LM_DEPLOY_VERSION" ]]; then
+  echo "DEPLOY ABORTED: Forge jar version $FORGE_VER != LM_DEPLOY_VERSION=$LM_DEPLOY_VERSION" >&2
+  exit 1
+fi
+if [[ -n "$FORGE_VER" && -n "$GUI_VER" && "$FORGE_VER" != "$GUI_VER" ]]; then
+  echo "DEPLOY ABORTED: Forge $FORGE_VER != GUI $GUI_VER" >&2
+  exit 1
+fi
+
 if [[ "$STAGE_PENDING" == "1" ]]; then
   "${SFTP_CMD[@]}" "$USER@$HOST" <<EOF
 mkdir $REMOTE_MODS
