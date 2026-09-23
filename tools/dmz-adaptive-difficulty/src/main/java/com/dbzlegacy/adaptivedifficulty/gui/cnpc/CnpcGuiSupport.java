@@ -71,6 +71,8 @@ public final class CnpcGuiSupport {
     public static final int ID_ENTITY_PREVIEW = 102;
     /** Hint above an overflow pick list (never reuse {@link #ID_STATUS_TAG} on the same gui). */
     public static final int ID_PICK_HINT = 117;
+    /** Empty-list placeholder — never {@link #ID_FLASH_LABEL_BASE} (flash notices use 50+). */
+    public static final int ID_EMPTY_PLACEHOLDER = 118;
     /** Static note label on the same row as an action button (never reuse the button id). */
     public static final int ID_INLINE_NOTE = 115;
     /** Extra staff-only control (never {@link #ID_CLOSE}). */
@@ -79,6 +81,8 @@ public final class CnpcGuiSupport {
     public static final int ID_GRID_BASE = 120;
     /** Prestige permanent tier shop (7 buttons — must not overlap flash band 50–59). */
     public static final int ID_PRESTIGE_TIER_GRID = 200;
+    /** Progression TP boost presets (must not overlap {@link #ID_FLASH_LABEL_BASE}). */
+    public static final int ID_BOOST_PRESET_BASE = 120;
 
     /** Shorter divider so labels do not wrap oddly in CNPC. */
     private static String dividerText() {
@@ -140,7 +144,7 @@ public final class CnpcGuiSupport {
     /** Title + subtitle + optional inspect line + divider. Returns Y for the info block. */
     public static int paintHeader(ServerPlayer viewer, ICustomGui gui, String title, String subtitle) {
         title(gui, ID_TITLE, title);
-        subtitle(gui, ID_SUBTITLE, subtitle == null ? "" : subtitle);
+        subtitle(gui, ID_SUBTITLE, subtitle == null ? "" : CnpcGuiStyle.readableInfoLine(subtitle));
         inspectBanner(viewer, gui);
         boolean inspecting = AdminInspectSessions.isInspecting(viewer.m_20148_());
         int dividerY = inspecting ? 52 : 38;
@@ -256,7 +260,7 @@ public final class CnpcGuiSupport {
         if (reservePickListScroll && maxInline > 0) {
             if (clean.size() > maxInline) {
                 List<String> trimmed = new ArrayList<>(clean.subList(0, maxInline));
-                trimmed.add("§8More summary text is hidden above the list.");
+                trimmed.add(CnpcGuiStyle.readableInfoLine("§eMore summary text is hidden above the list."));
                 clean = trimmed;
             }
             bodyLines(gui, labelBase, startY, clean, clean.size(), textW);
@@ -713,20 +717,7 @@ public final class CnpcGuiSupport {
     }
 
     private static String brightenNoticeLine(String line) {
-        if (line == null || line.isBlank()) {
-            return line;
-        }
-        String s = line.trim();
-        if (s.startsWith("§c") || s.startsWith("§a") || s.startsWith("§6") || s.startsWith("§e§l")) {
-            return s;
-        }
-        if (s.startsWith("§7")) {
-            return "§f" + s.substring(2);
-        }
-        if (s.startsWith("§8")) {
-            return "§e" + s.substring(2);
-        }
-        return s;
+        return CnpcGuiStyle.readableInfoLine(line);
     }
 
     private static String splitCamel(String s) {
@@ -784,7 +775,7 @@ public final class CnpcGuiSupport {
             if (line == null || line.isBlank()) {
                 continue;
             }
-            out.add(safeChat(CnpcGuiStyle.normalizeLine(line)));
+            out.add(safeChat(CnpcGuiStyle.readableInfoLine(CnpcGuiStyle.normalizeLine(line))));
         }
         return out;
     }

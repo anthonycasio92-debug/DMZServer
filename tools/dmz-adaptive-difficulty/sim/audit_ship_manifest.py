@@ -151,8 +151,11 @@ def main() -> int:
 
     print("\n--- § difficulty ---")
     cnpc_diff = read(SRC / "gui/cnpc/CnpcLmDifficultyGui.java")
-    check("CNPC tiers locked when personal OFF", "paintTiersLocked" in cnpc_diff
+    check("CNPC tiers locked when personal OFF", "paintFeatureLocked" in cnpc_diff
           and "Turn personal difficulty ON first" in cnpc_diff)
+    check("CNPC team scaling locked like tiers", "Teams locked" in cnpc_diff
+          and "before using team scaling" in cnpc_diff)
+    check("Difficulty team action gated when personal OFF", "ACT_TEAM.equals(act)" in read(SRC / "service/DifficultyActions.java"))
     check("CNPC difficulty uses handleArgNoReopen", "handleArgNoReopen" in cnpc_diff)
 
     print("\n--- § cnpc ---")
@@ -160,6 +163,10 @@ def main() -> int:
     check("CNPC afterGuiClosed defer reopen", "afterGuiClosed" in cnpc_support)
     check("CNPC flash notice separate widget ids", "ID_FLASH_LABEL_BASE" in cnpc_support)
     check("CNPC flash notice readable", "§6§lNotice" in cnpc_support and "brightenNoticeLine" in cnpc_support)
+    check("CNPC info blocks readable (readableInfoLine)", "readableInfoLine" in cnpc_support
+          and "readableInfoLine" in read(SRC / "gui/cnpc/CnpcGuiStyle.java"))
+    check("CNPC difficulty clear tier avoids flash ids", "ID_GRID_BASE" in cnpc_diff
+          and 'button(gui, 50, "§cClear active tier"' not in cnpc_diff)
     cnpc_preview = read(SRC / "gui/cnpc/CnpcPlayerPreview.java")
     check("CNPC preview live player sync (inventory-style)", "tryBindLivePlayer" in cnpc_preview
           and "setEntitySyncedById" in cnpc_preview)
@@ -178,6 +185,22 @@ def main() -> int:
     print("\n--- § android ---")
     android = read(SRC / "progression/race/AndroidConversion.java")
     check("Android Gero convert no Saiyan deny list", "GERO_RACE_DENY" not in android)
+    check("Android CNPC copy does not deny Saiyan", "Saiyan races cannot" not in read(SRC / "gui/cnpc/CnpcLmProgressionGui.java"))
+    check("Android convert allows self (not staff-only)", "you can convert yourself" in read(SRC / "gui/ProgressionGuiApi.java"))
+    cnpc_rival = read(SRC / "gui/cnpc/CnpcLmRivalGui.java")
+    check("CNPC rival empty labels avoid flash ids", "ID_EMPTY_PLACEHOLDER" in cnpc_rival
+          and "addLabel(50," not in cnpc_rival)
+    cnpc_prog = read(SRC / "gui/cnpc/CnpcLmProgressionGui.java")
+    check("CNPC TP boost presets avoid flash ids", "ID_BOOST_PRESET_BASE" in cnpc_prog
+          and "boostPreset(gui, player, row, 50," not in cnpc_prog)
+    check("Progression CNPC no All flags menu", "All flags" not in cnpc_prog and "paintAllFlags" not in cnpc_prog)
+    prog_chest = read(BUKKIT / "ProgressionChestGui.java")
+    check("Progression chest no All Flags hub tile", "All Flags" not in prog_chest
+          and 'SlotAction.page("admin")' not in prog_chest)
+    chat_prog = read(SRC / "gui/ProgressionChatMenu.java")
+    check("Progression chat menu no Flags hub", "[Flags]" not in chat_prog and "Staff Flags" not in chat_prog)
+    cmi_prog = read(BUKKIT / "CmiProgressionGui.java")
+    check("Progression CMI no flag board methods", "openFlags" not in cmi_prog and "openFabledFlags" not in cmi_prog)
     check("Android build overlay ships AndroidConversion", "progression/race/AndroidConversion.class" in build_sh)
     chest_prog = read(BUKKIT / "ProgressionChestGui.java")
     tooltips = read(GUI / "src/main/resources/gui-tooltips.json")

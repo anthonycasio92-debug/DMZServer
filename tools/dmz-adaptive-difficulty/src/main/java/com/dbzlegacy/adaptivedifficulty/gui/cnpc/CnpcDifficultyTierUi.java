@@ -12,11 +12,11 @@ public final class CnpcDifficultyTierUi {
 
     public static String formatActivationCost(ServerPlayer player, UnlockTier tier) {
         if (tier == null || PaidFeatureAccess.bypassAncientCoinCost(player)) {
-            return "§7free";
+            return "§ffree";
         }
         long cost = AncientCoinEconomy.activationCost(tier, player);
         if (cost <= 0L) {
-            return "§7—";
+            return "§e—";
         }
         return "§6" + AncientCoinEconomy.formatExactCost(cost);
     }
@@ -37,7 +37,7 @@ public final class CnpcDifficultyTierUi {
     public static String tierActionLabel(
             ServerPlayer player, int t, int activeTier, boolean unlocked, boolean eligible) {
         if (t <= 0) {
-            return "§8—";
+            return "§e—";
         }
         if (activeTier == t) {
             return "§aTier " + t + " · active";
@@ -46,10 +46,10 @@ public final class CnpcDifficultyTierUi {
             if (eligible) {
                 return "§aUnlock T" + t + " · " + formatActivationCost(player, UnlockTier.byId(t));
             }
-            return "§8Tier " + t + " · locked";
+            return "§eTier " + t + " · locked";
         }
         if (t < activeTier) {
-            return "§fUse T" + t + " §8(free)";
+            return "§fUse T" + t + " §e(free)";
         }
         return "§eSwitch T" + t + " · " + formatActivationCost(player, UnlockTier.byId(t));
     }

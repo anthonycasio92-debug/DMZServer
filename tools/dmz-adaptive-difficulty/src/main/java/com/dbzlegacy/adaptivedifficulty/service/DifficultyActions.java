@@ -283,10 +283,13 @@ public final class DifficultyActions {
         // Personal OFF freezes buy / lower / reset until the player turns it back on.
         if (!SystemGate.participates(player)
                 && (ACT_ACTIVATE.equals(act) || ACT_PURCHASE_TIER.equals(act) || ACT_BUY.equals(act)
-                || ACT_LOWER_TIER.equals(act) || ACT_RESET.equals(act)
+                || ACT_LOWER_TIER.equals(act) || ACT_RESET.equals(act) || ACT_TEAM.equals(act)
                 || "zero".equals(act) || "clear".equals(act))) {
             openGui(player, page == null || page.isBlank() ? "main" : page);
-            return Result.fail("§cTurn personal difficulty ON first §7— use Personal scaling on the main menu, then pick a tier.");
+            String hint = ACT_TEAM.equals(act)
+                    ? "§cTurn personal difficulty ON first §7— use Personal scaling on the main menu, then pick a team mode."
+                    : "§cTurn personal difficulty ON first §7— use Personal scaling on the main menu, then pick a tier.";
+            return Result.fail(hint);
         }
 
         long amount = 0L;

@@ -176,15 +176,16 @@ public final class ProgressionGuiApi {
             }
             return ProgressionSystem.androidConvert(target);
         }
-        if (!StaffAccess.isStaff(actor)) {
-            return "§cStaff only.";
-        }
         ServerPlayer target = actor;
         if (!name.isBlank()) {
             target = resolveOnline(actor, name);
             if (target == null) {
                 return "§cPlayer not found: §f" + name;
             }
+        }
+        boolean self = target.m_20148_().equals(actor.m_20148_());
+        if (!self && !StaffAccess.isStaff(actor)) {
+            return "§cStaff only — you can convert yourself at Dr. Gero or use Convert yourself in the menu.";
         }
         return ProgressionSystem.androidConvert(target);
     }

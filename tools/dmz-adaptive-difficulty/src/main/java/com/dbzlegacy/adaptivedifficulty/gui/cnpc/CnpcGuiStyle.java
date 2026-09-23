@@ -55,6 +55,20 @@ public final class CnpcGuiStyle {
         return "§7" + s;
     }
 
+    /**
+     * Info blocks, subtitles, and flash notices — same contrast as {@code §6§lNotice} band
+     * (grey/dark-grey body copy becomes white/yellow so CNPC labels stay readable).
+     */
+    public static String readableInfoLine(String line) {
+        if (line == null || line.isBlank()) {
+            return line == null ? "" : line;
+        }
+        String s = line.trim();
+        s = s.replace("§7", "§f");
+        s = s.replace("§8", "§e");
+        return s;
+    }
+
     /** Collapse duplicate spaces and normalize separators for CNPC labels/scroll rows. */
     public static String normalizeLine(String line) {
         if (line == null || line.isBlank()) {

@@ -349,6 +349,39 @@ public final class CmiDifficultyGui {
     private static void openTeams(Player player) {
         Map<String, String> ph = ForgeBridge.placeholders(player);
         CMIGui gui = base(player, "&8Rival Teams", 5);
+
+        boolean bridgeOk = "true".equalsIgnoreCase(ph.getOrDefault("bridge_ok", "false"));
+        boolean systemOn = bridgeOk && !"false".equalsIgnoreCase(ph.getOrDefault("system_enabled", "false"));
+        boolean allowed = bridgeOk && !"false".equalsIgnoreCase(ph.getOrDefault("player_allowed", "false"));
+        if (!bridgeOk || !systemOn || !allowed) {
+            CMIGuiButton locked = new CMIGuiButton(4, Material.BARRIER, "&c&lTeams Locked");
+            locked.lockField();
+            locked.addLore(unavailableLore(player, systemOn, bridgeOk));
+            gui.addButton(locked);
+            gui.addButton(pageBtn(player, 36, "common.back", Material.ARROW, "&7Back", "main", "&7Return"));
+            gui.addButton(hubBtn(40));
+            gui.addButton(closeBtn(44));
+            fillEmpty(gui, 5);
+            GuiFeedback.openCmi(gui);
+            return;
+        }
+        boolean personalOn = "true".equalsIgnoreCase(ph.getOrDefault("personal_enabled", "false"));
+        if (!personalOn) {
+            CMIGuiButton locked = new CMIGuiButton(4, Material.BARRIER, "&c&lTeams Locked");
+            locked.lockField();
+            locked.addLore(List.of(
+                    "",
+                    "&cTurn personal difficulty ON first",
+                    "&7Use Difficulty ON on the main menu, then pick a team mode."));
+            gui.addButton(locked);
+            gui.addButton(pageBtn(player, 36, "common.back", Material.ARROW, "&7Back", "main", "&7Return"));
+            gui.addButton(hubBtn(40));
+            gui.addButton(closeBtn(44));
+            fillEmpty(gui, 5);
+            GuiFeedback.openCmi(gui);
+            return;
+        }
+
         CMIGuiButton header = new CMIGuiButton(4, Material.SHIELD,
                 GuiTooltips.name("difficulty.team.header", "&b&lRival Teams"));
         header.lockField();

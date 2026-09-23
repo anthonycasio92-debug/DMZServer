@@ -583,11 +583,6 @@ public final class ProgressionCommands {
     }
 
     private static int androidSelfOrHint(CommandSourceStack source) {
-        if (!staff(source)) {
-            reply(source, playerOrNull(source),
-                    "§7Open §f/lm §7→ §cRemove Android §7(GUI).\n§8Convert is staff-only.");
-            return 0;
-        }
         return androidSelf(source);
     }
 
