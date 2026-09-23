@@ -140,7 +140,7 @@ public final class CnpcGuiSupport {
     /** Title + subtitle + optional inspect line + divider. Returns Y for the info block. */
     public static int paintHeader(ServerPlayer viewer, ICustomGui gui, String title, String subtitle) {
         title(gui, ID_TITLE, title);
-        subtitle(gui, ID_SUBTITLE, subtitle == null ? "" : subtitle);
+        subtitle(gui, ID_SUBTITLE, subtitle == null ? "" : CnpcGuiStyle.readableInfoLine(subtitle));
         inspectBanner(viewer, gui);
         boolean inspecting = AdminInspectSessions.isInspecting(viewer.m_20148_());
         int dividerY = inspecting ? 52 : 38;
@@ -256,7 +256,7 @@ public final class CnpcGuiSupport {
         if (reservePickListScroll && maxInline > 0) {
             if (clean.size() > maxInline) {
                 List<String> trimmed = new ArrayList<>(clean.subList(0, maxInline));
-                trimmed.add("§8More summary text is hidden above the list.");
+                trimmed.add(CnpcGuiStyle.readableInfoLine("§eMore summary text is hidden above the list."));
                 clean = trimmed;
             }
             bodyLines(gui, labelBase, startY, clean, clean.size(), textW);
@@ -713,20 +713,7 @@ public final class CnpcGuiSupport {
     }
 
     private static String brightenNoticeLine(String line) {
-        if (line == null || line.isBlank()) {
-            return line;
-        }
-        String s = line.trim();
-        if (s.startsWith("§c") || s.startsWith("§a") || s.startsWith("§6") || s.startsWith("§e§l")) {
-            return s;
-        }
-        if (s.startsWith("§7")) {
-            return "§f" + s.substring(2);
-        }
-        if (s.startsWith("§8")) {
-            return "§e" + s.substring(2);
-        }
-        return s;
+        return CnpcGuiStyle.readableInfoLine(line);
     }
 
     private static String splitCamel(String s) {
@@ -784,7 +771,7 @@ public final class CnpcGuiSupport {
             if (line == null || line.isBlank()) {
                 continue;
             }
-            out.add(safeChat(CnpcGuiStyle.normalizeLine(line)));
+            out.add(safeChat(CnpcGuiStyle.readableInfoLine(CnpcGuiStyle.normalizeLine(line))));
         }
         return out;
     }

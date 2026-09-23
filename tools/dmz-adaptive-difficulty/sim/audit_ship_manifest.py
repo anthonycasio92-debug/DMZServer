@@ -160,6 +160,10 @@ def main() -> int:
     check("CNPC afterGuiClosed defer reopen", "afterGuiClosed" in cnpc_support)
     check("CNPC flash notice separate widget ids", "ID_FLASH_LABEL_BASE" in cnpc_support)
     check("CNPC flash notice readable", "§6§lNotice" in cnpc_support and "brightenNoticeLine" in cnpc_support)
+    check("CNPC info blocks readable (readableInfoLine)", "readableInfoLine" in cnpc_support
+          and "readableInfoLine" in read(SRC / "gui/cnpc/CnpcGuiStyle.java"))
+    check("CNPC difficulty clear tier avoids flash ids", "ID_GRID_BASE" in cnpc_diff
+          and 'button(gui, 50, "§cClear active tier"' not in cnpc_diff)
     cnpc_preview = read(SRC / "gui/cnpc/CnpcPlayerPreview.java")
     check("CNPC preview live player sync (inventory-style)", "tryBindLivePlayer" in cnpc_preview
           and "setEntitySyncedById" in cnpc_preview)

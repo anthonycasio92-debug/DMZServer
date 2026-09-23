@@ -39,6 +39,7 @@ FOOTER_PREVIEW = re.compile(
     r"if\s*\(\s*parentPage\s*==\s*null(?:\s*\|\|\s*parentPage\.isBlank\(\))?\s*\)\s*\{[^}]*paintSystemMainPreview",
     re.DOTALL,
 )
+FLASH_BUTTON_CONFLICT = re.compile(r"CnpcGuiSupport\.button\s*\(\s*gui\s*,\s*50\s*,")
 def method_blocks(text: str) -> list[tuple[str, str]]:
     parts = re.split(r"\n    private static void ", text)
     out: list[tuple[str, str]] = []
@@ -112,6 +113,8 @@ def main() -> int:
             errors.append(f"{rel}: flag ON check must use flagOnOff §a prefix, not contains(\"ON\")")
         if STATIC_EVENT_LOG.search(text):
             errors.append(f"{rel}: event log toggle must reflect live state (CnpcGuiStyle.toggleOn/Off)")
+        if FLASH_BUTTON_CONFLICT.search(text):
+            errors.append(f"{rel}: button id 50 overlaps ID_FLASH_LABEL_BASE (use ID_GRID_BASE+)")
 
     support = CNPC / "CnpcGuiSupport.java"
     if support.is_file():
@@ -126,10 +129,14 @@ def main() -> int:
             errors.append("CnpcGuiSupport.java: flash notice must not consume scroll panel (reserve pick list)")
         if "ID_FLASH_LABEL_BASE" not in st:
             errors.append("CnpcGuiSupport.java: flash notices need ID_FLASH_LABEL_BASE (avoid duplicate id:10)")
+        if "readableInfoLine" not in st:
+            errors.append("CnpcGuiSupport.java: info blocks must use CnpcGuiStyle.readableInfoLine")
 
     style = CNPC / "CnpcGuiStyle.java"
     if not style.is_file():
         errors.append("Missing CnpcGuiStyle.java")
+    elif "readableInfoLine" not in style.read_text(encoding="utf-8"):
+        errors.append("CnpcGuiStyle.java: missing readableInfoLine for CNPC notice contrast")
 
     print("=== CNPC GUI menu audit ===")
     for w in warnings:

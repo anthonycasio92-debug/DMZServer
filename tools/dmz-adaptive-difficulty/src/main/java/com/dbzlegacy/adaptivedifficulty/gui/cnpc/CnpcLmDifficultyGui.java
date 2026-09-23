@@ -249,15 +249,18 @@ public final class CnpcLmDifficultyGui {
             } else if (active == t) {
                 gui.addLabel(30 + t, CnpcGuiSupport.safeChat(label), col, row + 4, CnpcGuiSupport.BTN_W, 14);
             } else if (!unlocked) {
-                gui.addLabel(30 + t, "§8T" + t + " · " + CnpcDifficultyTierUi.humanRequirement(ut), col, row + 2,
-                        CnpcGuiSupport.BTN_W, 12);
+                gui.addLabel(30 + t,
+                        CnpcGuiSupport.safeChat(CnpcGuiStyle.readableInfoLine(
+                                "§eT" + t + " · " + CnpcDifficultyTierUi.humanRequirement(ut))),
+                        col, row + 2, CnpcGuiSupport.BTN_W, 12);
             } else {
                 gui.addLabel(30 + t, CnpcGuiSupport.safeChat(label), col, row + 4, CnpcGuiSupport.BTN_W, 14);
             }
             placed++;
         }
         row += CnpcGuiSupport.ROW_STEP + 12;
-        CnpcGuiSupport.button(gui, 50, "§cClear active tier", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
+        CnpcGuiSupport.button(gui, CnpcGuiSupport.ID_GRID_BASE, "§cClear active tier", CnpcGuiSupport.COL_L, row,
+                () -> CnpcGuiSupport.act(
                 player,
                 () -> DifficultyActions.handleArgNoReopen(subject, "lower_tier", "0", "tiers").message(),
                 () -> open(player, "tiers")));
@@ -376,7 +379,9 @@ public final class CnpcLmDifficultyGui {
                         }
                     });
         } else {
-            gui.addLabel(CnpcGuiSupport.ID_INLINE_NOTE, "§8Equip unlocks after you earn the title.",
+            gui.addLabel(CnpcGuiSupport.ID_INLINE_NOTE,
+                    CnpcGuiSupport.safeChat(CnpcGuiStyle.readableInfoLine(
+                            "§eEquip unlocks after you earn the title.")),
                     CnpcGuiSupport.COL_L, row + 4, CnpcGuiSupport.BTN_W, 14);
         }
         row += 28;
@@ -472,7 +477,9 @@ public final class CnpcLmDifficultyGui {
                     () -> DifficultyActions.handleArgNoReopen(subject, "summon_end_dragon", "0", "end_dragon").message(),
                     () -> open(player, "end_dragon")));
         } else {
-            gui.addLabel(CnpcGuiSupport.ID_INLINE_NOTE, "§8Fix requirements above to summon.",
+            gui.addLabel(CnpcGuiSupport.ID_INLINE_NOTE,
+                    CnpcGuiSupport.safeChat(CnpcGuiStyle.readableInfoLine(
+                            "§eFix requirements above to summon.")),
                     CnpcGuiSupport.COL_L, row + 4, CnpcGuiSupport.BTN_W, 14);
             row += 8;
         }
