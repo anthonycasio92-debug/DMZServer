@@ -123,7 +123,6 @@ public final class SparCommands {
                                         ctx.getSource(),
                                         StringArgumentType.getString(ctx, "player")))))
                 .then(Commands.m_82127_("admin")
-                        .requires(SparCommands::staff)
                         .executes(ctx -> sparAdminHelp(ctx.getSource()))
                         .then(Commands.m_82127_("help").executes(ctx -> sparAdminHelp(ctx.getSource())))
                         .then(Commands.m_82127_("save").executes(ctx -> save(ctx.getSource())))
@@ -136,7 +135,6 @@ public final class SparCommands {
                                                         ctx.getSource(),
                                                         StringArgumentType.getString(ctx, "player")))))))
                 .then(Commands.m_82127_("save")
-                        .requires(SparCommands::staff)
                         .executes(ctx -> save(ctx.getSource())));
 
         event.getDispatcher().register(root);

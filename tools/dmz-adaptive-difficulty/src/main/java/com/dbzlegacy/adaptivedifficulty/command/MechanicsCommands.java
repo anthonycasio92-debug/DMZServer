@@ -63,7 +63,6 @@ public final class MechanicsCommands {
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "system")))))
                         .then(Commands.m_82127_("syslog")
-                                .requires(StaffAccess::isStaffSource)
                                 .then(LmCommandSuggestions.word("mode", LmCommandSuggestions.SYSLOG_MODES)
                                         .executes(ctx -> {
                                             ServerPlayer p = playerOrNull(ctx.getSource());
@@ -78,7 +77,6 @@ public final class MechanicsCommands {
                                             return open(ctx.getSource(), "logs");
                                         }))))
                 .then(Commands.m_82127_("admin")
-                        .requires(StaffAccess::isStaffSource)
                         .executes(ctx -> adminHelp(ctx.getSource()))
                         .then(Commands.m_82127_("help").executes(ctx -> adminHelp(ctx.getSource())))
                         .then(Commands.m_82127_("reload").executes(ctx -> adminReload(ctx.getSource())))

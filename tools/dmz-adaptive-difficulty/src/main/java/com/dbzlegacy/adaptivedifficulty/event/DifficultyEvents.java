@@ -131,6 +131,7 @@ public final class DifficultyEvents {
 
     @SubscribeEvent
     public void onServerStarted(ServerStartedEvent event) {
+        com.dbzlegacy.adaptivedifficulty.command.MohistCommandBridge.tryRegister(event.getServer());
         VanillaDifficultyGuard.restoreIfPeaceful(event.getServer());
         try {
             com.dbzlegacy.adaptivedifficulty.data.CnpcDataMigrator.migrateWorldIfNeeded(event.getServer());

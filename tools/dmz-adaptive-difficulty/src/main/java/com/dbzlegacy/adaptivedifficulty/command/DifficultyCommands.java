@@ -83,7 +83,6 @@ public final class DifficultyCommands {
                 .then(vanillaDifficultyLiteral("normal"))
                 .then(vanillaDifficultyLiteral("hard"))
                 .then(Commands.m_82127_("admin")
-                        .requires(StaffAccess::isStaffSource)
                         .executes(ctx -> adminHelpOrDeny(ctx.getSource()))
                         .then(Commands.m_82127_("help")
                                 .executes(ctx -> adminHelpOrDeny(ctx.getSource())))
