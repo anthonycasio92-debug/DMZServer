@@ -30,4 +30,6 @@ When you ask for a behavior change, add a row here and a matching check in `audi
 ## Why regressions happened (2026-09)
 
 - **Rival challenge pending** lived on open PR #150 and was **never merged to `main`** while prestige/skillcheck fixes shipped on other branches → live got 4.5.68 **without** challenge pending UX.
+- **Prestige runtime crash (4.5.74):** source had `heldCountForNeed` but **jar build** did not overlay `PrestigeSystem.class` onto the consolidated base — fixed 4.5.75+ (`build.sh` + manifest `javap` check).
 - **Prevention:** manifest audit + deploy gate; merge manifest row when feature ships; do not deploy from a branch that fails `audit_ship_manifest.py`.
+- **Branch matrix:** `tools/dmz-adaptive-difficulty/sim/audit_branch_manifest_matrix.py` runs in `build.sh`. It **fails** if `main` is behind any `origin/cursor/*-c766` tip or if a scanned feature branch **regresses** markers present on the best branch. After merging to `main`, fast-forward or delete stale cursor branches so the matrix stays green.
