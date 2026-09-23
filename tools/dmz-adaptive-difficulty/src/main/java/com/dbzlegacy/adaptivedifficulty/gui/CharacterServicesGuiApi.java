@@ -46,11 +46,21 @@ public final class CharacterServicesGuiApi {
         out.put("race_cooldown", CharacterServicesSystem.cooldownLine(player, "race"));
         out.put("class_cooldown", CharacterServicesSystem.cooldownLine(player, "class"));
         out.put("reskin_cooldown", CharacterServicesSystem.cooldownLine(player, "reskin"));
-        out.put("can_services", CharacterServicesAccess.canUseServices(player) ? "true" : "false");
-        out.put("can_race_change", CharacterServicesAccess.canRaceChange(player) ? "true" : "false");
-        out.put("can_class_change", CharacterServicesAccess.canClassChange(player) ? "true" : "false");
-        out.put("can_reskin", CharacterServicesAccess.canReskin(player) ? "true" : "false");
-        out.put("can_head_bones", CharacterServicesAccess.canHeadBoneShop(player) ? "true" : "false");
+        out.put("can_services", cfg.enabled && CharacterServicesAccess.canUseServices(player) ? "true" : "false");
+        out.put("can_race_change",
+                cfg.enabled && cfg.raceChange.enabled && CharacterServicesAccess.canRaceChange(player)
+                        ? "true"
+                        : "false");
+        out.put("can_class_change",
+                cfg.enabled && cfg.classChange.enabled && CharacterServicesAccess.canClassChange(player)
+                        ? "true"
+                        : "false");
+        out.put("can_reskin",
+                cfg.enabled && cfg.reskin.enabled && CharacterServicesAccess.canReskin(player) ? "true" : "false");
+        out.put("can_head_bones",
+                cfg.enabled && cfg.headBoneShop.enabled && CharacterServicesAccess.canHeadBoneShop(player)
+                        ? "true"
+                        : "false");
         LmOverhaulScaledCombat.putPlaceholders(out, player);
         return out;
     }

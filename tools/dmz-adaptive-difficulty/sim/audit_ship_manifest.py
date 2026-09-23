@@ -269,24 +269,31 @@ def main() -> int:
             import zipfile
 
             with zipfile.ZipFile(forge_jar) as zf:
+                jar_names = set(zf.namelist())
                 chat_bytes = zf.read(
                     "com/dbzlegacy/adaptivedifficulty/gui/MechanicsChatMenu.class"
                 )
                 cmd_bytes = zf.read(
                     "com/dbzlegacy/adaptivedifficulty/command/MechanicsCommands.class"
                 )
-            check(
-                "shipped MechanicsChatMenu Forge routes (no /lmdo hub hops)",
-                b"/lmdo lm open difficulty" not in chat_bytes
-                and b"/difficulty" in chat_bytes
-                and b"/lm open android_remove" in chat_bytes,
-                "rebuild overlay — chat menu classes must merge from src",
-            )
-            check(
-                "shipped MechanicsCommands top-level /lm open",
-                b"open" in cmd_bytes and b"page" in cmd_bytes,
-                "rebuild overlay — MechanicsCommands must merge from src",
-            )
+                check(
+                    "shipped MechanicsChatMenu Forge routes (no /lmdo hub hops)",
+                    b"/lmdo lm open difficulty" not in chat_bytes
+                    and b"/difficulty" in chat_bytes
+                    and b"/lm open android_remove" in chat_bytes,
+                    "rebuild overlay — chat menu classes must merge from src",
+                )
+                check(
+                    "shipped MechanicsCommands top-level /lm open",
+                    b"open" in cmd_bytes and b"page" in cmd_bytes,
+                    "rebuild overlay — MechanicsCommands must merge from src",
+                )
+                check(
+                    "shipped CharacterServicesPermissionBootstrap",
+                    "com/dbzlegacy/adaptivedifficulty/character/CharacterServicesPermissionBootstrap.class"
+                    in jar_names,
+                    "rebuild overlay — character permission bootstrap must ship on Forge-only",
+                )
 
     out = SIM / "out/ship-manifest-audit.md"
     out.parent.mkdir(parents=True, exist_ok=True)

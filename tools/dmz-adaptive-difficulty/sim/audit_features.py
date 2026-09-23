@@ -737,6 +737,11 @@ def main() -> int:
           "You can only remove your own Android upgrade" in gui_api)
     hub = read(gui_root / "HubChestGui.java")
     cmi_hub = read(gui_root / "CmiHubGui.java")
+    diff_events = read(SRC / "com/dbzlegacy/adaptivedifficulty/event/DifficultyEvents.java")
+    char_bootstrap = read(SRC / "com/dbzlegacy/adaptivedifficulty/character/CharacterServicesPermissionBootstrap.java")
+    check("Character services Bukkit permission bootstrap",
+          "CharacterServicesPermissionBootstrap.register()" in diff_events
+          and "addPermission" in char_bootstrap)
     check("Hub Remove Android button", 'SlotAction.open("android_remove")' in hub)
     check("CMI Hub Remove Android", '"android_remove"' in cmi_hub and "Remove Android" in cmi_hub)
     plugin = read(gui_root / "AdaptiveDifficultyGuiPlugin.java")

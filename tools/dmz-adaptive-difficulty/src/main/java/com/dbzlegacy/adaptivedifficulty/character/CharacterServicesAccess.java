@@ -54,16 +54,44 @@ public final class CharacterServicesAccess {
         if (node == null || node.isBlank()) {
             return defaultWhenBlank;
         }
+        Object bukkit = bukkitEntity(player);
+        if (bukkit == null) {
+            return defaultWhenBlank;
+        }
         try {
-            Object bukkit = player.getClass().getMethod("getBukkitEntity").invoke(player);
-            if (bukkit != null) {
-                Object ok = bukkit.getClass().getMethod("hasPermission", String.class).invoke(bukkit, node);
-                if (ok instanceof Boolean b) {
-                    return b;
+            Object ok = bukkit.getClass().getMethod("hasPermission", String.class).invoke(bukkit, node);
+            if (ok instanceof Boolean b) {
+                if (b) {
+                    return true;
                 }
+                // Forge-only: without LegacyMechanicsGUI, nodes may be missing from PluginManager
+                // and Bukkit returns false — treat like plugin.yml default: true for player services.
+                if (defaultWhenBlank && !permissionRegistered(node)) {
+                    return true;
+                }
+                return false;
             }
         } catch (Throwable ignored) {
         }
         return defaultWhenBlank;
+    }
+
+    private static Object bukkitEntity(ServerPlayer player) {
+        try {
+            return player.getClass().getMethod("getBukkitEntity").invoke(player);
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    private static boolean permissionRegistered(String node) {
+        try {
+            Class<?> bukkit = Class.forName("org.bukkit.Bukkit");
+            Object pm = bukkit.getMethod("getPluginManager").invoke(null);
+            Object perm = pm.getClass().getMethod("getPermission", String.class).invoke(pm, node);
+            return perm != null;
+        } catch (Throwable ignored) {
+            return false;
+        }
     }
 }

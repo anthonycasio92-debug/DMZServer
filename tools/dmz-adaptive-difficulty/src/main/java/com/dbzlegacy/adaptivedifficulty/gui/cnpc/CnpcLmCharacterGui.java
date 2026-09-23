@@ -77,7 +77,10 @@ public final class CnpcLmCharacterGui {
                 actions.add(CnpcGuiLayout.GridButton.run("§fHead bones", () -> open(player, "bones:0")));
             }
             if (actions.isEmpty()) {
-                gui.addLabel(CnpcGuiSupport.ID_INLINE_NOTE, "§7No services available for your account.",
+                String note = "false".equals(ph.get("can_services"))
+                        ? "§7Character Services are locked for your account. Ask staff if you need access."
+                        : "§7No character services are enabled on this server right now.";
+                gui.addLabel(CnpcGuiSupport.ID_INLINE_NOTE, note,
                         CnpcGuiSupport.M, row + 4, CnpcGuiSupport.listWidth(), 14);
                 row += CnpcGuiSupport.ROW_STEP;
             } else {
