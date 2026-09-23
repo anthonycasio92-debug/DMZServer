@@ -1196,6 +1196,11 @@ def main() -> int:
     check("rival/spar chat hub /lm", '"/lm"' in rival_chat and '"/lm"' in spar_chat)
     check("difficulty chat hub button", '"/lm"' in diff_chat and 'lmdo lm open hub' not in diff_chat)
     check("ProgressionMenu allows android_remove", "isAndroidRemovePage" in prog_menu)
+    cnpc_prog = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmProgressionGui.java")
+    check("CNPC progression staff-only except android_remove",
+          '!"android_remove".equals(page)' in cnpc_prog or "android_remove\" -> false" in cnpc_prog)
+    check("CNPC android remove back goes to LM hub for players",
+          "CnpcLmHubGui.open(player, \"main\")" in cnpc_prog.split("paintAndroidRemove")[1].split("private static int paintNameScroll")[0])
     check(
         "MechanicsCommands android_remove opens GUI",
         "ProgressionMenu.open(player, \"android_remove\")" in mech_cmds,
