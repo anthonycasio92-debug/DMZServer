@@ -1664,12 +1664,6 @@
           "&7Shadow dummy · Stat checker"
         ]
       },
-      "admin": {
-        "name": "&cAll Flags",
-        "lore": [
-          "&7Full flag board"
-        ]
-      },
       "economy": {
         "name": "&6Ancient Coins",
         "lore": [

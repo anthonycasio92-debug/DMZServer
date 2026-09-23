@@ -1,11 +1,11 @@
 # Ship manifest audit
 
-- **OK:** 77
-- **Errors:** 0
+- **OK:** 74
+- **Errors:** 2
 
-## Result
+## FAIL
 
-**PASS** — all owner manifest checks satisfied.
-
+- audit_gui_menus_comprehensive.py failed
+- built jars exist for 4.5.91
 
 See [LM_SHIP_MANIFEST.md](../../../docs/LM_SHIP_MANIFEST.md).

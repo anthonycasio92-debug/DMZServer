@@ -48,7 +48,7 @@ public final class ProgressionChestGui implements Listener {
             Map.entry("endportal", new String[]{"End Portal Guard", "Blocks End portal use when locked.", "Passive at portals"}),
             Map.entry("shadow", new String[]{"Shadow Dummy", "50% shadow + spawn protect.", "Passive near dummies"}),
             Map.entry("statchecker", new String[]{"Stat Checker", "Sneak + RMB a player to dump stats.", "Sneak + right-click"}),
-            Map.entry("fabled", new String[]{"Fabled Bridges", "Master switch for soft Fabled syncs.", "See Fabled Subflags"})
+            Map.entry("fabled", new String[]{"Fabled Bridges", "Master switch for soft Fabled syncs.", "/progression"})
     );
 
     private final AdaptiveDifficultyGuiPlugin plugin;

@@ -17,18 +17,6 @@ import org.bukkit.entity.Player;
 public final class CmiProgressionGui {
     private static final Material FILL = Material.BLACK_STAINED_GLASS_PANE;
     private static final Material ACCENT = Material.GRAY_STAINED_GLASS_PANE;
-    private static final Material SECTION = Material.LIGHT_GRAY_STAINED_GLASS_PANE;
-
-    private static final String[][] FLAG_GROUPS = {
-            {"&eSkills", "flight", "sprint", "meditation", "potential"},
-            {"&6TP Gains", "farming", "building", "boost", "bio"},
-            {"&bRace", "racelock", "yardrat", "spiritualist", "android"},
-            {"&cCombat", "kiweapons", "piercing", "dot", "apothic"},
-            {"&5End", "end", "endportal"},
-            {"&7Utility", "shadow", "statchecker"},
-            {"&dFabled", "fabled"}
-    };
-
     private static final Map<String, String[]> FLAG_INFO = Map.ofEntries(
             Map.entry("flight", new String[]{"Flight", "Train fly by flying; Viltrumite max grant.", "/progression"}),
             Map.entry("sprint", new String[]{"Sprint Jump", "Jump/Sprint — Strength unlocked (invested STR).", "/progression"}),
@@ -50,13 +38,8 @@ public final class CmiProgressionGui {
             Map.entry("endportal", new String[]{"End Portal Guard", "Blocks End portal use when locked.", "Passive at portals"}),
             Map.entry("shadow", new String[]{"Shadow Dummy", "50% shadow + spawn protect.", "Passive near dummies"}),
             Map.entry("statchecker", new String[]{"Stat Checker", "Sneak + RMB a player to dump stats.", "Sneak + right-click"}),
-            Map.entry("fabled", new String[]{"Fabled Bridges", "Master switch for soft Fabled syncs.", "See Fabled Subflags"})
+            Map.entry("fabled", new String[]{"Fabled Bridges", "Master switch for soft Fabled syncs.", "/progression"})
     );
-
-    private static final String[] FABLED_FLAG_KEYS = {
-            "fabled", "energy", "statscreen", "tpsp", "attr",
-            "prestigeskill", "faction", "cleaner", "raceclass", "classperm"
-    };
 
     private CmiProgressionGui() {}
 
@@ -458,99 +441,6 @@ public final class CmiProgressionGui {
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         GuiFeedback.openCmi(gui);
-    }
-
-    private static void openFlags(Player player) {
-        Map<String, String> ph = ForgeBridge.progressionPlaceholders(player);
-        CMIGui gui = base(player, "&8Flags", 6);
-        CMIGuiButton info = new CMIGuiButton(4, Material.REPEATER, "&c&lStaff Flags");
-        info.lockField();
-        info.addLore(List.of("", "&7Grouped by script category", "&7Click a flag to toggle"));
-        gui.addButton(info);
-
-        int[] slots = {
-                1, 2, 3, 5, 6, 7,
-                10, 11, 12, 13, 14, 15, 16,
-                19, 20, 21, 22, 23, 24, 25,
-                28, 29, 30, 31, 32, 33, 34,
-                37, 38, 39, 40, 41, 42, 43
-        };
-        int si = 0;
-        for (String[] group : FLAG_GROUPS) {
-            if (si >= slots.length) {
-                break;
-            }
-            String sectionTitle = group[0];
-            CMIGuiButton label = new CMIGuiButton(slots[si++], SECTION, sectionTitle);
-            label.lockField();
-            label.addLore(List.of("", "&8Category"));
-            gui.addButton(label);
-            for (int g = 1; g < group.length && si < slots.length; g++) {
-                String key = group[g];
-                boolean on = "true".equalsIgnoreCase(ph.getOrDefault("flag_" + key, "false"));
-                String flagTitle = (on ? "&a" : "&8") + key + (on ? " ON" : " OFF");
-                Map<String, String> flagVars = Map.of(
-                        "name", flagTitle,
-                        "title", key,
-                        "status", on ? "ON" : "OFF",
-                        "desc", stripSection(sectionTitle));
-                gui.addButton(actionBtn(slots[si++], "progression.admin.flag",
-                        on ? Material.LIME_DYE : Material.GRAY_DYE,
-                        flagTitle,
-                        "flag", key, "admin",
-                        List.of("&8" + stripSection(sectionTitle), "&7Click to toggle " + key), flagVars));
-            }
-        }
-
-        gui.addButton(pageBtn(47, "progression.fabled.subflags", Material.ENCHANTED_BOOK, "&dFabled Subflags",
-                "flags_fabled", "&7Energy, TP/SP, race class, etc."));
-        gui.addButton(pageBtn(45, "common.back", Material.ARROW, "&7Back", "main", "&7Return"));
-        gui.addButton(hubBtn(49));
-        gui.addButton(closeBtn(53));
-        fillEmpty(gui, 6);
-        GuiFeedback.openCmi(gui);
-    }
-
-    private static void openFabledFlags(Player player) {
-        Map<String, String> ph = ForgeBridge.progressionPlaceholders(player);
-        CMIGui gui = base(player, "&8Fabled Flags", 5);
-        CMIGuiButton info = new CMIGuiButton(4, Material.ENCHANTED_BOOK, "&d&lFabled Subflags");
-        info.lockField();
-        info.addLore(List.of("", "&7Soft-dependency bridge toggles", "&7Click to toggle"));
-        gui.addButton(info);
-
-        int[] slots = {19, 20, 21, 22, 23, 24, 25, 28, 29, 30};
-        for (int i = 0; i < FABLED_FLAG_KEYS.length && i < slots.length; i++) {
-            String key = FABLED_FLAG_KEYS[i];
-            boolean on = "true".equalsIgnoreCase(ph.getOrDefault("flag_" + key, "false"));
-            String flagTitle = (on ? "&a" : "&8") + key + (on ? " ON" : " OFF");
-            Map<String, String> flagVars = Map.of(
-                    "name", flagTitle,
-                    "title", key,
-                    "status", on ? "ON" : "OFF",
-                    "desc", "Fabled");
-            gui.addButton(actionBtn(slots[i], "progression.fabled.flag",
-                    on ? Material.LIME_DYE : Material.GRAY_DYE,
-                    flagTitle,
-                    "flag", key, "flags_fabled",
-                    List.of("&8Fabled", "&7Click to toggle " + key), flagVars));
-        }
-
-        gui.addButton(pageBtn(36, "progression.fabled.back", Material.ARROW, "&7Back", "admin",
-                "&7Return to Flags"));
-        gui.addButton(hubBtn(40));
-        gui.addButton(closeBtn(44));
-        fillEmpty(gui, 5);
-        GuiFeedback.openCmi(gui);
-    }
-
-    private static String stripSection(String s) {
-        if (s == null) {
-            return "";
-        }
-        return s.replace("&e", "").replace("&6", "").replace("&b", "")
-                .replace("&c", "").replace("&5", "").replace("&a", "")
-                .replace("&d", "").replace("&7", "").replace("§", "");
     }
 
     private static List<String> unavailableLore(boolean bridgeOk) {

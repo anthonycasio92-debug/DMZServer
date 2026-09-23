@@ -197,6 +197,10 @@ def main() -> int:
     prog_chest = read(BUKKIT / "ProgressionChestGui.java")
     check("Progression chest no All Flags hub tile", "All Flags" not in prog_chest
           and 'SlotAction.page("admin")' not in prog_chest)
+    chat_prog = read(SRC / "gui/ProgressionChatMenu.java")
+    check("Progression chat menu no Flags hub", "[Flags]" not in chat_prog and "Staff Flags" not in chat_prog)
+    cmi_prog = read(BUKKIT / "CmiProgressionGui.java")
+    check("Progression CMI no flag board methods", "openFlags" not in cmi_prog and "openFabledFlags" not in cmi_prog)
     check("Android build overlay ships AndroidConversion", "progression/race/AndroidConversion.class" in build_sh)
     chest_prog = read(BUKKIT / "ProgressionChestGui.java")
     tooltips = read(GUI / "src/main/resources/gui-tooltips.json")

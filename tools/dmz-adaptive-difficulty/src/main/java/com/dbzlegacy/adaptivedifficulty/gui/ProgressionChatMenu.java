@@ -32,7 +32,7 @@ public final class ProgressionChatMenu {
             case "skills", "tp", "race", "combat", "end", "shop", "fabled", "utility", "status", "help" ->
                     category(player, p);
             case "economy", "ancient_coins", "coins" -> economy(player);
-            case "admin", "flags", "disable", "flags_fabled", "fabled_flags" -> admin(player);
+            case "admin", "flags", "disable", "flags_fabled", "fabled_flags" -> main(player);
             default -> main(player);
         }
     }
@@ -63,9 +63,7 @@ public final class ProgressionChatMenu {
                 .m_7220_(btn("§f[Help]", "/prog do page help", "Commands")));
         if (StaffAccess.isStaff(player)) {
             send(player, Component.m_237113_("§7")
-                    .m_7220_(btn("§6[Ancient Coins]", "/prog do page economy", "Staff free coin costs (all LM paid features)"))
-                    .m_7220_(Component.m_237113_(" "))
-                    .m_7220_(btn("§c[Flags]", "/prog do page admin", "Toggle features")));
+                    .m_7220_(btn("§6[Ancient Coins]", "/prog do page economy", "Staff free coin costs (all LM paid features)")));
         }
         send(player, Component.m_237113_("§8────────────────"));
     }
@@ -116,44 +114,6 @@ public final class ProgressionChatMenu {
                 "Applies to all LM Ancient Coin charges"));
         send(player, btn("§7« Back", "/prog do page main", "Main"));
         send(player, Component.m_237113_("§8────────────────"));
-    }
-
-    private static void admin(ServerPlayer player) {
-        send(player, Component.m_237113_(""));
-        send(player, Component.m_237113_("§8── §fProgression · Staff Flags §8──"));
-        List<String> lines = ProgressionGuiApi.linesForPage(player, "admin");
-        for (String line : lines) {
-            if (line == null || line.isBlank()) {
-                continue;
-            }
-            // Section headers stay plain; flag lines get toggle buttons
-            if (line.contains("§l") && !line.contains("ON") && !line.contains("OFF")) {
-                send(player, Component.m_237113_(line));
-                continue;
-            }
-            // Parse "§7key §aON" / "§7key §cOFF"
-            String stripped = line.replace("§7", "").replace("§a", "").replace("§c", "")
-                    .replace("§f", "").trim();
-            int space = stripped.lastIndexOf(' ');
-            if (space > 0) {
-                String key = stripped.substring(0, space).trim();
-                boolean on = stripped.endsWith("ON");
-                if (!key.isBlank() && (stripped.endsWith("ON") || stripped.endsWith("OFF"))) {
-                    send(player, toggleRow(key, on));
-                    continue;
-                }
-            }
-            send(player, Component.m_237113_(line));
-        }
-        send(player, btn("§7« Back", "/prog do page main", "Main"));
-        send(player, Component.m_237113_("§8────────────────"));
-    }
-
-    private static MutableComponent toggleRow(String key, boolean on) {
-        String label = on ? "§aON" : "§cOFF";
-        String next = on ? "off" : "on";
-        return Component.m_237113_("§7" + key + " §f" + label + " ")
-                .m_7220_(btn("§8[toggle]", "/prog admin " + key + " " + next, "Toggle " + key));
     }
 
     private static MutableComponent btn(String label, String command, String hover) {
