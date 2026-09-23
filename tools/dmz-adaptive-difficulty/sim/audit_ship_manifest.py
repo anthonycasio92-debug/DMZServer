@@ -94,6 +94,11 @@ def main() -> int:
     check("skills staff permission", "permission: difficulty.admin" in yml)
     hub = read(BUKKIT / "HubChestGui.java")
     check("hub Staff Admin tile staff-gated", "ForgeBridge.isStaff(player)" in hub and "Staff Admin" in hub)
+    cnpc_admin = read(SRC / "gui/cnpc/CnpcLmAdminGui.java")
+    check("admin hub no CNPC import/migrate tile", "hub.admin.migrate" not in hub and "CNPC migrate" not in hub
+          and "migrate-cnpc" not in hub.split("private Inventory admin", 1)[1].split("private Inventory", 1)[0]
+          if "private Inventory admin" in hub else "hub.admin.migrate" not in hub)
+    check("CNPC staff admin no CNPC migrate button", "CNPC data migrate" not in cnpc_admin and "migrate-cnpc" not in cnpc_admin)
     check("hub Skill Check tile donator-gated", "ForgeBridge.hasSkillCheck(player)" in hub)
 
     print("\n--- § rival ---")

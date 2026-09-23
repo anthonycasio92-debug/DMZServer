@@ -175,7 +175,7 @@ public final class HubChestGui implements Listener {
         put(holder, inv, 4, item(Material.COMMAND_BLOCK, "&c&lStaff Admin",
                 List.of("",
                         "&7Progression module flags · TP boost · Android tools",
-                        "&7Event log · config reload · CNPC migrate",
+                        "&7Event log · config reload",
                         "",
                         "&8/lm admin help")));
         put(holder, inv, 20, tipBtn(player, "hub.admin.reload", Material.LIME_DYE, "&aReload LM config",
@@ -187,9 +187,6 @@ public final class HubChestGui implements Listener {
         put(holder, inv, 24, tipBtn(player, "hub.admin.logs", Material.CLOCK, "&8Event log",
                 List.of("&7Toggle event logging and save to disk", "", "&eOpen")),
                 SlotAction.page("logs"));
-        put(holder, inv, 31, tipBtn(player, "hub.admin.migrate", Material.ANVIL, "&eCNPC migrate",
-                List.of("&7One-shot CNPC data migration", "", "&eRun")),
-                SlotAction.act("migrate-cnpc", "", "admin"));
         put(holder, inv, 36, pageBtn(player, "hub.admin.back", Material.ARROW, "&7Back", "&7Main hub"),
                 SlotAction.page("main"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());

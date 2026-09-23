@@ -194,8 +194,6 @@ public final class CmiHubGui {
                 "&7Skills · TP · Race · Combat flags", "&eOpen"));
         gui.addButton(pageBtn(player, 24, "hub.admin.logs", Material.CLOCK, "&8Event log", "logs",
                 "&7Toggle event logging and save to disk", "&eOpen"));
-        gui.addButton(actionBtn(player, 31, "hub.admin.migrate", Material.ANVIL, "&eCNPC migrate",
-                "migrate-cnpc", "", "admin", List.of("&7One-shot CNPC data migration", "", "&eRun")));
 
         gui.addButton(pageBtn(player, 36, "hub.admin.back", Material.ARROW, "&7Back", "main", "&7Main hub"));
         gui.addButton(closeBtn(44));

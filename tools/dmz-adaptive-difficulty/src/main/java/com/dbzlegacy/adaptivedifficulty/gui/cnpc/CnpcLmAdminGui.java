@@ -36,11 +36,6 @@ public final class CnpcLmAdminGui {
         row += 24;
         CnpcGuiSupport.button(gui, 22, "§8Event log", CnpcGuiSupport.COL_L, row,
                 () -> CnpcLmLogsGui.open(player, "main"));
-        CnpcGuiSupport.button(gui, 23, "§eCNPC data migrate", CnpcGuiSupport.COL_R, row, () -> CnpcGuiSupport.act(
-                player,
-                () -> com.dbzlegacy.adaptivedifficulty.gui.MechanicsGuiApi.handleDo(
-                        player, "migrate-cnpc", "", "admin"),
-                () -> open(player, "main")));
         row += CnpcGuiSupport.ROW_STEP + 4;
         CnpcGuiSupport.navSystemRoot(player, gui, row);
     }

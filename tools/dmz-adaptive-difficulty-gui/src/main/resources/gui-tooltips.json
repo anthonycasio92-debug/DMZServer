@@ -144,14 +144,6 @@
           "&8For staff"
         ]
       },
-      "migrate": {
-        "name": "&eCNPC migrate",
-        "lore": [
-          "&7One-time CustomNPCs data migration",
-          "&8For staff",
-          "&eRun"
-        ]
-      },
       "back": {
         "name": "&7Back",
         "lore": [
