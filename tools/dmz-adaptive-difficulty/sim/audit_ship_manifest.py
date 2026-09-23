@@ -266,6 +266,27 @@ def main() -> int:
                 r3.returncode == 0 and "raceAllowsAndroidForms" in android_abi,
                 "rebuild overlay — AndroidConversion.class must merge onto base jar",
             )
+            import zipfile
+
+            with zipfile.ZipFile(forge_jar) as zf:
+                chat_bytes = zf.read(
+                    "com/dbzlegacy/adaptivedifficulty/gui/MechanicsChatMenu.class"
+                )
+                cmd_bytes = zf.read(
+                    "com/dbzlegacy/adaptivedifficulty/command/MechanicsCommands.class"
+                )
+            check(
+                "shipped MechanicsChatMenu Forge routes (no /lmdo hub hops)",
+                b"/lmdo lm open difficulty" not in chat_bytes
+                and b"/difficulty" in chat_bytes
+                and b"/lm open android_remove" in chat_bytes,
+                "rebuild overlay — chat menu classes must merge from src",
+            )
+            check(
+                "shipped MechanicsCommands top-level /lm open",
+                b"open" in cmd_bytes and b"page" in cmd_bytes,
+                "rebuild overlay — MechanicsCommands must merge from src",
+            )
 
     out = SIM / "out/ship-manifest-audit.md"
     out.parent.mkdir(parents=True, exist_ok=True)

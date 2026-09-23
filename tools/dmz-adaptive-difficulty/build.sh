@@ -129,6 +129,20 @@ merge_onto_base_jar() {
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigeSystem.class" \
       "$merge/com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigeSystem.class"
   fi
+  # Hub/chat fallback + /lm open|page — must ship from src (base jar may still reference /lmdo).
+  for class in MechanicsChatMenu DifficultyChatMenu RivalChatMenu SparChatMenu ProgressionChatMenu; do
+    if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/gui/${class}.class" ]]; then
+      cp "$OUT/com/dbzlegacy/adaptivedifficulty/gui/${class}.class" \
+        "$merge/com/dbzlegacy/adaptivedifficulty/gui/${class}.class"
+    fi
+  done
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/command/MechanicsCommands.class" ]]; then
+    mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/command"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/command/MechanicsCommands.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/command/MechanicsCommands.class"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/command/MechanicsCommands\$"*.class \
+      "$merge/com/dbzlegacy/adaptivedifficulty/command/" 2>/dev/null || true
+  fi
   if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/util/StaffAccess.class" ]]; then
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/util/StaffAccess.class" \
       "$merge/com/dbzlegacy/adaptivedifficulty/util/StaffAccess.class"
