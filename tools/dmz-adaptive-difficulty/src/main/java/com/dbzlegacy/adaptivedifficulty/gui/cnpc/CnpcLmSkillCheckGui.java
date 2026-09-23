@@ -60,17 +60,8 @@ public final class CnpcLmSkillCheckGui {
             }
         });
         row += 24;
-        if ("saga".equals(page)) {
-            CnpcGuiSupport.navSubmenu(player, gui, row, () -> {
-                if (staffAdmin) {
-                    show(player, "core", true);
-                } else {
-                    show(player, "core", false);
-                }
-            }, "§7« Back");
-        } else {
-            CnpcGuiSupport.navSystemRoot(player, gui, row);
-        }
+        // Natural ↔ Saga via tabs only — no separate Back (matches chest/CMI Skill Check).
+        CnpcGuiSupport.navSystemRoot(player, gui, row);
         if ("core".equals(page)) {
             CnpcGuiSupport.paintSystemMainPreview(CnpcGuiSupport.target(player), gui, player);
         }
