@@ -169,6 +169,7 @@ def main() -> int:
     ok("CNPC skillcheck donator-only open", "SkillCheckService.canUse(player)" in cnpc_sk
        and "StaffAccess.isStaff(player)" not in cnpc_sk.split("public static void open", 1)[1].split("openSkillsAdmin", 1)[0])
     ok("CNPC skills admin staff-only", "openSkillsAdmin" in cnpc_sk and "StaffAccess.isStaff(player)" in cnpc_sk)
+    ok("CNPC skillcheck no redundant open-ui button", "Open Skill Check UI" not in cnpc_sk)
     ok("plugin ensureSkillsGuiAccess", "ensureSkillsGuiAccess" in plugin)
     ok("plugin skillcheck lmdo no staff bypass",
        "case \"skillcheck\"" in plugin and "ForgeBridge.isStaff(player)" not in plugin.split("case \"skillcheck\"", 1)[1].split("default ->", 1)[0])

@@ -60,13 +60,6 @@ public final class CnpcLmSkillCheckGui {
             }
         });
         row += 24;
-        if (SkillCheckService.canUse(player)) {
-            CnpcGuiSupport.button(gui, 22, "§bOpen Skill Check UI", CnpcGuiSupport.COL_L, row, () -> {
-                SkillCheckService.open(player, page);
-                show(player, page, false);
-            });
-        }
-        row += 24;
         if ("saga".equals(page)) {
             CnpcGuiSupport.navSubmenu(player, gui, row, () -> {
                 if (staffAdmin) {
