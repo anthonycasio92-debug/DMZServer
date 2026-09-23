@@ -29,6 +29,8 @@ When you ask for a behavior change, add a row here and a matching check in `audi
 | cnpc-defer-reopen | CNPC buttons defer reopen via `afterGuiClosed` (fix flash/crash after actions) | 4.5.54+ | manifest §cnpc |
 | gui-menus | All LM hub systems wired (CNPC + chest + CMI where applicable) | ongoing | `audit_gui_menus_comprehensive.py` |
 | android-saiyan-eligible | Dr. Gero Android convert allowed for **Saiyan** (and variants) when `androidforms` configured — no hard deny list | 4.5.84+ | manifest §android |
+| android-self-convert | Players may **convert themselves** (staff converts others); CNPC must not say Saiyan blocked | 4.5.88+ | manifest §android |
+| cnpc-empty-label-ids | CNPC empty-list placeholders use `ID_EMPTY_PLACEHOLDER` not flash id 50 | 4.5.88+ | manifest §cnpc |
 | cnpc-preview-live-player | Main-system CNPC menus: character preview uses **live player sync** (inventory-style) before Gecko clone fallback | 4.5.84+ | manifest §cnpc |
 | prestige-cnpc-tier-ids | Prestige **Tiers** grid must not reuse CNPC flash widget ids (50+) — avoids menu errors after buy/turn-in | 4.5.85+ | manifest §prestige |
 | version-handshake | Forge `VERSION`, `mods.toml`, GUI `plugin.yml`, and built jar names **same version** | always | `audit_gui_abi.py`, manifest §version |

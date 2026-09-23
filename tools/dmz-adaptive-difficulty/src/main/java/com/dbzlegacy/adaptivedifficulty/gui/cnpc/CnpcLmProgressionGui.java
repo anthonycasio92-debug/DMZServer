@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.gui.cnpc;
 
 import com.dbzlegacy.adaptivedifficulty.gui.ProgressionGuiApi;
+import com.dbzlegacy.adaptivedifficulty.progression.ProgressionConfig;
 import com.dbzlegacy.adaptivedifficulty.gui.RivalGuiApi;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import java.util.ArrayList;
@@ -53,8 +54,7 @@ public final class CnpcLmProgressionGui {
 
     private static boolean requiresStaff(String page) {
         return switch (page) {
-            case "economy", "admin", "flags", "flags_fabled", "boost_panel", "android_panel", "android_convert" ->
-                    true;
+            case "economy", "admin", "flags", "flags_fabled", "boost_panel" -> true;
             default -> false;
         };
     }
@@ -145,11 +145,15 @@ public final class CnpcLmProgressionGui {
                 continue;
             }
             if ("race".equals(page) && "android".equals(key)) {
-                if (staff) {
+                if (ProgressionConfig.androidConversion()) {
                     grid.add(CnpcGuiLayout.GridButton.run("§bAndroid tools", () -> open(player, "android_panel")));
+                } else if (staff) {
+                    grid.add(CnpcGuiLayout.GridButton.action(
+                            "§bAndroid §8· " + CnpcGuiSupport.flagOnOff(ph, "android"),
+                            () -> ProgressionGuiApi.handleDo(player, "flag", key, page),
+                            () -> open(player, page)));
                 } else {
-                    grid.add(CnpcGuiLayout.GridButton.disabled(
-                            "§bAndroid §8· " + CnpcGuiSupport.flagOnOff(ph, "android")));
+                    grid.add(CnpcGuiLayout.GridButton.disabled("§bAndroid §8· off"));
                 }
                 continue;
             }
@@ -216,12 +220,12 @@ public final class CnpcLmProgressionGui {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, "§bAndroid tools",
                 "§7Dr. Gero convert · remove upgrade");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of(
-                "§7Convert keeps race · unlocks Android path",
-                "§8Eligible: §7Human · Frost Demon · Viltrumite",
-                "§8Saiyan races cannot take the Gero upgrade",
+                "§7Convert keeps race · unlocks Android forms",
+                "§7Eligible races:",
+                "§f" + com.dbzlegacy.adaptivedifficulty.progression.race.AndroidConversion.eligibleRaceHint(),
                 "§7Remove restores prior forms (confirm within 10s)"
-        ), 2));
-        CnpcGuiSupport.button(gui, 60, "§aConvert player…", CnpcGuiSupport.COL_L, row,
+        ), 3));
+        CnpcGuiSupport.button(gui, 60, "§aConvert to Android…", CnpcGuiSupport.COL_L, row,
                 () -> open(player, "android_convert"));
         CnpcGuiSupport.button(gui, 61, "§cRemove upgrade…", CnpcGuiSupport.COL_R, row,
                 () -> open(player, "android_remove"));
@@ -239,7 +243,9 @@ public final class CnpcLmProgressionGui {
                 () -> ProgressionGuiApi.handleDo(player, "android", subject.m_7755_().getString(), "android_convert"),
                 () -> open(player, "android_convert")));
         row += CnpcGuiSupport.ROW_STEP + 4;
-        row = paintNameScroll(player, gui, row, "android", "android_convert");
+        if (StaffAccess.isStaff(player)) {
+            row = paintNameScroll(player, gui, row, "android", "android_convert");
+        }
         CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "android_panel"), "§7« Back");
     }
 

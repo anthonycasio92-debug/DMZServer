@@ -40,6 +40,7 @@ FOOTER_PREVIEW = re.compile(
     re.DOTALL,
 )
 FLASH_BUTTON_CONFLICT = re.compile(r"CnpcGuiSupport\.button\s*\(\s*gui\s*,\s*50\s*,")
+FLASH_LABEL_CONFLICT = re.compile(r"addLabel\s*\(\s*50\s*,")
 def method_blocks(text: str) -> list[tuple[str, str]]:
     parts = re.split(r"\n    private static void ", text)
     out: list[tuple[str, str]] = []
@@ -115,6 +116,8 @@ def main() -> int:
             errors.append(f"{rel}: event log toggle must reflect live state (CnpcGuiStyle.toggleOn/Off)")
         if FLASH_BUTTON_CONFLICT.search(text):
             errors.append(f"{rel}: button id 50 overlaps ID_FLASH_LABEL_BASE (use ID_GRID_BASE+)")
+        if FLASH_LABEL_CONFLICT.search(text):
+            errors.append(f"{rel}: label id 50 overlaps flash notice band (use ID_EMPTY_PLACEHOLDER)")
 
     support = CNPC / "CnpcGuiSupport.java"
     if support.is_file():

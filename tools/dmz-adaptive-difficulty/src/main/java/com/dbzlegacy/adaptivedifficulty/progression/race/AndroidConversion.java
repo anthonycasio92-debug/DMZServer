@@ -16,6 +16,7 @@ import com.dragonminez.common.util.TransformationsHelper;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -172,8 +173,8 @@ public final class AndroidConversion {
                 return "§c[Android] §f" + prettyRace(raceName)
                         + " §7is already an android lineage and cannot take the Gero upgrade.";
             }
-            // Match Gero: race must have androidforms TP costs configured.
-            if (!raceAllowsAndroidForms(raceName)) {
+            // Match Gero: race must have androidforms TP costs configured (resolve DMZ race id aliases).
+            if (!raceAllowsAndroidForms(player, character, raceName)) {
                 return "§c[Android] §f" + prettyRace(raceName)
                         + " §7has no android forms. §8Eligible: §7" + eligibleRaceHint() + "§8.";
             }
@@ -389,18 +390,69 @@ public final class AndroidConversion {
 
     /** Match Gero: {@code getFormSkillTpCosts("androidforms").length > 0}. */
     public static boolean raceAllowsAndroidForms(String raceName) {
-        if (raceName == null || raceName.isBlank()) {
+        return raceAllowsAndroidForms(null, null, raceName);
+    }
+
+    /** Resolves DMZ race folder ids (display name vs config key) before checking androidforms. */
+    public static boolean raceAllowsAndroidForms(ServerPlayer player, Character character, String raceName) {
+        for (String key : raceConfigKeys(character, raceName)) {
+            if (raceConfigHasAndroidForms(key)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean raceConfigHasAndroidForms(String raceKey) {
+        if (raceKey == null || raceKey.isBlank()) {
             return false;
         }
         try {
-            RaceCharacterConfig cfg = ConfigManager.getRaceCharacter(raceName);
-            if (cfg == null) {
-                return false;
+            RaceCharacterConfig cfg = ConfigManager.getRaceCharacter(raceKey);
+            if (cfg != null) {
+                Integer[] costs = cfg.getFormSkillTpCosts(ANDROID_FORM_GROUP);
+                if (costs != null && costs.length > 0) {
+                    return true;
+                }
             }
-            Integer[] costs = cfg.getFormSkillTpCosts(ANDROID_FORM_GROUP);
-            return costs != null && costs.length > 0;
         } catch (Throwable ignored) {
-            return false;
+        }
+        Path forms = FMLPaths.CONFIGDIR.get()
+                .resolve("dragonminez")
+                .resolve("races")
+                .resolve(raceKey.toLowerCase(Locale.ROOT))
+                .resolve("forms")
+                .resolve("androidforms.json");
+        return Files.isRegularFile(forms);
+    }
+
+    private static List<String> raceConfigKeys(Character character, String primaryRace) {
+        LinkedHashSet<String> keys = new LinkedHashSet<>();
+        addRaceKey(keys, primaryRace);
+        if (character != null) {
+            try {
+                addRaceKey(keys, character.getRace());
+            } catch (Throwable ignored) {
+            }
+            try {
+                addRaceKey(keys, character.getRaceName());
+            } catch (Throwable ignored) {
+            }
+        }
+        return new ArrayList<>(keys);
+    }
+
+    private static void addRaceKey(LinkedHashSet<String> keys, String raw) {
+        if (raw == null || raw.isBlank()) {
+            return;
+        }
+        String s = raw.trim();
+        keys.add(s);
+        String lower = s.toLowerCase(Locale.ROOT);
+        keys.add(lower);
+        keys.add(lower.replace(' ', '_').replace('-', '_'));
+        if (lower.endsWith(" saiyan") || lower.equals("half saiyan") || lower.equals("half-saiyan")) {
+            keys.add("saiyan");
         }
     }
 

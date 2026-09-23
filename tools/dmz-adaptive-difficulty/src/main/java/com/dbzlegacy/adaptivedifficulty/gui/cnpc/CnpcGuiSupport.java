@@ -71,6 +71,8 @@ public final class CnpcGuiSupport {
     public static final int ID_ENTITY_PREVIEW = 102;
     /** Hint above an overflow pick list (never reuse {@link #ID_STATUS_TAG} on the same gui). */
     public static final int ID_PICK_HINT = 117;
+    /** Empty-list placeholder — never {@link #ID_FLASH_LABEL_BASE} (flash notices use 50+). */
+    public static final int ID_EMPTY_PLACEHOLDER = 118;
     /** Static note label on the same row as an action button (never reuse the button id). */
     public static final int ID_INLINE_NOTE = 115;
     /** Extra staff-only control (never {@link #ID_CLOSE}). */

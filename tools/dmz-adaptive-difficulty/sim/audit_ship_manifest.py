@@ -185,6 +185,11 @@ def main() -> int:
     print("\n--- § android ---")
     android = read(SRC / "progression/race/AndroidConversion.java")
     check("Android Gero convert no Saiyan deny list", "GERO_RACE_DENY" not in android)
+    check("Android CNPC copy does not deny Saiyan", "Saiyan races cannot" not in read(SRC / "gui/cnpc/CnpcLmProgressionGui.java"))
+    check("Android convert allows self (not staff-only)", "you can convert yourself" in read(SRC / "gui/ProgressionGuiApi.java"))
+    cnpc_rival = read(SRC / "gui/cnpc/CnpcLmRivalGui.java")
+    check("CNPC rival empty labels avoid flash ids", "ID_EMPTY_PLACEHOLDER" in cnpc_rival
+          and "addLabel(50," not in cnpc_rival)
     check("Android build overlay ships AndroidConversion", "progression/race/AndroidConversion.class" in build_sh)
     chest_prog = read(BUKKIT / "ProgressionChestGui.java")
     tooltips = read(GUI / "src/main/resources/gui-tooltips.json")
