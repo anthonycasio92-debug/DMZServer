@@ -270,11 +270,7 @@ public final class DifficultyCommands {
     }
 
     private static boolean isStaff(CommandSourceStack src) {
-        if (src.m_6761_(2)) {
-            return true;
-        }
-        ServerPlayer player = src.m_230896_();
-        return player != null && StaffAccess.isStaff(player);
+        return StaffAccess.isStaffSource(src);
     }
 
     private static int openGui(CommandSourceStack source) {

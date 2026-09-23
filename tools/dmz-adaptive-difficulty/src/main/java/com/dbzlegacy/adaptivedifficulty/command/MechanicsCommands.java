@@ -73,14 +73,6 @@ public final class MechanicsCommands {
                                             return open(ctx.getSource(), "logs");
                                         }))))
                 .then(Commands.m_82127_("admin")
-                        .requires(src -> {
-                            try {
-                                ServerPlayer p = src.m_81375_();
-                                return StaffAccess.isStaff(p) || src.m_6761_(2);
-                            } catch (Exception e) {
-                                return src.m_6761_(2);
-                            }
-                        })
                         .executes(ctx -> adminHelp(ctx.getSource()))
                         .then(Commands.m_82127_("help").executes(ctx -> adminHelp(ctx.getSource())))
                         .then(Commands.m_82127_("reload").executes(ctx -> adminReload(ctx.getSource())))
@@ -119,8 +111,9 @@ public final class MechanicsCommands {
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "mode")))))
                         .then(Commands.m_82127_("open")
+                                .executes(ctx -> adminOpen(ctx.getSource(), "hub"))
                                 .then(Commands.m_82129_("system", StringArgumentType.word())
-                                        .executes(ctx -> openSystem(
+                                        .executes(ctx -> adminOpen(
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "system")))))
                         .then(Commands.m_82127_("inspect")
@@ -154,6 +147,13 @@ public final class MechanicsCommands {
             return 0;
         }
         return openSystemMenu(player, system) ? 1 : 0;
+    }
+
+    private static int adminOpen(CommandSourceStack source, String system) {
+        if (StaffAccess.denyUnlessStaff(source) == 0) {
+            return 0;
+        }
+        return openSystem(source, system);
     }
 
     /** Opens the standard LM inventory/chat menu for a system (shared with staff CNPC test GUI). */
@@ -222,6 +222,9 @@ public final class MechanicsCommands {
     }
 
     private static int adminTestGui(CommandSourceStack source) {
+        if (StaffAccess.denyUnlessStaff(source) == 0) {
+            return 0;
+        }
         ServerPlayer player = playerOrNull(source);
         if (player == null) {
             source.m_81352_(Component.m_237113_("Run /lm admin testgui in-game."));
@@ -231,6 +234,9 @@ public final class MechanicsCommands {
     }
 
     private static int adminHelp(CommandSourceStack source) {
+        if (StaffAccess.denyUnlessStaff(source) == 0) {
+            return 0;
+        }
         source.m_288197_(() -> Component.m_237113_(
                 "§6§l/lm admin\n"
                         + "§e/lm admin help §7— this list\n"
@@ -251,13 +257,12 @@ public final class MechanicsCommands {
     }
 
     private static int adminInspect(CommandSourceStack source, String playerName, String system) {
+        if (StaffAccess.denyUnlessStaff(source) == 0) {
+            return 0;
+        }
         ServerPlayer admin = playerOrNull(source);
         if (admin == null) {
             source.m_81352_(Component.m_237113_("Players only (open inspect from in-game)."));
-            return 0;
-        }
-        if (!StaffAccess.isStaff(admin)) {
-            admin.m_213846_(Component.m_237113_("§cStaff only."));
             return 0;
         }
         if (playerName == null || playerName.isBlank()
@@ -287,6 +292,9 @@ public final class MechanicsCommands {
     }
 
     private static int adminMigrateCnpc(CommandSourceStack source, boolean force) {
+        if (StaffAccess.denyUnlessStaff(source) == 0) {
+            return 0;
+        }
         String msg = com.dbzlegacy.adaptivedifficulty.data.CnpcDataMigrator.forceMigrateWorld(
                 source.m_81377_(), force);
         source.m_288197_(() -> Component.m_237113_(msg), true);
@@ -294,6 +302,9 @@ public final class MechanicsCommands {
     }
 
     private static int adminClear(CommandSourceStack source, String player, String scope) {
+        if (StaffAccess.denyUnlessStaff(source) == 0) {
+            return 0;
+        }
         String msg = com.dbzlegacy.adaptivedifficulty.data.PlayerDataClear.clear(
                 source.m_81377_(), player, scope);
         source.m_288197_(() -> Component.m_237113_(msg), true);
@@ -301,6 +312,9 @@ public final class MechanicsCommands {
     }
 
     private static int adminCharacterCooldownClear(CommandSourceStack source, String player, String kind) {
+        if (StaffAccess.denyUnlessStaff(source) == 0) {
+            return 0;
+        }
         String msg = com.dbzlegacy.adaptivedifficulty.data.PlayerDataClear.clearCharacterCooldowns(
                 source.m_81377_(), player, kind);
         source.m_288197_(() -> Component.m_237113_(msg), true);
@@ -308,6 +322,9 @@ public final class MechanicsCommands {
     }
 
     private static int adminReload(CommandSourceStack source) {
+        if (StaffAccess.denyUnlessStaff(source) == 0) {
+            return 0;
+        }
         boolean ok = DifficultyConfig.reload();
         source.m_288197_(() -> Component.m_237113_(
                 ok ? "§aLegacyMechanics config reloaded." : "§cConfig reload failed."), true);
@@ -315,6 +332,9 @@ public final class MechanicsCommands {
     }
 
     private static int adminSyslog(CommandSourceStack source, String mode) {
+        if (StaffAccess.denyUnlessStaff(source) == 0) {
+            return 0;
+        }
         String m = mode == null ? "status" : mode.toLowerCase();
         switch (m) {
             case "on", "true", "enable" -> {
@@ -335,11 +355,10 @@ public final class MechanicsCommands {
     }
 
     private static ServerPlayer playerOrNull(CommandSourceStack source) {
-        try {
-            return source.m_81375_();
-        } catch (Exception e) {
+        ServerPlayer player = source.m_230896_();
+        if (player == null) {
             source.m_81352_(Component.m_237113_("Players only."));
-            return null;
         }
+        return player;
     }
 }

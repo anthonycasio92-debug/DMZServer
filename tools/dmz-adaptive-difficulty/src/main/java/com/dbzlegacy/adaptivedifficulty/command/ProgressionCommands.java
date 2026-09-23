@@ -446,15 +446,7 @@ public final class ProgressionCommands {
     }
 
     private static boolean staff(CommandSourceStack src) {
-        try {
-            if (src.m_6761_(2)) {
-                return true;
-            }
-            ServerPlayer p = src.m_81375_();
-            return StaffAccess.isStaff(p);
-        } catch (Exception e) {
-            return src.m_6761_(2);
-        }
+        return StaffAccess.isStaffSource(src);
     }
 
     private static boolean skillCheck(CommandSourceStack src) {

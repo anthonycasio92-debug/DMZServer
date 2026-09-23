@@ -144,15 +144,7 @@ public final class SparCommands {
 
     /** Op level 2 or configured admin permission (Mohist Bukkit node). */
     private static boolean staff(CommandSourceStack src) {
-        try {
-            if (src.m_6761_(2)) {
-                return true;
-            }
-            ServerPlayer p = src.m_81375_();
-            return StaffAccess.isStaff(p);
-        } catch (Throwable ignored) {
-            return false;
-        }
+        return StaffAccess.isStaffSource(src);
     }
 
     private static int gui(CommandSourceStack source, String page) {

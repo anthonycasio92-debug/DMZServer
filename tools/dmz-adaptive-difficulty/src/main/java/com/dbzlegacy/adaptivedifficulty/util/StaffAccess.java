@@ -1,13 +1,46 @@
 package com.dbzlegacy.adaptivedifficulty.util;
 
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+
+import java.util.UUID;
 
 /**
  * Shared access checks: staff (op level 2 / {@code difficulty.admin}) and SkillCheck donators.
  */
 public final class StaffAccess {
     private StaffAccess() {}
+
+    /**
+     * Brigadier {@code .requires()} / admin handlers — use {@link CommandSourceStack#m_230896_()}
+     * not {@code getPlayer()} (throws on Mohist and hides whole subtrees).
+     */
+    public static boolean isStaffSource(CommandSourceStack src) {
+        if (src == null) {
+            return false;
+        }
+        try {
+            if (src.m_6761_(2)) {
+                return true;
+            }
+        } catch (Throwable ignored) {
+        }
+        ServerPlayer player = src.m_230896_();
+        return player != null && isStaff(player);
+    }
+
+    /** {@code 1} if staff; else sends denial and returns {@code 0}. */
+    public static int denyUnlessStaff(CommandSourceStack source) {
+        if (isStaffSource(source)) {
+            return 1;
+        }
+        source.m_288197_(() -> Component.m_237113_(
+                "§cNo permission (need op or difficulty.admin)."
+        ), false);
+        return 0;
+    }
 
     public static boolean isStaff(ServerPlayer player) {
         if (player == null) {
@@ -85,9 +118,25 @@ public final class StaffAccess {
             return null;
         }
         try {
-            return player.getClass().getMethod("getBukkitEntity").invoke(player);
+            Object bp = player.getClass().getMethod("getBukkitEntity").invoke(player);
+            if (bp != null) {
+                return bp;
+            }
         } catch (Throwable ignored) {
         }
-        return player;
+        try {
+            UUID id = player.m_20148_();
+            Class<?> bukkit = Class.forName("org.bukkit.Bukkit");
+            Object byId = bukkit.getMethod("getPlayer", UUID.class).invoke(null, id);
+            if (byId != null) {
+                return byId;
+            }
+            String name = player.m_6302_();
+            if (name != null && !name.isBlank()) {
+                return bukkit.getMethod("getPlayerExact", String.class).invoke(null, name);
+            }
+        } catch (Throwable ignored) {
+        }
+        return null;
     }
 }
