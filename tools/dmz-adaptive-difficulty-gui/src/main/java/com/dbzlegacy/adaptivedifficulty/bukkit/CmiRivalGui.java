@@ -144,7 +144,7 @@ public final class CmiRivalGui {
         gui.addButton(actionBtn(player, 33,
                 tpOn ? "rival.main.tpmsg_on" : "rival.main.tpmsg_off",
                 tpOn ? Material.BELL : Material.GRAY_DYE,
-                tpOn ? "&aTP Msg ON" : "&8TP Msg OFF",
+                tpOn ? "&aTP ON" : "&8TP OFF",
                 "tpmsg", "toggle", "main",
                 List.of(
                         tpOn ? "&8Hides rival TP chat messages" : "&8Shows rival TP chat messages again",

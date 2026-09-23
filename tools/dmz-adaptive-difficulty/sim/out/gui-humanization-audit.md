@@ -1,6 +1,6 @@
 # GUI humanization audit
 
-- Catalog keys: **291** · Referenced from Java: **265**
+- Catalog keys: **291** · Referenced from Java: **264**
 - Catalog revision: **Java 200** · **JSON 201** · **MISMATCH**
 
 ## Summary

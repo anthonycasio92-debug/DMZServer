@@ -142,7 +142,7 @@ public final class RivalChestGui implements Listener {
         put(holder, inv, 33, tipBtn(viewer,
                 tpOn ? "rival.main.tpmsg_on" : "rival.main.tpmsg_off",
                 tpOn ? Material.BELL : Material.GRAY_DYE,
-                tpOn ? "&aTP Msg ON" : "&8TP Msg OFF",
+                tpOn ? "&aTP ON" : "&8TP OFF",
                 List.of(
                         tpOn ? "&8Hides rival TP chat messages" : "&8Shows rival TP chat messages again",
                         "&8Only affects rivalry TP chat"

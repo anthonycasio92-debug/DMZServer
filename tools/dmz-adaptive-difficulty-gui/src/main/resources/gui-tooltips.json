@@ -812,14 +812,14 @@
         ]
       },
       "tpmsg_on": {
-        "name": "&aTP Msg ON",
+        "name": "&aTP ON",
         "lore": [
           "&7Hide rival TP messages",
           "&8Only affects rivalry TP chat"
         ]
       },
       "tpmsg_off": {
-        "name": "&8TP Msg OFF",
+        "name": "&8TP OFF",
         "lore": [
           "&7Show rival TP messages again",
           "&8Only affects rivalry TP chat"

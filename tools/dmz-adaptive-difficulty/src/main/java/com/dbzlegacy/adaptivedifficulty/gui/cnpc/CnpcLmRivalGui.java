@@ -123,8 +123,8 @@ public final class CnpcLmRivalGui {
         CnpcGuiSupport.button(gui, 25, "§bProgress", CnpcGuiSupport.COL_R, row, () -> open(player, "progress"));
         row += 24;
         boolean tpOn = "true".equalsIgnoreCase(ph.get("tpMsg"));
-        CnpcGuiSupport.button(gui, 26, tpOn ? CnpcGuiStyle.toggleOn("Teleport msgs")
-                : CnpcGuiStyle.toggleOff("Teleport msgs"),
+        CnpcGuiSupport.button(gui, 26, tpOn ? CnpcGuiStyle.toggleOn("TP")
+                : CnpcGuiStyle.toggleOff("TP"),
                 CnpcGuiSupport.COL_L, row, () -> act(
                 player, "tpmsg", "toggle", "main"));
         if ("true".equalsIgnoreCase(ph.get("instinct_feature"))) {
