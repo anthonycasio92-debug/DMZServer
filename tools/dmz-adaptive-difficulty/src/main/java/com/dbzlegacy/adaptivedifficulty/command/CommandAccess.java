@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.command;
 
+import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.commands.CommandSourceStack;
@@ -47,5 +48,38 @@ public final class CommandAccess {
 
     public static LiteralArgumentBuilder<CommandSourceStack> staffRoot(String name) {
         return Commands.m_82127_(name).requires(StaffAccess::isStaffSource);
+    }
+
+    /** Staff-only literal (hides subtree from tab complete and parsing for non-staff). */
+    public static LiteralArgumentBuilder<CommandSourceStack> staffLiteral(String name) {
+        return Commands.m_82127_(name).requires(StaffAccess::isStaffSource);
+    }
+
+    /** Bukkit {@code PluginCommand} permission for Mohist bridge (defaults {@code difficulty.admin}). */
+    public static String staffBukkitPermission() {
+        String node = DifficultyConfig.get().adminPermission;
+        return node == null || node.isBlank() ? "difficulty.admin" : node;
+    }
+
+    public static String skillCheckBukkitPermission() {
+        DifficultyConfig cfg = DifficultyConfig.get();
+        String node = cfg.skillCheckPermission;
+        return node == null || node.isBlank() ? "legacymechanics.skillcheck" : node;
+    }
+
+    public static boolean isStaffOnlyBukkitCommand(String label) {
+        if (label == null || label.isBlank()) {
+            return false;
+        }
+        return switch (label.toLowerCase()) {
+            case "progression", "prog", "prestige", "skills", "character", "characterservices", "charservices",
+                    "enddragon", "cleardragons", "spawndragon", "killdragons", "androidify", "androidification",
+                    "padmin", "prestigeadmin", "legacymechanics" -> true;
+            default -> false;
+        };
+    }
+
+    public static boolean isSkillCheckBukkitCommand(String label) {
+        return label != null && "skillcheck".equalsIgnoreCase(label);
     }
 }

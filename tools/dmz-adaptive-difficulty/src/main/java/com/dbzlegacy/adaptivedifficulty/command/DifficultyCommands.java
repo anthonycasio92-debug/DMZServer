@@ -82,7 +82,7 @@ public final class DifficultyCommands {
                 .then(vanillaDifficultyLiteral("easy"))
                 .then(vanillaDifficultyLiteral("normal"))
                 .then(vanillaDifficultyLiteral("hard"))
-                .then(Commands.m_82127_("admin")
+                .then(CommandAccess.staffLiteral("admin")
                         .executes(ctx -> adminHelpOrDeny(ctx.getSource()))
                         .then(Commands.m_82127_("help")
                                 .executes(ctx -> adminHelpOrDeny(ctx.getSource())))

@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.command;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
+import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import com.mojang.brigadier.ParseResults;
 import com.mojang.brigadier.suggestion.Suggestion;
 import com.mojang.brigadier.suggestion.Suggestions;
@@ -91,36 +92,39 @@ public final class MohistCommandBridge {
                     Class.forName("org.bukkit.plugin.Plugin"));
             ctor.setAccessible(true);
 
+            String staffPerm = CommandAccess.staffBukkitPermission();
+            String skillPerm = CommandAccess.skillCheckBukkitPermission();
+
             registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
-                    "lm", List.of("legacymechanics"));
+                    "lm", List.of("legacymechanics"), null);
             registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
-                    "difficulty", List.of("diff"));
+                    "difficulty", List.of("diff"), null);
             registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
-                    "rival", List.of());
+                    "rival", List.of(), null);
             registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
-                    "spar", List.of("sparring"));
+                    "spar", List.of("sparring"), null);
             registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
-                    "skillcheck", List.of());
+                    "skillcheck", List.of(), skillPerm);
             registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
-                    "progression", List.of("prog"));
+                    "progression", List.of("prog"), staffPerm);
             registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
-                    "prestige", List.of());
+                    "prestige", List.of(), staffPerm);
             registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
-                    "skills", List.of());
+                    "skills", List.of(), staffPerm);
             registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
-                    "character", List.of("characterservices", "charservices"));
+                    "character", List.of("characterservices", "charservices"), staffPerm);
             registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
-                    "enddragon", List.of());
+                    "enddragon", List.of(), staffPerm);
             registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
-                    "cleardragons", List.of());
+                    "cleardragons", List.of(), staffPerm);
             registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
-                    "spawndragon", List.of());
+                    "spawndragon", List.of(), staffPerm);
             registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
-                    "killdragons", List.of());
+                    "killdragons", List.of(), staffPerm);
             registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
-                    "androidify", List.of("androidification"));
+                    "androidify", List.of("androidification"), staffPerm);
             registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
-                    "padmin", List.of("prestigeadmin"));
+                    "padmin", List.of("prestigeadmin"), staffPerm);
 
             registered = true;
             AdaptiveDifficultyMod.LOGGER.info(
@@ -143,7 +147,8 @@ public final class MohistCommandBridge {
             Object executor,
             Object tabCompleter,
             String name,
-            List<String> aliases) throws ReflectiveOperationException {
+            List<String> aliases,
+            String bukkitPermission) throws ReflectiveOperationException {
         Object cmd = ctor.newInstance(name, hostPlugin);
         cmd.getClass().getMethod("setExecutor", Class.forName("org.bukkit.command.CommandExecutor"))
                 .invoke(cmd, executor);
@@ -151,6 +156,9 @@ public final class MohistCommandBridge {
                 .invoke(cmd, tabCompleter);
         if (!aliases.isEmpty()) {
             cmd.getClass().getMethod("setAliases", List.class).invoke(cmd, aliases);
+        }
+        if (bukkitPermission != null && !bukkitPermission.isBlank()) {
+            cmd.getClass().getMethod("setPermission", String.class).invoke(cmd, bukkitPermission);
         }
         cmd.getClass().getMethod("setDescription", String.class)
                 .invoke(cmd, "LegacyMechanics → Forge (" + name + ")");
@@ -162,6 +170,10 @@ public final class MohistCommandBridge {
     static void dispatch(MinecraftServer server, Object sender, String label, String[] args) {
         CommandSourceStack source = commandSource(server, sender);
         if (source == null) {
+            return;
+        }
+        if (!mayUseBukkitRoot(source, label)) {
+            LmCommandFeedback.tell(source, "§cNo permission.");
             return;
         }
         String line = commandLine(label, args);
@@ -176,7 +188,7 @@ public final class MohistCommandBridge {
     private static List<String> tabComplete(
             MinecraftServer server, Object sender, String label, String[] args) {
         CommandSourceStack source = commandSource(server, sender);
-        if (source == null) {
+        if (source == null || !mayUseBukkitRoot(source, label)) {
             return Collections.emptyList();
         }
         String line = commandLine(label, args);
@@ -255,6 +267,16 @@ public final class MohistCommandBridge {
         } catch (Throwable ignored) {
         }
         return server.m_129893_();
+    }
+
+    private static boolean mayUseBukkitRoot(CommandSourceStack source, String label) {
+        if (CommandAccess.isStaffOnlyBukkitCommand(label)) {
+            return StaffAccess.isStaffSource(source);
+        }
+        if (CommandAccess.isSkillCheckBukkitCommand(label)) {
+            return StaffAccess.hasSkillCheckSource(source);
+        }
+        return true;
     }
 
     /** Entity-attached stack so feedback and brigadier suggestions reach the player on Mohist. */

@@ -122,7 +122,7 @@ public final class SparCommands {
                                 .executes(ctx -> apprenticeInvite(
                                         ctx.getSource(),
                                         StringArgumentType.getString(ctx, "player")))))
-                .then(Commands.m_82127_("admin")
+                .then(CommandAccess.staffLiteral("admin")
                         .executes(ctx -> sparAdminHelp(ctx.getSource()))
                         .then(Commands.m_82127_("help").executes(ctx -> sparAdminHelp(ctx.getSource())))
                         .then(Commands.m_82127_("save").executes(ctx -> save(ctx.getSource())))
@@ -134,7 +134,7 @@ public final class SparCommands {
                                                 .executes(ctx -> resetCd(
                                                         ctx.getSource(),
                                                         StringArgumentType.getString(ctx, "player")))))))
-                .then(Commands.m_82127_("save")
+                .then(CommandAccess.staffLiteral("save")
                         .executes(ctx -> save(ctx.getSource())));
 
         event.getDispatcher().register(root);

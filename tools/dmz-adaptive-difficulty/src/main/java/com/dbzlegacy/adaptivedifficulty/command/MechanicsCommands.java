@@ -62,7 +62,7 @@ public final class MechanicsCommands {
                                         .executes(ctx -> openSystem(
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "system")))))
-                        .then(Commands.m_82127_("syslog")
+                        .then(CommandAccess.staffLiteral("syslog")
                                 .then(LmCommandSuggestions.word("mode", LmCommandSuggestions.SYSLOG_MODES)
                                         .executes(ctx -> {
                                             ServerPlayer p = playerOrNull(ctx.getSource());
@@ -76,7 +76,7 @@ public final class MechanicsCommands {
                                             p.m_213846_(Component.m_237113_(msg));
                                             return open(ctx.getSource(), "logs");
                                         }))))
-                .then(Commands.m_82127_("admin")
+                .then(CommandAccess.staffLiteral("admin")
                         .executes(ctx -> adminHelp(ctx.getSource()))
                         .then(Commands.m_82127_("help").executes(ctx -> adminHelp(ctx.getSource())))
                         .then(Commands.m_82127_("reload").executes(ctx -> adminReload(ctx.getSource())))
