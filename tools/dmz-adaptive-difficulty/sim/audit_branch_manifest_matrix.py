@@ -102,6 +102,21 @@ CHECKS: list[Check] = [
     Check("gui-tp-audit-script", "process",
           ("tools/dmz-adaptive-difficulty/sim/audit_gui_tp_copy.py",),
           "use TP instead of Teleport"),
+    Check("difficulty-tier-personal-gate", "difficulty",
+          ("tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmDifficultyGui.java",),
+          "paintTiersLocked"),
+    Check("rival-challenge-persist", "rival",
+          ("tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/rival/RivalStore.java",),
+          "challengeRequests"),
+    Check("rival-challenge-reopen", "rival",
+          ("tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmRivalGui.java",),
+          '"challenge_send", sendArg, "challenge_pending"'),
+    Check("dojo-war-offline", "spar",
+          ("tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/sparring/DojoRankings.java",),
+          "challengeDojoByMasterKey"),
+    Check("build-backend-ship-overlay", "build",
+          ("tools/dmz-adaptive-difficulty/build.sh",),
+          "sparring/DojoRankings.class"),
 ]
 
 
@@ -279,9 +294,14 @@ def main() -> int:
     print(out.read_text(encoding="utf-8"))
 
     exit_code = 0
+    best_ver = version_key(best_ref) if best_ref else (0,)
+
     if best_ref and best_ref in rows:
         for ref in rows:
             if ref == best_ref:
+                continue
+            # Stale feature branches below best LM version are not deploy targets — skip.
+            if version_key(ref) < best_ver:
                 continue
             lost = [c.id for c in CHECKS if rows[best_ref][c.id] and not rows[ref][c.id]]
             if lost:

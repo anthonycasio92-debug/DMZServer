@@ -11,7 +11,16 @@ When you ask for a behavior change, add a row here and a matching check in `audi
 | prestige-gui | Main prestige hub: **Need/Held** from wallet; **no Cap** on main; no cap breakthrough button on main (CNPC/chest/CMI) | 4.5.64+ | `audit_prestige_gui_flow.py`, manifest §prestige |
 | skillcheck-gate | **Skill Check** = `legacymechanics.skillcheck` only; **no NPC/session bypass**; staff use **Skills** admin | 4.5.68+ | manifest §access |
 | staff-admin-gate | **Staff Admin** / `/skills` / progression staff pages = staff/op only | 4.5.68+ | manifest §access |
-| rival-challenge-pending | Rival **Challenge → Pending requests** board; tap row → accept/decline/cancel (CNPC + chest + CMI) | 4.5.59+ (merged 4.5.69) | manifest §rival |
+| rival-challenge-pending | Rival **Challenge → Duel requests** board; tap row → accept/decline/cancel (CNPC + chest + CMI) | 4.5.59+ (merged 4.5.69) | manifest §rival |
+| rival-challenge-persist | Duel requests **persist** in `rivalry-v4.json`; **not** cleared on logout | 4.5.79+ | manifest §rival |
+| rival-challenge-reopen | After send, CNPC reopens **Duel requests** (not generic Challenge hub) | 4.5.79+ | manifest §rival |
+| rival-declare-vs-duel | **Declare invites** (Actions) labeled separately from **Duel requests** (Challenge) | 4.5.79+ | manifest §rival |
+| dojo-war-offline | Dojo war declare via **`uuid:` master** (target may be offline) | 4.5.79+ | manifest §spar |
+| dojo-war-pending-hub | CNPC Dojo War hub: **War pending** only (no hub Accept/Decline) | 4.5.79+ | manifest §spar |
+| spar-training-bonds | Mentor hub **Training bonds** + recruit/master wording (CNPC + chest/CMI) | 4.5.79+ | manifest §spar |
+| cnpc-notice-visible | CNPC flash notice band readable (not grey-only) | 4.5.79+ | manifest §cnpc |
+| difficulty-tier-personal-gate | CNPC tier ladder locked when personal difficulty OFF | 4.5.78+ | manifest §difficulty |
+| build-backend-ship-overlay | `build.sh` overlays rival/spar backend classes shipped in 4.5.79+ | 4.5.79+ | manifest §build |
 | rival-declare-pending | Rival **Actions → Pending** + `pending_decide:` (declare mutual confirm) | 4.5.55+ | manifest §rival |
 | spar-pending | Spar **Mentor Pending** + `pending_decide:`; dojo war pending decide | 2.3.142+ | manifest §spar |
 | spar-no-end-session | Spar main GUI: **no End Session** button (use normal flow / `/spar end`) | 4.5.63+ | manifest §spar |
@@ -30,6 +39,7 @@ When you ask for a behavior change, add a row here and a matching check in `audi
 ## Why regressions happened (2026-09)
 
 - **Rival challenge pending** lived on open PR #150 and was **never merged to `main`** while prestige/skillcheck fixes shipped on other branches → live got 4.5.68 **without** challenge pending UX.
+- **4.5.79:** duel requests were memory-only and cleared on logout; dojo war required online masters — fixed + manifest rows above.
 - **Prestige runtime crash (4.5.74):** source had `heldCountForNeed` but **jar build** did not overlay `PrestigeSystem.class` onto the consolidated base — fixed 4.5.75+ (`build.sh` + manifest `javap` check).
 - **Prevention:** manifest audit + deploy gate; merge manifest row when feature ships; do not deploy from a branch that fails `audit_ship_manifest.py`.
 - **Branch matrix:** `tools/dmz-adaptive-difficulty/sim/audit_branch_manifest_matrix.py` runs in `build.sh`. It **fails** if `main` is behind any `origin/cursor/*-c766` tip or if a scanned feature branch **regresses** markers present on the best branch. After merging to `main`, fast-forward or delete stale cursor branches so the matrix stays green.
