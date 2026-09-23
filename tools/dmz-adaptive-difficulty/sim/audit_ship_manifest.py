@@ -57,6 +57,8 @@ def main() -> int:
 
     manifest = read(ROOT / "docs/LM_SHIP_MANIFEST.md")
     check("LM_SHIP_MANIFEST.md present", "prestige-need" in manifest and "rival-challenge-pending" in manifest)
+    check("manifest android-saiyan-eligible row", "android-saiyan-eligible" in manifest)
+    check("manifest cnpc-preview-live-player row", "cnpc-preview-live-player" in manifest)
 
     print("\n--- Sub-audits (must PASS) ---")
     for script in (
@@ -158,12 +160,26 @@ def main() -> int:
     check("CNPC afterGuiClosed defer reopen", "afterGuiClosed" in cnpc_support)
     check("CNPC flash notice separate widget ids", "ID_FLASH_LABEL_BASE" in cnpc_support)
     check("CNPC flash notice readable", "§6§lNotice" in cnpc_support and "brightenNoticeLine" in cnpc_support)
+    cnpc_preview = read(SRC / "gui/cnpc/CnpcPlayerPreview.java")
+    check("CNPC preview live player sync (inventory-style)", "tryBindLivePlayer" in cnpc_preview
+          and "setEntitySyncedById" in cnpc_preview)
     cnpc_prestige = read(SRC / "gui/cnpc/CnpcLmPrestigeGui.java")
     check("CNPC prestige section tags avoid info label ids",
           "ID_INLINE_NOTE" in cnpc_prestige and 'paintSectionTag(gui, 11,' not in cnpc_prestige
           and 'paintSectionTag(gui, 12,' not in cnpc_prestige)
     build_sh = read(MOD / "build.sh")
     check("build overlays RivalStore + dojo backend", "rival/RivalStore.class" in build_sh and "sparring/DojoRankings.class" in build_sh)
+    check(
+        "build overlays full CNPC gui/cnpc package",
+        "adaptivedifficulty/gui/cnpc/." in build_sh and "cp -a" in build_sh,
+    )
+    print("\n--- § android ---")
+    android = read(SRC / "progression/race/AndroidConversion.java")
+    check("Android Gero convert no Saiyan deny list", "GERO_RACE_DENY" not in android)
+    check("Android build overlay ships AndroidConversion", "progression/race/AndroidConversion.class" in build_sh)
+    chest_prog = read(BUKKIT / "ProgressionChestGui.java")
+    tooltips = read(GUI / "src/main/resources/gui-tooltips.json")
+    check("Android GUI copy lists Saiyan eligible", "Saiyan excluded" not in chest_prog and "Saiyan excluded" not in tooltips)
     preview_tex = read(SRC / "gui/cnpc/DmzPreviewTexture.java")
     check("CNPC preview race textures (namekian/bio)", "namekian" in preview_tex and "bioandroid" in preview_tex)
     check("PrestigeSystem shrinkNeedFloor early band", "shrinkNeedFloor" in prestige)
@@ -194,6 +210,30 @@ def main() -> int:
                 "shipped PrestigeSystem.heldCountForNeed(ServerPlayer)",
                 r.returncode == 0 and "heldCountForNeed(net.minecraft.server.level.ServerPlayer)" in prestige_abi,
                 "rebuild overlay — ProgressionGuiApi calls method missing from base jar merge",
+            )
+            r2 = subprocess.run(
+                ["javap", "-classpath", str(forge_jar), "-private",
+                 "com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcPlayerPreview"],
+                capture_output=True,
+                text=True,
+            )
+            preview_abi = (r2.stdout or "") + (r2.stderr or "")
+            check(
+                "shipped CnpcPlayerPreview live sync helper",
+                r2.returncode == 0 and "tryBindLivePlayer" in preview_abi,
+                "rebuild overlay — CNPC preview must ship from gui/cnpc overlay",
+            )
+            r3 = subprocess.run(
+                ["javap", "-classpath", str(forge_jar), "-private",
+                 "com.dbzlegacy.adaptivedifficulty.progression.race.AndroidConversion"],
+                capture_output=True,
+                text=True,
+            )
+            android_abi = (r3.stdout or "") + (r3.stderr or "")
+            check(
+                "shipped AndroidConversion.raceAllowsAndroidForms",
+                r3.returncode == 0 and "raceAllowsAndroidForms" in android_abi,
+                "rebuild overlay — AndroidConversion.class must merge onto base jar",
             )
 
     out = SIM / "out/ship-manifest-audit.md"
