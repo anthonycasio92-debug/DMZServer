@@ -421,13 +421,12 @@ public final class SparCommands {
         if (StaffAccess.denyUnlessStaff(source) == 0) {
             return 0;
         }
-        source.m_288197_(() -> Component.m_237113_(
+        LmCommandFeedback.tellLines(source,
                 "§6§l/spar admin\n"
                         + "§e/spar admin save §7— save sparring data to disk\n"
                         + "§e/spar admin status §7— enabled + path\n"
                         + "§7Clear mentor cooldown\n"
-                        + "§8/spar admin mentor resetcd [player]"
-        ), false);
+                        + "§8/spar admin mentor resetcd [player]");
         return 1;
     }
 

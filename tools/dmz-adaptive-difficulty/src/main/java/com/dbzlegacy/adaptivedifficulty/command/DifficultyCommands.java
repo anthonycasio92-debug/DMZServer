@@ -759,7 +759,7 @@ public final class DifficultyCommands {
     }
 
     private static int adminHelp(CommandSourceStack source) {
-        source.m_288197_(() -> Component.m_237113_(
+        LmCommandFeedback.tellLines(source,
                 "§6Legacy Mechanics — admin\n"
                         + "§e/difficulty §7— open player GUI (CMI / chest / chat)\n"
                         + "§e/difficulty reset §7— clear active tier (free)\n"
@@ -782,8 +782,7 @@ public final class DifficultyCommands {
                         + "§8transformScaleWeight · transformScaleExponent · maxFormBoost · maxLiveCombatChannel\n"
                         + "§8mobHealthScale · tankDamageDefenseRatio · tankDamageHealthRatio\n"
                         + "§8eliteMinUnlockTier · mutationMinUnlockTier · adaptiveAiMinUnlockTier\n"
-                        + "§8enemyEvolutionMinUnlockTier · bossMechanicsMinUnlockTier"
-        ), false);
+                        + "§8enemyEvolutionMinUnlockTier · bossMechanicsMinUnlockTier");
         return 1;
     }
 

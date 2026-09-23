@@ -1,6 +1,9 @@
 package com.dbzlegacy.adaptivedifficulty.command;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
+import com.mojang.brigadier.ParseResults;
+import com.mojang.brigadier.suggestion.Suggestion;
+import com.mojang.brigadier.suggestion.Suggestions;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -8,12 +11,17 @@ import net.minecraft.server.level.ServerPlayer;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Mohist routes player chat through Bukkit. Without LegacyMechanicsGUI, only top-level
  * Forge literals work — subcommands like {@code /lm admin} show as unknown. Registers
- * Bukkit commands that forward the full line to Forge brigadier.
+ * Bukkit commands that forward the full line to Forge brigadier with brigadier tab complete.
  */
 public final class MohistCommandBridge {
     private static volatile boolean registered;
@@ -64,40 +72,55 @@ public final class MohistCommandBridge {
                         return true;
                     });
 
+            Class<?> tabCompleter = Class.forName("org.bukkit.command.TabCompleter");
+            Object tabCompleterProxy = Proxy.newProxyInstance(
+                    tabCompleter.getClassLoader(),
+                    new Class<?>[] {tabCompleter},
+                    (proxy, method, args) -> {
+                        if (!"onTabComplete".equals(method.getName()) || args == null || args.length < 4) {
+                            return Collections.emptyList();
+                        }
+                        Object sender = args[0];
+                        String label = String.valueOf(args[2]);
+                        String[] cmdArgs = (String[]) args[3];
+                        return tabComplete(server, sender, label, cmdArgs);
+                    });
+
             Class<?> pluginCommandClass = Class.forName("org.bukkit.command.PluginCommand");
             Constructor<?> ctor = pluginCommandClass.getDeclaredConstructor(String.class,
                     Class.forName("org.bukkit.plugin.Plugin"));
             ctor.setAccessible(true);
 
-            registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, "lm",
-                    List.of("legacymechanics"));
-            registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, "difficulty",
-                    List.of("diff"));
-            registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, "rival", List.of());
-            registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, "spar",
-                    List.of("sparring"));
-            registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, "skillcheck",
-                    List.of());
-            registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, "progression",
-                    List.of("prog"));
-            registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, "prestige",
-                    List.of());
-            registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, "skills",
-                    List.of());
-            registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, "character",
-                    List.of("characterservices", "charservices"));
-            registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, "enddragon",
-                    List.of());
-            registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, "cleardragons",
-                    List.of());
-            registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, "spawndragon",
-                    List.of());
-            registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, "killdragons",
-                    List.of());
-            registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, "androidify",
-                    List.of("androidification"));
-            registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, "padmin",
-                    List.of("prestigeadmin"));
+            registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
+                    "lm", List.of("legacymechanics"));
+            registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
+                    "difficulty", List.of("diff"));
+            registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
+                    "rival", List.of());
+            registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
+                    "spar", List.of("sparring"));
+            registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
+                    "skillcheck", List.of());
+            registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
+                    "progression", List.of("prog"));
+            registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
+                    "prestige", List.of());
+            registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
+                    "skills", List.of());
+            registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
+                    "character", List.of("characterservices", "charservices"));
+            registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
+                    "enddragon", List.of());
+            registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
+                    "cleardragons", List.of());
+            registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
+                    "spawndragon", List.of());
+            registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
+                    "killdragons", List.of());
+            registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
+                    "androidify", List.of("androidification"));
+            registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
+                    "padmin", List.of("prestigeadmin"));
 
             registered = true;
             AdaptiveDifficultyMod.LOGGER.info(
@@ -118,11 +141,14 @@ public final class MohistCommandBridge {
             Constructor<?> ctor,
             Object hostPlugin,
             Object executor,
+            Object tabCompleter,
             String name,
             List<String> aliases) throws ReflectiveOperationException {
         Object cmd = ctor.newInstance(name, hostPlugin);
         cmd.getClass().getMethod("setExecutor", Class.forName("org.bukkit.command.CommandExecutor"))
                 .invoke(cmd, executor);
+        cmd.getClass().getMethod("setTabCompleter", Class.forName("org.bukkit.command.TabCompleter"))
+                .invoke(cmd, tabCompleter);
         if (!aliases.isEmpty()) {
             cmd.getClass().getMethod("setAliases", List.class).invoke(cmd, aliases);
         }
@@ -138,20 +164,68 @@ public final class MohistCommandBridge {
         if (source == null) {
             return;
         }
-        StringBuilder line = new StringBuilder(label);
-        if (args != null) {
-            for (String arg : args) {
-                if (arg != null && !arg.isEmpty()) {
-                    line.append(' ').append(arg);
-                }
-            }
-        }
+        String line = commandLine(label, args);
         try {
-            server.m_129892_().m_230957_(source, line.toString());
+            server.m_129892_().m_230957_(source, line);
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.warn("[{}] Command dispatch failed for /{}: {}",
                     AdaptiveDifficultyMod.MOD_ID, line, t.toString());
         }
+    }
+
+    private static List<String> tabComplete(
+            MinecraftServer server, Object sender, String label, String[] args) {
+        CommandSourceStack source = commandSource(server, sender);
+        if (source == null) {
+            return Collections.emptyList();
+        }
+        String line = commandLine(label, args);
+        int cursor = line.length();
+        try {
+            var dispatcher = server.m_129892_().m_82094_();
+            ParseResults<CommandSourceStack> parse = dispatcher.parse(line, source);
+            Suggestions suggestions = dispatcher.getCompletionSuggestions(parse, cursor)
+                    .get(3, TimeUnit.SECONDS);
+            List<String> out = new ArrayList<>();
+            String partial = partialLastArg(args);
+            for (Suggestion s : suggestions.getList()) {
+                String text = s.getText();
+                if (text == null || text.isEmpty()) {
+                    continue;
+                }
+                if (!partial.isEmpty() && !text.toLowerCase(Locale.ROOT).startsWith(partial.toLowerCase(Locale.ROOT))) {
+                    continue;
+                }
+                out.add(text);
+            }
+            return out;
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.debug("[{}] Tab complete failed for /{}: {}",
+                    AdaptiveDifficultyMod.MOD_ID, line, t.toString());
+            return Collections.emptyList();
+        }
+    }
+
+    private static String commandLine(String label, String[] args) {
+        StringBuilder line = new StringBuilder(label);
+        if (args != null) {
+            for (String arg : args) {
+                line.append(' ');
+                if (arg != null) {
+                    line.append(arg);
+                }
+            }
+        }
+        return line.toString();
+    }
+
+    /** Lowercase prefix of the token Bukkit is completing (last arg). */
+    private static String partialLastArg(String[] args) {
+        if (args == null || args.length == 0) {
+            return "";
+        }
+        String last = args[args.length - 1];
+        return last == null ? "" : last;
     }
 
     private static CommandSourceStack commandSource(MinecraftServer server, Object sender) {
@@ -166,14 +240,16 @@ public final class MohistCommandBridge {
         try {
             Object handle = sender.getClass().getMethod("getHandle").invoke(sender);
             if (handle instanceof ServerPlayer sp) {
-                CommandSourceStack stack = commandSourceStack(sp);
-                if (stack != null) {
-                    return stack;
-                }
-            } else if (handle != null) {
-                CommandSourceStack stack = commandSourceStack(handle);
-                if (stack != null) {
-                    return stack;
+                return forPlayer(sp);
+            }
+        } catch (Throwable ignored) {
+        }
+        try {
+            Object uuidObj = sender.getClass().getMethod("getUniqueId").invoke(sender);
+            if (uuidObj instanceof UUID uuid) {
+                ServerPlayer sp = server.m_6846_().m_11259_(uuid);
+                if (sp != null) {
+                    return forPlayer(sp);
                 }
             }
         } catch (Throwable ignored) {
@@ -181,30 +257,12 @@ public final class MohistCommandBridge {
         return server.m_129893_();
     }
 
-    private static CommandSourceStack commandSourceStack(Object nmsPlayer) {
-        if (nmsPlayer == null) {
+    /** Entity-attached stack so feedback and brigadier suggestions reach the player on Mohist. */
+    private static CommandSourceStack forPlayer(ServerPlayer sp) {
+        MinecraftServer server = sp.m_20194_();
+        if (server == null) {
             return null;
         }
-        if (nmsPlayer instanceof ServerPlayer sp) {
-            for (Method m : ServerPlayer.class.getMethods()) {
-                if (m.getParameterCount() == 0
-                        && CommandSourceStack.class.isAssignableFrom(m.getReturnType())) {
-                    try {
-                        return (CommandSourceStack) m.invoke(sp);
-                    } catch (Throwable ignored) {
-                    }
-                }
-            }
-        }
-        for (Method m : nmsPlayer.getClass().getMethods()) {
-            if (m.getParameterCount() == 0
-                    && m.getReturnType().getName().endsWith("CommandSourceStack")) {
-                try {
-                    return (CommandSourceStack) m.invoke(nmsPlayer);
-                } catch (Throwable ignored) {
-                }
-            }
-        }
-        return null;
+        return server.m_129893_().m_81329_(sp);
     }
 }

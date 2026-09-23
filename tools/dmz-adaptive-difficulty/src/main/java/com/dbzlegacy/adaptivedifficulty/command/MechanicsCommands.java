@@ -250,7 +250,7 @@ public final class MechanicsCommands {
         if (StaffAccess.denyUnlessStaff(source) == 0) {
             return 0;
         }
-        source.m_288197_(() -> Component.m_237113_(
+        LmCommandFeedback.tellLines(source,
                 "§6§l/lm admin\n"
                         + "§e/lm admin help §7— this list\n"
                         + "§e/lm admin reload §7— reload config\n"
@@ -264,8 +264,7 @@ public final class MechanicsCommands {
                         + "§e/lm admin inspect <player> [hub|difficulty|rival|spar|skillcheck|…]\n"
                         + "§e/lm admin inspect clear §7— stop inspecting\n"
                         + "§e/lm admin testgui §7— staff CNPC test hub (all LM systems)\n"
-                        + "§8Also: /difficulty admin gui|inspect <player>"
-        ), false);
+                        + "§8Also: /difficulty admin gui|inspect <player>");
         return 1;
     }
 
