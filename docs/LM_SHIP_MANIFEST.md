@@ -28,6 +28,7 @@ When you ask for a behavior change, add a row here and a matching check in `audi
 | gui-menus | All LM hub systems wired (CNPC + chest + CMI where applicable) | ongoing | `audit_gui_menus_comprehensive.py` |
 | android-saiyan-eligible | Dr. Gero Android convert allowed for **Saiyan** (and variants) when `androidforms` configured — no hard deny list | 4.5.84+ | manifest §android |
 | cnpc-preview-live-player | Main-system CNPC menus: character preview uses **live player sync** (inventory-style) before Gecko clone fallback | 4.5.84+ | manifest §cnpc |
+| prestige-cnpc-tier-ids | Prestige **Tiers** grid must not reuse CNPC flash widget ids (50+) — avoids menu errors after buy/turn-in | 4.5.85+ | manifest §prestige |
 | version-handshake | Forge `VERSION`, `mods.toml`, GUI `plugin.yml`, and built jar names **same version** | always | `audit_gui_abi.py`, manifest §version |
 
 ## Deploy process (do not skip)
