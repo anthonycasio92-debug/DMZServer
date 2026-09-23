@@ -158,6 +158,9 @@ def main() -> int:
     check("CNPC afterGuiClosed defer reopen", "afterGuiClosed" in cnpc_support)
     check("CNPC flash notice separate widget ids", "ID_FLASH_LABEL_BASE" in cnpc_support)
     check("CNPC flash notice readable", "§6§lNotice" in cnpc_support and "brightenNoticeLine" in cnpc_support)
+    cnpc_preview = read(SRC / "gui/cnpc/CnpcPlayerPreview.java")
+    check("CNPC preview live player sync (inventory-style)", "tryBindLivePlayer" in cnpc_preview
+          and "setEntitySyncedById" in cnpc_preview)
     cnpc_prestige = read(SRC / "gui/cnpc/CnpcLmPrestigeGui.java")
     check("CNPC prestige section tags avoid info label ids",
           "ID_INLINE_NOTE" in cnpc_prestige and 'paintSectionTag(gui, 11,' not in cnpc_prestige
