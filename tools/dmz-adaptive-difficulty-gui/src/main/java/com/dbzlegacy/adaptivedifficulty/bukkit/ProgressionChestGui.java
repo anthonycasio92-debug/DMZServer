@@ -26,17 +26,7 @@ public final class ProgressionChestGui implements Listener {
     private static final Material ACCENT = Material.GRAY_STAINED_GLASS_PANE;
     private static final Material SECTION = Material.LIGHT_GRAY_STAINED_GLASS_PANE;
 
-    private static final String[][] FLAG_GROUPS = {
-            {"&eSkills", "flight", "sprint", "meditation", "potential"},
-            {"&6TP Gains", "farming", "building", "boost", "bio"},
-            {"&bRace", "racelock", "yardrat", "spiritualist", "android"},
-            {"&cCombat", "kiweapons", "piercing", "dot", "apothic"},
-            {"&5End", "end", "endportal"},
-            {"&7Utility", "shadow", "statchecker"},
-            {"&dFabled", "fabled"}
-    };
-
-    /** Per-section flag cards: key → title, description, commands. */
+    /** Per-section tool cards: key → title, description, commands. */
     private static final Map<String, String[]> FLAG_INFO = Map.ofEntries(
             Map.entry("flight", new String[]{"Flight", "Train fly by flying; Viltrumite max grant.", "/progression"}),
             Map.entry("sprint", new String[]{"Sprint Jump", "Jump/Sprint — Strength unlocked (invested STR).", "/progression"}),
@@ -60,11 +50,6 @@ public final class ProgressionChestGui implements Listener {
             Map.entry("statchecker", new String[]{"Stat Checker", "Sneak + RMB a player to dump stats.", "Sneak + right-click"}),
             Map.entry("fabled", new String[]{"Fabled Bridges", "Master switch for soft Fabled syncs.", "See Fabled Subflags"})
     );
-
-    private static final String[] FABLED_FLAG_KEYS = {
-            "fabled", "energy", "statscreen", "tpsp", "attr",
-            "prestigeskill", "faction", "cleaner", "raceclass", "classperm"
-    };
 
     private final AdaptiveDifficultyGuiPlugin plugin;
 
@@ -110,11 +95,10 @@ public final class ProgressionChestGui implements Listener {
             case "utility" -> sectionFlags(viewer, subject, "utility", "&7Utility", Material.SPYGLASS,
                     new String[]{"shadow", "statchecker"});
             case "status" -> sectionFlags(viewer, subject, "status", "&eStatus", Material.WRITABLE_BOOK,
-                    new String[]{"flight", "sprint", "meditation", "potential", "farming", "building"});
+                    new String[0]);
             case "economy", "ancient_coins", "coins" ->
                     ForgeBridge.isStaff(viewer) ? economy(viewer, subject) : main(viewer, subject);
-            case "admin", "flags", "disable" -> ForgeBridge.isStaff(viewer) ? flags(viewer, subject) : main(viewer, subject);
-            case "flags_fabled", "fabled_flags" -> ForgeBridge.isStaff(viewer) ? fabledFlags(viewer, subject) : main(viewer, subject);
+            case "admin", "flags", "disable", "flags_fabled", "fabled_flags" -> main(viewer, subject);
             default -> main(viewer, subject);
         };
         GuiFeedback.openChest(viewer, inv);
@@ -139,7 +123,7 @@ public final class ProgressionChestGui implements Listener {
         }
 
         put(holder, inv, 4, item(Material.BREWING_STAND, "&d&lProgression",
-                List.of("", "&7Pick a section", "&7Toggle flags inside each page")));
+                List.of("", "&7Pick a section", "&7Module status and tools")));
 
         int[] slots = GuiBoardHelper.centeredSlots(7);
         String[] pages = {"skills", "tp", "race", "combat", "end", "fabled", "utility"};
@@ -172,8 +156,6 @@ public final class ProgressionChestGui implements Listener {
                             "&8Tiers · Character Services · End dragon · …",
                             "&eOpen")),
                     SlotAction.page("economy"));
-            put(holder, inv, 41, tipBtn("progression.main.admin", Material.REPEATER, "&cAll Flags",
-                    List.of("&7Full flag board")), SlotAction.page("admin"));
         }
         put(holder, inv, 49, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 53, closeBtn(), SlotAction.dismiss());
@@ -187,9 +169,15 @@ public final class ProgressionChestGui implements Listener {
         holder.bind(inv);
         frame(inv, 45);
         boolean staff = ForgeBridge.isStaff(viewer);
-        put(holder, inv, 4, item(mat, title, List.of("",
-                staff ? "&7Click a module to toggle ON/OFF" : "&7Module status",
-                staff ? "&8Description + commands on each item" : "&8Player-facing modules")));
+        List<String> headerLore = new ArrayList<>();
+        headerLore.add("");
+        headerLore.add("&7Module status (read-only)");
+        for (String line : ForgeBridge.progressionLines(subject, page)) {
+            if (line != null && !line.isBlank()) {
+                headerLore.add(line.replace('§', '&'));
+            }
+        }
+        put(holder, inv, 4, item(mat, title, headerLore));
         int[] slots = GuiBoardHelper.centeredSlots(keys.length);
         for (int i = 0; i < keys.length && i < slots.length; i++) {
             String key = keys[i];
@@ -210,12 +198,8 @@ public final class ProgressionChestGui implements Listener {
                     lore.add("&eClick · Convert / Remove");
                 }
                 ItemStack stack = tipBtn("progression.race.android_tools", Material.IRON_INGOT,
-                        staff ? "&bAndroid Tools" : "&bAndroid", lore);
-                if (staff) {
-                    put(holder, inv, slots[i], stack, SlotAction.page("android_panel"));
-                } else {
-                    put(holder, inv, slots[i], stack);
-                }
+                        "&bAndroid Tools", lore);
+                put(holder, inv, slots[i], stack, SlotAction.page("android_panel"));
                 continue;
             }
             // TP page: Boost opens start/end panel (flag stays on Flags board).
@@ -238,31 +222,7 @@ public final class ProgressionChestGui implements Listener {
                 }
                 continue;
             }
-            List<String> lore = new ArrayList<>();
-            lore.add("");
-            lore.add(on ? "&aEnabled" : "&cDisabled");
-            lore.add("&7" + info[1]);
-            // Staff commands never appear on non-op lore.
-            if (staff && info.length > 2 && info[2] != null && !info[2].isBlank()) {
-                lore.add("&8Cmd: &f" + info[2]);
-            }
-            if (staff) {
-                lore.add("");
-                lore.add("&eSelect to switch");
-            }
-            String flagTitle = (on ? "&a" : "&8") + info[0] + (on ? " ON" : " OFF");
-            Map<String, String> flagVars = Map.of(
-                    "name", flagTitle,
-                    "title", info[0],
-                    "status", on ? "ON" : "OFF",
-                    "desc", info[1]);
-            ItemStack stack = tipBtn("progression." + page + ".flag",
-                    on ? Material.LIME_DYE : Material.GRAY_DYE, flagTitle, lore, flagVars);
-            if (staff) {
-                put(holder, inv, slots[i], stack, SlotAction.act("flag", key, page));
-            } else {
-                put(holder, inv, slots[i], stack);
-            }
+            // Flag toggles removed from GUI — use /progression commands for staff.
         }
         put(holder, inv, 36, pageBtn("common.back", Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
@@ -300,84 +260,6 @@ public final class ProgressionChestGui implements Listener {
                 staffFreeVars),
                 SlotAction.act("toggle_staff_free_coins", staffFree ? "off" : "on", "economy"));
         put(holder, inv, 36, pageBtn("common.back", Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
-        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
-        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
-        return inv;
-    }
-
-    private Inventory flags(Player viewer, Player subject) {
-        Map<String, String> ph = ForgeBridge.progressionPlaceholders(subject);
-        Holder holder = new Holder("admin");
-        Inventory inv = Bukkit.createInventory(holder, 54, invTitle(viewer, subject, "&8Flags"));
-        holder.bind(inv);
-        frame(inv, 54);
-        put(holder, inv, 4, item(Material.REPEATER, "&c&lStaff Flags",
-                List.of("", "&7Grouped by script category", "&7Click a flag to toggle")));
-
-        int[] slots = {
-                1, 2, 3, 5, 6, 7,
-                10, 11, 12, 13, 14, 15, 16,
-                19, 20, 21, 22, 23, 24, 25,
-                28, 29, 30, 31, 32, 33, 34,
-                37, 38, 39, 40, 41, 42, 43
-        };
-        int si = 0;
-        for (String[] group : FLAG_GROUPS) {
-            if (si >= slots.length) {
-                break;
-            }
-            String sectionTitle = group[0];
-            put(holder, inv, slots[si++], item(SECTION, sectionTitle, List.of("", "&8Category")));
-            for (int g = 1; g < group.length && si < slots.length; g++) {
-                String key = group[g];
-                boolean on = "true".equalsIgnoreCase(ph.getOrDefault("flag_" + key, "false"));
-                String flagTitle = (on ? "&a" : "&8") + key + (on ? " ON" : " OFF");
-                Map<String, String> flagVars = Map.of(
-                        "name", flagTitle,
-                        "title", key,
-                        "status", on ? "ON" : "OFF",
-                        "desc", stripAmp(sectionTitle));
-                put(holder, inv, slots[si++], tipBtn("progression.admin.flag",
-                        on ? Material.LIME_DYE : Material.GRAY_DYE,
-                        flagTitle,
-                        List.of("&8" + stripAmp(sectionTitle), "&7Click to toggle " + key), flagVars),
-                        SlotAction.act("flag", key, "admin"));
-            }
-        }
-        put(holder, inv, 47, pageBtn("progression.fabled.subflags", Material.AMETHYST_SHARD, "&dFabled Subflags",
-                "&7Energy, TP/SP, race class, etc."), SlotAction.page("flags_fabled"));
-        put(holder, inv, 45, pageBtn("common.back", Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
-        put(holder, inv, 49, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
-        put(holder, inv, 53, closeBtn(), SlotAction.dismiss());
-        return inv;
-    }
-
-    private Inventory fabledFlags(Player viewer, Player subject) {
-        Map<String, String> ph = ForgeBridge.progressionPlaceholders(subject);
-        Holder holder = new Holder("flags_fabled");
-        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Fabled Flags"));
-        holder.bind(inv);
-        frame(inv, 45);
-        put(holder, inv, 4, item(Material.AMETHYST_SHARD, "&d&lFabled Subflags",
-                List.of("", "&7Soft-dependency bridge toggles", "&7Click to toggle")));
-        int[] slots = {19, 20, 21, 22, 23, 24, 25, 28, 29, 30};
-        for (int i = 0; i < FABLED_FLAG_KEYS.length && i < slots.length; i++) {
-            String key = FABLED_FLAG_KEYS[i];
-            boolean on = "true".equalsIgnoreCase(ph.getOrDefault("flag_" + key, "false"));
-            String flagTitle = (on ? "&a" : "&8") + key + (on ? " ON" : " OFF");
-            Map<String, String> flagVars = Map.of(
-                    "name", flagTitle,
-                    "title", key,
-                    "status", on ? "ON" : "OFF",
-                    "desc", "Fabled");
-            put(holder, inv, slots[i], tipBtn("progression.fabled.flag",
-                    on ? Material.LIME_DYE : Material.GRAY_DYE,
-                    flagTitle,
-                    List.of("&8Fabled", "&7Click to toggle " + key), flagVars),
-                    SlotAction.act("flag", key, "flags_fabled"));
-        }
-        put(holder, inv, 36, pageBtn("progression.fabled.back", Material.ARROW, "&7Back", "&7Return to Flags"),
-                SlotAction.page("admin"));
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;

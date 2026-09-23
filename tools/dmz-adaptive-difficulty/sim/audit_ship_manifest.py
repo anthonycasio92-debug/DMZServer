@@ -193,6 +193,10 @@ def main() -> int:
     cnpc_prog = read(SRC / "gui/cnpc/CnpcLmProgressionGui.java")
     check("CNPC TP boost presets avoid flash ids", "ID_BOOST_PRESET_BASE" in cnpc_prog
           and "boostPreset(gui, player, row, 50," not in cnpc_prog)
+    check("Progression CNPC no All flags menu", "All flags" not in cnpc_prog and "paintAllFlags" not in cnpc_prog)
+    prog_chest = read(BUKKIT / "ProgressionChestGui.java")
+    check("Progression chest no All Flags hub tile", "All Flags" not in prog_chest
+          and 'SlotAction.page("admin")' not in prog_chest)
     check("Android build overlay ships AndroidConversion", "progression/race/AndroidConversion.class" in build_sh)
     chest_prog = read(BUKKIT / "ProgressionChestGui.java")
     tooltips = read(GUI / "src/main/resources/gui-tooltips.json")

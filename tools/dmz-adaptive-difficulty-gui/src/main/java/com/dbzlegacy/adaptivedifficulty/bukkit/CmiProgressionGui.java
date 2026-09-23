@@ -12,7 +12,7 @@ import org.bukkit.entity.Player;
 
 /**
  * CMILib inventory GUI — Legacy Mechanics Progression.
- * Section hub with per-section toggleable flags (no Shop / Prestige / Skills openers).
+ * Section hub — module status, TP boost, and Android tools (no flag toggle boards).
  */
 public final class CmiProgressionGui {
     private static final Material FILL = Material.BLACK_STAINED_GLASS_PANE;
@@ -108,8 +108,7 @@ public final class CmiProgressionGui {
                         new String[]{"fabled"});
                 case "utility" -> openSection(player, "utility", "&7Utility", Material.SPYGLASS,
                         new String[]{"shadow", "statchecker"});
-                case "status" -> openSection(player, "status", "&eStatus", Material.WRITABLE_BOOK,
-                        new String[]{"flight", "sprint", "meditation", "potential", "farming", "building"});
+                case "status" -> openSection(player, "status", "&eStatus", Material.WRITABLE_BOOK, new String[0]);
                 case "economy", "ancient_coins", "coins" -> {
                     if (ForgeBridge.isStaff(player)) {
                         openEconomy(player);
@@ -117,20 +116,7 @@ public final class CmiProgressionGui {
                         openMain(player);
                     }
                 }
-                case "admin", "flags", "disable" -> {
-                    if (ForgeBridge.isStaff(player)) {
-                        openFlags(player);
-                    } else {
-                        openMain(player);
-                    }
-                }
-                case "flags_fabled", "fabled_flags" -> {
-                    if (ForgeBridge.isStaff(player)) {
-                        openFabledFlags(player);
-                    } else {
-                        openMain(player);
-                    }
-                }
+                case "admin", "flags", "disable", "flags_fabled", "fabled_flags" -> openMain(player);
                 default -> openMain(player);
             }
             return true;
@@ -160,7 +146,7 @@ public final class CmiProgressionGui {
             GuiFeedback.openCmi(gui);
             return;
         }
-        status.addLore(List.of("", "&7Pick a section", "&7Toggle flags inside each page"));
+        status.addLore(List.of("", "&7Pick a section", "&7Module status and tools"));
         gui.addButton(status);
 
         int[] slots = GuiBoardHelper.centeredSlots(7);
@@ -190,8 +176,6 @@ public final class CmiProgressionGui {
         if (ForgeBridge.isStaff(player)) {
             gui.addButton(pageBtn(40, "progression.main.economy", Material.GOLD_INGOT, "&6Ancient Coins", "economy",
                     "&7Staff pricing for all LM Ancient Coin features", "", "&eOpen"));
-            gui.addButton(pageBtn(41, "progression.main.admin", Material.REPEATER, "&cAll Flags", "admin",
-                    "&7Full flag board"));
         }
 
         gui.addButton(hubBtn(49));
@@ -206,9 +190,15 @@ public final class CmiProgressionGui {
         boolean staff = ForgeBridge.isStaff(player);
         CMIGuiButton header = new CMIGuiButton(4, mat, title);
         header.lockField();
-        header.addLore(List.of("",
-                staff ? "&7Click a module to toggle ON/OFF" : "&7Module status",
-                staff ? "&8Description + commands on each item" : "&8Player-facing modules"));
+        List<String> headerLore = new ArrayList<>();
+        headerLore.add("");
+        headerLore.add("&7Module status (read-only)");
+        for (String line : ForgeBridge.progressionLines(player, page)) {
+            if (line != null && !line.isBlank()) {
+                headerLore.add(line.replace('§', '&'));
+            }
+        }
+        header.addLore(headerLore);
         gui.addButton(header);
 
         int[] slots = GuiBoardHelper.centeredSlots(keys.length);
@@ -229,16 +219,8 @@ public final class CmiProgressionGui {
                     lore.add("");
                     lore.add("&eClick · Android tools");
                 }
-                if (staff) {
-                    gui.addButton(pageBtn(slots[i], "progression.race.android_tools", Material.IRON_INGOT,
-                            "&bAndroid Tools", "android_panel", lore.toArray(new String[0])));
-                } else {
-                    CMIGuiButton btn = new CMIGuiButton(slots[i], Material.IRON_INGOT,
-                            GuiTooltips.name("progression.race.android_tools", "&bAndroid"));
-                    btn.lockField();
-                    btn.addLore(GuiTooltips.buttonLore("progression.race.android_tools", lore));
-                    gui.addButton(btn);
-                }
+                gui.addButton(pageBtn(slots[i], "progression.race.android_tools", Material.IRON_INGOT,
+                        "&bAndroid Tools", "android_panel", lore.toArray(new String[0])));
                 continue;
             }
             if ("boost".equals(key) && "tp".equals(page)) {
@@ -263,40 +245,6 @@ public final class CmiProgressionGui {
                 }
                 continue;
             }
-            List<String> lore = new ArrayList<>();
-            lore.add("");
-            lore.add(on ? "&aEnabled" : "&cDisabled");
-            lore.add("&7" + info[1]);
-            if (staff && info.length > 2 && info[2] != null && !info[2].isBlank()) {
-                lore.add("&8Cmd: &f" + info[2]);
-            }
-            if (staff) {
-                lore.add("");
-                lore.add("&eSelect to switch");
-            }
-            String flagTitle = (on ? "&a" : "&8") + info[0] + (on ? " ON" : " OFF");
-            Map<String, String> flagVars = Map.of(
-                    "name", flagTitle,
-                    "title", info[0],
-                    "status", on ? "ON" : "OFF",
-                    "desc", info[1]);
-            if (staff) {
-                gui.addButton(actionBtn(slots[i], "progression." + page + ".flag",
-                        on ? Material.LIME_DYE : Material.GRAY_DYE,
-                        flagTitle, "flag", key, page, lore, flagVars));
-            } else {
-                CMIGuiButton btn = new CMIGuiButton(slots[i],
-                        on ? Material.LIME_DYE : Material.GRAY_DYE,
-                        GuiTooltips.name("progression." + page + ".flag", flagTitle));
-                btn.lockField();
-                btn.addLore(GuiTooltips.buttonLore("progression." + page + ".flag", lore, flagVars, null));
-                gui.addButton(btn);
-            }
-        }
-
-        if ("fabled".equals(page) && staff) {
-            gui.addButton(pageBtn(31, "progression.fabled.subflags", Material.AMETHYST_SHARD, "&dFabled Subflags",
-                    "flags_fabled", "&7Energy, TP/SP, race class, etc."));
         }
 
         gui.addButton(pageBtn(36, "common.back", Material.ARROW, "&7Back", "main", "&7Return"));
