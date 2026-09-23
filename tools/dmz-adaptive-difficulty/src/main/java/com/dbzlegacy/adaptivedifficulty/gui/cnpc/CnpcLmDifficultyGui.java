@@ -177,20 +177,26 @@ public final class CnpcLmDifficultyGui {
         ServerPlayer subject = who(player);
         DifficultyActions.prepareGui(subject);
         if (!DifficultyConfig.isEnabled()) {
-            paintTiersLocked(player, gui, List.of(
+            paintFeatureLocked(player, gui, "Tiers locked",
+                    "§7Enable personal difficulty before changing tiers",
+                    List.of(
                     "§cAdaptive Difficulty is off on this server.",
                     "§7Ask staff to enable it before using tiers."));
             return;
         }
         if (!SystemGate.allows(subject)) {
-            paintTiersLocked(player, gui, List.of(
+            paintFeatureLocked(player, gui, "Tiers locked",
+                    "§7Enable personal difficulty before changing tiers",
+                    List.of(
                     "§eYou cannot use personal difficulty yet.",
                     "§7Ask staff to add you to the whitelist."));
             return;
         }
         PlayerDifficultyData gateData = DifficultyCache.data(subject);
         if (gateData == null || !gateData.isPersonalEnabled()) {
-            paintTiersLocked(player, gui, List.of(
+            paintFeatureLocked(player, gui, "Tiers locked",
+                    "§7Enable personal difficulty before changing tiers",
+                    List.of(
                     "§cTurn personal difficulty ON first.",
                     "§7Use §ePersonal scaling §7on the main menu, then return here to pick a tier."));
             return;
@@ -268,10 +274,14 @@ public final class CnpcLmDifficultyGui {
         navFooter(player, gui, row, "main", subject);
     }
 
-    /** Tiers page when personal/system gates block buying — no tier buttons (avoids CNPC errors). */
-    private static void paintTiersLocked(ServerPlayer player, ICustomGui gui, List<String> body) {
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§c", "Difficulty", "Tiers locked"),
-                "§7Enable personal difficulty before changing tiers");
+    /**
+     * Tiers / team scaling when AD is off, whitelist blocks, or personal difficulty is OFF —
+     * no mode buttons (avoids CNPC errors).
+     */
+    private static void paintFeatureLocked(
+            ServerPlayer player, ICustomGui gui, String lockedTitle, String headerHint, List<String> body) {
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§c", "Difficulty", lockedTitle),
+                headerHint);
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, body, 3));
         row += 8;
         ServerPlayer subject = who(player);
@@ -406,7 +416,32 @@ public final class CnpcLmDifficultyGui {
     private static void paintTeam(ServerPlayer player, ICustomGui gui) {
         ServerPlayer subject = who(player);
         DifficultyActions.prepareGui(subject);
-        TeamMode mode = DifficultyCache.data(subject).getTeamMode();
+        if (!DifficultyConfig.isEnabled()) {
+            paintFeatureLocked(player, gui, "Teams locked",
+                    "§7Enable personal difficulty before changing team modes",
+                    List.of(
+                            "§cAdaptive Difficulty is off on this server.",
+                            "§7Ask staff to enable it before using team scaling."));
+            return;
+        }
+        if (!SystemGate.allows(subject)) {
+            paintFeatureLocked(player, gui, "Teams locked",
+                    "§7Enable personal difficulty before changing team modes",
+                    List.of(
+                            "§eYou cannot use personal difficulty yet.",
+                            "§7Ask staff to add you to the whitelist."));
+            return;
+        }
+        PlayerDifficultyData teamGate = DifficultyCache.data(subject);
+        if (teamGate == null || !teamGate.isPersonalEnabled()) {
+            paintFeatureLocked(player, gui, "Teams locked",
+                    "§7Enable personal difficulty before changing team modes",
+                    List.of(
+                            "§cTurn personal difficulty ON first.",
+                            "§7Use §ePersonal scaling §7on the main menu, then return here to pick a team mode."));
+            return;
+        }
+        TeamMode mode = teamGate.getTeamMode();
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§a", "Difficulty", "Teams"),
                 "§7How rival teams affect scaling");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, DifficultyTeamGuiApi.linesForPage(subject, "team"),

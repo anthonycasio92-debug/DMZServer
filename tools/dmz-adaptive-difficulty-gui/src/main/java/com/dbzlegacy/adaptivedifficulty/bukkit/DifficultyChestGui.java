@@ -371,6 +371,31 @@ public final class DifficultyChestGui implements Listener {
         holder.bind(inv);
         frame(inv, 45);
 
+        boolean bridgeOk = "true".equalsIgnoreCase(ph.getOrDefault("bridge_ok", "false"));
+        boolean systemOn = bridgeOk && !"false".equalsIgnoreCase(ph.getOrDefault("system_enabled", "false"));
+        boolean allowed = bridgeOk && !"false".equalsIgnoreCase(ph.getOrDefault("player_allowed", "false"));
+        if (!bridgeOk || !systemOn || !allowed) {
+            put(holder, inv, 4, item(Material.BARRIER, "&c&lTeams Locked",
+                    unavailableLore(viewer, subject, systemOn, bridgeOk)));
+            put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),
+                    SlotAction.page("main"));
+            put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
+            put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
+            return inv;
+        }
+        boolean personalOn = "true".equalsIgnoreCase(ph.getOrDefault("personal_enabled", "false"));
+        if (!personalOn) {
+            put(holder, inv, 4, item(Material.BARRIER, "&c&lTeams Locked", List.of(
+                    "",
+                    "&cTurn personal difficulty ON first",
+                    "&7Use Difficulty ON on the main menu, then pick a team mode.")));
+            put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),
+                    SlotAction.page("main"));
+            put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
+            put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
+            return inv;
+        }
+
         List<String> header = new ArrayList<>();
         header.add("");
         header.addAll(toAmp(ForgeBridge.diffTeamLines(subject)));

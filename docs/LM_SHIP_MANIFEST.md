@@ -21,6 +21,7 @@ When you ask for a behavior change, add a row here and a matching check in `audi
 | cnpc-notice-visible | CNPC flash notice band readable (not grey-only) | 4.5.79+ | manifest §cnpc |
 | cnpc-info-readable | CNPC info blocks + subtitles use same contrast as flash notices (`readableInfoLine`) | 4.5.86+ | manifest §cnpc |
 | difficulty-tier-personal-gate | CNPC tier ladder locked when personal difficulty OFF | 4.5.78+ | manifest §difficulty |
+| difficulty-team-personal-gate | Team scaling locked when AD off / whitelist / personal OFF (CNPC + chest + CMI) | 4.5.87+ | manifest §difficulty |
 | build-backend-ship-overlay | `build.sh` overlays rival/spar backend classes shipped in 4.5.79+ | 4.5.79+ | manifest §build |
 | rival-declare-pending | Rival **Actions → Pending** + `pending_decide:` (declare mutual confirm) | 4.5.55+ | manifest §rival |
 | spar-pending | Spar **Mentor Pending** + `pending_decide:`; dojo war pending decide | 2.3.142+ | manifest §spar |
