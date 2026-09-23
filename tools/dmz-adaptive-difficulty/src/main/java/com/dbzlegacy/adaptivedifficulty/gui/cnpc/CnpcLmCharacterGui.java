@@ -28,6 +28,11 @@ public final class CnpcLmCharacterGui {
             paintClassConfirm(player, p.substring("class_confirm:".length()));
             return;
         }
+        if ("reskin_confirm".equals(p)) {
+            CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CHARACTER, CnpcGuiSupport.W, 320,
+                    (pl, gui) -> paintReskinConfirm(pl, gui));
+            return;
+        }
         if (p.startsWith("bones:") || "bones".equals(p)) {
             int bonePage = parseBonePage(p);
             CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CHARACTER, CnpcGuiSupport.W,
@@ -277,12 +282,34 @@ public final class CnpcLmCharacterGui {
                 "§7Opens the in-game editor");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, CharacterServicesGuiApi.linesForPage(player, "reskin"),
                         CnpcGuiStyle.INFO_INLINE_MAX));
-        CnpcGuiSupport.button(gui, 20, "§aOpen reskin editor", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
-                player,
-                () -> CharacterServicesGuiApi.handleDo(player, "reskin_confirm", "", "reskin"),
-                () -> open(player, "main")));
+        CnpcGuiSupport.button(gui, 20, "§eReview cost & continue", CnpcGuiSupport.COL_L, row,
+                () -> open(player, "reskin_confirm"));
         row += CnpcGuiSupport.ROW_STEP + 4;
         footer(player, gui, row, "main", subject);
+    }
+
+    private static void paintReskinConfirm(ServerPlayer player, ICustomGui gui) {
+        ServerPlayer subject = CnpcGuiSupport.target(player);
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§f", "Character", "Confirm reskin"),
+                CnpcGuiStyle.HINT_REVIEW_PAY);
+        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintReadOnlyScroll(gui, infoY,
+                CharacterServicesGuiApi.linesForPage(player, "reskin_confirm")));
+        String pre = com.dbzlegacy.adaptivedifficulty.character.CharacterServicesSystem.reskinPrecheck(player);
+        boolean ready = pre == null || pre.isBlank();
+        CnpcGuiSupport.button(gui, 20, ready ? "§aConfirm & pay" : "§8Cannot reskin yet", CnpcGuiSupport.COL_L, row,
+                () -> {
+                    if (!ready) {
+                        CnpcGuiSupport.feedback(player, pre);
+                        open(player, "reskin_confirm");
+                        return;
+                    }
+                    CnpcGuiSupport.act(
+                            player,
+                            () -> CharacterServicesGuiApi.handleDo(player, "reskin_confirm", "", "reskin_confirm"),
+                            () -> open(player, "reskin_confirm"));
+                });
+        row += CnpcGuiSupport.ROW_STEP + 8;
+        CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "reskin"), "§7« Back");
     }
 
     private static void footer(

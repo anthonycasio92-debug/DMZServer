@@ -545,9 +545,10 @@ public final class CharacterServicesSystem {
     }
 
     /**
-     * Charges Ancient Coins (level-scaled), then opens DMZ recustomize UI only — no full mod menu.
+     * Validates reskin eligibility and cost without charging, opening the editor, or starting cooldown.
+     * Empty string means OK to proceed.
      */
-    public static String executeReskin(ServerPlayer player) {
+    public static String reskinPrecheck(ServerPlayer player) {
         String block = blockReason(player, true);
         if (!block.isEmpty()) {
             return block;
@@ -570,6 +571,19 @@ public final class CharacterServicesSystem {
         if (cost > 0L && !AncientCoinEconomy.canAfford(player, cost)) {
             return insufficientFunds(player, cost);
         }
+        return "";
+    }
+
+    /**
+     * Charges Ancient Coins (level-scaled), then opens DMZ recustomize UI only — no full mod menu.
+     */
+    public static String executeReskin(ServerPlayer player) {
+        String pre = reskinPrecheck(player);
+        if (pre != null && !pre.isBlank()) {
+            return pre;
+        }
+        long cost = CharacterServicesAccess.bypassCost(player) ? 0L : reskinCost(player);
+        AncientCoinEconomy.migrateWalletToItems(player);
         if (cost > 0L && !chargeAc(player, cost)) {
             return insufficientFunds(player, cost);
         }
@@ -592,6 +606,7 @@ public final class CharacterServicesSystem {
             String paid = cost > 0L ? "§7Paid §f" + formatCost(cost) + "§7. " : "";
             return "§a" + paid + "Opening the appearance editor. §7Your stats and progression are unchanged.";
         } catch (Throwable t) {
+            ReskinSessionGuard.clear(player);
             refund(player, cost);
             audit(player, "Reskin", "", "", 0, cost, false);
             return "§cCould not open the appearance editor. Payment was refunded when possible.";

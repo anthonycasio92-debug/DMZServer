@@ -151,6 +151,10 @@ merge_onto_base_jar() {
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/command/MechanicsCommands\$"*.class \
       "$merge/com/dbzlegacy/adaptivedifficulty/command/" 2>/dev/null || true
   fi
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/character/CharacterServicesSystem.class" ]]; then
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/character/CharacterServicesSystem.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/character/CharacterServicesSystem.class"
+  fi
   for class in CharacterServicesAccess CharacterServicesPermissionBootstrap; do
     if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/character/${class}.class" ]]; then
       mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/character"

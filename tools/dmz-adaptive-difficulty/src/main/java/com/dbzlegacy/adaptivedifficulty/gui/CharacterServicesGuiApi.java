@@ -133,8 +133,28 @@ public final class CharacterServicesGuiApi {
             lines.add("§7Fighting class cannot be changed during a reskin.");
             lines.add("§7Level, stats, and race are unchanged.");
             lines.add(costLine(player, CharacterServicesSystem.reskinCost(player)));
-            lines.add("§8Pay-up OK · change returned");
+            lines.add("§8Ancient Coins are charged when you confirm on the next screen.");
             lines.add(CharacterServicesSystem.cooldownLine(player, "reskin"));
+            return lines;
+        }
+        if ("reskin_confirm".equals(p)) {
+            if (!CharacterServicesConfig.get().reskin.enabled) {
+                lines.add("§cReskin is turned off on this server.");
+                return lines;
+            }
+            if (!CharacterServicesAccess.canReskin(player)) {
+                lines.add("§cYou do not have permission for reskin.");
+                return lines;
+            }
+            lines.add("§7Opens the appearance editor (hair, colors, body).");
+            lines.add("§7Level, stats, race, and class stay locked during the session.");
+            lines.add(costLine(player, CharacterServicesSystem.reskinCost(player)));
+            lines.add("§8Ancient Coins charged when you confirm · change is not refundable");
+            lines.add(CharacterServicesSystem.cooldownLine(player, "reskin"));
+            String block = CharacterServicesSystem.reskinPrecheck(player);
+            if (block != null && !block.isBlank()) {
+                lines.add(block);
+            }
             return lines;
         }
         if (p.startsWith("race_pct:")) {

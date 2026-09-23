@@ -742,6 +742,12 @@ def main() -> int:
     check("Character services Bukkit permission bootstrap",
           "CharacterServicesPermissionBootstrap.register()" in diff_events
           and "addPermission" in char_bootstrap)
+    char_sys = read(SRC / "com/dbzlegacy/adaptivedifficulty/character/CharacterServicesSystem.java")
+    cnpc_char = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmCharacterGui.java")
+    check("reskin precheck before charge/cooldown",
+          "reskinPrecheck" in char_sys and "executeReskin" in char_sys.split("reskinPrecheck")[1][:1200])
+    check("CNPC reskin confirm step like class",
+          "paintReskinConfirm" in cnpc_char and "reskin_confirm" in cnpc_char)
     snapshot = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcPlayerSnapshot.java")
     check("CNPC hub snapshot includes difficulty + spar streak",
           "appendDifficulty" in snapshot and "Training streak" in snapshot)
