@@ -213,7 +213,14 @@ public final class CnpcGuiSupport {
      */
     /** Small section caption above a button group. Returns Y for the first button row. */
     public static int paintSectionTag(ICustomGui gui, int labelId, int y, String caption) {
-        gui.addLabel(labelId, safeChat(caption), M, y, textBandWidth(), 10);
+        // Never reuse low ids (10–12 = info block); callers may pass legacy ids — ignore.
+        int id = labelId >= ID_INFO_LABEL_BASE && labelId <= ID_INFO_LABEL_BASE + 8
+                ? ID_INLINE_NOTE
+                : labelId;
+        if (id == ID_TITLE || id == ID_SUBTITLE || id == ID_DIVIDER || id == ID_STATUS_TAG) {
+            id = ID_INLINE_NOTE;
+        }
+        gui.addLabel(id, safeChat(caption), M, y, textBandWidth(), 10);
         return y + 16;
     }
 

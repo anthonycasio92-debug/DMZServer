@@ -155,6 +155,10 @@ def main() -> int:
     check("CNPC afterGuiClosed defer reopen", "afterGuiClosed" in cnpc_support)
     check("CNPC flash notice separate widget ids", "ID_FLASH_LABEL_BASE" in cnpc_support)
     check("CNPC flash notice readable", "§6§lNotice" in cnpc_support and "brightenNoticeLine" in cnpc_support)
+    cnpc_prestige = read(SRC / "gui/cnpc/CnpcLmPrestigeGui.java")
+    check("CNPC prestige section tags avoid info label ids",
+          "ID_INLINE_NOTE" in cnpc_prestige and 'paintSectionTag(gui, 11,' not in cnpc_prestige
+          and 'paintSectionTag(gui, 12,' not in cnpc_prestige)
     build_sh = read(MOD / "build.sh")
     check("build overlays RivalStore + dojo backend", "rival/RivalStore.class" in build_sh and "sparring/DojoRankings.class" in build_sh)
     preview_tex = read(SRC / "gui/cnpc/DmzPreviewTexture.java")

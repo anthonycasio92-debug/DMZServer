@@ -34,9 +34,10 @@ public final class CnpcLmPrestigeGui {
         final int shopPageFinal = Math.max(0, shopPage);
         final String pageKey = p;
         int height = switch (p) {
-            case "turnin", "points" -> 340;
+            case "turnin", "points" -> 360;
             case "shop", "skills" -> 360;
-            case "tiers", "tier" -> 360;
+            case "tiers", "tier" -> 380;
+            case "forms", "effects", "effect" -> 380;
             default -> 320;
         };
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_PRESTIGE, CnpcGuiSupport.W, height, (pl, gui) -> {
@@ -71,14 +72,17 @@ public final class CnpcLmPrestigeGui {
     }
 
     private static void paintTurnIn(ServerPlayer player, ICustomGui gui) {
+        if (!prestigeReady(player, gui, "main")) {
+            return;
+        }
         Map<String, String> ph = ProgressionGuiApi.prestigePlaceholders(player);
         int held = parseInt(ph.get("held"), 0);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§d", "Prestige", "Turn-in"),
                 "§7Each button shows points gained before you confirm");
         List<String> info = new ArrayList<>(ProgressionGuiApi.prestigeLines(player, "turnin"));
-        info.add("§7Bulk turn-in bonus: 3 tokens → 4 pts, 6 → 9 pts, 9 → 15 pts");
+        info.add("§7Bulk bonus: §f3→4 §8· §f6→9 §8· §f9→15 §7points");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, info, CnpcGuiStyle.INFO_INLINE_MAX));
-        row = CnpcGuiSupport.paintSectionTag(gui, 12, row + 4, "§8Choose amount");
+        row = CnpcGuiSupport.paintSectionTag(gui, CnpcGuiSupport.ID_INLINE_NOTE, row + 4, "§eChoose amount");
 
         int[] amounts = PrestigePointsSystem.TURN_IN_AMOUNTS;
         CnpcGuiLayout.GridButton[] grid = new CnpcGuiLayout.GridButton[amounts.length];
@@ -184,6 +188,9 @@ public final class CnpcLmPrestigeGui {
     }
 
     private static void paintEffects(ServerPlayer player, ICustomGui gui) {
+        if (!prestigeReady(player, gui, "main")) {
+            return;
+        }
         Map<String, String> ph = ProgressionGuiApi.prestigePlaceholders(player);
         boolean hasMajin = "true".equalsIgnoreCase(ph.get("majin"));
         boolean hasMutant = "true".equalsIgnoreCase(ph.get("mutant"));
@@ -192,30 +199,35 @@ public final class CnpcLmPrestigeGui {
         String cost = ph.getOrDefault("form_cost", "5");
 
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§d", "Prestige", "Effects"),
-                "§7Majin and Mutant forms · §e" + cost + " §7points each · one at a time");
-        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, ProgressionGuiApi.prestigeLines(player, "effects"),
-                        CnpcGuiStyle.INFO_INLINE_MAX));
+                "§7Majin and Mutant · §e" + cost + " §7pts · one form at a time");
+        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY,
+                ProgressionGuiApi.prestigeLines(player, "effects"), CnpcGuiStyle.INFO_INLINE_MAX));
+        row += 4;
 
+        // Stacked rows — side-by-side labels overlapped when Mutant owned (long hint text).
         if (hasMajin) {
-            gui.addLabel(40, "§aPermanent Majin §8· owned", CnpcGuiSupport.COL_L, row + 4, CnpcGuiSupport.BTN_W, 14);
+            gui.addLabel(40, "§aMajin §8· owned", CnpcGuiSupport.M, row + 4, CnpcGuiSupport.textBandWidth(), 14);
         } else if (canBuyMajin) {
             CnpcGuiSupport.button(gui, 40, "§dBuy Majin", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                     player,
                     () -> ProgressionGuiApi.handlePrestigeDo(player, "majin", "", "effects"),
                     () -> open(player, "effects")));
         } else {
-            gui.addLabel(40, "§8Buy Majin §7(unpurchase Mutant first)", CnpcGuiSupport.COL_L, row + 4, CnpcGuiSupport.BTN_W, 14);
+            gui.addLabel(40, "§8Majin §7— unpurchase Mutant first", CnpcGuiSupport.M, row + 4,
+                    CnpcGuiSupport.textBandWidth(), 14);
         }
+        row += CnpcGuiSupport.ROW_STEP;
 
         if (hasMutant) {
-            gui.addLabel(41, "§aPermanent Mutant §8· owned", CnpcGuiSupport.COL_R, row + 4, CnpcGuiSupport.BTN_W, 14);
+            gui.addLabel(41, "§aMutant §8· owned", CnpcGuiSupport.M, row + 4, CnpcGuiSupport.textBandWidth(), 14);
         } else if (canBuyMutant) {
-            CnpcGuiSupport.button(gui, 41, "§dBuy Mutant", CnpcGuiSupport.COL_R, row, () -> CnpcGuiSupport.act(
+            CnpcGuiSupport.button(gui, 41, "§dBuy Mutant", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                     player,
                     () -> ProgressionGuiApi.handlePrestigeDo(player, "mutant", "", "effects"),
                     () -> open(player, "effects")));
         } else {
-            gui.addLabel(41, "§8Buy Mutant §7(unpurchase Majin first)", CnpcGuiSupport.COL_R, row + 4, CnpcGuiSupport.BTN_W, 14);
+            gui.addLabel(41, "§8Mutant §7— unpurchase Majin first", CnpcGuiSupport.M, row + 4,
+                    CnpcGuiSupport.textBandWidth(), 14);
         }
         row += CnpcGuiSupport.ROW_STEP;
 
@@ -230,19 +242,22 @@ public final class CnpcLmPrestigeGui {
                     () -> ProgressionGuiApi.handlePrestigeDo(player, "unmutant", "", "effects"),
                     () -> open(player, "effects")));
         } else {
-            gui.addLabel(42, "§7Nothing to unpurchase", CnpcGuiSupport.COL_L, row + 4, CnpcGuiSupport.BTN_W, 14);
+            gui.addLabel(42, "§7Nothing to unpurchase", CnpcGuiSupport.M, row + 4, CnpcGuiSupport.textBandWidth(), 14);
         }
         row += CnpcGuiSupport.ROW_STEP;
         footer(player, gui, row, "main");
     }
 
     private static void paintTiers(ServerPlayer player, ICustomGui gui) {
+        if (!prestigeReady(player, gui, "main")) {
+            return;
+        }
         Map<String, String> ph = ProgressionGuiApi.prestigePlaceholders(player);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§d", "Prestige", "Tiers"),
                 "§7Permanent unlocks · tiers T1 through T7");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, ProgressionGuiApi.prestigeLines(player, "tiers"),
                         CnpcGuiStyle.INFO_INLINE_MAX));
-        row = CnpcGuiSupport.paintSectionTag(gui, 11, row + 4, "§8Permanent difficulty tiers");
+        row = CnpcGuiSupport.paintSectionTag(gui, CnpcGuiSupport.ID_INLINE_NOTE + 1, row + 4, "§eBuy permanent tiers");
         CnpcGuiLayout.GridButton[] grid = new CnpcGuiLayout.GridButton[7];
         for (int t = 1; t <= 7; t++) {
             int tier = t;
@@ -265,6 +280,18 @@ public final class CnpcLmPrestigeGui {
         row = CnpcGuiLayout.paintTwoColumnButtonGrid(player, gui, row, 50, grid, () -> open(player, "tiers"));
         row += 4;
         footer(player, gui, row, "main");
+    }
+
+    private static boolean prestigeReady(ServerPlayer player, ICustomGui gui, String backPage) {
+        Map<String, String> ph = ProgressionGuiApi.prestigePlaceholders(player);
+        if ("true".equalsIgnoreCase(ph.get("bridge_ok")) && "true".equalsIgnoreCase(ph.get("system_enabled"))) {
+            return true;
+        }
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§dPrestige", "§cUnavailable");
+        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY,
+                ProgressionGuiApi.prestigeLines(player, "main"), 3));
+        footer(player, gui, row + 8, backPage);
+        return false;
     }
 
     private static void footer(ServerPlayer player, ICustomGui gui, int row, String parentPage) {
