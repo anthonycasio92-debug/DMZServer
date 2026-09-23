@@ -75,7 +75,7 @@ public final class LmCommandSuggestions {
             if ("admin".equals(a0) && "inspect".equals(a1) && n >= 3 && !"clear".equals(a2)) {
                 return true;
             }
-            if ("admin".equals(a0) && "character".equals(a1) && "cooldown".equals(a2) && "clear".equals(a3)
+            if ("admin".equals(a0) && isCharacterAdminSub(a1) && isCooldownSub(a2) && "clear".equals(a3)
                     && n >= 5) {
                 return true;
             }
@@ -135,6 +135,17 @@ public final class LmCommandSuggestions {
             case "addpoints", "givepoints", "grantpoints", "setpoints", "removepoints", "takepoints" -> true;
             default -> false;
         };
+    }
+
+    private static boolean isCharacterAdminSub(String raw) {
+        return switch (lower(raw)) {
+            case "character", "char", "charservices", "characterservices" -> true;
+            default -> false;
+        };
+    }
+
+    private static boolean isCooldownSub(String raw) {
+        return "cooldown".equals(lower(raw)) || "cool".equals(lower(raw));
     }
 
     private static String lower(String s) {

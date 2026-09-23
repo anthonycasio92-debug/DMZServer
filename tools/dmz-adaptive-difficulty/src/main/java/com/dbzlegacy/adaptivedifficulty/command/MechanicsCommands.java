@@ -80,35 +80,20 @@ public final class MechanicsCommands {
                         .executes(ctx -> adminHelp(ctx.getSource()))
                         .then(Commands.m_82127_("help").executes(ctx -> adminHelp(ctx.getSource())))
                         .then(Commands.m_82127_("reload").executes(ctx -> adminReload(ctx.getSource())))
-                        .then(Commands.m_82127_("migrate-cnpc")
-                                .executes(ctx -> adminMigrateCnpc(ctx.getSource(), false))
-                                .then(Commands.m_82127_("force")
-                                        .executes(ctx -> adminMigrateCnpc(ctx.getSource(), true))))
-                        .then(Commands.m_82127_("clear")
-                                .then(LmCommandSuggestions.playerString("player")
-                                        .executes(ctx -> adminClear(
-                                                ctx.getSource(),
-                                                StringArgumentType.getString(ctx, "player"),
-                                                "all"))
-                                        .then(LmCommandSuggestions.word("scope", LmCommandSuggestions.LM_CLEAR_SCOPES)
-                                                .executes(ctx -> adminClear(
-                                                        ctx.getSource(),
-                                                        StringArgumentType.getString(ctx, "player"),
-                                                        StringArgumentType.getString(ctx, "scope"))))))
-                        .then(Commands.m_82127_("character")
-                                .then(Commands.m_82127_("cooldown")
-                                        .then(Commands.m_82127_("clear")
-                                                .then(LmCommandSuggestions.playerString("player")
-                                                        .executes(ctx -> adminCharacterCooldownClear(
-                                                                ctx.getSource(),
-                                                                StringArgumentType.getString(ctx, "player"),
-                                                                "all"))
-                                                        .then(LmCommandSuggestions.word(
-                                                                        "kind", LmCommandSuggestions.LM_CHARACTER_COOLDOWN_KINDS)
-                                                                .executes(ctx -> adminCharacterCooldownClear(
-                                                                        ctx.getSource(),
-                                                                        StringArgumentType.getString(ctx, "player"),
-                                                                        StringArgumentType.getString(ctx, "kind"))))))))
+                        .then(migrateCnpcLiteral("migrate-cnpc"))
+                        .then(migrateCnpcLiteral("migratecnpc"))
+                        .then(migrateCnpcLiteral("cnpcmigrate"))
+                        .then(migrateCnpcLiteral("cnpc-migrate"))
+                        .then(adminClearRoot("clear"))
+                        .then(adminClearRoot("wipe"))
+                        .then(adminClearRoot("resetplayer"))
+                        .then(characterCooldownAdmin("character"))
+                        .then(characterCooldownAdmin("char"))
+                        .then(characterCooldownAdmin("charservices"))
+                        .then(characterCooldownAdmin("characterservices"))
+                        .then(staffFreeRoot("stafffree"))
+                        .then(staffFreeRoot("staffcoins"))
+                        .then(staffFreeRoot("freecoins"))
                         .then(Commands.m_82127_("syslog")
                                 .executes(ctx -> adminSyslog(ctx.getSource(), "status"))
                                 .then(LmCommandSuggestions.word("mode", LmCommandSuggestions.SYSLOG_MODES)
@@ -121,23 +106,88 @@ public final class MechanicsCommands {
                                         .executes(ctx -> adminOpen(
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "system")))))
-                        .then(Commands.m_82127_("inspect")
-                                .executes(ctx -> adminInspect(ctx.getSource(), null, "hub"))
-                                .then(Commands.m_82127_("clear")
-                                        .executes(ctx -> adminInspect(ctx.getSource(), "clear", "hub")))
-                                .then(LmCommandSuggestions.playerString("player")
-                                        .executes(ctx -> adminInspect(
-                                                ctx.getSource(),
-                                                StringArgumentType.getString(ctx, "player"),
-                                                "hub"))
-                                        .then(LmCommandSuggestions.word(
-                                                        "system", LmCommandSuggestions.LM_INSPECT_SYSTEMS)
-                                                .executes(ctx -> adminInspect(
-                                                        ctx.getSource(),
-                                                        StringArgumentType.getString(ctx, "player"),
-                                                        StringArgumentType.getString(ctx, "system"))))))
+                        .then(adminInspectRoot("inspect"))
+                        .then(adminInspectRoot("view"))
+                        .then(adminInspectRoot("playergui"))
                         .then(Commands.m_82127_("testgui")
-                                .executes(ctx -> adminTestGui(ctx.getSource()))));
+                                .executes(ctx -> adminTestGui(ctx.getSource()))
+                                .then(Commands.m_82127_("test-gui").executes(ctx -> adminTestGui(ctx.getSource())))
+                                .then(Commands.m_82127_("cnpcgui").executes(ctx -> adminTestGui(ctx.getSource())))));
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> migrateCnpcLiteral(String name) {
+        return Commands.m_82127_(name)
+                .executes(ctx -> adminMigrateCnpc(ctx.getSource(), false))
+                .then(Commands.m_82127_("force")
+                        .executes(ctx -> adminMigrateCnpc(ctx.getSource(), true)));
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> adminClearRoot(String name) {
+        return Commands.m_82127_(name)
+                .then(LmCommandSuggestions.playerWord("player")
+                        .executes(ctx -> adminClear(
+                                ctx.getSource(),
+                                StringArgumentType.getString(ctx, "player"),
+                                "all"))
+                        .then(LmCommandSuggestions.word("scope", LmCommandSuggestions.LM_CLEAR_SCOPES)
+                                .executes(ctx -> adminClear(
+                                        ctx.getSource(),
+                                        StringArgumentType.getString(ctx, "player"),
+                                        StringArgumentType.getString(ctx, "scope")))));
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> characterCooldownClearTree() {
+        return Commands.m_82127_("clear")
+                .executes(ctx -> {
+                    LmCommandFeedback.tell(ctx.getSource(),
+                            "§cUsage: /lm admin character cooldown clear <player> [race|class|reskin|all]");
+                    return 0;
+                })
+                .then(LmCommandSuggestions.playerWord("player")
+                        .executes(ctx -> adminCharacterCooldownClear(
+                                ctx.getSource(),
+                                StringArgumentType.getString(ctx, "player"),
+                                "all"))
+                        .then(LmCommandSuggestions.word(
+                                        "kind", LmCommandSuggestions.LM_CHARACTER_COOLDOWN_KINDS)
+                                .executes(ctx -> adminCharacterCooldownClear(
+                                        ctx.getSource(),
+                                        StringArgumentType.getString(ctx, "player"),
+                                        StringArgumentType.getString(ctx, "kind")))));
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> characterCooldownAdmin(String characterLiteral) {
+        LiteralArgumentBuilder<CommandSourceStack> cooldown = Commands.m_82127_("cooldown")
+                .then(characterCooldownClearTree());
+        cooldown.then(Commands.m_82127_("cool").then(characterCooldownClearTree()));
+        return Commands.m_82127_(characterLiteral).then(cooldown);
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> staffFreeRoot(String name) {
+        return CommandAccess.staffLiteral(name)
+                .executes(ctx -> adminStaffFree(ctx.getSource(), "status"))
+                .then(LmCommandSuggestions.word("mode", LmCommandSuggestions.TOGGLE_MODES)
+                        .executes(ctx -> adminStaffFree(
+                                ctx.getSource(),
+                                StringArgumentType.getString(ctx, "mode"))));
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> adminInspectRoot(String name) {
+        return Commands.m_82127_(name)
+                .executes(ctx -> adminInspect(ctx.getSource(), null, "hub"))
+                .then(Commands.m_82127_("clear")
+                        .executes(ctx -> adminInspect(ctx.getSource(), "clear", "hub")))
+                .then(LmCommandSuggestions.playerWord("player")
+                        .executes(ctx -> adminInspect(
+                                ctx.getSource(),
+                                StringArgumentType.getString(ctx, "player"),
+                                "hub"))
+                        .then(LmCommandSuggestions.word(
+                                        "system", LmCommandSuggestions.LM_INSPECT_SYSTEMS)
+                                .executes(ctx -> adminInspect(
+                                        ctx.getSource(),
+                                        StringArgumentType.getString(ctx, "player"),
+                                        StringArgumentType.getString(ctx, "system")))));
     }
 
     private static int open(CommandSourceStack source, String page) {
@@ -259,6 +309,8 @@ public final class MechanicsCommands {
                         + "§8If CNPC wiped: drop world_data.json into config/legacymechanics/cnpc-import-backup/\n"
                         + "§e/lm admin clear <player> [all|rival|spar|difficulty|progression]\n"
                         + "§e/lm admin character cooldown clear <player> [race|class|reskin|all]\n"
+                        + "§8Aliases: char · charservices · migratecnpc · stafffree\n"
+                        + "§e/lm admin stafffree on|off|toggle|status §7— staff skip Ancient Coin charges\n"
                         + "§e/lm admin syslog on|off|status|flush\n"
                         + "§e/lm admin open <difficulty|rival|spar|progression|prestige|skills|hub>\n"
                         + "§e/lm admin inspect <player> [hub|difficulty|rival|spar|skillcheck|…]\n"
@@ -309,7 +361,7 @@ public final class MechanicsCommands {
         }
         String msg = com.dbzlegacy.adaptivedifficulty.data.CnpcDataMigrator.forceMigrateWorld(
                 source.m_81377_(), force);
-        source.m_288197_(() -> Component.m_237113_(msg), true);
+        LmCommandFeedback.tellLines(source, msg);
         return 1;
     }
 
@@ -319,8 +371,8 @@ public final class MechanicsCommands {
         }
         String msg = com.dbzlegacy.adaptivedifficulty.data.PlayerDataClear.clear(
                 source.m_81377_(), player, scope);
-        source.m_288197_(() -> Component.m_237113_(msg), true);
-        return 1;
+        LmCommandFeedback.tellLines(source, msg);
+        return msg != null && msg.startsWith("§c") ? 0 : 1;
     }
 
     private static int adminCharacterCooldownClear(CommandSourceStack source, String player, String kind) {
@@ -329,7 +381,39 @@ public final class MechanicsCommands {
         }
         String msg = com.dbzlegacy.adaptivedifficulty.data.PlayerDataClear.clearCharacterCooldowns(
                 source.m_81377_(), player, kind);
-        source.m_288197_(() -> Component.m_237113_(msg), true);
+        LmCommandFeedback.tellLines(source, msg);
+        return msg != null && msg.startsWith("§c") ? 0 : 1;
+    }
+
+    private static int adminStaffFree(CommandSourceStack source, String mode) {
+        if (StaffAccess.denyUnlessStaff(source) == 0) {
+            return 0;
+        }
+        String m = mode == null ? "status" : mode.toLowerCase();
+        DifficultyConfig cfg = DifficultyConfig.get();
+        String msg = switch (m) {
+            case "on", "true", "enable" -> {
+                cfg.staffFreeAncientCoinCosts = true;
+                DifficultyConfig.save();
+                yield "§aStaff free Ancient Coin costs ON\n§8/difficulty admin stafffree off";
+            }
+            case "off", "false", "disable" -> {
+                cfg.staffFreeAncientCoinCosts = false;
+                DifficultyConfig.save();
+                yield "§eStaff free Ancient Coin costs OFF";
+            }
+            case "toggle" -> {
+                cfg.staffFreeAncientCoinCosts = !cfg.staffFreeAncientCoinCosts;
+                DifficultyConfig.save();
+                yield cfg.staffFreeAncientCoinCosts
+                        ? "§aStaff free Ancient Coin costs ON"
+                        : "§eStaff free Ancient Coin costs OFF";
+            }
+            default -> "§6Staff free Ancient Coin costs: "
+                    + (cfg.staffFreeAncientCoinCosts ? "§aON" : "§eOFF")
+                    + "\n§8/lm admin stafffree on|off|toggle";
+        };
+        LmCommandFeedback.tellLines(source, msg);
         return 1;
     }
 
@@ -338,8 +422,8 @@ public final class MechanicsCommands {
             return 0;
         }
         boolean ok = DifficultyConfig.reload();
-        source.m_288197_(() -> Component.m_237113_(
-                ok ? "§aLegacyMechanics config reloaded." : "§cConfig reload failed."), true);
+        LmCommandFeedback.tell(source,
+                ok ? "§aLegacyMechanics config reloaded." : "§cConfig reload failed.");
         return ok ? 1 : 0;
     }
 
@@ -348,21 +432,22 @@ public final class MechanicsCommands {
             return 0;
         }
         String m = mode == null ? "status" : mode.toLowerCase();
-        switch (m) {
+        String msg = switch (m) {
             case "on", "true", "enable" -> {
                 SystemTelemetry.setEnabled(true);
-                source.m_288197_(() -> Component.m_237113_("§aEvent log ON"), true);
+                yield "§aEvent log ON";
             }
             case "off", "false", "disable" -> {
                 SystemTelemetry.setEnabled(false);
-                source.m_288197_(() -> Component.m_237113_("§eEvent log OFF"), true);
+                yield "§eEvent log OFF";
             }
             case "flush" -> {
                 SystemTelemetry.flushAndClose();
-                source.m_288197_(() -> Component.m_237113_("§aLogs flushed."), true);
+                yield "§aLogs flushed.";
             }
-            default -> source.m_288197_(() -> Component.m_237113_("§7" + SystemTelemetry.statusLine()), false);
-        }
+            default -> "§7" + SystemTelemetry.statusLine();
+        };
+        LmCommandFeedback.tellLines(source, msg);
         return 1;
     }
 

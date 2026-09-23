@@ -151,7 +151,7 @@ merge_onto_base_jar() {
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/command/MechanicsCommands\$"*.class \
       "$merge/com/dbzlegacy/adaptivedifficulty/command/" 2>/dev/null || true
   fi
-  for class in LmCommandSuggestions LmCommandFeedback CommandAccess MohistCommandBridge PrestigeAdminCommandTree DifficultyCommands RivalCommands SparCommands ProgressionCommands CharacterCommands; do
+  for class in LmCommandSuggestions LmCommandFeedback CommandAccess LmAdminArgCoalesce MohistCommandBridge PrestigeAdminCommandTree DifficultyCommands RivalCommands SparCommands ProgressionCommands CharacterCommands MechanicsCommands; do
     if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/command/${class}.class" ]]; then
       mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/command"
       cp "$OUT/com/dbzlegacy/adaptivedifficulty/command/${class}.class" \
@@ -160,6 +160,20 @@ merge_onto_base_jar() {
         "$merge/com/dbzlegacy/adaptivedifficulty/command/" 2>/dev/null || true
     fi
   done
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/data/PlayerDataClear.class" ]]; then
+    mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/data"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/data/PlayerDataClear.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/data/PlayerDataClear.class"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/data/PlayerDataClear\$"*.class \
+      "$merge/com/dbzlegacy/adaptivedifficulty/data/" 2>/dev/null || true
+  fi
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/character/CharacterServicesStore.class" ]]; then
+    mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/character"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/character/CharacterServicesStore.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/character/CharacterServicesStore.class"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/character/CharacterServicesStore\$"*.class \
+      "$merge/com/dbzlegacy/adaptivedifficulty/character/" 2>/dev/null || true
+  fi
   if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/character/CharacterServicesSystem.class" ]]; then
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/character/CharacterServicesSystem.class" \
       "$merge/com/dbzlegacy/adaptivedifficulty/character/CharacterServicesSystem.class"

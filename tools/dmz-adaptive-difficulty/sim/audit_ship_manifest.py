@@ -66,6 +66,7 @@ def main() -> int:
     sub_audits = (
         "audit_prestige_need_ladder.py",
         "audit_prestige_gui_flow.py",
+        "audit_lm_admin_commands.py",
         "audit_gui_menus_comprehensive.py",
         "audit_gui_tp_copy.py",
     )

@@ -176,7 +176,8 @@ public final class MohistCommandBridge {
             LmCommandFeedback.tell(source, "§cNo permission.");
             return;
         }
-        String line = commandLine(label, args);
+        String[] coalesced = LmAdminArgCoalesce.forMohist(label, args);
+        String line = commandLine(label, coalesced);
         try {
             server.m_129892_().m_230957_(source, line);
         } catch (Throwable t) {
@@ -191,7 +192,8 @@ public final class MohistCommandBridge {
         if (source == null || !mayUseBukkitRoot(source, label)) {
             return Collections.emptyList();
         }
-        String line = commandLine(label, args);
+        String[] coalesced = LmAdminArgCoalesce.forMohist(label, args);
+        String line = commandLine(label, coalesced);
         int cursor = line.length();
         try {
             var dispatcher = server.m_129892_().m_82094_();
@@ -200,7 +202,7 @@ public final class MohistCommandBridge {
                     .get(3, TimeUnit.SECONDS);
             List<String> out = new ArrayList<>();
             String partial = partialLastArg(args);
-            if (LmCommandSuggestions.expectsPlayerName(label, args)) {
+            if (LmCommandSuggestions.expectsPlayerName(label, coalesced)) {
                 return LmCommandSuggestions.filterPlayerNames(source, partial);
             }
             for (Suggestion s : suggestions.getList()) {
