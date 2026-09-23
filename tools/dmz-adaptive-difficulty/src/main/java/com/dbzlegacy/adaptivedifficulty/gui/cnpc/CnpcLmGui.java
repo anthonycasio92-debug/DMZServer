@@ -22,7 +22,8 @@ public final class CnpcLmGui {
             return;
         }
         String sys = system == null || system.isBlank() ? "hub" : system.toLowerCase();
-        String pg = page == null || page.isBlank() ? "main" : page.toLowerCase();
+        String pg = page == null || page.isBlank() ? "main"
+                : (page.indexOf(':') >= 0 ? page.trim() : page.toLowerCase(java.util.Locale.ROOT));
         switch (sys) {
             case "hub", "lm", "legacymechanics", "main" -> CnpcLmHubGui.open(player, pg);
             case "difficulty", "diff" -> CnpcLmDifficultyGui.open(player, pg);

@@ -387,7 +387,17 @@ public final class RivalGuiApi {
                 return null;
             }
             try {
-                return server.m_6846_().m_11259_(java.util.UUID.fromString(id));
+                java.util.UUID uuid = java.util.UUID.fromString(id);
+                ServerPlayer direct = server.m_6846_().m_11259_(uuid);
+                if (direct != null) {
+                    return direct;
+                }
+                for (ServerPlayer p : server.m_6846_().m_11314_()) {
+                    if (p != null && uuid.equals(p.m_20148_())) {
+                        return p;
+                    }
+                }
+                return null;
             } catch (IllegalArgumentException e) {
                 return null;
             }

@@ -165,6 +165,7 @@ public final class RivalChallengeManager {
         req.expiresAt = now + RivalConstants.CH_REQUEST_EXPIRE_MS;
         req.durationMs = mins * 60_000L;
         storeRequest(req);
+        RivalStore.get().saveIfNeeded(now);
         DmzRewards.msg(to, LmChat.note("Challenge", "§e" + req.fromName
                 + " §7challenged you for §f" + mins + "§7 min!"));
         DmzRewards.msg(to, LmChat.tip("/rival", "→ Challenge → Pending requests"));
@@ -187,9 +188,6 @@ public final class RivalChallengeManager {
         if (challenger == null) {
             dropRequest(req.id);
             return "§cThe challenger went offline.";
-        }
-        if (distance(player, challenger) > RivalConstants.CH_MAX_DISTANCE) {
-            return "§cGet within " + (int) RivalConstants.CH_MAX_DISTANCE + " blocks to accept.";
         }
         long now = System.currentTimeMillis();
         RivalPlayerRecord aRec = RivalStore.get().ensurePlayer(challenger);
@@ -325,6 +323,21 @@ public final class RivalChallengeManager {
             }
             if (ch.status == RivalChallenge.Phase.COUNTDOWN) {
                 if (now >= ch.countdownUntil) {
+                    if (a == null || b == null) {
+                        endChallenge(server, ch, a != null ? ch.a : ch.b, a == null ? ch.a : ch.b, false, "disconnect");
+                        continue;
+                    }
+                    if (distance(a, b) > RivalConstants.CH_MAX_DISTANCE) {
+                        if (now - ch.lastBroadcastAt >= 3_000L) {
+                            ch.lastBroadcastAt = now;
+                            String need = "§cGet within " + (int) RivalConstants.CH_MAX_DISTANCE
+                                    + " blocks to start the fight!";
+                            DmzRewards.msg(a, LmChat.fail("Challenge", need));
+                            DmzRewards.msg(b, LmChat.fail("Challenge", need));
+                        }
+                        ch.countdownUntil = now + 2_000L;
+                        continue;
+                    }
                     ch.status = RivalChallenge.Phase.ACTIVE;
                     ch.startAt = now;
                     ch.endsAt = now + ch.durationMs;

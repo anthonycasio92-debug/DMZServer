@@ -266,7 +266,7 @@ public final class CnpcLmRivalGui {
             row += 8;
             CnpcGuiSupport.button(gui, 20, "§aConfirm", CnpcGuiSupport.COL_L, row, () -> {
                 if ("challenge_pick".equals(action)) {
-                    CnpcGuiSupport.afterGuiClosed(gui, () -> open(pl, "challenge_time:" + targetArg));
+                    CnpcGuiSupport.runDeferred(pl, () -> open(pl, "challenge_time:" + targetArg));
                 } else {
                     act(pl, action, targetArg, returnPage);
                 }
@@ -358,7 +358,7 @@ public final class CnpcLmRivalGui {
     }
 
     private static void openChallengeTime(ServerPlayer player, String targetArg) {
-        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_RIVAL, CnpcGuiSupport.W, 280, (pl, gui) -> {
+        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_RIVAL, CnpcGuiSupport.W, 360, (pl, gui) -> {
             int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Challenge length"),
                     "§7Target " + RivalGuiApi.displayPickerArg(player, targetArg));
             int row = CnpcGuiSupport.bodyBelowHeader(infoY);
