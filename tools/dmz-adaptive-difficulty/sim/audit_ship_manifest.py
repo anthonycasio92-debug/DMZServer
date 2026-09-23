@@ -193,6 +193,9 @@ def main() -> int:
     check("CNPC rival challenge duration grid avoids flash ids", "ID_GRID_BASE" in cnpc_rival
           and "paintTwoColumnButtonGrid(pl, gui, row, 30," not in cnpc_rival)
     check("CNPC rival act defers menu reopen", "runDeferred(player, reopen)" in read(SRC / "gui/cnpc/CnpcGuiSupport.java"))
+    check("Rival challenge request window >= 5 min", "CH_REQUEST_EXPIRE_MS = 300_000" in read(SRC / "rival/RivalConstants.java"))
+    rival_mgr = read(SRC / "rival/RivalChallengeManager.java")
+    check("Rival accept not blocked by distance at accept", "blocks to accept" not in rival_mgr)
     cnpc_prog = read(SRC / "gui/cnpc/CnpcLmProgressionGui.java")
     check("CNPC TP boost presets avoid flash ids", "ID_BOOST_PRESET_BASE" in cnpc_prog
           and "boostPreset(gui, player, row, 50," not in cnpc_prog)

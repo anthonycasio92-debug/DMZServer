@@ -905,7 +905,7 @@ public final class CmiRivalGui {
             }
             CMIGuiButton btn = new CMIGuiButton(slots[i], clock);
             btn.lockField();
-            btn.addCommand("lmdo rival challenge_send " + targetArg + "@" + minutes + " challenge");
+            btn.addCommand("lmdo rival challenge_send " + targetArg + "@" + minutes + " challenge_pending");
             gui.addButton(btn);
         }
 

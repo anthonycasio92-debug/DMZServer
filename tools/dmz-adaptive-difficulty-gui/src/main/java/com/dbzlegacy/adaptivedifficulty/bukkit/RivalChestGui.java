@@ -831,7 +831,7 @@ public final class RivalChestGui implements Listener {
                 clock.setItemMeta(meta);
             }
             put(holder, inv, slots[i], clock,
-                    SlotAction.act("challenge_send", targetArg + "@" + minutes, "challenge"));
+                    SlotAction.act("challenge_send", targetArg + "@" + minutes, "challenge_pending"));
         }
 
         put(holder, inv, 36, pageBtn(viewer, "rival.challenge.back_picker", Material.ARROW, "&7Back",

@@ -48,7 +48,8 @@ public final class RivalConstants {
     public static final long INSTINCT_STATUS_CD_MS = 120_000L;
     public static final long INSTINCT_EVENT_CD_MS = 20_000L;
 
-    public static final long CH_REQUEST_EXPIRE_MS = 30_000L;
+    /** Pending duel request lifetime (GUI accept/decline window). */
+    public static final long CH_REQUEST_EXPIRE_MS = 300_000L;
     public static final long CH_REQUEST_COOLDOWN_MS = 15_000L;
     public static final long CH_COUNTDOWN_MS = 5_000L;
     public static final long CH_DURATION_MS = 60_000L;

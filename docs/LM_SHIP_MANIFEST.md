@@ -33,6 +33,7 @@ When you ask for a behavior change, add a row here and a matching check in `audi
 | cnpc-empty-label-ids | CNPC empty-list placeholders use `ID_EMPTY_PLACEHOLDER` not flash id 50 | 4.5.88+ | manifest §cnpc |
 | cnpc-boost-preset-ids | TP boost preset buttons use `ID_BOOST_PRESET_BASE` not flash band 50–59 | 4.5.89+ | manifest §cnpc |
 | rival-challenge-cnpc-reopen | Rival challenge CNPC: defer reopen after actions; duration grid on `ID_GRID_BASE`; accept/decline/cancel match uuid or name | 4.5.92+ | manifest §rival |
+| rival-challenge-accept-range | Accept duel from GUI without standing within range; fight starts when both players are in range after countdown | 4.5.93+ | manifest §rival |
 | progression-no-flag-gui | Progression GUIs have no All Flags / subflags boards or per-module toggle tiles | 4.5.90+ | manifest §progression |
 | cnpc-preview-live-player | Main-system CNPC menus: character preview uses **live player sync** (inventory-style) before Gecko clone fallback | 4.5.84+ | manifest §cnpc |
 | prestige-cnpc-tier-ids | Prestige **Tiers** grid must not reuse CNPC flash widget ids (50+) — avoids menu errors after buy/turn-in | 4.5.85+ | manifest §prestige |
