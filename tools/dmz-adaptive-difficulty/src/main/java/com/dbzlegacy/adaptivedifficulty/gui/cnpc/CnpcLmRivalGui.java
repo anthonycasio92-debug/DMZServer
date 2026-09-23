@@ -187,7 +187,7 @@ public final class CnpcLmRivalGui {
                 if (picker == null) {
                     return;
                 }
-                open(player, "pending_decide:" + picker);
+                CnpcGuiSupport.afterGuiClosed(g, () -> open(player, "pending_decide:" + picker));
             });
             footer(player, gui, CnpcGuiSupport.navRowAfterScroll(bandY, scrollH), "actions");
         }
@@ -266,7 +266,7 @@ public final class CnpcLmRivalGui {
             row += 8;
             CnpcGuiSupport.button(gui, 20, "§aConfirm", CnpcGuiSupport.COL_L, row, () -> {
                 if ("challenge_pick".equals(action)) {
-                    open(pl, "challenge_time:" + targetArg);
+                    CnpcGuiSupport.afterGuiClosed(gui, () -> open(pl, "challenge_time:" + targetArg));
                 } else {
                     act(pl, action, targetArg, returnPage);
                 }
@@ -321,7 +321,7 @@ public final class CnpcLmRivalGui {
                 if (picker == null) {
                     return;
                 }
-                open(player, "challenge_decide:" + picker);
+                CnpcGuiSupport.afterGuiClosed(g, () -> open(player, "challenge_decide:" + picker));
             });
             footer(player, gui, CnpcGuiSupport.navRowAfterScroll(bandY, scrollH), "challenge");
         }
@@ -369,7 +369,7 @@ public final class CnpcLmRivalGui {
                 grid[min - 1] = CnpcGuiLayout.GridButton.run(
                         "§f" + m + " min", () -> act(pl, "challenge_send", sendArg, "challenge_pending"));
             }
-            row = CnpcGuiLayout.paintTwoColumnButtonGrid(pl, gui, row, 30, grid, () -> {});
+            row = CnpcGuiLayout.paintTwoColumnButtonGrid(pl, gui, row, CnpcGuiSupport.ID_GRID_BASE, grid, () -> {});
             row += 4;
             CnpcGuiSupport.navSubmenu(pl, gui, row, () -> open(pl, "pick_challenge"), "§7« Back");
         });
@@ -427,7 +427,7 @@ public final class CnpcLmRivalGui {
             }
             String picker = CnpcGuiSupport.rivalPickerArgFromCard(cards.get(sel[0]));
             if (picker != null) {
-                open(player, "list_detail:" + picker);
+                CnpcGuiSupport.afterGuiClosed(g, () -> open(player, "list_detail:" + picker));
             }
         });
         int actionRow = CnpcGuiSupport.navRowAfterScroll(bandY, scrollH);
@@ -463,7 +463,7 @@ public final class CnpcLmRivalGui {
             int[] sel = sc.getSelection();
             if (sel != null && sel.length > 0 && sel[0] >= 0 && sel[0] < items.length) {
                 String name = items[sel[0]];
-                open(player, "pick_confirm:" + action + "|" + returnPage + "|" + name);
+                CnpcGuiSupport.afterGuiClosed(g, () -> open(player, "pick_confirm:" + action + "|" + returnPage + "|" + name));
             }
         });
         footer(player, gui, CnpcGuiSupport.navRowAfterScroll(bandY, scrollH), returnPage);
@@ -526,7 +526,7 @@ public final class CnpcLmRivalGui {
             }
             String arg = RivalGuiApi.pickerArgFromRivalCard(cards.get(sel[0]));
             if (!arg.isBlank()) {
-                open(player, "pick_confirm:" + action + "|" + returnPage + "|" + arg);
+                CnpcGuiSupport.afterGuiClosed(g, () -> open(player, "pick_confirm:" + action + "|" + returnPage + "|" + arg));
             }
         });
         footer(player, gui, CnpcGuiSupport.navRowAfterScroll(bandY, scrollH), returnPage);

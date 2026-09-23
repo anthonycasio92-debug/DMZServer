@@ -102,11 +102,11 @@ public final class RivalChallengeManager {
         }
         UUID self = viewer.m_20148_();
         ChallengeRequest incoming = findIncoming(self);
-        if (incoming != null && matchesCounterparty(incoming.from, pickerArg)) {
+        if (incoming != null && matchesCounterparty(incoming.from, pickerArg, incoming.fromName)) {
             return incoming;
         }
         ChallengeRequest outgoing = findOutgoing(self);
-        if (outgoing != null && matchesCounterparty(outgoing.to, pickerArg)) {
+        if (outgoing != null && matchesCounterparty(outgoing.to, pickerArg, outgoing.toName)) {
             return outgoing;
         }
         return null;
@@ -176,13 +176,11 @@ public final class RivalChallengeManager {
     }
 
     public String acceptChallenge(ServerPlayer player, String counterpartyPicker) {
-        ChallengeRequest req = findIncoming(player.m_20148_());
+        ChallengeRequest req = resolveIncomingRequest(player, counterpartyPicker);
         if (req == null) {
-            return "§cNo pending challenge to accept.";
-        }
-        if (counterpartyPicker != null && !counterpartyPicker.isBlank()
-                && !matchesCounterparty(req.from, counterpartyPicker)) {
-            return "§cNo pending challenge from that player.";
+            return counterpartyPicker != null && !counterpartyPicker.isBlank()
+                    ? "§cNo pending challenge from that player."
+                    : "§cNo pending challenge to accept.";
         }
         MinecraftServer server = player.m_20194_();
         ServerPlayer challenger = server == null ? null : server.m_6846_().m_11259_(req.from);
@@ -228,13 +226,11 @@ public final class RivalChallengeManager {
     }
 
     public String declineChallenge(ServerPlayer player, String counterpartyPicker) {
-        ChallengeRequest req = findIncoming(player.m_20148_());
+        ChallengeRequest req = resolveIncomingRequest(player, counterpartyPicker);
         if (req == null) {
-            return "§cNo pending challenge to decline.";
-        }
-        if (counterpartyPicker != null && !counterpartyPicker.isBlank()
-                && !matchesCounterparty(req.from, counterpartyPicker)) {
-            return "§cNo pending challenge from that player.";
+            return counterpartyPicker != null && !counterpartyPicker.isBlank()
+                    ? "§cNo pending challenge from that player."
+                    : "§cNo pending challenge to decline.";
         }
         dropRequest(req.id);
         MinecraftServer server = player.m_20194_();
@@ -251,14 +247,13 @@ public final class RivalChallengeManager {
     }
 
     public String cancelChallenge(ServerPlayer player, String counterpartyPicker) {
-        ChallengeRequest outgoing = findOutgoing(player.m_20148_());
+        ChallengeRequest outgoing = resolveOutgoingRequest(player, counterpartyPicker);
         if (outgoing != null) {
-            if (counterpartyPicker != null && !counterpartyPicker.isBlank()
-                    && !matchesCounterparty(outgoing.to, counterpartyPicker)) {
-                return "§cNo outgoing challenge to that player.";
-            }
             dropRequest(outgoing.id);
             return "§eChallenge request cancelled.";
+        }
+        if (counterpartyPicker != null && !counterpartyPicker.isBlank()) {
+            return "§cNo outgoing challenge to that player.";
         }
         RivalChallenge ch = getChallenge(player.m_20148_());
         if (ch == null || ch.status == RivalChallenge.Phase.ENDED) {
@@ -842,7 +837,45 @@ public final class RivalChallengeManager {
                 req.id == null ? "" : req.id);
     }
 
-    private static boolean matchesCounterparty(UUID counterparty, String pickerArg) {
+    private ChallengeRequest resolveIncomingRequest(ServerPlayer player, String counterpartyPicker) {
+        if (player == null) {
+            return null;
+        }
+        UUID self = player.m_20148_();
+        if (counterpartyPicker == null || counterpartyPicker.isBlank()) {
+            return findIncoming(self);
+        }
+        ChallengeRequest req = findPendingRequestForViewer(player, counterpartyPicker);
+        if (req != null && self.equals(req.to)) {
+            return req;
+        }
+        ChallengeRequest incoming = findIncoming(self);
+        if (incoming != null && matchesCounterparty(incoming.from, counterpartyPicker, incoming.fromName)) {
+            return incoming;
+        }
+        return null;
+    }
+
+    private ChallengeRequest resolveOutgoingRequest(ServerPlayer player, String counterpartyPicker) {
+        if (player == null) {
+            return null;
+        }
+        UUID self = player.m_20148_();
+        if (counterpartyPicker == null || counterpartyPicker.isBlank()) {
+            return findOutgoing(self);
+        }
+        ChallengeRequest req = findPendingRequestForViewer(player, counterpartyPicker);
+        if (req != null && self.equals(req.from)) {
+            return req;
+        }
+        ChallengeRequest outgoing = findOutgoing(self);
+        if (outgoing != null && matchesCounterparty(outgoing.to, counterpartyPicker, outgoing.toName)) {
+            return outgoing;
+        }
+        return null;
+    }
+
+    private static boolean matchesCounterparty(UUID counterparty, String pickerArg, String storedName) {
         if (counterparty == null) {
             return false;
         }
@@ -856,6 +889,16 @@ public final class RivalChallengeManager {
             } catch (IllegalArgumentException e) {
                 return false;
             }
+        }
+        if (counterparty.toString().equalsIgnoreCase(raw)) {
+            return true;
+        }
+        if (storedName != null && !storedName.isBlank() && storedName.equalsIgnoreCase(raw)) {
+            return true;
+        }
+        RivalPlayerRecord rec = RivalStore.get().get(counterparty.toString());
+        if (rec != null && rec.name != null && rec.name.equalsIgnoreCase(raw)) {
+            return true;
         }
         return false;
     }
