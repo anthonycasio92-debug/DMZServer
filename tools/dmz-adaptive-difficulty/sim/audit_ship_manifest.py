@@ -107,6 +107,9 @@ def main() -> int:
     check("CMI challenge_pending page", "challenge_pending" in cmi_rival)
     check("CNPC challenge pending paint", "pendingChallengeCards" in cnpc_rival)
     check("rival declare pending_decide", "pending_decide:" in rival_chest and "pending_decide:" in cmi_rival)
+    cnpc_rival = read(SRC / "gui/cnpc/CnpcLmRivalGui.java")
+    check("rival CNPC TP toggle label", 'toggleOn("TP")' in cnpc_rival and "Teleport msgs" not in cnpc_rival)
+    check("rival chest TP toggle label", '"&aTP ON"' in rival_chest and "TP Msg ON" not in rival_chest)
 
     print("\n--- § spar ---")
     spar_chest = read(BUKKIT / "SparChestGui.java")
