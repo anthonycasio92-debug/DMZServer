@@ -41,65 +41,7 @@ public final class ProgressionCommands {
                 .requires(StaffAccess::isStaffSource)
                 .executes(ctx -> prestigeGui(ctx.getSource(), "main"))
                 .then(Commands.m_82127_("gui").executes(ctx -> prestigeGui(ctx.getSource(), "main")))
-                .then(Commands.m_82127_("admin")
-                        .executes(ctx -> prestigeAdminHelp(ctx.getSource()))
-                        .then(Commands.m_82127_("help").executes(ctx -> prestigeAdminHelp(ctx.getSource())))
-                        .then(Commands.m_82127_("info")
-                                .executes(ctx -> prestigeAdminInfo(ctx.getSource(), null))
-                                .then(LmCommandSuggestions.playerWord("player")
-                                        .executes(ctx -> prestigeAdminInfo(
-                                                ctx.getSource(),
-                                                StringArgumentType.getString(ctx, "player")))))
-                        .then(Commands.m_82127_("sync")
-                                .then(LmCommandSuggestions.playerWord("player")
-                                        .executes(ctx -> prestigeAdminSync(
-                                                ctx.getSource(),
-                                                StringArgumentType.getString(ctx, "player")))))
-                        .then(Commands.m_82127_("held")
-                                .then(LmCommandSuggestions.playerWord("player")
-                                        .then(LmCommandSuggestions.word("mode", LmCommandSuggestions.PRESTIGE_ADJUST_MODES)
-                                                .then(Commands.m_82129_("amount", IntegerArgumentType.integer())
-                                                        .executes(ctx -> prestigeAdminAdjust(
-                                                                ctx.getSource(), "held",
-                                                                StringArgumentType.getString(ctx, "player"),
-                                                                StringArgumentType.getString(ctx, "mode"),
-                                                                IntegerArgumentType.getInteger(ctx, "amount")))))))
-                        .then(Commands.m_82127_("completed")
-                                .then(LmCommandSuggestions.playerWord("player")
-                                        .then(LmCommandSuggestions.word("mode", LmCommandSuggestions.PRESTIGE_ADJUST_MODES)
-                                                .then(Commands.m_82129_("amount", IntegerArgumentType.integer())
-                                                        .executes(ctx -> prestigeAdminAdjust(
-                                                                ctx.getSource(), "completed",
-                                                                StringArgumentType.getString(ctx, "player"),
-                                                                StringArgumentType.getString(ctx, "mode"),
-                                                                IntegerArgumentType.getInteger(ctx, "amount")))))))
-                        .then(Commands.m_82127_("points")
-                                .then(LmCommandSuggestions.playerWord("player")
-                                        .then(LmCommandSuggestions.word("mode", LmCommandSuggestions.PRESTIGE_ADJUST_MODES)
-                                                .then(Commands.m_82129_("amount", IntegerArgumentType.integer())
-                                                        .executes(ctx -> prestigeAdminAdjust(
-                                                                ctx.getSource(), "points",
-                                                                StringArgumentType.getString(ctx, "player"),
-                                                                StringArgumentType.getString(ctx, "mode"),
-                                                                IntegerArgumentType.getInteger(ctx, "amount")))))))
-                        .then(Commands.m_82127_("breakthroughs")
-                                .then(LmCommandSuggestions.playerWord("player")
-                                        .then(LmCommandSuggestions.word("mode", LmCommandSuggestions.PRESTIGE_ADJUST_MODES)
-                                                .then(Commands.m_82129_("amount", IntegerArgumentType.integer())
-                                                        .executes(ctx -> prestigeAdminAdjust(
-                                                                ctx.getSource(), "breakthroughs",
-                                                                StringArgumentType.getString(ctx, "player"),
-                                                                StringArgumentType.getString(ctx, "mode"),
-                                                                IntegerArgumentType.getInteger(ctx, "amount")))))))
-                        .then(Commands.m_82127_("fabled")
-                                .then(LmCommandSuggestions.playerWord("player")
-                                        .then(LmCommandSuggestions.word("mode", LmCommandSuggestions.PRESTIGE_ADJUST_MODES)
-                                                .then(Commands.m_82129_("amount", IntegerArgumentType.integer())
-                                                        .executes(ctx -> prestigeAdminAdjust(
-                                                                ctx.getSource(), "fabled",
-                                                                StringArgumentType.getString(ctx, "player"),
-                                                                StringArgumentType.getString(ctx, "mode"),
-                                                                IntegerArgumentType.getInteger(ctx, "amount"))))))))
+                .then(PrestigeAdminCommandTree.attach(Commands.m_82127_("admin")))
                 .then(Commands.m_82127_("do")
                         .then(Commands.m_82127_("confirm")
                                 .executes(ctx -> prestigeConfirm(ctx.getSource(), "main"))
@@ -112,6 +54,13 @@ public final class ProgressionCommands {
                                         .executes(ctx -> prestigeGui(
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "page")))))));
+
+        event.getDispatcher().register(
+                PrestigeAdminCommandTree.attach(
+                        Commands.m_82127_("padmin").requires(StaffAccess::isStaffSource)));
+        event.getDispatcher().register(
+                PrestigeAdminCommandTree.attach(
+                        Commands.m_82127_("prestigeadmin").requires(StaffAccess::isStaffSource)));
 
         // SkillUnlock admin browser — staff only (not aliased to skillcheck)
         event.getDispatcher().register(Commands.m_82127_("skills")
@@ -227,13 +176,29 @@ public final class ProgressionCommands {
         return 1;
     }
 
-    private static int prestigeAdminHelp(CommandSourceStack source) {
-        reply(source, playerOrNull(source),
+    static int prestigeAdminHelp(CommandSourceStack source) {
+        if (StaffAccess.denyUnlessStaff(source) == 0) {
+            return 0;
+        }
+        LmCommandFeedback.tellLines(source,
                 com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeAdmin.help());
         return 1;
     }
 
-    private static int prestigeAdminInfo(CommandSourceStack source, String playerName) {
+    static int prestigeAdminViaApi(CommandSourceStack source, String rawArgs) {
+        if (StaffAccess.denyUnlessStaff(source) == 0) {
+            return 0;
+        }
+        ServerPlayer actor = playerOrNull(source);
+        String msg = ProgressionGuiApi.handlePrestigeAdmin(actor, rawArgs);
+        reply(source, actor, msg);
+        return msg != null && msg.startsWith("§c") ? 0 : 1;
+    }
+
+    static int prestigeAdminInfo(CommandSourceStack source, String playerName) {
+        if (StaffAccess.denyUnlessStaff(source) == 0) {
+            return 0;
+        }
         ServerPlayer target = resolveAdminTarget(source, playerName);
         if (target == null) {
             reply(source, playerOrNull(source), "§cPlayer not online"
@@ -245,7 +210,10 @@ public final class ProgressionCommands {
         return 1;
     }
 
-    private static int prestigeAdminSync(CommandSourceStack source, String playerName) {
+    static int prestigeAdminSync(CommandSourceStack source, String playerName) {
+        if (StaffAccess.denyUnlessStaff(source) == 0) {
+            return 0;
+        }
         ServerPlayer target = resolveAdminTarget(source, playerName);
         if (target == null) {
             reply(source, playerOrNull(source), "§cPlayer not online: §f" + playerName);
@@ -256,9 +224,12 @@ public final class ProgressionCommands {
         return 1;
     }
 
-    private static int prestigeAdminAdjust(
+    static int prestigeAdminAdjust(
             CommandSourceStack source, String field, String playerName, String mode, int amount
     ) {
+        if (StaffAccess.denyUnlessStaff(source) == 0) {
+            return 0;
+        }
         ServerPlayer target = resolveAdminTarget(source, playerName);
         if (target == null) {
             reply(source, playerOrNull(source), "§cPlayer not online: §f" + playerName);
@@ -277,6 +248,62 @@ public final class ProgressionCommands {
                     .adjustFabled(target, mode, amount);
             default -> "§cUnknown field: " + field;
         };
+        reply(source, playerOrNull(source), msg);
+        return msg != null && msg.startsWith("§c") ? 0 : 1;
+    }
+
+    static int prestigeAdminListSkills(CommandSourceStack source, String playerName) {
+        if (StaffAccess.denyUnlessStaff(source) == 0) {
+            return 0;
+        }
+        ServerPlayer target = resolveAdminTarget(source, playerName);
+        if (target == null) {
+            reply(source, playerOrNull(source), "§cPlayer not online: §f" + playerName);
+            return 0;
+        }
+        reply(source, playerOrNull(source),
+                com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeAdmin.listSkills(target));
+        return 1;
+    }
+
+    static int prestigeAdminSkill(
+            CommandSourceStack source, String playerName, String skillId, String mode, int levels
+    ) {
+        if (StaffAccess.denyUnlessStaff(source) == 0) {
+            return 0;
+        }
+        ServerPlayer target = resolveAdminTarget(source, playerName);
+        if (target == null) {
+            reply(source, playerOrNull(source), "§cPlayer not online: §f" + playerName);
+            return 0;
+        }
+        String msg = com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeAdmin.adjustSkill(
+                target, skillId, mode, levels);
+        reply(source, playerOrNull(source), msg);
+        return msg != null && msg.startsWith("§c") ? 0 : 1;
+    }
+
+    static int prestigeAdminTier(CommandSourceStack source, String playerName, String mode, String tierRaw) {
+        if (StaffAccess.denyUnlessStaff(source) == 0) {
+            return 0;
+        }
+        ServerPlayer target = resolveAdminTarget(source, playerName);
+        if (target == null) {
+            reply(source, playerOrNull(source), "§cPlayer not online: §f" + playerName);
+            return 0;
+        }
+        int tierId;
+        if ("all".equalsIgnoreCase(tierRaw)) {
+            tierId = 0;
+        } else {
+            try {
+                tierId = Integer.parseInt(tierRaw);
+            } catch (NumberFormatException e) {
+                reply(source, playerOrNull(source), "§cTier must be 0–7 or all.");
+                return 0;
+            }
+        }
+        String msg = com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeAdmin.adjustTier(target, mode, tierId);
         reply(source, playerOrNull(source), msg);
         return msg != null && msg.startsWith("§c") ? 0 : 1;
     }

@@ -200,8 +200,11 @@ public final class MohistCommandBridge {
                     .get(3, TimeUnit.SECONDS);
             List<String> out = new ArrayList<>();
             String partial = partialLastArg(args);
+            if (LmCommandSuggestions.expectsPlayerName(label, args)) {
+                return LmCommandSuggestions.filterPlayerNames(source, partial);
+            }
             for (Suggestion s : suggestions.getList()) {
-                String text = s.getText();
+                String text = bukkitSuggestionToken(line, s);
                 if (text == null || text.isEmpty()) {
                     continue;
                 }
@@ -229,6 +232,11 @@ public final class MohistCommandBridge {
             }
         }
         return line.toString();
+    }
+
+    private static String bukkitSuggestionToken(String line, Suggestion s) {
+        String text = s.getText();
+        return text == null || text.isEmpty() ? null : text;
     }
 
     /** Lowercase prefix of the token Bukkit is completing (last arg). */
