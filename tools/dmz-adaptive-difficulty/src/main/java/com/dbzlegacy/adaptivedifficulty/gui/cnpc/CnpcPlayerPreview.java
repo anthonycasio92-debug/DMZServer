@@ -9,9 +9,11 @@ import noppes.npcs.api.gui.IEntityDisplay;
 import noppes.npcs.api.wrapper.gui.CustomGuiEntityDisplayWrapper;
 
 /**
- * CNPC {@link IEntityDisplay} player preview (ProfTools cursor yaw + SDU Gecko model).
- * Gecko clone first (visible on dedicated servers); live {@code IPlayer} fallback for armor/forms
- * when Gecko is unavailable.
+ * CNPC {@link IEntityDisplay} player preview (ProfTools cursor yaw + inventory-style live player).
+ * <p>
+ * Prefer syncing the real {@link ServerPlayer} (same entity the client renders in-world and in the
+ * inventory screen) via {@code setEntitySyncedById}. Fall back to a Gecko clone when live sync is
+ * unavailable (dedicated servers without a trackable entity id).
  */
 public final class CnpcPlayerPreview {
     /** Right column reserved for the model (buttons must stay left of {@link #contentRightEdge()}). */
@@ -52,27 +54,31 @@ public final class CnpcPlayerPreview {
             return;
         }
         try {
-            IEntity gecko = CnpcGeckoPreviewBridge.previewEntity(player);
-            IEntity entity = gecko;
-            boolean snapshotNbt = gecko != null;
+            IEntity live = NpcAPI.Instance().getIEntity(player);
+            IEntity entity = live;
+            boolean liveSync = false;
+
             if (entity == null) {
-                entity = NpcAPI.Instance().getIEntity(player);
-                snapshotNbt = true;
+                entity = CnpcGeckoPreviewBridge.previewEntity(player);
             }
+
             if (entity == null) {
                 return;
             }
+
             IEntityDisplay display = gui.addEntityDisplay(componentId, x, y, entity);
-            if (snapshotNbt) {
-                forceNbtSnapshot(display, entity);
+            if (live != null && tryBindLivePlayer(display, live)) {
+                liveSync = true;
             } else {
-                try {
-                    display.setEntitySyncedById(entity);
-                } catch (Throwable ignored) {
+                IEntity gecko = entity == live ? CnpcGeckoPreviewBridge.previewEntity(player) : entity;
+                if (gecko != null) {
+                    forceNbtSnapshot(display, gecko);
+                } else {
                     forceNbtSnapshot(display, entity);
                 }
             }
-            tuneDisplay(display);
+
+            tuneDisplay(display, liveSync);
             display.setSize(SLOT_W, SLOT_H);
             display.setScale(PREVIEW_SCALE);
             display.setBackground(false);
@@ -88,12 +94,41 @@ public final class CnpcPlayerPreview {
         }
     }
 
-    private static void tuneDisplay(IEntityDisplay display) {
+    /**
+     * Inventory-style preview: client tracks the player's live entity (skin, armor, DMZ forms).
+     */
+    private static boolean tryBindLivePlayer(IEntityDisplay display, IEntity live) {
+        try {
+            display.setEntitySyncedById(live);
+            return true;
+        } catch (Throwable ignored) {
+        }
+        try {
+            display.setEntity(live);
+            if (display instanceof CustomGuiEntityDisplayWrapper wrapper) {
+                try {
+                    wrapper.entityId = live.getMCEntity().m_19879_();
+                } catch (Throwable ignored) {
+                }
+            } else {
+                try {
+                    var idField = display.getClass().getField("entityId");
+                    idField.setInt(display, live.getMCEntity().m_19879_());
+                } catch (Throwable ignored) {
+                }
+            }
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    private static void tuneDisplay(IEntityDisplay display, boolean liveSync) {
         try {
             var x = display.getClass().getField("offsetX");
             var y = display.getClass().getField("offsetY");
             x.setFloat(display, 0f);
-            y.setFloat(display, 8f);
+            y.setFloat(display, liveSync ? 4f : 8f);
         } catch (Throwable ignored) {
         }
     }

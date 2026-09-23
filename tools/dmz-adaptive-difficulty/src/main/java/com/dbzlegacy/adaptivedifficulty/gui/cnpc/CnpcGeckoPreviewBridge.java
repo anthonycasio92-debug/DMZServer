@@ -113,6 +113,28 @@ final class CnpcGeckoPreviewBridge {
         cmdClass.getMethod("setWalkAnim", String.class).invoke(cmd, walk);
         cmdClass.getMethod("setAttackAnim", String.class).invoke(cmd, attack);
         cmdClass.getMethod("setHurtAnim", String.class).invoke(cmd, hurt);
+        if (texture != null && !texture.isBlank()) {
+            applyGeckoTexture(cmd, texture);
+        }
+    }
+
+    private static void applyGeckoTexture(Object customModelData, String texture) {
+        Class<?> cmdClass = customModelData.getClass();
+        for (String method : new String[] {"setTexture", "setSkin", "setPrimaryTexture", "setModelTexture"}) {
+            try {
+                cmdClass.getMethod(method, String.class).invoke(customModelData, texture);
+                return;
+            } catch (Throwable ignored) {
+            }
+        }
+        try {
+            int colon = texture.indexOf(':');
+            ResourceLocation loc = colon > 0
+                    ? new ResourceLocation(texture.substring(0, colon), texture.substring(colon + 1))
+                    : new ResourceLocation(texture);
+            cmdClass.getMethod("setTexture", ResourceLocation.class).invoke(customModelData, loc);
+        } catch (Throwable ignored) {
+        }
     }
 
     private static void applyPlayerSkin(EntityCustomNpc npc, String playerName) {

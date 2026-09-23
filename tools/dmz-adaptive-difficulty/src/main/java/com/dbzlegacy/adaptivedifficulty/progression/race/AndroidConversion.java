@@ -31,16 +31,14 @@ import net.minecraftforge.fml.loading.FMLPaths;
  * and the CNPC Android Upgrade Removal script — Dr. Gero convert + remove.
  * <p>
  * Android is an <b>upgrade flag</b> on supported races (not a race swap). Eligible
- * when that race has {@code androidforms} TP costs configured — Human, Frost Demon,
- * and Viltrumite on this server (Saiyan lineage excluded). Bio-Android is blocked
- * (already an android lineage). Combat scaling stays race-agnostic via live DMZ
- * stats + form mults; the upgrade only swaps form skills / {@code isAndroidUpgraded}.
+ * when that race has {@code androidforms} TP costs configured (e.g. Human, Saiyan,
+ * Frost Demon, Viltrumite). Bio-Android is blocked (already an android lineage).
+ * Combat scaling stays race-agnostic via live DMZ stats + form mults; the upgrade
+ * only swaps form skills / {@code isAndroidUpgraded}.
  */
 public final class AndroidConversion {
     /** Native android lineage — cannot take the Gero upgrade on top. */
     private static final Set<String> BLOCKED = Set.of("bioandroid");
-    /** Gero upgrade not offered for Saiyan races (androidforms exist in DMZ configs but are disabled here). */
-    private static final Set<String> GERO_RACE_DENY = Set.of("saiyan", "ancient_saiyan", "sento_saiyan");
     private static final String ANDROID_FORM_GROUP = "androidforms";
     private static final String ANDROID_BASE_FORM = "androidbase";
     private static final long CONFIRM_MS = 10_000L;
@@ -114,7 +112,7 @@ public final class AndroidConversion {
                                 return;
                             }
                             String lower = id.toLowerCase(Locale.ROOT);
-                            if (BLOCKED.contains(lower) || GERO_RACE_DENY.contains(lower)) {
+                            if (BLOCKED.contains(lower)) {
                                 return;
                             }
                             if (raceAllowsAndroidForms(id)) {
@@ -132,7 +130,7 @@ public final class AndroidConversion {
     public static String eligibleRaceHint() {
         List<String> ids = configuredAndroidRaceIds();
         if (ids.isEmpty()) {
-            return "Human, Frost Demon, Viltrumite (Saiyan races excluded)";
+            return "Human, Saiyan, Frost Demon, Viltrumite (races with androidforms configured)";
         }
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < ids.size(); i++) {
@@ -392,10 +390,6 @@ public final class AndroidConversion {
     /** Match Gero: {@code getFormSkillTpCosts("androidforms").length > 0}. */
     public static boolean raceAllowsAndroidForms(String raceName) {
         if (raceName == null || raceName.isBlank()) {
-            return false;
-        }
-        String lower = raceName.trim().toLowerCase(Locale.ROOT);
-        if (GERO_RACE_DENY.contains(lower)) {
             return false;
         }
         try {

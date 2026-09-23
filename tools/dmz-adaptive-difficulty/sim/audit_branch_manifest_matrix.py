@@ -117,6 +117,21 @@ CHECKS: list[Check] = [
     Check("build-backend-ship-overlay", "build",
           ("tools/dmz-adaptive-difficulty/build.sh",),
           "sparring/DojoRankings.class"),
+    Check("android-no-saiyan-deny", "android",
+          ("tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/progression/race/AndroidConversion.java",),
+          "raceAllowsAndroidForms", forbidden="GERO_RACE_DENY"),
+    Check("android-gui-copy", "android",
+          ("tools/dmz-adaptive-difficulty-gui/src/main/resources/gui-tooltips.json",),
+          "Human · Saiyan · Frost Demon", forbidden="Saiyan excluded"),
+    Check("cnpc-preview-live-sync", "cnpc",
+          ("tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcPlayerPreview.java",),
+          "tryBindLivePlayer", forbidden="Gecko clone first"),
+    Check("manifest-android-row", "process",
+          ("docs/LM_SHIP_MANIFEST.md",),
+          "android-saiyan-eligible"),
+    Check("manifest-preview-row", "process",
+          ("docs/LM_SHIP_MANIFEST.md",),
+          "cnpc-preview-live-player"),
 ]
 
 
