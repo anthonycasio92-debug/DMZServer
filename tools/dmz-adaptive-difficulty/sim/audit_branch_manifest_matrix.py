@@ -132,6 +132,9 @@ CHECKS: list[Check] = [
     Check("manifest-preview-row", "process",
           ("docs/LM_SHIP_MANIFEST.md",),
           "cnpc-preview-live-player"),
+    Check("prestige-tier-cnpc-ids", "prestige",
+          ("tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmPrestigeGui.java",),
+          "ID_PRESTIGE_TIER_GRID", forbidden="paintTwoColumnButtonGrid(player, gui, row, 50,"),
 ]
 
 

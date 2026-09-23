@@ -75,6 +75,10 @@ public final class CnpcGuiSupport {
     public static final int ID_INLINE_NOTE = 115;
     /** Extra staff-only control (never {@link #ID_CLOSE}). */
     public static final int ID_STAFF_EXTRA = 116;
+    /** Flash notices use {@link #ID_FLASH_LABEL_BASE}+ — keep button grids above this band. */
+    public static final int ID_GRID_BASE = 120;
+    /** Prestige permanent tier shop (7 buttons — must not overlap flash band 50–59). */
+    public static final int ID_PRESTIGE_TIER_GRID = 200;
 
     /** Shorter divider so labels do not wrap oddly in CNPC. */
     private static String dividerText() {

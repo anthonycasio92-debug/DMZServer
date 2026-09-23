@@ -99,7 +99,8 @@ public final class CnpcLmPrestigeGui {
                 grid[i] = CnpcGuiLayout.GridButton.disabled(label);
             }
         }
-        row = CnpcGuiLayout.paintTwoColumnButtonGrid(player, gui, row, 30, grid, () -> open(player, "turnin"));
+        row = CnpcGuiLayout.paintTwoColumnButtonGrid(
+                player, gui, row, CnpcGuiSupport.ID_GRID_BASE, grid, () -> open(player, "turnin"));
         row += 4;
         footer(player, gui, row, "main");
     }
@@ -147,7 +148,7 @@ public final class CnpcLmPrestigeGui {
             }
         }
         row = CnpcGuiLayout.paintTwoColumnButtonGrid(
-                player, gui, row, 30, grid.toArray(CnpcGuiLayout.GridButton[]::new),
+                player, gui, row, CnpcGuiSupport.ID_GRID_BASE, grid.toArray(CnpcGuiLayout.GridButton[]::new),
                 () -> open(player, "shop:" + page));
         if (page > 0) {
             int prev = page - 1;
@@ -257,7 +258,7 @@ public final class CnpcLmPrestigeGui {
                 "§7Permanent unlocks · tiers T1 through T7");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, ProgressionGuiApi.prestigeLines(player, "tiers"),
                         CnpcGuiStyle.INFO_INLINE_MAX));
-        row = CnpcGuiSupport.paintSectionTag(gui, CnpcGuiSupport.ID_INLINE_NOTE + 1, row + 4, "§eBuy permanent tiers");
+        row = CnpcGuiSupport.paintSectionTag(gui, CnpcGuiSupport.ID_INLINE_NOTE, row + 4, "§eBuy permanent tiers");
         CnpcGuiLayout.GridButton[] grid = new CnpcGuiLayout.GridButton[7];
         for (int t = 1; t <= 7; t++) {
             int tier = t;
@@ -277,7 +278,8 @@ public final class CnpcLmPrestigeGui {
                 grid[t - 1] = CnpcGuiLayout.GridButton.disabled("§8T" + tier + " · " + hint);
             }
         }
-        row = CnpcGuiLayout.paintTwoColumnButtonGrid(player, gui, row, 50, grid, () -> open(player, "tiers"));
+        row = CnpcGuiLayout.paintTwoColumnButtonGrid(
+                player, gui, row, CnpcGuiSupport.ID_PRESTIGE_TIER_GRID, grid, () -> open(player, "tiers"));
         row += 4;
         footer(player, gui, row, "main");
     }

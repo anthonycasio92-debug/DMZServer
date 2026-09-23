@@ -167,6 +167,8 @@ def main() -> int:
     check("CNPC prestige section tags avoid info label ids",
           "ID_INLINE_NOTE" in cnpc_prestige and 'paintSectionTag(gui, 11,' not in cnpc_prestige
           and 'paintSectionTag(gui, 12,' not in cnpc_prestige)
+    check("Prestige CNPC tier grid avoids flash widget ids",
+          "ID_PRESTIGE_TIER_GRID" in cnpc_prestige and "paintTwoColumnButtonGrid(player, gui, row, 50," not in cnpc_prestige)
     build_sh = read(MOD / "build.sh")
     check("build overlays RivalStore + dojo backend", "rival/RivalStore.class" in build_sh and "sparring/DojoRankings.class" in build_sh)
     check(
