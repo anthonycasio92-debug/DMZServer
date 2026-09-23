@@ -15,7 +15,6 @@ ROOT = Path(__file__).resolve().parents[3]
 
 # Refs to scan (newest consolidated first).
 DEFAULT_REFS = [
-    "origin/cursor/rival-spar-merge-deploy-c766",
     "origin/main",
     "origin/cursor/skillcheck-donator-gates-c766",
     "origin/cursor/prestige-menu-need-fix-c766",
@@ -163,7 +162,7 @@ def main() -> int:
     # Best ref = most checks pass
     scores = {ref: sum(1 for v in rows[ref].values() if v) for ref in rows}
     best_ref = max(scores, key=scores.get) if scores else None
-    canonical = "origin/cursor/rival-spar-merge-deploy-c766"
+    canonical = "origin/main"
     main_ref = "origin/main"
 
     lines = [
