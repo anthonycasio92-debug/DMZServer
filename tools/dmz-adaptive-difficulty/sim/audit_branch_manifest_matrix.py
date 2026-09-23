@@ -104,7 +104,7 @@ CHECKS: list[Check] = [
           "use TP instead of Teleport"),
     Check("difficulty-tier-personal-gate", "difficulty",
           ("tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmDifficultyGui.java",),
-          "paintTiersLocked"),
+          "paintFeatureLocked", forbidden="paintTiersLocked"),
     Check("rival-challenge-persist", "rival",
           ("tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/rival/RivalStore.java",),
           "challengeRequests"),
