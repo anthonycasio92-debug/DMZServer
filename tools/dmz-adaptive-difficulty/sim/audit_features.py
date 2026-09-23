@@ -1199,8 +1199,13 @@ def main() -> int:
     cnpc_prog = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmProgressionGui.java")
     check("CNPC progression staff-only except android_remove",
           '!"android_remove".equals(page)' in cnpc_prog or "android_remove\" -> false" in cnpc_prog)
-    check("CNPC android remove back goes to LM hub for players",
-          "CnpcLmHubGui.open(player, \"main\")" in cnpc_prog.split("paintAndroidRemove")[1].split("private static int paintNameScroll")[0])
+    remove_block = cnpc_prog.split("private static void paintAndroidRemove", 1)[1].split(
+        "private static int paintNameScroll", 1
+    )[0]
+    check(
+        "CNPC android remove back goes to LM hub for players",
+        "CnpcLmHubGui.open(player, \"main\")" in remove_block,
+    )
     check(
         "MechanicsCommands android_remove opens GUI",
         "ProgressionMenu.open(player, \"android_remove\")" in mech_cmds,
