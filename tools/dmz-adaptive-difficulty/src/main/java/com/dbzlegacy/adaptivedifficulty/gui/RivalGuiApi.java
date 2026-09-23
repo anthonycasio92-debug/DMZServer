@@ -525,10 +525,10 @@ public final class RivalGuiApi {
             case "history", "past", "previous" -> RivalSystem.historyLines(player);
             case "pending", "invites", "pendinginvites" -> RivalSystem.pendingInviteLines(player);
             case "actions" -> List.of(
-                    "§6§lRival Actions",
-                    "§7Pending board — tap a name to Accept or Decline",
-                    "§7Declare · Silent · remove rivals from List",
-                    "§7Both Silent → Declared → Pending → Mutual"
+                    "§6§lRival actions",
+                    "§7Pending board — tap a name to accept or decline an invite",
+                    "§7Declare a rivalry, send a silent rival, or remove someone from your list",
+                    "§8Flow: Silent → Declared → Pending invite → Mutual rival"
             );
             case "stats", "statistics" -> statsLines(player);
             case "challenge", "challenges" -> challengeLines(player);

@@ -235,7 +235,9 @@ public final class CnpcLmSparGui {
         List<String> cards = SparGuiApi.pendingDojoWarCards(who);
         int listY = CnpcGuiSupport.bodyBelowHeader(infoY);
         if (cards.isEmpty()) {
-            gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER, "§7No pending dojo wars.", CnpcGuiSupport.M, listY + 4, CnpcGuiSupport.textBandWidth(), 14);
+            gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER,
+                    "§7No dojo war challenges waiting — declare war from Dojo when your roster is ready.",
+                    CnpcGuiSupport.M, listY + 4, CnpcGuiSupport.textBandWidth(), 14);
             footer(player, gui, listY + 28, "dojo_war");
             return;
         }
@@ -344,7 +346,9 @@ public final class CnpcLmSparGui {
         List<String> args = SparGuiApi.pendingIncomingMentorArgs(subject(player));
         int listY = CnpcGuiSupport.bodyBelowHeader(infoY);
         if (args == null || args.isEmpty()) {
-            gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER, "§7Nothing to pick.", CnpcGuiSupport.M, listY + 4, CnpcGuiSupport.textBandWidth(), 14);
+            gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER,
+                    "§7Nobody else is online for this — try again when other players are on.",
+                    CnpcGuiSupport.M, listY + 4, CnpcGuiSupport.textBandWidth(), 14);
             footer(player, gui, listY + 28, back);
             return;
         }
@@ -359,7 +363,9 @@ public final class CnpcLmSparGui {
         List<String> cards = SparGuiApi.apprenticeCards(subject(player));
         int listY = CnpcGuiSupport.bodyBelowHeader(infoY);
         if (cards.isEmpty()) {
-            gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER, "§7No apprentices to release.", CnpcGuiSupport.M, listY + 4, CnpcGuiSupport.textBandWidth(), 14);
+            gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER,
+                    "§7You have no apprentices to release from your mentor bond.",
+                    CnpcGuiSupport.M, listY + 4, CnpcGuiSupport.textBandWidth(), 14);
             footer(player, gui, listY + 28, "mentor");
             return;
         }
@@ -382,7 +388,9 @@ public final class CnpcLmSparGui {
         List<String> cards = SparGuiApi.rivalDojoCards(subject(player));
         int listY = CnpcGuiSupport.bodyBelowHeader(infoY);
         if (cards.isEmpty()) {
-            gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER, "§7No rival dojo masters online.", CnpcGuiSupport.M, listY + 4, CnpcGuiSupport.textBandWidth(), 14);
+            gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER,
+                    "§7No rival dojo masters are online — challenge when one is on.",
+                    CnpcGuiSupport.M, listY + 4, CnpcGuiSupport.textBandWidth(), 14);
             footer(player, gui, listY + 28, "dojo_war");
             return;
         }

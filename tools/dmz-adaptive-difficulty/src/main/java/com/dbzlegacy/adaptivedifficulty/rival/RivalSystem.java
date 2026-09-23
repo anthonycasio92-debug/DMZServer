@@ -659,14 +659,24 @@ public final class RivalSystem {
         link.touch(System.currentTimeMillis());
     }
 
+    /** Guide when the rival list is empty (CNPC + chat). */
+    public static List<String> emptyRivalListGuide() {
+        List<String> lines = new ArrayList<>();
+        lines.add("§7You do not have any rivals on your list yet.");
+        lines.add("§7From the main Rival menu, open §fActions §7→ §fDeclare… §7and choose a player.");
+        lines.add("§7When you both accept, they appear here for duels, rival TP, and progress.");
+        lines.add("§8Silent rivals and pending invites use other pages — check Actions and Pending.");
+        return lines;
+    }
+
     public static List<String> listLines(ServerPlayer player) {
         List<String> lines = new ArrayList<>();
         RivalPlayerRecord me = RivalStore.get().ensurePlayer(player);
         if (me == null || me.rivals.isEmpty()) {
-            lines.add("§7No rivals yet. §8Open /rival → Actions → Declare…");
+            lines.addAll(emptyRivalListGuide());
             return lines;
         }
-        lines.add("§6§lYour Rivals");
+        lines.add("§6§lYour rivals");
         List<Map.Entry<String, RivalLink>> entries = new ArrayList<>(me.rivals.entrySet());
         entries.sort(rivalListOrder());
         for (Map.Entry<String, RivalLink> e : entries) {

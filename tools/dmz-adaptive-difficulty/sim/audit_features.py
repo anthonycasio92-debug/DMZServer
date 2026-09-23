@@ -742,6 +742,11 @@ def main() -> int:
     check("Character services Bukkit permission bootstrap",
           "CharacterServicesPermissionBootstrap.register()" in diff_events
           and "addPermission" in char_bootstrap)
+    snapshot = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcPlayerSnapshot.java")
+    check("CNPC hub snapshot includes difficulty + spar streak",
+          "appendDifficulty" in snapshot and "Training streak" in snapshot)
+    check("empty rival list guide for CNPC",
+          "emptyRivalListGuide" in rival_sys and "Actions" in rival_sys.split("emptyRivalListGuide")[1][:800])
     check("Hub Remove Android button", 'SlotAction.open("android_remove")' in hub)
     check("CMI Hub Remove Android", '"android_remove"' in cmi_hub and "Remove Android" in cmi_hub)
     plugin = read(gui_root / "AdaptiveDifficultyGuiPlugin.java")

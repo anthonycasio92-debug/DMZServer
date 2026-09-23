@@ -1,12 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.gui.cnpc;
 
-import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
-import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
-import com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot;
-import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.gui.MechanicsGuiApi;
-import com.dbzlegacy.adaptivedifficulty.gui.RivalGuiApi;
-import com.dbzlegacy.adaptivedifficulty.gui.SparGuiApi;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.SkillCheckService;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import java.util.ArrayList;
@@ -47,7 +41,7 @@ public final class CnpcLmHubGui {
     }
 
     private static void paintMain(ServerPlayer player) {
-        int height = CnpcGuiSupport.suggestHeight(StaffAccess.isStaff(player) ? 360 : 340);
+        int height = CnpcGuiSupport.suggestHeight(StaffAccess.isStaff(player) ? 400 : 380);
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_HUB, CnpcGuiSupport.W, height,
                 (p, gui) -> paintMain(p, gui));
     }
@@ -61,8 +55,9 @@ public final class CnpcLmHubGui {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, "§f§lLegacy Mechanics",
                 "§7Scaling, rivals, sparring, prestige, and character tools");
 
-        List<String> lines = hubSnapshot(who, ph, staff, skillCheck);
-        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 3));
+        List<String> lines = CnpcPlayerSnapshot.hubLines(who, ph, staff, skillCheck);
+        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(
+                gui, infoY, lines, CnpcPlayerSnapshot.HUB_INFO_LINES));
         int gap = CnpcGuiSupport.ROW_STEP;
 
         if (!"true".equals(ph.get("bridge_ok"))) {
@@ -150,52 +145,4 @@ public final class CnpcLmHubGui {
                 });
     }
 
-    private static List<String> hubSnapshot(
-            ServerPlayer who, Map<String, String> ph, boolean staff, boolean skillCheck) {
-        List<String> lines = new ArrayList<>();
-        lines.add("§7Hi §f" + who.m_7755_().getString() + "§7 — here is a quick snapshot.");
-
-        try {
-            int level = DmzProgression.guiDisplayDmzLevel(who);
-            lines.add("§7Level §f" + level + " §8· §7Growth pace §f" + ph.getOrDefault("overhaul_scale", "x1"));
-        } catch (Throwable ignored) {
-        }
-
-        try {
-            if (DifficultyConfig.isEnabled()) {
-                DifficultySnapshot snap = DifficultyCache.refresh(who);
-                lines.add("§7Difficulty tier §f" + snap.activeTierName);
-            }
-        } catch (Throwable ignored) {
-        }
-
-        try {
-            var rph = RivalGuiApi.placeholders(who);
-            if ("true".equals(rph.get("system_enabled"))) {
-                lines.add("§7Rivals §f" + rph.getOrDefault("mutual", "0") + " of "
-                        + rph.getOrDefault("mutual_max", "3")
-                        + " §8· §7Record §f" + rph.getOrDefault("wins", "0") + "W "
-                        + rph.getOrDefault("losses", "0") + "L");
-            }
-        } catch (Throwable ignored) {
-        }
-
-        try {
-            var sph = SparGuiApi.placeholders(who);
-            if ("true".equals(sph.get("session_active"))) {
-                String partner = sph.getOrDefault("partner", "");
-                lines.add("§7Sparring §ais active"
-                        + (partner.isBlank() ? "" : " §8· §7with §f" + partner));
-            }
-        } catch (Throwable ignored) {
-        }
-
-        if (skillCheck && "true".equals(ph.get("skillcheck_session"))) {
-            lines.add("§7Skill Check session is open on this account.");
-        } else if (staff) {
-            lines.add("§7Staff: open §fStaff Admin §7for server tools.");
-        }
-
-        return lines;
-    }
 }

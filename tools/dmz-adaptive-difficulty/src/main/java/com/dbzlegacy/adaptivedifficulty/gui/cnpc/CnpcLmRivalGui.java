@@ -2,6 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.gui.cnpc;
 
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.gui.RivalGuiApi;
+import com.dbzlegacy.adaptivedifficulty.rival.RivalSystem;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import java.util.List;
 import java.util.Locale;
@@ -169,7 +170,9 @@ public final class CnpcLmRivalGui {
                 RivalGuiApi.linesForPage(who, "pending"), 2));
         List<String> cards = RivalGuiApi.pendingInviteCards(who);
         if (cards.isEmpty()) {
-            gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER, "§7No pending invites.", CnpcGuiSupport.M, listY + 4, CnpcGuiSupport.textBandWidth(), 14);
+            gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER,
+                    "§7No one is waiting on you — invites you send or receive show up here.",
+                    CnpcGuiSupport.M, listY + 4, CnpcGuiSupport.textBandWidth(), 14);
             footer(player, gui, listY + 28, "actions");
         } else {
             int rowsBelow = 1;
@@ -302,7 +305,9 @@ public final class CnpcLmRivalGui {
                 RivalGuiApi.linesForPage(who, "challenge_pending"), 2));
         List<String> cards = RivalGuiApi.pendingChallengeCards(who);
         if (cards.isEmpty()) {
-            gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER, "§7No pending challenge requests.", CnpcGuiSupport.M, listY + 4,
+            gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER,
+                    "§7No open duel requests — send one from Challenge or wait for a rival to challenge you.",
+                    CnpcGuiSupport.M, listY + 4,
                     CnpcGuiSupport.textBandWidth(), 14);
             footer(player, gui, listY + 28, "challenge");
         } else {
@@ -407,12 +412,13 @@ public final class CnpcLmRivalGui {
         ServerPlayer who = subject(player);
         List<String> cards = RivalGuiApi.currentRivalCards(who);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Your list"),
-                cards.isEmpty() ? "§7No rivals yet"
-                        : "§7" + cards.size() + " rivals · tap a name for profile and remove");
+                cards.isEmpty() ? "§7Your list is empty — start from Actions"
+                        : "§7" + cards.size() + " rival" + (cards.size() == 1 ? "" : "s")
+                                + " · tap a name for profile, duel, or remove");
         int listY = CnpcGuiSupport.bodyBelowHeader(infoY);
         if (cards.isEmpty()) {
-            listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, RivalGuiApi.listLines(who),
-                            CnpcGuiStyle.INFO_INLINE_MAX));
+            listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY,
+                    RivalSystem.emptyRivalListGuide(), 4));
             footer(player, gui, listY + 8, "main");
             return;
         }
@@ -450,7 +456,9 @@ public final class CnpcLmRivalGui {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, title, CnpcGuiStyle.HINT_CLICK_PLAYER);
         int listY = CnpcGuiSupport.bodyBelowHeader(infoY);
         if (names == null || names.isEmpty()) {
-            gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER, "§cNo players available.", CnpcGuiSupport.M, listY + 4, CnpcGuiSupport.textBandWidth(), 14);
+            gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER,
+                    "§7Nobody else is online right now — try again when other players are on.",
+                    CnpcGuiSupport.M, listY + 4, CnpcGuiSupport.textBandWidth(), 14);
             footer(player, gui, listY + 28, returnPage);
             return;
         }
@@ -481,7 +489,9 @@ public final class CnpcLmRivalGui {
         int listY = CnpcGuiSupport.bodyBelowHeader(infoY);
         List<String> cards = args;
         if (cards == null || cards.isEmpty()) {
-            gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER, "§7Nothing to pick.", CnpcGuiSupport.M, listY + 4, CnpcGuiSupport.textBandWidth(), 14);
+            gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER,
+                    "§7This list is empty — there is nothing to choose yet.",
+                    CnpcGuiSupport.M, listY + 4, CnpcGuiSupport.textBandWidth(), 14);
             footer(player, gui, listY + 28, returnPage);
             return;
         }
@@ -510,7 +520,9 @@ public final class CnpcLmRivalGui {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, title, CnpcGuiStyle.HINT_CLICK_ENTRY);
         int listY = CnpcGuiSupport.bodyBelowHeader(infoY);
         if (cards == null || cards.isEmpty()) {
-            gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER, "§7Nothing to pick.", CnpcGuiSupport.M, listY + 4, CnpcGuiSupport.textBandWidth(), 14);
+            gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER,
+                    "§7No rivals match this action — add rivals from Actions first.",
+                    CnpcGuiSupport.M, listY + 4, CnpcGuiSupport.textBandWidth(), 14);
             footer(player, gui, listY + 28, returnPage);
             return;
         }

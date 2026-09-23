@@ -95,6 +95,14 @@ merge_onto_base_jar() {
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/gui/RivalGuiApi.class" \
       "$merge/com/dbzlegacy/adaptivedifficulty/gui/RivalGuiApi.class"
   fi
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/rival/RivalSystem.class" ]]; then
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/rival/RivalSystem.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/rival/RivalSystem.class"
+  fi
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/gui/RivalGuiApi.class" ]]; then
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/gui/RivalGuiApi.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/gui/RivalGuiApi.class"
+  fi
   if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/rival/RivalChallengeManager.class" ]]; then
     mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/rival"
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/rival/RivalChallengeManager.class" \
