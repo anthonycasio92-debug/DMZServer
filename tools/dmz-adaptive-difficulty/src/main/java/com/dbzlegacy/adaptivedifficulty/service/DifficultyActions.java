@@ -286,7 +286,7 @@ public final class DifficultyActions {
                 || ACT_LOWER_TIER.equals(act) || ACT_RESET.equals(act)
                 || "zero".equals(act) || "clear".equals(act))) {
             openGui(player, page == null || page.isBlank() ? "main" : page);
-            return Result.fail("Personal difficulty is OFF — turn it ON to use tiers.");
+            return Result.fail("§cTurn personal difficulty ON first §7— use Personal scaling on the main menu, then pick a tier.");
         }
 
         long amount = 0L;

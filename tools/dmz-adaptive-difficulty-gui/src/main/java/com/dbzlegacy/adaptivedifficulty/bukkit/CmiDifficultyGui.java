@@ -175,8 +175,8 @@ public final class CmiDifficultyGui {
             locked.lockField();
             locked.addLore(List.of(
                     "",
-                    "&cPersonal difficulty is OFF",
-                    "&7Turn it ON on the main menu to change tiers."
+                    "&cTurn personal difficulty ON first",
+                    "&7Use Difficulty ON on the main menu, then pick a tier."
             ));
             gui.addButton(locked);
             gui.addButton(pageBtn(player, 36, "common.back", Material.ARROW, "&7Back", "main", "&7Return"));

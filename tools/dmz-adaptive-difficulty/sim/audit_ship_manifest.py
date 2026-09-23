@@ -129,6 +129,12 @@ def main() -> int:
     spar_main = spar_chest.split("private Inventory main", 1)[1].split("private Inventory top", 1)[0] if "private Inventory main" in spar_chest else ""
     check("spar main no End Session button", "spar.main.end_session" not in spar_main)
 
+    print("\n--- § difficulty ---")
+    cnpc_diff = read(SRC / "gui/cnpc/CnpcLmDifficultyGui.java")
+    check("CNPC tiers locked when personal OFF", "paintTiersLocked" in cnpc_diff
+          and "Turn personal difficulty ON first" in cnpc_diff)
+    check("CNPC difficulty uses handleArgNoReopen", "handleArgNoReopen" in cnpc_diff)
+
     print("\n--- § cnpc ---")
     cnpc_support = read(SRC / "gui/cnpc/CnpcGuiSupport.java")
     check("CNPC afterGuiClosed defer reopen", "afterGuiClosed" in cnpc_support)

@@ -198,8 +198,8 @@ public final class DifficultyChestGui implements Listener {
         List<String> info = new ArrayList<>();
         info.add("");
         if (!personalOn) {
-            info.add("&cPersonal difficulty is OFF");
-            info.add("&7Turn it ON on the main menu to change tiers.");
+            info.add("&cTurn personal difficulty ON first");
+            info.add("&7Use Difficulty ON on the main menu, then pick a tier.");
             put(holder, inv, 4, item(Material.BARRIER, "&c&lTiers Locked", info));
             put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
             put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
