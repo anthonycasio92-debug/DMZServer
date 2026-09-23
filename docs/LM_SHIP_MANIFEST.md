@@ -14,6 +14,8 @@ When you ask for a behavior change, add a row here and a matching check in `audi
 | rival-challenge-pending | Rival **Challenge → Pending requests** board; tap row → accept/decline/cancel (CNPC + chest + CMI) | 4.5.59+ (merged 4.5.69) | manifest §rival |
 | rival-declare-pending | Rival **Actions → Pending** + `pending_decide:` (declare mutual confirm) | 4.5.55+ | manifest §rival |
 | spar-pending | Spar **Mentor Pending** + `pending_decide:`; dojo war pending decide | 2.3.142+ | manifest §spar |
+| spar-no-end-session | Spar main GUI: **no End Session** button (use normal flow / `/spar end`) | 4.5.63+ | manifest §spar |
+| cnpc-defer-reopen | CNPC buttons defer reopen via `afterGuiClosed` (fix flash/crash after actions) | 4.5.54+ | manifest §cnpc |
 | gui-menus | All LM hub systems wired (CNPC + chest + CMI where applicable) | ongoing | `audit_gui_menus_comprehensive.py` |
 | version-handshake | Forge `VERSION`, `mods.toml`, GUI `plugin.yml`, and built jar names **same version** | always | `audit_gui_abi.py`, manifest §version |
 

@@ -113,6 +113,12 @@ def main() -> int:
     cmi_spar = read(BUKKIT / "CmiSparGui.java")
     check("spar pending_decide", "pending_decide:" in spar_chest and "pending_decide:" in cmi_spar)
     check("spar dojo war pending decide", "dojo_war_pending_decide:" in spar_chest)
+    spar_main = spar_chest.split("private Inventory main", 1)[1].split("private Inventory top", 1)[0] if "private Inventory main" in spar_chest else ""
+    check("spar main no End Session button", "spar.main.end_session" not in spar_main)
+
+    print("\n--- § cnpc ---")
+    cnpc_support = read(SRC / "gui/cnpc/CnpcGuiSupport.java")
+    check("CNPC afterGuiClosed defer reopen", "afterGuiClosed" in cnpc_support)
 
     print("\n--- § version ---")
     mod = read(MOD / "src/main/java/com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.java")
