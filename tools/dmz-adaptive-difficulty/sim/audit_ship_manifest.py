@@ -190,6 +190,9 @@ def main() -> int:
     cnpc_rival = read(SRC / "gui/cnpc/CnpcLmRivalGui.java")
     check("CNPC rival empty labels avoid flash ids", "ID_EMPTY_PLACEHOLDER" in cnpc_rival
           and "addLabel(50," not in cnpc_rival)
+    check("CNPC rival challenge duration grid avoids flash ids", "ID_GRID_BASE" in cnpc_rival
+          and "paintTwoColumnButtonGrid(pl, gui, row, 30," not in cnpc_rival)
+    check("CNPC rival act defers menu reopen", "runDeferred(player, reopen)" in read(SRC / "gui/cnpc/CnpcGuiSupport.java"))
     cnpc_prog = read(SRC / "gui/cnpc/CnpcLmProgressionGui.java")
     check("CNPC TP boost presets avoid flash ids", "ID_BOOST_PRESET_BASE" in cnpc_prog
           and "boostPreset(gui, player, row, 50," not in cnpc_prog)

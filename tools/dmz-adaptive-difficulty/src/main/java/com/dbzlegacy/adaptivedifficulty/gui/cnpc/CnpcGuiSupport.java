@@ -821,7 +821,9 @@ public final class CnpcGuiSupport {
         if (msg != null && !msg.isBlank()) {
             pushMenuMessage(player, msg);
         }
-        reopen.run();
+        if (reopen != null) {
+            runDeferred(player, reopen);
+        }
     }
 
     /** Tab-separated GUI cards: field 0 = id/arg, field 1 = display label. */
@@ -893,7 +895,7 @@ public final class CnpcGuiSupport {
         scroll.setOnClick((g, sc) -> {
             String arg = cardField(cards, sc, argField);
             if (arg != null) {
-                onOpen.accept(arg);
+                afterGuiClosed(g, () -> onOpen.accept(arg));
             }
         });
     }
