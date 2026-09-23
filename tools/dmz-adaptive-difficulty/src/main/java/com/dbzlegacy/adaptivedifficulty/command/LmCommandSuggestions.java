@@ -92,16 +92,10 @@ public final class LmCommandSuggestions {
             return false;
         }
         if ("padmin".equals(cmd) || "prestigeadmin".equals(cmd)) {
-            if (n == 2 && (isPrestigeAdminPlayerSub(a0) || isPrestigeAdminPointsShorthand(a0))) {
-                return true;
-            }
-            return false;
+            return padminPlayerNameSlot(n, a0);
         }
         if ("prestige".equals(cmd) && "admin".equals(a0)) {
-            if (n == 3 && (isPrestigeAdminPlayerSub(a1) || isPrestigeAdminPointsShorthand(a1))) {
-                return true;
-            }
-            return false;
+            return padminPlayerNameSlot(n, a1);
         }
         if ("rival".equals(cmd) || "spar".equals(cmd)) {
             if (n == 2 && ("stats".equals(a0) || "spectate".equals(a0) || "declare".equals(a0)
@@ -120,6 +114,81 @@ public final class LmCommandSuggestions {
             return false;
         }
         return false;
+    }
+
+    /** Partial token for the player-name slot (Bukkit often omits an empty trailing arg). */
+    public static String playerNamePartial(String label, String[] args) {
+        if (args == null || args.length == 0 || !expectsPlayerName(label, args)) {
+            if (args == null || args.length == 0) {
+                return "";
+            }
+            String last = args[args.length - 1];
+            return last == null ? "" : last;
+        }
+        String cmd = label == null ? "" : label.toLowerCase(Locale.ROOT);
+        int n = args.length;
+        if ("prestige".equals(cmd) && n >= 2 && "admin".equalsIgnoreCase(args[0])) {
+            if (n == 2) {
+                return "";
+            }
+            String p = args[2];
+            return p == null ? "" : p;
+        }
+        if ("padmin".equals(cmd) || "prestigeadmin".equals(cmd)) {
+            if (n <= 1) {
+                return "";
+            }
+            if (n == 2) {
+                String p = args[1];
+                return p == null ? "" : p;
+            }
+            return "";
+        }
+        if ("lm".equals(cmd) || "legacymechanics".equals(cmd)) {
+            if (n >= 5) {
+                String p = args[4];
+                return p == null ? "" : p;
+            }
+            if (n >= 3) {
+                String p = args[2];
+                return p == null ? "" : p;
+            }
+        }
+        if ("difficulty".equals(cmd) || "diff".equals(cmd)) {
+            if (n >= 4) {
+                String p = args[3];
+                return p == null ? "" : p;
+            }
+            if (n >= 3) {
+                String p = args[2];
+                return p == null ? "" : p;
+            }
+        }
+        if ("rival".equals(cmd) || "spar".equals(cmd)) {
+            String p = args[1];
+            return p == null ? "" : p;
+        }
+        String last = args[args.length - 1];
+        return last == null ? "" : last;
+    }
+
+    /** Append trailing space when the next Brigadier token is a player name. */
+    public static boolean needsTrailingSpaceForTab(String label, String[] args) {
+        return expectsPlayerName(label, args) && playerNamePartial(label, args).isEmpty();
+    }
+
+    /** Player-name slot for {@code /padmin <sub> …} (and {@code /prestige admin <sub> …}). */
+    private static boolean padminPlayerNameSlot(int argCount, String subRaw) {
+        String sub = lower(subRaw);
+        if (!isPrestigeAdminPlayerSub(sub) && !isPrestigeAdminPointsShorthand(sub)) {
+            return false;
+        }
+        return switch (sub) {
+            case "info", "sync", "skills", "invested" -> argCount == 1 || argCount == 2;
+            case "skill", "invest" -> argCount == 1 || argCount == 2;
+            case "tier", "tiers", "difficulty" -> argCount == 1 || argCount == 2;
+            default -> argCount == 1 || argCount == 2;
+        };
     }
 
     private static boolean isPrestigeAdminPlayerSub(String sub) {

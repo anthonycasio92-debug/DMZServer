@@ -130,13 +130,6 @@ public final class PrestigeAdminCommandTree {
 
     private static LiteralArgumentBuilder<CommandSourceStack> adjustField(String field) {
         return Commands.m_82127_(field)
-                .then(LmCommandSuggestions.word("selfMode", LmCommandSuggestions.PRESTIGE_ADJUST_MODES)
-                        .then(Commands.m_82129_("amount", IntegerArgumentType.integer())
-                                .executes(ctx -> ProgressionCommands.prestigeAdminViaApi(
-                                        ctx.getSource(),
-                                        field + " "
-                                                + StringArgumentType.getString(ctx, "selfMode") + " "
-                                                + IntegerArgumentType.getInteger(ctx, "amount")))))
                 .then(LmCommandSuggestions.playerWord("player")
                         .then(LmCommandSuggestions.word("mode", LmCommandSuggestions.PRESTIGE_ADJUST_MODES)
                                 .then(Commands.m_82129_("amount", IntegerArgumentType.integer())
@@ -150,6 +143,13 @@ public final class PrestigeAdminCommandTree {
                                         ctx.getSource(),
                                         field + " "
                                                 + StringArgumentType.getString(ctx, "player") + " "
+                                                + IntegerArgumentType.getInteger(ctx, "amount")))))
+                .then(LmCommandSuggestions.word("selfMode", LmCommandSuggestions.PRESTIGE_ADJUST_MODES)
+                        .then(Commands.m_82129_("amount", IntegerArgumentType.integer())
+                                .executes(ctx -> ProgressionCommands.prestigeAdminViaApi(
+                                        ctx.getSource(),
+                                        field + " "
+                                                + StringArgumentType.getString(ctx, "selfMode") + " "
                                                 + IntegerArgumentType.getInteger(ctx, "amount")))));
     }
 
