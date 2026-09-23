@@ -609,15 +609,15 @@ public final class CmiSparGui {
      * Invite · Ask · Pending · Leave · Release · Dojo.
      */
     private static void openMentor(Player player) {
-        CMIGui gui = base(player, "&8Mentor Actions", 5);
-        CMIGuiButton info = new CMIGuiButton(4, Material.EMERALD, "&b&lMentor Actions");
+        CMIGui gui = base(player, "&8Training bonds", 5);
+        CMIGuiButton info = new CMIGuiButton(4, Material.EMERALD, "&b&lTraining bonds");
         info.lockField();
         info.addLore(toAmp(ForgeBridge.sparLines(player, "mentor")));
         gui.addButton(info);
 
-        gui.addButton(pageBtn(player, 19, "spar.mentor.invite", Material.LIME_DYE, "&aInvite apprentice…",
+        gui.addButton(pageBtn(player, 19, "spar.mentor.invite", Material.LIME_DYE, "&aRecruit apprentice…",
                 "pick_apprentice", "&7Pick a player to join your dojo"));
-        gui.addButton(pageBtn(player, 20, "spar.mentor.ask", Material.LIGHT_BLUE_DYE, "&bAsk mentor…",
+        gui.addButton(pageBtn(player, 20, "spar.mentor.ask", Material.LIGHT_BLUE_DYE, "&bRequest a master…",
                 "pick_mentor", "&7Pick a player to ask as your master"));
         Map<String, String> ph = ForgeBridge.sparPlaceholders(player);
         int pendingCount = 0;
@@ -627,9 +627,9 @@ public final class CmiSparGui {
             pendingCount = 0;
         }
         gui.addButton(pageBtn(player, 21, "spar.mentor.pending", Material.CLOCK,
-                pendingCount > 0 ? "&ePending &f(" + pendingCount + ")" : "&ePending",
+                pendingCount > 0 ? "&eBond invites &f(" + pendingCount + ")" : "&eBond invites",
                 "pending",
-                "&7Incoming + outgoing invites",
+                "&7Mentor ↔ apprentice only",
                 pendingCount > 0 ? "&8Tap to accept or decline" : "&8No pending invites"));
         boolean hasMentor = "true".equalsIgnoreCase(ph.getOrDefault("has_mentor", "false"));
         boolean hasApprentice = "true".equalsIgnoreCase(ph.getOrDefault("has_apprentice", "false"));

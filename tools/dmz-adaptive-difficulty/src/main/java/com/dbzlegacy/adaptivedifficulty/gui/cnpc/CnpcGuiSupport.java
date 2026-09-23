@@ -2,10 +2,15 @@ package com.dbzlegacy.adaptivedifficulty.gui.cnpc;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.gui.AdminInspectSessions;
+import com.dbzlegacy.adaptivedifficulty.rival.RivalPlayerRecord;
+import com.dbzlegacy.adaptivedifficulty.rival.RivalStore;
+import com.dbzlegacy.adaptivedifficulty.rival.RivalUuid;
+import com.dbzlegacy.adaptivedifficulty.sparring.DojoRankings;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
@@ -146,16 +151,16 @@ public final class CnpcGuiSupport {
             return y;
         }
         List<String> box = new ArrayList<>();
-        box.add("§eNotice");
+        box.add("§6§lNotice");
         int max = CnpcGuiStyle.INFO_INLINE_MAX;
         for (String line : raw) {
             if (box.size() >= max) {
                 break;
             }
-            box.add(line);
+            box.add(brightenNoticeLine(line));
         }
         if (raw.size() + 1 > max) {
-            box.set(max - 1, "§8+" + (raw.size() + 1 - max) + " more — check chat for details");
+            box.set(max - 1, "§e+" + (raw.size() + 1 - max) + " more — check chat for details");
         }
         // Never use the scrolling panel here — the main page may need it for scrollPickList.
         return paintInfoBlock(gui, y, box, max, true, ID_FLASH_LABEL_BASE);
@@ -631,13 +636,86 @@ public final class CnpcGuiSupport {
 
     private static String humanizeUuid(String uuid) {
         if (uuid == null || uuid.isBlank()) {
-            return "§7(player)";
+            return "§f(player)";
         }
         String u = uuid.trim();
-        if (u.length() > 8) {
-            return "§7Player " + u.substring(0, 8) + "…";
+        if (u.regionMatches(true, 0, "uuid:", 0, 5)) {
+            u = u.substring(5).trim();
         }
-        return "§7Player " + u;
+        String resolved = resolveStoredPlayerName(u);
+        if (resolved != null && !resolved.isBlank()) {
+            return "§f" + safeChat(resolved);
+        }
+        if (u.length() > 8) {
+            return "§fPlayer §7" + u.substring(0, 8) + "…";
+        }
+        return "§fPlayer §7" + u;
+    }
+
+    private static String resolveStoredPlayerName(String uuidRaw) {
+        if (uuidRaw == null || uuidRaw.isBlank()) {
+            return null;
+        }
+        try {
+            UUID id = UUID.fromString(uuidRaw);
+            String key = RivalUuid.canonical(id.toString());
+            RivalPlayerRecord rec = key == null ? null : RivalStore.get().players.get(key);
+            if (rec != null && rec.name != null && !rec.name.isBlank()) {
+                return rec.name;
+            }
+            MinecraftServer server = net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer();
+            if (server != null) {
+                ServerPlayer online = server.m_6846_().m_11259_(id);
+                if (online != null) {
+                    return online.m_7755_().getString();
+                }
+            }
+            String dojo = DojoRankings.dojoDisplayName(id.toString().toLowerCase(Locale.ROOT));
+            if (dojo != null && !dojo.isBlank() && !"?".equals(dojo) && !"Dojo".equalsIgnoreCase(dojo)) {
+                return dojo;
+            }
+        } catch (IllegalArgumentException ignored) {
+        }
+        for (RivalStore.DeclareRequest dr : RivalStore.get().declareRequests.values()) {
+            if (dr == null) {
+                continue;
+            }
+            if (uuidRaw.equalsIgnoreCase(dr.fromUuid) && dr.fromName != null && !dr.fromName.isBlank()) {
+                return dr.fromName;
+            }
+            if (uuidRaw.equalsIgnoreCase(dr.toUuid) && dr.toName != null && !dr.toName.isBlank()) {
+                return dr.toName;
+            }
+        }
+        for (RivalStore.StoredChallengeRequest cr : RivalStore.get().challengeRequests.values()) {
+            if (cr == null) {
+                continue;
+            }
+            if (uuidRaw.equalsIgnoreCase(cr.from) && cr.fromName != null && !cr.fromName.isBlank()) {
+                return cr.fromName;
+            }
+            if (uuidRaw.equalsIgnoreCase(cr.to) && cr.toName != null && !cr.toName.isBlank()) {
+                return cr.toName;
+            }
+        }
+        return null;
+    }
+
+    private static String brightenNoticeLine(String line) {
+        if (line == null || line.isBlank()) {
+            return line;
+        }
+        String s = line.trim();
+        if (s.startsWith("§c") || s.startsWith("§a") || s.startsWith("§6") || s.startsWith("§e§l")) {
+            return s;
+        }
+        if (s.startsWith("§7")) {
+            return "§f" + s.substring(2);
+        }
+        if (s.startsWith("§8")) {
+            return "§e" + s.substring(2);
+        }
+        return s;
     }
 
     private static String splitCamel(String s) {

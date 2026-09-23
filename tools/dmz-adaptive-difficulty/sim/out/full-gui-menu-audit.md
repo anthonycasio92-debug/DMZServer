@@ -1,6 +1,6 @@
 # Full GUI menu audit
 
-- **OK checks:** 123
+- **OK checks:** 124
 - **Errors:** 0
 - **Warnings:** 0
 

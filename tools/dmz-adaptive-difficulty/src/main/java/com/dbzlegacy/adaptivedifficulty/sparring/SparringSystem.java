@@ -1091,6 +1091,10 @@ public final class SparringSystem {
         return DojoRankings.challengeDojo(player, target);
     }
 
+    public static String dojoChallengeByMasterUuid(ServerPlayer player, String targetMasterUuid) {
+        return DojoRankings.challengeDojoByMasterKey(player, targetMasterUuid);
+    }
+
     public static String dojoAcceptWar(ServerPlayer player) {
         return DojoRankings.acceptChallenge(player);
     }

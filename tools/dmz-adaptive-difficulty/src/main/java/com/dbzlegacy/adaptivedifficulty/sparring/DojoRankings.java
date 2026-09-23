@@ -368,6 +368,12 @@ public final class DojoRankings {
         if (lb != null && lb.name != null && !lb.name.isBlank()) {
             return lb.name;
         }
+        com.dbzlegacy.adaptivedifficulty.rival.RivalPlayerRecord rec =
+                com.dbzlegacy.adaptivedifficulty.rival.RivalStore.get().players.get(
+                        com.dbzlegacy.adaptivedifficulty.rival.RivalUuid.canonical(dojoKey));
+        if (rec != null && rec.name != null && !rec.name.isBlank()) {
+            return rec.name;
+        }
         MinecraftServer server = net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer();
         if (server != null) {
             try {
@@ -825,23 +831,34 @@ public final class DojoRankings {
     }
 
     public static String challengeDojo(ServerPlayer challenger, ServerPlayer target) {
+        if (target == null) {
+            return challengeDojoByMasterKey(challenger, null);
+        }
+        return challengeDojoByMasterKey(challenger, target.m_20148_().toString());
+    }
+
+    /** Declare war on a rival dojo by the defending master's UUID (master may be offline). */
+    public static String challengeDojoByMasterKey(ServerPlayer challenger, String targetMasterRaw) {
         if (challenger == null) {
             return "§cPlayers only.";
         }
         if (!isDojoMaster(challenger)) {
             return "§cOnly dojo masters (with apprentices) can declare war.";
         }
-        if (target == null) {
-            return "§cPlayer not online.";
+        if (targetMasterRaw == null || targetMasterRaw.isBlank()) {
+            return "§cPick a rival dojo master.";
         }
-        if (challenger.m_20148_().equals(target.m_20148_())) {
-            return "§cYou cannot challenge your own dojo.";
-        }
-        if (!isDojoMaster(target)) {
-            return "§cThey are not a dojo master.";
+        String toKey = SparStore.canonicalDojoKey(normalizeMasterUuid(targetMasterRaw));
+        if (toKey.isBlank()) {
+            return "§cInvalid dojo target.";
         }
         String fromKey = SparStore.canonicalDojoKey(challenger.m_20148_().toString());
-        String toKey = SparStore.canonicalDojoKey(target.m_20148_().toString());
+        if (fromKey.equalsIgnoreCase(toKey)) {
+            return "§cYou cannot challenge your own dojo.";
+        }
+        if (!isDojoMasterUuid(toKey)) {
+            return "§cThat dojo has no master with apprentices.";
+        }
         if (findChallenge(fromKey, toKey) != null) {
             return "§cA challenge already exists between these dojos.";
         }
@@ -857,10 +874,33 @@ public final class DojoRankings {
         c = SparStore.normalizeDojoChallenge(toKey, c);
         SparStore.get().dojoChallenges.put(c.toDojoUuid, c);
         SparStore.get().markDirty();
-        DmzRewards.msg(target, LmChat.note("Dojo", "§f" + c.fromDojoName
-                + " §e challenged your dojo to war!"));
-        DmzRewards.msg(target, LmChat.tip("/spar", "→ Dojo War → Pending to Accept or Decline"));
-        return "§aWar challenge sent to §f" + target.m_7755_().getString() + "§a.";
+        MinecraftServer server = challenger.m_20194_();
+        ServerPlayer targetOnline = null;
+        if (server != null) {
+            try {
+                targetOnline = server.m_6846_().m_11259_(UUID.fromString(toKey));
+            } catch (IllegalArgumentException ignored) {
+                targetOnline = null;
+            }
+        }
+        if (targetOnline != null && isDojoMaster(targetOnline)) {
+            DmzRewards.msg(targetOnline, LmChat.note("Dojo", "§f" + c.fromDojoName
+                    + " §e challenged your dojo to war!"));
+            DmzRewards.msg(targetOnline, LmChat.tip("/spar", "→ Dojo War → War pending"));
+        }
+        return "§aWar challenge sent to §f" + blank(c.toDojoName, dojoDisplayName(toKey)) + "§a.";
+    }
+
+    private static boolean isDojoMasterUuid(String masterKey) {
+        if (masterKey == null || masterKey.isBlank()) {
+            return false;
+        }
+        try {
+            UUID u = UUID.fromString(masterKey);
+            return SparStore.get().bond(u).apprenticeCount() > 0;
+        } catch (IllegalArgumentException ignored) {
+            return false;
+        }
     }
 
     public static String acceptChallenge(ServerPlayer master) {

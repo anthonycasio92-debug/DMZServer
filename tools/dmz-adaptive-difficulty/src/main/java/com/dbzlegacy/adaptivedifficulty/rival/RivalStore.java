@@ -30,6 +30,8 @@ public final class RivalStore {
     public final Map<String, RivalPlayerRecord> players = new ConcurrentHashMap<>();
     /** Pending visible declare requests: key = fromUuid + ">" + toUuid */
     public final Map<String, DeclareRequest> declareRequests = new ConcurrentHashMap<>();
+    /** Pending duel challenge requests (persisted); key = request id. */
+    public final Map<String, StoredChallengeRequest> challengeRequests = new ConcurrentHashMap<>();
     private final AtomicBoolean dirty = new AtomicBoolean(false);
     private long lastSaveAt;
 
@@ -57,13 +59,16 @@ public final class RivalStore {
             if (!Files.isRegularFile(file)) {
                 players.clear();
                 declareRequests.clear();
+                challengeRequests.clear();
                 dirty.set(false);
+                RivalChallengeManager.get().replaceRequestsFromStore(challengeRequests);
                 return;
             }
             try (Reader reader = Files.newBufferedReader(file)) {
                 Persist blob = GSON.fromJson(reader, Persist.class);
                 players.clear();
                 declareRequests.clear();
+                challengeRequests.clear();
                 if (blob != null) {
                     if (blob.players != null) {
                         for (Map.Entry<String, RivalPlayerRecord> e : blob.players.entrySet()) {
@@ -80,8 +85,12 @@ public final class RivalStore {
                     if (blob.declareRequests != null) {
                         declareRequests.putAll(blob.declareRequests);
                     }
+                    if (blob.challengeRequests != null) {
+                        challengeRequests.putAll(blob.challengeRequests);
+                    }
                 }
                 dirty.set(false);
+                RivalChallengeManager.get().replaceRequestsFromStore(challengeRequests);
                 AdaptiveDifficultyMod.LOGGER.info(
                         "[{}] RivalStore loaded {} players from {}",
                         AdaptiveDifficultyMod.MOD_ID, players.size(), file);
@@ -102,6 +111,7 @@ public final class RivalStore {
             Persist blob = new Persist();
             blob.players = new ConcurrentHashMap<>(players);
             blob.declareRequests = new ConcurrentHashMap<>(declareRequests);
+            blob.challengeRequests = new ConcurrentHashMap<>(challengeRequests);
             try (Writer writer = Files.newBufferedWriter(file)) {
                 GSON.toJson(blob, writer);
             }
@@ -380,8 +390,47 @@ public final class RivalStore {
         public long expiresAt;
     }
 
+    /** Gson-friendly mirror of {@link RivalChallengeManager.ChallengeRequest}. */
+    public static final class StoredChallengeRequest {
+        public String id = "";
+        public String from = "";
+        public String to = "";
+        public String fromName = "";
+        public String toName = "";
+        public long createdAt;
+        public long expiresAt;
+        public long durationMs;
+    }
+
+    public void upsertChallengeRequest(RivalChallengeManager.ChallengeRequest req) {
+        if (req == null || req.id == null || req.id.isBlank()) {
+            return;
+        }
+        StoredChallengeRequest s = new StoredChallengeRequest();
+        s.id = req.id;
+        s.from = req.from == null ? "" : req.from.toString();
+        s.to = req.to == null ? "" : req.to.toString();
+        s.fromName = req.fromName == null ? "" : req.fromName;
+        s.toName = req.toName == null ? "" : req.toName;
+        s.createdAt = req.createdAt;
+        s.expiresAt = req.expiresAt;
+        s.durationMs = req.durationMs;
+        challengeRequests.put(s.id, s);
+        markDirty();
+    }
+
+    public void removeChallengeRequest(String id) {
+        if (id == null || id.isBlank()) {
+            return;
+        }
+        if (challengeRequests.remove(id) != null) {
+            markDirty();
+        }
+    }
+
     private static final class Persist {
         Map<String, RivalPlayerRecord> players;
         Map<String, DeclareRequest> declareRequests;
+        Map<String, StoredChallengeRequest> challengeRequests;
     }
 }

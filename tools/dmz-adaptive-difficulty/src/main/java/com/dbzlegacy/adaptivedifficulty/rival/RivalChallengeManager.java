@@ -164,7 +164,7 @@ public final class RivalChallengeManager {
         req.createdAt = now;
         req.expiresAt = now + RivalConstants.CH_REQUEST_EXPIRE_MS;
         req.durationMs = mins * 60_000L;
-        requests.put(req.id, req);
+        storeRequest(req);
         DmzRewards.msg(to, LmChat.note("Challenge", "§e" + req.fromName
                 + " §7challenged you for §f" + mins + "§7 min!"));
         DmzRewards.msg(to, LmChat.tip("/rival", "→ Challenge → Pending requests"));
@@ -187,7 +187,7 @@ public final class RivalChallengeManager {
         MinecraftServer server = player.m_20194_();
         ServerPlayer challenger = server == null ? null : server.m_6846_().m_11259_(req.from);
         if (challenger == null) {
-            requests.remove(req.id);
+            dropRequest(req.id);
             return "§cThe challenger went offline.";
         }
         if (distance(player, challenger) > RivalConstants.CH_MAX_DISTANCE) {
@@ -202,7 +202,7 @@ public final class RivalChallengeManager {
         if (bRec != null && now - bRec.lastChallengeEndAt < RivalConstants.CH_BETWEEN_COOLDOWN_MS) {
             return "§cYou are on challenge cooldown.";
         }
-        requests.remove(req.id);
+        dropRequest(req.id);
         RivalChallenge ch = new RivalChallenge();
         ch.id = "ch-" + NEXT_ID.getAndIncrement();
         ch.a = req.from;
@@ -236,7 +236,7 @@ public final class RivalChallengeManager {
                 && !matchesCounterparty(req.from, counterpartyPicker)) {
             return "§cNo pending challenge from that player.";
         }
-        requests.remove(req.id);
+        dropRequest(req.id);
         MinecraftServer server = player.m_20194_();
         ServerPlayer from = server == null ? null : server.m_6846_().m_11259_(req.from);
         if (from != null) {
@@ -257,7 +257,7 @@ public final class RivalChallengeManager {
                     && !matchesCounterparty(outgoing.to, counterpartyPicker)) {
                 return "§cNo outgoing challenge to that player.";
             }
-            requests.remove(outgoing.id);
+            dropRequest(outgoing.id);
             return "§eChallenge request cancelled.";
         }
         RivalChallenge ch = getChallenge(player.m_20148_());
@@ -376,10 +376,6 @@ public final class RivalChallengeManager {
             return;
         }
         pendingHp.remove(uuid);
-        ChallengeRequest req = getRequestInvolving(uuid);
-        if (req != null) {
-            requests.remove(req.id);
-        }
         RivalChallenge ch = getChallenge(uuid);
         if (ch != null && ch.status != RivalChallenge.Phase.ENDED) {
             endChallenge(null, ch, ch.other(uuid), uuid, false, "logout");
@@ -741,7 +737,69 @@ public final class RivalChallengeManager {
     }
 
     private void expireRequests(long now) {
-        requests.entrySet().removeIf(e -> e.getValue() == null || now > e.getValue().expiresAt);
+        Iterator<Map.Entry<String, ChallengeRequest>> it = requests.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<String, ChallengeRequest> e = it.next();
+            ChallengeRequest req = e.getValue();
+            if (req == null || now > req.expiresAt) {
+                it.remove();
+                RivalStore.get().removeChallengeRequest(e.getKey());
+            }
+        }
+    }
+
+    /** Hydrate in-memory pending duels after {@link RivalStore#load()}. */
+    public void replaceRequestsFromStore(Map<String, RivalStore.StoredChallengeRequest> stored) {
+        requests.clear();
+        if (stored == null || stored.isEmpty()) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        for (RivalStore.StoredChallengeRequest s : stored.values()) {
+            if (s == null || s.id == null || s.id.isBlank() || s.expiresAt <= now) {
+                continue;
+            }
+            ChallengeRequest req = fromStored(s);
+            if (req != null) {
+                requests.put(req.id, req);
+            }
+        }
+    }
+
+    private static ChallengeRequest fromStored(RivalStore.StoredChallengeRequest s) {
+        if (s == null) {
+            return null;
+        }
+        try {
+            ChallengeRequest req = new ChallengeRequest();
+            req.id = s.id;
+            req.from = UUID.fromString(s.from);
+            req.to = UUID.fromString(s.to);
+            req.fromName = s.fromName == null ? "" : s.fromName;
+            req.toName = s.toName == null ? "" : s.toName;
+            req.createdAt = s.createdAt;
+            req.expiresAt = s.expiresAt;
+            req.durationMs = s.durationMs > 0L ? s.durationMs : RivalConstants.CH_DURATION_MS;
+            return req;
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
+    }
+
+    private void storeRequest(ChallengeRequest req) {
+        if (req == null || req.id == null || req.id.isBlank()) {
+            return;
+        }
+        requests.put(req.id, req);
+        RivalStore.get().upsertChallengeRequest(req);
+    }
+
+    private void dropRequest(String id) {
+        if (id == null || id.isBlank()) {
+            return;
+        }
+        requests.remove(id);
+        RivalStore.get().removeChallengeRequest(id);
     }
 
     private ChallengeRequest findIncoming(UUID to) {

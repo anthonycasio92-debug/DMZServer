@@ -149,7 +149,7 @@ public final class CnpcLmRivalGui {
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, RivalGuiApi.linesForPage(subject(player), "actions"),
                         CnpcGuiStyle.INFO_INLINE_MAX));
         CnpcGuiSupport.button(gui, 20, "§eDeclare…", CnpcGuiSupport.COL_L, row, () -> open(player, "pick_declare"));
-        CnpcGuiSupport.button(gui, 21, "§6Pending board", CnpcGuiSupport.COL_R, row, () -> open(player, "pending"));
+        CnpcGuiSupport.button(gui, 21, "§6Declare invites", CnpcGuiSupport.COL_R, row, () -> open(player, "pending"));
         row += 24;
         CnpcGuiSupport.button(gui, 22, "§8Silent…", CnpcGuiSupport.COL_L, row, () -> open(player, "pick_silent"));
         row += 24;
@@ -163,8 +163,8 @@ public final class CnpcLmRivalGui {
 
     private static void paintPending(ServerPlayer player, ICustomGui gui) {
         ServerPlayer who = subject(player);
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Pending"),
-                CnpcGuiStyle.HINT_CLICK_INVITE);
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Declare invites"),
+                "§eRival declare requests — not duel challenges");
         int listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBeforePickList(gui, infoY,
                 RivalGuiApi.linesForPage(who, "pending"), 2));
         List<String> cards = RivalGuiApi.pendingInviteCards(who);
@@ -296,8 +296,8 @@ public final class CnpcLmRivalGui {
 
     private static void paintChallengePending(ServerPlayer player, ICustomGui gui) {
         ServerPlayer who = subject(player);
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Pending"),
-                CnpcGuiStyle.HINT_CLICK_INVITE);
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Duel requests"),
+                "§eOfficial timed duels — accept, decline, or cancel");
         int listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBeforePickList(gui, infoY,
                 RivalGuiApi.linesForPage(who, "challenge_pending"), 2));
         List<String> cards = RivalGuiApi.pendingChallengeCards(who);
@@ -367,7 +367,7 @@ public final class CnpcLmRivalGui {
                 int m = min;
                 String sendArg = targetArg + "@" + m;
                 grid[min - 1] = CnpcGuiLayout.GridButton.run(
-                        "§f" + m + " min", () -> act(pl, "challenge_send", sendArg, "challenge"));
+                        "§f" + m + " min", () -> act(pl, "challenge_send", sendArg, "challenge_pending"));
             }
             row = CnpcGuiLayout.paintTwoColumnButtonGrid(pl, gui, row, 30, grid, () -> {});
             row += 4;

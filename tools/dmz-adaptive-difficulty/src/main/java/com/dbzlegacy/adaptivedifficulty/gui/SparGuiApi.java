@@ -592,11 +592,18 @@ public final class SparGuiApi {
             if (a.isBlank()) {
                 return "§cPick a rival dojo master.";
             }
-            ServerPlayer target = resolveOnline(player, a);
-            if (target == null) {
-                return "§cPlayer not online: " + a;
+            String who = a.trim();
+            if (who.regionMatches(true, 0, "uuid:", 0, 5)) {
+                return SparringSystem.dojoChallengeByMasterUuid(player, who.substring(5).trim());
             }
-            return SparringSystem.dojoChallenge(player, target);
+            if (who.matches("[0-9a-fA-F\\-]{32,36}")) {
+                return SparringSystem.dojoChallengeByMasterUuid(player, who);
+            }
+            ServerPlayer target = resolveOnline(player, who);
+            if (target != null) {
+                return SparringSystem.dojoChallenge(player, target);
+            }
+            return "§cPlayer not online: " + who;
         }
         if ("dojo_accept".equals(act) || "dojo_war_accept".equals(act)) {
             return SparringSystem.dojoAcceptWar(player);

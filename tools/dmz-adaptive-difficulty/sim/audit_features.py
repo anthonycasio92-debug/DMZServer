@@ -907,7 +907,7 @@ def main() -> int:
     cmi_mentor_hub = spar_cmi146.split("private static void openMentor(", 1)[1].split(
         "private static void openPending(", 1)[0] if "private static void openMentor(" in spar_cmi146 else ""
     check("chest mentor Actions hub",
-          "Mentor Actions" in mentor_hub
+          "Training bonds" in mentor_hub
           and 'page("pick_apprentice")' in mentor_hub
           and 'page("pending")' in mentor_hub
           and 'page("dojo")' in mentor_hub
@@ -918,7 +918,7 @@ def main() -> int:
           and 'SlotAction.act("mentor_cancel"' in spar_chest146)
     check("CMI mentor Actions + pending_decide + dojo",
           "openPendingDecide" in spar_cmi146 and "openDojo" in spar_cmi146
-          and "Mentor Actions" in spar_cmi146
+          and "Training bonds" in spar_cmi146
           and 'lmdo spar page pending_decide:' in spar_cmi146)
     check("CMI mentor hub has no Accept…/Decline…",
           "spar.mentor.accept" not in cmi_mentor_hub

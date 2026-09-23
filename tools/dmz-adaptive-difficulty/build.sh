@@ -96,8 +96,29 @@ merge_onto_base_jar() {
       "$merge/com/dbzlegacy/adaptivedifficulty/gui/RivalGuiApi.class"
   fi
   if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/rival/RivalChallengeManager.class" ]]; then
+    mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/rival"
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/rival/RivalChallengeManager.class" \
       "$merge/com/dbzlegacy/adaptivedifficulty/rival/RivalChallengeManager.class"
+  fi
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/rival/RivalStore.class" ]]; then
+    mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/rival"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/rival/RivalStore.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/rival/RivalStore.class"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/rival/RivalStore\$"*.class \
+      "$merge/com/dbzlegacy/adaptivedifficulty/rival/" 2>/dev/null || true
+  fi
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/gui/SparGuiApi.class" ]]; then
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/gui/SparGuiApi.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/gui/SparGuiApi.class"
+  fi
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/sparring/DojoRankings.class" ]]; then
+    mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/sparring"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/sparring/DojoRankings.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/sparring/DojoRankings.class"
+  fi
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/sparring/SparringSystem.class" ]]; then
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/sparring/SparringSystem.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/sparring/SparringSystem.class"
   fi
   if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/gui/ProgressionGuiApi.class" ]]; then
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/gui/ProgressionGuiApi.class" \

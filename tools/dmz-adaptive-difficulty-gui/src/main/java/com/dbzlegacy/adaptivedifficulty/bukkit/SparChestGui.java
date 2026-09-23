@@ -642,14 +642,14 @@ public final class SparChestGui implements Listener {
      */
     private Inventory mentor(Player viewer, Player subject) {
         Holder holder = new Holder("mentor");
-        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Mentor Actions"));
+        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Training bonds"));
         holder.bind(inv);
         frame(inv, 45);
-        put(holder, inv, 4, item(Material.EMERALD, "&b&lMentor Actions",
+        put(holder, inv, 4, item(Material.EMERALD, "&b&lTraining bonds",
                 prependBlank(toAmp(ForgeBridge.sparLines(subject, "mentor")))));
-        put(holder, inv, 19, pageBtn(viewer, "spar.mentor.invite", Material.LIME_DYE, "&aInvite apprentice…",
+        put(holder, inv, 19, pageBtn(viewer, "spar.mentor.invite", Material.LIME_DYE, "&aRecruit apprentice…",
                 "&7Pick a player to join your dojo"), SlotAction.page("pick_apprentice"));
-        put(holder, inv, 20, pageBtn(viewer, "spar.mentor.ask", Material.LIGHT_BLUE_DYE, "&bAsk mentor…",
+        put(holder, inv, 20, pageBtn(viewer, "spar.mentor.ask", Material.LIGHT_BLUE_DYE, "&bRequest a master…",
                 "&7Pick a player to ask as your master"), SlotAction.page("pick_mentor"));
         Map<String, String> ph = ForgeBridge.sparPlaceholders(subject);
         int pendingCount = 0;
@@ -659,8 +659,8 @@ public final class SparChestGui implements Listener {
             pendingCount = 0;
         }
         put(holder, inv, 21, pageBtn(viewer, "spar.mentor.pending", Material.CLOCK,
-                pendingCount > 0 ? "&ePending &f(" + pendingCount + ")" : "&ePending",
-                "&7Incoming + outgoing invites",
+                pendingCount > 0 ? "&eBond invites &f(" + pendingCount + ")" : "&eBond invites",
+                "&7Mentor ↔ apprentice only",
                 pendingCount > 0 ? "&8Tap to accept or decline" : "&8No pending invites"),
                 SlotAction.page("pending"));
         boolean hasMentor = "true".equalsIgnoreCase(ph.getOrDefault("has_mentor", "false"));
