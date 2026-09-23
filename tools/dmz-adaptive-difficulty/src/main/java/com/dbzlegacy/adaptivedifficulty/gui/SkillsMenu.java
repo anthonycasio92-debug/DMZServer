@@ -25,6 +25,10 @@ public final class SkillsMenu {
         if (player == null) {
             return;
         }
+        if (!com.dbzlegacy.adaptivedifficulty.progression.shop.SkillCheckService.canUse(player)) {
+            DmzRewards.msg(player, "§cNo permission: legacymechanics.skillcheck");
+            return;
+        }
         openInternal(player, page, true);
     }
 

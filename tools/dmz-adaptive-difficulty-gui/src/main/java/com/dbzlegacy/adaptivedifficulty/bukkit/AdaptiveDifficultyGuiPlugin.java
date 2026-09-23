@@ -740,32 +740,84 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
     }
 
     private void openSkillsInventory(Player player, String page) {
-        if (CmiSkillsGui.available() && CmiSkillsGui.open(player, page)) {
+        openSkillsInventory(player, page, false);
+    }
+
+    private void openSkillsInventory(Player player, String page, boolean skillCheckMode) {
+        if (!ensureSkillsGuiAccess(player, skillCheckMode)) {
             return;
         }
-        skillsChestGui.open(player, page);
+        if (skillCheckMode) {
+            ForgeBridge.markSkillCheckSession(player);
+        }
+        if (CmiSkillsGui.available() && CmiSkillsGui.open(player, page, skillCheckMode)) {
+            return;
+        }
+        skillsChestGui.open(player, page, skillCheckMode);
     }
 
     private void openSkillsRespectingConfig(Player player, String page) {
+        openSkillsRespectingConfig(player, page, false);
+    }
+
+    private void openSkillsRespectingConfig(Player player, String page, boolean skillCheckMode) {
         if (player == null) {
             return;
+        }
+        if (!ensureSkillsGuiAccess(player, skillCheckMode)) {
+            return;
+        }
+        if (skillCheckMode) {
+            ForgeBridge.markSkillCheckSession(player);
         }
         String backend = ForgeBridge.guiBackend();
         if ("chat".equals(backend)) {
             // No dedicated skills chat menu — inventory GUI (avoid Forge /skills do forward).
-            openSkillsInventory(player, page);
+            openSkillsInventory(player, page, skillCheckMode);
             return;
         }
         if ("cnpc".equals(backend)) {
-            String sys = ForgeBridge.hasSkillCheck(player) ? "skillcheck" : "skills";
+            String sys = skillCheckMode ? "skillcheck" : "skills";
             openCnpcMenu(player, sys, page);
             return;
         }
         if ("chest".equals(backend)) {
-            skillsChestGui.open(player, page);
+            skillsChestGui.open(player, page, skillCheckMode);
             return;
         }
-        openSkillsInventory(player, page);
+        openSkillsInventory(player, page, skillCheckMode);
+    }
+
+    /**
+     * Skill Check = donator node only. Skills admin browser = staff/op only.
+     * Staff inspect may open either mode for an online subject.
+     */
+    private boolean ensureSkillsGuiAccess(Player player, boolean skillCheckMode) {
+        if (player == null) {
+            return false;
+        }
+        if (AdminInspectSessions.isInspecting(player.getUniqueId())) {
+            Player subject = AdminInspectSessions.resolveSubject(player);
+            if (subject != null && !subject.getUniqueId().equals(player.getUniqueId())) {
+                if (!ForgeBridge.isStaff(player)) {
+                    player.sendMessage("§cStaff only.");
+                    return false;
+                }
+                return true;
+            }
+        }
+        if (skillCheckMode) {
+            if (!ForgeBridge.hasSkillCheck(player)) {
+                player.sendMessage("§cSkill Check requires donator access.");
+                return false;
+            }
+            return true;
+        }
+        if (!ForgeBridge.isStaff(player)) {
+            player.sendMessage("§cStaff only. Use Skill Check if you have donator access.");
+            return false;
+        }
+        return true;
     }
 
     private void runForUuid(
@@ -1030,21 +1082,19 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                 openSkillsRespectingConfig(player, reopen);
             }
             case "skillcheck" -> {
-                // NPC Skill Check marks a session without the donator node — allow
-                // Natural/Saga page switches while that session is live.
-                boolean allowed = ForgeBridge.hasSkillCheck(player)
-                        || ForgeBridge.isStaff(player)
-                        || ForgeBridge.inSkillCheckSession(player);
-                if (!allowed) {
-                    player.sendMessage("§cSkill Check requires donator access.");
-                    return true;
-                }
                 if (AdminInspectSessions.isInspecting(player.getUniqueId()) && subject != null) {
+                    if (!ForgeBridge.isStaff(player)) {
+                        player.sendMessage("§cStaff only.");
+                        return true;
+                    }
                     openInspectSystem(player, subject, "skillcheck", reopen);
                     return true;
                 }
-                ForgeBridge.markSkillCheckSession(player);
-                openSkillsRespectingConfig(player, reopen);
+                if (!ForgeBridge.hasSkillCheck(player)) {
+                    player.sendMessage("§cSkill Check requires donator access.");
+                    return true;
+                }
+                openSkillsRespectingConfig(player, reopen, true);
             }
             default -> player.sendMessage("§cUnknown lmdo system: " + system);
         }
@@ -1143,13 +1193,12 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             case "rival", "rivals", "rivalry" -> openRivalRespectingConfig(player, p);
             case "spar", "sparring" -> openSparRespectingConfig(player, p);
             case "skillcheck", "skill_check" -> {
-                if (!ForgeBridge.hasSkillCheck(player) && !ForgeBridge.isStaff(player)) {
+                if (!ForgeBridge.hasSkillCheck(player)) {
                     player.sendMessage("§cSkill Check requires donator access.");
                     openHubInventory(player, "main");
                     return;
                 }
-                ForgeBridge.markSkillCheckSession(player);
-                openSkillsRespectingConfig(player, "core".equals(p) || "main".equals(p) ? "core" : p);
+                openSkillsRespectingConfig(player, "core".equals(p) || "main".equals(p) ? "core" : p, true);
             }
             case "skills", "skill" -> {
                 if (!ForgeBridge.isStaff(player)) {
@@ -1649,10 +1698,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             sender.sendMessage("Players only.");
             return true;
         }
-        // Slash /skillcheck needs the donator node. NPC-opened sessions may page-switch
-        // without it while inSkillCheckSession is live (Natural ↔ Saga).
-        boolean session = ForgeBridge.inSkillCheckSession(player);
-        if (!ForgeBridge.hasSkillCheck(player) && !session) {
+        if (!ForgeBridge.hasSkillCheck(player)) {
             player.sendMessage("§cNo permission: legacymechanics.skillcheck");
             return true;
         }
@@ -1660,9 +1706,8 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             player.sendMessage("§cNo permission: dmzdiff.gui");
             return true;
         }
-        ForgeBridge.markSkillCheckSession(player);
         if (args.length == 0 || "gui".equalsIgnoreCase(args[0])) {
-            openSkillsRespectingConfig(player, "core");
+            openSkillsRespectingConfig(player, "core", true);
             return true;
         }
         String sub = args[0].toLowerCase();
@@ -1675,12 +1720,12 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             } else {
                 reopen = "core";
             }
-            openSkillsInventory(player, reopen);
+            openSkillsInventory(player, reopen, true);
             return true;
         }
         if ("core".equals(sub) || "advanced".equals(sub) || "saga".equals(sub)
                 || "natural".equals(sub) || "help".equals(sub)) {
-            openSkillsRespectingConfig(player, sub);
+            openSkillsRespectingConfig(player, sub, true);
             return true;
         }
         forwardToForge(player, "skillcheck", args);

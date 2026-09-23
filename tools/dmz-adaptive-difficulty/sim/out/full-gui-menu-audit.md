@@ -1,8 +1,8 @@
 # Full GUI menu audit
 
-- **OK checks:** 115
-- **Errors:** 0
-- **Warnings:** 1
+- **OK checks:** 122
+- **Errors:** 1
+- **Warnings:** 0
 
 ## Menus covered
 
@@ -19,10 +19,6 @@
 | logs | CnpcLmLogsGui | — | — |
 | admin | CnpcLmAdminGui | — | — |
 
-## Result
+## Failures
 
-**PASS** — all blocking menu/system checks passed.
-
-## Warnings
-
-- hub: CMI hub via GuiNav
+- Forge↔Bukkit ABI

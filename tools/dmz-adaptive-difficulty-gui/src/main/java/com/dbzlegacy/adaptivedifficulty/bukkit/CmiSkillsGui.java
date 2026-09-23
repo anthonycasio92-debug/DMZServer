@@ -25,17 +25,37 @@ public final class CmiSkillsGui {
     }
 
     public static boolean open(Player player, String page) {
+        if (ForgeBridge.hasSkillCheck(player)) {
+            return open(player, page, true);
+        }
+        if (ForgeBridge.isStaff(player)) {
+            return open(player, page, false);
+        }
+        player.sendMessage("§cSkill Check requires donator access.");
+        return false;
+    }
+
+    public static boolean open(Player player, String page, boolean skillCheckMode) {
         if (player == null || !available()) {
+            return false;
+        }
+        if (skillCheckMode) {
+            if (!ForgeBridge.hasSkillCheck(player)) {
+                player.sendMessage("§cSkill Check requires donator access.");
+                return false;
+            }
+        } else if (!ForgeBridge.isStaff(player)) {
+            player.sendMessage("§cStaff only.");
             return false;
         }
         String p = page == null || page.isBlank() ? "core" : page.toLowerCase(Locale.ROOT);
         try {
             switch (p) {
                 case "advanced", "dmz", "saga" ->
-                        openPage(player, "saga", "&dSaga", Material.AMETHYST_SHARD);
-                case "help" -> openPage(player, "core", "&aNatural", Material.FEATHER);
-                case "natural" -> openPage(player, "core", "&aNatural", Material.FEATHER);
-                default -> openPage(player, "core", "&aNatural", Material.FEATHER);
+                        openPage(player, "saga", "&dSaga", Material.AMETHYST_SHARD, skillCheckMode);
+                case "help" -> openPage(player, "core", "&aNatural", Material.FEATHER, skillCheckMode);
+                case "natural" -> openPage(player, "core", "&aNatural", Material.FEATHER, skillCheckMode);
+                default -> openPage(player, "core", "&aNatural", Material.FEATHER, skillCheckMode);
             }
             return true;
         } catch (Throwable t) {
@@ -44,10 +64,11 @@ public final class CmiSkillsGui {
         }
     }
 
-    private static void openPage(Player player, String page, String title, Material mat) {
+    private static void openPage(Player player, String page, String title, Material mat, boolean skillCheckMode) {
         Map<String, String> ph = ForgeBridge.skillsPlaceholders(player);
-        boolean skillCheckUi = ForgeBridge.inSkillCheckSession(player);
-        boolean staffAdmin = ForgeBridge.isStaff(player) && !skillCheckUi;
+        boolean skillCheckUi = skillCheckMode || (ForgeBridge.hasSkillCheck(player)
+                && ForgeBridge.inSkillCheckSession(player));
+        boolean staffAdmin = !skillCheckUi && ForgeBridge.isStaff(player);
         String windowTitle = skillCheckUi
                 ? "&8Skill Check"
                 : staffAdmin ? "&8Skills (Admin)" : "&8Skills";

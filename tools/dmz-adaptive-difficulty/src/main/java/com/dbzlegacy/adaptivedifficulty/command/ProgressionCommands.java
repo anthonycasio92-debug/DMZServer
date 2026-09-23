@@ -210,17 +210,11 @@ public final class ProgressionCommands {
         if (p == null) {
             return 0;
         }
-        boolean session = SkillCheckService.inSession(p);
-        if (!SkillCheckService.canUse(p) && !session) {
+        if (!SkillCheckService.canUse(p)) {
             reply(source, p, "§cNo permission: legacymechanics.skillcheck");
             return 0;
         }
-        // Session (NPC) path keeps permission-free open; slash still needs canUse above.
-        if (session && !SkillCheckService.canUse(p)) {
-            SkillCheckService.openFromNpc(p, page);
-        } else {
-            SkillCheckService.open(p, page);
-        }
+        SkillCheckService.open(p, page);
         return 1;
     }
 

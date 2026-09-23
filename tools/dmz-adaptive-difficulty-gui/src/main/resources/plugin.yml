@@ -1,5 +1,5 @@
 name: LegacyMechanicsGUI
-version: '4.5.67'
+version: '4.5.68'
 main: com.dbzlegacy.adaptivedifficulty.bukkit.AdaptiveDifficultyGuiPlugin
 api-version: '1.20'
 author: DBZ Legacy Reborn
@@ -39,6 +39,8 @@ commands:
   skills:
     description: Open LegacyMechanics Skills admin GUI (staff)
     usage: /skills
+    permission: difficulty.admin
+    permission-message: "§cStaff only."
   skillcheck:
     description: Open Skill Check GUI (donator)
     usage: /skillcheck

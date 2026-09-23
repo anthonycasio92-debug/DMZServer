@@ -1097,7 +1097,9 @@ def main() -> int:
     check("no soft contains(rival)", 'hay.contains("rival")' not in cnpc)
     check("events call tryOpenFromNpc", "CnpcGuiOpener.tryOpenFromNpc" in events)
     check("CnpcGuiOpener tryOpenFromNpc uses tags or names", "tryOpenFromTags" in cnpc and "tryOpenFromName" in cnpc)
-    check("Skill Check NPC skips canUse", "openFromNpc(player, \"core\")" in skill and "canUse(player)" not in skill.split("tryOpenFromNpc")[1].split("trigger21")[0])
+    check("Skill Check NPC requires canUse",
+          "canUse(player)" in skill.split("tryOpenFromNpc", 1)[1].split("trigger21", 1)[0]
+          and "openFromNpc" not in skill)
     check("End hitcap not undone by raw minFrac", "setAmount(mitigated)" in end and "Math.max(mitigated, raw" not in end)
     check("egg clear not end_portal", "isDragonEggBlock" in end and "Blocks.f_50259_" not in end.split("clearDragonEggBlocks")[1].split("findDragons")[0])
 
@@ -1153,8 +1155,9 @@ def main() -> int:
           'case "skillcheck" ->' in plugin
           and "hasSkillCheck(player)" in plugin
           and "Skill Check requires donator access." in plugin)
-    check("lmdo skillcheck allows NPC session",
-          "inSkillCheckSession(player)" in plugin)
+    check("lmdo skillcheck donator-only (no session bypass)",
+          "ensureSkillsGuiAccess" in plugin
+          and "Skill Check requires donator access." in plugin)
     check("CMI skillcheck page uses lmdo skillcheck",
           'skillCheckUi ? "skillcheck" : "skills"' in cmi_skills
           or 'lmdo skillcheck page' in cmi_skills)

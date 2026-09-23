@@ -39,25 +39,50 @@ public final class SkillsChestGui implements Listener {
     }
 
     public void open(Player player, String page) {
+        if (ForgeBridge.hasSkillCheck(player)) {
+            open(player, page, true);
+        } else if (ForgeBridge.isStaff(player)) {
+            open(player, page, false);
+        } else {
+            player.sendMessage("§cSkill Check requires donator access.");
+        }
+    }
+
+    public void open(Player player, String page, boolean skillCheckMode) {
         Player viewer = player;
         Player subject = AdminInspectSessions.resolveSubject(viewer);
+        if (!inspecting(viewer, subject)) {
+            if (skillCheckMode) {
+                if (!ForgeBridge.hasSkillCheck(viewer)) {
+                    viewer.sendMessage("§cSkill Check requires donator access.");
+                    return;
+                }
+            } else if (!ForgeBridge.isStaff(viewer)) {
+                viewer.sendMessage("§cStaff only.");
+                return;
+            }
+        } else if (!ForgeBridge.isStaff(viewer)) {
+            viewer.sendMessage("§cStaff only.");
+            return;
+        }
         String p = page == null || page.isBlank() ? "core" : page.toLowerCase(Locale.ROOT);
         Inventory inv = switch (p) {
             // Advanced folded into Saga — alias keeps old links working.
             case "advanced", "dmz", "saga" ->
-                    pageInv(viewer, subject, "saga", "&dSaga", Material.AMETHYST_SHARD);
-            case "help" -> pageInv(viewer, subject, "core", "&aNatural", Material.FEATHER);
-            case "natural" -> pageInv(viewer, subject, "core", "&aNatural", Material.FEATHER);
-            default -> pageInv(viewer, subject, "core", "&aNatural", Material.FEATHER);
+                    pageInv(viewer, subject, "saga", "&dSaga", Material.AMETHYST_SHARD, skillCheckMode);
+            case "help" -> pageInv(viewer, subject, "core", "&aNatural", Material.FEATHER, skillCheckMode);
+            case "natural" -> pageInv(viewer, subject, "core", "&aNatural", Material.FEATHER, skillCheckMode);
+            default -> pageInv(viewer, subject, "core", "&aNatural", Material.FEATHER, skillCheckMode);
         };
         GuiFeedback.openChest(viewer, inv);
     }
 
-    private Inventory pageInv(Player viewer, Player subject, String page, String title, Material mat) {
+    private Inventory pageInv(
+            Player viewer, Player subject, String page, String title, Material mat, boolean skillCheckMode) {
         Map<String, String> ph = ForgeBridge.skillsPlaceholders(subject);
-        // SkillCheck session stays on viewer; staff admin browser gated on viewer staff.
-        boolean skillCheckUi = ForgeBridge.inSkillCheckSession(viewer);
-        boolean staffAdmin = ForgeBridge.isStaff(viewer) && !skillCheckUi;
+        boolean skillCheckUi = skillCheckMode || (ForgeBridge.hasSkillCheck(viewer)
+                && ForgeBridge.inSkillCheckSession(viewer));
+        boolean staffAdmin = !skillCheckUi && ForgeBridge.isStaff(viewer);
         Holder holder = new Holder(page);
         String baseTitle = skillCheckUi
                 ? "&8Skill Check"

@@ -89,10 +89,8 @@ public final class SkillCheckService {
     }
 
     /**
-     * CNPC right-click: if entity is a CustomNPC Skill Check marker, open Skill Check.
-     * <p>
-     * The NPC is the access gate — <b>no</b> {@code legacymechanics.skillcheck} required.
-     * Slash {@code /skillcheck} remains permission-gated for donators.
+     * CNPC right-click: Skill Check marker opens the donator UI only when
+     * {@link #canUse} ({@code legacymechanics.skillcheck}) is granted.
      */
     public static boolean tryOpenFromNpc(ServerPlayer player, Entity npc) {
         if (player == null || npc == null) {
@@ -108,33 +106,20 @@ public final class SkillCheckService {
             DmzRewards.msg(player, "§cSkill Check is disabled.");
             return true;
         }
-        openFromNpc(player, "core");
+        if (!canUse(player)) {
+            DmzRewards.msg(player, "§cNo permission: legacymechanics.skillcheck");
+            return true;
+        }
+        open(player, "core");
         return true;
     }
 
-    /** Trigger 21 / dialog script path — NPC/dialog is the gate (no permission). */
+    /** Trigger 21 / dialog script path — same donator permission as slash {@code /skillcheck}. */
     public static void trigger21(ServerPlayer player) {
         if (player == null) {
             return;
         }
-        if (!DifficultyConfig.get().enableSkillCheck || !DifficultyConfig.get().enableSkillUnlockService) {
-            return;
-        }
-        openFromNpc(player, "core");
-    }
-
-    /** Open Skill Check UI without the donator permission (CNPC / trigger paths). */
-    public static void openFromNpc(ServerPlayer player, String page) {
-        if (player == null) {
-            return;
-        }
-        if (!DifficultyConfig.get().enableSkillCheck || !DifficultyConfig.get().enableSkillUnlockService) {
-            DmzRewards.msg(player, "§cSkill Check is disabled.");
-            return;
-        }
-        markSession(player);
-        String target = page == null || page.isBlank() ? "core" : page;
-        SkillsMenu.openSkillCheck(player, target);
+        open(player, "core");
     }
 
     public static boolean looksLikeCustomNpc(Entity entity) {

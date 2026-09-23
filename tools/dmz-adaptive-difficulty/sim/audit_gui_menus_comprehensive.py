@@ -161,6 +161,20 @@ def main() -> int:
     ):
         ok(f"plugin {token}", token in plugin)
 
+    print("\n=== Skill Check / Staff Admin access gates ===")
+    skill_svc = read(MOD / "src/main/java/com/dbzlegacy/adaptivedifficulty/progression/shop/SkillCheckService.java")
+    ok("Skill Check NPC requires canUse", "canUse(player)" in skill_svc.split("tryOpenFromNpc", 1)[1])
+    ok("no openFromNpc permission bypass", "openFromNpc" not in skill_svc)
+    cnpc_sk = read(CNPC_DIR / "CnpcLmSkillCheckGui.java")
+    ok("CNPC skillcheck donator-only open", "SkillCheckService.canUse(player)" in cnpc_sk
+       and "StaffAccess.isStaff(player)" not in cnpc_sk.split("public static void open", 1)[1].split("openSkillsAdmin", 1)[0])
+    ok("CNPC skills admin staff-only", "openSkillsAdmin" in cnpc_sk and "StaffAccess.isStaff(player)" in cnpc_sk)
+    ok("plugin ensureSkillsGuiAccess", "ensureSkillsGuiAccess" in plugin)
+    ok("plugin skillcheck lmdo no staff bypass",
+       "case \"skillcheck\"" in plugin and "ForgeBridge.isStaff(player)" not in plugin.split("case \"skillcheck\"", 1)[1].split("default ->", 1)[0])
+    ok("skills command permission", "permission: difficulty.admin" in read(GUI / "src/main/resources/plugin.yml"))
+    ok("skillcheck command permission", "permission: legacymechanics.skillcheck" in read(GUI / "src/main/resources/plugin.yml"))
+
     print("\n=== Difficulty tier unlock copy (DMZ or Prestige) ===")
     board = read(BUKKIT / "GuiBoardHelper.java")
     ok(
