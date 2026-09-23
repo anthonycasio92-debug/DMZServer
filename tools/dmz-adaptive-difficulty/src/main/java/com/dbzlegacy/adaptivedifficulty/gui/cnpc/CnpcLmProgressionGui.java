@@ -50,10 +50,8 @@ public final class CnpcLmProgressionGui {
     }
 
     private static boolean requiresStaff(String page) {
-        return switch (page) {
-            case "economy", "boost_panel" -> true;
-            default -> false;
-        };
+        // Players may only use Remove Android (hub); all other progression screens are staff.
+        return !"android_remove".equals(page);
     }
 
     private static void paint(ServerPlayer player, ICustomGui gui, String page) {
@@ -234,7 +232,7 @@ public final class CnpcLmProgressionGui {
             row = paintNameScroll(player, gui, row, "android_remove", "android_remove");
             CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "android_panel"), "§7« Back");
         } else {
-            CnpcGuiSupport.navSubmenu(player, gui, row + 8, () -> open(player, "main"), "§7« Back");
+            CnpcGuiSupport.navSubmenu(player, gui, row + 8, () -> CnpcLmHubGui.open(player, "main"), "§7« Back");
         }
     }
 
