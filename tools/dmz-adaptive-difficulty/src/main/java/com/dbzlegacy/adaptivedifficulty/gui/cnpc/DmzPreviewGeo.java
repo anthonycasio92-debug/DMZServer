@@ -42,6 +42,10 @@ final class DmzPreviewGeo {
 
     private DmzPreviewGeo() {}
 
+    static String resolveAppearanceKeyForPreview(Character ch) {
+        return resolveAppearanceKey(ch);
+    }
+
     static String resolveModelGeo(Character ch) {
         if (ch == null) {
             return raceGeo("human", false);
@@ -148,7 +152,7 @@ final class DmzPreviewGeo {
             case "frostdemon_fp" -> "frostdemon_fp";
             case "frostdemon_third" -> "frostdemon_third";
             case "frostdemon_metalcore" -> "frostdemon_metalcore";
-            case "bioandroid", "bioandroid_base" -> "bioandroid";
+            case "bio_android", "bio-android", "bioandroid", "bioandroid_base" -> "bioandroid";
             case "bioandroid_semi" -> "bioandroid_semi";
             case "bioandroid_perfect" -> "bioandroid_perfect";
             case "bioandroid_ultra" -> "bioandroid_ultra";

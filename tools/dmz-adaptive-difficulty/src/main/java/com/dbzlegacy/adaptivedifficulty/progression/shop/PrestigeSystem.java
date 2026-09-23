@@ -347,8 +347,13 @@ public final class PrestigeSystem {
     private static int needForProgress(ServerPlayer player, int completed, int heldWallet) {
         int need = needForProgress(completed, heldWallet);
         if (completed < HELD_GATE_MIN_COMPLETED) {
-            int floor = getNeedFloor(player);
-            need = Math.max(need, Math.min(floor, MAX_REQUIRED_LEVEL));
+            int ladder = Math.min(MAX_REQUIRED_LEVEL, (completed + 1) * LEVELS_PER_PRESTIGE);
+            int floor = Math.min(getNeedFloor(player), MAX_REQUIRED_LEVEL);
+            if (floor > ladder) {
+                shrinkNeedFloor(player, ladder);
+                floor = ladder;
+            }
+            need = Math.max(ladder, floor);
         }
         return need;
     }
@@ -404,11 +409,29 @@ public final class PrestigeSystem {
         if (player == null) {
             return;
         }
-        if (getCompleted(player) < HELD_GATE_MIN_COMPLETED) {
+        int completed = getCompleted(player);
+        if (completed < HELD_GATE_MIN_COMPLETED) {
+            int ladder = Math.min(MAX_REQUIRED_LEVEL, (completed + 1) * LEVELS_PER_PRESTIGE);
+            shrinkNeedFloor(player, ladder);
             return;
         }
         int need = requiredLevelForHeld(heldCountForNeed(player));
         clampVeteranNeedFloor(player, need);
+    }
+
+    /** Lower corrupt {@link #KEY_NEED_FLOOR} values (never raise). */
+    private static void shrinkNeedFloor(ServerPlayer player, int maxAllowed) {
+        if (player == null || maxAllowed < 0) {
+            return;
+        }
+        CompoundTag tag = PersistentDataAccess.get(player);
+        if (!PersistentDataAccess.isWritable(tag) || !tag.m_128441_(KEY_NEED_FLOOR)) {
+            return;
+        }
+        int floor = Math.max(0, readStoredInt(tag, KEY_NEED_FLOOR));
+        if (floor > maxAllowed) {
+            tag.m_128405_(KEY_NEED_FLOOR, maxAllowed);
+        }
     }
 
     private static void clampVeteranNeedFloor(ServerPlayer player, int veteranNeed) {

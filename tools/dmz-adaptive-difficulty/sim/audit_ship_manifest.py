@@ -120,6 +120,9 @@ def main() -> int:
     cnpc_support = read(SRC / "gui/cnpc/CnpcGuiSupport.java")
     check("CNPC afterGuiClosed defer reopen", "afterGuiClosed" in cnpc_support)
     check("CNPC flash notice separate widget ids", "ID_FLASH_LABEL_BASE" in cnpc_support)
+    preview_tex = read(SRC / "gui/cnpc/DmzPreviewTexture.java")
+    check("CNPC preview race textures (namekian/bio)", "namekian" in preview_tex and "bioandroid" in preview_tex)
+    check("PrestigeSystem shrinkNeedFloor early band", "shrinkNeedFloor" in prestige)
 
     print("\n--- § version ---")
     mod = read(MOD / "src/main/java/com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.java")
