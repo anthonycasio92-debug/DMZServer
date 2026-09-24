@@ -24,9 +24,13 @@ public final class LmStaffHelp {
         return sb.toString().stripTrailing();
     }
 
-    /** {@code §f/command … §7— description} */
+    /** {@code §f/command … §8— §7description} */
     public static String cmd(String command, String description) {
-        return "§f" + command + " §7— " + description;
+        String text = description == null ? "" : description.trim();
+        if (!text.isEmpty() && Character.isLowerCase(text.charAt(0))) {
+            text = Character.toUpperCase(text.charAt(0)) + text.substring(1);
+        }
+        return "§f" + command + " §8— §7" + text;
     }
 
     public static String note(String text) {

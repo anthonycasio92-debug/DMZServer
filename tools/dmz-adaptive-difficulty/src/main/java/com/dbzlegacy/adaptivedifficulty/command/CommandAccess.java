@@ -38,7 +38,7 @@ public final class CommandAccess {
         if (isPlayerSlashUser(source)) {
             return 1;
         }
-        source.m_288197_(() -> Component.m_237113_("§cPlayers only."), false);
+        source.m_288197_(() -> Component.m_237113_(LmCommandMessages.PLAYERS_ONLY), false);
         return 0;
     }
 

@@ -105,7 +105,7 @@ public final class ProgressionCommands {
                             if (playerOrNull(ctx.getSource()) == null) {
                                 ctx.getSource().m_288197_(
                                         () -> Component.m_237113_(
-                                                "§cUsage: §f/androidify <player>"),
+                                                LmCommandMessages.tryCommand("/androidify <player>")),
                                         false);
                                 return 0;
                             }
@@ -125,7 +125,7 @@ public final class ProgressionCommands {
             return 0;
         }
         if (!StaffAccess.isStaff(p)) {
-            reply(source, p, "§cStaff only.");
+            reply(source, p, LmCommandMessages.STAFF_ONLY);
             return 0;
         }
         SkillsMenu.open(p, page);
@@ -138,7 +138,7 @@ public final class ProgressionCommands {
             return 0;
         }
         if (!SkillCheckService.canUse(p)) {
-            reply(source, p, "§cNo permission: legacymechanics.skillcheck");
+            reply(source, p, LmCommandMessages.SKILLCHECK_DONATOR);
             return 0;
         }
         SkillCheckService.open(p, page);
@@ -207,8 +207,10 @@ public final class ProgressionCommands {
         }
         ServerPlayer target = resolveAdminTarget(source, playerName);
         if (target == null) {
-            reply(source, playerOrNull(source), "§cPlayer not online"
-                    + (playerName == null || playerName.isBlank() ? " (self)." : ": §f" + playerName));
+            reply(source, playerOrNull(source),
+                    playerName == null || playerName.isBlank()
+                            ? LmCommandMessages.playerOffline(null)
+                            : LmCommandMessages.playerOffline(playerName));
             return 0;
         }
         reply(source, playerOrNull(source),
@@ -222,7 +224,7 @@ public final class ProgressionCommands {
         }
         ServerPlayer target = resolveAdminTarget(source, playerName);
         if (target == null) {
-            reply(source, playerOrNull(source), "§cPlayer not online: §f" + playerName);
+            reply(source, playerOrNull(source), LmCommandMessages.playerOffline(playerName));
             return 0;
         }
         reply(source, playerOrNull(source),
@@ -238,7 +240,7 @@ public final class ProgressionCommands {
         }
         ServerPlayer target = resolveAdminTarget(source, playerName);
         if (target == null) {
-            reply(source, playerOrNull(source), "§cPlayer not online: §f" + playerName);
+            reply(source, playerOrNull(source), LmCommandMessages.playerOffline(playerName));
             return 0;
         }
         String msg = switch (field == null ? "" : field.toLowerCase()) {
@@ -264,7 +266,7 @@ public final class ProgressionCommands {
         }
         ServerPlayer target = resolveAdminTarget(source, playerName);
         if (target == null) {
-            reply(source, playerOrNull(source), "§cPlayer not online: §f" + playerName);
+            reply(source, playerOrNull(source), LmCommandMessages.playerOffline(playerName));
             return 0;
         }
         reply(source, playerOrNull(source),
@@ -280,7 +282,7 @@ public final class ProgressionCommands {
         }
         ServerPlayer target = resolveAdminTarget(source, playerName);
         if (target == null) {
-            reply(source, playerOrNull(source), "§cPlayer not online: §f" + playerName);
+            reply(source, playerOrNull(source), LmCommandMessages.playerOffline(playerName));
             return 0;
         }
         String msg = com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeAdmin.adjustSkill(
@@ -295,7 +297,7 @@ public final class ProgressionCommands {
         }
         ServerPlayer target = resolveAdminTarget(source, playerName);
         if (target == null) {
-            reply(source, playerOrNull(source), "§cPlayer not online: §f" + playerName);
+            reply(source, playerOrNull(source), LmCommandMessages.playerOffline(playerName));
             return 0;
         }
         int tierId;
@@ -305,7 +307,7 @@ public final class ProgressionCommands {
             try {
                 tierId = Integer.parseInt(tierRaw);
             } catch (NumberFormatException e) {
-                reply(source, playerOrNull(source), "§cTier must be 0–7 or all.");
+                reply(source, playerOrNull(source), "§cTier must be a number from 0–7, or §fall§c.");
                 return 0;
             }
         }
@@ -366,7 +368,8 @@ public final class ProgressionCommands {
     private static int endSpawnDenied(CommandSourceStack source) {
         ServerPlayer p = playerOrNull(source);
         if (p == null) {
-            reply(source, null, "§c[The End] Staff dragon spawn is disabled. §7Use §f/enddragon clear§7.");
+            reply(source, null,
+                    "§cStaff can’t spawn dragons from here anymore. §7Players use the Difficulty menu; staff use §f/enddragon clear§7.");
             return 0;
         }
         return com.dbzlegacy.adaptivedifficulty.progression.end.EndDimensionStrength.cmdSpawnDragon(p);
@@ -503,7 +506,7 @@ public final class ProgressionCommands {
             return 0;
         }
         if (!StaffAccess.isStaff(player)) {
-            reply(source, player, "§cStaff only.");
+            reply(source, player, LmCommandMessages.STAFF_ONLY);
             return 0;
         }
         ProgressionMenu.open(player, page);
@@ -516,7 +519,7 @@ public final class ProgressionCommands {
             return 0;
         }
         if (!staff(source)) {
-            reply(source, player, "§cStaff only.");
+            reply(source, player, LmCommandMessages.STAFF_ONLY);
             return 0;
         }
         String msg = com.dbzlegacy.adaptivedifficulty.gui.ProgressionGuiApi.handleDo(
@@ -592,7 +595,7 @@ public final class ProgressionCommands {
             return androidRemoveSelf(source);
         }
         reply(source, playerOrNull(source),
-                "§7Open §f/lm §7→ §cRemove Android §7(GUI).");
+                "§7Use §f/lm §7and choose Remove Android in the menu.");
         return 0;
     }
 
@@ -603,7 +606,7 @@ public final class ProgressionCommands {
     private static int androidSelf(CommandSourceStack source) {
         ServerPlayer player = playerOrNull(source);
         if (player == null) {
-            source.m_288197_(() -> Component.m_237113_("§cPlayer required."), false);
+            source.m_288197_(() -> Component.m_237113_(LmCommandMessages.NEED_IN_GAME), false);
             return 0;
         }
         reply(source, player, ProgressionSystem.androidConvert(player));
@@ -613,7 +616,7 @@ public final class ProgressionCommands {
     private static int androidPlayer(CommandSourceStack source, String name) {
         ServerPlayer target = resolve(source, name);
         if (target == null) {
-            source.m_288197_(() -> Component.m_237113_("§cPlayer not found: " + name), false);
+            source.m_288197_(() -> Component.m_237113_(LmCommandMessages.playerNotFound(name)), false);
             return 0;
         }
         reply(source, playerOrNull(source), ProgressionSystem.androidConvert(target));
@@ -623,7 +626,7 @@ public final class ProgressionCommands {
     private static int androidRemoveSelf(CommandSourceStack source) {
         ServerPlayer player = playerOrNull(source);
         if (player == null) {
-            source.m_288197_(() -> Component.m_237113_("§cPlayer required."), false);
+            source.m_288197_(() -> Component.m_237113_(LmCommandMessages.NEED_IN_GAME), false);
             return 0;
         }
         reply(source, player, ProgressionGuiApi.androidRemove(player, ""));
@@ -635,7 +638,7 @@ public final class ProgressionCommands {
         if (actor == null) {
             ServerPlayer target = resolve(source, name);
             if (target == null) {
-                source.m_288197_(() -> Component.m_237113_("§cPlayer not found: " + name), false);
+                source.m_288197_(() -> Component.m_237113_(LmCommandMessages.playerNotFound(name)), false);
                 return 0;
             }
             reply(source, null, ProgressionGuiApi.androidRemove(target, ""));
@@ -652,14 +655,15 @@ public final class ProgressionCommands {
         boolean on = "on".equalsIgnoreCase(value) || "true".equalsIgnoreCase(value) || "1".equals(value);
         boolean off = "off".equalsIgnoreCase(value) || "false".equalsIgnoreCase(value) || "0".equals(value);
         if (!on && !off) {
-            source.m_288197_(() -> Component.m_237113_("§cUse on|off."), false);
+            source.m_288197_(() -> Component.m_237113_("§cUse §fon§c or §foff§c for that flag."), false);
             return 0;
         }
         if (!ProgressionSystem.setFlag(flag, on)) {
-            source.m_288197_(() -> Component.m_237113_("§cUnknown flag: " + flag), false);
+            source.m_288197_(() -> Component.m_237113_("§cUnknown flag §f" + flag + "§c—see §f/progression help§c."), false);
             return 0;
         }
-        String msg = "§aProgression §f" + flag + " §7→ §f" + (on ? "ON" : "OFF");
+        String msg = (on ? LmCommandMessages.turnedOn("Progression flag " + flag)
+                : LmCommandMessages.turnedOff("Progression flag " + flag));
         reply(source, playerOrNull(source), msg);
         ServerPlayer p = playerOrNull(source);
         if (p != null) {

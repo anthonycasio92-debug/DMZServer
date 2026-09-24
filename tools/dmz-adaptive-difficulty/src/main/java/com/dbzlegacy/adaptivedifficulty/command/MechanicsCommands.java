@@ -120,7 +120,8 @@ public final class MechanicsCommands {
         return Commands.m_82127_("clear")
                 .executes(ctx -> {
                     LmCommandFeedback.tell(ctx.getSource(),
-                            "§cUsage: /lm admin character cooldown clear <player> [race|class|reskin|all]");
+                            LmCommandMessages.tryCommand(
+                                    "/lm admin character cooldown clear <player> [race|class|reskin|all]"));
                     return 0;
                 })
                 .then(LmCommandSuggestions.playerWord("player")
@@ -206,7 +207,7 @@ public final class MechanicsCommands {
             }
             case "progression", "prog" -> {
                 if (!StaffAccess.isStaff(player)) {
-                    player.m_213846_(Component.m_237113_("§cStaff only."));
+                    player.m_213846_(Component.m_237113_(LmCommandMessages.STAFF_ONLY));
                     yield false;
                 }
                 com.dbzlegacy.adaptivedifficulty.gui.ProgressionMenu.open(player, "main");
@@ -226,7 +227,7 @@ public final class MechanicsCommands {
             }
             case "skills", "skill" -> {
                 if (!StaffAccess.isStaff(player)) {
-                    player.m_213846_(Component.m_237113_("§cStaff only."));
+                    player.m_213846_(Component.m_237113_(LmCommandMessages.STAFF_ONLY));
                     yield false;
                 }
                 com.dbzlegacy.adaptivedifficulty.gui.SkillsMenu.open(player, "core");
@@ -234,8 +235,7 @@ public final class MechanicsCommands {
             }
             case "skillcheck" -> {
                 if (!StaffAccess.hasSkillCheck(player)) {
-                    player.m_213846_(Component.m_237113_(
-                            "§cSkill Check requires donator access."));
+                    player.m_213846_(Component.m_237113_(LmCommandMessages.SKILLCHECK_DONATOR));
                     yield false;
                 }
                 com.dbzlegacy.adaptivedifficulty.progression.shop.SkillCheckService.open(player, "core");
@@ -246,9 +246,9 @@ public final class MechanicsCommands {
                 yield true;
             }
             default -> {
-                player.m_213846_(Component.m_237113_(
-                        "§cUnknown: " + s
-                                + " §8(difficulty|rival|spar|prestige|skillcheck|android_remove|progression|skills)"));
+                player.m_213846_(Component.m_237113_(LmCommandMessages.unknownOpenTarget(
+                        s,
+                        "difficulty, rival, spar, prestige, skillcheck, character, progression, skills")));
                 yield false;
             }
         };
@@ -260,7 +260,8 @@ public final class MechanicsCommands {
         }
         ServerPlayer player = playerOrNull(source);
         if (player == null) {
-            source.m_81352_(Component.m_237113_("Run /lm admin testgui in-game."));
+            source.m_81352_(Component.m_237113_(LmCommandMessages.NEED_IN_GAME
+                    + " §8Then: §f/lm admin testgui"));
             return 0;
         }
         return com.dbzlegacy.adaptivedifficulty.gui.CnpcStaffTestGui.open(player) ? 1 : 0;
@@ -285,7 +286,7 @@ public final class MechanicsCommands {
         }
         ServerPlayer admin = playerOrNull(source);
         if (admin == null) {
-            source.m_81352_(Component.m_237113_("Players only (open inspect from in-game)."));
+            source.m_81352_(Component.m_237113_(LmCommandMessages.PLAYERS_ONLY_INSPECT));
             return 0;
         }
         if (playerName == null || playerName.isBlank()
@@ -307,7 +308,7 @@ public final class MechanicsCommands {
             }
         }
         if (subject == null) {
-            admin.m_213846_(Component.m_237113_("§cPlayer not online: §f" + playerName));
+            admin.m_213846_(Component.m_237113_(LmCommandMessages.playerOffline(playerName)));
             return 0;
         }
         String sys = system == null || system.isBlank() ? "hub" : system;
@@ -350,7 +351,8 @@ public final class MechanicsCommands {
         }
         boolean ok = DifficultyConfig.reload();
         LmCommandFeedback.tell(source,
-                ok ? "§aLegacyMechanics config reloaded." : "§cConfig reload failed.");
+                ok ? LmCommandMessages.reloaded("Legacy Mechanics config")
+                        : "§cConfig reload failed—check the server log. Your live settings are unchanged.");
         return ok ? 1 : 0;
     }
 
@@ -381,7 +383,7 @@ public final class MechanicsCommands {
     private static ServerPlayer playerOrNull(CommandSourceStack source) {
         ServerPlayer player = source.m_230896_();
         if (player == null) {
-            source.m_81352_(Component.m_237113_("Players only."));
+            source.m_81352_(Component.m_237113_(LmCommandMessages.PLAYERS_ONLY));
         }
         return player;
     }

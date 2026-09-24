@@ -167,7 +167,7 @@ public final class MohistCommandBridge {
             return;
         }
         if (!mayUseBukkitRoot(source, label)) {
-            LmCommandFeedback.tell(source, "§cNo permission.");
+            LmCommandFeedback.tell(source, LmCommandMessages.NO_PERMISSION_BRIDGE);
             return;
         }
         String[] coalesced = LmAdminArgCoalesce.forMohist(label, args);

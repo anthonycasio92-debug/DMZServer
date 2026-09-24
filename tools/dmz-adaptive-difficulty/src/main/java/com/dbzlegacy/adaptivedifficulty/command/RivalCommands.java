@@ -241,7 +241,7 @@ public final class RivalCommands {
         }
         ServerPlayer target = RivalSystem.findOnline(source.m_81377_(), name);
         if (target == null) {
-            DmzRewards.msg(player, "§cPlayer not online: " + name);
+            DmzRewards.msg(player, LmCommandMessages.playerOffline(name));
             return 0;
         }
         DmzRewards.msg(player, RivalSystem.silentRival(player, target));
@@ -255,7 +255,7 @@ public final class RivalCommands {
         }
         ServerPlayer target = RivalSystem.findOnline(source.m_81377_(), name);
         if (target == null) {
-            DmzRewards.msg(player, "§cPlayer not online: " + name);
+            DmzRewards.msg(player, LmCommandMessages.playerOffline(name));
             return 0;
         }
         DmzRewards.msg(player, RivalSystem.declare(player, target));
@@ -337,12 +337,12 @@ public final class RivalCommands {
             return 0;
         }
         if (!DifficultyConfig.get().rivalChallenges) {
-            DmzRewards.msg(player, "§cRival challenges are disabled.");
+            DmzRewards.msg(player, LmCommandMessages.systemDisabled("Rival challenges"));
             return 0;
         }
         ServerPlayer target = RivalSystem.findOnline(source.m_81377_(), name);
         if (target == null) {
-            DmzRewards.msg(player, "§cPlayer not online: " + name);
+            DmzRewards.msg(player, LmCommandMessages.playerOffline(name));
             return 0;
         }
         DmzRewards.msg(player, RivalChallengeManager.get().sendChallenge(player, target, minutes));
@@ -382,7 +382,7 @@ public final class RivalCommands {
         }
         RivalStore.get().load();
         RivalProgression.get().load();
-        source.m_288197_(() -> Component.m_237113_("§aRival store + progression reloaded."), true);
+        source.m_288197_(() -> Component.m_237113_("§aReloaded rival data from disk."), true);
         return 1;
     }
 
@@ -393,7 +393,7 @@ public final class RivalCommands {
         RivalStore.get().markDirty();
         RivalStore.get().save();
         RivalProgression.get().save();
-        source.m_288197_(() -> Component.m_237113_("§aRival store + progression saved."), true);
+        source.m_288197_(() -> Component.m_237113_(LmCommandMessages.saved("rival data")), true);
         return 1;
     }
 
@@ -423,7 +423,7 @@ public final class RivalCommands {
 
     private static boolean enabled(ServerPlayer player) {
         if (!DifficultyConfig.get().enableRivalSystem) {
-            DmzRewards.msg(player, "§cRival system is disabled.");
+            DmzRewards.msg(player, LmCommandMessages.systemDisabled("The rival system"));
             return false;
         }
         return true;
@@ -433,7 +433,7 @@ public final class RivalCommands {
         try {
             return source.m_81375_();
         } catch (Exception e) {
-            source.m_81352_(Component.m_237113_("Players only."));
+            source.m_81352_(Component.m_237113_(LmCommandMessages.PLAYERS_ONLY));
             return null;
         }
     }

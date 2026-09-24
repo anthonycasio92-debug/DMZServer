@@ -270,7 +270,7 @@ public final class DifficultyCommands {
     private static int openGui(CommandSourceStack source) {
         ServerPlayer player = source.m_230896_();
         if (player == null) {
-            source.m_81352_(Component.m_237113_("Players only. Use /difficulty admin … from console."));
+            source.m_81352_(Component.m_237113_(LmCommandMessages.PLAYERS_ONLY_CONSOLE));
             return 0;
         }
         DifficultyMenu.open(player, "main");
@@ -281,7 +281,7 @@ public final class DifficultyCommands {
     private static int setSystemEnabled(CommandSourceStack source, boolean on) {
         if (!isStaff(source)) {
             source.m_288197_(() -> Component.m_237113_(
-                    "§cNo permission (need op or difficulty.admin)."
+                    LmCommandMessages.NEED_STAFF
             ), false);
             return 0;
         }
@@ -293,14 +293,14 @@ public final class DifficultyCommands {
         }
         if (on) {
             source.m_288197_(() -> Component.m_237113_(
-                    "§aAdaptive Difficulty ENABLED.\n"
-                            + "§7Scaling, rewards, AI, and tier purchases are active again."
+                    LmCommandMessages.turnedOn("Adaptive difficulty")
+                            + "\n§7Scaling, rewards, AI, and tier purchases are active again."
             ), true);
         } else {
             source.m_288197_(() -> Component.m_237113_(
-                    "§cAdaptive Difficulty DISABLED.\n"
-                            + "§7No scaling, kill coins, AI, or tier purchases until re-enabled.\n"
-                            + "§eRe-enable: §f/difficulty admin on"
+                    LmCommandMessages.turnedOff("Adaptive difficulty")
+                            + "\n§7No scaling, kill coins, AI, or tier purchases until you turn it back on."
+                            + "\n§7Turn it on again: §f/difficulty admin on"
             ), true);
         }
         ServerPlayer actor = source.m_230896_();
@@ -321,7 +321,7 @@ public final class DifficultyCommands {
     private static int systemStatus(CommandSourceStack source) {
         if (!isStaff(source)) {
             source.m_288197_(() -> Component.m_237113_(
-                    "§cNo permission (need op or difficulty.admin)."
+                    LmCommandMessages.NEED_STAFF
             ), false);
             return 0;
         }
@@ -330,13 +330,12 @@ public final class DifficultyCommands {
         boolean staffFree = DifficultyConfig.get().staffFreeAncientCoinCosts;
         int n = DifficultyConfig.whitelistEntries().size();
         source.m_288197_(() -> Component.m_237113_(
-                (on ? "§aSystem ENABLED" : "§cSystem DISABLED")
+                (on ? "§aAdaptive difficulty is on." : "§eAdaptive difficulty is off.")
                         + " §8· "
-                        + (wl ? "§eWhitelist ON §7(" + n + " entries)" : "§7Whitelist OFF")
+                        + (wl ? "§eTesting whitelist on §7(" + n + " players)" : "§7Testing whitelist off")
                         + " §8· "
-                        + (staffFree ? "§aStaff coin bypass ON" : "§7Staff coin bypass OFF")
-                        + "\n§8/difficulty admin whitelist on|off|add|remove|list"
-                        + "\n§8/difficulty admin stafffree on|off"
+                        + (staffFree ? "§aStaff skip coin costs" : "§7Staff pay coin costs")
+                        + "\n§8Tip: §f/difficulty admin help"
         ), false);
         return 1;
     }
@@ -344,7 +343,7 @@ public final class DifficultyCommands {
     private static int setWhitelistEnabled(CommandSourceStack source, boolean on) {
         if (!isStaff(source)) {
             source.m_288197_(() -> Component.m_237113_(
-                    "§cNo permission (need op or difficulty.admin)."
+                    LmCommandMessages.NEED_STAFF
             ), false);
             return 0;
         }
@@ -354,14 +353,15 @@ public final class DifficultyCommands {
         int n = DifficultyConfig.whitelistEntries().size();
         if (on) {
             source.m_288197_(() -> Component.m_237113_(
-                    "§eWhitelist ENABLED §7(" + n + " entries).\n"
-                            + "§7Only listed players use Adaptive Difficulty.\n"
-                            + "§eAdd: §f/difficulty admin whitelist add <player>"
+                    LmCommandMessages.turnedOn("Testing whitelist")
+                            + " §7(" + n + " players)\n"
+                            + "§7Only listed players see scaled mobs while you test.\n"
+                            + "§7Add someone: §f/difficulty admin whitelist add <player>"
             ), true);
         } else {
             source.m_288197_(() -> Component.m_237113_(
-                    "§aWhitelist DISABLED.\n"
-                            + "§7All players may use Adaptive Difficulty again (if system is on)."
+                    LmCommandMessages.turnedOff("Testing whitelist")
+                            + "\n§7Everyone can use adaptive difficulty again (when the system is on)."
             ), true);
         }
         return 1;
@@ -370,7 +370,7 @@ public final class DifficultyCommands {
     private static int whitelistStatus(CommandSourceStack source) {
         if (!isStaff(source)) {
             source.m_288197_(() -> Component.m_237113_(
-                    "§cNo permission (need op or difficulty.admin)."
+                    LmCommandMessages.NEED_STAFF
             ), false);
             return 0;
         }
@@ -387,7 +387,7 @@ public final class DifficultyCommands {
     private static int whitelistList(CommandSourceStack source) {
         if (!isStaff(source)) {
             source.m_288197_(() -> Component.m_237113_(
-                    "§cNo permission (need op or difficulty.admin)."
+                    LmCommandMessages.NEED_STAFF
             ), false);
             return 0;
         }
@@ -408,12 +408,12 @@ public final class DifficultyCommands {
     private static int whitelistAdd(CommandSourceStack source, String raw) {
         if (!isStaff(source)) {
             source.m_288197_(() -> Component.m_237113_(
-                    "§cNo permission (need op or difficulty.admin)."
+                    LmCommandMessages.NEED_STAFF
             ), false);
             return 0;
         }
         if (raw == null || raw.isBlank()) {
-            source.m_81352_(Component.m_237113_("Usage: /difficulty admin whitelist add <player>"));
+            source.m_81352_(Component.m_237113_(LmCommandMessages.tryCommand("/difficulty admin whitelist add <player>")));
             return 0;
         }
         ServerPlayer online = resolveOnlinePlayer(source, raw.trim());
@@ -443,12 +443,13 @@ public final class DifficultyCommands {
     private static int whitelistRemove(CommandSourceStack source, String raw) {
         if (!isStaff(source)) {
             source.m_288197_(() -> Component.m_237113_(
-                    "§cNo permission (need op or difficulty.admin)."
+                    LmCommandMessages.NEED_STAFF
             ), false);
             return 0;
         }
         if (raw == null || raw.isBlank()) {
-            source.m_81352_(Component.m_237113_("Usage: /difficulty admin whitelist remove <player|uuid>"));
+            source.m_81352_(Component.m_237113_(LmCommandMessages.tryCommand(
+                "/difficulty admin whitelist remove <player>")));
             return 0;
         }
         ServerPlayer online = resolveOnlinePlayer(source, raw.trim());
@@ -597,7 +598,7 @@ public final class DifficultyCommands {
     private static int whitelistClear(CommandSourceStack source) {
         if (!isStaff(source)) {
             source.m_288197_(() -> Component.m_237113_(
-                    "§cNo permission (need op or difficulty.admin)."
+                    LmCommandMessages.NEED_STAFF
             ), false);
             return 0;
         }
@@ -635,7 +636,7 @@ public final class DifficultyCommands {
     private static int denyAdmin(CommandSourceStack source) {
         if (!isStaff(source)) {
             source.m_288197_(() -> Component.m_237113_(
-                    "§cNo permission for /difficulty admin (need op or difficulty.admin)."
+                    LmCommandMessages.NEED_STAFF
             ), false);
             return 0;
         }
@@ -703,7 +704,7 @@ public final class DifficultyCommands {
         }
         ServerPlayer player = source.m_230896_();
         if (player == null) {
-            source.m_81352_(Component.m_237113_("Players only."));
+            source.m_81352_(Component.m_237113_(LmCommandMessages.PLAYERS_ONLY));
             return 0;
         }
         ServerLevel level = player.m_284548_(); // serverLevel / getLevel
@@ -730,7 +731,8 @@ public final class DifficultyCommands {
         boolean ok = DifficultyConfig.reload();
         DifficultyCache.invalidateAll();
         if (ok) {
-            source.m_288197_(() -> Component.m_237113_("§aAdaptive difficulty config reloaded."), true);
+            source.m_288197_(() -> Component.m_237113_(
+                    LmCommandMessages.reloaded("adaptive difficulty config")), true);
             return 1;
         }
         source.m_81352_(Component.m_237113_(
@@ -755,7 +757,7 @@ public final class DifficultyCommands {
         }
         ServerPlayer admin = source.m_230896_();
         if (admin == null) {
-            source.m_81352_(Component.m_237113_("Players only (open inspect from in-game)."));
+            source.m_81352_(Component.m_237113_(LmCommandMessages.PLAYERS_ONLY_INSPECT));
             return 0;
         }
         if (playerName == null || playerName.isBlank()
@@ -768,7 +770,7 @@ public final class DifficultyCommands {
         }
         ServerPlayer subject = source.m_81377_().m_6846_().m_11255_(playerName);
         if (subject == null) {
-            source.m_81352_(Component.m_237113_("Player not online: " + playerName));
+            source.m_81352_(Component.m_237113_(LmCommandMessages.playerOffline(playerName)));
             return 0;
         }
         String targetPage = page == null || page.isBlank() ? "main" : page;
@@ -788,7 +790,7 @@ public final class DifficultyCommands {
         }
         ServerPlayer player = source.m_230896_();
         if (player == null) {
-            source.m_81352_(Component.m_237113_("Players only."));
+            source.m_81352_(Component.m_237113_(LmCommandMessages.PLAYERS_ONLY));
             return 0;
         }
         var data = DifficultyCache.data(player);
@@ -810,7 +812,8 @@ public final class DifficultyCommands {
         }
         ServerPlayer player = source.m_230896_();
         if (player == null) {
-            source.m_81352_(Component.m_237113_("Players only. Or run: /difficulty do character_reset"));
+            source.m_81352_(Component.m_237113_(LmCommandMessages.PLAYERS_ONLY
+                + " §8Or: §f/difficulty do character_reset"));
             return 0;
         }
         DifficultyActions.Result result =
@@ -856,7 +859,7 @@ public final class DifficultyCommands {
         if (playerName == null || playerName.isBlank()) {
             target = source.m_230896_();
             if (target == null) {
-                source.m_81352_(Component.m_237113_("Usage: /difficulty admin resynclevel <player>"));
+                source.m_81352_(Component.m_237113_(LmCommandMessages.tryCommand("/difficulty admin resynclevel <player>")));
                 return 0;
             }
         } else {
@@ -867,7 +870,7 @@ public final class DifficultyCommands {
             }
             target = server.m_6846_().m_11255_(playerName);
             if (target == null) {
-                source.m_81352_(Component.m_237113_("§cPlayer not online: " + playerName));
+                source.m_81352_(Component.m_237113_(LmCommandMessages.playerOffline(playerName)));
                 return 0;
             }
         }

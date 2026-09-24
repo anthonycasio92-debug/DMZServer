@@ -151,7 +151,7 @@ merge_onto_base_jar() {
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/command/MechanicsCommands\$"*.class \
       "$merge/com/dbzlegacy/adaptivedifficulty/command/" 2>/dev/null || true
   fi
-  for class in LmCommandSuggestions LmCommandFeedback LmStaffHelp LmCommandHelp CommandAccess LmAdminArgCoalesce MohistCommandBridge PrestigeAdminCommandTree DifficultyCommands RivalCommands SparCommands ProgressionCommands CharacterCommands MechanicsCommands; do
+  for class in LmCommandSuggestions LmCommandFeedback LmStaffHelp LmCommandHelp LmCommandMessages CommandAccess LmAdminArgCoalesce MohistCommandBridge PrestigeAdminCommandTree DifficultyCommands RivalCommands SparCommands ProgressionCommands CharacterCommands MechanicsCommands; do
     if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/command/${class}.class" ]]; then
       mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/command"
       cp "$OUT/com/dbzlegacy/adaptivedifficulty/command/${class}.class" \
@@ -258,6 +258,7 @@ python3 "$HERE_SIM/audit_cnpc_gui_style.py"
 python3 "$HERE_SIM/audit_forge_gui_backend.py"
 python3 "$HERE_SIM/audit_scaling_sync.py"
 python3 "$HERE_SIM/audit_features.py"
+python3 "$HERE_SIM/audit_command_humanization.py"
 python3 "$HERE_SIM/audit_prestige_need_ladder.py"
 python3 "$HERE_SIM/audit_prestige_gui_flow.py"
 python3 "$HERE_SIM/audit_gui_menus_comprehensive.py"

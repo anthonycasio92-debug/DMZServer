@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.util;
 
 import com.dbzlegacy.adaptivedifficulty.command.LmCommandFeedback;
+import com.dbzlegacy.adaptivedifficulty.command.LmCommandMessages;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
@@ -37,7 +38,7 @@ public final class StaffAccess {
         if (isStaffSource(source)) {
             return 1;
         }
-        LmCommandFeedback.tell(source, "§cNo permission (need op or difficulty.admin).");
+        LmCommandFeedback.tell(source, LmCommandMessages.NEED_STAFF);
         return 0;
     }
 

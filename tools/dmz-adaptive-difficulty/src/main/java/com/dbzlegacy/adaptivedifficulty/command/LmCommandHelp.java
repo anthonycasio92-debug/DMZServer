@@ -8,7 +8,7 @@ public final class LmCommandHelp {
         return LmStaffHelp.build(
                 "Legacy Mechanics",
                 "/lm",
-                "§7Opens CNPC menus. Use §f/lm help §7anytime.",
+                "§7Your hub for CNPC menus—no chest GUIs. Type §f/lm help §7anytime.",
                 new LmStaffHelp.Section("Menus",
                         LmStaffHelp.cmd("/lm", "open the main hub"),
                         LmStaffHelp.cmd("/lm open difficulty", "adaptive difficulty"),
@@ -26,7 +26,7 @@ public final class LmCommandHelp {
         return LmStaffHelp.build(
                 "Legacy Mechanics staff",
                 "/lm admin",
-                "§7Use §f/lm admin help §7anytime. Menus are CNPC only (no chest GUI).",
+                "§7Staff tools and player fixes. Type §f/lm admin help §7anytime—menus stay CNPC-only.",
                 new LmStaffHelp.Section("Config and data",
                         LmStaffHelp.cmd("/lm admin reload", "reload Legacy Mechanics config"),
                         LmStaffHelp.cmd("/lm admin migrate-cnpc", "import CNPC rival and spar data"),
@@ -61,7 +61,7 @@ public final class LmCommandHelp {
         return LmStaffHelp.build(
                 "Adaptive difficulty",
                 "/difficulty",
-                "§7Player hub also at §f/lm §7· Staff: §f/difficulty admin help §7· Shortcut: §f/diff",
+                "§7Open your difficulty menu here or from §f/lm§7. Staff: §f/difficulty admin help§7 · shortcut §f/diff",
                 new LmStaffHelp.Section("Menus",
                         LmStaffHelp.cmd("/difficulty", "open your difficulty menu (CNPC)"),
                         LmStaffHelp.cmd("/difficulty reset", "clear active tier (free)")),
@@ -125,7 +125,7 @@ public final class LmCommandHelp {
         return LmStaffHelp.build(
                 "Rival system",
                 "/rival",
-                "§7Use §f/rival help §7anytime. Most actions use the CNPC menu.",
+                "§7Most rival actions live in the CNPC menu. Type §f/rival help §7when you need the full list.",
                 new LmStaffHelp.Section("Menus",
                         LmStaffHelp.cmd("/rival", "open rival menu"),
                         LmStaffHelp.cmd("/rival season", "season progress menu"),
@@ -181,7 +181,7 @@ public final class LmCommandHelp {
         return LmStaffHelp.build(
                 "Sparring",
                 "/spar",
-                "§7Use §f/spar help §7anytime. Most actions use the CNPC menu.",
+                "§7Training, mentors, and dojo wars—mostly in the CNPC menu. Type §f/spar help §7for commands.",
                 new LmStaffHelp.Section("Menus",
                         LmStaffHelp.cmd("/spar", "open sparring menu")),
                 new LmStaffHelp.Section("Session",
@@ -230,7 +230,7 @@ public final class LmCommandHelp {
         return LmStaffHelp.build(
                 "Progression",
                 "/progression",
-                "§7Staff tools use the same command with staff permission.",
+                "§7Check your meditation trial here. Prestige and shop live under §f/lm§7.",
                 new LmStaffHelp.Section("Meditation",
                         LmStaffHelp.cmd("/progression meditation", "current meditation trial status"),
                         LmStaffHelp.cmd("/progression meditation status", "same as meditation")),
@@ -243,7 +243,7 @@ public final class LmCommandHelp {
         return LmStaffHelp.build(
                 "Progression staff",
                 "/progression",
-                "§7Staff-only leaves on the progression tree.",
+                "§7Staff progression tools—boosts, flags, and android conversion.",
                 new LmStaffHelp.Section("Menus",
                         LmStaffHelp.cmd("/progression", "open progression staff menu (CNPC)")),
                 new LmStaffHelp.Section("Meditation",

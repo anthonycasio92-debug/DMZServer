@@ -307,7 +307,7 @@ public final class SparCommands {
         if (targetName != null && !targetName.isBlank()) {
             target = RivalSystem.findOnline(source.m_81377_(), targetName);
             if (target == null) {
-                DmzRewards.msg(player, "§cPlayer not online: " + targetName);
+                DmzRewards.msg(player, LmCommandMessages.playerOffline(targetName));
                 return 0;
             }
         }
@@ -398,7 +398,7 @@ public final class SparCommands {
         ServerPlayer admin = playerOrNull(source);
         ServerPlayer target = name == null ? admin : RivalSystem.findOnline(source.m_81377_(), name);
         if (target == null) {
-            source.m_81352_(Component.m_237113_("§cPlayer not online: " + name));
+            source.m_81352_(Component.m_237113_(LmCommandMessages.playerOffline(name)));
             return 0;
         }
         String msg = SparringSystem.resetMentorCd(admin == null ? target : admin, target);
@@ -412,7 +412,7 @@ public final class SparCommands {
         }
         SparStore.get().markDirty();
         SparStore.get().save();
-        source.m_288197_(() -> Component.m_237113_("§aSpar store saved."), true);
+        source.m_288197_(() -> Component.m_237113_(LmCommandMessages.saved("spar data")), true);
         return 1;
     }
 
@@ -440,7 +440,7 @@ public final class SparCommands {
 
     private static boolean enabled(ServerPlayer player) {
         if (!DifficultyConfig.get().enableSparringSystem) {
-            DmzRewards.msg(player, "§cSparring system is disabled.");
+            DmzRewards.msg(player, LmCommandMessages.systemDisabled("Sparring"));
             return false;
         }
         return true;
@@ -450,7 +450,7 @@ public final class SparCommands {
         try {
             return source.m_81375_();
         } catch (Exception e) {
-            source.m_81352_(Component.m_237113_("Players only."));
+            source.m_81352_(Component.m_237113_(LmCommandMessages.PLAYERS_ONLY));
             return null;
         }
     }
