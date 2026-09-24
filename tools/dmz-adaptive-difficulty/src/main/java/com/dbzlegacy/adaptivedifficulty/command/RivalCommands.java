@@ -400,15 +400,17 @@ public final class RivalCommands {
         if (StaffAccess.denyUnlessStaff(source) == 0) {
             return 0;
         }
-        LmCommandFeedback.tellLines(source,
-                """
-                        §6§lRival staff §8(/rival admin)
-                        
-                        §f/rival admin save §7— write rivalry data to disk
-                        §f/rival admin refresh §7— reload stores from disk
-                        §f/rival admin status §7— enabled flag and file paths
-                        §f/rival admin open [§fpage§7] §7— open rival GUI
-                        """.stripTrailing());
+        LmCommandFeedback.tellLines(source, LmStaffHelp.build(
+                "Rival staff",
+                "/rival admin",
+                "§7Use §f/rival admin help §7anytime.",
+                new LmStaffHelp.Section("Data",
+                        LmStaffHelp.cmd("/rival admin save", "write rivalry data to disk"),
+                        LmStaffHelp.cmd("/rival admin refresh", "reload stores from disk"),
+                        LmStaffHelp.cmd("/rival admin status", "enabled flag and file paths")),
+                new LmStaffHelp.Section("Menus",
+                        LmStaffHelp.cmd("/rival admin open", "open rival CNPC menu"),
+                        LmStaffHelp.cmd("/rival admin open <page>", "open a specific rival page"))));
         return 1;
     }
 

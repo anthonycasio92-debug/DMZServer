@@ -419,14 +419,16 @@ public final class SparCommands {
         if (StaffAccess.denyUnlessStaff(source) == 0) {
             return 0;
         }
-        LmCommandFeedback.tellLines(source,
-                """
-                        §6§lSparring staff §8(/spar admin)
-                        
-                        §f/spar admin save §7— write spar data to disk
-                        §f/spar admin status §7— enabled flag and file path
-                        §f/spar admin mentor resetcd [§fplayer§7] §7— clear mentor invite cooldown
-                        """.stripTrailing());
+        LmCommandFeedback.tellLines(source, LmStaffHelp.build(
+                "Sparring staff",
+                "/spar admin",
+                "§7Use §f/spar admin help §7anytime.",
+                new LmStaffHelp.Section("Data",
+                        LmStaffHelp.cmd("/spar admin save", "write spar data to disk"),
+                        LmStaffHelp.cmd("/spar admin status", "enabled flag and file path")),
+                new LmStaffHelp.Section("Mentor cooldown",
+                        LmStaffHelp.cmd("/spar admin mentor resetcd", "clear your mentor invite cooldown"),
+                        LmStaffHelp.cmd("/spar admin mentor resetcd <player>", "clear cooldown for a player"))));
         return 1;
     }
 

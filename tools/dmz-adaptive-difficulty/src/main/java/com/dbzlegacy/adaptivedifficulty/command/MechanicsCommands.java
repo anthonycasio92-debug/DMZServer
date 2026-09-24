@@ -270,31 +270,37 @@ public final class MechanicsCommands {
         if (StaffAccess.denyUnlessStaff(source) == 0) {
             return 0;
         }
-        LmCommandFeedback.tellLines(source,
-                """
-                        §6§lLegacy Mechanics staff §8(/lm admin)
-                        §7Use §f/lm admin help §7anytime.
-                        
-                        §6— Config and data —
-                        §f/lm admin reload §7— reload Legacy Mechanics config
-                        §f/lm admin migrate-cnpc §7— import CNPC rival/spar data
-                        §f/lm admin migrate-cnpc force §7— wipe LM stores, then re-import
-                        §8Backup folder: config/legacymechanics/cnpc-import-backup/
-                        
-                        §6— Player resets —
-                        §f/lm admin clear §7<§fplayer§7> [§fall|rival|spar|difficulty|progression§7]
-                        §f/lm admin character cooldown clear §7<§fplayer§7> [§frace|class|reskin|all§7]
-                        
-                        §6— Staff tools —
-                        §f/lm admin syslog §7<§fon|off|status|flush§7>
-                        §f/lm admin open §7<§fsystem§7> §8— open a menu as yourself
-                        §f/lm admin inspect §7<§fplayer§7> [§fsystem§7] §8— view as that player
-                        §f/lm admin inspect clear §7— stop inspect mode
-                        §f/lm admin testgui §7— CNPC test hub for all systems
-                        
-                        §6— Adaptive difficulty (separate tree) —
-                        §f/difficulty admin … §7— whitelist, telemetry, stafffree, resync, settings
-                        """.stripTrailing());
+        LmCommandFeedback.tellLines(source, LmStaffHelp.build(
+                "Legacy Mechanics staff",
+                "/lm admin",
+                "§7Use §f/lm admin help §7anytime. Menus are CNPC only (no chest GUI).",
+                new LmStaffHelp.Section("Config and data",
+                        LmStaffHelp.cmd("/lm admin reload", "reload Legacy Mechanics config"),
+                        LmStaffHelp.cmd("/lm admin migrate-cnpc", "import CNPC rival and spar data"),
+                        LmStaffHelp.cmd("/lm admin migrate-cnpc force", "wipe LM stores, then re-import"),
+                        LmStaffHelp.note("Backup: config/legacymechanics/cnpc-import-backup/")),
+                new LmStaffHelp.Section("Player resets",
+                        LmStaffHelp.cmd("/lm admin clear <player>", "clear all LM data for a player"),
+                        LmStaffHelp.cmd("/lm admin clear <player> rival", "clear rival data only"),
+                        LmStaffHelp.cmd("/lm admin clear <player> spar", "clear spar data only"),
+                        LmStaffHelp.cmd("/lm admin clear <player> difficulty", "clear difficulty data only"),
+                        LmStaffHelp.cmd("/lm admin clear <player> progression", "clear progression data only"),
+                        LmStaffHelp.cmd("/lm admin character cooldown clear <player>", "clear all character service cooldowns"),
+                        LmStaffHelp.cmd("/lm admin character cooldown clear <player> race", "clear race change cooldown"),
+                        LmStaffHelp.cmd("/lm admin character cooldown clear <player> class", "clear class change cooldown"),
+                        LmStaffHelp.cmd("/lm admin character cooldown clear <player> reskin", "clear reskin cooldown")),
+                new LmStaffHelp.Section("Staff tools",
+                        LmStaffHelp.cmd("/lm admin syslog status", "event log on or off"),
+                        LmStaffHelp.cmd("/lm admin syslog on", "turn unified event log on"),
+                        LmStaffHelp.cmd("/lm admin syslog off", "turn unified event log off"),
+                        LmStaffHelp.cmd("/lm admin syslog flush", "flush logs to disk"),
+                        LmStaffHelp.cmd("/lm admin open <system>", "open a CNPC menu as yourself"),
+                        LmStaffHelp.cmd("/lm admin inspect <player>", "view menus as that player"),
+                        LmStaffHelp.cmd("/lm admin inspect clear", "stop inspect mode"),
+                        LmStaffHelp.cmd("/lm admin testgui", "staff CNPC test hub")),
+                new LmStaffHelp.Section("Adaptive difficulty",
+                        LmStaffHelp.cmd("/difficulty admin help", "whitelist, telemetry, stafffree, inspect, config"),
+                        LmStaffHelp.note("Shortcut: /diff"))));
         return 1;
     }
 

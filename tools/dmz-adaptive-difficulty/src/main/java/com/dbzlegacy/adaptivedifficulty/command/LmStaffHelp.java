@@ -1,0 +1,37 @@
+package com.dbzlegacy.adaptivedifficulty.command;
+
+/** Consistent staff command help — one full command per line, shared section headers. */
+public final class LmStaffHelp {
+    private LmStaffHelp() {}
+
+    public static String build(String title, String rootLabel, String intro, Section... sections) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("§6§l").append(title).append(" §8(").append(rootLabel).append(')');
+        if (intro != null && !intro.isBlank()) {
+            sb.append('\n').append(intro.trim());
+        }
+        for (Section section : sections) {
+            if (section == null) {
+                continue;
+            }
+            sb.append('\n').append('\n').append("§6— ").append(section.name).append(" —");
+            for (String line : section.lines) {
+                if (line != null && !line.isBlank()) {
+                    sb.append('\n').append(line.trim());
+                }
+            }
+        }
+        return sb.toString().stripTrailing();
+    }
+
+    /** {@code §f/command … §7— description} */
+    public static String cmd(String command, String description) {
+        return "§f" + command + " §7— " + description;
+    }
+
+    public static String note(String text) {
+        return "§8" + text;
+    }
+
+    public record Section(String name, String... lines) {}
+}

@@ -42,7 +42,8 @@ pick_lm_jar() {
   ls -1 "$dir"/${prefix}-*.jar 2>/dev/null | sort -V | tail -1
 }
 
-SKIP_GUI="${LM_SKIP_GUI:-0}"
+# Forge-only by default — LegacyMechanicsGUI (chest menus) is retired.
+SKIP_GUI="${LM_SKIP_GUI:-1}"
 FORGE_JAR="$(pick_lm_jar "$ROOT/mods" LegacyMechanics)"
 GUI_JAR=""
 if [[ "$SKIP_GUI" != "1" ]]; then
@@ -133,7 +134,7 @@ fi
 MANIFEST_AUDIT="$ROOT/tools/dmz-adaptive-difficulty/sim/audit_ship_manifest.py"
 if [[ -f "$MANIFEST_AUDIT" ]]; then
   echo "Running ship manifest audit before upload..."
-  if ! python3 "$MANIFEST_AUDIT"; then
+  if ! LM_SKIP_GUI="$SKIP_GUI" python3 "$MANIFEST_AUDIT"; then
     echo "DEPLOY ABORTED: audit_ship_manifest.py failed (see docs/LM_SHIP_MANIFEST.md)." >&2
     exit 1
   fi
@@ -157,9 +158,6 @@ if [[ -n "$FORGE_VER" && -n "$GUI_VER" && "$FORGE_VER" != "$GUI_VER" ]]; then
 fi
 
 recycle_remote_gui_jars() {
-  if [[ "$SKIP_GUI" != "1" ]]; then
-    return
-  fi
   local list_file
   list_file="$(mktemp)"
   printf 'ls -1 %s/LegacyMechanicsGUI-*.jar\n' "$REMOTE_PLUGINS" \
@@ -209,8 +207,11 @@ mkdir $REMOTE_MODS
 put $FORGE_JAR $REMOTE_MODS/$FORGE_NAME
 bye
 EOF
-    recycle_remote_gui_jars
   fi
+  recycle_remote_gui_jars
   recycle_remote_lm_jars
   echo "Upload complete."
+  if [[ "$SKIP_GUI" == "1" ]]; then
+    echo "  LegacyMechanicsGUI jars recycled on live (Forge-only / CNPC UI)."
+  fi
 fi

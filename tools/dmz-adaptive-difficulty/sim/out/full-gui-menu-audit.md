@@ -1,7 +1,7 @@
 # Full GUI menu audit
 
-- **OK checks:** 122
-- **Errors:** 2
+- **OK checks:** 123
+- **Errors:** 1
 - **Warnings:** 0
 
 ## Menus covered
@@ -21,5 +21,4 @@
 
 ## Failures
 
-- GUI tooltips policy
 - Forge↔Bukkit ABI

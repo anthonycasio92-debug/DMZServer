@@ -20,9 +20,9 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Mohist routes player chat through Bukkit. Without LegacyMechanicsGUI, only top-level
- * Forge literals work — subcommands like {@code /lm admin} show as unknown. Registers
- * Bukkit commands that forward the full line to Forge brigadier with brigadier tab complete.
+ * Mohist routes player chat through Bukkit. Registers Bukkit commands that forward the
+ * full line to Forge Brigadier (with Brigadier tab complete). LegacyMechanicsGUI must
+ * not be installed — it owns chest menus and disables this bridge when present.
  */
 public final class MohistCommandBridge {
     private static volatile boolean registered;
@@ -36,13 +36,13 @@ public final class MohistCommandBridge {
         try {
             Class<?> bukkit = Class.forName("org.bukkit.Bukkit");
             Object pluginManager = bukkit.getMethod("getPluginManager").invoke(null);
-            if (pluginManager.getClass().getMethod("getPlugin", String.class)
-                    .invoke(pluginManager, "LegacyMechanicsGUI") != null) {
-                AdaptiveDifficultyMod.LOGGER.info(
-                        "[{}] Mohist command bridge skipped (LegacyMechanicsGUI loaded)",
+            Object legacyGui = pluginManager.getClass().getMethod("getPlugin", String.class)
+                    .invoke(pluginManager, "LegacyMechanicsGUI");
+            if (legacyGui != null) {
+                AdaptiveDifficultyMod.LOGGER.error(
+                        "[{}] LegacyMechanicsGUI is loaded — remove plugins/LegacyMechanicsGUI-*.jar "
+                                + "and restart. Chest menus and duplicate /lm handlers are active.",
                         AdaptiveDifficultyMod.MOD_ID);
-                registered = true;
-                return;
             }
             Object hostPlugin = pluginManager.getClass().getMethod("getPlugin", String.class)
                     .invoke(pluginManager, AdaptiveDifficultyMod.MOD_ID);
