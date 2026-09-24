@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 /** Brigadier tab-complete helpers for LegacyMechanics command trees (Forge / Mohist). */
 public final class LmCommandSuggestions {
@@ -54,10 +55,21 @@ public final class LmCommandSuggestions {
         return out;
     }
 
+    private static final Set<String> PADMIN_SUBCOMMANDS = Set.of(
+            "help", "info", "sync", "skills", "skill", "held", "completed", "points",
+            "breakthroughs", "fabled", "tier");
+
+    private static final Set<String> PRESTIGE_MODE_TOKENS = Set.of(
+            "set", "add", "remove", "give", "clear", "take");
+
     /**
      * Mohist Bukkit tab passes {@code args}; last entry is the partial token being completed.
      */
     public static boolean expectsPlayerName(String label, String[] args) {
+        return expectsPlayerName(label, args, null);
+    }
+
+    public static boolean expectsPlayerName(String label, String[] args, CommandSourceStack source) {
         if (args == null || args.length == 0) {
             return false;
         }
@@ -92,7 +104,7 @@ public final class LmCommandSuggestions {
             return false;
         }
         if ("padmin".equals(cmd)) {
-            return padminPlayerNameSlot(n, a0);
+            return padminPlayerNameSlot(n, a0, args, source);
         }
         if ("rival".equals(cmd) || "spar".equals(cmd)) {
             if (n == 2 && ("stats".equals(a0) || "spectate".equals(a0) || "declare".equals(a0)
@@ -115,7 +127,11 @@ public final class LmCommandSuggestions {
 
     /** Partial token for the player-name slot (Bukkit often omits an empty trailing arg). */
     public static String playerNamePartial(String label, String[] args) {
-        if (args == null || args.length == 0 || !expectsPlayerName(label, args)) {
+        return playerNamePartial(label, args, null);
+    }
+
+    public static String playerNamePartial(String label, String[] args, CommandSourceStack source) {
+        if (args == null || args.length == 0 || !expectsPlayerName(label, args, source)) {
             if (args == null || args.length == 0) {
                 return "";
             }
@@ -164,19 +180,55 @@ public final class LmCommandSuggestions {
 
     /** Append trailing space when the next Brigadier token is a player name. */
     public static boolean needsTrailingSpaceForTab(String label, String[] args) {
-        return expectsPlayerName(label, args) && playerNamePartial(label, args).isEmpty();
+        return needsTrailingSpaceForTab(label, args, null);
     }
 
-    /** Player-name slot for {@code /padmin <sub> …}. */
-    private static boolean padminPlayerNameSlot(int argCount, String subRaw) {
+    public static boolean needsTrailingSpaceForTab(String label, String[] args, CommandSourceStack source) {
+        return expectsPlayerName(label, args, source)
+                && playerNamePartial(label, args, source).isEmpty();
+    }
+
+    /**
+     * Player-name slot for {@code /padmin <sub> …}. Do not hijack tab when completing subcommands
+     * or adjust modes (set/add/remove) after a resolved player name.
+     */
+    private static boolean padminPlayerNameSlot(
+            int argCount, String subRaw, String[] args, CommandSourceStack source) {
         String sub = lower(subRaw);
         if (!isPrestigeAdminPlayerSub(sub)) {
             return false;
         }
-        return switch (sub) {
-            case "info" -> argCount == 1 || argCount == 2;
-            default -> argCount == 1 || argCount == 2;
-        };
+        if (argCount == 1) {
+            // Only after a full subcommand literal — partial "h" must fall through to Brigadier.
+            return PADMIN_SUBCOMMANDS.contains(sub);
+        }
+        if (argCount == 2 && args.length >= 2) {
+            String token = args[1];
+            if (token == null || token.isBlank()) {
+                return true;
+            }
+            if (PRESTIGE_MODE_TOKENS.contains(lower(token))) {
+                return false;
+            }
+            if (isExactOnlinePlayer(source, token)) {
+                return false;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    private static boolean isExactOnlinePlayer(CommandSourceStack source, String name) {
+        if (source == null || name == null || name.isBlank()) {
+            return false;
+        }
+        String want = name.trim();
+        for (String online : onlinePlayerNames(source)) {
+            if (online.equalsIgnoreCase(want)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static boolean isPrestigeAdminPlayerSub(String sub) {

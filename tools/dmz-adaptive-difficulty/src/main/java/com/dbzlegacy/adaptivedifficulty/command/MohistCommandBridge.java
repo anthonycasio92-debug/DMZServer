@@ -188,7 +188,7 @@ public final class MohistCommandBridge {
         }
         String[] coalesced = LmAdminArgCoalesce.forMohist(label, args);
         String line = commandLine(label, coalesced);
-        if (LmCommandSuggestions.needsTrailingSpaceForTab(label, coalesced) && !line.endsWith(" ")) {
+        if (LmCommandSuggestions.needsTrailingSpaceForTab(label, coalesced, source) && !line.endsWith(" ")) {
             line = line + " ";
         }
         int cursor = line.length();
@@ -198,8 +198,8 @@ public final class MohistCommandBridge {
             Suggestions suggestions = dispatcher.getCompletionSuggestions(parse, cursor)
                     .get(3, TimeUnit.SECONDS);
             List<String> out = new ArrayList<>();
-            String partial = LmCommandSuggestions.playerNamePartial(label, coalesced);
-            if (LmCommandSuggestions.expectsPlayerName(label, coalesced)) {
+            String partial = LmCommandSuggestions.playerNamePartial(label, coalesced, source);
+            if (LmCommandSuggestions.expectsPlayerName(label, coalesced, source)) {
                 List<String> players = LmCommandSuggestions.filterPlayerNames(source, partial);
                 if (!players.isEmpty()) {
                     return players;
