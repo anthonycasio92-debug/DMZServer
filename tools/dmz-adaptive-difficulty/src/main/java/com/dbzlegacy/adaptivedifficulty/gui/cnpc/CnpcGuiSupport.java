@@ -826,6 +826,20 @@ public final class CnpcGuiSupport {
         }
     }
 
+    /**
+     * Paid external UI (DMZ editor, etc.): do not reopen CNPC on success.
+     * Reopen only when the action returns an error (message starts with {@code §c}).
+     */
+    public static void actExternalUi(ServerPlayer player, Supplier<String> action, Runnable reopenOnFailure) {
+        String msg = action.get();
+        if (msg != null && !msg.isBlank()) {
+            pushMenuMessage(player, msg);
+        }
+        if (msg != null && msg.startsWith("§c") && reopenOnFailure != null) {
+            runDeferred(player, reopenOnFailure);
+        }
+    }
+
     /** Tab-separated GUI cards: field 0 = id/arg, field 1 = display label. */
     public static String[] cardLabels(List<String> cards, int labelField) {
         if (cards == null || cards.isEmpty()) {

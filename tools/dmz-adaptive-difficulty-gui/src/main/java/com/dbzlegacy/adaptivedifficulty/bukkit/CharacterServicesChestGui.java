@@ -44,6 +44,7 @@ public final class CharacterServicesChestGui implements Listener {
                 case "race" -> raceList(viewer, subject);
                 case "class" -> classList(viewer, subject);
                 case "reskin" -> reskin(viewer, subject);
+                case "reskin_confirm" -> reskinConfirm(viewer, subject);
                 case "bones" -> boneShopOrReskin(viewer, subject, 0);
                 default -> {
                     if (p.startsWith("bones:")) {
@@ -393,10 +394,9 @@ public final class CharacterServicesChestGui implements Listener {
                 GuiTooltips.name("character.reskin.header", "&d&lReskin"),
                 prependBlank(toAmp(ForgeBridge.charLines(subject, "reskin")))));
         if (serviceAllowed(ph, "reskin_enabled", "can_reskin")) {
-            put(holder, inv, 20, tipBtn("character.reskin.open", Material.LIME_CONCRETE, "&a&lPay & Open Appearance",
-                    List.of("&7Cost &f{reskin_cost}", "&7Opens the in-game look editor",
-                            "&8Cancel from the editor and you get a refund", "&ePay, then open the editor"), vars),
-                    SlotAction.actNoReopen("reskin_confirm", "0"));
+            put(holder, inv, 20, tipBtn("character.reskin.review", Material.LIME_CONCRETE, "&a&lReview cost & continue",
+                    List.of("&7See exact price on the next screen", "&7Then pay and open the look editor"), vars),
+                    SlotAction.page("reskin_confirm"));
         } else {
             put(holder, inv, 20, item(Material.GRAY_CONCRETE, "&7Reskin unavailable",
                     List.of("", "&7Turned off or no permission")));
@@ -409,6 +409,31 @@ public final class CharacterServicesChestGui implements Listener {
                     SlotAction.page("bones"));
         }
         footer45(holder, inv, "character.reskin.back", SlotAction.page("main"));
+        return inv;
+    }
+
+    private Inventory reskinConfirm(Player viewer, Player subject) {
+        Map<String, String> ph = ForgeBridge.charPlaceholders(subject);
+        Map<String, String> vars = charCooldownVars(ph);
+        vars.put("reskin_cost", ph.getOrDefault("reskin_cost", "?"));
+
+        Holder holder = new Holder("reskin_confirm");
+        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Confirm reskin"));
+        holder.bind(inv);
+        frame(inv, 45);
+        put(holder, inv, 4, item(Material.PAINTING,
+                GuiTooltips.name("character.reskin.confirm.header", "&d&lConfirm reskin"),
+                prependBlank(toAmp(ForgeBridge.charLines(subject, "reskin_confirm")))));
+        if (serviceAllowed(ph, "reskin_enabled", "can_reskin")) {
+            put(holder, inv, 20, tipBtn("character.reskin.confirm.pay", Material.LIME_CONCRETE, "&a&lConfirm & pay",
+                    List.of("&7Cost &f{reskin_cost}", "&7Opens the in-game look editor",
+                            "&8Closing the editor early does not refund", "&ePay, then open the editor"), vars),
+                    SlotAction.actNoReopen("reskin_confirm", "0"));
+        } else {
+            put(holder, inv, 20, item(Material.GRAY_CONCRETE, "&7Reskin unavailable",
+                    List.of("", "&7Turned off or no permission")));
+        }
+        footer45(holder, inv, "character.reskin.confirm.back", SlotAction.page("reskin"));
         return inv;
     }
 

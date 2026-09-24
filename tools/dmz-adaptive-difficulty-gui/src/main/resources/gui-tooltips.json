@@ -341,6 +341,35 @@
           "&ePay, then open the appearance editor"
         ]
       },
+      "review": {
+        "name": "&a&lReview cost & continue",
+        "lore": [
+          "&7See exact price on the next screen",
+          "&7Then pay and open the look editor",
+          "&eContinue"
+        ]
+      },
+      "confirm": {
+        "header": {
+          "name": "&d&lConfirm reskin",
+          "lore": []
+        },
+        "pay": {
+          "name": "&a&lConfirm & pay",
+          "lore": [
+            "&7Cost &f{reskin_cost}",
+            "&7Opens the in-game look editor",
+            "&8Closing the editor early does not refund",
+            "&ePay, then open the editor"
+          ]
+        },
+        "back": {
+          "name": "&7« Back",
+          "lore": [
+            "&7Return to reskin info"
+          ]
+        }
+      },
       "bones": {
         "name": "&6&lHead Parts Shop",
         "lore": [

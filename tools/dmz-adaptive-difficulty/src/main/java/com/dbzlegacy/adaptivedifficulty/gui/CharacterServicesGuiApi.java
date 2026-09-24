@@ -133,6 +133,7 @@ public final class CharacterServicesGuiApi {
             lines.add("§7Fighting class cannot be changed during a reskin.");
             lines.add("§7Level, stats, and race are unchanged.");
             lines.add(costLine(player, CharacterServicesSystem.reskinCost(player)));
+            lines.add(CharacterServicesSystem.reskinCostExplanation(player));
             lines.add("§8Ancient Coins are charged when you confirm on the next screen.");
             lines.add(CharacterServicesSystem.cooldownLine(player, "reskin"));
             return lines;
@@ -149,7 +150,8 @@ public final class CharacterServicesGuiApi {
             lines.add("§7Opens the appearance editor (hair, colors, body).");
             lines.add("§7Level, stats, race, and class stay locked during the session.");
             lines.add(costLine(player, CharacterServicesSystem.reskinCost(player)));
-            lines.add("§8Ancient Coins charged when you confirm · change is not refundable");
+            lines.add(CharacterServicesSystem.reskinCostExplanation(player));
+            lines.add("§8Ancient Coins charged when you confirm · editor cancel does not refund");
             lines.add(CharacterServicesSystem.cooldownLine(player, "reskin"));
             String block = CharacterServicesSystem.reskinPrecheck(player);
             if (block != null && !block.isBlank()) {

@@ -200,6 +200,25 @@ public final class CharacterServicesSystem {
         return payableCost(player, rs.baseCostCopper, rs.levelCostMultiplier);
     }
 
+    /** Explains level scaling + coin normalization so UI matches {@link #executeReskin} charges. */
+    public static String reskinCostExplanation(ServerPlayer player) {
+        CharacterServicesConfig.Reskin rs = CharacterServicesConfig.get().reskin;
+        if (CharacterServicesAccess.bypassCost(player)) {
+            return "§8Cost bypass active for your account";
+        }
+        if (!rs.levelCostMultiplier) {
+            return "§8Fixed price (not level-scaled)";
+        }
+        long base = rs.baseCostCopper;
+        long pay = reskinCost(player);
+        int lvl = DmzProgression.tierScalingDmzLevel(player);
+        if (pay <= base) {
+            return "§8Scales with DMZ level (§f" + lvl + "§8) · currently at base price";
+        }
+        return "§8Scales with DMZ level (§f" + lvl + "§8) · list base §f"
+                + formatCost(base) + " §8→ you pay §f" + formatCost(pay);
+    }
+
     /** Level-scaled copper, snapped to payable Ancient Coin denominations (same as AD tier buys). */
     public static long payableCost(ServerPlayer player, long baseCopper, boolean useLevelMult) {
         return AncientCoinEconomy.normalizeCost(scaledCost(player, baseCopper, useLevelMult));
@@ -593,15 +612,25 @@ public final class CharacterServicesSystem {
                 RaceHeadBoneSync.syncClient(player);
             }
             var server = player.m_20194_();
-            Runnable openEditor = () -> NetworkHandler.sendToPlayer(new OpenRecustomizeS2C(), player);
+            String uuid = player.m_20148_().toString();
+            Runnable openEditor = () -> {
+                try {
+                    NetworkHandler.sendToPlayer(new OpenRecustomizeS2C(), player);
+                    CharacterServicesStore.get().record(uuid).lastReskinAt = System.currentTimeMillis();
+                    CharacterServicesStore.get().markDirty();
+                } catch (Throwable openErr) {
+                    ReskinSessionGuard.clear(player);
+                    refund(player, cost);
+                    AdaptiveDifficultyMod.LOGGER.warn("[{}] Reskin editor open failed for {}: {}",
+                            AdaptiveDifficultyMod.MOD_ID, player.m_6302_(), openErr.toString());
+                }
+            };
+            // Defer so CNPC/chest inventory can close on the client before DMZ UI opens.
             if (server != null) {
-                server.execute(openEditor);
+                server.execute(() -> server.execute(() -> server.execute(openEditor)));
             } else {
                 openEditor.run();
             }
-            CharacterServicesStore.get().record(player.m_20148_().toString()).lastReskinAt =
-                    System.currentTimeMillis();
-            CharacterServicesStore.get().markDirty();
             audit(player, "Reskin", "", "", 0, cost, true);
             String paid = cost > 0L ? "§7Paid §f" + formatCost(cost) + "§7. " : "";
             return "§a" + paid + "Opening the appearance editor. §7Your stats and progression are unchanged.";

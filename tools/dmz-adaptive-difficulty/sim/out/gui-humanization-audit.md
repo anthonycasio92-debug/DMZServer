@@ -1,11 +1,11 @@
 # GUI humanization audit
 
-- Catalog keys: **289** · Referenced from Java: **258**
+- Catalog keys: **289** · Referenced from Java: **261**
 - Catalog revision: **Java 200** · **JSON 201** · **MISMATCH**
 
 ## Summary
 
-- No blocking issues
+- **4 blocking issue(s)** (missing keys, banned jargon, corrupt lore)
 - **0** Java fallback lines still use robotic "Click to…" (use `&8Tap…` or catalog keys)
 - **23** catalog warnings
 
@@ -28,6 +28,13 @@
 - `REQUIRED_PLACEHOLDERS` (2):
   - ✓ `difficulty.titles.item` — has ['perk', 'rarity_line', 'req']
   - ✓ `progression.economy.staff_free` — has ['action']
+
+## Blocking issues
+
+- MISSING KEY: character.reskin.confirm.back
+- MISSING KEY: character.reskin.confirm.header
+- MISSING KEY: character.reskin.confirm.pay
+- MISSING KEY: character.reskin.review
 
 ## Humanize safety
 

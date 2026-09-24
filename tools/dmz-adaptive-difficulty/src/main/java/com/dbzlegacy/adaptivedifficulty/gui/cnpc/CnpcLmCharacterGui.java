@@ -303,7 +303,7 @@ public final class CnpcLmCharacterGui {
                         open(player, "reskin_confirm");
                         return;
                     }
-                    CnpcGuiSupport.act(
+                    CnpcGuiSupport.actExternalUi(
                             player,
                             () -> CharacterServicesGuiApi.handleDo(player, "reskin_confirm", "", "reskin_confirm"),
                             () -> open(player, "reskin_confirm"));
