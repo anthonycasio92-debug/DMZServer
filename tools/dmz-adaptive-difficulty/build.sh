@@ -151,7 +151,7 @@ merge_onto_base_jar() {
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/command/MechanicsCommands\$"*.class \
       "$merge/com/dbzlegacy/adaptivedifficulty/command/" 2>/dev/null || true
   fi
-  for class in LmCommandSuggestions LmCommandFeedback LmStaffHelp CommandAccess LmAdminArgCoalesce MohistCommandBridge PrestigeAdminCommandTree DifficultyCommands RivalCommands SparCommands ProgressionCommands CharacterCommands MechanicsCommands; do
+  for class in LmCommandSuggestions LmCommandFeedback LmStaffHelp LmCommandHelp CommandAccess LmAdminArgCoalesce MohistCommandBridge PrestigeAdminCommandTree DifficultyCommands RivalCommands SparCommands ProgressionCommands CharacterCommands MechanicsCommands; do
     if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/command/${class}.class" ]]; then
       mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/command"
       cp "$OUT/com/dbzlegacy/adaptivedifficulty/command/${class}.class" \

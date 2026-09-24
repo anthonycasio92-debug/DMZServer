@@ -54,6 +54,7 @@ public final class DifficultyCommands {
         return Commands.m_82127_(name)
                 .requires(CommandAccess::isPlayerSlashUser)
                 .executes(ctx -> openGui(ctx.getSource()))
+                .then(Commands.m_82127_("help").executes(ctx -> playerHelp(ctx.getSource())))
                 // Hidden GUI action handler used by clickable chat buttons
                 .then(Commands.m_82127_("do")
                         .then(Commands.m_82129_("action", StringArgumentType.word())
@@ -738,53 +739,13 @@ public final class DifficultyCommands {
         return 0;
     }
 
+    private static int playerHelp(CommandSourceStack source) {
+        LmCommandFeedback.tellLines(source, LmCommandHelp.difficultyPlayer());
+        return 1;
+    }
+
     private static int adminHelp(CommandSourceStack source) {
-        LmCommandFeedback.tellLines(source, LmStaffHelp.build(
-                "Adaptive difficulty staff",
-                "/difficulty admin",
-                "§7Player hub: §f/lm §7· Shortcut: §f/diff",
-                new LmStaffHelp.Section("Players",
-                        LmStaffHelp.cmd("/difficulty", "open your difficulty menu (CNPC)"),
-                        LmStaffHelp.cmd("/difficulty reset", "clear active tier (free)"),
-                        LmStaffHelp.cmd("/difficulty peaceful", "set vanilla world difficulty (ops)"),
-                        LmStaffHelp.cmd("/difficulty easy", "set vanilla world difficulty (ops)"),
-                        LmStaffHelp.cmd("/difficulty normal", "set vanilla world difficulty (ops)"),
-                        LmStaffHelp.cmd("/difficulty hard", "set vanilla world difficulty (ops)")),
-                new LmStaffHelp.Section("System switch",
-                        LmStaffHelp.cmd("/difficulty admin status", "show master switch state"),
-                        LmStaffHelp.cmd("/difficulty admin on", "enable adaptive difficulty"),
-                        LmStaffHelp.cmd("/difficulty admin off", "disable adaptive difficulty"),
-                        LmStaffHelp.cmd("/difficulty admin toggle", "flip master switch")),
-                new LmStaffHelp.Section("Testing whitelist",
-                        LmStaffHelp.cmd("/difficulty admin whitelist list", "who can see scaled mobs while testing"),
-                        LmStaffHelp.cmd("/difficulty admin whitelist add <player>", "add player to whitelist"),
-                        LmStaffHelp.cmd("/difficulty admin whitelist remove <player>", "remove from whitelist"),
-                        LmStaffHelp.cmd("/difficulty admin whitelist on", "restrict scaling to whitelist"),
-                        LmStaffHelp.cmd("/difficulty admin whitelist off", "scaling for everyone again"),
-                        LmStaffHelp.cmd("/difficulty admin whitelist clear", "empty whitelist")),
-                new LmStaffHelp.Section("Staff perks and logs",
-                        LmStaffHelp.cmd("/difficulty admin stafffree status", "staff skip Ancient Coin costs"),
-                        LmStaffHelp.cmd("/difficulty admin stafffree on", "enable staff free coins"),
-                        LmStaffHelp.cmd("/difficulty admin stafffree off", "disable staff free coins"),
-                        LmStaffHelp.cmd("/difficulty admin telemetry status", "combat balance telemetry"),
-                        LmStaffHelp.cmd("/difficulty admin telemetry on", "enable combat telemetry"),
-                        LmStaffHelp.cmd("/difficulty admin telemetry off", "disable combat telemetry"),
-                        LmStaffHelp.cmd("/difficulty admin syslog status", "unified system event log"),
-                        LmStaffHelp.cmd("/difficulty admin syslog on", "enable system event log"),
-                        LmStaffHelp.cmd("/difficulty admin syslog off", "disable system event log")),
-                new LmStaffHelp.Section("Inspect and fix players",
-                        LmStaffHelp.cmd("/difficulty admin inspect <player>", "open their difficulty menu"),
-                        LmStaffHelp.cmd("/difficulty admin inspect clear", "stop inspect mode"),
-                        LmStaffHelp.cmd("/difficulty admin resynclevel <player>", "fix stuck level sample on GUI"),
-                        LmStaffHelp.cmd("/difficulty admin resetpurchased", "reset purchased tiers (staff)"),
-                        LmStaffHelp.cmd("/difficulty admin characterreset", "character wipe hook")),
-                new LmStaffHelp.Section("Config",
-                        LmStaffHelp.cmd("/difficulty admin reload", "reload adaptivedifficulty.json"),
-                        LmStaffHelp.cmd("/difficulty admin settings", "open admin settings menu"),
-                        LmStaffHelp.cmd("/difficulty admin area", "show area difficulty at you"),
-                        LmStaffHelp.cmd("/difficulty admin gamedifficulty <level>", "set vanilla difficulty"),
-                        LmStaffHelp.cmd("/difficulty admin set <key> <value>", "change a live config key"),
-                        LmStaffHelp.note("Tier keys live in config/adaptivedifficulty.json"))));
+        LmCommandFeedback.tellLines(source, LmCommandHelp.difficultyAdmin());
         return 1;
     }
 

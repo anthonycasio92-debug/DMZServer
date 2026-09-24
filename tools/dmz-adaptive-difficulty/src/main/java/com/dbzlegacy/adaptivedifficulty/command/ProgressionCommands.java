@@ -38,6 +38,7 @@ public final class ProgressionCommands {
         event.getDispatcher().register(Commands.m_82127_("prestige")
                 .requires(StaffAccess::isStaffSource)
                 .executes(ctx -> prestigeGui(ctx.getSource(), "main"))
+                .then(Commands.m_82127_("help").executes(ctx -> prestigeMenuHelp(ctx.getSource())))
                 .then(Commands.m_82127_("do")
                         .then(Commands.m_82127_("confirm")
                                 .executes(ctx -> prestigeConfirm(ctx.getSource(), "main"))
@@ -59,6 +60,7 @@ public final class ProgressionCommands {
         event.getDispatcher().register(Commands.m_82127_("skills")
                 .requires(StaffAccess::isStaffSource)
                 .executes(ctx -> skillsPage(ctx.getSource(), "core"))
+                .then(Commands.m_82127_("help").executes(ctx -> skillsHelp(ctx.getSource())))
                 .then(Commands.m_82127_("do")
                         .then(Commands.m_82127_("page")
                                 .then(Commands.m_82129_("page", StringArgumentType.word())
@@ -70,6 +72,7 @@ public final class ProgressionCommands {
         event.getDispatcher().register(Commands.m_82127_("skillcheck")
                 .requires(StaffAccess::hasSkillCheckSource)
                 .executes(ctx -> skillCheckPage(ctx.getSource(), "core"))
+                .then(Commands.m_82127_("help").executes(ctx -> skillCheckHelp(ctx.getSource())))
                 .then(Commands.m_82127_("do")
                         .then(Commands.m_82127_("page")
                                 .then(Commands.m_82129_("page", StringArgumentType.word())
@@ -85,6 +88,7 @@ public final class ProgressionCommands {
         event.getDispatcher().register(Commands.m_82127_("enddragon")
                 .requires(StaffAccess::isStaffSource)
                 .executes(ctx -> endDragonHelp(ctx.getSource()))
+                .then(Commands.m_82127_("help").executes(ctx -> endDragonHelp(ctx.getSource())))
                 .then(Commands.m_82127_("spawn").executes(ctx -> endSpawnDenied(ctx.getSource())))
                 .then(Commands.m_82127_("repair").executes(ctx -> endRepair(ctx.getSource())))
                 .then(Commands.m_82127_("clear").executes(ctx -> endClear(ctx.getSource()))));
@@ -92,6 +96,7 @@ public final class ProgressionCommands {
         event.getDispatcher().register(
                 Commands.m_82127_("androidify")
                         .requires(StaffAccess::isStaffSource)
+                        .then(Commands.m_82127_("help").executes(ctx -> androidifyHelp(ctx.getSource())))
                         .then(LmCommandSuggestions.playerWord("player")
                                 .executes(ctx -> androidPlayer(
                                         ctx.getSource(),
@@ -153,8 +158,36 @@ public final class ProgressionCommands {
         if (StaffAccess.denyUnlessStaff(source) == 0) {
             return 0;
         }
-        LmCommandFeedback.tellLines(source,
-                com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeAdmin.help());
+        LmCommandFeedback.tellLines(source, LmCommandHelp.prestigeAdmin());
+        return 1;
+    }
+
+    private static int prestigeMenuHelp(CommandSourceStack source) {
+        if (StaffAccess.denyUnlessStaff(source) == 0) {
+            return 0;
+        }
+        LmCommandFeedback.tellLines(source, LmCommandHelp.prestigeMenuStaff());
+        return 1;
+    }
+
+    private static int skillsHelp(CommandSourceStack source) {
+        if (StaffAccess.denyUnlessStaff(source) == 0) {
+            return 0;
+        }
+        LmCommandFeedback.tellLines(source, LmCommandHelp.skillsStaff());
+        return 1;
+    }
+
+    private static int skillCheckHelp(CommandSourceStack source) {
+        LmCommandFeedback.tellLines(source, LmCommandHelp.skillCheck());
+        return 1;
+    }
+
+    private static int androidifyHelp(CommandSourceStack source) {
+        if (StaffAccess.denyUnlessStaff(source) == 0) {
+            return 0;
+        }
+        LmCommandFeedback.tellLines(source, LmCommandHelp.androidifyStaff());
         return 1;
     }
 
@@ -326,13 +359,7 @@ public final class ProgressionCommands {
     }
 
     private static int endDragonHelp(CommandSourceStack source) {
-        reply(source, playerOrNull(source),
-                """
-                        §6§lEnd dragon §8(/enddragon)
-                        §f/enddragon clear §7— remove stray dragons (staff)
-                        §f/enddragon repair §7— fix End podium (staff)
-                        §8Player summons use the Difficulty menu only.
-                        """.stripTrailing());
+        LmCommandFeedback.tellLines(source, LmCommandHelp.endDragonStaff());
         return 1;
     }
 
@@ -463,13 +490,10 @@ public final class ProgressionCommands {
     private static int helpOrGui(CommandSourceStack source) {
         ServerPlayer player = playerOrNull(source);
         if (player != null && StaffAccess.isStaff(player)) {
-            return gui(source, "help");
+            LmCommandFeedback.tellLines(source, LmCommandHelp.progressionStaff());
+            return 1;
         }
-        // Player-facing help (no progression GUI).
-        String msg = "§6§l/progression\n"
-                + "§e/progression meditation §7— current trial status\n"
-                + "§8Other actions: §f/lm §7→ Prestige · Remove Android";
-        reply(source, player, msg);
+        LmCommandFeedback.tellLines(source, LmCommandHelp.progressionPlayer());
         return 1;
     }
 

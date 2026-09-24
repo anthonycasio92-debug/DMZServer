@@ -28,7 +28,13 @@ public final class CharacterCommands {
     private static LiteralArgumentBuilder<CommandSourceStack> staffCharacterRoot(String name) {
         return Commands.m_82127_(name)
                 .requires(StaffAccess::isStaffSource)
-                .executes(ctx -> open(ctx.getSource(), "main"));
+                .executes(ctx -> open(ctx.getSource(), "main"))
+                .then(Commands.m_82127_("help").executes(ctx -> characterHelp(ctx.getSource())));
+    }
+
+    private static int characterHelp(CommandSourceStack source) {
+        LmCommandFeedback.tellLines(source, LmCommandHelp.characterStaff());
+        return 1;
     }
 
     private static int open(CommandSourceStack source, String page) {

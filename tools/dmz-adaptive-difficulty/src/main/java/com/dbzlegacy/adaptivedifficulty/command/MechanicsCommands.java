@@ -35,7 +35,7 @@ public final class MechanicsCommands {
                 .requires(CommandAccess::isPlayerSlashUser);
         return root.executes(ctx -> open(ctx.getSource(), "main"))
                 .then(Commands.m_82127_("gui").executes(ctx -> open(ctx.getSource(), "main")))
-                .then(Commands.m_82127_("help").executes(ctx -> open(ctx.getSource(), "main")))
+                .then(Commands.m_82127_("help").executes(ctx -> playerHelp(ctx.getSource())))
                 .then(Commands.m_82127_("open")
                         .then(LmCommandSuggestions.word("system", LmCommandSuggestions.LM_OPEN_SYSTEMS)
                                 .executes(ctx -> openSystem(
@@ -266,41 +266,16 @@ public final class MechanicsCommands {
         return com.dbzlegacy.adaptivedifficulty.gui.CnpcStaffTestGui.open(player) ? 1 : 0;
     }
 
+    private static int playerHelp(CommandSourceStack source) {
+        LmCommandFeedback.tellLines(source, LmCommandHelp.lmPlayer());
+        return 1;
+    }
+
     private static int adminHelp(CommandSourceStack source) {
         if (StaffAccess.denyUnlessStaff(source) == 0) {
             return 0;
         }
-        LmCommandFeedback.tellLines(source, LmStaffHelp.build(
-                "Legacy Mechanics staff",
-                "/lm admin",
-                "§7Use §f/lm admin help §7anytime. Menus are CNPC only (no chest GUI).",
-                new LmStaffHelp.Section("Config and data",
-                        LmStaffHelp.cmd("/lm admin reload", "reload Legacy Mechanics config"),
-                        LmStaffHelp.cmd("/lm admin migrate-cnpc", "import CNPC rival and spar data"),
-                        LmStaffHelp.cmd("/lm admin migrate-cnpc force", "wipe LM stores, then re-import"),
-                        LmStaffHelp.note("Backup: config/legacymechanics/cnpc-import-backup/")),
-                new LmStaffHelp.Section("Player resets",
-                        LmStaffHelp.cmd("/lm admin clear <player>", "clear all LM data for a player"),
-                        LmStaffHelp.cmd("/lm admin clear <player> rival", "clear rival data only"),
-                        LmStaffHelp.cmd("/lm admin clear <player> spar", "clear spar data only"),
-                        LmStaffHelp.cmd("/lm admin clear <player> difficulty", "clear difficulty data only"),
-                        LmStaffHelp.cmd("/lm admin clear <player> progression", "clear progression data only"),
-                        LmStaffHelp.cmd("/lm admin character cooldown clear <player>", "clear all character service cooldowns"),
-                        LmStaffHelp.cmd("/lm admin character cooldown clear <player> race", "clear race change cooldown"),
-                        LmStaffHelp.cmd("/lm admin character cooldown clear <player> class", "clear class change cooldown"),
-                        LmStaffHelp.cmd("/lm admin character cooldown clear <player> reskin", "clear reskin cooldown")),
-                new LmStaffHelp.Section("Staff tools",
-                        LmStaffHelp.cmd("/lm admin syslog status", "event log on or off"),
-                        LmStaffHelp.cmd("/lm admin syslog on", "turn unified event log on"),
-                        LmStaffHelp.cmd("/lm admin syslog off", "turn unified event log off"),
-                        LmStaffHelp.cmd("/lm admin syslog flush", "flush logs to disk"),
-                        LmStaffHelp.cmd("/lm admin open <system>", "open a CNPC menu as yourself"),
-                        LmStaffHelp.cmd("/lm admin inspect <player>", "view menus as that player"),
-                        LmStaffHelp.cmd("/lm admin inspect clear", "stop inspect mode"),
-                        LmStaffHelp.cmd("/lm admin testgui", "staff CNPC test hub")),
-                new LmStaffHelp.Section("Adaptive difficulty",
-                        LmStaffHelp.cmd("/difficulty admin help", "whitelist, telemetry, stafffree, inspect, config"),
-                        LmStaffHelp.note("Shortcut: /diff"))));
+        LmCommandFeedback.tellLines(source, LmCommandHelp.lmAdmin());
         return 1;
     }
 

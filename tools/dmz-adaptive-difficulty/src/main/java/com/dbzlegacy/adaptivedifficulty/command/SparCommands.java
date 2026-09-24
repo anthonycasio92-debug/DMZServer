@@ -32,7 +32,7 @@ public final class SparCommands {
                 .requires(CommandAccess::isPlayerSlashUser)
                 .executes(ctx -> gui(ctx.getSource(), "main"))
                 .then(Commands.m_82127_("gui").executes(ctx -> gui(ctx.getSource(), "main")))
-                .then(Commands.m_82127_("help").executes(ctx -> gui(ctx.getSource(), "help")))
+                .then(Commands.m_82127_("help").executes(ctx -> playerHelp(ctx.getSource())))
                 .then(Commands.m_82127_("stats")
                         .executes(ctx -> stats(ctx.getSource(), null))
                         .then(LmCommandSuggestions.playerWord("player")
@@ -293,8 +293,9 @@ public final class SparCommands {
         return 1;
     }
 
-    private static int help(CommandSourceStack source) {
-        return gui(source, "help");
+    private static int playerHelp(CommandSourceStack source) {
+        LmCommandFeedback.tellLines(source, LmCommandHelp.sparPlayer());
+        return 1;
     }
 
     private static int stats(CommandSourceStack source, String targetName) {
@@ -419,16 +420,7 @@ public final class SparCommands {
         if (StaffAccess.denyUnlessStaff(source) == 0) {
             return 0;
         }
-        LmCommandFeedback.tellLines(source, LmStaffHelp.build(
-                "Sparring staff",
-                "/spar admin",
-                "§7Use §f/spar admin help §7anytime.",
-                new LmStaffHelp.Section("Data",
-                        LmStaffHelp.cmd("/spar admin save", "write spar data to disk"),
-                        LmStaffHelp.cmd("/spar admin status", "enabled flag and file path")),
-                new LmStaffHelp.Section("Mentor cooldown",
-                        LmStaffHelp.cmd("/spar admin mentor resetcd", "clear your mentor invite cooldown"),
-                        LmStaffHelp.cmd("/spar admin mentor resetcd <player>", "clear cooldown for a player"))));
+        LmCommandFeedback.tellLines(source, LmCommandHelp.sparAdmin());
         return 1;
     }
 

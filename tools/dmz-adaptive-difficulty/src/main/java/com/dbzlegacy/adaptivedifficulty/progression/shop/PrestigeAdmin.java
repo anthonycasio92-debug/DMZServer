@@ -1,6 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.progression.shop;
 
-import com.dbzlegacy.adaptivedifficulty.command.LmStaffHelp;
+import com.dbzlegacy.adaptivedifficulty.command.LmCommandHelp;
 import com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeFactionSync;
 import com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeSkillSync;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
@@ -18,41 +18,7 @@ public final class PrestigeAdmin {
     private PrestigeAdmin() {}
 
     public static String help() {
-        return LmStaffHelp.build(
-                "Prestige admin",
-                "/padmin",
-                "§7Staff-only prestige shop adjustments. Use §f/padmin help §7anytime.",
-                new LmStaffHelp.Section("Look up",
-                        LmStaffHelp.cmd("/padmin info", "your prestige summary"),
-                        LmStaffHelp.cmd("/padmin info <player>", "another player's summary"),
-                        LmStaffHelp.cmd("/padmin sync <player>", "refresh prestige from disk and mods")),
-                new LmStaffHelp.Section("Wallet counts",
-                        LmStaffHelp.cmd("/padmin points <player> set <amount>", "set wallet points"),
-                        LmStaffHelp.cmd("/padmin points <player> add <amount>", "add wallet points"),
-                        LmStaffHelp.cmd("/padmin points <player> remove <amount>", "remove wallet points"),
-                        LmStaffHelp.cmd("/padmin held <player> set <amount>", "set held prestige count"),
-                        LmStaffHelp.cmd("/padmin held <player> add <amount>", "add held prestige count"),
-                        LmStaffHelp.cmd("/padmin held <player> remove <amount>", "remove held prestige count"),
-                        LmStaffHelp.cmd("/padmin completed <player> set <amount>", "set completed count"),
-                        LmStaffHelp.cmd("/padmin completed <player> add <amount>", "add completed count"),
-                        LmStaffHelp.cmd("/padmin completed <player> remove <amount>", "remove completed count"),
-                        LmStaffHelp.cmd("/padmin breakthroughs <player> set <0-5>", "set breakthroughs"),
-                        LmStaffHelp.cmd("/padmin breakthroughs <player> add <n>", "add breakthroughs"),
-                        LmStaffHelp.cmd("/padmin breakthroughs <player> remove <n>", "remove breakthroughs"),
-                        LmStaffHelp.cmd("/padmin fabled <player> set <amount>", "set fabled prestige level"),
-                        LmStaffHelp.cmd("/padmin fabled <player> add <amount>", "add fabled prestige level"),
-                        LmStaffHelp.cmd("/padmin fabled <player> remove <amount>", "remove fabled prestige level"),
-                        LmStaffHelp.cmd("/padmin fabled <player> take <amount>", "take fabled prestige level")),
-                new LmStaffHelp.Section("Shop unlocks",
-                        LmStaffHelp.cmd("/padmin tier <player> set <0-7>", "set highest purchased tier"),
-                        LmStaffHelp.cmd("/padmin tier <player> give <1-7>", "grant a tier unlock"),
-                        LmStaffHelp.cmd("/padmin tier <player> clear <1-7>", "clear one tier unlock"),
-                        LmStaffHelp.cmd("/padmin tier <player> clear all", "clear all tier unlocks"),
-                        LmStaffHelp.cmd("/padmin skills <player>", "list invested skill floors"),
-                        LmStaffHelp.cmd("/padmin skill <player> <skillId> set <levels>", "set skill floor level"),
-                        LmStaffHelp.cmd("/padmin skill <player> <skillId> add <levels>", "add skill floor levels"),
-                        LmStaffHelp.cmd("/padmin skill <player> <skillId> remove <levels>", "remove skill floor levels"),
-                        LmStaffHelp.note("Skill IDs match the prestige shop (e.g. potentialunlock)")));
+        return LmCommandHelp.prestigeAdmin();
     }
 
     public static String info(ServerPlayer target) {

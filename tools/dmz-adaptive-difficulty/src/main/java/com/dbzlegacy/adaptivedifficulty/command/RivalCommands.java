@@ -38,7 +38,7 @@ public final class RivalCommands {
                 .requires(CommandAccess::isPlayerSlashUser)
                 .executes(ctx -> gui(ctx.getSource(), "main"))
                 .then(Commands.m_82127_("gui").executes(ctx -> gui(ctx.getSource(), "main")))
-                .then(Commands.m_82127_("help").executes(ctx -> gui(ctx.getSource(), "help")))
+                .then(Commands.m_82127_("help").executes(ctx -> playerHelp(ctx.getSource())))
                 .then(Commands.m_82127_("list").executes(ctx -> list(ctx.getSource())))
                 .then(Commands.m_82127_("stats")
                         .executes(ctx -> stats(ctx.getSource(), null))
@@ -229,8 +229,9 @@ public final class RivalCommands {
         return 1;
     }
 
-    private static int help(CommandSourceStack source) {
-        return gui(source, "help");
+    private static int playerHelp(CommandSourceStack source) {
+        LmCommandFeedback.tellLines(source, LmCommandHelp.rivalPlayer());
+        return 1;
     }
 
     private static int silent(CommandSourceStack source, String name) {
@@ -400,17 +401,7 @@ public final class RivalCommands {
         if (StaffAccess.denyUnlessStaff(source) == 0) {
             return 0;
         }
-        LmCommandFeedback.tellLines(source, LmStaffHelp.build(
-                "Rival staff",
-                "/rival admin",
-                "§7Use §f/rival admin help §7anytime.",
-                new LmStaffHelp.Section("Data",
-                        LmStaffHelp.cmd("/rival admin save", "write rivalry data to disk"),
-                        LmStaffHelp.cmd("/rival admin refresh", "reload stores from disk"),
-                        LmStaffHelp.cmd("/rival admin status", "enabled flag and file paths")),
-                new LmStaffHelp.Section("Menus",
-                        LmStaffHelp.cmd("/rival admin open", "open rival CNPC menu"),
-                        LmStaffHelp.cmd("/rival admin open <page>", "open a specific rival page"))));
+        LmCommandFeedback.tellLines(source, LmCommandHelp.rivalAdmin());
         return 1;
     }
 
