@@ -6,7 +6,7 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 
-/** Shared Brigadier tree for {@code /prestige admin …} and {@code /padmin …}. */
+/** Brigadier tree for {@code /padmin} (staff prestige adjustments). */
 public final class PrestigeAdminCommandTree {
     private PrestigeAdminCommandTree() {}
 
@@ -32,27 +32,11 @@ public final class PrestigeAdminCommandTree {
                                 .executes(ctx -> ProgressionCommands.prestigeAdminListSkills(
                                         ctx.getSource(),
                                         StringArgumentType.getString(ctx, "player")))))
-                .then(Commands.m_82127_("invested")
-                        .then(LmCommandSuggestions.playerWord("player")
-                                .executes(ctx -> ProgressionCommands.prestigeAdminListSkills(
-                                        ctx.getSource(),
-                                        StringArgumentType.getString(ctx, "player")))))
                 .then(Commands.m_82127_("skill")
                         .then(LmCommandSuggestions.playerWord("player")
                                 .executes(ctx -> ProgressionCommands.prestigeAdminListSkills(
                                         ctx.getSource(),
                                         StringArgumentType.getString(ctx, "player")))
-                                .then(Commands.m_82129_("skillId", StringArgumentType.word())
-                                        .then(LmCommandSuggestions.word("mode", LmCommandSuggestions.PRESTIGE_ADJUST_MODES)
-                                                .then(Commands.m_82129_("levels", IntegerArgumentType.integer())
-                                                        .executes(ctx -> ProgressionCommands.prestigeAdminSkill(
-                                                                ctx.getSource(),
-                                                                StringArgumentType.getString(ctx, "player"),
-                                                                StringArgumentType.getString(ctx, "skillId"),
-                                                                StringArgumentType.getString(ctx, "mode"),
-                                                                IntegerArgumentType.getInteger(ctx, "levels"))))))))
-                .then(Commands.m_82127_("invest")
-                        .then(LmCommandSuggestions.playerWord("player")
                                 .then(Commands.m_82129_("skillId", StringArgumentType.word())
                                         .then(LmCommandSuggestions.word("mode", LmCommandSuggestions.PRESTIGE_ADJUST_MODES)
                                                 .then(Commands.m_82129_("levels", IntegerArgumentType.integer())
@@ -71,46 +55,10 @@ public final class PrestigeAdminCommandTree {
                                                         StringArgumentType.getString(ctx, "player"),
                                                         StringArgumentType.getString(ctx, "mode"),
                                                         StringArgumentType.getString(ctx, "tier")))))))
-                .then(Commands.m_82127_("tiers")
-                        .then(LmCommandSuggestions.playerWord("player")
-                                .then(LmCommandSuggestions.word("mode", LmCommandSuggestions.PRESTIGE_TIER_MODES)
-                                        .then(LmCommandSuggestions.word("tier", LmCommandSuggestions.PRESTIGE_TIER_IDS)
-                                                .executes(ctx -> ProgressionCommands.prestigeAdminTier(
-                                                        ctx.getSource(),
-                                                        StringArgumentType.getString(ctx, "player"),
-                                                        StringArgumentType.getString(ctx, "mode"),
-                                                        StringArgumentType.getString(ctx, "tier")))))))
-                .then(Commands.m_82127_("difficulty")
-                        .then(LmCommandSuggestions.playerWord("player")
-                                .then(LmCommandSuggestions.word("mode", LmCommandSuggestions.PRESTIGE_TIER_MODES)
-                                        .then(LmCommandSuggestions.word("tier", LmCommandSuggestions.PRESTIGE_TIER_IDS)
-                                                .executes(ctx -> ProgressionCommands.prestigeAdminTier(
-                                                        ctx.getSource(),
-                                                        StringArgumentType.getString(ctx, "player"),
-                                                        StringArgumentType.getString(ctx, "mode"),
-                                                        StringArgumentType.getString(ctx, "tier")))))))
                 .then(adjustField("held"))
                 .then(adjustField("completed"))
                 .then(adjustField("points"))
                 .then(adjustField("breakthroughs"))
-                .then(Commands.m_82127_("breakthrough")
-                        .then(LmCommandSuggestions.playerWord("player")
-                                .then(LmCommandSuggestions.word("mode", LmCommandSuggestions.PRESTIGE_ADJUST_MODES)
-                                        .then(Commands.m_82129_("amount", IntegerArgumentType.integer())
-                                                .executes(ctx -> ProgressionCommands.prestigeAdminAdjust(
-                                                        ctx.getSource(), "breakthroughs",
-                                                        StringArgumentType.getString(ctx, "player"),
-                                                        StringArgumentType.getString(ctx, "mode"),
-                                                        IntegerArgumentType.getInteger(ctx, "amount")))))))
-                .then(Commands.m_82127_("cap")
-                        .then(LmCommandSuggestions.playerWord("player")
-                                .then(LmCommandSuggestions.word("mode", LmCommandSuggestions.PRESTIGE_ADJUST_MODES)
-                                        .then(Commands.m_82129_("amount", IntegerArgumentType.integer())
-                                                .executes(ctx -> ProgressionCommands.prestigeAdminAdjust(
-                                                        ctx.getSource(), "breakthroughs",
-                                                        StringArgumentType.getString(ctx, "player"),
-                                                        StringArgumentType.getString(ctx, "mode"),
-                                                        IntegerArgumentType.getInteger(ctx, "amount")))))))
                 .then(Commands.m_82127_("fabled")
                         .then(LmCommandSuggestions.playerWord("player")
                                 .then(LmCommandSuggestions.word("mode", LmCommandSuggestions.PRESTIGE_FABLED_MODES)
@@ -119,13 +67,7 @@ public final class PrestigeAdminCommandTree {
                                                         ctx.getSource(), "fabled",
                                                         StringArgumentType.getString(ctx, "player"),
                                                         StringArgumentType.getString(ctx, "mode"),
-                                                        IntegerArgumentType.getInteger(ctx, "amount")))))))
-                .then(pointsShorthand("addpoints"))
-                .then(pointsShorthand("givepoints"))
-                .then(pointsShorthand("grantpoints"))
-                .then(pointsShorthand("setpoints"))
-                .then(pointsShorthand("removepoints"))
-                .then(pointsShorthand("takepoints"));
+                                                        IntegerArgumentType.getInteger(ctx, "amount")))))));
     }
 
     private static LiteralArgumentBuilder<CommandSourceStack> adjustField(String field) {
@@ -137,30 +79,6 @@ public final class PrestigeAdminCommandTree {
                                                 ctx.getSource(), field,
                                                 StringArgumentType.getString(ctx, "player"),
                                                 StringArgumentType.getString(ctx, "mode"),
-                                                IntegerArgumentType.getInteger(ctx, "amount")))))
-                        .then(Commands.m_82129_("amount", IntegerArgumentType.integer())
-                                .executes(ctx -> ProgressionCommands.prestigeAdminViaApi(
-                                        ctx.getSource(),
-                                        field + " "
-                                                + StringArgumentType.getString(ctx, "player") + " "
-                                                + IntegerArgumentType.getInteger(ctx, "amount")))))
-                .then(LmCommandSuggestions.word("selfMode", LmCommandSuggestions.PRESTIGE_ADJUST_MODES)
-                        .then(Commands.m_82129_("amount", IntegerArgumentType.integer())
-                                .executes(ctx -> ProgressionCommands.prestigeAdminViaApi(
-                                        ctx.getSource(),
-                                        field + " "
-                                                + StringArgumentType.getString(ctx, "selfMode") + " "
-                                                + IntegerArgumentType.getInteger(ctx, "amount")))));
-    }
-
-    private static LiteralArgumentBuilder<CommandSourceStack> pointsShorthand(String name) {
-        return Commands.m_82127_(name)
-                .then(LmCommandSuggestions.playerWord("player")
-                        .then(Commands.m_82129_("amount", IntegerArgumentType.integer())
-                                .executes(ctx -> ProgressionCommands.prestigeAdminViaApi(
-                                        ctx.getSource(),
-                                        name + " "
-                                                + StringArgumentType.getString(ctx, "player") + " "
-                                                + IntegerArgumentType.getInteger(ctx, "amount")))));
+                                                IntegerArgumentType.getInteger(ctx, "amount"))))));
     }
 }

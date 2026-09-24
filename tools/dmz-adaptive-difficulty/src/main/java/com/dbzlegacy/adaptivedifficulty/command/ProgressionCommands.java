@@ -22,7 +22,7 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
-/** {@code /progression} / {@code /prog} — staff natural progression controls. */
+/** {@code /progression} — natural progression (staff tools + meditation status). */
 public final class ProgressionCommands {
     private ProgressionCommands() {}
 
@@ -32,16 +32,12 @@ public final class ProgressionCommands {
 
     @SubscribeEvent
     public void onRegister(RegisterCommandsEvent event) {
-        LiteralArgumentBuilder<CommandSourceStack> root = build("progression");
-        event.getDispatcher().register(root);
-        event.getDispatcher().register(build("prog"));
+        event.getDispatcher().register(build("progression"));
 
-        // Prestige — staff slash only; players use /lm → Prestige (GUI).
+        // Prestige GUI backend — staff only; players use /lm → Prestige. Admin: /padmin.
         event.getDispatcher().register(Commands.m_82127_("prestige")
                 .requires(StaffAccess::isStaffSource)
                 .executes(ctx -> prestigeGui(ctx.getSource(), "main"))
-                .then(Commands.m_82127_("gui").executes(ctx -> prestigeGui(ctx.getSource(), "main")))
-                .then(PrestigeAdminCommandTree.attach(Commands.m_82127_("admin")))
                 .then(Commands.m_82127_("do")
                         .then(Commands.m_82127_("confirm")
                                 .executes(ctx -> prestigeConfirm(ctx.getSource(), "main"))
@@ -58,16 +54,11 @@ public final class ProgressionCommands {
         event.getDispatcher().register(
                 PrestigeAdminCommandTree.attach(
                         Commands.m_82127_("padmin").requires(StaffAccess::isStaffSource)));
-        event.getDispatcher().register(
-                PrestigeAdminCommandTree.attach(
-                        Commands.m_82127_("prestigeadmin").requires(StaffAccess::isStaffSource)));
 
-        // SkillUnlock admin browser — staff only (not aliased to skillcheck)
+        // SkillUnlock admin browser — staff only
         event.getDispatcher().register(Commands.m_82127_("skills")
                 .requires(StaffAccess::isStaffSource)
                 .executes(ctx -> skillsPage(ctx.getSource(), "core"))
-                .then(Commands.m_82127_("gui").executes(ctx -> skillsPage(ctx.getSource(), "core")))
-                .then(Commands.m_82127_("check").executes(ctx -> skillsPage(ctx.getSource(), "core")))
                 .then(Commands.m_82127_("do")
                         .then(Commands.m_82127_("page")
                                 .then(Commands.m_82129_("page", StringArgumentType.word())
@@ -79,7 +70,6 @@ public final class ProgressionCommands {
         event.getDispatcher().register(Commands.m_82127_("skillcheck")
                 .requires(StaffAccess::hasSkillCheckSource)
                 .executes(ctx -> skillCheckPage(ctx.getSource(), "core"))
-                .then(Commands.m_82127_("gui").executes(ctx -> skillCheckPage(ctx.getSource(), "core")))
                 .then(Commands.m_82127_("do")
                         .then(Commands.m_82127_("page")
                                 .then(Commands.m_82129_("page", StringArgumentType.word())
@@ -97,32 +87,10 @@ public final class ProgressionCommands {
                 .executes(ctx -> endDragonHelp(ctx.getSource()))
                 .then(Commands.m_82127_("spawn").executes(ctx -> endSpawnDenied(ctx.getSource())))
                 .then(Commands.m_82127_("repair").executes(ctx -> endRepair(ctx.getSource())))
-                .then(Commands.m_82127_("clear").executes(ctx -> endClear(ctx.getSource())))
-                .then(Commands.m_82127_("cleanup").executes(ctx -> endClear(ctx.getSource()))));
-        event.getDispatcher().register(Commands.m_82127_("spawndragon")
-                .requires(StaffAccess::isStaffSource)
-                .executes(ctx -> endSpawnDenied(ctx.getSource())));
-        event.getDispatcher().register(Commands.m_82127_("cleardragons")
-                .requires(StaffAccess::isStaffSource)
-                .executes(ctx -> endClear(ctx.getSource())));
-        event.getDispatcher().register(Commands.m_82127_("killdragons")
-                .requires(StaffAccess::isStaffSource)
-                .executes(ctx -> endClear(ctx.getSource())));
+                .then(Commands.m_82127_("clear").executes(ctx -> endClear(ctx.getSource()))));
 
-        // Console / Saga aliases — Mohist Bukkit /progression blocks console except boost.
-        registerAndroidify(event, "androidify");
-        registerAndroidify(event, "androidification");
-
-        AdaptiveDifficultyMod.LOGGER.info(
-                "[{}] registered /progression /prog /prestige /skills /skillcheck /enddragon"
-                        + " /androidify /androidification (+ /prestige admin)",
-                AdaptiveDifficultyMod.MOD_ID
-        );
-    }
-
-    private static void registerAndroidify(RegisterCommandsEvent event, String name) {
         event.getDispatcher().register(
-                Commands.m_82127_(name)
+                Commands.m_82127_("androidify")
                         .requires(StaffAccess::isStaffSource)
                         .then(LmCommandSuggestions.playerWord("player")
                                 .executes(ctx -> androidPlayer(
@@ -132,12 +100,17 @@ public final class ProgressionCommands {
                             if (playerOrNull(ctx.getSource()) == null) {
                                 ctx.getSource().m_288197_(
                                         () -> Component.m_237113_(
-                                                "§cUsage: §f/" + name + " <player>"),
+                                                "§cUsage: §f/androidify <player>"),
                                         false);
                                 return 0;
                             }
                             return androidSelf(ctx.getSource());
                         })
+        );
+
+        AdaptiveDifficultyMod.LOGGER.info(
+                "[{}] registered /progression /prestige /padmin /skills /skillcheck /enddragon /androidify",
+                AdaptiveDifficultyMod.MOD_ID
         );
     }
 
@@ -354,15 +327,19 @@ public final class ProgressionCommands {
 
     private static int endDragonHelp(CommandSourceStack source) {
         reply(source, playerOrNull(source),
-                "§7Staff: §f/enddragon clear§7 · §f/enddragon repair§7 · §f/cleardragons"
-                        + " §8· Player summons: Difficulty GUI only (staff spawn disabled).");
+                """
+                        §6§lEnd dragon §8(/enddragon)
+                        §f/enddragon clear §7— remove stray dragons (staff)
+                        §f/enddragon repair §7— fix End podium (staff)
+                        §8Player summons use the Difficulty menu only.
+                        """.stripTrailing());
         return 1;
     }
 
     private static int endSpawnDenied(CommandSourceStack source) {
         ServerPlayer p = playerOrNull(source);
         if (p == null) {
-            reply(source, null, "§c[The End] Staff dragon spawn is disabled. §7Use §f/cleardragons§7.");
+            reply(source, null, "§c[The End] Staff dragon spawn is disabled. §7Use §f/enddragon clear§7.");
             return 0;
         }
         return com.dbzlegacy.adaptivedifficulty.progression.end.EndDimensionStrength.cmdSpawnDragon(p);

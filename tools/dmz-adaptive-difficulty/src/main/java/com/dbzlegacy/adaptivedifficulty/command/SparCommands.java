@@ -133,9 +133,7 @@ public final class SparCommands {
                                         .then(LmCommandSuggestions.playerWord("player")
                                                 .executes(ctx -> resetCd(
                                                         ctx.getSource(),
-                                                        StringArgumentType.getString(ctx, "player")))))))
-                .then(CommandAccess.staffLiteral("save")
-                        .executes(ctx -> save(ctx.getSource())));
+                                                        StringArgumentType.getString(ctx, "player")))))));
 
         event.getDispatcher().register(root);
         AdaptiveDifficultyMod.LOGGER.info("[{}] registered /spar", AdaptiveDifficultyMod.MOD_ID);
@@ -422,11 +420,13 @@ public final class SparCommands {
             return 0;
         }
         LmCommandFeedback.tellLines(source,
-                "§6§l/spar admin\n"
-                        + "§e/spar admin save §7— save sparring data to disk\n"
-                        + "§e/spar admin status §7— enabled + path\n"
-                        + "§7Clear mentor cooldown\n"
-                        + "§8/spar admin mentor resetcd [player]");
+                """
+                        §6§lSparring staff §8(/spar admin)
+                        
+                        §f/spar admin save §7— write spar data to disk
+                        §f/spar admin status §7— enabled flag and file path
+                        §f/spar admin mentor resetcd [§fplayer§7] §7— clear mentor invite cooldown
+                        """.stripTrailing());
         return 1;
     }
 

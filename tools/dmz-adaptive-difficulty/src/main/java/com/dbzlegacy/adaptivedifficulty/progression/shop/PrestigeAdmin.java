@@ -17,21 +17,27 @@ public final class PrestigeAdmin {
     private PrestigeAdmin() {}
 
     public static String help() {
-        return "§6§l/padmin §8(or /prestige admin)\n"
-                + "§e/padmin info [player]\n"
-                + "§e/padmin points <player> <set|add|remove> <n>\n"
-                + "§8Also: /padmin points set <n>  ·  /padmin points <player> <n>\n"
-                + "§e/padmin addpoints|removepoints|setpoints <player> <n>\n"
-                + "§e/padmin skill <player> <skillId> <set|add|remove> <levels>\n"
-                + "§8  e.g. skill Steve potentialunlock set 10\n"
-                + "§e/padmin skills <player> §8— list invested skill floors\n"
-                + "§e/padmin breakthroughs <player> <set|add|remove> <0-5>\n"
-                + "§e/padmin tier <player> <set|add|remove> <0-7> §8— highest permanent tier\n"
-                + "§e/padmin tier <player> give <1-7> | clear <1-7|all>\n"
-                + "§e/padmin held|completed <player> <set|add|remove> <n>\n"
-                + "§e/padmin fabled <player> <set|add|take> <n>\n"
-                + "§e/padmin sync <player>\n"
-                + "§8Skill/tier/breakthrough adjust invested shop progress (not the wallet).";
+        return """
+                §6§lPrestige admin §8(/padmin)
+                §7Staff-only adjustments. Use §f/padmin help §7anytime.
+                
+                §6— Look up a player —
+                §f/padmin info §7[§fplayer§7]
+                §f/padmin sync §7<§fplayer§7>
+                
+                §6— Wallet and progression counts —
+                §f/padmin points §7<§fplayer§7> §7<§fset|add|remove§7> §7<§famount§7>
+                §f/padmin held §7<§fplayer§7> §7<§fset|add|remove§7> §7<§famount§7>
+                §f/padmin completed §7<§fplayer§7> §7<§fset|add|remove§7> §7<§famount§7>
+                §f/padmin breakthroughs §7<§fplayer§7> §7<§fset|add|remove§7> §7<§f0-5§7>
+                §f/padmin fabled §7<§fplayer§7> §7<§fset|add|remove|take§7> §7<§famount§7>
+                
+                §6— Shop unlocks (invested progress) —
+                §f/padmin tier §7<§fplayer§7> §7<§fset|add|remove|give|clear§7> §7<§f0-7 or all§7>
+                §f/padmin skills §7<§fplayer§7>
+                §f/padmin skill §7<§fplayer§7> §7<§fskillId§7> §7<§fset|add|remove§7> §7<§flevels§7>
+                §8Skill IDs match the prestige shop (e.g. potentialunlock).
+                """.stripTrailing();
     }
 
     public static String info(ServerPlayer target) {

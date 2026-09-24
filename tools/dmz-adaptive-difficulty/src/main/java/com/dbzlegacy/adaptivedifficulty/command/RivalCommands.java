@@ -118,16 +118,11 @@ public final class RivalCommands {
                         .then(Commands.m_82127_("accept").executes(ctx -> challengeAccept(ctx.getSource())))
                         .then(Commands.m_82127_("decline").executes(ctx -> challengeDecline(ctx.getSource())))
                         .then(Commands.m_82127_("cancel").executes(ctx -> challengeCancel(ctx.getSource()))))
-                .then(CommandAccess.staffLiteral("refresh")
-                        .executes(ctx -> refresh(ctx.getSource())))
-                .then(CommandAccess.staffLiteral("save")
-                        .executes(ctx -> save(ctx.getSource())))
                 .then(CommandAccess.staffLiteral("admin")
                         .executes(ctx -> adminHelp(ctx.getSource()))
                         .then(Commands.m_82127_("help").executes(ctx -> adminHelp(ctx.getSource())))
                         .then(Commands.m_82127_("save").executes(ctx -> save(ctx.getSource())))
                         .then(Commands.m_82127_("refresh").executes(ctx -> refresh(ctx.getSource())))
-                        .then(Commands.m_82127_("reload").executes(ctx -> refresh(ctx.getSource())))
                         .then(Commands.m_82127_("status").executes(ctx -> adminStatus(ctx.getSource())))
                         .then(Commands.m_82127_("open")
                                 .executes(ctx -> gui(ctx.getSource(), "main"))
@@ -406,11 +401,14 @@ public final class RivalCommands {
             return 0;
         }
         LmCommandFeedback.tellLines(source,
-                "§6§l/rival admin\n"
-                        + "§e/rival admin save §7— save rivalry and progress data to disk\n"
-                        + "§e/rival admin refresh|reload §7— reload stores from disk\n"
-                        + "§e/rival admin status §7— enabled + path summary\n"
-                        + "§e/rival admin open [page] §7— open rival GUI");
+                """
+                        §6§lRival staff §8(/rival admin)
+                        
+                        §f/rival admin save §7— write rivalry data to disk
+                        §f/rival admin refresh §7— reload stores from disk
+                        §f/rival admin status §7— enabled flag and file paths
+                        §f/rival admin open [§fpage§7] §7— open rival GUI
+                        """.stripTrailing());
         return 1;
     }
 

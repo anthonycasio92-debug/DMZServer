@@ -96,35 +96,29 @@ public final class MohistCommandBridge {
             String skillPerm = CommandAccess.skillCheckBukkitPermission();
 
             registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
-                    "lm", List.of("legacymechanics"), null);
+                    "lm", List.of(), null);
             registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
                     "difficulty", List.of("diff"), null);
             registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
                     "rival", List.of(), null);
             registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
-                    "spar", List.of("sparring"), null);
+                    "spar", List.of(), null);
             registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
                     "skillcheck", List.of(), skillPerm);
             registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
-                    "progression", List.of("prog"), staffPerm);
+                    "progression", List.of(), staffPerm);
             registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
                     "prestige", List.of(), staffPerm);
             registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
                     "skills", List.of(), staffPerm);
             registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
-                    "character", List.of("characterservices", "charservices"), staffPerm);
+                    "character", List.of(), staffPerm);
             registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
                     "enddragon", List.of(), staffPerm);
             registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
-                    "cleardragons", List.of(), staffPerm);
+                    "androidify", List.of(), staffPerm);
             registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
-                    "spawndragon", List.of(), staffPerm);
-            registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
-                    "killdragons", List.of(), staffPerm);
-            registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
-                    "androidify", List.of("androidification"), staffPerm);
-            registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
-                    "padmin", List.of("prestigeadmin"), staffPerm);
+                    "padmin", List.of(), staffPerm);
 
             registered = true;
             AdaptiveDifficultyMod.LOGGER.info(

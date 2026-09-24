@@ -8,7 +8,7 @@ import java.util.Set;
 /** Join Bukkit-split tokens for {@code /lm admin …} before Forge Brigadier parse (Mohist). */
 public final class LmAdminArgCoalesce {
     private static final Set<String> CLEAR_SCOPES = Set.of(
-            "all", "rival", "spar", "difficulty", "progression", "prog", "lm", "*");
+            "all", "rival", "spar", "difficulty", "progression", "lm", "*");
     private static final Set<String> COOLDOWN_KINDS = Set.of(
             "all", "race", "racechange", "class", "classchange", "reskin", "skin");
 
@@ -18,14 +18,14 @@ public final class LmAdminArgCoalesce {
         if (args == null || args.length == 0 || label == null) {
             return args;
         }
-        if (!"lm".equalsIgnoreCase(label) && !"legacymechanics".equalsIgnoreCase(label)) {
+        if (!"lm".equalsIgnoreCase(label)) {
             return args;
         }
         if (args.length < 2 || !"admin".equalsIgnoreCase(args[0])) {
             return args;
         }
         String sub = lower(args[1]);
-        if ("clear".equals(sub) || "wipe".equals(sub) || "resetplayer".equals(sub)) {
+        if ("clear".equals(sub)) {
             return coalesceClearPlayerScope(args);
         }
         if (isCharacterSub(sub) && args.length >= 5
@@ -85,14 +85,11 @@ public final class LmAdminArgCoalesce {
     }
 
     private static boolean isCharacterSub(String raw) {
-        return switch (lower(raw)) {
-            case "character", "char", "charservices", "characterservices" -> true;
-            default -> false;
-        };
+        return "character".equals(lower(raw));
     }
 
     private static boolean isCooldownSub(String raw) {
-        return "cooldown".equals(lower(raw)) || "cool".equals(lower(raw));
+        return "cooldown".equals(lower(raw));
     }
 
     private static String joinRange(String[] args, int from, int toExclusive) {

@@ -22,8 +22,6 @@ public final class CharacterCommands {
     @SubscribeEvent
     public void onRegister(RegisterCommandsEvent event) {
         event.getDispatcher().register(staffCharacterRoot("character"));
-        event.getDispatcher().register(staffCharacterRoot("characterservices"));
-        event.getDispatcher().register(staffCharacterRoot("charservices"));
         AdaptiveDifficultyMod.LOGGER.info("[{}] registered /character", AdaptiveDifficultyMod.MOD_ID);
     }
 

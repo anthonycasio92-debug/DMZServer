@@ -72,9 +72,7 @@ public final class CommandAccess {
             return false;
         }
         return switch (label.toLowerCase()) {
-            case "progression", "prog", "prestige", "skills", "character", "characterservices", "charservices",
-                    "enddragon", "cleardragons", "spawndragon", "killdragons", "androidify", "androidification",
-                    "padmin", "prestigeadmin", "legacymechanics" -> true;
+            case "progression", "prestige", "skills", "character", "enddragon", "androidify", "padmin" -> true;
             default -> false;
         };
     }

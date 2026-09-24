@@ -93,24 +93,16 @@ public final class DifficultyCommands {
                         // Master system switch — ops / staff only.
                         .then(Commands.m_82127_("off")
                                 .executes(ctx -> setSystemEnabled(ctx.getSource(), false)))
-                        .then(Commands.m_82127_("disable")
-                                .executes(ctx -> setSystemEnabled(ctx.getSource(), false)))
                         .then(Commands.m_82127_("on")
-                                .executes(ctx -> setSystemEnabled(ctx.getSource(), true)))
-                        .then(Commands.m_82127_("enable")
                                 .executes(ctx -> setSystemEnabled(ctx.getSource(), true)))
                         .then(Commands.m_82127_("toggle")
                                 .executes(ctx -> toggleSystem(ctx.getSource())))
                         .then(Commands.m_82127_("status")
                                 .executes(ctx -> systemStatus(ctx.getSource())))
                         .then(whitelistRoot("whitelist"))
-                        .then(whitelistRoot("wl"))
                         .then(telemetryRoot("telemetry"))
-                        .then(telemetryRoot("tel"))
                         .then(staffFreeRoot("stafffree"))
-                        .then(staffFreeRoot("staffcoins"))
                         .then(syslogRoot("syslog"))
-                        .then(syslogRoot("systemlog"))
                         .then(Commands.m_82127_("gamedifficulty")
                                 .then(LmCommandSuggestions.word("level", LmCommandSuggestions.VANILLA_DIFFICULTY)
                                         .executes(ctx -> setVanillaDifficultyOrDeny(
@@ -128,18 +120,6 @@ public final class DifficultyCommands {
                                         .executes(ctx -> adminResyncLevelOrDeny(
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "player")))))
-                        .then(Commands.m_82127_("gui")
-                                .executes(ctx -> adminInspectGuiOrDeny(ctx.getSource(), null, "main"))
-                                .then(LmCommandSuggestions.playerWord("player")
-                                        .executes(ctx -> adminInspectGuiOrDeny(
-                                                ctx.getSource(),
-                                                StringArgumentType.getString(ctx, "player"),
-                                                "main"))
-                                        .then(Commands.m_82129_("page", StringArgumentType.word())
-                                                .executes(ctx -> adminInspectGuiOrDeny(
-                                                        ctx.getSource(),
-                                                        StringArgumentType.getString(ctx, "player"),
-                                                        StringArgumentType.getString(ctx, "page"))))))
                         .then(Commands.m_82127_("inspect")
                                 .executes(ctx -> adminInspectGuiOrDeny(ctx.getSource(), null, "main"))
                                 .then(Commands.m_82127_("clear")
@@ -760,29 +740,35 @@ public final class DifficultyCommands {
 
     private static int adminHelp(CommandSourceStack source) {
         LmCommandFeedback.tellLines(source,
-                "§6Legacy Mechanics — admin\n"
-                        + "§e/difficulty §7— open player GUI (CMI / chest / chat)\n"
-                        + "§e/difficulty reset §7— clear active tier (free)\n"
-                        + "§e/difficulty do character_reset §7— character-wipe hook (scriptable)\n"
-                        + "§e/difficulty hard|normal|easy|peaceful §7— vanilla world difficulty (ops)\n"
-                        + "§e/difficulty admin off|on|toggle|status §7— master system switch\n"
-                        + "§e/difficulty admin whitelist on|off|add|remove|list|clear §7— testing whitelist\n"
-                        + "§e/difficulty admin telemetry on|off|status|flush|test §7— log AD combat hits (all players)\n"
-                        + "§e/difficulty admin stafffree on|off|toggle|status §7— staff skip Ancient Coin charges (default off)\n"
-                        + "§e/difficulty admin syslog on|off|status|flush §7— unified system event log\n"
-                        + "§e/difficulty admin gui|inspect <player> [page] §7— open their GUI (edit/see their state)\n"
-                        + "§e/difficulty admin resynclevel [player] §7— clear stuck DMZ level sample + refresh GUI level\n"
-                        + "§e/lm §7— open Legacy Mechanics menu (Difficulty / Rival / Sparring)\n"
-                        + "§e/difficulty admin reload|settings|area|gamedifficulty|resetpurchased|characterreset\n"
-                        + "§e/difficulty admin set <key> <value>\n"
-                        + "§8Master keys: enabled · whitelistEnabled · staffFreeAncientCoinCosts · balanceTelemetryEnabled · enableSystemTelemetry\n"
-                        + "§8Tier keys: unlockTier1Level…7 / Cost…7 / tier1statpercent…7 (0.15–2.0)\n"
-                        + "§8Counters: enableClassCounters · enableStrongStatCounters\n"
-                        + "§8classCounter*Mult · strongStatCounterMult · maxCounterOverlayMult\n"
-                        + "§8transformScaleWeight · transformScaleExponent · maxFormBoost · maxLiveCombatChannel\n"
-                        + "§8mobHealthScale · tankDamageDefenseRatio · tankDamageHealthRatio\n"
-                        + "§8eliteMinUnlockTier · mutationMinUnlockTier · adaptiveAiMinUnlockTier\n"
-                        + "§8enemyEvolutionMinUnlockTier · bossMechanicsMinUnlockTier");
+                """
+                        §6§lAdaptive difficulty §8(/difficulty admin)
+                        §7Shortcut: §f/diff §7· Player hub: §f/lm
+                        
+                        §6— Players —
+                        §f/difficulty §7— open your difficulty menu
+                        §f/difficulty reset §7— clear active tier (free)
+                        §f/difficulty hard|normal|easy|peaceful §7— vanilla world difficulty (ops)
+                        
+                        §6— System switch —
+                        §f/difficulty admin on|off|toggle|status
+                        
+                        §6— Testing and staff perks —
+                        §f/difficulty admin whitelist … §7— limit who gets scaled mobs
+                        §f/difficulty admin stafffree … §7— skip Ancient Coin charges (default off)
+                        §f/difficulty admin telemetry … §7— combat balance log
+                        §f/difficulty admin syslog … §7— unified event log
+                        
+                        §6— Inspect and fix players —
+                        §f/difficulty admin inspect §7<§fplayer§7> [§fpage§7]
+                        §f/difficulty admin inspect clear
+                        §f/difficulty admin resynclevel [§fplayer§7]
+                        §f/difficulty admin resetpurchased §7· §fcharacterreset
+                        
+                        §6— Config —
+                        §f/difficulty admin reload §7· §fsettings §7· §farea §7· §fgamedifficulty
+                        §f/difficulty admin set §7<§fkey§7> §7<§fvalue§7>
+                        §8See config/adaptivedifficulty.json for tier and scaling keys.
+                        """.stripTrailing());
         return 1;
     }
 

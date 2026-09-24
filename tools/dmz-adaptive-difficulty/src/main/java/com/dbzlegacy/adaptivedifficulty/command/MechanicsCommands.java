@@ -16,7 +16,7 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
-/** {@code /legacymechanics} / {@code /lm} hub. */
+/** {@code /lm} — Legacy Mechanics hub (player menus + staff admin). */
 public final class MechanicsCommands {
     private MechanicsCommands() {}
 
@@ -26,18 +26,13 @@ public final class MechanicsCommands {
 
     @SubscribeEvent
     public void onRegister(RegisterCommandsEvent event) {
-        event.getDispatcher().register(build("legacymechanics"));
-        event.getDispatcher().register(build("lm"));
-        AdaptiveDifficultyMod.LOGGER.info("[{}] registered /legacymechanics /lm", AdaptiveDifficultyMod.MOD_ID);
+        event.getDispatcher().register(build());
+        AdaptiveDifficultyMod.LOGGER.info("[{}] registered /lm", AdaptiveDifficultyMod.MOD_ID);
     }
 
-    private static LiteralArgumentBuilder<CommandSourceStack> build(String name) {
-        LiteralArgumentBuilder<CommandSourceStack> root = Commands.m_82127_(name);
-        if ("lm".equals(name)) {
-            root.requires(CommandAccess::isPlayerSlashUser);
-        } else if ("legacymechanics".equals(name)) {
-            root.requires(StaffAccess::isStaffSource);
-        }
+    private static LiteralArgumentBuilder<CommandSourceStack> build() {
+        LiteralArgumentBuilder<CommandSourceStack> root = Commands.m_82127_("lm")
+                .requires(CommandAccess::isPlayerSlashUser);
         return root.executes(ctx -> open(ctx.getSource(), "main"))
                 .then(Commands.m_82127_("gui").executes(ctx -> open(ctx.getSource(), "main")))
                 .then(Commands.m_82127_("help").executes(ctx -> open(ctx.getSource(), "main")))
@@ -80,20 +75,9 @@ public final class MechanicsCommands {
                         .executes(ctx -> adminHelp(ctx.getSource()))
                         .then(Commands.m_82127_("help").executes(ctx -> adminHelp(ctx.getSource())))
                         .then(Commands.m_82127_("reload").executes(ctx -> adminReload(ctx.getSource())))
-                        .then(migrateCnpcLiteral("migrate-cnpc"))
-                        .then(migrateCnpcLiteral("migratecnpc"))
-                        .then(migrateCnpcLiteral("cnpcmigrate"))
-                        .then(migrateCnpcLiteral("cnpc-migrate"))
-                        .then(adminClearRoot("clear"))
-                        .then(adminClearRoot("wipe"))
-                        .then(adminClearRoot("resetplayer"))
-                        .then(characterCooldownAdmin("character"))
-                        .then(characterCooldownAdmin("char"))
-                        .then(characterCooldownAdmin("charservices"))
-                        .then(characterCooldownAdmin("characterservices"))
-                        .then(staffFreeRoot("stafffree"))
-                        .then(staffFreeRoot("staffcoins"))
-                        .then(staffFreeRoot("freecoins"))
+                        .then(migrateCnpcLiteral())
+                        .then(adminClearRoot())
+                        .then(characterCooldownAdmin())
                         .then(Commands.m_82127_("syslog")
                                 .executes(ctx -> adminSyslog(ctx.getSource(), "status"))
                                 .then(LmCommandSuggestions.word("mode", LmCommandSuggestions.SYSLOG_MODES)
@@ -106,24 +90,20 @@ public final class MechanicsCommands {
                                         .executes(ctx -> adminOpen(
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "system")))))
-                        .then(adminInspectRoot("inspect"))
-                        .then(adminInspectRoot("view"))
-                        .then(adminInspectRoot("playergui"))
+                        .then(adminInspectRoot())
                         .then(Commands.m_82127_("testgui")
-                                .executes(ctx -> adminTestGui(ctx.getSource()))
-                                .then(Commands.m_82127_("test-gui").executes(ctx -> adminTestGui(ctx.getSource())))
-                                .then(Commands.m_82127_("cnpcgui").executes(ctx -> adminTestGui(ctx.getSource())))));
+                                .executes(ctx -> adminTestGui(ctx.getSource()))));
     }
 
-    private static LiteralArgumentBuilder<CommandSourceStack> migrateCnpcLiteral(String name) {
-        return Commands.m_82127_(name)
+    private static LiteralArgumentBuilder<CommandSourceStack> migrateCnpcLiteral() {
+        return Commands.m_82127_("migrate-cnpc")
                 .executes(ctx -> adminMigrateCnpc(ctx.getSource(), false))
                 .then(Commands.m_82127_("force")
                         .executes(ctx -> adminMigrateCnpc(ctx.getSource(), true)));
     }
 
-    private static LiteralArgumentBuilder<CommandSourceStack> adminClearRoot(String name) {
-        return Commands.m_82127_(name)
+    private static LiteralArgumentBuilder<CommandSourceStack> adminClearRoot() {
+        return Commands.m_82127_("clear")
                 .then(LmCommandSuggestions.playerWord("player")
                         .executes(ctx -> adminClear(
                                 ctx.getSource(),
@@ -156,24 +136,14 @@ public final class MechanicsCommands {
                                         StringArgumentType.getString(ctx, "kind")))));
     }
 
-    private static LiteralArgumentBuilder<CommandSourceStack> characterCooldownAdmin(String characterLiteral) {
-        LiteralArgumentBuilder<CommandSourceStack> cooldown = Commands.m_82127_("cooldown")
-                .then(characterCooldownClearTree());
-        cooldown.then(Commands.m_82127_("cool").then(characterCooldownClearTree()));
-        return Commands.m_82127_(characterLiteral).then(cooldown);
+    private static LiteralArgumentBuilder<CommandSourceStack> characterCooldownAdmin() {
+        return Commands.m_82127_("character")
+                .then(Commands.m_82127_("cooldown")
+                        .then(characterCooldownClearTree()));
     }
 
-    private static LiteralArgumentBuilder<CommandSourceStack> staffFreeRoot(String name) {
-        return CommandAccess.staffLiteral(name)
-                .executes(ctx -> adminStaffFree(ctx.getSource(), "status"))
-                .then(LmCommandSuggestions.word("mode", LmCommandSuggestions.TOGGLE_MODES)
-                        .executes(ctx -> adminStaffFree(
-                                ctx.getSource(),
-                                StringArgumentType.getString(ctx, "mode"))));
-    }
-
-    private static LiteralArgumentBuilder<CommandSourceStack> adminInspectRoot(String name) {
-        return Commands.m_82127_(name)
+    private static LiteralArgumentBuilder<CommandSourceStack> adminInspectRoot() {
+        return Commands.m_82127_("inspect")
                 .executes(ctx -> adminInspect(ctx.getSource(), null, "hub"))
                 .then(Commands.m_82127_("clear")
                         .executes(ctx -> adminInspect(ctx.getSource(), "clear", "hub")))
@@ -301,22 +271,30 @@ public final class MechanicsCommands {
             return 0;
         }
         LmCommandFeedback.tellLines(source,
-                "§6§l/lm admin\n"
-                        + "§e/lm admin help §7— this list\n"
-                        + "§e/lm admin reload §7— reload config\n"
-                        + "§e/lm admin migrate-cnpc §7— import CNPC Rival/Spar (live → backup → world_data.json)\n"
-                        + "§e/lm admin migrate-cnpc force §7— wipe LM stores + re-import from those sources\n"
-                        + "§8If CNPC wiped: drop world_data.json into config/legacymechanics/cnpc-import-backup/\n"
-                        + "§e/lm admin clear <player> [all|rival|spar|difficulty|progression]\n"
-                        + "§e/lm admin character cooldown clear <player> [race|class|reskin|all]\n"
-                        + "§8Aliases: char · charservices · migratecnpc · stafffree\n"
-                        + "§e/lm admin stafffree on|off|toggle|status §7— staff skip Ancient Coin charges\n"
-                        + "§e/lm admin syslog on|off|status|flush\n"
-                        + "§e/lm admin open <difficulty|rival|spar|progression|prestige|skills|hub>\n"
-                        + "§e/lm admin inspect <player> [hub|difficulty|rival|spar|skillcheck|…]\n"
-                        + "§e/lm admin inspect clear §7— stop inspecting\n"
-                        + "§e/lm admin testgui §7— staff CNPC test hub (all LM systems)\n"
-                        + "§8Also: /difficulty admin gui|inspect <player>");
+                """
+                        §6§lLegacy Mechanics staff §8(/lm admin)
+                        §7Use §f/lm admin help §7anytime.
+                        
+                        §6— Config and data —
+                        §f/lm admin reload §7— reload Legacy Mechanics config
+                        §f/lm admin migrate-cnpc §7— import CNPC rival/spar data
+                        §f/lm admin migrate-cnpc force §7— wipe LM stores, then re-import
+                        §8Backup folder: config/legacymechanics/cnpc-import-backup/
+                        
+                        §6— Player resets —
+                        §f/lm admin clear §7<§fplayer§7> [§fall|rival|spar|difficulty|progression§7]
+                        §f/lm admin character cooldown clear §7<§fplayer§7> [§frace|class|reskin|all§7]
+                        
+                        §6— Staff tools —
+                        §f/lm admin syslog §7<§fon|off|status|flush§7>
+                        §f/lm admin open §7<§fsystem§7> §8— open a menu as yourself
+                        §f/lm admin inspect §7<§fplayer§7> [§fsystem§7] §8— view as that player
+                        §f/lm admin inspect clear §7— stop inspect mode
+                        §f/lm admin testgui §7— CNPC test hub for all systems
+                        
+                        §6— Adaptive difficulty (separate tree) —
+                        §f/difficulty admin … §7— whitelist, telemetry, stafffree, resync, settings
+                        """.stripTrailing());
         return 1;
     }
 
@@ -383,38 +361,6 @@ public final class MechanicsCommands {
                 source.m_81377_(), player, kind);
         LmCommandFeedback.tellLines(source, msg);
         return msg != null && msg.startsWith("§c") ? 0 : 1;
-    }
-
-    private static int adminStaffFree(CommandSourceStack source, String mode) {
-        if (StaffAccess.denyUnlessStaff(source) == 0) {
-            return 0;
-        }
-        String m = mode == null ? "status" : mode.toLowerCase();
-        DifficultyConfig cfg = DifficultyConfig.get();
-        String msg = switch (m) {
-            case "on", "true", "enable" -> {
-                cfg.staffFreeAncientCoinCosts = true;
-                DifficultyConfig.save();
-                yield "§aStaff free Ancient Coin costs ON\n§8/difficulty admin stafffree off";
-            }
-            case "off", "false", "disable" -> {
-                cfg.staffFreeAncientCoinCosts = false;
-                DifficultyConfig.save();
-                yield "§eStaff free Ancient Coin costs OFF";
-            }
-            case "toggle" -> {
-                cfg.staffFreeAncientCoinCosts = !cfg.staffFreeAncientCoinCosts;
-                DifficultyConfig.save();
-                yield cfg.staffFreeAncientCoinCosts
-                        ? "§aStaff free Ancient Coin costs ON"
-                        : "§eStaff free Ancient Coin costs OFF";
-            }
-            default -> "§6Staff free Ancient Coin costs: "
-                    + (cfg.staffFreeAncientCoinCosts ? "§aON" : "§eOFF")
-                    + "\n§8/lm admin stafffree on|off|toggle";
-        };
-        LmCommandFeedback.tellLines(source, msg);
-        return 1;
     }
 
     private static int adminReload(CommandSourceStack source) {

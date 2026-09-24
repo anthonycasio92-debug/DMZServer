@@ -68,7 +68,7 @@ public final class LmCommandSuggestions {
         String a2 = n > 2 ? lower(args[2]) : "";
         String a3 = n > 3 ? lower(args[3]) : "";
 
-        if ("lm".equals(cmd) || "legacymechanics".equals(cmd)) {
+        if ("lm".equals(cmd)) {
             if ("admin".equals(a0) && "clear".equals(a1) && n >= 3) {
                 return true;
             }
@@ -82,7 +82,7 @@ public final class LmCommandSuggestions {
             return false;
         }
         if ("difficulty".equals(cmd) || "diff".equals(cmd)) {
-            if ("admin".equals(a0) && ("gui".equals(a1) || "inspect".equals(a1) || "resynclevel".equals(a1))
+            if ("admin".equals(a0) && ("inspect".equals(a1) || "resynclevel".equals(a1))
                     && n >= 3 && !"clear".equals(a2)) {
                 return true;
             }
@@ -91,11 +91,8 @@ public final class LmCommandSuggestions {
             }
             return false;
         }
-        if ("padmin".equals(cmd) || "prestigeadmin".equals(cmd)) {
+        if ("padmin".equals(cmd)) {
             return padminPlayerNameSlot(n, a0);
-        }
-        if ("prestige".equals(cmd) && "admin".equals(a0)) {
-            return padminPlayerNameSlot(n, a1);
         }
         if ("rival".equals(cmd) || "spar".equals(cmd)) {
             if (n == 2 && ("stats".equals(a0) || "spectate".equals(a0) || "declare".equals(a0)
@@ -127,14 +124,7 @@ public final class LmCommandSuggestions {
         }
         String cmd = label == null ? "" : label.toLowerCase(Locale.ROOT);
         int n = args.length;
-        if ("prestige".equals(cmd) && n >= 2 && "admin".equalsIgnoreCase(args[0])) {
-            if (n == 2) {
-                return "";
-            }
-            String p = args[2];
-            return p == null ? "" : p;
-        }
-        if ("padmin".equals(cmd) || "prestigeadmin".equals(cmd)) {
+        if ("padmin".equals(cmd)) {
             if (n <= 1) {
                 return "";
             }
@@ -144,7 +134,7 @@ public final class LmCommandSuggestions {
             }
             return "";
         }
-        if ("lm".equals(cmd) || "legacymechanics".equals(cmd)) {
+        if ("lm".equals(cmd)) {
             if (n >= 5) {
                 String p = args[4];
                 return p == null ? "" : p;
@@ -177,44 +167,32 @@ public final class LmCommandSuggestions {
         return expectsPlayerName(label, args) && playerNamePartial(label, args).isEmpty();
     }
 
-    /** Player-name slot for {@code /padmin <sub> …} (and {@code /prestige admin <sub> …}). */
+    /** Player-name slot for {@code /padmin <sub> …}. */
     private static boolean padminPlayerNameSlot(int argCount, String subRaw) {
         String sub = lower(subRaw);
-        if (!isPrestigeAdminPlayerSub(sub) && !isPrestigeAdminPointsShorthand(sub)) {
+        if (!isPrestigeAdminPlayerSub(sub)) {
             return false;
         }
         return switch (sub) {
-            case "info", "sync", "skills", "invested" -> argCount == 1 || argCount == 2;
-            case "skill", "invest" -> argCount == 1 || argCount == 2;
-            case "tier", "tiers", "difficulty" -> argCount == 1 || argCount == 2;
+            case "info" -> argCount == 1 || argCount == 2;
             default -> argCount == 1 || argCount == 2;
         };
     }
 
     private static boolean isPrestigeAdminPlayerSub(String sub) {
         return switch (sub) {
-            case "info", "sync", "skills", "invested", "skill", "invest", "held", "completed", "points",
-                    "breakthroughs", "breakthrough", "cap", "fabled", "tier", "tiers", "difficulty" -> true;
-            default -> false;
-        };
-    }
-
-    private static boolean isPrestigeAdminPointsShorthand(String sub) {
-        return switch (sub) {
-            case "addpoints", "givepoints", "grantpoints", "setpoints", "removepoints", "takepoints" -> true;
+            case "info", "sync", "skills", "skill", "held", "completed", "points",
+                    "breakthroughs", "fabled", "tier" -> true;
             default -> false;
         };
     }
 
     private static boolean isCharacterAdminSub(String raw) {
-        return switch (lower(raw)) {
-            case "character", "char", "charservices", "characterservices" -> true;
-            default -> false;
-        };
+        return "character".equals(lower(raw));
     }
 
     private static boolean isCooldownSub(String raw) {
-        return "cooldown".equals(lower(raw)) || "cool".equals(lower(raw));
+        return "cooldown".equals(lower(raw));
     }
 
     private static String lower(String s) {
@@ -222,8 +200,8 @@ public final class LmCommandSuggestions {
     }
 
     public static final SuggestionProvider<CommandSourceStack> LM_OPEN_SYSTEMS = literals(
-            "hub", "main", "difficulty", "diff", "rival", "spar", "sparring", "prestige",
-            "character", "char", "progression", "prog", "skills", "skillcheck", "android_remove"
+            "hub", "main", "difficulty", "rival", "spar", "prestige", "character", "progression",
+            "skills", "skillcheck", "android_remove"
     );
 
     public static final SuggestionProvider<CommandSourceStack> LM_INSPECT_SYSTEMS = literals(
