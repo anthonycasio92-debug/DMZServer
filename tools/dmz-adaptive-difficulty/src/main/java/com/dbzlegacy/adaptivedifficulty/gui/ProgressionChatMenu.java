@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.gui;
 
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
+import com.dbzlegacy.adaptivedifficulty.progression.ProgressionModuleCatalog;
 import com.dbzlegacy.adaptivedifficulty.progression.skills.MeditationProgression;
 import com.dbzlegacy.adaptivedifficulty.progression.tp.GlobalTpBoost;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
@@ -32,7 +33,7 @@ public final class ProgressionChatMenu {
             case "skills", "tp", "race", "combat", "end", "shop", "fabled", "utility", "status", "help" ->
                     category(player, p);
             case "economy", "ancient_coins", "coins" -> economy(player);
-            case "admin", "flags", "disable", "flags_fabled", "fabled_flags" -> main(player);
+            case "admin", "flags", "disable", "flags_fabled", "fabled_flags" -> flagsBoard(player);
             default -> main(player);
         }
     }
@@ -63,7 +64,9 @@ public final class ProgressionChatMenu {
                 .m_7220_(btn("§f[Help]", "/prog do page help", "Commands")));
         if (StaffAccess.isStaff(player)) {
             send(player, Component.m_237113_("§7")
-                    .m_7220_(btn("§6[Ancient Coins]", "/prog do page economy", "Staff free coin costs (all LM paid features)")));
+                    .m_7220_(btn("§6[Ancient Coins]", "/prog do page economy", "Staff free coin costs (all LM paid features)"))
+                    .m_7220_(Component.m_237113_("  "))
+                    .m_7220_(btn("§e[All flags]", "/prog do page flags", "Toggle every progression module")));
         }
         send(player, Component.m_237113_("§8────────────────"));
     }
@@ -94,8 +97,64 @@ public final class ProgressionChatMenu {
                     .m_7220_(Component.m_237113_("  "))
                     .m_7220_(btn("§f[Open Skills]", "/skills", "Skills GUI")));
         }
+        appendFlagToggles(player, page);
         send(player, btn("§7« Back", "/prog do page main", "Main"));
         send(player, Component.m_237113_("§8────────────────"));
+    }
+
+    private static void flagsBoard(ServerPlayer player) {
+        send(player, Component.m_237113_(""));
+        send(player, Component.m_237113_("§8── §fProgression · All flags §8──"));
+        for (String line : ProgressionGuiApi.linesForPage(player, "flags")) {
+            send(player, Component.m_237113_(line));
+        }
+        send(player, Component.m_237113_(""));
+        appendFlagToggles(player, "flags");
+        send(player, btn("§7« Back", "/prog do page main", "Main"));
+        send(player, Component.m_237113_("§8────────────────"));
+    }
+
+    private static void appendFlagToggles(ServerPlayer player, String page) {
+        if (!StaffAccess.isStaff(player)) {
+            return;
+        }
+        var ph = ProgressionGuiApi.placeholders(player);
+        String[] keys = "flags".equals(page)
+                ? ProgressionModuleCatalog.allFlagKeys()
+                : ProgressionGuiApi.flagKeysForPage(page);
+        if (keys.length == 0) {
+            return;
+        }
+        send(player, Component.m_237113_("§7Staff toggles:"));
+        MutableComponent row = Component.m_237113_("§7");
+        int col = 0;
+        for (String key : keys) {
+            if ("android".equals(key) && "race".equals(page)) {
+                continue;
+            }
+            if ("boost".equals(key) && "tp".equals(page)) {
+                continue;
+            }
+            boolean on = "true".equalsIgnoreCase(ph.getOrDefault("flag_" + key, "false"));
+            String title = ProgressionModuleCatalog.displayTitle(key);
+            String label = (on ? "§c[OFF " : "§a[ON ") + title + "§7]";
+            String cmd = "/prog do flag " + key + " " + page;
+            if (col > 0 && col % 2 == 0) {
+                send(player, row);
+                row = Component.m_237113_("§7");
+            }
+            if (col % 2 == 1) {
+                row = row.m_7220_(Component.m_237113_("  "));
+            }
+            row = row.m_7220_(btn(label, cmd, "Toggle " + title));
+            col++;
+        }
+        if (col > 0) {
+            send(player, row);
+        }
+        if (!"flags".equals(page) && keys.length > 0) {
+            send(player, btn("§8[Module sources]", "/prog do module_doc " + page, "Config + Java paths for this section"));
+        }
     }
 
     private static void economy(ServerPlayer player) {
