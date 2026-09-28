@@ -5,6 +5,7 @@ import com.dbzlegacy.adaptivedifficulty.calc.LmOverhaulScaledCombat;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionData;
+import com.dbzlegacy.adaptivedifficulty.progression.ProgressionModuleCatalog;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionSystem;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeAdmin;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem;
@@ -91,6 +92,21 @@ public final class ProgressionGuiApi {
     /** Text status (flags + active boost + meditation trial). */
     public static String statusText() {
         return ProgressionSystem.statusSummary();
+    }
+
+    /** Progression section pages → toggle keys (staff GUIs). */
+    public static String[] flagKeysForPage(String page) {
+        return ProgressionModuleCatalog.flagKeysForPage(page);
+    }
+
+    /** Staff chat lines: where to edit one module (Java + config, not CNPC scripts). */
+    public static List<String> moduleDocLines(String flagKey) {
+        return ProgressionModuleCatalog.formatModuleDoc(flagKey);
+    }
+
+    /** Staff chat lines: all modules on a progression section page. */
+    public static List<String> sectionModuleDocLines(String page) {
+        return ProgressionModuleCatalog.formatSectionDoc(page);
     }
 
     /** Staff: {@code /progression admin <flag> <on|off>}. */
@@ -666,7 +682,7 @@ public final class ProgressionGuiApi {
                     help.add("§e/prestige §7— Prestige GUI (staff slash; players use /lm)");
                     help.add("§e/skills §7— Skill unlocks (staff)");
                     help.add("§e/skillcheck §7— Skill Check (donator)");
-                    help.add("§8Staff · /prog admin · toggle flags in section GUIs");
+                    help.add("§8Staff · tap flags in section GUIs · §f/prog do module_doc <section>");
                 } else {
                     help.add("§7Other actions: §f/lm §7→ Prestige · Remove Android");
                     help.add("§8Charge Ki in the trial biome while meeting the trial.");
@@ -791,6 +807,7 @@ public final class ProgressionGuiApi {
         String a = arg == null ? "" : arg.trim();
         boolean staff = StaffAccess.isStaff(player);
         boolean staffMaintenance = staff && ("flag".equals(act) || "toggle".equals(act)
+                || "module_doc".equals(act) || "moduledoc".equals(act) || "module".equals(act)
                 || "boost".equals(act) || "tpboost".equals(act) || "globaltpboost".equals(act)
                 || "toggle_staff_free_coins".equals(act) || "staff_free_coins".equals(act)
                 || "stafffree".equals(act) || "staff_free".equals(act));
@@ -831,6 +848,19 @@ public final class ProgressionGuiApi {
                 return "§cUnknown flag: " + key;
             }
             return "§aProgression §f" + key + " §7→ §f" + (next ? "ON" : "OFF");
+        }
+        if ("module_doc".equals(act) || "moduledoc".equals(act) || "module".equals(act)) {
+            if (!StaffAccess.isStaff(player)) {
+                return "§cStaff only.";
+            }
+            String targetPage = page == null || page.isBlank() ? "main" : page;
+            if (a == null || a.isBlank()) {
+                return String.join("\n", sectionModuleDocLines(targetPage));
+            }
+            if (ProgressionModuleCatalog.isSectionPage(a)) {
+                return String.join("\n", sectionModuleDocLines(a));
+            }
+            return String.join("\n", moduleDocLines(a));
         }
         if ("android".equals(act) || "androidconvert".equals(act) || "convertandroid".equals(act)) {
             return androidConvert(player, a);

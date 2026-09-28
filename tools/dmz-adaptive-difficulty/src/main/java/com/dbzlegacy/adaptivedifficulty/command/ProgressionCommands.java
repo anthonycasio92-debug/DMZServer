@@ -392,7 +392,6 @@ public final class ProgressionCommands {
         // Root is open so players can run meditation status + android remove.
         // Staff-only leaves keep .requires(staff) / handler checks.
         return Commands.m_82127_(name)
-                .requires(StaffAccess::isStaffSource)
                 .executes(ctx -> helpOrGui(ctx.getSource()))
                 .then(Commands.m_82127_("gui")
                         .requires(ProgressionCommands::staff)
@@ -414,6 +413,21 @@ public final class ProgressionCommands {
                                                 .executes(ctx -> flagDo(
                                                         ctx.getSource(),
                                                         StringArgumentType.getString(ctx, "flag"),
+                                                        StringArgumentType.getString(ctx, "page"))))))
+                        .then(Commands.m_82127_("module_doc")
+                                .executes(ctx -> progressionActionDo(ctx.getSource(), "module_doc", "", "main"))
+                                .then(Commands.m_82129_("target", StringArgumentType.word())
+                                        .executes(ctx -> {
+                                            String target = StringArgumentType.getString(ctx, "target");
+                                            return progressionActionDo(ctx.getSource(), "module_doc", target, target);
+                                        })))
+                        .then(Commands.m_82127_("toggle_staff_free_coins")
+                                .then(Commands.m_82129_("value", StringArgumentType.word())
+                                        .then(Commands.m_82129_("page", StringArgumentType.word())
+                                                .executes(ctx -> progressionActionDo(
+                                                        ctx.getSource(),
+                                                        "toggle_staff_free_coins",
+                                                        StringArgumentType.getString(ctx, "value"),
                                                         StringArgumentType.getString(ctx, "page")))))))
                 .then(Commands.m_82127_("boost")
                         .requires(ProgressionCommands::staff)
@@ -527,7 +541,26 @@ public final class ProgressionCommands {
         if (msg != null && !msg.isBlank()) {
             reply(source, player, msg);
         }
-        ProgressionMenu.open(player, page == null || page.isBlank() ? "admin" : page);
+        ProgressionMenu.open(player, page == null || page.isBlank() ? "main" : page);
+        return 1;
+    }
+
+    private static int progressionActionDo(CommandSourceStack source, String action, String arg, String page) {
+        ServerPlayer player = playerOrNull(source);
+        if (player == null) {
+            return 0;
+        }
+        if (!staff(source)) {
+            reply(source, player, LmCommandMessages.STAFF_ONLY);
+            return 0;
+        }
+        String msg = ProgressionGuiApi.handleDo(player, action, arg, page);
+        if (msg != null && !msg.isBlank()) {
+            LmCommandFeedback.tellLines(source, msg);
+        }
+        if (!"module_doc".equals(action) && !"moduledoc".equals(action) && !"module".equals(action)) {
+            ProgressionMenu.open(player, page == null || page.isBlank() ? "main" : page);
+        }
         return 1;
     }
 

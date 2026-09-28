@@ -91,14 +91,17 @@ public final class ProgressionChestGui implements Listener {
             case "end" -> sectionFlags(viewer, subject, "end", "&5End", Material.END_CRYSTAL,
                     new String[]{"end", "endportal"});
             case "fabled" -> sectionFlags(viewer, subject, "fabled", "&dFabled Bridges", Material.AMETHYST_SHARD,
-                    new String[]{"fabled"});
+                    new String[]{
+                            "fabled", "energy", "statscreen", "tpsp", "attr",
+                            "prestigeskill", "faction", "cleaner", "raceclass", "classperm"
+                    });
             case "utility" -> sectionFlags(viewer, subject, "utility", "&7Utility", Material.SPYGLASS,
                     new String[]{"shadow", "statchecker"});
             case "status" -> sectionFlags(viewer, subject, "status", "&eStatus", Material.WRITABLE_BOOK,
                     new String[0]);
             case "economy", "ancient_coins", "coins" ->
                     ForgeBridge.isStaff(viewer) ? economy(viewer, subject) : main(viewer, subject);
-            case "admin", "flags", "disable", "flags_fabled", "fabled_flags" -> main(viewer, subject);
+            case "admin", "flags", "disable", "flags_fabled", "fabled_flags" -> allFlags(viewer, subject);
             default -> main(viewer, subject);
         };
         GuiFeedback.openChest(viewer, inv);
@@ -162,6 +165,21 @@ public final class ProgressionChestGui implements Listener {
         return inv;
     }
 
+    private static final String[] ALL_PROGRESSION_FLAG_KEYS = {
+            "flight", "sprint", "meditation", "potential",
+            "farming", "building", "boost", "bio",
+            "racelock", "yardrat", "spiritualist", "android",
+            "kiweapons", "piercing", "dot", "apothic",
+            "end", "endportal", "prestige", "skills",
+            "fabled", "energy", "statscreen", "tpsp", "attr",
+            "prestigeskill", "faction", "cleaner", "raceclass", "classperm",
+            "shadow", "statchecker"
+    };
+
+    private Inventory allFlags(Player viewer, Player subject) {
+        return sectionFlags(viewer, subject, "flags", "&eAll Flags", Material.REPEATER, ALL_PROGRESSION_FLAG_KEYS);
+    }
+
     private Inventory sectionFlags(Player viewer, Player subject, String page, String title, Material mat, String[] keys) {
         Map<String, String> ph = ForgeBridge.progressionPlaceholders(subject);
         Holder holder = new Holder(page);
@@ -171,7 +189,7 @@ public final class ProgressionChestGui implements Listener {
         boolean staff = ForgeBridge.isStaff(viewer);
         List<String> headerLore = new ArrayList<>();
         headerLore.add("");
-        headerLore.add("&7Module status (read-only)");
+        headerLore.add(staff ? "&7Staff: click a module to toggle ON/OFF" : "&7Module status");
         for (String line : ForgeBridge.progressionLines(subject, page)) {
             if (line != null && !line.isBlank()) {
                 headerLore.add(line.replace('§', '&'));
@@ -222,7 +240,21 @@ public final class ProgressionChestGui implements Listener {
                 }
                 continue;
             }
-            // Flag toggles removed from GUI — use /progression commands for staff.
+            List<String> lore = new ArrayList<>();
+            lore.add("");
+            lore.add(on ? "&aModule enabled" : "&cModule disabled");
+            lore.add("&7" + info[1]);
+            if (staff) {
+                lore.add("");
+                lore.add("&eClick · turn " + (on ? "OFF" : "ON"));
+                ItemStack stack = tipBtn("progression.flag." + key, Material.LEVER,
+                        (on ? "&a" : "&c") + info[0], lore);
+                put(holder, inv, slots[i], stack, SlotAction.act("flag", key, page));
+            } else {
+                ItemStack stack = tipBtn("progression.flag." + key, Material.GRAY_DYE,
+                        "&7" + info[0], lore);
+                put(holder, inv, slots[i], stack);
+            }
         }
         put(holder, inv, 36, pageBtn("common.back", Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
