@@ -217,6 +217,12 @@ merge_onto_base_jar() {
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/race/AndroidConversion.class" \
       "$merge/com/dbzlegacy/adaptivedifficulty/progression/race/AndroidConversion.class"
   fi
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/progression/ProgressionModuleCatalog.class" ]]; then
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/ProgressionModuleCatalog.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/progression/ProgressionModuleCatalog.class"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/ProgressionModuleCatalog\$"*.class \
+      "$merge/com/dbzlegacy/adaptivedifficulty/progression/" 2>/dev/null || true
+  fi
   cp "$RES/META-INF/mods.toml" "$merge/META-INF/mods.toml"
   # Ki/stamina pool fixes live in the base jar bytecode — never replace mixin wiring from src.
   if [[ ! -f "$merge/legacymechanics.mixins.json" ]]; then
