@@ -23,8 +23,8 @@ export SSHPASS="$PASS"
 SFTP=(sshpass -e sftp -o StrictHostKeyChecking=accept-new -P "$PORT")
 list_remote() {
   local dir="$1"
-  "${SFTP[@]}" "$USER@$HOST" <<EOF 2>/dev/null | rg '\.jar$' | awk '{print $NF}' || true
-ls -1 $dir
+  "${SFTP[@]}" "$USER@$HOST" <<EOF 2>/dev/null | rg '\.jar' | sed -E 's#.*/##' | rg '\.jar$' || true
+ls $dir
 bye
 EOF
 }

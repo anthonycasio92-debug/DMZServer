@@ -207,12 +207,11 @@ def main() -> int:
     cnpc_prog = read(SRC / "gui/cnpc/CnpcLmProgressionGui.java")
     check("CNPC TP boost presets avoid flash ids", "ID_BOOST_PRESET_BASE" in cnpc_prog
           and "boostPreset(gui, player, row, 50," not in cnpc_prog)
-    check("Progression CNPC no All flags menu", "All flags" not in cnpc_prog and "paintAllFlags" not in cnpc_prog)
+    check("Progression CNPC staff flag toggles", "HINT_TOGGLE_STAFF" in cnpc_prog and "paintAllFlags" in cnpc_prog)
     prog_chest = read(BUKKIT / "ProgressionChestGui.java")
-    check("Progression chest no All Flags hub tile", "All Flags" not in prog_chest
-          and 'SlotAction.page("admin")' not in prog_chest)
+    check("Progression chest staff section toggles", "allFlags" in prog_chest and "SlotAction.act(\"flag\"" in prog_chest)
     chat_prog = read(SRC / "gui/ProgressionChatMenu.java")
-    check("Progression chat menu no Flags hub", "[Flags]" not in chat_prog and "Staff Flags" not in chat_prog)
+    check("Progression chat staff flag toggles", "appendFlagToggles" in chat_prog and "[All flags]" in chat_prog)
     cmi_prog = read(BUKKIT / "CmiProgressionGui.java")
     check("Progression CMI no flag board methods", "openFlags" not in cmi_prog and "openFabledFlags" not in cmi_prog)
     check("Android build overlay ships AndroidConversion", "progression/race/AndroidConversion.class" in build_sh)
