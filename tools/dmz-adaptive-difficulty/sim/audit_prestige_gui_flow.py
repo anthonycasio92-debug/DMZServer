@@ -93,7 +93,7 @@ def main() -> None:
 
     print("\n=== Cross-backend parity ===")
     ok("All backends: Turn-in + Shop + Effects + Tiers on main",
-       all(x in cnpc for x in ("Turn in held", "Skill shop", "Effects", "Difficulty tiers"))
+       all(x in cnpc for x in ("Turn-in", "Skill shop", "Effects", "§6Tiers"))
        and "Turn In Prestiges" in chest and "Skill Shop" in chest)
 
     out = ROOT / "sim/out/prestige-gui-audit.md"

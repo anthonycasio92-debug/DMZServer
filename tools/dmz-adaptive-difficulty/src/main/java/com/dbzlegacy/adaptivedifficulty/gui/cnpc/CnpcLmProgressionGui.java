@@ -127,10 +127,10 @@ public final class CnpcLmProgressionGui {
         }
         if ("tp".equals(page)) {
             if (staff) {
-                grid.add(CnpcGuiLayout.GridButton.run("§6Global TP boost", () -> open(player, "boost_panel")));
+                grid.add(CnpcGuiLayout.GridButton.run("§6TP boost", () -> open(player, "boost_panel")));
             } else {
                 grid.add(CnpcGuiLayout.GridButton.disabled(
-                        "§6Global TP boost §8· " + CnpcGuiSupport.flagOnOff(ph, "boost")));
+                        "§6TP boost §8· " + CnpcGuiSupport.flagOnOff(ph, "boost")));
             }
         }
         if ("race".equals(page) && ProgressionConfig.androidConversion()) {
@@ -172,8 +172,8 @@ public final class CnpcLmProgressionGui {
             }
             boolean on = "true".equalsIgnoreCase(ph.getOrDefault("flag_" + key, "false"));
             String label = on
-                    ? CnpcGuiStyle.toggleOn(ProgressionModuleCatalog.displayTitle(key))
-                    : CnpcGuiStyle.toggleOff(ProgressionModuleCatalog.displayTitle(key));
+                    ? CnpcGuiStyle.toggleOn(ProgressionModuleCatalog.buttonTitle(key))
+                    : CnpcGuiStyle.toggleOff(ProgressionModuleCatalog.buttonTitle(key));
             String flagKey = key;
             out.add(CnpcGuiLayout.GridButton.action(
                     label,
@@ -265,9 +265,9 @@ public final class CnpcLmProgressionGui {
                 "§f" + com.dbzlegacy.adaptivedifficulty.progression.race.AndroidConversion.eligibleRaceHint(),
                 "§7Remove restores prior forms (confirm within 10s)"
         ), 3));
-        CnpcGuiSupport.button(gui, 60, "§aConvert to Android…", CnpcGuiSupport.COL_L, row,
+        CnpcGuiSupport.button(gui, 60, "§aConvert…", CnpcGuiSupport.COL_L, row,
                 () -> open(player, "android_convert"));
-        CnpcGuiSupport.button(gui, 61, "§cRemove upgrade…", CnpcGuiSupport.COL_R, row,
+        CnpcGuiSupport.button(gui, 61, "§cRemove…", CnpcGuiSupport.COL_R, row,
                 () -> open(player, "android_remove"));
         row += CnpcGuiSupport.ROW_STEP + 8;
         CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "race"), "§7« Back");
@@ -278,7 +278,7 @@ public final class CnpcLmProgressionGui {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandSubPage("Progression", "Android convert"),
                 CnpcGuiStyle.HINT_DOUBLE_CLICK_PLAYER);
         int row = CnpcGuiSupport.bodyBelowHeader(infoY);
-        CnpcGuiSupport.button(gui, 62, "§aConvert yourself", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
+        CnpcGuiSupport.button(gui, 62, "§aSelf convert", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> ProgressionGuiApi.handleDo(player, "android", subject.m_7755_().getString(), "android_convert"),
                 () -> open(player, "android_convert")));
@@ -295,7 +295,7 @@ public final class CnpcLmProgressionGui {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandSubPage("Progression", "Remove Android"),
                 "§7Two-step confirm within 10 seconds");
         int row = CnpcGuiSupport.bodyBelowHeader(infoY);
-        CnpcGuiSupport.button(gui, 63, "§cRemove on yourself", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
+        CnpcGuiSupport.button(gui, 63, "§cRemove on me", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> ProgressionGuiApi.handleDo(player, "android_remove", subject.m_7755_().getString(),
                         "android_remove"),
@@ -341,7 +341,7 @@ public final class CnpcLmProgressionGui {
                 "§7Staff pricing for LM paid features");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, ProgressionGuiApi.linesForPage(player, "economy"), 4));
         CnpcGuiSupport.button(gui, 20,
-                staffFree ? CnpcGuiStyle.toggleOn("Staff free costs") : CnpcGuiStyle.toggleOff("Staff free costs"),
+                staffFree ? CnpcGuiStyle.toggleOn("Free for staff") : CnpcGuiStyle.toggleOff("Free for staff"),
                 CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                         player,
                         () -> ProgressionGuiApi.handleDo(player, "toggle_staff_free_coins",

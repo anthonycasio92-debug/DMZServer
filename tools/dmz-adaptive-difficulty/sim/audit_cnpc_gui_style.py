@@ -42,6 +42,9 @@ FOOTER_PREVIEW = re.compile(
 FLASH_BUTTON_CONFLICT = re.compile(r"CnpcGuiSupport\.button\s*\(\s*gui\s*,\s*50\s*,")
 FLASH_LABEL_CONFLICT = re.compile(r"addLabel\s*\(\s*50\s*,")
 BOOST_FLASH_CONFLICT = re.compile(r"boostPreset\s*\([^)]*,\s*5[0-9]\s*,")
+BRAND_ON_BUTTON = re.compile(
+    r"CnpcGuiSupport\.button(?:Small)?\([^)]*CnpcGuiStyle\.brand(?:SubPage|Title)\("
+)
 def method_blocks(text: str) -> list[tuple[str, str]]:
     parts = re.split(r"\n    private static void ", text)
     out: list[tuple[str, str]] = []
@@ -121,6 +124,8 @@ def main() -> int:
             errors.append(f"{rel}: label id 50 overlaps flash notice band (use ID_EMPTY_PLACEHOLDER)")
         if BOOST_FLASH_CONFLICT.search(text):
             errors.append(f"{rel}: TP boost preset button id 50–59 overlaps flash band (use ID_BOOST_PRESET_BASE)")
+        if BRAND_ON_BUTTON.search(text):
+            errors.append(f"{rel}: brandTitle/brandSubPage on a button (window headers only — use short labels)")
 
     support = CNPC / "CnpcGuiSupport.java"
     if support.is_file():

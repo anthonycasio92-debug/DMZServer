@@ -61,12 +61,12 @@ public final class CnpcLmPrestigeGui {
                 player,
                 () -> ProgressionGuiApi.handlePrestigeDo(player, "confirm", "", "main"),
                 () -> open(player, "main")));
-        CnpcGuiSupport.button(gui, 21, "§eTurn in held", CnpcGuiSupport.COL_R, row, () -> open(player, "turnin"));
+        CnpcGuiSupport.button(gui, 21, "§eTurn-in", CnpcGuiSupport.COL_R, row, () -> open(player, "turnin"));
         row += 24;
         CnpcGuiSupport.button(gui, 22, "§bSkill shop", CnpcGuiSupport.COL_L, row, () -> open(player, "shop"));
         CnpcGuiSupport.button(gui, 23, "§5Effects", CnpcGuiSupport.COL_R, row, () -> open(player, "effects"));
         row += 24;
-        CnpcGuiSupport.button(gui, 24, "§6Difficulty tiers", CnpcGuiSupport.COL_L, row, () -> open(player, "tiers"));
+        CnpcGuiSupport.button(gui, 24, "§6Tiers", CnpcGuiSupport.COL_L, row, () -> open(player, "tiers"));
         row += 24;
         footer(player, gui, row, null);
     }

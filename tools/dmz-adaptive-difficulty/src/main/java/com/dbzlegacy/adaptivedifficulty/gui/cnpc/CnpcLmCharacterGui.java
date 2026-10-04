@@ -58,7 +58,7 @@ public final class CnpcLmCharacterGui {
     private static void paintMain(ServerPlayer player, ICustomGui gui) {
         ServerPlayer subject = CnpcGuiSupport.target(player);
         var ph = CharacterServicesGuiApi.placeholders(player);
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandTitle("Character services"),
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandTitle("Character"),
                 "§7Race §f" + ph.getOrDefault("current_race", "?") + CnpcGuiStyle.SEP + "§7Class §f"
                         + ph.getOrDefault("current_class", "?"));
 
@@ -282,7 +282,7 @@ public final class CnpcLmCharacterGui {
                 "§7Opens the in-game editor");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, CharacterServicesGuiApi.linesForPage(player, "reskin"),
                         CnpcGuiStyle.INFO_INLINE_MAX));
-        CnpcGuiSupport.button(gui, 20, "§eReview cost & continue", CnpcGuiSupport.COL_L, row,
+        CnpcGuiSupport.button(gui, 20, "§eContinue…", CnpcGuiSupport.COL_L, row,
                 () -> open(player, "reskin_confirm"));
         row += CnpcGuiSupport.ROW_STEP + 4;
         footer(player, gui, row, "main", subject);

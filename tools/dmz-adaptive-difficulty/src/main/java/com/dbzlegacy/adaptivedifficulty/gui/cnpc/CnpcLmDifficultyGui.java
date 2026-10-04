@@ -99,14 +99,14 @@ public final class CnpcLmDifficultyGui {
             lines.add("§8Scaled enemies can hurt other players nearby.");
         }
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 3));
-        CnpcGuiSupport.button(gui, 20, "§eUnlock tiers", CnpcGuiSupport.COL_L, row, () -> open(player, "tiers"));
+        CnpcGuiSupport.button(gui, 20, "§eTiers", CnpcGuiSupport.COL_L, row, () -> open(player, "tiers"));
         CnpcGuiSupport.button(gui, 21, "§dTitles", CnpcGuiSupport.COL_R, row, () -> open(player, "titles"));
         row += 24;
-        CnpcGuiSupport.button(gui, 22, "§bTeam scaling", CnpcGuiSupport.COL_L, row, () -> open(player, "team"));
+        CnpcGuiSupport.button(gui, 22, "§bTeam scale", CnpcGuiSupport.COL_L, row, () -> open(player, "team"));
         PlayerDifficultyData personalData = DifficultyCache.data(subject);
         boolean personalOn = personalData != null && personalData.isPersonalEnabled();
         CnpcGuiSupport.button(gui, 23,
-                personalOn ? CnpcGuiStyle.toggleOn("Personal scaling") : CnpcGuiStyle.toggleOff("Personal scaling"),
+                personalOn ? CnpcGuiStyle.toggleOn("Personal") : CnpcGuiStyle.toggleOff("Personal"),
                 CnpcGuiSupport.COL_R, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> DifficultyActions.handleArgNoReopen(subject, "toggle_personal", "0", "main").message(),
@@ -114,13 +114,13 @@ public final class CnpcLmDifficultyGui {
         row += 24;
         CnpcGuiSupport.button(gui, 24, "§5End Dragon…", CnpcGuiSupport.COL_L, row,
                 () -> open(player, "end_dragon"));
-        CnpcGuiSupport.button(gui, 25, "§6Rival system", CnpcGuiSupport.COL_R, row,
+        CnpcGuiSupport.button(gui, 25, "§6Rivals", CnpcGuiSupport.COL_R, row,
                 () -> CnpcLmGui.open(player, "rival", "main"));
         row += 24;
         PlayerDifficultyData d = DifficultyCache.data(subject);
         boolean coinChat = d != null && d.isCoinDropChat();
-        CnpcGuiSupport.button(gui, 26, coinChat ? CnpcGuiStyle.toggleOn("Coin messages")
-                : CnpcGuiStyle.toggleOff("Coin messages"), CnpcGuiSupport.COL_L, row,
+        CnpcGuiSupport.button(gui, 26, coinChat ? CnpcGuiStyle.toggleOn("Coin chat")
+                : CnpcGuiStyle.toggleOff("Coin chat"), CnpcGuiSupport.COL_L, row,
                 () -> CnpcGuiSupport.act(
                         player,
                         () -> DifficultyActions.handleArgNoReopen(subject, "toggle_coin_chat", "0", "main").message(),
@@ -265,7 +265,7 @@ public final class CnpcLmDifficultyGui {
             placed++;
         }
         row += CnpcGuiSupport.ROW_STEP + 12;
-        CnpcGuiSupport.button(gui, CnpcGuiSupport.ID_GRID_BASE, "§cClear active tier", CnpcGuiSupport.COL_L, row,
+        CnpcGuiSupport.button(gui, CnpcGuiSupport.ID_GRID_BASE, "§cClear tier", CnpcGuiSupport.COL_L, row,
                 () -> CnpcGuiSupport.act(
                 player,
                 () -> DifficultyActions.handleArgNoReopen(subject, "lower_tier", "0", "tiers").message(),
@@ -286,7 +286,7 @@ public final class CnpcLmDifficultyGui {
         row += 8;
         ServerPlayer subject = who(player);
         if (DifficultyConfig.isEnabled() && SystemGate.allows(subject)) {
-            CnpcGuiSupport.button(gui, 40, "§aTurn personal ON", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
+            CnpcGuiSupport.button(gui, 40, "§aEnable personal", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                     player,
                     () -> DifficultyActions.handleArgNoReopen(subject, "toggle_personal", "0", "main").message(),
                     () -> open(player, "main")));
@@ -376,7 +376,7 @@ public final class CnpcLmDifficultyGui {
 
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 2));
         if (earned) {
-            CnpcGuiSupport.button(gui, 20, equipped ? "§aAlready equipped" : "§aEquip this title",
+            CnpcGuiSupport.button(gui, 20, equipped ? "§aEquipped" : "§aEquip",
                     CnpcGuiSupport.COL_L, row, () -> {
                         if (!equipped) {
                             CnpcGuiSupport.act(
@@ -489,7 +489,7 @@ public final class CnpcLmDifficultyGui {
                 () -> open(player, "admin")));
         CnpcGuiSupport.button(gui, 21, "§8Staff details", CnpcGuiSupport.COL_R, row, () -> open(player, "stats"));
         row += 24;
-        CnpcGuiSupport.button(gui, 22, "§cLM Staff Admin", CnpcGuiSupport.COL_L, row,
+        CnpcGuiSupport.button(gui, 22, "§cStaff Admin", CnpcGuiSupport.COL_L, row,
                 () -> CnpcLmAdminGui.open(player, "main"));
         CnpcGuiSupport.button(gui, 23, "§8Event log", CnpcGuiSupport.COL_R, row,
                 () -> CnpcLmLogsGui.open(player, "main"));

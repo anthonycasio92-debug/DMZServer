@@ -130,8 +130,8 @@ public final class CnpcLmRivalGui {
                 player, "tpmsg", "toggle", "main"));
         if ("true".equalsIgnoreCase(ph.get("instinct_feature"))) {
             boolean instinctOn = "true".equalsIgnoreCase(ph.get("instinct"));
-            CnpcGuiSupport.button(gui, 27, instinctOn ? CnpcGuiStyle.toggleOn("Rival instinct")
-                    : CnpcGuiStyle.toggleOff("Rival instinct"),
+            CnpcGuiSupport.button(gui, 27, instinctOn ? CnpcGuiStyle.toggleOn("Instinct")
+                    : CnpcGuiStyle.toggleOff("Instinct"),
                     CnpcGuiSupport.COL_R, row,
                     () -> act(player, "instinct", "toggle", "main"));
         }
@@ -150,12 +150,12 @@ public final class CnpcLmRivalGui {
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, RivalGuiApi.linesForPage(subject(player), "actions"),
                         CnpcGuiStyle.INFO_INLINE_MAX));
         CnpcGuiSupport.button(gui, 20, "§eDeclare…", CnpcGuiSupport.COL_L, row, () -> open(player, "pick_declare"));
-        CnpcGuiSupport.button(gui, 21, "§6Declare invites", CnpcGuiSupport.COL_R, row, () -> open(player, "pending"));
+        CnpcGuiSupport.button(gui, 21, "§6Invites", CnpcGuiSupport.COL_R, row, () -> open(player, "pending"));
         row += 24;
         CnpcGuiSupport.button(gui, 22, "§8Silent…", CnpcGuiSupport.COL_L, row, () -> open(player, "pick_silent"));
         row += 24;
         if (RivalGuiApi.needsMutualReplacePick(subject(player))) {
-            CnpcGuiSupport.button(gui, 24, "§eReplace mutual…", CnpcGuiSupport.COL_L, row,
+            CnpcGuiSupport.button(gui, 24, "§eSwap mutual…", CnpcGuiSupport.COL_L, row,
                     () -> open(player, "pick_replace_mutual"));
             row += 24;
         }
@@ -211,13 +211,13 @@ public final class CnpcLmRivalGui {
             int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, detail, CnpcGuiStyle.INFO_INLINE_MAX));
             row += 8;
             if (outgoing) {
-                CnpcGuiSupport.button(gui, 20, "§cWithdraw declare", CnpcGuiSupport.COL_L, row,
+                CnpcGuiSupport.button(gui, 20, "§cWithdraw", CnpcGuiSupport.COL_L, row,
                         () -> act(pl, "remove", pickerArg, "pending"));
-                CnpcGuiSupport.button(gui, 21, "§7Keep waiting", CnpcGuiSupport.COL_R, row, () -> open(pl, "pending"));
+                CnpcGuiSupport.button(gui, 21, "§7Wait", CnpcGuiSupport.COL_R, row, () -> open(pl, "pending"));
             } else if (mutual) {
-                CnpcGuiSupport.button(gui, 20, "§aAccept mutual", CnpcGuiSupport.COL_L, row,
+                CnpcGuiSupport.button(gui, 20, "§aAccept", CnpcGuiSupport.COL_L, row,
                         () -> act(pl, "accept", pickerArg, "pending"));
-                CnpcGuiSupport.button(gui, 21, "§cDecline mutual", CnpcGuiSupport.COL_R, row,
+                CnpcGuiSupport.button(gui, 21, "§cDecline", CnpcGuiSupport.COL_R, row,
                         () -> act(pl, "decline", pickerArg, "pending"));
             } else {
                 CnpcGuiSupport.button(gui, 20, "§aAccept", CnpcGuiSupport.COL_L, row,
@@ -286,13 +286,13 @@ public final class CnpcLmRivalGui {
                 "§7Send duels · pending board · spectate");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, RivalGuiApi.challengeLines(who),
                         CnpcGuiStyle.INFO_INLINE_MAX));
-        CnpcGuiSupport.button(gui, 20, "§eSend challenge…", CnpcGuiSupport.COL_L, row, () -> open(player, "pick_challenge"));
+        CnpcGuiSupport.button(gui, 20, "§eChallenge…", CnpcGuiSupport.COL_L, row, () -> open(player, "pick_challenge"));
         int pending = RivalGuiApi.pendingChallengeCards(who).size();
         String pendingLabel = pending > 0 ? "§ePending requests §f(" + pending + ")" : "§6Pending requests";
         CnpcGuiSupport.button(gui, 21, pendingLabel, CnpcGuiSupport.COL_R, row, () -> open(player, "challenge_pending"));
         row += 24;
         CnpcGuiSupport.button(gui, 24, "§bSpectate…", CnpcGuiSupport.COL_L, row, () -> open(player, "pick_spectate"));
-        CnpcGuiSupport.button(gui, 25, "§8Stop spectate", CnpcGuiSupport.COL_R, row, () -> act(player, "spectate_stop", "", "challenge"));
+        CnpcGuiSupport.button(gui, 25, "§8Stop watching", CnpcGuiSupport.COL_R, row, () -> act(player, "spectate_stop", "", "challenge"));
         row += 24;
         footer(player, gui, row, "main");
     }
@@ -347,9 +347,9 @@ public final class CnpcLmRivalGui {
                     CnpcGuiStyle.INFO_INLINE_MAX));
             row += 8;
             if (outgoing) {
-                CnpcGuiSupport.button(gui, 20, "§cCancel challenge", CnpcGuiSupport.COL_L, row,
+                CnpcGuiSupport.button(gui, 20, "§cCancel", CnpcGuiSupport.COL_L, row,
                         () -> act(pl, "challenge_cancel", pickerArg, "challenge_pending"));
-                CnpcGuiSupport.button(gui, 21, "§7Keep waiting", CnpcGuiSupport.COL_R, row,
+                CnpcGuiSupport.button(gui, 21, "§7Wait", CnpcGuiSupport.COL_R, row,
                         () -> open(pl, "challenge_pending"));
             } else {
                 CnpcGuiSupport.button(gui, 20, "§aAccept", CnpcGuiSupport.COL_L, row,
@@ -390,7 +390,7 @@ public final class CnpcLmRivalGui {
         CnpcGuiSupport.button(gui, 21, "§aSeason", CnpcGuiSupport.COL_R, row, () -> open(player, "season"));
         row += 24;
         CnpcGuiSupport.button(gui, 22, "§bQuests", CnpcGuiSupport.COL_L, row, () -> open(player, "quests"));
-        CnpcGuiSupport.button(gui, 23, "§6More records", CnpcGuiSupport.COL_R, row, () -> open(player, "records"));
+        CnpcGuiSupport.button(gui, 23, "§6Records", CnpcGuiSupport.COL_R, row, () -> open(player, "records"));
         row += 24;
         footer(player, gui, row, "main");
     }

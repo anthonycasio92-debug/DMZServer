@@ -53,7 +53,7 @@ public final class CnpcLmHubGui {
         boolean skillCheck = SkillCheckService.canUse(player);
 
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandTitle("Main menu"),
-                "Scaling, rivals, sparring, prestige, and character tools");
+                "Difficulty, rivals, spar, prestige, and your character");
 
         List<String> lines = CnpcPlayerSnapshot.hubLines(who, ph, staff, skillCheck);
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(
@@ -68,7 +68,7 @@ public final class CnpcLmHubGui {
             return;
         }
 
-        row = CnpcGuiSupport.paintSectionTag(gui, ID_SECTION_COMBAT, row + 4, "Combat & world scaling");
+        row = CnpcGuiSupport.paintSectionTag(gui, ID_SECTION_COMBAT, row + 4, "Combat & scaling");
         systemBtn(gui, player, ph, "difficulty", row, CnpcGuiSupport.COL_L, "§aDifficulty",
                 () -> CnpcLmGui.open(player, "difficulty", "main"));
         systemBtn(gui, player, ph, "rival", row, CnpcGuiSupport.COL_R, "§6Rival",
@@ -81,7 +81,7 @@ public final class CnpcLmHubGui {
                 () -> CnpcLmGui.open(player, "prestige", "main"));
         row += gap + 4;
 
-        row = CnpcGuiSupport.paintSectionTag(gui, ID_SECTION_CHARACTER, row, "Character & account");
+        row = CnpcGuiSupport.paintSectionTag(gui, ID_SECTION_CHARACTER, row, "Character");
         if (skillCheck) {
             CnpcGuiSupport.button(gui, 24, "§eSkill Check", CnpcGuiSupport.COL_L, row,
                     () -> CnpcLmGui.open(player, "skillcheck", "main"));
@@ -96,11 +96,11 @@ public final class CnpcLmHubGui {
                         paintMain(player);
                     });
         }
-        CnpcGuiSupport.button(gui, 25, "§fCharacter Services", CnpcGuiSupport.COL_R, row,
+        CnpcGuiSupport.button(gui, 25, "§fCharacter", CnpcGuiSupport.COL_R, row,
                 () -> CnpcLmGui.open(player, "character", "main"));
         row += gap;
 
-        CnpcGuiSupport.button(gui, 26, CnpcGuiStyle.brandSubPage("Progression", "Remove Android"), CnpcGuiSupport.COL_L, row,
+        CnpcGuiSupport.button(gui, 26, "§cRemove Android", CnpcGuiSupport.COL_L, row,
                 () -> CnpcLmGui.open(player, "android_remove", "main"));
         if (staff) {
             CnpcGuiSupport.button(gui, 27, "§cStaff Admin", CnpcGuiSupport.COL_R, row,

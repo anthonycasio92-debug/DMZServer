@@ -97,15 +97,15 @@ public final class CnpcLmSparGui {
         CnpcGuiSupport.button(gui, 21, "§6Dojo rank", CnpcGuiSupport.COL_R, row, () -> open(player, "dojo_rank"));
         row += 24;
         CnpcGuiSupport.button(gui, 22, "§dLeaderboard", CnpcGuiSupport.COL_L, row, () -> open(player, "top"));
-        CnpcGuiSupport.button(gui, 23, "§bTraining bonds", CnpcGuiSupport.COL_R, row, () -> open(player, "mentor"));
+        CnpcGuiSupport.button(gui, 23, "§bBonds", CnpcGuiSupport.COL_R, row, () -> open(player, "mentor"));
         row += 24;
         boolean tpOn = "true".equalsIgnoreCase(ph.get("tpMsg"));
         CnpcGuiSupport.button(gui, 24, tpOn ? CnpcGuiStyle.toggleOn("TP")
                 : CnpcGuiStyle.toggleOff("TP"), CnpcGuiSupport.COL_L, row,
                 () -> act(player, "tpmsg", "toggle", "main"));
         boolean mentorTpOn = "true".equalsIgnoreCase(ph.get("mentorTpMsg"));
-        CnpcGuiSupport.button(gui, 25, mentorTpOn ? CnpcGuiStyle.toggleOn("Mentor TP")
-                : CnpcGuiStyle.toggleOff("Mentor TP"), CnpcGuiSupport.COL_R, row,
+        CnpcGuiSupport.button(gui, 25, mentorTpOn ? CnpcGuiStyle.toggleOn("Mentor chat")
+                : CnpcGuiStyle.toggleOff("Mentor chat"), CnpcGuiSupport.COL_R, row,
                 () -> act(player, "mentor_tpmsg", "toggle", "main"));
         row += 24;
         if (StaffAccess.isStaff(player)) {
@@ -121,11 +121,11 @@ public final class CnpcLmSparGui {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandSubPage("Sparring", "Training bonds"),
                 "§7Masters recruit · students request a master");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, SparGuiApi.mentorLines(who), CnpcGuiStyle.INFO_INLINE_MAX));
-        CnpcGuiSupport.button(gui, 20, "§aRecruit apprentice…", CnpcGuiSupport.COL_L, row, () -> open(player, "pick_apprentice"));
-        CnpcGuiSupport.button(gui, 21, "§bRequest a master…", CnpcGuiSupport.COL_R, row, () -> open(player, "pick_mentor"));
+        CnpcGuiSupport.button(gui, 20, "§aRecruit…", CnpcGuiSupport.COL_L, row, () -> open(player, "pick_apprentice"));
+        CnpcGuiSupport.button(gui, 21, "§bFind master…", CnpcGuiSupport.COL_R, row, () -> open(player, "pick_mentor"));
         row += 24;
-        CnpcGuiSupport.button(gui, 22, "§6Bond invites", CnpcGuiSupport.COL_L, row, () -> open(player, "pending"));
-        CnpcGuiSupport.button(gui, 23, "§eRelease apprentice…", CnpcGuiSupport.COL_R, row, () -> open(player, "pick_release"));
+        CnpcGuiSupport.button(gui, 22, "§6Invites", CnpcGuiSupport.COL_L, row, () -> open(player, "pending"));
+        CnpcGuiSupport.button(gui, 23, "§eRelease…", CnpcGuiSupport.COL_R, row, () -> open(player, "pick_release"));
         row += 24;
         CnpcGuiSupport.button(gui, 24, "§cLeave mentor", CnpcGuiSupport.COL_L, row, () -> act(player, "mentor_leave", "", "mentor"));
         CnpcGuiSupport.button(gui, 25, "§5Dojo home", CnpcGuiSupport.COL_R, row, () -> open(player, "dojo"));
@@ -220,7 +220,7 @@ public final class CnpcLmSparGui {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandSubPage("Sparring", "Dojo war"),
                 "§7Challenge rival dojos");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, SparGuiApi.dojoWarLines(who), CnpcGuiStyle.INFO_INLINE_MAX));
-        CnpcGuiSupport.button(gui, 20, "§eChallenge rival dojo…", CnpcGuiSupport.COL_L, row, () -> open(player, "pick_dojo_challenge"));
+        CnpcGuiSupport.button(gui, 20, "§eDeclare war…", CnpcGuiSupport.COL_L, row, () -> open(player, "pick_dojo_challenge"));
         int warPending = SparGuiApi.pendingDojoWarCards(who).size();
         String warPendingLabel = warPending > 0 ? "§eWar pending §f(" + warPending + ")" : "§6War pending";
         CnpcGuiSupport.button(gui, 21, warPendingLabel, CnpcGuiSupport.COL_R, row, () -> open(player, "dojo_war_pending"));
@@ -264,7 +264,7 @@ public final class CnpcLmSparGui {
             row += 8;
             CnpcGuiSupport.button(gui, 20, "§aAccept", CnpcGuiSupport.COL_L, row,
                     () -> act(pl, "dojo_accept", pickerArg, "dojo_war_pending"));
-            CnpcGuiSupport.button(gui, 21, "§cDecline / revoke", CnpcGuiSupport.COL_R, row,
+            CnpcGuiSupport.button(gui, 21, "§cDecline", CnpcGuiSupport.COL_R, row,
                     () -> act(pl, "dojo_war_cancel", pickerArg, "dojo_war_pending"));
             row += CnpcGuiSupport.ROW_STEP + 4;
             CnpcGuiSupport.navSubmenu(pl, gui, row, () -> open(pl, "dojo_war_pending"), "§7« Back");

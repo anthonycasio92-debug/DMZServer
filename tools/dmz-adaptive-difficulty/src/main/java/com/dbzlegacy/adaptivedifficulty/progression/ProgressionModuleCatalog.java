@@ -135,6 +135,42 @@ public final class ProgressionModuleCatalog {
         return flagKey == null ? "" : flagKey;
     }
 
+    /** Short label for CNPC toggle buttons (full title stays in chat/docs). */
+    public static String buttonTitle(String flagKey) {
+        if (flagKey == null || flagKey.isBlank()) {
+            return "";
+        }
+        return switch (flagKey.toLowerCase(Locale.ROOT)) {
+            case "sprint" -> "Sprint jump";
+            case "boost" -> "TP boost";
+            case "bio" -> "Bio android";
+            case "spiritualist" -> "Spiritualist ki";
+            case "android" -> "Android";
+            case "kiweapons" -> "Ki weapons";
+            case "dot" -> "DoT bonus";
+            case "apothic" -> "Apothic elem";
+            case "endportal" -> "Portal guard";
+            case "prestige" -> "Prestige shop";
+            case "skills" -> "Skill unlocks";
+            case "fabled" -> "Fabled bridge";
+            case "energy" -> "Energy/mana";
+            case "statscreen" -> "Stat screen";
+            case "tpsp" -> "TP/SP mirror";
+            case "attr" -> "Attr bonus";
+            case "prestigeskill" -> "Prestige skills";
+            case "faction" -> "Faction sync";
+            case "raceclass" -> "Race/class";
+            case "classperm" -> "Class perms";
+            default -> {
+                String full = displayTitle(flagKey);
+                if (full.length() <= 14) {
+                    yield full;
+                }
+                yield full.substring(0, 12).trim() + "…";
+            }
+        };
+    }
+
     /** Chat lines for one module (staff). */
     public static List<String> formatModuleDoc(String flagKey) {
         List<String> out = new ArrayList<>();
