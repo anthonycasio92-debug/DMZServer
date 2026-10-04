@@ -135,6 +135,18 @@ CHECKS: list[Check] = [
     Check("prestige-tier-cnpc-ids", "prestige",
           ("tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmPrestigeGui.java",),
           "ID_PRESTIGE_TIER_GRID", forbidden="paintTwoColumnButtonGrid(player, gui, row, 50,"),
+    Check("class-stamina-config-scale", "combat",
+          ("tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/StatsDataStatScalingMixin.java",),
+          "live / scale", forbidden="live * scale"),
+    Check("class-stamina-mixin-registered", "combat",
+          ("tools/dmz-adaptive-difficulty/src/main/resources/legacymechanics.mixins.json",),
+          "StatsDataStatScalingMixin"),
+    Check("death-tp-penalty", "progression",
+          ("tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/progression/tp/DeathTpPenalty.java",),
+          "DURATION_MS = 10L * 60L * 1000L"),
+    Check("death-tp-penalty-mixin", "progression",
+          ("tools/dmz-adaptive-difficulty/src/main/resources/legacymechanics.mixins.json",),
+          "StatsDataDeathTpPenaltyMixin"),
 ]
 
 
