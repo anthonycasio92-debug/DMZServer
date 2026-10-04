@@ -35,7 +35,7 @@ fi
 SRC="$(cd "$(dirname "$0")" && pwd)/src/main/java"
 RES="$(cd "$(dirname "$0")" && pwd)/src/main/resources"
 OUT="$(cd "$(dirname "$0")" && pwd)/build/classes"
-JAR="$ROOT/mods/dmz_mohist_melee_fix-2.12.21.jar"
+JAR="$ROOT/mods/dmz_mohist_melee_fix-2.12.22.jar"
 
 rm -f "$ROOT"/mods/dmz_mohist_melee_fix-*.jar
 rm -f "$ROOT"/dmz_mohist_melee_fix-*.jar
@@ -67,6 +67,26 @@ if [[ -n "$SDU" ]]; then
 else
   echo "WARN: sdu jar not found; SDU stack-buy mixin may fail to compile" >&2
 fi
+NOEA="${NOEA_JAR:-}"
+if [[ -z "$NOEA" ]]; then
+  for candidate in \
+    /tmp/noea/Noea_Build-1.1.5.jar \
+    /tmp/noea/NoeaBosses*.jar \
+    "$ROOT/mods"/Noea*.jar \
+    "$ROOT/mods"/DragonBlockNoea*.jar
+  do
+    if [[ -f "$candidate" ]]; then
+      NOEA="$candidate"
+      break
+    fi
+  done
+fi
+if [[ -n "$NOEA" ]]; then
+  CP="$CP:$NOEA"
+  echo "Using Noea jar for compile: $NOEA"
+else
+  echo "WARN: Noea jar not found; Noea grab mixins may fail to compile (set NOEA_JAR)." >&2
+fi
 
 rm -rf "$OUT"
 mkdir -p "$OUT"
@@ -82,9 +102,10 @@ echo '{}' > /tmp/dmz_mohist_melee_fix.refmap.json
     -C "$RES" dmz_mohist_melee_fix.mixins.json \
     -C "$RES" dmz_mohist_melee_fix.raid.mixins.json \
     -C "$RES" dmz_mohist_melee_fix.sdu.mixins.json \
+    -C "$RES" dmz_mohist_melee_fix.noea.mixins.json \
     -C "$RES" pack.mcmeta
 )
 jar uf "$JAR" -C /tmp dmz_mohist_melee_fix.refmap.json
-cp -f "$JAR" "$ROOT/dmz_mohist_melee_fix-2.12.21.jar"
+cp -f "$JAR" "$ROOT/dmz_mohist_melee_fix-2.12.22.jar"
 echo "Built $JAR"
 jar tf "$JAR"

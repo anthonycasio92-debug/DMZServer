@@ -1,8 +1,8 @@
 # DMZ Mohist Melee Fix
 
-**v2.12.16** — M1 rescue, NPC disables, Old Kai skips Precision, priceless stack-form buy block (incl. SDU 3.0.5)
+**v2.12.22** — hard-disables Dragon Block Noea experimental grab when `noeabosses` is present.
 
-Jar: `mods/dmz_mohist_melee_fix-2.12.16.jar`
+Jar: `mods/dmz_mohist_melee_fix-2.12.22.jar`
 
 **Client note:** Old Kai Precision skip is a **client** mixin. Put this jar in the client/modpack `mods/` folder too (not only the server).
 
