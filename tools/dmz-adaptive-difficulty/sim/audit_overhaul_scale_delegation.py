@@ -2,8 +2,10 @@
 """Fail if Legacy Mechanics applies its own prestige scale.
 
 Policy:
-  - DragonMineZ and dmzrevamp own combat, ki, and stamina scale.
-  - LM may read PrestigeSystem.scaleMultiplier for display only.
+  - Fighting-class and stamina scaling stay the DragonMineZ config values.
+  - dmzrevamp multiplies getStatScaling by PrestigeSystem.scaleMultiplier.
+    That hits STM and every class stat the same way. LM divides it back out.
+  - LM may read PrestigeSystem.scaleMultiplier for that undo and for display.
   - LM must not multiply getTotalMultiplier, getMaxEnergy, getMaxStamina, or defense by that scale.
   - LM must not duplicate 1 + count × scaleBonusPerPrestige in Java.
 """
@@ -67,6 +69,14 @@ def main() -> int:
         errors.append("legacymechanics.mixins.json must not register StatsDataOverhaulCombatScaleMixin")
     if '"StatsDataHudPoolMaxMixin"' in mixins:
         errors.append("legacymechanics.mixins.json must not register StatsDataHudPoolMaxMixin")
+    if '"StatsDataStatScalingMixin"' not in mixins:
+        errors.append("legacymechanics.mixins.json must register StatsDataStatScalingMixin")
+
+    stat_scaling = read("mixin/StatsDataStatScalingMixin.java")
+    if "live / scale" not in stat_scaling:
+        errors.append("StatsDataStatScalingMixin must divide the prestige coefficient out of getStatScaling")
+    if re.search(r"live\s*\*\s*scale", stat_scaling) or "setReturnValue(live *" in stat_scaling:
+        errors.append("StatsDataStatScalingMixin must not multiply getStatScaling")
 
     if "return data == null ? 0f : data.getMaxEnergy()" not in pool:
         errors.append("DmzResourcePoolClamp.actualMaxEnergy must be live getMaxEnergy")
