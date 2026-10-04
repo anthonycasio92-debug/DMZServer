@@ -72,6 +72,24 @@ if [[ -n "$GUI_JAR" ]]; then
 fi
 STAGE_PENDING="${LM_STAGE_PENDING:-0}"
 
+# Move every LegacyMechanics Forge jar out of mods/ before uploading the new one.
+recycle_remote_lm_forge_jars_before_upload() {
+  local list_file
+  list_file="$(mktemp)"
+  printf 'ls -1 %s/LegacyMechanics-*.jar\n' "$REMOTE_MODS" \
+    | "${SFTP_CMD[@]}" "$USER@$HOST" 2>/dev/null \
+    | rg -o 'LegacyMechanics-[0-9][^[:space:]]*\.jar' | sort -u >"$list_file" || true
+  local cmds=""
+  while IFS= read -r name; do
+    [[ -z "$name" ]] && continue
+    cmds+="rename $REMOTE_MODS/$name $RECYCLE/$name"$'\n'
+  done <"$list_file"
+  rm -f "$list_file"
+  if [[ -n "$cmds" ]]; then
+    printf 'mkdir %s\n%s' "$RECYCLE" "$cmds" | "${SFTP_CMD[@]}" "$USER@$HOST" || true
+  fi
+}
+
 recycle_remote_lm_jars() {
   local list_file
   list_file="$(mktemp)"
@@ -173,26 +191,50 @@ recycle_remote_gui_jars() {
   fi
 }
 
+UPLOAD_PY="$ROOT/scripts/lm-live-sftp-upload.py"
+if [[ ! -f "$UPLOAD_PY" ]]; then
+  echo "Missing $UPLOAD_PY" >&2
+  exit 1
+fi
+
+UPLOAD_ARGS=(python3 "$UPLOAD_PY" --forge "$FORGE_JAR")
+if [[ -n "$GUI_JAR" ]]; then
+  UPLOAD_ARGS+=(--gui "$GUI_JAR")
+fi
 if [[ "$STAGE_PENDING" == "1" ]]; then
-  if [[ -n "$GUI_JAR" ]]; then
-    "${SFTP_CMD[@]}" "$USER@$HOST" <<EOF
+  UPLOAD_ARGS+=(--stage-pending)
+fi
+if [[ "$SKIP_GUI" == "1" ]]; then
+  UPLOAD_ARGS+=(--recycle-gui)
+fi
+
+echo "Removing previous LegacyMechanics jar(s) on live, then uploading..."
+if ! "${UPLOAD_ARGS[@]}"; then
+  echo "Paramiko upload failed — falling back to OpenSSH sftp (clear old jars, then put)." >&2
+  if [[ "$STAGE_PENDING" == "1" ]]; then
+    if [[ -n "$GUI_JAR" ]]; then
+      "${SFTP_CMD[@]}" "$USER@$HOST" <<EOF
 mkdir $REMOTE_MODS
 mkdir $REMOTE_PLUGINS
 put $FORGE_JAR $REMOTE_MODS/${FORGE_NAME}.pending
 put $GUI_JAR $REMOTE_PLUGINS/${GUI_NAME}.pending
 bye
 EOF
-  else
-    "${SFTP_CMD[@]}" "$USER@$HOST" <<EOF
+    else
+      "${SFTP_CMD[@]}" "$USER@$HOST" <<EOF
 mkdir $REMOTE_MODS
 put $FORGE_JAR $REMOTE_MODS/${FORGE_NAME}.pending
 bye
 EOF
-  fi
-  echo "Staged pending jars. Active files unchanged until activate-lm-staged-jar.sh"
-else
-  if [[ -n "$GUI_JAR" ]]; then
-    "${SFTP_CMD[@]}" "$USER@$HOST" <<EOF
+    fi
+    echo "Staged pending jars. Active files unchanged until activate-lm-staged-jar.sh"
+  else
+    recycle_remote_lm_forge_jars_before_upload
+    if [[ "$SKIP_GUI" == "1" || -n "$GUI_JAR" ]]; then
+      recycle_remote_gui_jars
+    fi
+    if [[ -n "$GUI_JAR" ]]; then
+      "${SFTP_CMD[@]}" "$USER@$HOST" <<EOF
 mkdir $RECYCLE
 mkdir $REMOTE_MODS
 mkdir $REMOTE_PLUGINS
@@ -200,18 +242,21 @@ put $FORGE_JAR $REMOTE_MODS/$FORGE_NAME
 put $GUI_JAR $REMOTE_PLUGINS/$GUI_NAME
 bye
 EOF
-  else
-    "${SFTP_CMD[@]}" "$USER@$HOST" <<EOF
+    else
+      "${SFTP_CMD[@]}" "$USER@$HOST" <<EOF
 mkdir $RECYCLE
 mkdir $REMOTE_MODS
 put $FORGE_JAR $REMOTE_MODS/$FORGE_NAME
 bye
 EOF
+    fi
+    echo "Upload complete (fallback path)."
   fi
-  recycle_remote_gui_jars
-  recycle_remote_lm_jars
-  echo "Upload complete."
-  if [[ "$SKIP_GUI" == "1" ]]; then
-    echo "  LegacyMechanicsGUI jars recycled on live (Forge-only / CNPC UI)."
-  fi
+  exit 0
+fi
+
+if [[ "$STAGE_PENDING" == "1" ]]; then
+  echo "Staged pending jars. Active files unchanged until activate-lm-staged-jar.sh"
+elif [[ "$SKIP_GUI" == "1" ]]; then
+  echo "  LegacyMechanicsGUI jars recycled on live (Forge-only / CNPC UI)."
 fi
