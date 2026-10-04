@@ -16,7 +16,8 @@ Production is the **Kinetic live** panel server. The old **test server** (`node.
   - **Cleanup duplicates on live:** `DEPLOY_LIVE_CONFIRM=LIVE bash scripts/cleanup-lm-live.sh` (moves extra LM/melee jars + `.pending` to `recycle_bin/`; default keeps `4.5.49` + melee `2.12.21`).
   - **Refresh local consolidated base after deploy:** `bash scripts/pull-lm-base-jar.sh` or `bash scripts/refresh-lm-consolidated-base.sh`.
 - Cap JSON (no jar): `DEPLOY_LIVE_CONFIRM=LIVE bash scripts/deploy-lm-cap-config.sh` (`LevelingRevamp.json` 100k/150k + remove KubeJS cap shims).
-- Other mods (e.g. `dmz_mohist_melee_fix`): upload to `mods/` manually or extend deploy scripts; move replaced jars to `recycle_bin/`.
+- **Melee fix (Noea grab off, etc.):** `DEPLOY_LIVE_CONFIRM=LIVE bash scripts/deploy-melee-fix-live.sh` — uploads newest `mods/dmz_mohist_melee_fix-*.jar` and recycles older names in `mods/`.
+- Other mods: upload to `mods/` manually; move replaced jars to `recycle_bin/`.
 - **Start** the server after any Forge mixin jar change (`LegacyMechanics`, `dmz_mohist_melee_fix`, …).
 - Credentials: `live-sftp.env` from `live-sftp.env.example`; cloud agents may use env secrets + `scripts/ensure-live-sftp-env.sh`.
 
