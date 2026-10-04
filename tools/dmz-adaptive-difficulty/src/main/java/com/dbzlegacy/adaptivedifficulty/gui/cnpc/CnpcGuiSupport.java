@@ -131,9 +131,11 @@ public final class CnpcGuiSupport {
             return;
         }
         try {
-            ICustomGui gui = NpcAPI.Instance().createCustomGui(guiId, width, height, false, ip);
+            int[] fitted = CnpcUiFit.fit(ip, width, height);
+            ICustomGui gui = NpcAPI.Instance().createCustomGui(guiId, fitted[0], fitted[1], false, ip);
             gui.setClosesOnEsc(true);
             painter.paint(player, gui);
+            CnpcUiFit.compressToWindow(gui);
             ip.showCustomGui(gui);
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.warn("[{}] CNPC GUI {} failed: {}", AdaptiveDifficultyMod.MOD_ID, guiId, t.toString(), t);

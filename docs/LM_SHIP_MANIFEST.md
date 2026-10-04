@@ -7,6 +7,7 @@ When you ask for a behavior change, add a row here and a matching check in `audi
 
 | ID | Request (summary) | Introduced | Audit |
 |----|-------------------|------------|--------|
+| cnpc-ui-scale | CNPC menus fit the player's UI scale. A larger GUI scale uses a shorter window and squeezes the layout so it stays on screen | 4.5.131+ | manifest §ui scale |
 | terminal-donator | `/terminal` opens for donators (`legacymechanics.skillcheck`) or players with `cmi.customalias.terminal` | 4.5.130+ | manifest §terminal |
 | held-overhaul-sync | Overhaul prestige count matches the LM held wallet, 1:1 from 0 to 10. A missing wallet is filled from faction, the DMZ prestige skill, or the current Overhaul count before that sync | 4.5.129+ | manifest §held overhaul |
 | farming-building-removed | Farming TP and Building TP are not in LegacyMechanics. Harvesting crops and placing blocks do not award training points from this mod | 4.5.128+ | manifest §farming building |

@@ -312,6 +312,30 @@ def main() -> int:
     check("CNPC preview race textures (namekian/bio)", "namekian" in preview_tex and "bioandroid" in preview_tex)
     check("PrestigeSystem shrinkNeedFloor early band", "shrinkNeedFloor" in prestige)
 
+    print("\n--- § ui scale ---")
+    ui_fit = read(SRC / "gui/cnpc/CnpcUiFit.java")
+    cnpc_support = read(SRC / "gui/cnpc/CnpcGuiSupport.java")
+
+    def mc_gui_scale(fb_w: int, fb_h: int) -> int:
+        scale = 1
+        while (scale < fb_w and scale < fb_h
+               and fb_w // (scale + 1) >= 320 and fb_h // (scale + 1) >= 240):
+            scale += 1
+        return scale
+
+    check("CNPC menus read the player screen size",
+          "getScreenSize" in ui_fit and "compressToWindow" in ui_fit
+          and "CnpcUiFit.fit" in cnpc_support and "compressToWindow" in cnpc_support)
+    check("GUI scale uses Minecraft's 320x240 floor",
+          "MIN_SCALED_WIDTH = 320" in ui_fit and "MIN_SCALED_HEIGHT = 240" in ui_fit
+          and "framebufferWidth / (scale + 1)" in ui_fit)
+    check("1080p Auto GUI scale is 4 (480x270)",
+          mc_gui_scale(1920, 1080) == 4)
+    check("1440p Auto GUI scale is 6 (shorter than the design window)",
+          mc_gui_scale(2560, 1440) == 6)
+    check("4K Auto GUI scale is 9",
+          mc_gui_scale(3840, 2160) == 9)
+
     print("\n--- § version ---")
     mod = read(MOD / "src/main/java/com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.java")
     toml = read(MOD / "src/main/resources/META-INF/mods.toml")
