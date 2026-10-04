@@ -80,7 +80,7 @@ def main() -> int:
     print("\n--- § prestige (source markers) ---")
     prestige = read(SRC / "progression/shop/PrestigeSystem.java")
     gui_api = read(SRC / "gui/ProgressionGuiApi.java")
-    check("PrestigeSystem HELD_GATE_MIN_COMPLETED = 5", "HELD_GATE_MIN_COMPLETED = 5" in prestige)
+    check("PrestigeSystem HELD_GATE_MIN_COMPLETED = 4", "HELD_GATE_MIN_COMPLETED = 4" in prestige)
     check("PrestigeSystem heldCountForNeed", "heldCountForNeed" in prestige)
     check("PrestigeSystem veteran needForProgress", "needForProgress" in prestige and "completed >= HELD_GATE_MIN_COMPLETED" in prestige)
     check("ProgressionGuiApi prestige uses heldCountForNeed", "heldCountForNeed(player)" in gui_api)

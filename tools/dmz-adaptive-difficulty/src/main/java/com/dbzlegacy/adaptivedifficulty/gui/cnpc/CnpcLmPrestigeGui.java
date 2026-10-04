@@ -54,7 +54,7 @@ public final class CnpcLmPrestigeGui {
 
     private static void paintMain(ServerPlayer player, ICustomGui gui) {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, "§dPrestige",
-                "§7Turn-ins, skill shop, and permanent unlocks");
+                "§7Spend held prestiges, or prestige when your level is high enough");
         List<String> lines = ProgressionGuiApi.prestigeLines(player, "main");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX));
         CnpcGuiSupport.button(gui, 20, "§aPrestige now", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
@@ -108,9 +108,9 @@ public final class CnpcLmPrestigeGui {
     private static String turnInLabel(Map<String, String> ph, int amount, int held) {
         String gain = ph.getOrDefault("turnin_" + amount + "_points", "0");
         if (held >= amount) {
-            return "§eTurn in ×" + amount + " §7(+" + gain + " pts)";
+            return "§eTurn in " + amount + " §7(+" + gain + " points)";
         }
-        return "§8×" + amount + " §7(need " + amount + " held · +" + gain + " pts)";
+        return "§7Turn in " + amount + " §8· hold " + amount + " first · +" + gain + " points";
     }
 
     private static void paintShop(ServerPlayer player, ICustomGui gui, int pageIndex) {

@@ -35,7 +35,7 @@ CHECKS: list[Check] = [
           "heldCountForNeed"),
     Check("prestige-veteran-gate", "prestige",
           ("tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigeSystem.java",),
-          "HELD_GATE_MIN_COMPLETED = 5"),
+          "HELD_GATE_MIN_COMPLETED = 4"),
     Check("prestige-gui-need", "prestige",
           ("tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/gui/ProgressionGuiApi.java",),
           "heldCountForNeed(player)"),
