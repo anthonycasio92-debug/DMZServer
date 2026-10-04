@@ -223,14 +223,42 @@ merge_onto_base_jar() {
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/ProgressionModuleCatalog\$"*.class \
       "$merge/com/dbzlegacy/adaptivedifficulty/progression/" 2>/dev/null || true
   fi
+  # Ki/stamina: one compiled slice + src mixins so HUD max matches DmzResourcePoolClamp.
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/progression/DmzResourcePoolClamp.class" ]]; then
+    mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/progression/bridge" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/mixin"
+    for pool_cls in DmzResourcePoolClamp LmOverhaulPrestigeIntegration ProgressionSystem \
+        StaminaRegenGuard StatsDataLoadContext; do
+      if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/progression/${pool_cls}.class" ]]; then
+        cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/${pool_cls}.class" \
+          "$merge/com/dbzlegacy/adaptivedifficulty/progression/${pool_cls}.class"
+        cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/${pool_cls}\$"*.class \
+          "$merge/com/dbzlegacy/adaptivedifficulty/progression/" 2>/dev/null || true
+      fi
+    done
+    if [[ -d "$OUT/com/dbzlegacy/adaptivedifficulty/progression/bridge" ]]; then
+      cp -a "$OUT/com/dbzlegacy/adaptivedifficulty/progression/bridge/." \
+        "$merge/com/dbzlegacy/adaptivedifficulty/progression/bridge/"
+    fi
+    for mixin_cls in StatsDataHudPoolMaxMixin ResourcesPoolClampMixin ResourcesLoadClampMixin \
+        StatsDataRestoreMultiplierClampMixin StatsDataLoadClampMixin; do
+      if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/mixin/${mixin_cls}.class" ]]; then
+        cp "$OUT/com/dbzlegacy/adaptivedifficulty/mixin/${mixin_cls}.class" \
+          "$merge/com/dbzlegacy/adaptivedifficulty/mixin/${mixin_cls}.class"
+      fi
+    done
+    cp "$RES/legacymechanics.mixins.json" "$merge/legacymechanics.mixins.json"
+    if [[ -f "$RES/legacymechanics.refmap.json" ]]; then
+      cp "$RES/legacymechanics.refmap.json" "$merge/legacymechanics.refmap.json"
+    fi
+  fi
   cp "$RES/META-INF/mods.toml" "$merge/META-INF/mods.toml"
-  # Ki/stamina pool fixes live in the base jar bytecode — never replace mixin wiring from src.
   if [[ ! -f "$merge/legacymechanics.mixins.json" ]]; then
     cp "$RES/legacymechanics.mixins.json" "$merge/legacymechanics.mixins.json"
   fi
   (cd "$merge" && jar cfm "$dest" META-INF/MANIFEST.MF .)
-  if ! unzip -p "$dest" legacymechanics.mixins.json | cmp -s - <(unzip -p "$base" legacymechanics.mixins.json); then
-    echo "ERROR: merged jar mixins.json differs from base — ki/stamina wiring must stay on live base" >&2
+  if ! unzip -p "$dest" legacymechanics.mixins.json | grep -q '"StatsDataHudPoolMaxMixin"'; then
+    echo "ERROR: shipped mixins.json must register StatsDataHudPoolMaxMixin (HUD/clamp split-brain)" >&2
     exit 1
   fi
   rm -rf "$tmp" "$merge"
@@ -260,6 +288,7 @@ jar tf "$JAR"
 
 # Fail-closed audits: product features, combat scaling sim, GUI ABI.
 HERE_SIM="$(cd "$(dirname "$0")" && pwd)/sim"
+python3 "$HERE_SIM/audit_overhaul_scale_delegation.py"
 python3 "$HERE_SIM/audit_cnpc_gui_style.py"
 python3 "$HERE_SIM/audit_forge_gui_backend.py"
 python3 "$HERE_SIM/audit_scaling_sync.py"
