@@ -81,7 +81,7 @@ config toggles, CNPC Skill Check setup, and scripts to disable on test. Full aud
 **[AUDIT.md](AUDIT.md)**.
 
 `/progression` is a **staff category hub**: Skills · TP Gains · Race · Combat · End · Shop ·
-Fabled · Utility (plus Prestige/Skills shortcuts). Also includes Building TP, End portal
+Fabled · Utility (plus Prestige/Skills shortcuts). Also includes End portal
 guard, and Title progression / Admin inspect (from the server-fixes line).
 
 Donators: grant `legacymechanics.skillcheck` (LuckPerms) — hub hides Skill Check without it.

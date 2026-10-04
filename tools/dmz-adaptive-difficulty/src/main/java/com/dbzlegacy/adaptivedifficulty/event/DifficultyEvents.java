@@ -70,7 +70,6 @@ import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.living.MobSpawnEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.event.server.ServerStartedEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.event.server.ServerStoppingEvent;
@@ -863,25 +862,6 @@ public final class DifficultyEvents {
             SparringSystem.onPlayerHurt(pvpVictim, pvpAttacker, source);
         }
         ProgressionSystem.onHurt(event);
-    }
-
-    @SubscribeEvent
-    public void onBlockBreak(BlockEvent.BreakEvent event) {
-        if (!(event.getPlayer() instanceof ServerPlayer player) || player.m_9236_().f_46443_) {
-            return;
-        }
-        ProgressionSystem.onBlockBreak(player, event.getPos(), event.getState());
-    }
-
-    @SubscribeEvent
-    public void onBlockPlace(BlockEvent.EntityPlaceEvent event) {
-        if (event.getLevel() == null || event.getLevel().m_5776_()) {
-            return;
-        }
-        if (!(event.getEntity() instanceof ServerPlayer player)) {
-            return;
-        }
-        ProgressionSystem.onBlockPlace(player, event.getPos(), event.getPlacedBlock());
     }
 
     @SubscribeEvent

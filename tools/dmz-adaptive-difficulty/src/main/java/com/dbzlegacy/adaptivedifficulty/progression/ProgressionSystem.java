@@ -14,16 +14,12 @@ import com.dbzlegacy.adaptivedifficulty.progression.skills.MeditationProgression
 import com.dbzlegacy.adaptivedifficulty.progression.skills.PotentialProgression;
 import com.dbzlegacy.adaptivedifficulty.progression.skills.SprintJumpProgression;
 import com.dbzlegacy.adaptivedifficulty.progression.tp.BioAndroidAbsorb;
-import com.dbzlegacy.adaptivedifficulty.progression.tp.BuildingTp;
-import com.dbzlegacy.adaptivedifficulty.progression.tp.FarmingTp;
 import com.dbzlegacy.adaptivedifficulty.progression.tp.DeathTpPenalty;
 import com.dbzlegacy.adaptivedifficulty.progression.tp.GlobalTpBoost;
-import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
@@ -308,26 +304,6 @@ public final class ProgressionSystem {
         }
     }
 
-    public static void onBlockBreak(ServerPlayer player, BlockPos pos, BlockState state) {
-        if (!ProgressionConfig.masterEnabled()) {
-            return;
-        }
-        try {
-            FarmingTp.onBlockBreak(player, pos, state);
-        } catch (Throwable ignored) {
-        }
-    }
-
-    public static void onBlockPlace(ServerPlayer player, BlockPos pos, BlockState state) {
-        if (!ProgressionConfig.masterEnabled()) {
-            return;
-        }
-        try {
-            BuildingTp.onBlockPlace(player, pos, state);
-        } catch (Throwable ignored) {
-        }
-    }
-
     /* ========================= Command API ========================= */
 
     public static String boostStartEncoded(ServerPlayer actor, int encoded, String purchaser) {
@@ -371,8 +347,6 @@ public final class ProgressionSystem {
             case "sprint", "sprintjump", "enablesprintjump" -> cfg.enableSprintJump = on;
             case "meditation", "med", "enablemeditation" -> cfg.enableMeditation = on;
             case "potential", "enablepotential" -> cfg.enablePotential = on;
-            case "farming", "farmingtp", "enablefarmingtp" -> cfg.enableFarmingTp = on;
-            case "building", "buildingtp", "enablebuildingtp" -> cfg.enableBuildingTp = on;
             case "boost", "globaltpboost", "enableglobaltpboost" -> cfg.enableGlobalTpBoost = on;
             case "bio", "bioandroid", "enablebioandroid" -> cfg.enableBioAndroid = on;
             case "racelock", "lock", "enableracelock" -> cfg.enableRaceLock = on;

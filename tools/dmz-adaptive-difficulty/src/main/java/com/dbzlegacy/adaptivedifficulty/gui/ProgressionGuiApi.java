@@ -84,7 +84,7 @@ public final class ProgressionGuiApi {
                 "§e/progression do <action> [arg] [page] §8— GUI actions",
                 "§8Pages: main · skills · tp · race · combat · end · utility · economy · admin · help",
                 "§8Economy: staff free Ancient Coin costs — §f/lm §7→ Progression → Ancient Coins",
-                "§8Flags: flight sprint meditation potential farming building boost bio",
+                "§8Flags: flight sprint meditation potential boost bio",
                 "§8       racelock yardrat spiritualist android kiweapons piercing dot apothic",
                 "§8       end endportal shadow statchecker");
     }
@@ -522,8 +522,6 @@ public final class ProgressionGuiApi {
         out.put("flag_meditation", c.enableMeditation ? "true" : "false");
         out.put("flag_potential", c.enablePotential ? "true" : "false");
         // TP Gains
-        out.put("flag_farming", c.enableFarmingTp ? "true" : "false");
-        out.put("flag_building", c.enableBuildingTp ? "true" : "false");
         out.put("flag_boost", c.enableGlobalTpBoost ? "true" : "false");
         out.put("flag_bio", c.enableBioAndroid ? "true" : "false");
         // Race & Form
@@ -570,11 +568,9 @@ public final class ProgressionGuiApi {
                     flagLine("Potential", "flag_potential"));
             case "tp" -> categoryLines(
                     "§6§lTP Gains",
-                    "§7Training-point sources: farming, building,",
-                    "§7global boost, and Bio-Android absorb.",
+                    "§7Training-point sources: global boost",
+                    "§7and Bio-Android absorb.",
                     ph,
-                    flagLine("Farming TP", "flag_farming"),
-                    flagLine("Building TP", "flag_building"),
                     flagLine("Global TP Boost", "flag_boost"),
                     flagLine("Bio-Android Absorb", "flag_bio"));
             case "race" -> categoryLines(
@@ -724,8 +720,6 @@ public final class ProgressionGuiApi {
         lore.add(flag("meditation", ph));
         lore.add(flag("potential", ph));
         lore.add("§6§lTP Gains");
-        lore.add(flag("farming", ph));
-        lore.add(flag("building", ph));
         lore.add(flag("boost", ph));
         lore.add(flag("bio", ph));
         lore.add("§b§lRace & Form");

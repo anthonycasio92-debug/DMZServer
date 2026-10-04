@@ -2,17 +2,12 @@
 ============================================================
  Farming TP Skill.js — DISABLED STUB
 ============================================================
- LegacyMechanics (Forge) owns this system:
-   Java: com.dbzlegacy.adaptivedifficulty.progression.tp.FarmingTp
-   Use: (automatic on mature crop harvest)
+ LegacyMechanics no longer awards farming TP.
+ Crop harvest TP belongs in a different mod.
 
- Full script backup: uploads/scripts/Farming TP Skill.js
-   and/or uploads/script-backups-full/ / live-scripts-2026-08-27/
-
- Do NOT re-enable while the matching enable* flag is ON in the
- Forge mod — double TP / double handlers / double sync will occur.
+ Do NOT re-enable this script while that mod is installed.
 ============================================================
 */
 
-function broken(e) { /* owned by LegacyMechanics */ }
-function init(e) { /* owned by LegacyMechanics */ }
+function broken(e) { /* farming TP removed from LegacyMechanics */ }
+function init(e) { /* farming TP removed from LegacyMechanics */ }

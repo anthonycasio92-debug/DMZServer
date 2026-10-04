@@ -74,7 +74,7 @@ Staff `/skills` has no special CNPC name hook — use an NPC interaction command
 |---------|-------|----------|
 | `main` | Hub | Status header (boost + meditation) · category buttons · Prestige/Skills shortcuts · staff Flags |
 | `skills` | Skills | flight, sprint, meditation, potential |
-| `tp` | TP Gains | farming, building, boost, bio |
+| `tp` | TP Gains | boost, bio |
 | `race` | Race & Form | racelock, yardrat, spiritualist, android (→ Android Tools) |
 | `android_panel` | Android Tools | Convert · Remove (staff) |
 | `android_convert` | Android Convert | player picker → Gero convert |
@@ -103,8 +103,6 @@ Staff `/skills` has no special CNPC name hook — use an NPC interaction command
 
 | Flag | Default | Module |
 |------|---------|--------|
-| `enableFarmingTp` | true | Farming TP Skill |
-| `enableBuildingTp` | true | Building TP on block place |
 | `enableGlobalTpBoost` | true | Global TP Boost / End TP boost |
 | `enableBioAndroid` | true | Bio-Android absorb |
 
@@ -172,7 +170,7 @@ Staff `/skills` has no special CNPC name hook — use an NPC interaction command
 |---------|------|
 | `progression/` | `ProgressionSystem`, `ProgressionConfig`, `ProgressionData`, `PlayerStatChecker`, helpers |
 | `progression/skills/` | Flight, SprintJump, Meditation, Potential |
-| `progression/tp/` | FarmingTp, BuildingTp, GlobalTpBoost, BioAndroidAbsorb |
+| `progression/tp/` | GlobalTpBoost, BioAndroidAbsorb, DeathTpPenalty |
 | `progression/race/` | RaceLock, Yardrat, SpiritualistKi, AndroidConversion |
 | `progression/combat/` | KiWeapons, Piercing, DOT, Apothic elemental |
 | `progression/end/` | End Dimension Strength, EndPortalGuard |
@@ -207,8 +205,8 @@ Staff `/skills` has no special CNPC name hook — use an NPC interaction command
 
 ### TP Gains
 
-- `Farming TP Skill`
-- KubeJS `building_tp_place` / `building_tp` (Building TP on place)
+- `Farming TP Skill` — not in LegacyMechanics; leave the stub disabled
+- KubeJS `building_tp_place` / `building_tp` — not in LegacyMechanics; leave disabled
 - `Global TP Boost` / `TP boost end`
 - `BioAndroid`
 

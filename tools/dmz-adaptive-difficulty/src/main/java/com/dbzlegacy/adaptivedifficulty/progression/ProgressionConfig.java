@@ -28,14 +28,6 @@ public final class ProgressionConfig {
         return masterEnabled() && DifficultyConfig.get().enablePotential;
     }
 
-    public static boolean farmingTp() {
-        return masterEnabled() && DifficultyConfig.get().enableFarmingTp;
-    }
-
-    public static boolean buildingTp() {
-        return masterEnabled() && DifficultyConfig.get().enableBuildingTp;
-    }
-
     public static boolean globalTpBoost() {
         return masterEnabled() && DifficultyConfig.get().enableGlobalTpBoost;
     }
@@ -112,9 +104,7 @@ public final class ProgressionConfig {
                 + " sprint=" + onOff(c.enableSprintJump)
                 + " med=" + onOff(c.enableMeditation)
                 + " pot=" + onOff(c.enablePotential)
-                + "\n§6TP§7: farm=" + onOff(c.enableFarmingTp)
-                + " build=" + onOff(c.enableBuildingTp)
-                + " boost=" + onOff(c.enableGlobalTpBoost)
+                + "\n§6TP§7: boost=" + onOff(c.enableGlobalTpBoost)
                 + " bio=" + onOff(c.enableBioAndroid)
                 + "\n§bRace§7: lock=" + onOff(c.enableRaceLock)
                 + " yard=" + onOff(c.enableYardrat)

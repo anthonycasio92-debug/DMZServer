@@ -23,10 +23,6 @@ public final class ProgressionModuleCatalog {
                     "progression.skills.MeditationProgression", "kubejs meditation trial")),
             Map.entry("potential", info("Potential", "enablePotential",
                     "progression.skills.PotentialProgression", "kubejs potential / spar")),
-            Map.entry("farming", info("Farming TP", "enableFarmingTp",
-                    "progression.tp.FarmingTp", "kubejs farming_tp")),
-            Map.entry("building", info("Building TP", "enableBuildingTp",
-                    "progression.tp.BuildingTp", "kubejs building_tp_place.js")),
             Map.entry("boost", info("Global TP Boost", "enableGlobalTpBoost",
                     "progression.tp.GlobalTpBoost", "kubejs global_tp_boost")),
             Map.entry("bio", info("Bio-Android", "enableBioAndroid",
@@ -82,7 +78,7 @@ public final class ProgressionModuleCatalog {
         }
         return switch (page.toLowerCase(Locale.ROOT)) {
             case "skills" -> new String[]{"flight", "sprint", "meditation", "potential"};
-            case "tp" -> new String[]{"farming", "building", "boost", "bio"};
+            case "tp" -> new String[]{"boost", "bio"};
             case "race" -> new String[]{"racelock", "yardrat", "spiritualist", "android"};
             case "combat" -> new String[]{"kiweapons", "piercing", "dot", "apothic"};
             case "end" -> new String[]{"end", "endportal"};

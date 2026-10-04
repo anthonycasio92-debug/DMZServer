@@ -210,8 +210,6 @@ public final class DifficultyConfig {
     public boolean enableSprintJump = true;
     public boolean enableMeditation = true;
     public boolean enablePotential = true;
-    public boolean enableFarmingTp = true;
-    public boolean enableBuildingTp = true;
     public boolean enableGlobalTpBoost = true;
     public boolean enableBioAndroid = true;
     public boolean enableRaceLock = true;

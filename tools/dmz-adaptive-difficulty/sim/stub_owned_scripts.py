@@ -54,8 +54,8 @@ OWNED = {
         ["interact", "init", "trigger"],
     ),
     "Farming TP Skill.js": (
-        "progression.tp.FarmingTp",
-        "(automatic on mature crop harvest)",
+        "(removed — farming TP is not in LegacyMechanics)",
+        "(do not enable; another mod owns crop TP)",
         ["broken", "init"],
     ),
     "PlayerStatChecker.js": (

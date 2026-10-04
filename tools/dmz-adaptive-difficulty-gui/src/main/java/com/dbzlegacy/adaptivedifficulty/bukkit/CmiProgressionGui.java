@@ -22,8 +22,6 @@ public final class CmiProgressionGui {
             Map.entry("sprint", new String[]{"Sprint Jump", "Jump/Sprint — Strength unlocked (invested STR).", "/progression"}),
             Map.entry("meditation", new String[]{"Meditation", "Charge Ki in the trial biome and meet the trial (/progression meditation).", "/progression meditation"}),
             Map.entry("potential", new String[]{"Potential", "Spar others to raise it (soft-caps at 10 until you beat Piccolo in the skill saga, then to 30).", "/skillcheck"}),
-            Map.entry("farming", new String[]{"Farming TP", "Break mature crops / Pam's harvest for TP.", "Passive while farming"}),
-            Map.entry("building", new String[]{"Building TP", "Place blocks for silent building TP.", "Passive while placing"}),
             Map.entry("boost", new String[]{"Global TP Boost", "Timed world TP multiplier.", "/progression boost start|end"}),
             Map.entry("bio", new String[]{"Bio-Android", "Absorb TP / steal skills from drains.", "Passive as Bio-Android"}),
             Map.entry("racelock", new String[]{"Race Lock", "Clears a stuck saga difficulty picker during character creation.", "Passive during create"}),
@@ -56,7 +54,7 @@ public final class CmiProgressionGui {
                 case "skills" -> openSection(player, "skills", "&eSkills", Material.BOOK,
                         new String[]{"flight", "sprint", "meditation", "potential"});
                 case "tp" -> openSection(player, "tp", "&6TP Gains", Material.GOLDEN_CARROT,
-                        new String[]{"farming", "building", "boost", "bio"});
+                        new String[]{"boost", "bio"});
                 case "boost_panel", "tpboost" -> {
                     if (ForgeBridge.isStaff(player)) {
                         openBoostPanel(player);
@@ -141,7 +139,7 @@ public final class CmiProgressionGui {
         };
         String[] tips = {
                 "&7Flight · Sprint · Meditation · Potential",
-                "&7Farming · Building · Boost · Bio",
+                "&7Boost · Bio-Android",
                 "&7Race lock · Yardrat · Spiritualist · Android",
                 "&7Ki weapons · Piercing · DoT · Apothic",
                 "&7End strength · Portal guard",

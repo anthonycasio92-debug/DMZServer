@@ -37,7 +37,7 @@ public final class ProgressionCommandTree implements TabCompleter {
     );
     private static final List<String> FLAGS = List.of(
             "master", "flight", "sprint", "meditation", "potential",
-            "farming", "building", "boost", "bio",
+            "boost", "bio",
             "racelock", "yardrat", "spiritualist", "android",
             "kiweapons", "piercing", "dot", "apothic",
             "end", "endportal", "endnatural",

@@ -126,6 +126,20 @@ def main() -> int:
     check("stamina Fabled drain mixin removed",
           not (SRC / "mixin/ResourcesStaminaDrainGuardMixin.java").is_file())
 
+    print("\n--- § farming building ---")
+    events = read(SRC / "event/DifficultyEvents.java")
+    progression = read(SRC / "progression/ProgressionSystem.java")
+    diff_cfg = read(SRC / "config/DifficultyConfig.java")
+    chest_prog = read(BUKKIT / "ProgressionChestGui.java")
+    check("FarmingTp class removed", not (SRC / "progression/tp/FarmingTp.java").is_file())
+    check("BuildingTp class removed", not (SRC / "progression/tp/BuildingTp.java").is_file())
+    check("block break and place do not award farming or building TP",
+          "FarmingTp" not in progression and "BuildingTp" not in progression
+          and "onBlockBreak" not in events and "onBlockPlace" not in events)
+    check("farming and building flags removed",
+          "enableFarmingTp" not in diff_cfg and "enableBuildingTp" not in diff_cfg
+          and "Farming TP" not in chest_prog and "Building TP" not in chest_prog)
+
     print("\n--- § terminal ---")
     terminal = read(SRC / "currency/LightmanTerminal.java")
     terminal_cmd = read(SRC / "command/TerminalCommands.java")
