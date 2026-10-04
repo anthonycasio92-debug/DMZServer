@@ -54,6 +54,10 @@ def main() -> int:
     if "cur * ratio" in resource_scale or "restoreMultiplierGains" in resource_scale:
         errors.append("OverhaulPrestigeResourceScale must not multiply ki/stamina or reapply multiplier gains")
 
+    class_apply = read("character/DmzClassCommandApply.java")
+    if "restoreMultiplierGains" in class_apply:
+        errors.append("DmzClassCommandApply must not raise ki/stamina when the fighting class changes")
+
     scaled = read("calc/LmOverhaulScaledCombat.java")
     if "* scale(data)" in scaled or "* scale(" in scaled:
         errors.append("LmOverhaulScaledCombat must not multiply combat stats by scale")
