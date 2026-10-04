@@ -126,6 +126,24 @@ def main() -> int:
     check("stamina Fabled drain mixin removed",
           not (SRC / "mixin/ResourcesStaminaDrainGuardMixin.java").is_file())
 
+    print("\n--- § terminal ---")
+    terminal = read(SRC / "currency/LightmanTerminal.java")
+    terminal_cmd = read(SRC / "command/TerminalCommands.java")
+    terminal_plugin = read(BUKKIT / "AdaptiveDifficultyGuiPlugin.java")
+    terminal_yml = read(GUI / "src/main/resources/plugin.yml")
+    alias_note = read(ROOT / "uploads/scripts/Aliases-Terminal.yml")
+    check("/terminal opens Lightman network terminal",
+          "TerminalMenuProvider.OpenMenu" in terminal and "SimpleValidator.NULL" in terminal)
+    check("/terminal is a player command",
+          'playerRoot("terminal")' in terminal_cmd
+          and "cmi.customalias.terminal" in terminal_cmd)
+    check("bukkit /terminal is registered",
+          "\n  terminal:" in terminal_yml
+          and "cmi.customalias.terminal" in terminal_yml
+          and '"terminal".equals(name)' in terminal_plugin)
+    check("CMI terminal alias is not reintroduced",
+          "forcecast" not in alias_note and "CustomAlias:" not in alias_note)
+
     print("\n--- § access (skillcheck + staff admin) ---")
     skill_svc = read(SRC / "progression/shop/SkillCheckService.java")
     staff = read(SRC / "util/StaffAccess.java")

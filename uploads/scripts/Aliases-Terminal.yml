@@ -1,0 +1,18 @@
+#
+# /terminal — DO NOT use a CMI CustomAlias
+#
+# LegacyMechanics owns this command:
+#   /terminal — opens the Lightman's Currency network terminal
+#
+# The old alias force-cast the Fabled skill "terminal", which ran
+# `lcterminal` as OP. That skill and that alias are retired.
+#
+# Delete this key from plugins/CMI/CustomAlias/CustomAlias.yml if it is still there:
+#   Terminal
+#
+# Players who could use the alias still need cmi.customalias.terminal.
+#
+# Do NOT re-add a CustomAlias block for terminal — it shadows the mod.
+#
+
+# (intentionally empty — no CustomAlias)

@@ -7,6 +7,7 @@ When you ask for a behavior change, add a row here and a matching check in `audi
 
 | ID | Request (summary) | Introduced | Audit |
 |----|-------------------|------------|--------|
+| lightman-terminal | `/terminal` opens the Lightman's Currency network terminal. The CMI CustomAlias that force-cast the Fabled Terminal skill is retired | 4.5.127+ | manifest §terminal |
 | fabled-removed | Fabled bridges are gone. Prestige, spar, and Overhaul count use the LM held wallet. Race lock does not reset a character for a missing skill. Farming and building TP are flat | 4.5.126+ | manifest §fabled removed |
 | class-stamina-config-scale | Fighting-class and stamina scaling stay the DragonMineZ config values. LM divides dmzrevamp's prestige coefficient out of `getStatScaling` and does not multiply pools | 4.5.124+ | `audit_overhaul_scale_delegation.py` |
 | death-tp-penalty | Dying cuts TP gain in half for 10 minutes. The timer stays on the player through relog, and a later death refreshes it to 10 minutes | 4.5.125+ | manifest §death tp |

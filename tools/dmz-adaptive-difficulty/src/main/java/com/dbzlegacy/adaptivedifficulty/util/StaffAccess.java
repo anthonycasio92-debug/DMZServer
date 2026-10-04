@@ -118,6 +118,10 @@ public final class StaffAccess {
         return false;
     }
 
+    public static boolean hasPermission(ServerPlayer player, String node) {
+        return hasBukkitPermission(player, node);
+    }
+
     private static boolean hasBukkitPermission(ServerPlayer player, String node) {
         if (player == null || node == null || node.isBlank()) {
             return false;

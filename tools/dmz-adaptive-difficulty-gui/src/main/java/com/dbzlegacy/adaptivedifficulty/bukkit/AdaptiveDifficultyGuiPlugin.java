@@ -81,7 +81,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                 getLogger().info("Version handshake OK: " + pluginVer);
             }
         }
-        getLogger().info("Registered Bukkit /difficulty /rival /spar /lm /progression /androidify /prestige /padmin /skills /skillcheck.");
+        getLogger().info("Registered Bukkit /difficulty /rival /spar /lm /progression /androidify /prestige /padmin /skills /skillcheck /terminal.");
     }
 
     /**
@@ -879,10 +879,26 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         if ("lmdo".equals(name)) {
             return handleLmDo(sender, args);
         }
+        if ("terminal".equals(name)) {
+            return handleTerminal(sender);
+        }
         if (!"difficulty".equals(name)) {
             return false;
         }
         return handleDifficulty(sender, args);
+    }
+
+    /** {@code /terminal} — Lightman's Currency network terminal. Replaces the Fabled skill alias. */
+    private boolean handleTerminal(CommandSender sender) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage("§cPlayers only.");
+            return true;
+        }
+        String msg = ForgeBridge.openLightmanTerminal(player);
+        if (msg != null && !msg.isBlank()) {
+            player.sendMessage(msg);
+        }
+        return true;
     }
 
     /**

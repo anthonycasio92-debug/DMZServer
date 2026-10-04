@@ -119,6 +119,8 @@ public final class MohistCommandBridge {
                     "androidify", List.of(), staffPerm);
             registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
                     "padmin", List.of(), staffPerm);
+            registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
+                    "terminal", List.of(), "cmi.customalias.terminal");
 
             registered = true;
             AdaptiveDifficultyMod.LOGGER.info(

@@ -6,6 +6,7 @@ import com.dbzlegacy.adaptivedifficulty.command.RivalCommands;
 import com.dbzlegacy.adaptivedifficulty.command.MechanicsCommands;
 import com.dbzlegacy.adaptivedifficulty.command.ProgressionCommands;
 import com.dbzlegacy.adaptivedifficulty.command.SparCommands;
+import com.dbzlegacy.adaptivedifficulty.command.TerminalCommands;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.event.DifficultyEvents;
@@ -31,7 +32,7 @@ public final class AdaptiveDifficultyMod {
     /** Forge modId — lowercase; not used for NBT / GUI class lookup. */
     public static final String MOD_ID = "legacymechanics";
     /** Product line version (was DMZ Adaptive Difficulty 3.3.x). */
-    public static final String VERSION = "4.5.126";
+    public static final String VERSION = "4.5.127";
     public static final String DISPLAY_NAME = "LegacyMechanics";
     public static final Logger LOGGER = LogManager.getLogger(DISPLAY_NAME);
 
@@ -60,6 +61,7 @@ public final class AdaptiveDifficultyMod {
         MechanicsCommands.register();
         CharacterCommands.register();
         ProgressionCommands.register();
+        TerminalCommands.register();
         LOGGER.info(
                 "[{}] v{} server-only: Lightman's={}, FTB Teams={}, guiBackend={}, CNPC={}, Progression={}",
                 MOD_ID,

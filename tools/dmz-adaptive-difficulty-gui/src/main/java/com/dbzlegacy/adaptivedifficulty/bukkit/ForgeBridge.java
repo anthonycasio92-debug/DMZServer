@@ -1645,6 +1645,36 @@ public final class ForgeBridge {
         }
     }
 
+    /** Player {@code /terminal} — Lightman's Currency network terminal. */
+    public static String openLightmanTerminal(Player player) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return "§cCould not reach LegacyMechanics mod.";
+        }
+        try {
+            Class<?> api = Class.forName(
+                    "com.dbzlegacy.adaptivedifficulty.currency.LightmanTerminal",
+                    true,
+                    nms.getClass().getClassLoader());
+            Method open = null;
+            for (Method cand : api.getMethods()) {
+                if ("open".equals(cand.getName()) && cand.getParameterCount() == 1) {
+                    open = cand;
+                    break;
+                }
+            }
+            if (open == null) {
+                return "§cTerminal API missing — update LegacyMechanics jar.";
+            }
+            Object raw = open.invoke(null, nms);
+            return raw == null ? "" : String.valueOf(raw);
+        } catch (Throwable t) {
+            Throwable root = t.getCause() == null ? t : t.getCause();
+            return "§cCould not open the currency terminal: " + root.getClass().getSimpleName()
+                    + (root.getMessage() == null ? "" : " — " + root.getMessage());
+        }
+    }
+
     /** Staff: End dragon spawn/clear via {@code /lmdo enddragon spawn|clear}. */
     public static String endDragon(Player actor, String action) {
         Object nms = nmsPlayer(actor);
