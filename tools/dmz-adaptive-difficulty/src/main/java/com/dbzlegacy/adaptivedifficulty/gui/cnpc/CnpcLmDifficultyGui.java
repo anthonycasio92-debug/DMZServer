@@ -75,7 +75,7 @@ public final class CnpcLmDifficultyGui {
         ServerPlayer subject = who(player);
         DifficultyActions.prepareGui(subject);
         DifficultySnapshot snap = DifficultyCache.refresh(subject);
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§aDifficulty",
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandTitle("Difficulty"),
                 "§7Tougher mobs, tiers, and optional titles");
 
         List<String> lines = new ArrayList<>();
@@ -159,7 +159,7 @@ public final class CnpcLmDifficultyGui {
         lines.add("§7Top stats §f" + blankNone(profile.topStatsLabel()));
         lines.add("§6Coins §f" + AncientCoinEconomy.inventoryBreakdown(subject));
 
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§8Staff · Details",
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandSubPage("Difficulty", "Staff details"),
                 "§7Combat rating and scaled stats (read-only)");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 3));
         row += 8;
@@ -202,7 +202,7 @@ public final class CnpcLmDifficultyGui {
             return;
         }
         UnlockSystem.syncUnlocks(subject, DifficultyCache.data(subject));
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§a", "Difficulty", "Tiers"),
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandSubPage("Difficulty", "Tiers"),
                 "§7Costs show before you confirm · lower tiers are free");
 
         DifficultySnapshot snap = DifficultyCache.refresh(subject);
@@ -280,7 +280,7 @@ public final class CnpcLmDifficultyGui {
      */
     private static void paintFeatureLocked(
             ServerPlayer player, ICustomGui gui, String lockedTitle, String headerHint, List<String> body) {
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§c", "Difficulty", lockedTitle),
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandSubPage("Difficulty", lockedTitle),
                 headerHint);
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, body, 3));
         row += 8;
@@ -301,7 +301,7 @@ public final class CnpcLmDifficultyGui {
     private static void paintTitles(ServerPlayer player, ICustomGui gui) {
         ServerPlayer subject = who(player);
         DifficultyActions.prepareGui(subject);
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§a", "Difficulty", "Titles"),
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandSubPage("Difficulty", "Titles"),
                 CnpcGuiStyle.HINT_TITLE_EQUIP);
         List<String> header = new ArrayList<>();
         header.add("§7Wearing §e" + blankNone(TitleSystem.activeDisplay(subject)));
@@ -351,7 +351,7 @@ public final class CnpcLmDifficultyGui {
         DifficultyActions.prepareGui(subject);
         DifficultyTitle title = DifficultyTitle.byId(titleIdRaw);
         if (title == null) {
-            int infoY = CnpcGuiSupport.paintHeader(player, gui, "§dTitle", "§7Unknown entry");
+            int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandSubPage("Difficulty", "Title"), "Unknown entry");
             int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of("§7That title could not be found."), 2));
             navFooter(player, gui, row + 8, "titles", subject);
             return;
@@ -360,7 +360,7 @@ public final class CnpcLmDifficultyGui {
         boolean equipped = title.id.equals(TitleSystem.activeId(subject));
         int mastery = DifficultyCache.data(subject).titleProgress().masteryLevel(title.id);
 
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§d" + title.masteryDisplay(mastery),
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandSubPage("Difficulty", title.masteryDisplay(mastery)),
                 earned ? "§7Unlocked · tap Equip to wear" : "§7Locked · see how to earn it");
 
         List<String> lines = new ArrayList<>();
@@ -442,7 +442,7 @@ public final class CnpcLmDifficultyGui {
             return;
         }
         TeamMode mode = teamGate.getTeamMode();
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§a", "Difficulty", "Teams"),
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandSubPage("Difficulty", "Teams"),
                 "§7How rival teams affect scaling");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, DifficultyTeamGuiApi.linesForPage(subject, "team"),
                         CnpcGuiStyle.INFO_INLINE_MAX));
@@ -476,7 +476,7 @@ public final class CnpcLmDifficultyGui {
             return;
         }
         DifficultyActions.prepareGui(who(player));
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§c", "Difficulty", "Staff Admin"),
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandSubPage("Difficulty", "Staff Admin"),
                 "§7Server tools · typed admin: §f/difficulty admin");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of(
                 "§7Reload config, event log, and LM Staff Admin hub",
@@ -501,7 +501,7 @@ public final class CnpcLmDifficultyGui {
         ServerPlayer subject = who(player);
         DifficultyActions.prepareGui(subject);
         boolean canSummon = EndDimensionStrength.canOpenSummonMenu(subject);
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§5", "Difficulty", "End Dragon"),
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandSubPage("Difficulty", "End Dragon"),
                 "§7Paid summon · AD boss profile · summoner-only damage");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY,
                 EndDimensionStrength.summonMenuLines(subject), CnpcGuiStyle.INFO_INLINE_MAX));

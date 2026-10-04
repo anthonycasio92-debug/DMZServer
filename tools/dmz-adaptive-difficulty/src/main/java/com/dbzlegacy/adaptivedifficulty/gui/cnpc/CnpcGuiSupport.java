@@ -228,8 +228,39 @@ public final class CnpcGuiSupport {
         if (id == ID_TITLE || id == ID_SUBTITLE || id == ID_DIVIDER || id == ID_STATUS_TAG) {
             id = ID_INLINE_NOTE;
         }
-        gui.addLabel(id, safeChat(caption), M, y, textBandWidth(), 10);
+        ILabel l = gui.addLabel(id, safeChat(caption), M, y, textBandWidth(), 11);
+        styleLabel(l, brightenLabelColor(CnpcGuiStyle.COLOR_SECTION), 0.72f, false);
         return y + 16;
+    }
+
+    private static void styleLabel(ILabel label, int argb, float scale, boolean centered) {
+        if (label == null) {
+            return;
+        }
+        try {
+            label.setColor(brightenLabelColor(argb));
+        } catch (Throwable ignored) {
+        }
+        try {
+            label.setScale(scale);
+        } catch (Throwable ignored) {
+        }
+        try {
+            label.setCentered(centered);
+        } catch (Throwable ignored) {
+        }
+    }
+
+    /** Slight lift for CNPC label contrast (Noea Empires {@code GuiStyle.brighten}). */
+    static int brightenLabelColor(int argb) {
+        int a = (argb >> 24) & 0xFF;
+        if (a == 0) {
+            a = 255;
+        }
+        int r = Math.min(255, ((argb >> 16) & 0xFF) + 20);
+        int g = Math.min(255, ((argb >> 8) & 0xFF) + 20);
+        int b = Math.min(255, (argb & 0xFF) + 20);
+        return (a << 24) | (r << 16) | (g << 8) | b;
     }
 
     public static int paintInfoBlock(ICustomGui gui, int startY, List<String> lines, int inlineMax) {
@@ -303,16 +334,14 @@ public final class CnpcGuiSupport {
     }
 
     public static ILabel title(ICustomGui gui, int id, String text) {
-        ILabel l = gui.addLabel(id, safeChat(text), M, 8, textBandWidth(), 18);
-        try {
-            l.setScale(1.15f);
-        } catch (Throwable ignored) {
-        }
+        ILabel l = gui.addLabel(id, safeChat(text), M, 7, textBandWidth(), 16);
+        styleLabel(l, CnpcGuiStyle.COLOR_GOLD, 0.92f, true);
         return l;
     }
 
     public static void subtitle(ICustomGui gui, int id, String text) {
-        gui.addLabel(id, safeChat(text), M, 28, textBandWidth(), 14);
+        ILabel l = gui.addLabel(id, safeChat(text), M, 28, textBandWidth(), 14);
+        styleLabel(l, brightenLabelColor(CnpcGuiStyle.COLOR_MUTED), 1f, false);
     }
 
     /** Data/actions target (inspect subject when staff is inspecting). */
@@ -328,6 +357,14 @@ public final class CnpcGuiSupport {
     }
 
     public static void divider(ICustomGui gui, int id, int y) {
+        if (gui != null) {
+            try {
+                int w = Math.max(40, gui.getWidth() - 12);
+                gui.addColoredLine(id, 12, y, w, 25, CnpcGuiStyle.COLOR_LINE, 1f);
+                return;
+            } catch (Throwable ignored) {
+            }
+        }
         int w = textBandWidth();
         gui.addLabel(id, dividerText(), M, y, w, 10);
     }

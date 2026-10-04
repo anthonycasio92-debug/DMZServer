@@ -12,6 +12,13 @@ public final class CnpcGuiStyle {
 
     public static final String SEP = " §8· ";
 
+    /** CNPC ARGB label colors (same palette as Noea Empires {@code GuiStyle}). */
+    public static final int COLOR_TEXT = 0xF0EEE9;
+    public static final int COLOR_MUTED = 0xC9C5BE;
+    public static final int COLOR_GOLD = 0xFFD27A;
+    public static final int COLOR_SECTION = 0x8DCBFF;
+    public static final int COLOR_LINE = 0xB9B4AB;
+
     public static final String HINT_CLICK_ENTRY = "§7Select an entry below";
     public static final String HINT_CLICK_PLAYER = "§7Select a player below";
     public static final String HINT_CLICK_INVITE = "§7Tap a name — Accept or Decline (or withdraw outgoing)";
@@ -42,6 +49,25 @@ public final class CnpcGuiStyle {
             return colorPrefix + system;
         }
         return colorPrefix + system + " · " + sub;
+    }
+
+    /** Empires-style window title: {@code Legacy Mechanics — Page}. */
+    public static String brandTitle(String page) {
+        if (page == null || page.isBlank()) {
+            return "§6Legacy Mechanics";
+        }
+        return "§6Legacy Mechanics§8 — §f" + page.trim();
+    }
+
+    /** {@code Legacy Mechanics — System · Subpage} (replaces colored {@link #subPage} headers). */
+    public static String brandSubPage(String system, String sub) {
+        if (system == null || system.isBlank()) {
+            return brandTitle(sub);
+        }
+        if (sub == null || sub.isBlank()) {
+            return brandTitle(system.trim());
+        }
+        return brandTitle(system.trim() + " · " + sub.trim());
     }
 
     public static String subGray(String sentence) {
