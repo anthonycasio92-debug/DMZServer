@@ -12,7 +12,7 @@
 ## DMZ reference (`/dmzclass`)
 
 - `isValidClass` → `getAllClasses().contains(lowercase)`
-- `snapshotMultiplierResources` → `setCharacterClass` → `restoreMultiplierGains` → `StatsSyncS2C`
+- LM sets the class id and clamps pools down. It does not call `restoreMultiplierGains`.
 
 ## Static checks
 

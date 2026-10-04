@@ -34,7 +34,14 @@ def main() -> int:
     update_mixin = read(MIXIN / "UpdateCharacterC2SMixin.java")
     create_mixin = read(MIXIN / "CreateCharacterC2SMixin.java")
 
-    check("DmzClassCommandApply mirrors dmzclass steps", "restoreMultiplierGains" in apply and "StatsSyncS2C" in apply, errors)
+    check(
+        "DmzClassCommandApply sets class and syncs without raising pools",
+        "setCharacterClass" in apply
+        and "StatsSyncS2C" in apply
+        and "restoreMultiplierGains" not in apply
+        and "DmzResourcePoolClamp.clamp" in apply,
+        errors,
+    )
     check("Class validation uses ConfigManager getAllClasses contains", "getAllClasses" in apply and "contains" in apply, errors)
     check("Paid class snapshots before mutate", re.search(
         r"resourceSnapshot\s*=\s*data\.snapshotMultiplierResources\(\);\s*\n\s*if \(cost", services, re.M
@@ -90,7 +97,7 @@ def main() -> int:
         "## DMZ reference (`/dmzclass`)",
         "",
         "- `isValidClass` → `getAllClasses().contains(lowercase)`",
-        "- `snapshotMultiplierResources` → `setCharacterClass` → `restoreMultiplierGains` → `StatsSyncS2C`",
+        "- LM sets the class id and clamps pools down. It does not call `restoreMultiplierGains`.",
         "",
         "## Static checks",
         "",
