@@ -6,10 +6,17 @@ import java.lang.reflect.Method;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Use dmzrevamp Overhaul prestige (Statistics UI, scaling, saga rebirth) while Legacy Mechanics
- * owns playable stat totals via mixins. Combat scale reads Overhaul
- * {@code PrestigeSystem.scaleMultiplier} directly so prestige count changes apply even when
- * the Overhaul JSON cache is stale.
+ * Bridge to dmzrevamp Overhaul prestige — LM must <b>not</b> reimplement
+ * {@code 1 + count × scaleBonusPerPrestige} or other Overhaul scaling formulas in Java.
+ * <p>
+ * {@link #combatScaleMultiplier(StatsData)} is the only supported scale source: it reflects
+ * {@code com.dmzrevamp.revamp.prestige.PrestigeSystem.scaleMultiplier}. LM applies that value
+ * once on combat {@code getTotalMultiplier} ({@code StatsDataOverhaulCombatScaleMixin}) and
+ * once on ki/stamina canonical max ({@link DmzResourcePoolClamp#applyOverhaulScale}) with ENE/STM
+ * excluded from totalMult so pools are not double-scaled.
+ * <p>
+ * Level caps and max stat totals are aligned via mixins on Overhaul APIs, not a parallel scale
+ * ladder ({@link LmOverhaulCapMath}, {@code DmzRevampPrestigeCapMixin}).
  */
 public final class LmOverhaulPrestigeIntegration {
     /** Overhaul Statistics prestige count hard cap. */
