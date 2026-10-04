@@ -5,16 +5,21 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 ENV_FILE="$ROOT/live-sftp.env"
 
-if [[ -f "$ENV_FILE" ]]; then
-  exit 0
-fi
-
 HOST="${LIVE_SFTP_HOST:-}"
 PORT="${LIVE_SFTP_PORT:-2022}"
 USER="${LIVE_SFTP_USER:-}"
 PASS="${LIVE_SFTP_PASS:-}"
 
-if [[ -z "$HOST" || -z "$USER" || -z "$PASS" ]]; then
+have_secrets=0
+if [[ -n "$HOST" && -n "$USER" && -n "$PASS" ]]; then
+  have_secrets=1
+fi
+
+if [[ -f "$ENV_FILE" && "$have_secrets" -eq 0 ]]; then
+  exit 0
+fi
+
+if [[ "$have_secrets" -eq 0 ]]; then
   exit 0
 fi
 

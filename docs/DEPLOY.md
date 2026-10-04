@@ -18,10 +18,17 @@ Production is the **Kinetic live** panel server. The old **test server** (`node.
 - Cap JSON (no jar): `DEPLOY_LIVE_CONFIRM=LIVE bash scripts/deploy-lm-cap-config.sh` (`LevelingRevamp.json` 100k/150k + remove KubeJS cap shims).
 - Other mods (e.g. `dmz_mohist_melee_fix`): upload to `mods/` manually or extend deploy scripts; move replaced jars to `recycle_bin/`.
 - **Start** the server after any Forge mixin jar change (`LegacyMechanics`, `dmz_mohist_melee_fix`, …).
-- Credentials: `live-sftp.env` from `live-sftp.env.example`; cloud agents may use env secrets + `scripts/ensure-live-sftp-env.sh`.
+- Credentials (pick one):
+  - **Cursor Cloud (recommended):** In [Environment settings](https://cursor.com/dashboard/cloud-agents/environments) for this repo, add **secrets** (not committed):
+    - `LIVE_SFTP_HOST` — e.g. `use-dc-p98-a6-cg.kineticpanel.net`
+    - `LIVE_SFTP_PORT` — `2022` (optional; default 2022)
+    - `LIVE_SFTP_USER` — Kinetic SFTP username from the panel
+    - `LIVE_SFTP_PASS` — same password as the Kinetic panel login
+  - On each agent boot, `install` / `start` run `scripts/ensure-live-sftp-env.sh`, which writes gitignored `live-sftp.env` from those variables. Dashboard secrets override an existing `live-sftp.env` when all three of host, user, and pass are set.
+  - **Local only:** copy `live-sftp.env.example` → `live-sftp.env` and fill in the password.
 
 ## Agent checklist
 
 1. Confirm destination is **live** SFTP — not the retired test host.
-2. Never commit passwords (`live-sftp.env` is gitignored).
+2. Never commit passwords (`live-sftp.env` is gitignored). Rotate the panel password if it was pasted in chat.
 3. Do not upload to live unless the owner asked for a live deploy in chat.
