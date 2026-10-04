@@ -1481,8 +1481,8 @@ def main() -> int:
     check("build ships StatsDataHudPoolMaxMixin in mixins.json",
           "StatsDataHudPoolMaxMixin" in build_sh
           and '"StatsDataHudPoolMaxMixin"' in mixins_json)
-    check("HUD pool max mixin always returns canonical cap",
-          "actualMaxEnergy" in hud_pool and "setReturnValue(canon)" in hud_pool)
+    check("HUD pool max mixin scales getter return once (2.4.115)",
+          "applyOverhaulScale" in hud_pool and "scaled > value" in hud_pool)
     check("EnergyManaSync does not raise max to overflowing current",
           "maxEnergy = currentEnergy" not in energy_mana
           and "clampCurrentToMax" in energy_mana)
