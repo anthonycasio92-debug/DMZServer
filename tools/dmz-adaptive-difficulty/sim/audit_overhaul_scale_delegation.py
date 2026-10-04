@@ -51,10 +51,8 @@ def main() -> int:
         errors.append("DmzResourcePoolClamp must not multiply pool max by scale")
 
     resource_scale = read("progression/bridge/OverhaulPrestigeResourceScale.java")
-    if "scaleOnMaxIncrease" not in resource_scale:
-        errors.append("OverhaulPrestigeResourceScale missing scaleOnMaxIncrease (document fallback path)")
-    if "overhaulPrestigeEnabled()" not in resource_scale:
-        errors.append("OverhaulPrestigeResourceScale must branch on overhaulPrestigeEnabled()")
+    if "cur * ratio" in resource_scale or "restoreMultiplierGains" in resource_scale:
+        errors.append("OverhaulPrestigeResourceScale must not multiply ki/stamina or reapply multiplier gains")
 
     scaled = read("calc/LmOverhaulScaledCombat.java")
     if "* scale(data)" in scaled or "* scale(" in scaled:
