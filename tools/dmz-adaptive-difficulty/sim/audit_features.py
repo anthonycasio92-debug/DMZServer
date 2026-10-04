@@ -1314,11 +1314,12 @@ def main() -> int:
     check("completed not inflated from held skill",
           "never bump total from it" in prestige_sys
           and "High-watermark" not in prestige_sys)
-    check("prestige Need ladder completed 0-4 then held gates",
-          "HELD_GATE_MIN_COMPLETED = 5" in prestige_sys
+    check("prestige Need ladder first 4 at 20k then held 50k/100k",
+          "HELD_GATE_MIN_COMPLETED = 4" in prestige_sys
           and "requiredLevelForHeld" in prestige_sys
           and "HELD0_NEED = 50_000" in prestige_sys
-          and "HELD2_NEED = 145_000" in prestige_sys
+          and "HELD1_PLUS_NEED = 100_000" in prestige_sys
+          and "HELD2_NEED" not in prestige_sys
           and "needForProgress" in prestige_sys
           and "heldCountForNeed" in prestige_sys
           and "reconcileNeedFloor" in prestige_sys)

@@ -22,8 +22,8 @@ import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Port of {@code Prestige NPC.js} purchase logic as {@code /prestige} chat GUI.
- * Need ladder: completed 0–4 → {@code min(100k, (completed+1)×20k)}; completed ≥5 →
- * held-wallet gates (0→50k, 1→100k, 2→145k, 3+→150k), capped by personal breakthroughs.
+ * Level gate: the first four prestiges each need 20k. From the fifth on, 50k if you
+ * hold none and 100k if you hold one or more. Capped by the personal level cap.
  *
  * <p><b>Lifetime completed</b> never drops when held/Fabled Prestige is turned in —
  * otherwise Need would snap back to 20k after a completed prestige.
@@ -31,12 +31,10 @@ import net.minecraft.server.level.ServerPlayer;
 public final class PrestigeSystem {
     private static final int LEVELS_PER_PRESTIGE = 20_000;
     private static final int MAX_REQUIRED_LEVEL = 100_000;
-    /** At this lifetime completed count, Need switches from the 20k ladder to held gates. */
-    public static final int HELD_GATE_MIN_COMPLETED = 5;
+    /** Lifetime completed count where the next prestige starts using the held gate. */
+    public static final int HELD_GATE_MIN_COMPLETED = 4;
     private static final int HELD0_NEED = 50_000;
-    private static final int HELD1_NEED = 100_000;
-    private static final int HELD2_NEED = 145_000;
-    private static final int HELD3_PLUS_NEED = 150_000;
+    private static final int HELD1_PLUS_NEED = 100_000;
     private static final int MAX_HELD = 10;
     private static final long CONFIRM_MS = 10_000L;
     /** Live Prestige NPC.js — held tokens live on CNPC faction 4. */
@@ -189,16 +187,15 @@ public final class PrestigeSystem {
         }
 
         int nextRequired = requiredLevel(player);
-        String summary = "§aPrestige Level §f" + newCompleted + " §aComplete!\n"
-                + "§7Held: §6" + newHeld + "§7/§f" + MAX_HELD + "\n"
-                + "§7Next needs §e" + DmzRewards.formatWhole(nextRequired) + " §7DMZ levels.";
+        String summary = "§aThat's prestige §f" + newCompleted + "§a.\n"
+                + "§7You're holding §6" + newHeld + "§7/§f" + MAX_HELD + ".\n"
+                + "§7The next one needs level §e" + DmzRewards.formatWhole(nextRequired) + "§7.";
         if (!preferGuiFeedback()) {
             send(player, "");
             send(player, LmChat.DIVIDER);
-            send(player, "§aPrestige Level §f" + newCompleted + " §aComplete!");
-            send(player, "§7Required level was §f" + DmzRewards.formatWhole(required));
-            send(player, "§7Held Prestige Levels: §6" + newHeld + "§7/§f" + MAX_HELD);
-            send(player, "§7Next Prestige requires §e" + DmzRewards.formatWhole(nextRequired) + " §7DMZ levels.");
+            send(player, "§aThat's prestige §f" + newCompleted + "§a.");
+            send(player, "§7You're holding §6" + newHeld + "§7/§f" + MAX_HELD + ".");
+            send(player, "§7The next one needs level §e" + DmzRewards.formatWhole(nextRequired) + "§7.");
             send(player, LmChat.DIVIDER);
         }
         SystemTelemetry.log("prestige", "purchase", player, null, Map.of(
@@ -223,9 +220,9 @@ public final class PrestigeSystem {
         int required = requiredLevel(player);
         send(player, "");
         send(player, "§8── §6Prestige §8──");
-        send(player, "§7Completed: §f" + completed + " §8| §7Held: §6" + held + "§7/§f" + MAX_HELD);
-        send(player, "§7DMZ Level: §f" + DmzRewards.formatWhole(level)
-                + " §8| §7Need: §e" + DmzRewards.formatWhole(required));
+        send(player, "§7Prestiged §f" + completed + " §7times · holding §6" + held + "§7/§f" + MAX_HELD);
+        send(player, "§7Level §f" + DmzRewards.formatWhole(level)
+                + " §7· next one needs §e" + DmzRewards.formatWhole(required));
         MutableComponent row = Component.m_237113_("§7")
                 .m_7220_(btn("§a[Prestige]", "/prestige do confirm", "Confirm prestige purchase"))
                 .m_7220_(Component.m_237113_("  "))
@@ -237,18 +234,18 @@ public final class PrestigeSystem {
     private static String replyConfirm(
             ServerPlayer player, int completed, int next, int required, int level, int held
     ) {
-        String summary = "§eConfirm Prestige Level §f" + next + "§e?\n"
-                + "§7Click again within 10s · resets DMZ stats\n"
-                + "§7Held after: §6" + (held + 1) + "§7/§f" + MAX_HELD;
+        String summary = "§ePrestige now?\n"
+                + "§7This resets your stats. Click again within 10 seconds.\n"
+                + "§7You'll be holding §6" + (held + 1) + "§7/§f" + MAX_HELD + ".";
         if (!preferGuiFeedback()) {
             send(player, "");
             send(player, LmChat.DIVIDER);
-            send(player, "§eConfirm Prestige Level §f" + next + "§e?");
-            send(player, "§7This resets DMZ stats and awards one held Prestige Level.");
+            send(player, "§ePrestige now?");
+            send(player, "§7This resets your stats and gives you one to hold.");
             send(player, "§7Your level §f" + DmzRewards.formatWhole(level)
-                    + " §7meets §e" + DmzRewards.formatWhole(required) + "§7.");
-            send(player, "§7Held after: §6" + (held + 1) + "§7/§f" + MAX_HELD);
-            send(player, "§8Click again within 10s to confirm.");
+                    + " §7is enough (needs §e" + DmzRewards.formatWhole(required) + "§7).");
+            send(player, "§7You'll be holding §6" + (held + 1) + "§7/§f" + MAX_HELD + ".");
+            send(player, "§7Click again within 10 seconds.");
             MutableComponent row = Component.m_237113_("§7")
                     .m_7220_(btn("§a[Confirm Prestige]", "/prestige do confirm", "Complete prestige"))
                     .m_7220_(Component.m_237113_("  "))
@@ -260,15 +257,15 @@ public final class PrestigeSystem {
     }
 
     private static String replyCap(ServerPlayer player, int held) {
-        String summary = "§cMaximum Prestige Levels Reached\n"
-                + "§7Available: §6" + held + "§7/§f" + MAX_HELD + "\n"
-                + "§eUse one before prestiging again.";
+        String summary = "§cYou're holding as many as you can.\n"
+                + "§7That's §6" + held + "§7/§f" + MAX_HELD + ".\n"
+                + "§7Spend one, then you can prestige again.";
         if (!preferGuiFeedback()) {
             send(player, "");
             send(player, LmChat.DIVIDER);
-            send(player, "§cMaximum Prestige Levels Reached");
-            send(player, "§7Available Prestige Levels: §6" + held + "§7/§f" + MAX_HELD);
-            send(player, "§eUse one before prestiging again.");
+            send(player, "§cYou're holding as many as you can.");
+            send(player, "§7That's §6" + held + "§7/§f" + MAX_HELD + ".");
+            send(player, "§7Spend one, then you can prestige again.");
             send(player, LmChat.DIVIDER);
         }
         return summary;
@@ -277,16 +274,16 @@ public final class PrestigeSystem {
     private static String replyRequirement(
             ServerPlayer player, int completed, int next, int required, int level
     ) {
-        String summary = "§cNot Ready for Prestige Level §f" + next + "\n"
-                + "§7Need §e" + DmzRewards.formatWhole(required)
-                + " §7DMZ levels (have §f" + DmzRewards.formatWhole(level) + "§7).";
+        String summary = "§cNot high enough yet.\n"
+                + "§7You need level §e" + DmzRewards.formatWhole(required)
+                + "§7. You're at §f" + DmzRewards.formatWhole(level) + "§7.";
         if (!preferGuiFeedback()) {
             send(player, "");
             send(player, LmChat.DIVIDER);
-            send(player, "§cNot Ready for Prestige Level §f" + next);
-            send(player, "§7Need §e" + DmzRewards.formatWhole(required)
-                    + " §7DMZ levels (have §f" + DmzRewards.formatWhole(level) + "§7).");
-            send(player, "§7Completed prestiges: §f" + completed);
+            send(player, "§cNot high enough yet.");
+            send(player, "§7You need level §e" + DmzRewards.formatWhole(required)
+                    + "§7. You're at §f" + DmzRewards.formatWhole(level) + "§7.");
+            send(player, "§7You've prestiged §f" + completed + " §7times.");
             send(player, LmChat.DIVIDER);
         }
         return summary;
@@ -338,8 +335,7 @@ public final class PrestigeSystem {
         int c = Math.max(0, completed);
         int h = Math.max(0, Math.min(MAX_HELD, heldWallet));
         if (c < HELD_GATE_MIN_COMPLETED) {
-            int ladder = Math.min(MAX_REQUIRED_LEVEL, (c + 1) * LEVELS_PER_PRESTIGE);
-            return ladder;
+            return LEVELS_PER_PRESTIGE;
         }
         return requiredLevelForHeld(h);
     }
@@ -347,7 +343,7 @@ public final class PrestigeSystem {
     private static int needForProgress(ServerPlayer player, int completed, int heldWallet) {
         int need = needForProgress(completed, heldWallet);
         if (completed < HELD_GATE_MIN_COMPLETED) {
-            int ladder = Math.min(MAX_REQUIRED_LEVEL, (completed + 1) * LEVELS_PER_PRESTIGE);
+            int ladder = LEVELS_PER_PRESTIGE;
             int floor = Math.min(getNeedFloor(player), MAX_REQUIRED_LEVEL);
             if (floor > ladder) {
                 shrinkNeedFloor(player, ladder);
@@ -358,15 +354,10 @@ public final class PrestigeSystem {
         return need;
     }
 
-    /** Need when lifetime {@code completed ≥ 5} — depends on held wallet only. */
+    /** Need from the fifth prestige on — 50k with none held, 100k with one or more. */
     public static int requiredLevelForHeld(int held) {
         int h = Math.max(0, Math.min(MAX_HELD, held));
-        return switch (h) {
-            case 0 -> HELD0_NEED;
-            case 1 -> HELD1_NEED;
-            case 2 -> HELD2_NEED;
-            default -> HELD3_PLUS_NEED;
-        };
+        return h <= 0 ? HELD0_NEED : HELD1_PLUS_NEED;
     }
 
     /** @deprecated prefer {@link #requiredLevel(ServerPlayer)} — uses absolute 150k ceiling. */
@@ -376,7 +367,7 @@ public final class PrestigeSystem {
 
     public static int requiredLevel(int currentCompleted, int personalCap) {
         int cap = personalCap > 0 ? personalCap : MAX_REQUIRED_LEVEL;
-        int required = Math.max(0, currentCompleted + 1) * LEVELS_PER_PRESTIGE;
+        int required = currentCompleted < HELD_GATE_MIN_COMPLETED ? LEVELS_PER_PRESTIGE : HELD0_NEED;
         return Math.min(cap, required);
     }
 
@@ -411,8 +402,7 @@ public final class PrestigeSystem {
         }
         int completed = getCompleted(player);
         if (completed < HELD_GATE_MIN_COMPLETED) {
-            int ladder = Math.min(MAX_REQUIRED_LEVEL, (completed + 1) * LEVELS_PER_PRESTIGE);
-            shrinkNeedFloor(player, ladder);
+            shrinkNeedFloor(player, LEVELS_PER_PRESTIGE);
             return;
         }
         int need = requiredLevelForHeld(heldCountForNeed(player));

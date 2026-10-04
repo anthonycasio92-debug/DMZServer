@@ -1005,8 +1005,8 @@ public final class ProgressionGuiApi {
         }
         String p = page == null || page.isBlank() ? "main" : page.toLowerCase(Locale.ROOT);
         List<String> lore = new ArrayList<>();
-        lore.add("§7Completed: §f" + ph.getOrDefault("completed", "0")
-                + " §8| §7Held: §6" + ph.getOrDefault("held", "0")
+        lore.add("§7Prestiged §f" + ph.getOrDefault("completed", "0")
+                + " §7times · holding §6" + ph.getOrDefault("held", "0")
                 + "§7/§f" + ph.getOrDefault("held_max", "10"));
         switch (p) {
             case "turnin", "points" -> {
@@ -1064,15 +1064,15 @@ public final class ProgressionGuiApi {
             }
             default -> {
                 lore.add("§7Points: §e" + ph.getOrDefault("points", "0"));
-                lore.add("§7DMZ Level: §f" + ph.getOrDefault("level_fmt", "0")
-                        + " §8| §7Need: §e" + ph.getOrDefault("required_fmt", "0"));
-                lore.add("§8Need: C0–4 → 20k steps to 100k · C5+ by held (50k/100k/145k/150k)");
+                lore.add("§7Level §f" + ph.getOrDefault("level_fmt", "0")
+                        + " §7· next one needs §e" + ph.getOrDefault("required_fmt", "0"));
+                lore.add("§7Your first four each need §f20,000§7.");
+                lore.add("§7From the fifth on: §f50,000 §7if you hold none, §f100,000 §7if you hold any.");
                 if ("true".equalsIgnoreCase(ph.get("ready"))) {
-                    lore.add("§aReady to prestige");
+                    lore.add("§aYou can prestige now.");
                 } else {
-                    lore.add("§cNot ready yet");
+                    lore.add("§cYou need a higher level first.");
                 }
-                lore.add("§8Turn-in · Shop · Effects · Tiers · Breakthrough via command");
             }
         }
         return lore;
