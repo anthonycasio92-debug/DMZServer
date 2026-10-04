@@ -2,7 +2,6 @@ package com.dbzlegacy.adaptivedifficulty.progression.classdef;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.config.ConfigPaths;
-import com.dbzlegacy.adaptivedifficulty.progression.bridge.FabledBridge;
 import com.dbzlegacy.adaptivedifficulty.character.DmzContentDiscovery;
 import com.dbzlegacy.adaptivedifficulty.character.DmzRuntimeClassIds;
 import com.google.gson.Gson;
@@ -12,7 +11,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.io.Reader;
 import java.io.Writer;
-import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -29,10 +27,7 @@ import net.minecraftforge.fml.loading.FMLPaths;
 
 /**
  * Discovers every DMZ fighting class from {@code config/dragonminez/races/<race>/stats.json}
- * plus optional overrides in {@code config/legacymechanics/class-fabled.json}.
- *
- * <p>Used by {@link com.dbzlegacy.adaptivedifficulty.progression.bridge.ClassSkillSync}
- * and {@link com.dbzlegacy.adaptivedifficulty.progression.bridge.ClassPermissionSync}.
+ * plus optional display overrides in {@code config/legacymechanics/class-fabled.json}.
  */
 public final class FightingClassCatalog {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
@@ -66,7 +61,7 @@ public final class FightingClassCatalog {
         return Collections.unmodifiableList(new ArrayList<>(BLOB.entries));
     }
 
-    /** Resolve the Fabled base-skill display name for a DMZ class id. */
+    /** Resolve the display name for a DMZ class id. */
     public static String skillNameFor(String classId) {
         if (classId == null || classId.isBlank()) {
             return "";
@@ -75,10 +70,6 @@ public final class FightingClassCatalog {
         ClassEntry entry = BLOB.byId.get(id);
         if (entry != null && entry.fabledSkill != null && !entry.fabledSkill.isBlank()) {
             return entry.fabledSkill.trim();
-        }
-        String fromFabled = matchFabledSkillName(id);
-        if (!fromFabled.isBlank()) {
-            return fromFabled;
         }
         String legacy = legacySkillName(id);
         if (!legacy.isBlank()) {
@@ -122,7 +113,7 @@ public final class FightingClassCatalog {
             BLOB = buildCatalog(config);
             saveMerged(config);
             AdaptiveDifficultyMod.LOGGER.info(
-                    "[{}] Fighting class catalog: {} class(es) from DMZ + Fabled",
+                    "[{}] Fighting class catalog: {} class(es) from DMZ",
                     AdaptiveDifficultyMod.MOD_ID,
                     BLOB.classIds.size());
             return true;
@@ -180,7 +171,6 @@ public final class FightingClassCatalog {
     private static Catalog buildCatalog(FileBlob config) {
         Set<String> ids = new LinkedHashSet<>();
         ids.addAll(discoverDmzClassIds());
-        ids.addAll(discoverFabledFightingClassIds());
 
         Map<String, ClassEntry> byId = new LinkedHashMap<>();
         if (config != null && config.classes != null) {
@@ -274,91 +264,6 @@ public final class FightingClassCatalog {
         return out;
     }
 
-    private static Set<String> discoverFabledFightingClassIds() {
-        Set<String> out = new LinkedHashSet<>();
-        Class<?> fabledClass = FabledBridge.fabledClass();
-        if (fabledClass == null) {
-            return out;
-        }
-        try {
-            Method getClasses = FabledBridge.findNoArg(fabledClass, "getClasses");
-            if (getClasses == null) {
-                return out;
-            }
-            Object registered = getClasses.invoke(null);
-            if (!(registered instanceof Map<?, ?> map)) {
-                return out;
-            }
-            for (Object registeredClass : map.values()) {
-                if (registeredClass == null) {
-                    continue;
-                }
-                String group = "";
-                try {
-                    Object g = registeredClass.getClass().getMethod("getGroup").invoke(registeredClass);
-                    group = g == null ? "" : String.valueOf(g);
-                } catch (Throwable ignored) {
-                }
-                if ("race".equalsIgnoreCase(group.trim()) || "prestige".equalsIgnoreCase(group.trim())) {
-                    continue;
-                }
-                String name = "";
-                try {
-                    Object n = registeredClass.getClass().getMethod("getName").invoke(registeredClass);
-                    name = n == null ? "" : String.valueOf(n).trim();
-                } catch (Throwable ignored) {
-                }
-                if (!name.isBlank()) {
-                    out.add(normalizeId(name));
-                }
-            }
-        } catch (Throwable ignored) {
-        }
-        return out;
-    }
-
-    private static String matchFabledSkillName(String classId) {
-        Class<?> fabledClass = FabledBridge.fabledClass();
-        if (fabledClass == null) {
-            return "";
-        }
-        String wanted = normalize(classId);
-        try {
-            Method getSkills = FabledBridge.findNoArg(fabledClass, "getSkills");
-            if (getSkills == null) {
-                return "";
-            }
-            Object map = getSkills.invoke(null);
-            if (!(map instanceof Map<?, ?> skills)) {
-                return "";
-            }
-            for (Object skill : skills.values()) {
-                if (skill == null) {
-                    continue;
-                }
-                String name = "";
-                String key = "";
-                try {
-                    Object n = skill.getClass().getMethod("getName").invoke(skill);
-                    name = n == null ? "" : String.valueOf(n);
-                } catch (Throwable ignored) {
-                }
-                if (name.endsWith(PRESTIGE_SUFFIX)) {
-                    continue;
-                }
-                try {
-                    Object k = skill.getClass().getMethod("getKey").invoke(skill);
-                    key = k == null ? "" : String.valueOf(k);
-                } catch (Throwable ignored) {
-                }
-                if (normalize(name).equals(wanted) || normalize(key).equals(wanted)) {
-                    return name.trim();
-                }
-            }
-        } catch (Throwable ignored) {
-        }
-        return "";
-    }
 
     private static String legacySkillName(String id) {
         return switch (normalizeId(id)) {

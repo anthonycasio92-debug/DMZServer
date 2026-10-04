@@ -154,20 +154,18 @@ public final class SparCombat {
     }
 
     /**
-     * Prestige for spar TP — matches CNPC script: Fabled Prestige class level − 1,
-     * with DMZ {@code prestige} skill as the synced value (take the higher).
+     * Prestige for spar TP — the higher of the DMZ prestige skill and the LM held wallet.
      */
     public static int sparPrestigeLevel(ServerPlayer player) {
         int skill = Math.max(0, DmzProgression.prestige(player));
-        int fabled = 0;
+        int held = 0;
         try {
-            int classLevel = com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeSkillSync
-                    .fabledPrestigeLevel(player);
-            fabled = Math.max(0, classLevel - 1);
+            held = com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeSystem
+                    .getHeldWallet(player);
         } catch (Throwable ignored) {
-            fabled = 0;
+            held = 0;
         }
-        return Math.max(0, Math.min(MAX_PRESTIGE_LEVEL, Math.max(skill, fabled)));
+        return Math.max(0, Math.min(MAX_PRESTIGE_LEVEL, Math.max(skill, held)));
     }
 
     public static float momentumMultiplier(SparPlayerRuntime rt) {

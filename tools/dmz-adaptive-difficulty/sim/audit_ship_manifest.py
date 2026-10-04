@@ -104,6 +104,28 @@ def main() -> int:
     check("mixins.json registers StatsDataDeathTpPenaltyMixin",
           '"StatsDataDeathTpPenaltyMixin"' in mixins_json)
 
+    print("\n--- § fabled removed ---")
+    bridge_dir = SRC / "progression/bridge"
+    check("FabledBridge class removed", not (bridge_dir / "FabledBridge.java").is_file())
+    check("Fabled skill helpers removed",
+          not (SRC / "progression/FabledSkills.java").is_file()
+          and not (bridge_dir / "PrestigeSkillSync.java").is_file()
+          and not (bridge_dir / "EnergyManaSync.java").is_file()
+          and not (bridge_dir / "RaceSkillSync.java").is_file()
+          and not (bridge_dir / "ClassSkillSync.java").is_file()
+          and not (bridge_dir / "ClassPermissionSync.java").is_file())
+    overhaul_bridge = read(SRC / "progression/bridge/DmzRevampPrestigeBridge.java")
+    race_lock = read(SRC / "progression/race/RaceLock.java")
+    energy_guard = read(SRC / "mixin/ResourcesEnergyDrainGuardMixin.java")
+    check("Overhaul prestige count follows held wallet",
+          "getHeldWallet" in overhaul_bridge and "PrestigeSkillSync" not in overhaul_bridge)
+    check("race lock does not reset for a missing skill",
+          "FabledSkills" not in race_lock and "dmzstats reset" not in race_lock)
+    check("energy drain guard only ignores non-positive amounts",
+          "amount <= 0f" in energy_guard and "EnergyManaSync" not in energy_guard)
+    check("stamina Fabled drain mixin removed",
+          not (SRC / "mixin/ResourcesStaminaDrainGuardMixin.java").is_file())
+
     print("\n--- § access (skillcheck + staff admin) ---")
     skill_svc = read(SRC / "progression/shop/SkillCheckService.java")
     staff = read(SRC / "util/StaffAccess.java")

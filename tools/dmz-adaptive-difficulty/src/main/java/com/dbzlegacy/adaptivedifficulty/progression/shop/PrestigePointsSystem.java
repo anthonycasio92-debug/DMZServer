@@ -5,11 +5,9 @@ import com.dbzlegacy.adaptivedifficulty.progression.DmzSkillUtil;
 import com.dbzlegacy.adaptivedifficulty.progression.PersonalLevelCapMirror;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionData;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
-import com.dbzlegacy.adaptivedifficulty.progression.bridge.FabledBridge;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import com.dragonminez.common.stats.skills.Skills;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -62,11 +60,6 @@ public final class PrestigePointsSystem {
     private static final String KEY_SKILL_PREFIX = "pp_skill_";
     /** Permanent difficulty-tier unlocks bought with prestige points ({@code pp_tier_1}…{@code 7}). */
     private static final String KEY_TIER_PREFIX = "pp_tier_";
-
-    private static final String SKILL_MAJIN = "Permanent Majin";
-    private static final String SKILL_MUTANT = "Permanent Mutant";
-    private static final String NS_KEY = "legacymechanics";
-    private static final String NS_PATH = "prestige-points";
 
     /**
      * Legacy named map kept for callers/audits — resolves to live catalog entries.
@@ -278,7 +271,7 @@ public final class PrestigePointsSystem {
 
     /**
      * Turn in {@code amount} held prestiges for points.
-     * Also lowers Fabled Prestige class so faction sync cannot restore held.
+     * The LM held wallet is the only prestige count.
      */
     public static String turnIn(ServerPlayer player, int amount) {
         if (player == null) {
@@ -298,7 +291,6 @@ public final class PrestigePointsSystem {
         int gained = pointsForTurnIn(want);
         int newHeld = held - want;
         PrestigeSystem.setHeldPublic(player, newHeld);
-        reducePrestigeClass(player, want);
         int balance = getPoints(player) + gained;
         setPoints(player, balance);
         SystemTelemetry.log("prestige_points", "turn_in", player, null, Map.of(
@@ -904,7 +896,6 @@ public final class PrestigePointsSystem {
         }
         setPoints(player, points - FORM_COST);
         ProgressionData.storedPutBool(player, majin ? KEY_MAJIN : KEY_MUTANT, true);
-        // Fabled Permanent Majin/Mutant skills removed — LM owns the effect via dmzeffect.
         runDmzEffect(player, majin ? "majin" : "mutant", true);
         SystemTelemetry.log("prestige_points", majin ? "buy_majin" : "buy_mutant", player, null, Map.of(
                 "points", getPoints(player)
@@ -930,21 +921,15 @@ public final class PrestigePointsSystem {
 
     private static void clearForm(ServerPlayer player, boolean majin) {
         ProgressionData.storedPutBool(player, majin ? KEY_MAJIN : KEY_MUTANT, false);
-        // Drop any leftover Fabled grant if an older skill still exists on the server.
-        removeFormSkill(player, majin);
         runDmzEffect(player, majin ? "majin" : "mutant", false);
     }
 
     private static void reapplyForms(ServerPlayer player) {
         if (hasMajin(player)) {
             runDmzEffect(player, "majin", true);
-        } else {
-            removeFormSkill(player, true);
         }
         if (hasMutant(player)) {
             runDmzEffect(player, "mutant", true);
-        } else {
-            removeFormSkill(player, false);
         }
     }
 
@@ -1208,208 +1193,13 @@ public final class PrestigePointsSystem {
                 }
             }
         }
-        // Fabled Permanent Majin/Mutant skills are gone — LM must keep dmzeffect applied.
+        // Permanent Majin/Mutant stay on the DragonMineZ effect.
         if (hasMajin(player) || hasMutant(player)) {
             long next = ProgressionData.tempGetLong(player, KEY_FORM_PULSE_AT, 0L);
             if (next <= 0L || nowMs >= next) {
                 ProgressionData.tempPut(player, KEY_FORM_PULSE_AT, nowMs + FORM_PULSE_MS);
                 reapplyForms(player);
             }
-        }
-    }
-
-    // ── Fabled / DMZ helpers ───────────────────────────────────────────
-
-    private static void reducePrestigeClass(ServerPlayer player, int amount) {
-        if (player == null || amount <= 0) {
-            return;
-        }
-        // Prefer Fabled API — console "class level … take" often no-ops on Mohist,
-        // leaving Prestige class high so faction sync restores held tokens.
-        boolean aligned = false;
-        try {
-            com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeSkillSync
-                    .alignFabledToHeld(player);
-            int held = PrestigeSystem.getHeldWallet(player);
-            int want = com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeSkillSync
-                    .fabledLevelForHeld(held);
-            aligned = com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeSkillSync
-                    .fabledPrestigeLevel(player) == want;
-        } catch (Throwable t) {
-            AdaptiveDifficultyMod.LOGGER.debug(
-                    "[{}] prestige points API take soft-fail: {}",
-                    AdaptiveDifficultyMod.MOD_ID, t.toString());
-        }
-        if (aligned) {
-            return;
-        }
-        int remain = amount;
-        MinecraftServer server = player.m_20194_();
-        if (server == null) {
-            return;
-        }
-        String name = player.m_6302_();
-        try {
-            server.m_129892_().m_230957_(
-                    server.m_129893_(),
-                    "class level " + name + " take " + remain + " Prestige"
-            );
-        } catch (Throwable t) {
-            AdaptiveDifficultyMod.LOGGER.debug(
-                    "[{}] prestige points class take soft-fail: {}",
-                    AdaptiveDifficultyMod.MOD_ID, t.toString());
-        }
-        // Console path still needs DMZ skill + faction catch-up.
-        try {
-            com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeSkillSync.sync(player);
-        } catch (Throwable ignored) {
-        }
-        try {
-            com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeFactionSync.forceSync(player);
-        } catch (Throwable ignored) {
-        }
-    }
-
-    private static void grantFormSkill(ServerPlayer player, boolean majin) {
-        String skillName = majin ? SKILL_MAJIN : SKILL_MUTANT;
-        Object fabledData = FabledBridge.fabledData(player);
-        if (fabledData == null) {
-            return;
-        }
-        Class<?> fabledClass = FabledBridge.fabledClass();
-        if (fabledClass == null) {
-            return;
-        }
-        Object skill = findSkill(fabledClass, skillName);
-        if (skill == null) {
-            return;
-        }
-        Object playerClass = null;
-        try {
-            playerClass = fabledData.getClass().getMethod("getMainClass").invoke(fabledData);
-        } catch (Throwable ignored) {
-        }
-        if (!addSkillExternally(fabledData, skill, playerClass, 1)) {
-            try {
-                for (Method m : fabledData.getClass().getMethods()) {
-                    if (!"giveSkill".equals(m.getName())) {
-                        continue;
-                    }
-                    if (m.getParameterCount() == 2 && playerClass != null) {
-                        m.invoke(fabledData, skill, playerClass);
-                        break;
-                    }
-                    if (m.getParameterCount() == 1) {
-                        m.invoke(fabledData, skill);
-                        break;
-                    }
-                }
-            } catch (Throwable ignored) {
-            }
-        }
-        forceUp(fabledData, skillName, 1);
-    }
-
-    private static void removeFormSkill(ServerPlayer player, boolean majin) {
-        String skillName = majin ? SKILL_MAJIN : SKILL_MUTANT;
-        Object fabledData = FabledBridge.fabledData(player);
-        if (fabledData == null) {
-            return;
-        }
-        Class<?> fabledClass = FabledBridge.fabledClass();
-        if (fabledClass == null) {
-            return;
-        }
-        Object skill = findSkill(fabledClass, skillName);
-        if (skill == null) {
-            return;
-        }
-        try {
-            ClassLoader loader = fabledData.getClass().getClassLoader();
-            Class<?> namespacedKey = Class.forName("org.bukkit.NamespacedKey", true, loader);
-            Object key = namespacedKey.getConstructor(String.class, String.class)
-                    .newInstance(NS_KEY, NS_PATH);
-            for (Method m : fabledData.getClass().getMethods()) {
-                if ("removeSkillExternally".equals(m.getName()) && m.getParameterCount() == 2) {
-                    m.invoke(fabledData, skill, key);
-                    break;
-                }
-            }
-        } catch (Throwable ignored) {
-        }
-        // Also try refund/remove APIs if external remove missed a class-owned grant.
-        try {
-            Object playerSkill = fabledData.getClass()
-                    .getMethod("getSkill", String.class)
-                    .invoke(fabledData, skillName);
-            if (playerSkill != null) {
-                for (Method m : fabledData.getClass().getMethods()) {
-                    if ("removeSkill".equals(m.getName()) && m.getParameterCount() == 1) {
-                        m.invoke(fabledData, playerSkill);
-                        break;
-                    }
-                }
-            }
-        } catch (Throwable ignored) {
-        }
-    }
-
-    private static Object findSkill(Class<?> fabledClass, String skillName) {
-        try {
-            Object skill = fabledClass.getMethod("getSkill", String.class).invoke(null, skillName);
-            if (skill != null) {
-                return skill;
-            }
-        } catch (Throwable ignored) {
-        }
-        return null;
-    }
-
-    private static boolean addSkillExternally(
-            Object fabledData, Object skill, Object playerClass, int level
-    ) {
-        try {
-            ClassLoader loader = fabledData.getClass().getClassLoader();
-            Class<?> namespacedKey = Class.forName("org.bukkit.NamespacedKey", true, loader);
-            Constructor<?> ctor = namespacedKey.getConstructor(String.class, String.class);
-            Object key = ctor.newInstance(NS_KEY, NS_PATH);
-            for (Method m : fabledData.getClass().getMethods()) {
-                if (!"addSkillExternally".equals(m.getName()) || m.getParameterCount() != 4) {
-                    continue;
-                }
-                m.invoke(fabledData, skill, playerClass, key, level);
-                return true;
-            }
-        } catch (Throwable ignored) {
-        }
-        return false;
-    }
-
-    private static void forceUp(Object fabledData, String skillName, int targetLevel) {
-        try {
-            Object playerSkill = fabledData.getClass()
-                    .getMethod("getSkill", String.class)
-                    .invoke(fabledData, skillName);
-            if (playerSkill == null) {
-                return;
-            }
-            int current = 0;
-            Object lv = playerSkill.getClass().getMethod("getLevel").invoke(playerSkill);
-            if (lv instanceof Number n) {
-                current = n.intValue();
-            }
-            if (current >= targetLevel) {
-                return;
-            }
-            int delta = targetLevel - Math.max(0, current);
-            try {
-                fabledData.getClass()
-                        .getMethod("forceUpSkill", playerSkill.getClass(), int.class)
-                        .invoke(fabledData, playerSkill, delta);
-            } catch (NoSuchMethodException e) {
-                playerSkill.getClass().getMethod("setLevel", int.class).invoke(playerSkill, targetLevel);
-            }
-        } catch (Throwable ignored) {
         }
     }
 

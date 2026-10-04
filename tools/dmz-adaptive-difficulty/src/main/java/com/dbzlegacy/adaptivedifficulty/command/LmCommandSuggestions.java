@@ -57,7 +57,7 @@ public final class LmCommandSuggestions {
 
     private static final Set<String> PADMIN_SUBCOMMANDS = Set.of(
             "help", "info", "sync", "skills", "skill", "held", "completed", "points",
-            "breakthroughs", "fabled", "tier");
+            "breakthroughs", "tier");
 
     private static final Set<String> PRESTIGE_MODE_TOKENS = Set.of(
             "set", "add", "remove", "give", "clear", "take");
@@ -234,7 +234,7 @@ public final class LmCommandSuggestions {
     private static boolean isPrestigeAdminPlayerSub(String sub) {
         return switch (sub) {
             case "info", "sync", "skills", "skill", "held", "completed", "points",
-                    "breakthroughs", "fabled", "tier" -> true;
+                    "breakthroughs", "tier" -> true;
             default -> false;
         };
     }
@@ -292,10 +292,6 @@ public final class LmCommandSuggestions {
 
     public static final SuggestionProvider<CommandSourceStack> PRESTIGE_ADJUST_MODES = literals(
             "set", "add", "remove"
-    );
-
-    public static final SuggestionProvider<CommandSourceStack> PRESTIGE_FABLED_MODES = literals(
-            "set", "add", "remove", "take"
     );
 
     public static final SuggestionProvider<CommandSourceStack> PRESTIGE_TIER_MODES = literals(

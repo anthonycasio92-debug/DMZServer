@@ -18,9 +18,9 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.fml.ModList;
 
 /**
- * Keeps dmzrevamp Overhaul prestige count aligned with Fabled Prestige − 1
- * (same number as LM held). After {@code setCount}, DMZ stats/progression packets
- * are resent so Statistics UI and combat scale pick up the new count.
+ * Keeps dmzrevamp Overhaul prestige count aligned with the LM held wallet.
+ * After {@code setCount}, DMZ stats/progression packets are resent so Statistics
+ * UI and combat scale pick up the new count.
  */
 public final class DmzRevampPrestigeBridge {
     private static final String REVAMP_MOD = "dmzrevamp";
@@ -81,8 +81,8 @@ public final class DmzRevampPrestigeBridge {
         if (data == null) {
             return;
         }
-        int fabled = PrestigeSkillSync.fabledPrestigeLevel(player);
-        int want = Math.max(0, fabled - 1);
+        int want = com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeSystem
+                .getHeldWallet(player);
         int current = PrestigeSystem.count(data);
         if (current != want) {
             PrestigeSystem.setCount(data, want);

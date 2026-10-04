@@ -26,7 +26,6 @@ public final class MechanicsChatMenu {
             }
         } else if ("progression".equalsIgnoreCase(page)
                 || "prog".equalsIgnoreCase(page)
-                || "fabled".equalsIgnoreCase(page)
                 || "bridge".equalsIgnoreCase(page)
                 || "disable".equalsIgnoreCase(page)
                 || "cnpc".equalsIgnoreCase(page)) {

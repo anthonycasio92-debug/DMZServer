@@ -635,7 +635,7 @@ public final class DmzProgression {
     }
 
     /**
-     * DMZ prestige skill level (synced from Fabled Prestige class level - 1).
+     * DMZ prestige skill level.
      */
     public static int prestige(Player player) {
         return skillLevel(player, "prestige");

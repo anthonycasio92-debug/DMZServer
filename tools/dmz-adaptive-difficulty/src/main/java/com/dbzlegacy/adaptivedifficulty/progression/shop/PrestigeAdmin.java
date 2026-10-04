@@ -1,8 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.progression.shop;
 
 import com.dbzlegacy.adaptivedifficulty.command.LmCommandHelp;
-import com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeFactionSync;
-import com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeSkillSync;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import java.util.List;
@@ -31,7 +29,6 @@ public final class PrestigeAdmin {
         int bt = PrestigePointsSystem.getBreakthroughs(target);
         int cap = PrestigePointsSystem.effectiveMaxLevel(target);
         int need = PrestigeSystem.requiredLevel(target);
-        int fabled = PrestigeSkillSync.fabledPrestigeLevel(target);
         int highestTier = PrestigePointsSystem.highestPurchasedTier(target);
         StringBuilder sb = new StringBuilder();
         sb.append("§6Prestige §f").append(target.m_6302_()).append('\n');
@@ -44,8 +41,7 @@ public final class PrestigeAdmin {
         sb.append("§7Personal cap: §f").append(DmzRewards.formatWhole(cap))
                 .append(" §8| §7Next prestige need: §e")
                 .append(DmzRewards.formatWhole(need)).append('\n');
-        sb.append("§7Fabled Prestige class: §f").append(fabled)
-                .append(" §8| §7Permanent tiers: §fT").append(highestTier).append('\n');
+        sb.append("§7Permanent tiers: §fT").append(highestTier).append('\n');
         List<String> invested = PrestigePointsSystem.investedSkillSummary(target);
         if (invested.isEmpty()) {
             sb.append("§7Invested skills: §8none");
@@ -153,47 +149,6 @@ public final class PrestigeAdmin {
                 + " §8(" + target.m_6302_() + ")";
     }
 
-    public static String adjustFabled(ServerPlayer target, String mode, int amount) {
-        if (target == null) {
-            return "§cPlayer not online.";
-        }
-        String m = mode == null ? "" : mode.toLowerCase(Locale.ROOT).trim();
-        int before = PrestigeSkillSync.fabledPrestigeLevel(target);
-        int after;
-        switch (m) {
-            case "set" -> {
-                int want = Math.max(1, amount);
-                if (want > before) {
-                    PrestigeSkillSync.addPrestigeLevels(target, want - before);
-                } else if (want < before) {
-                    PrestigeSkillSync.takePrestigeLevels(target, before - want);
-                } else {
-                    PrestigeFactionSync.forceSync(target);
-                    PrestigeSkillSync.sync(target);
-                }
-            }
-            case "add" -> {
-                if (amount <= 0) {
-                    return "§cAmount must be > 0.";
-                }
-                PrestigeSkillSync.addPrestigeLevels(target, amount);
-            }
-            case "take", "remove" -> {
-                if (amount <= 0) {
-                    return "§cAmount must be > 0.";
-                }
-                PrestigeSkillSync.takePrestigeLevels(target, amount);
-            }
-            default -> {
-                return "§cUsage: fabled <player> <set|add|take> <n>";
-            }
-        }
-        after = PrestigeSkillSync.fabledPrestigeLevel(target);
-        log(target, "admin_fabled", m, before, after);
-        return "§aFabled Prestige §f" + before + " §7→ §f" + after
-                + " §8(" + target.m_6302_() + ")";
-    }
-
     public static String adjustTier(ServerPlayer target, String mode, int tierId) {
         if (target == null) {
             return "§cPlayer not online.";
@@ -228,21 +183,18 @@ public final class PrestigeAdmin {
             return "§cPlayer not online.";
         }
         try {
-            PrestigeSkillSync.sync(target);
-        } catch (Throwable ignored) {
-        }
-        try {
-            PrestigeFactionSync.forceSync(target);
-        } catch (Throwable ignored) {
-        }
-        try {
             PrestigePointsSystem.reapplySkillBonuses(target);
             PrestigePointsSystem.reapplyTierUnlocks(target);
             com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache.save(target);
         } catch (Throwable ignored) {
         }
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampPrestigeBridge
+                    .syncFromLegacy(target);
+        } catch (Throwable ignored) {
+        }
         log(target, "admin_sync", "sync", 0, 0);
-        return "§aSynced Fabled Prestige → skills + faction + prestige shop floors for §f"
+        return "§aSynced held prestige → Overhaul count and prestige shop floors for §f"
                 + target.m_6302_();
     }
 

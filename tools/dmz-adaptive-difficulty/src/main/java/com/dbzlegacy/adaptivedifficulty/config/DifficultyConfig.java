@@ -309,21 +309,6 @@ public final class DifficultyConfig {
      */
     public int lmTipNewPlayerMaxLevel = 2500;
 
-    /**
-     * Soft-dependency Fabled bridges (mana/SP/attrs/prestige/race/class perms).
-     * Safe when Fabled / LuckPerms / Bukkit are missing — reflection never hard-crashes.
-     */
-    public boolean enableFabledBridge = true;
-    public boolean enableEnergyManaSync = true;
-    public boolean enableStatScreenSync = true;
-    public boolean enableTpSpMirror = true;
-    /** Fabled attribute → DMZ “Prestige Bonus” multipliers (off by default; stacks per prestige AP). */
-    public boolean enableAttrMultiBonus = false;
-    public boolean enablePrestigeSkillSync = true;
-    public boolean enablePrestigeFactionSync = true;
-    public boolean enableValueCleaner = true;
-    public boolean enableRaceClassSync = true;
-    public boolean enableClassPermissionSync = true;
     public double bossStatMultiplier = 1.5;
     /** Natural (pre-scale) max-health at/above this marks a boss. Default keeps wardens/etc. */
     public double bossHealthThreshold = 300.0;

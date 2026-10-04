@@ -28,10 +28,10 @@ public final class ProgressionCommandTree implements TabCompleter {
     private static final List<String> ROOT = List.of(
             "gui", "help", "status", "flags", "admin", "do",
             "meditation", "android", "boost",
-            "skills", "tp", "race", "combat", "end", "fabled", "utility"
+            "skills", "tp", "race", "combat", "end", "utility"
     );
     private static final List<String> PAGES = List.of(
-            "main", "skills", "tp", "race", "combat", "end", "fabled", "utility",
+            "main", "skills", "tp", "race", "combat", "end", "utility",
             "admin", "flags", "help", "status", "boost_panel",
             "android_panel", "android_convert", "android_remove", "flags_fabled"
     );
@@ -42,9 +42,7 @@ public final class ProgressionCommandTree implements TabCompleter {
             "kiweapons", "piercing", "dot", "apothic",
             "end", "endportal", "endnatural",
             "shadow", "statchecker",
-            "skills", "prestige",
-            "fabled", "energy", "statscreen", "tpsp", "attr",
-            "prestigeskill", "faction", "cleaner", "raceclass", "classperm"
+            "skills", "prestige"
     );
     private static final List<String> ON_OFF = List.of("on", "off");
     private static final List<String> MEDITATION = List.of("status", "help", "next", "advance", "cycle");
@@ -144,7 +142,7 @@ public final class ProgressionCommandTree implements TabCompleter {
                 yield true;
             }
             // Shorthand: /progression skills|tp|race|… opens that GUI page
-            case "skills", "tp", "race", "combat", "end", "fabled", "utility",
+            case "skills", "tp", "race", "combat", "end", "utility",
                  "boost_panel", "android_convert", "android_remove", "android_panel", "flags_fabled" -> {
                 plugin.openProgressionRespectingConfig(player, sub);
                 yield true;

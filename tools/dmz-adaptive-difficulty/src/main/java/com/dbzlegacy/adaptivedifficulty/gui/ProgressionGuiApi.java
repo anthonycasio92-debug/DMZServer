@@ -82,11 +82,11 @@ public final class ProgressionGuiApi {
                 "§e/progression boost start <encoded> [name]",
                 "§e/progression boost end",
                 "§e/progression do <action> [arg] [page] §8— GUI actions",
-                "§8Pages: main · skills · tp · race · combat · end · fabled · utility · economy · admin · help",
+                "§8Pages: main · skills · tp · race · combat · end · utility · economy · admin · help",
                 "§8Economy: staff free Ancient Coin costs — §f/lm §7→ Progression → Ancient Coins",
                 "§8Flags: flight sprint meditation potential farming building boost bio",
                 "§8       racelock yardrat spiritualist android kiweapons piercing dot apothic",
-                "§8       end endportal shadow statchecker fabled …");
+                "§8       end endportal shadow statchecker");
     }
 
     /** Text status (flags + active boost + meditation trial). */
@@ -510,7 +510,6 @@ public final class ProgressionGuiApi {
         out.put("flags", ProgressionConfig.statusSummary());
         out.put("prestige_enabled", c.enablePrestigeSystem ? "true" : "false");
         out.put("skills_enabled", c.enableSkillUnlockService ? "true" : "false");
-        out.put("fabled_enabled", c.enableFabledBridge ? "true" : "false");
         out.put("staff_free_ancient_coin_costs", c.staffFreeAncientCoinCosts ? "true" : "false");
         out.put("bypass_ancient_cost", PaidFeatureAccess.bypassAncientCoinCost(player) ? "true" : "false");
         if (!enabled) {
@@ -548,17 +547,6 @@ public final class ProgressionGuiApi {
         out.put("flag_shadow", c.enableShadowDummyLimiter ? "true" : "false");
         out.put("flag_statchecker", c.enablePlayerStatChecker ? "true" : "false");
         out.put("flag_playerstatchecker", c.enablePlayerStatChecker ? "true" : "false");
-        // Fabled bridges
-        out.put("flag_fabled", c.enableFabledBridge ? "true" : "false");
-        out.put("flag_energy", c.enableEnergyManaSync ? "true" : "false");
-        out.put("flag_statscreen", c.enableStatScreenSync ? "true" : "false");
-        out.put("flag_tpsp", c.enableTpSpMirror ? "true" : "false");
-        out.put("flag_attr", c.enableAttrMultiBonus ? "true" : "false");
-        out.put("flag_prestigeskill", c.enablePrestigeSkillSync ? "true" : "false");
-        out.put("flag_faction", c.enablePrestigeFactionSync ? "true" : "false");
-        out.put("flag_cleaner", c.enableValueCleaner ? "true" : "false");
-        out.put("flag_raceclass", c.enableRaceClassSync ? "true" : "false");
-        out.put("flag_classperm", c.enableClassPermissionSync ? "true" : "false");
         LmOverhaulScaledCombat.putPlaceholders(out, DmzProgression.stats(player));
         return out;
     }
@@ -621,21 +609,6 @@ public final class ProgressionGuiApi {
                     ph,
                     flagLine("Prestige System", "flag_prestige"),
                     flagLine("Skill Unlock Service", "flag_skills"));
-            case "fabled" -> categoryLines(
-                    "§d§lFabled Bridges",
-                    "§7Soft Fabled / LuckPerms bridges — idle if",
-                    "§7the plugin is missing (never hard-crash).",
-                    ph,
-                    flagLine("Fabled Master", "flag_fabled"),
-                    flagLine("Energy ↔ Mana", "flag_energy"),
-                    flagLine("Stat Screen Sync", "flag_statscreen"),
-                    flagLine("TP ↔ SP Mirror", "flag_tpsp"),
-                    flagLine("Attr Multi Bonus", "flag_attr"),
-                    flagLine("Prestige Skill Sync", "flag_prestigeskill"),
-                    flagLine("Prestige Faction Sync", "flag_faction"),
-                    flagLine("Value Cleaner", "flag_cleaner"),
-                    flagLine("Race → Class Sync", "flag_raceclass"),
-                    flagLine("Class Permission Sync", "flag_classperm"));
             case "utility" -> categoryLines(
                     "§7§lUtility",
                     "§7Shadow dummy limiter and sneak-inspect",
@@ -674,7 +647,7 @@ public final class ProgressionGuiApi {
                 help.add("§e/progression meditation §7— Current trial + how to train");
                 if (player != null && StaffAccess.isStaff(player)) {
                     help.add("§e/progression §7— Category hub (flags per section)");
-                    help.add("§e/prog do page skills|tp|race|combat|end|fabled|utility");
+                    help.add("§e/prog do page skills|tp|race|combat|end|utility");
                     help.add("§e/progression meditation next §7— cycle + broadcast trial");
                     help.add("§e/progression boost §7— status · start &lt;mult&gt; &lt;min&gt; · end");
                     help.add("§e/progression android [player] §7— Android convert (Gero)");
@@ -771,17 +744,6 @@ public final class ProgressionGuiApi {
         lore.add("§a§lShop");
         lore.add(flag("prestige", ph));
         lore.add(flag("skills", ph));
-        lore.add("§d§lFabled");
-        lore.add(flag("fabled", ph));
-        lore.add(flag("energy", ph));
-        lore.add(flag("statscreen", ph));
-        lore.add(flag("tpsp", ph));
-        lore.add(flag("attr", ph));
-        lore.add(flag("prestigeskill", ph));
-        lore.add(flag("faction", ph));
-        lore.add(flag("cleaner", ph));
-        lore.add(flag("raceclass", ph));
-        lore.add(flag("classperm", ph));
         lore.add("§7§lUtility");
         lore.add(flag("shadow", ph));
         lore.add(flag("statchecker", ph));
@@ -1175,8 +1137,7 @@ public final class ProgressionGuiApi {
             return PrestigeAdmin.sync(player);
         }
         if ("admin_held".equals(act) || "admin_completed".equals(act)
-                || "admin_points".equals(act) || "admin_breakthroughs".equals(act)
-                || "admin_fabled".equals(act)) {
+                || "admin_points".equals(act) || "admin_breakthroughs".equals(act)) {
             if (!StaffAccess.isStaff(player)) {
                 return "§cStaff only.";
             }
@@ -1209,7 +1170,6 @@ public final class ProgressionGuiApi {
                 case "admin_completed" -> PrestigeAdmin.adjustCompleted(player, mode, amount);
                 case "admin_points" -> PrestigeAdmin.adjustPoints(player, mode, amount);
                 case "admin_breakthroughs" -> PrestigeAdmin.adjustBreakthroughs(player, mode, amount);
-                case "admin_fabled" -> PrestigeAdmin.adjustFabled(player, mode, amount);
                 default -> "§cUnknown admin action.";
             };
         }
@@ -1348,7 +1308,7 @@ public final class ProgressionGuiApi {
             return PrestigeAdmin.adjustSkill(target, skillId, mode, amount);
         }
         if ("held".equals(sub) || "completed".equals(sub) || "points".equals(sub)
-                || "breakthroughs".equals(sub) || "fabled".equals(sub)
+                || "breakthroughs".equals(sub)
                 || "cap".equals(sub) || "breakthrough".equals(sub)) {
             String field = switch (sub) {
                 case "cap", "breakthrough" -> "breakthroughs";
@@ -1363,7 +1323,6 @@ public final class ProgressionGuiApi {
                 case "completed" -> PrestigeAdmin.adjustCompleted(adj.target, adj.mode, adj.amount);
                 case "points" -> PrestigeAdmin.adjustPoints(adj.target, adj.mode, adj.amount);
                 case "breakthroughs" -> PrestigeAdmin.adjustBreakthroughs(adj.target, adj.mode, adj.amount);
-                case "fabled" -> PrestigeAdmin.adjustFabled(adj.target, adj.mode, adj.amount);
                 default -> "§cUnknown admin field.";
             };
         }

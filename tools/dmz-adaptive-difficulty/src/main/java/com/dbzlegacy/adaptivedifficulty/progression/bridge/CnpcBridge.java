@@ -4,8 +4,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 
 /**
- * Keeps CustomNPCs player tempdata aligned with Java bridge state so legacy
- * {@code DMZ Fabled Bridge.js} does not call {@code removeEnergy} on Fabled mana flicker.
+ * Writes CustomNPCs player tempdata from Java when a caller still needs it.
  */
 public final class CnpcBridge {
     private CnpcBridge() {}

@@ -1,6 +1,5 @@
 package com.dbzlegacy.adaptivedifficulty.progression.tp;
 
-import com.dbzlegacy.adaptivedifficulty.progression.FabledSkills;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionData;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
@@ -21,10 +20,9 @@ import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraftforge.registries.ForgeRegistries;
 
 /**
- * Port of Farming TP Skill.js — mature crop harvest awards Farming×10 TP.
+ * Mature crop harvest awards a flat 10 TP (the old Farming level-1 amount).
  */
 public final class FarmingTp {
-    private static final String SKILL = "Farming";
     private static final int TP_PER_LEVEL = 10;
     private static final Set<String> CROP_IDS = Set.of(
             "minecraft:wheat",
@@ -58,14 +56,10 @@ public final class FarmingTp {
             }
             ProgressionData.tempPut(player, posKey, now);
 
-            int skillLevel = FabledSkills.skillLevel(player, SKILL);
-            if (skillLevel <= 0) {
-                return;
-            }
-            float tp = skillLevel * TP_PER_LEVEL;
+            float tp = TP_PER_LEVEL;
             if (DmzRewards.awardTp(player, tp, "farming", false, "§a[Farming] ")) {
                 SystemTelemetry.log("progression", "farming_tp", player, null,
-                        Map.of("tp", (int) tp, "level", skillLevel, "block", id));
+                        Map.of("tp", (int) tp, "block", id));
             }
         } catch (Throwable ignored) {
         }

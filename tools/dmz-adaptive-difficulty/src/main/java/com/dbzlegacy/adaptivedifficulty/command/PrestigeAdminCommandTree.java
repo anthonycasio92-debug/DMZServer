@@ -58,16 +58,7 @@ public final class PrestigeAdminCommandTree {
                 .then(adjustField("held"))
                 .then(adjustField("completed"))
                 .then(adjustField("points"))
-                .then(adjustField("breakthroughs"))
-                .then(Commands.m_82127_("fabled")
-                        .then(LmCommandSuggestions.playerWord("player")
-                                .then(LmCommandSuggestions.word("mode", LmCommandSuggestions.PRESTIGE_FABLED_MODES)
-                                        .then(Commands.m_82129_("amount", IntegerArgumentType.integer())
-                                                .executes(ctx -> ProgressionCommands.prestigeAdminAdjust(
-                                                        ctx.getSource(), "fabled",
-                                                        StringArgumentType.getString(ctx, "player"),
-                                                        StringArgumentType.getString(ctx, "mode"),
-                                                        IntegerArgumentType.getInteger(ctx, "amount")))))));
+                .then(adjustField("breakthroughs"));
     }
 
     private static LiteralArgumentBuilder<CommandSourceStack> adjustField(String field) {

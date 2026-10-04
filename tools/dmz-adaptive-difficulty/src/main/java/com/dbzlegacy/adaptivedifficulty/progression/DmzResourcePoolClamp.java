@@ -14,7 +14,7 @@ import com.dragonminez.common.stats.character.Stats;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * One prestige-aware ki/stamina maximum used by HUD, Fabled, clamps, and Overhaul sync.
+ * One prestige-aware ki/stamina maximum used by the HUD, clamps, and Overhaul sync.
  *
  * <p>{@code actualMaxEnergy}/{@code actualMaxStamina} are the live
  * {@code getMaxEnergy}/{@code getMaxStamina} values from DragonMineZ and the other
@@ -174,7 +174,7 @@ public final class DmzResourcePoolClamp {
         }
     }
 
-    /** HUD / Fabled / Statistics all use the canonical prestige-aware max. */
+    /** HUD and Statistics use the canonical prestige-aware max. */
     public static float toHudMax(float live, StatsData data, boolean energy) {
         return energy ? actualMaxEnergy(data) : actualMaxStamina(data);
     }

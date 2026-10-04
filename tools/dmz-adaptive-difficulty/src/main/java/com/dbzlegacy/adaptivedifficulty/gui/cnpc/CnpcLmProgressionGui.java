@@ -27,7 +27,7 @@ public final class CnpcLmProgressionGui {
         }
         int h = switch (p) {
             case "android_convert", "android_remove" -> 320;
-            case "skills", "tp", "race", "combat", "end", "fabled", "utility", "status", "shop" ->
+            case "skills", "tp", "race", "combat", "end", "utility", "status", "shop" ->
                     sectionHeight(player, p);
             case "flags" -> flagsPageHeight();
             default -> H_MAIN;
@@ -60,7 +60,7 @@ public final class CnpcLmProgressionGui {
     private static void paint(ServerPlayer player, ICustomGui gui, String page) {
         switch (page) {
             case "main" -> paintMainHub(player, gui);
-            case "skills", "tp", "race", "combat", "end", "fabled", "utility", "status", "shop" ->
+            case "skills", "tp", "race", "combat", "end", "utility", "status", "shop" ->
                     paintSection(player, gui, page);
             case "flags" -> paintAllFlags(player, gui);
             case "boost_panel" -> paintBoostPanel(player, gui);
@@ -87,10 +87,9 @@ public final class CnpcLmProgressionGui {
         placeRow(gui, player, row, 23, "§cCombat", CnpcGuiSupport.COL_R, () -> open(player, "combat"));
         row += CnpcGuiSupport.ROW_STEP;
         placeRow(gui, player, row, 24, "§5End", CnpcGuiSupport.COL_L, () -> open(player, "end"));
-        placeRow(gui, player, row, 25, "§dFabled", CnpcGuiSupport.COL_R, () -> open(player, "fabled"));
+        placeRow(gui, player, row, 25, "§7Utility", CnpcGuiSupport.COL_R, () -> open(player, "utility"));
         row += CnpcGuiSupport.ROW_STEP;
-        placeRow(gui, player, row, 26, "§7Utility", CnpcGuiSupport.COL_L, () -> open(player, "utility"));
-        placeRow(gui, player, row, 27, "§eStatus", CnpcGuiSupport.COL_R, () -> open(player, "status"));
+        placeRow(gui, player, row, 26, "§eStatus", CnpcGuiSupport.COL_L, () -> open(player, "status"));
         row += CnpcGuiSupport.ROW_STEP;
 
         if (staff) {
@@ -358,7 +357,6 @@ public final class CnpcLmProgressionGui {
             case "race" -> CnpcGuiStyle.subPage("§d", "Progression", "Race and form");
             case "combat" -> CnpcGuiStyle.subPage("§d", "Progression", "Combat");
             case "end" -> CnpcGuiStyle.subPage("§d", "Progression", "End");
-            case "fabled" -> CnpcGuiStyle.subPage("§d", "Progression", "Fabled bridges");
             case "utility" -> CnpcGuiStyle.subPage("§d", "Progression", "Utility");
             case "status" -> CnpcGuiStyle.subPage("§d", "Progression", "Status");
             case "shop" -> CnpcGuiStyle.subPage("§d", "Progression", "Shop");

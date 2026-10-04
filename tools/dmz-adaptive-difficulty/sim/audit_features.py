@@ -104,19 +104,14 @@ def main() -> int:
     check("player dragon skips End DEF sponge", "No End DEF mitigation" in end_str or "Adaptive Difficulty attributes own the fight" in end_str)
     check("applySummonerAdStats uses MobScaling AD paint", "MobScaling.applyEndDragonAdProfile" in end_str)
 
-    race_skill = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/RaceSkillSync.java")
-    check("RaceSkillSync discovers DMZ races", "discoverDmzRaceIds" in race_skill)
-    check("RaceSkillSync grants Fabled skill", "addSkillExternally" in race_skill and "race_skill" in race_skill)
-    check("RaceSkillSync skips race-lock purchase gates", "isPurchaseGatedSkill" in race_skill)
-
-    class_skill = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/ClassSkillSync.java")
     class_catalog = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/classdef/FightingClassCatalog.java")
-    class_perm = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/ClassPermissionSync.java")
+    race_lock = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/race/RaceLock.java")
     check("FightingClassCatalog scans stats.json classes", "discoverDmzClassIds" in class_catalog and "\"classes\"" in class_catalog)
     check("FightingClassCatalog class-fabled.json", "class-fabled.json" in class_catalog)
-    check("ClassSkillSync ensures Fabled class skills", "ensureClassSkills" in class_skill and "needs-permission': 'true'" in class_skill)
-    check("ClassSkillSync prestige marker stubs", "Prestige" in class_skill and "prestige" in class_skill)
-    check("ClassPermissionSync uses catalog not hardcoded map", "FightingClassCatalog.skillNameFor" in class_perm and "hardcodedSkillName" not in class_perm)
+    check("Fighting class catalog does not query Fabled",
+          "FabledBridge" not in class_catalog and "discoverFabledFightingClassIds" not in class_catalog)
+    check("race lock does not reset for a missing skill",
+          "FabledSkills" not in race_lock and "dmzstats reset" not in race_lock)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {
@@ -894,7 +889,9 @@ def main() -> int:
           and "sessionBonusMultiplier" in build_fn and "streakMultiplier" in build_fn
           and "styleMultiplier" in build_fn and "PERFECT_TRAINING_MULTIPLIER" in build_fn)
     check("GLOBAL_TP_GAIN_MULT 1.50", "GLOBAL_TP_GAIN_MULT = 1.50f" in spar_c145)
-    check("sparPrestigeLevel Fabled fallback", "sparPrestigeLevel" in spar_c145 and "fabledPrestigeLevel" in spar_c145)
+    check("sparPrestigeLevel uses held wallet",
+          "sparPrestigeLevel" in spar_c145 and "getHeldWallet" in spar_c145
+          and "fabledPrestigeLevel" not in spar_c145)
     check("momentum messages", "SHOW_MOMENTUM_MESSAGES" in spar_c145 and "Momentum " in spar_c145)
     check("TP activeBonusTags", "activeBonusTags" in spar_c145)
     check("MOMENTUM_MULTIPLIERS script values",
@@ -1285,22 +1282,17 @@ def main() -> int:
           "putWallet" in prestige_chest_pp and "Difficulty Tiers" in prestige_chest_pp)
     check("turnIn triangular pack bonus", "packs * (packs + 1) / 2" in pp and "pointsForTurnIn" in pp)
     check("turnIn amounts 1/2/3/6/9", "TURN_IN_AMOUNTS = {1, 2, 3, 6, 9}" in pp)
-    prestige_skill_sync = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/PrestigeSkillSync.java")
-    prestige_faction_sync = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/PrestigeFactionSync.java")
-    check("takePrestigeLevels API", "takePrestigeLevels" in prestige_skill_sync and "loseLevels" in prestige_skill_sync)
-    check("addPrestigeLevels API", "addPrestigeLevels" in prestige_skill_sync and "giveLevels" in prestige_skill_sync)
-    check("turnIn uses Fabled API take", "takePrestigeLevels" in pp
-          or "alignFabledToHeld" in pp)
-    check("Fabled prestige is held + 1",
-          "FABLED_HELD_OFFSET = 1" in prestige_skill_sync
-          and "alignFabledToHeld" in prestige_skill_sync
-          and "fabledLevelForHeld" in prestige_skill_sync)
-    check("held wallet drives Fabled align",
+    check("turnIn spends held wallet only",
+          "setHeldPublic" in pp
+          and "reducePrestigeClass" not in pp
+          and "class level " not in pp)
+    check("held wallet is NBT source of truth",
           "getHeldWallet" in
           read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigeSystem.java")
-          and "alignFabledToHeld" in
+          and "alignFabledToHeld" not in
+          read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigeSystem.java")
+          and "class level " not in
           read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigeSystem.java"))
-    check("PrestigeFactionSync forceSync", "forceSync" in prestige_faction_sync)
     prestige_admin = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigeAdmin.java")
     prestige_sys = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigeSystem.java")
     check("PrestigeAdmin present", "class PrestigeAdmin" in prestige_admin)
@@ -1421,17 +1413,19 @@ def main() -> int:
           and "getMaxAllowedIncreaseForStat" in mixin)
     bridge = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/DmzRevampPrestigeBridge.java")
     check("Overhaul prestige sync bridge", "syncFromLegacy" in bridge and "setCount" in bridge)
-    check("Overhaul prestige count syncs from Fabled-1 (held+1)",
-          "fabledPrestigeLevel" in bridge
+    check("Overhaul prestige count syncs from held wallet",
+          "getHeldWallet" in bridge
           and "getCompleted" not in bridge
-          and "Math.max(0, fabled - 1)" in bridge)
+          and "fabledPrestigeLevel" not in bridge
+          and "PrestigeSkillSync" not in bridge)
     integration = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/LmOverhaulPrestigeIntegration.java")
     check("Overhaul prestige is 1:1 with held",
           "toOverhaulCount" in integration
           and "Math.min(OVERHAUL_MAX_PRESTIGE, held)" in integration
           and "overhaulCountFromHeld" in integration
           and "oneBasedLevel - 1" not in integration)
-    check("attr multi bonus default off", "enableAttrMultiBonus = false" in read(CFG))
+    check("Fabled bridge flags removed from config",
+          "enableFabledBridge" not in read(CFG) and "enableAttrMultiBonus" not in read(CFG))
     dmz_lvl = read(ROOT / "config" / "dmzrevamp" / "LevelingRevamp.json")
     check("Overhaul initialLevelCap 100k", '"initialLevelCap": 100000' in dmz_lvl)
     cap_math = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/LmOverhaulCapMath.java")
@@ -1452,12 +1446,10 @@ def main() -> int:
     mirror = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/PersonalLevelCapMirror.java")
     check("Cap publish pushes StatsSyncS2C to client",
           "DmzSkillUtil.sync(player)" in mirror)
-    energy_mana = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/EnergyManaSync.java")
     pool_clamp = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/DmzResourcePoolClamp.java")
-    check("Fabled mana uses actual ki pool not ENE stat",
-          "actualMaxEnergy" in energy_mana
-          and "getCurrentEnergy" in energy_mana
-          and "displayMaxEnergy(dmz)" not in energy_mana)
+    check("ki pool clamp uses actual max not a Fabled mirror",
+          "actualMaxEnergy" in pool_clamp
+          and not (SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/EnergyManaSync.java").is_file())
     check("0 breakthroughs are explicit NBT not inferred from 150k cap",
           "Inferring from lm_personal_level_cap" in pp
           and "return 0;" in
@@ -1484,19 +1476,13 @@ def main() -> int:
           and '"StatsDataHudPoolMaxMixin"' not in mixins_json)
     check("HUD pool mixin does not rescale max",
           "setReturnValue" not in hud_pool and "applyOverhaulScale" not in hud_pool)
-    check("EnergyManaSync does not raise max to overflowing current",
-          "maxEnergy = currentEnergy" not in energy_mana
-          and "clampCurrentToMax" in energy_mana)
     check("Revamp prestige does not refill after afterSetCount",
           "refillPoolsLikeOverhaulPrestige" not in bridge
           and "clampToOverhaulPool" in bridge
           and "StatsSyncS2C" in bridge)
-    check("Fabled MaxKi persistent uses actual ki",
-          "actualMaxEnergy" in
-          read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/StatScreenSync.java"))
-    check("Fabled Stamina persistent uses actual stamina",
-          "actualMaxStamina" in
-          read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/StatScreenSync.java"))
+    check("stat screen Fabled mirror removed",
+          not (SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/StatScreenSync.java").is_file()
+          and "actualMaxStamina" in pool_clamp)
     manifest = read(ROOT / "tools" / "dmz-adaptive-difficulty" / "src" / "main" / "resources" / "META-INF" / "MANIFEST.MF")
     check("MANIFEST MixinConfigs for Mohist",
           "MixinConfigs: legacymechanics.mixins.json" in manifest)
@@ -1580,8 +1566,10 @@ def main() -> int:
     check("Prestige reapply delayed ticks after reset",
           "REAPPLY_WINDOW_MS" in pp and "TickTask" in pp
           and "scheduleReapplyAfterDeath" in pp)
-    check("Race lock reset schedules prestige reapply",
-          "scheduleReapplyAfterDeath" in read(
+    check("race lock no longer wipes the character",
+          "scheduleReapplyAfterDeath" not in read(
+              SRC / "com/dbzlegacy/adaptivedifficulty/progression/race/RaceLock.java")
+          and "dmzstats reset" not in read(
               SRC / "com/dbzlegacy/adaptivedifficulty/progression/race/RaceLock.java"))
 
     print("\n=== End Dragon AD summon (2.3.65) ===")
@@ -1619,7 +1607,9 @@ def main() -> int:
     check("hasAliveSummonedDragon", "hasAliveSummonedDragon" in end_str)
     race_lock_cfg = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/race/RaceLockConfig.java")
     check("RaceLockConfig file", "race-lock.json" in race_lock_cfg)
-    check("RaceLock uses config", "RaceLockConfig.findByRaceId" in read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/race/RaceLock.java"))
+    check("RaceLockConfig still loads",
+          "RaceLockConfig.load()" in read(MOD)
+          and "FabledSkills" not in read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/race/RaceLock.java"))
     check("dragon phase steer", "maybeSteerDragonPhase" in end_str)
     check("AD off during dragon", "hasAliveSummonedDragon" in
           read(ROOT / "tools" / "dmz-adaptive-difficulty" / "src" / "main" / "java" /

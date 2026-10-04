@@ -1610,7 +1610,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         return "info".equals(sub) || "held".equals(sub) || "completed".equals(sub)
                 || "points".equals(sub) || "breakthroughs".equals(sub) || "breakthrough".equals(sub)
                 || "cap".equals(sub)
-                || "fabled".equals(sub) || "sync".equals(sub)
+                || "sync".equals(sub)
                 || "addpoints".equals(sub) || "givepoints".equals(sub) || "grantpoints".equals(sub)
                 || "removepoints".equals(sub) || "takepoints".equals(sub)
                 || "setpoints".equals(sub)

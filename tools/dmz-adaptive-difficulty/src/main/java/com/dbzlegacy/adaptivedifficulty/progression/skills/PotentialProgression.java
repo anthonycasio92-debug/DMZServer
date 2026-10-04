@@ -275,7 +275,7 @@ public final class PotentialProgression {
     private static int calculatePoints(ServerPlayer player, int basePoints) {
         double gMult = gravityMult(player);
         double wMult = weightMult(player);
-        // DMZ prestige skill is synced from Fabled Prestige class level − 1 (script offset).
+        // DMZ prestige skill tracks the held wallet, not lifetime completed.
         int prestige = Math.min(10, Math.max(0, DmzProgression.prestige(player)));
         double pMult = 1.0 + prestige * PRESTIGE_PER;
         int calculated = (int) Math.floor(basePoints * gMult * wMult * pMult);

@@ -57,16 +57,7 @@ public final class OverhaulPrestigeResourceScale {
         } catch (Throwable ignored) {
         }
         try {
-            EnergyManaSync.clear(player.m_20148_());
-            EnergyManaSync.sync(player, true);
-        } catch (Throwable ignored) {
-        }
-        try {
             DmzResourcePoolClamp.syncToClient(player);
-        } catch (Throwable ignored) {
-        }
-        try {
-            StatScreenSync.sync(player);
         } catch (Throwable ignored) {
         }
     }

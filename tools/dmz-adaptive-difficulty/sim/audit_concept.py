@@ -239,7 +239,9 @@ def main() -> int:
     profile = PROFILE.read_text(encoding="utf-8", errors="replace")
     check(f"VERSION {mod_version()}", f'VERSION = "{mod_version()}"' in mod)
 
-    check("RaceSkillSync present", (ROOT / "src/main/java/com/dbzlegacy/adaptivedifficulty/progression/bridge/RaceSkillSync.java").is_file())
+    check("Fabled race skill bridge removed",
+          not (ROOT / "src/main/java/com/dbzlegacy/adaptivedifficulty/progression/bridge/RaceSkillSync.java").is_file()
+          and not (ROOT / "src/main/java/com/dbzlegacy/adaptivedifficulty/progression/bridge/FabledBridge.java").is_file())
     check("formula revision 45", "mix(h, 45L)" in profile)
     check("KP hit-cap relief wired", "kiProtectionLevel * 0.010" in profile)
     check("DEF/enchant paint relief", "estimateMitigationRelief" in profile and "calculatePostMitigationDamage" in profile)

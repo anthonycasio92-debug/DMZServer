@@ -1,6 +1,5 @@
 package com.dbzlegacy.adaptivedifficulty.progression;
 
-import com.dbzlegacy.adaptivedifficulty.progression.bridge.EnergyManaSync;
 import com.dbzlegacy.adaptivedifficulty.progression.bridge.OverhaulPrestigeResourceScale;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dragonminez.common.network.NetworkHandler;
@@ -12,8 +11,8 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.TickTask;
 
 /**
- * After LM prestige / {@code dmzstats reset}, clear stale Fabled energy trackers and
- * stamina-pause cooldowns that block regen until relog.
+ * After LM prestige / {@code dmzstats reset}, clear stamina-pause cooldowns
+ * that block regen until relog.
  */
 public final class PrestigeResourceRecovery {
     private PrestigeResourceRecovery() {}
@@ -54,10 +53,6 @@ public final class PrestigeResourceRecovery {
             return;
         }
         try {
-            EnergyManaSync.clear(player.m_20148_());
-        } catch (Throwable ignored) {
-        }
-        try {
             ProgressionData.tempRemove(player, "dmz_fabled_last_mana");
         } catch (Throwable ignored) {
         }
@@ -90,10 +85,6 @@ public final class PrestigeResourceRecovery {
         }
         try {
             NetworkHandler.sendToTrackingEntityAndSelf(new StatsSyncS2C(player), player);
-        } catch (Throwable ignored) {
-        }
-        try {
-            EnergyManaSync.sync(player, true);
         } catch (Throwable ignored) {
         }
     }

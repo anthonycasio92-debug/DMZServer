@@ -2,7 +2,6 @@ package com.dbzlegacy.adaptivedifficulty.character;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
-import com.dbzlegacy.adaptivedifficulty.progression.bridge.ClassPermissionSync;
 import com.dbzlegacy.adaptivedifficulty.progression.race.AndroidConversion;
 import com.dragonminez.common.passives.PassiveRuntimeState;
 import com.dragonminez.common.stats.StatsData;
@@ -34,7 +33,6 @@ public final class DmzCharacterClassChangeHooks {
             }
             DmzClassCommandApply.pushStatsSync(player);
         }
-        ClassPermissionSync.syncAuthoritativeClassChange(player);
     }
 
     /**
@@ -85,7 +83,6 @@ public final class DmzCharacterClassChangeHooks {
             DmzClassCommandApply.applyClass(player, data, applied, resourceSnapshotBeforeChange);
         }
         DmzFightingClassStatsSync.afterFightingClassChange(player, data, preserveExactPrimaries);
-        ClassPermissionSync.syncAuthoritativeClassChange(player);
         AndroidConversion.stripIfRaceIneligible(player, newRaceId);
     }
 

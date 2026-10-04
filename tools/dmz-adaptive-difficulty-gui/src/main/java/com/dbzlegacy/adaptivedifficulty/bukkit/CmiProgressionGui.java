@@ -26,7 +26,7 @@ public final class CmiProgressionGui {
             Map.entry("building", new String[]{"Building TP", "Place blocks for silent building TP.", "Passive while placing"}),
             Map.entry("boost", new String[]{"Global TP Boost", "Timed world TP multiplier.", "/progression boost start|end"}),
             Map.entry("bio", new String[]{"Bio-Android", "Absorb TP / steal skills from drains.", "Passive as Bio-Android"}),
-            Map.entry("racelock", new String[]{"Race Lock", "Ancient/Sento need Fabled unlock skills.", "Passive on race select"}),
+            Map.entry("racelock", new String[]{"Race Lock", "Clears a stuck saga difficulty picker during character creation.", "Passive during create"}),
             Map.entry("yardrat", new String[]{"Yardrat", "Form mastery double-gain + starter ki.", "Passive for Yardrat"}),
             Map.entry("spiritualist", new String[]{"Spiritualist Ki", "Class confirm grants/removes kicontrol.", "Passive on class change"}),
             Map.entry("android", new String[]{"Android Tools", "Staff convert or remove Android upgrade (Gero path).", "/progression android · android remove"}),
@@ -37,8 +37,7 @@ public final class CmiProgressionGui {
             Map.entry("end", new String[]{"End Strength", "Dragon scale, ki attacks, egg/crystal clear.", "/enddragon · /cleardragons"}),
             Map.entry("endportal", new String[]{"End Portal Guard", "Blocks End portal use when locked.", "Passive at portals"}),
             Map.entry("shadow", new String[]{"Shadow Dummy", "50% shadow + spawn protect.", "Passive near dummies"}),
-            Map.entry("statchecker", new String[]{"Stat Checker", "Sneak + RMB a player to dump stats.", "Sneak + right-click"}),
-            Map.entry("fabled", new String[]{"Fabled Bridges", "Master switch for soft Fabled syncs.", "/progression"})
+            Map.entry("statchecker", new String[]{"Stat Checker", "Sneak + RMB a player to dump stats.", "Sneak + right-click"})
     );
 
     private CmiProgressionGui() {}
@@ -87,8 +86,6 @@ public final class CmiProgressionGui {
                         new String[]{"kiweapons", "piercing", "dot", "apothic"});
                 case "end" -> openSection(player, "end", "&5End", Material.END_CRYSTAL,
                         new String[]{"end", "endportal"});
-                case "fabled" -> openSection(player, "fabled", "&dFabled Bridges", Material.AMETHYST_SHARD,
-                        new String[]{"fabled"});
                 case "utility" -> openSection(player, "utility", "&7Utility", Material.SPYGLASS,
                         new String[]{"shadow", "statchecker"});
                 case "status" -> openSection(player, "status", "&eStatus", Material.WRITABLE_BOOK, new String[0]);
@@ -132,15 +129,15 @@ public final class CmiProgressionGui {
         status.addLore(List.of("", "&7Pick a section", "&7Module status and tools"));
         gui.addButton(status);
 
-        int[] slots = GuiBoardHelper.centeredSlots(7);
-        String[] pages = {"skills", "tp", "race", "combat", "end", "fabled", "utility"};
+        int[] slots = GuiBoardHelper.centeredSlots(6);
+        String[] pages = {"skills", "tp", "race", "combat", "end", "utility"};
         Material[] mats = {
                 Material.BOOK, Material.GOLDEN_CARROT, Material.TOTEM_OF_UNDYING,
-                Material.NETHERITE_SWORD, Material.END_CRYSTAL, Material.AMETHYST_SHARD, Material.SPYGLASS
+                Material.NETHERITE_SWORD, Material.END_CRYSTAL, Material.SPYGLASS
         };
         String[] titles = {
                 "&eSkills", "&6TP Gains", "&bRace & Form", "&cCombat",
-                "&5End", "&dFabled", "&7Utility"
+                "&5End", "&7Utility"
         };
         String[] tips = {
                 "&7Flight · Sprint · Meditation · Potential",
@@ -148,7 +145,6 @@ public final class CmiProgressionGui {
                 "&7Race lock · Yardrat · Spiritualist · Android",
                 "&7Ki weapons · Piercing · DoT · Apothic",
                 "&7End strength · Portal guard",
-                "&7Soft Fabled bridges",
                 "&7Shadow dummy · Stat checker"
         };
         for (int i = 0; i < pages.length && i < slots.length; i++) {

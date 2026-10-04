@@ -252,8 +252,6 @@ public final class ProgressionCommands {
                     .adjustPoints(target, mode, amount);
             case "breakthroughs" -> com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeAdmin
                     .adjustBreakthroughs(target, mode, amount);
-            case "fabled" -> com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeAdmin
-                    .adjustFabled(target, mode, amount);
             default -> "§cUnknown field: " + field;
         };
         reply(source, playerOrNull(source), msg);

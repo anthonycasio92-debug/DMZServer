@@ -25,7 +25,7 @@ import net.minecraft.server.level.ServerPlayer;
  * Level gate: the first four prestiges each need 20k. From the fifth on, 50k if you
  * hold none and 100k if you hold one or more. Capped by the personal level cap.
  *
- * <p><b>Lifetime completed</b> never drops when held/Fabled Prestige is turned in —
+ * <p><b>Lifetime completed</b> never drops when held prestige is turned in —
  * otherwise Need would snap back to 20k after a completed prestige.
  */
 public final class PrestigeSystem {
@@ -129,44 +129,13 @@ public final class PrestigeSystem {
         int newCompleted = completed + 1;
         setHeld(player, newHeld);
         setCompleted(player, newCompleted);
-        // Lock Need so turn-in / Fabled spend cannot snap the next gate back to 20k.
+        // Lock Need so a later turn-in cannot snap the next gate back to 20k.
         raiseNeedFloor(player, required);
         resetPrestigeProgress(player);
 
         String name = player.m_6302_();
         MinecraftServer server = player.m_20194_();
-        boolean apiAdded = false;
-        try {
-            com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeSkillSync
-                    .alignFabledToHeld(player);
-            int want = com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeSkillSync
-                    .fabledLevelForHeld(newHeld);
-            apiAdded = com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeSkillSync
-                    .fabledPrestigeLevel(player) == want;
-        } catch (Throwable t) {
-            AdaptiveDifficultyMod.LOGGER.debug(
-                    "[{}] prestige class level API soft-fail: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
-        }
         if (server != null) {
-            if (!apiAdded) {
-                try {
-                    server.m_129892_().m_230957_(
-                            server.m_129893_(),
-                            "class level " + name + " add 1 Prestige"
-                    );
-                    try {
-                        com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeSkillSync.sync(player);
-                    } catch (Throwable ignored) {
-                    }
-                    try {
-                        com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeFactionSync.forceSync(player);
-                    } catch (Throwable ignored) {
-                    }
-                } catch (Throwable t) {
-                    AdaptiveDifficultyMod.LOGGER.debug(
-                            "[{}] prestige class level soft-fail: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
-                }
-            }
             try {
                 server.m_129892_().m_230957_(server.m_129893_(), "dmzstats reset " + name);
             } catch (Throwable t) {
@@ -375,15 +344,12 @@ public final class PrestigeSystem {
         return MAX_HELD;
     }
 
-    /**
-     * NBT held wallet only (not CNPC faction inflate). Fabled Prestige class
-     * is always {@code wallet + 1}.
-     */
+    /** NBT held wallet only (not CNPC faction inflate). */
     public static int getHeldWallet(ServerPlayer player) {
         return heldCountForNeed(player);
     }
 
-    /** Wallet NBT for Need / Fabled sync — never CNPC faction (avoids 150k held≥3 gates). */
+    /** Wallet NBT for Need — never CNPC faction (avoids 150k held≥3 gates). */
     public static int heldCountForNeed(ServerPlayer player) {
         if (player == null) {
             return 0;
@@ -440,8 +406,8 @@ public final class PrestigeSystem {
     }
 
     /**
-     * Lifetime prestiges completed. Never decreases when held/Fabled Prestige is
-     * spent on turn-in (DMZ {@code prestige} skill tracks current Fabled, not lifetime).
+     * Lifetime prestiges completed. Never decreases when held prestige is
+     * spent on turn-in (DMZ {@code prestige} skill tracks the held wallet, not lifetime).
      */
     public static int getCompleted(ServerPlayer player) {
         if (player == null) {
@@ -455,14 +421,8 @@ public final class PrestigeSystem {
         int stored = readStoredInt(tag, KEY_TOTAL);
 
         if (!hasKey) {
-            // One-time migrate from legacy Fabled/DMZ skill (old NPC overwrote total from Fabled).
+            // One-time migrate from the DMZ prestige skill when the wallet total is missing.
             int legacy = Math.max(0, DmzProgression.prestige(player));
-            try {
-                int fabled = com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeSkillSync
-                        .fabledPrestigeLevel(player);
-                legacy = Math.max(legacy, Math.max(0, fabled - 1));
-            } catch (Throwable ignored) {
-            }
             if (legacy > 0) {
                 setCompletedPublic(player, legacy);
                 raiseNeedFloor(player, needForProgress(player, legacy, getHeldWallet(player)));
@@ -477,7 +437,7 @@ public final class PrestigeSystem {
             return 0;
         }
 
-        // DMZ prestige skill = held wallet (Fabled−1), not lifetime completed — never bump total from it.
+        // DMZ prestige skill tracks the held wallet, not lifetime completed — never bump total from it.
         if (stored <= 0 && inferCompletedFromShop(player)) {
             setCompletedPublic(player, 1);
             raiseNeedFloor(player, needForProgress(player, 1, getHeldWallet(player)));
@@ -625,16 +585,6 @@ public final class PrestigeSystem {
         CompoundTag tag = PersistentDataAccess.get(player);
         if (PersistentDataAccess.isWritable(tag)) {
             tag.m_128405_(KEY_HELD, clamped);
-        }
-        try {
-            com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeSkillSync
-                    .alignFabledToHeld(player);
-        } catch (Throwable ignored) {
-        }
-        try {
-            com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeFactionSync
-                    .forceSync(player);
-        } catch (Throwable ignored) {
         }
         try {
             com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampPrestigeBridge

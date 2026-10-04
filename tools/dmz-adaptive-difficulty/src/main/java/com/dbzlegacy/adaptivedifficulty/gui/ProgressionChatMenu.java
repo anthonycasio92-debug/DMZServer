@@ -30,7 +30,7 @@ public final class ProgressionChatMenu {
         String p = page == null || page.isBlank() ? "main" : page.toLowerCase(Locale.ROOT);
         switch (p) {
             case "main" -> main(player);
-            case "skills", "tp", "race", "combat", "end", "shop", "fabled", "utility", "status", "help" ->
+            case "skills", "tp", "race", "combat", "end", "shop", "utility", "status", "help" ->
                     category(player, p);
             case "economy", "ancient_coins", "coins" -> economy(player);
             case "admin", "flags", "disable", "flags_fabled", "fabled_flags" -> flagsBoard(player);
@@ -57,8 +57,6 @@ public final class ProgressionChatMenu {
                 .m_7220_(Component.m_237113_(" "))
                 .m_7220_(btn("§a[Shop]", "/prog do page shop", "Prestige & skills"))
                 .m_7220_(Component.m_237113_(" "))
-                .m_7220_(btn("§d[Fabled]", "/prog do page fabled", "Fabled bridges"))
-                .m_7220_(Component.m_237113_(" "))
                 .m_7220_(btn("§7[Utility]", "/prog do page utility", "Utility"))
                 .m_7220_(Component.m_237113_(" "))
                 .m_7220_(btn("§f[Help]", "/prog do page help", "Commands")));
@@ -79,7 +77,6 @@ public final class ProgressionChatMenu {
             case "combat" -> "Combat";
             case "end" -> "End";
             case "shop" -> "Shop";
-            case "fabled" -> "Fabled Bridges";
             case "utility" -> "Utility";
             case "status" -> "Status";
             case "help" -> "Help";

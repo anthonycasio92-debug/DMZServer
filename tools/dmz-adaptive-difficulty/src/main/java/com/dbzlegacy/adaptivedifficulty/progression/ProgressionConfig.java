@@ -105,46 +105,6 @@ public final class ProgressionConfig {
         return masterEnabled() && DifficultyConfig.get().enablePlayerStatChecker;
     }
 
-    public static boolean fabledBridge() {
-        return DifficultyConfig.get().enableFabledBridge;
-    }
-
-    public static boolean energyManaSync() {
-        return fabledBridge() && DifficultyConfig.get().enableEnergyManaSync;
-    }
-
-    public static boolean statScreenSync() {
-        return fabledBridge() && DifficultyConfig.get().enableStatScreenSync;
-    }
-
-    public static boolean tpSpMirror() {
-        return fabledBridge() && DifficultyConfig.get().enableTpSpMirror;
-    }
-
-    public static boolean attrMultiBonus() {
-        return fabledBridge() && DifficultyConfig.get().enableAttrMultiBonus;
-    }
-
-    public static boolean prestigeSkillSync() {
-        return fabledBridge() && DifficultyConfig.get().enablePrestigeSkillSync;
-    }
-
-    public static boolean prestigeFactionSync() {
-        return fabledBridge() && DifficultyConfig.get().enablePrestigeFactionSync;
-    }
-
-    public static boolean valueCleaner() {
-        return fabledBridge() && DifficultyConfig.get().enableValueCleaner;
-    }
-
-    public static boolean raceClassSync() {
-        return fabledBridge() && DifficultyConfig.get().enableRaceClassSync;
-    }
-
-    public static boolean classPermissionSync() {
-        return fabledBridge() && DifficultyConfig.get().enableClassPermissionSync;
-    }
-
     public static String statusSummary() {
         DifficultyConfig c = DifficultyConfig.get();
         return "§eSkills§7: master=" + onOff(c.enableProgression)
@@ -169,10 +129,6 @@ public final class ProgressionConfig {
                 + " endportal=" + onOff(c.enableEndPortalGuard)
                 + "\n§aShop§7: prestige=" + onOff(c.enablePrestigeSystem)
                 + " skills=" + onOff(c.enableSkillUnlockService)
-                + "\n§dFabled§7: master=" + onOff(c.enableFabledBridge)
-                + " energy=" + onOff(c.enableEnergyManaSync)
-                + " stats=" + onOff(c.enableStatScreenSync)
-                + " tpsp=" + onOff(c.enableTpSpMirror)
                 + "\n§7Utility: shadow=" + onOff(c.enableShadowDummyLimiter)
                 + " statcheck=" + onOff(c.enablePlayerStatChecker);
     }

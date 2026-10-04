@@ -1,9 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.character;
 
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
-import com.dbzlegacy.adaptivedifficulty.progression.bridge.RaceClassSync;
 import com.dbzlegacy.adaptivedifficulty.progression.race.AndroidConversion;
-import com.dbzlegacy.adaptivedifficulty.progression.bridge.RaceSkillSync;
 import com.dragonminez.common.network.NetworkHandler;
 import com.dragonminez.common.network.S2C.ProgressionSyncS2C;
 import com.dragonminez.common.network.S2C.StatsSyncS2C;
@@ -151,8 +149,6 @@ public final class RaceChangeCreationFlow {
             } catch (Throwable ignored) {
             }
         }
-        RaceSkillSync.sync(player, race);
-        RaceClassSync.sync(player);
         if (session.keepHeadBone != null && !session.keepHeadBone.isBlank()) {
             CosmeticHeadBoneService.reapplyHeadBoneAfterRaceChange(player, session.keepHeadBone);
         }

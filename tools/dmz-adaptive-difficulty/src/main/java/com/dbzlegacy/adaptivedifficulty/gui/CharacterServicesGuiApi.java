@@ -83,7 +83,6 @@ public final class CharacterServicesGuiApi {
             }
             lines.add("§7Choose the race you want to become.");
             lines.add("§7Use §f0% §7for a free full wipe (new race, nothing carried over).");
-            lines.add("§8Prestige races need their Fabled unlock skill.");
             lines.add("§7You keep ki skills, techniques, and shared form progress.");
             lines.add("§8Race-only form ladders reset when the new race does not use them.");
             lines.add(CharacterServicesSystem.cooldownLine(player, "race"));

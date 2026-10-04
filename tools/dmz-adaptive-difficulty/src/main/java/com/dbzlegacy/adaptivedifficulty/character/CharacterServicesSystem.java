@@ -4,8 +4,6 @@ import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
-import com.dbzlegacy.adaptivedifficulty.progression.bridge.RaceClassSync;
-import com.dbzlegacy.adaptivedifficulty.progression.bridge.RaceSkillSync;
 import com.dbzlegacy.adaptivedifficulty.progression.race.RaceLock;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import com.dbzlegacy.adaptivedifficulty.progression.classdef.FightingClassCatalog;
@@ -383,10 +381,6 @@ public final class CharacterServicesSystem {
                     // Full class sync runs when the player finishes recustomize (packet mixin hook).
                     if (keepSkills) {
                         RaceChangeSkillPreserve.restore(data, currentRace, raceId, skillSnapshot);
-                        RaceClassSync.syncRaceSkillOnly(player);
-                    } else {
-                        RaceSkillSync.sync(player, raceId);
-                        RaceClassSync.sync(player);
                     }
                     RaceChangeClassPickFlow.begin(
                             player, raceId, priorClassBeforeRaceChange, pickerResourceSnapshot);
@@ -416,10 +410,6 @@ public final class CharacterServicesSystem {
                             player, data, raceId, mappedClass, resourceSnapshot, target != null);
                     if (keepSkills) {
                         RaceChangeSkillPreserve.restore(data, currentRace, raceId, skillSnapshot);
-                        RaceClassSync.syncRaceSkillOnly(player);
-                    } else {
-                        RaceSkillSync.sync(player, raceId);
-                        RaceClassSync.sync(player);
                     }
                 }
             }
@@ -545,7 +535,6 @@ public final class CharacterServicesSystem {
             }
             DmzCharacterClassChangeHooks.onPaidClassChange(
                     player, data, classId, resourceSnapshot, preservePrimaries);
-            RaceClassSync.sync(player);
             CharacterServicesStore.get().record(player.m_20148_().toString()).lastClassChangeAt =
                     System.currentTimeMillis();
             CharacterServicesStore.get().markDirty();

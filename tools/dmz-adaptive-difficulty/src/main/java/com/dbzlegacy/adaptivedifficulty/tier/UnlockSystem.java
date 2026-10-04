@@ -23,7 +23,7 @@ public final class UnlockSystem {
         if (player == null || tier == null) {
             return false;
         }
-        // Prestige-point permanent unlocks bypass DMZ level / Fabled prestige gates.
+        // Prestige-point permanent unlocks bypass the DMZ level gate.
         try {
             if (com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem
                     .hasPurchasedTier(player, tier.id)) {

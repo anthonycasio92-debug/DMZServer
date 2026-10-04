@@ -1,7 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.progression;
 
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
-import com.dbzlegacy.adaptivedifficulty.progression.bridge.FabledBridge;
 import com.dbzlegacy.adaptivedifficulty.progression.combat.CombatProgression;
 import com.dbzlegacy.adaptivedifficulty.progression.dummy.DummyProgression;
 import com.dbzlegacy.adaptivedifficulty.progression.end.EndProgression;
@@ -47,12 +46,6 @@ public final class ProgressionSystem {
         if (ProgressionConfig.masterEnabled()) {
             try {
                 GlobalTpBoost.onLogin(player);
-            } catch (Throwable ignored) {
-            }
-        }
-        if (DifficultyConfig.get().enableFabledBridge) {
-            try {
-                FabledBridge.onLogin(player);
             } catch (Throwable ignored) {
             }
         }
@@ -130,12 +123,6 @@ public final class ProgressionSystem {
         }
         try {
             ShopProgression.onLogout(player);
-        } catch (Throwable ignored) {
-        }
-        try {
-            if (DifficultyConfig.get().enableFabledBridge) {
-                FabledBridge.onLogout(player);
-            }
         } catch (Throwable ignored) {
         }
         ProgressionData.clearPlayer(player.m_20148_());
@@ -226,12 +213,6 @@ public final class ProgressionSystem {
                     } catch (Throwable ignored) {
                     }
                 }
-            }
-        }
-        if (DifficultyConfig.get().enableFabledBridge) {
-            try {
-                FabledBridge.pulse(server, tick);
-            } catch (Throwable ignored) {
             }
         }
         try {
@@ -415,16 +396,6 @@ public final class ProgressionSystem {
             case "prestige", "enableprestigesystem" -> cfg.enablePrestigeSystem = on;
             case "overhaulprestige", "overhaului", "enableoverhaulprestigeintegration" ->
                     cfg.enableOverhaulPrestigeIntegration = on;
-            case "fabled", "enablefabledbridge" -> cfg.enableFabledBridge = on;
-            case "energy", "energymana", "enableenergymanasync" -> cfg.enableEnergyManaSync = on;
-            case "statscreen", "stats", "enablestatscreensync" -> cfg.enableStatScreenSync = on;
-            case "tpsp", "enabletpspmirror" -> cfg.enableTpSpMirror = on;
-            case "attr", "attrmulti", "enableattrmultibonus" -> cfg.enableAttrMultiBonus = on;
-            case "prestigeskill", "enableprestigeskillsync" -> cfg.enablePrestigeSkillSync = on;
-            case "faction", "prestigefaction", "enableprestigefactionsync" -> cfg.enablePrestigeFactionSync = on;
-            case "cleaner", "valuecleaner", "enablevaluecleaner" -> cfg.enableValueCleaner = on;
-            case "raceclass", "enableraceclasssync" -> cfg.enableRaceClassSync = on;
-            case "classperm", "classpermission", "enableclasspermissionsync" -> cfg.enableClassPermissionSync = on;
             default -> {
                 return false;
             }

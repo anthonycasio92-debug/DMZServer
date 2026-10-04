@@ -55,26 +55,6 @@ public final class ProgressionModuleCatalog {
                     "progression.shop.PrestigeSystem", "kubejs prestige shop")),
             Map.entry("skills", info("Skill Unlock Service", "enableSkillUnlockService",
                     "progression.shop.SkillUnlockService", "kubejs skill unlock")),
-            Map.entry("fabled", info("Fabled Master", "enableFabledBridge",
-                    "progression.bridge.FabledBridge", "CNPC fabled bridge scripts")),
-            Map.entry("energy", info("Energy ↔ Mana", "enableEnergyManaSync",
-                    "progression.bridge.EnergyManaSync", "CNPC energy/mana")),
-            Map.entry("statscreen", info("Stat Screen Sync", "enableStatScreenSync",
-                    "progression.bridge.StatScreenSync", "CNPC stat screen")),
-            Map.entry("tpsp", info("TP ↔ SP Mirror", "enableTpSpMirror",
-                    "progression.bridge.TpSpMirror", "CNPC tp/sp mirror")),
-            Map.entry("attr", info("Attr Multi Bonus", "enableAttrMultiBonus",
-                    "progression.bridge.AttrMultiBonus", "CNPC attr multi")),
-            Map.entry("prestigeskill", info("Prestige Skill Sync", "enablePrestigeSkillSync",
-                    "progression.bridge.PrestigeSkillSync", "CNPC prestige skill")),
-            Map.entry("faction", info("Prestige Faction Sync", "enablePrestigeFactionSync",
-                    "progression.bridge.PrestigeFactionSync", "CNPC faction sync")),
-            Map.entry("cleaner", info("Value Cleaner", "enableValueCleaner",
-                    "progression.bridge.ValueCleaner", "CNPC value cleaner")),
-            Map.entry("raceclass", info("Race → Class Sync", "enableRaceClassSync",
-                    "progression.bridge.RaceClassSync", "CNPC race class")),
-            Map.entry("classperm", info("Class Permission Sync", "enableClassPermissionSync",
-                    "progression.bridge.ClassPermissionSync", "CNPC class perm")),
             Map.entry("shadow", info("Shadow Dummy", "enableShadowDummyLimiter",
                     "progression.dummy.ShadowDummyLimiter", "CNPC shadow dummy")),
             Map.entry("statchecker", info("Stat Checker", "enablePlayerStatChecker",
@@ -91,7 +71,7 @@ public final class ProgressionModuleCatalog {
             return false;
         }
         return switch (name.toLowerCase(Locale.ROOT)) {
-            case "skills", "tp", "race", "combat", "end", "shop", "fabled", "utility", "flags" -> true;
+            case "skills", "tp", "race", "combat", "end", "shop", "utility", "flags" -> true;
             default -> false;
         };
     }
@@ -107,10 +87,6 @@ public final class ProgressionModuleCatalog {
             case "combat" -> new String[]{"kiweapons", "piercing", "dot", "apothic"};
             case "end" -> new String[]{"end", "endportal"};
             case "shop" -> new String[]{"prestige", "skills"};
-            case "fabled" -> new String[]{
-                    "fabled", "energy", "statscreen", "tpsp", "attr",
-                    "prestigeskill", "faction", "cleaner", "raceclass", "classperm"
-            };
             case "utility" -> new String[]{"shadow", "statchecker"};
             default -> new String[0];
         };

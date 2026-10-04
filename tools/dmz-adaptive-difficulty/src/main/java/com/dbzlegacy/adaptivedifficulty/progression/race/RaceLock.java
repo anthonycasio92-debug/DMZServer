@@ -1,32 +1,25 @@
 package com.dbzlegacy.adaptivedifficulty.progression.race;
 
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
-import com.dbzlegacy.adaptivedifficulty.progression.FabledSkills;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionData;
-import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import com.dbzlegacy.adaptivedifficulty.util.LmChat;
-import com.dbzlegacy.adaptivedifficulty.util.ScreenNotify;
 import com.dragonminez.common.network.NetworkHandler;
 import com.dragonminez.common.network.S2C.ProgressionSyncS2C;
 import com.dragonminez.common.quest.PartyManager;
 import com.dragonminez.common.quest.PlayerQuestData;
 import com.dragonminez.common.stats.StatsData;
-import com.dragonminez.common.stats.character.Character;
 import com.dragonminez.common.stats.character.Status;
-import java.util.Locale;
-import java.util.Map;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Port of DMZ RACE LOCK.js — restricted races require a Fabled unlock skill.
- * Race list is editable in {@code config/legacymechanics/race-lock.json}
- * ({@link RaceLockConfig}) — no mod rebuild needed to add races.
- * Also clears stuck saga {@code difficultyChosen} after reset (script parity).
+ * Clears stuck saga {@code difficultyChosen} while character creation is incomplete.
+ * Restricted-race skill gates are gone — a missing unlock skill no longer denies
+ * a race or resets the character.
  */
 public final class RaceLock {
     private static final long SAGA_DIFF_COOLDOWN_MS = 8_000L;
@@ -34,31 +27,14 @@ public final class RaceLock {
     private RaceLock() {}
 
     /**
-     * Whether the player may select this DMZ race (prestige / race-lock Fabled unlock).
+     * Whether the player may select this DMZ race.
      * Returns {@code null} when allowed; otherwise a short player-facing denial.
      */
     public static String selectBlockReason(ServerPlayer player, String raceId) {
         if (player == null || raceId == null || raceId.isBlank()) {
             return "§cInvalid race.";
         }
-        if (!ProgressionConfig.raceLock()) {
-            return null;
-        }
-        RaceLockConfig.RestrictedRace gate = RaceLockConfig.findByRaceId(raceId);
-        if (gate == null) {
-            return null;
-        }
-        String required = gate.fabledSkill;
-        if (required == null || required.isBlank()) {
-            return null;
-        }
-        if (FabledSkills.skillLevel(player, required) >= 1) {
-            return null;
-        }
-        String display = gate.displayName == null || gate.displayName.isBlank()
-                ? required
-                : gate.displayName;
-        return "§cYou need the Fabled skill §f" + required + " §cto become §f" + display + "§c.";
+        return null;
     }
 
     public static boolean maySelectRace(ServerPlayer player, String raceId) {
@@ -98,65 +74,7 @@ public final class RaceLock {
             if (!created) {
                 maybeAutoUnlockStuckDifficulty(player, data, nowMs);
                 ProgressionData.tempRemove(player, "restricted_race_command_last_state");
-                return;
             }
-
-            Character ch = data.getCharacter();
-            if (ch == null) {
-                return;
-            }
-            String raceId = ch.getRace();
-            if (raceId == null || raceId.isBlank() || "null".equalsIgnoreCase(raceId)) {
-                raceId = ch.getRaceName();
-            }
-            if (raceId == null || raceId.isBlank()) {
-                return;
-            }
-            RaceLockConfig.RestrictedRace gate = RaceLockConfig.findByRaceId(raceId);
-            if (gate == null) {
-                ProgressionData.tempRemove(player, "restricted_race_command_last_state");
-                return;
-            }
-            String required = gate.fabledSkill;
-            String display = gate.displayName == null || gate.displayName.isBlank()
-                    ? required
-                    : gate.displayName;
-            String lower = gate.id;
-            int skillLevel = FabledSkills.skillLevel(player, required);
-            if (skillLevel >= 1) {
-                return;
-            }
-
-            long retryUntil = ProgressionData.tempGetLong(player, "restricted_race_command_retry", 0L);
-            if (nowMs < retryUntil) {
-                return;
-            }
-            ProgressionData.tempPut(player, "restricted_race_command_retry", nowMs + 5000L);
-
-            String state = "restricted|" + lower + "|" + required.toLowerCase(Locale.ROOT) + "|" + skillLevel;
-            String old = ProgressionData.tempGet(player, "restricted_race_command_last_state", "");
-            if (!state.equals(old)) {
-                ProgressionData.tempPut(player, "restricted_race_command_last_state", state);
-                ScreenNotify.blocked(
-                        player,
-                        "Race locked",
-                        "Need Fabled skill: " + required,
-                        "race.lock.notify",
-                        8_000L);
-            }
-
-            String cmd = "dmzstats reset " + player.m_7755_().getString() + " 0 false";
-            dispatchConsole(player.m_20194_(), cmd);
-            // Prestige-invested skill floors / Majin / Mutant must survive race lock reset.
-            try {
-                com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem
-                        .scheduleReapplyAfterDeath(player);
-            } catch (Throwable ignored) {
-            }
-            // Script: clear stuck saga difficulty as soon as reset is issued.
-            clearStuckSagaDifficulty(player, data, true);
-            SystemTelemetry.log("progression", "race_lock_reset", player, null,
-                    Map.of("race", lower, "required", required, "display", display));
         } catch (Throwable ignored) {
         }
     }
