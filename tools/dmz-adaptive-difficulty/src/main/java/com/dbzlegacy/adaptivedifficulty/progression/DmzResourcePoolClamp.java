@@ -48,7 +48,7 @@ public final class DmzResourcePoolClamp {
         return data == null ? 0f : data.getMaxEnergy();
     }
 
-    /** Authoritative stamina cap — live {@code getMaxStamina} (HUD mixin applies scale once). */
+    /** Live {@code getMaxStamina}. LM does not multiply this. */
     public static float actualMaxStamina(StatsData data) {
         return data == null ? 0f : data.getMaxStamina();
     }
