@@ -17,6 +17,7 @@ import com.dbzlegacy.adaptivedifficulty.progression.skills.SprintJumpProgression
 import com.dbzlegacy.adaptivedifficulty.progression.tp.BioAndroidAbsorb;
 import com.dbzlegacy.adaptivedifficulty.progression.tp.BuildingTp;
 import com.dbzlegacy.adaptivedifficulty.progression.tp.FarmingTp;
+import com.dbzlegacy.adaptivedifficulty.progression.tp.DeathTpPenalty;
 import com.dbzlegacy.adaptivedifficulty.progression.tp.GlobalTpBoost;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
@@ -38,6 +39,10 @@ public final class ProgressionSystem {
     public static void onLogin(ServerPlayer player) {
         if (player == null) {
             return;
+        }
+        try {
+            DeathTpPenalty.onLogin(player);
+        } catch (Throwable ignored) {
         }
         if (ProgressionConfig.masterEnabled()) {
             try {
@@ -139,6 +144,10 @@ public final class ProgressionSystem {
     public static void pulse(MinecraftServer server, int tick) {
         if (server == null) {
             return;
+        }
+        try {
+            DeathTpPenalty.pulse(server, tick);
+        } catch (Throwable ignored) {
         }
         if (ProgressionConfig.masterEnabled()) {
             long now = System.currentTimeMillis();

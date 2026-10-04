@@ -1,0 +1,123 @@
+package com.dbzlegacy.adaptivedifficulty.progression.tp;
+
+import com.dbzlegacy.adaptivedifficulty.util.LmChat;
+import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
+import com.dbzlegacy.adaptivedifficulty.util.ScreenNotify;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
+
+/**
+ * Temporary death penalty: TP gain is cut in half for 10 minutes.
+ * <p>
+ * The timer is stored on the player, so a relog or restart keeps the remaining
+ * time. A later death refreshes the window back to 10 minutes. The cut is
+ * applied once, on the training points DragonMineZ is about to grant, so a
+ * global TP boost is halved too instead of stacking into a second formula.
+ */
+public final class DeathTpPenalty {
+    public static final double MULTIPLIER = 0.5d;
+    public static final long DURATION_MS = 10L * 60L * 1000L;
+    private static final String KEY = "lm.death_tp_penalty_until";
+    private static final String BAR_KEY = "lm.death.tp.bar";
+    private static final long BAR_COOLDOWN_MS = 8_000L;
+
+    private DeathTpPenalty() {}
+
+    /** 0.5 while the penalty is active, otherwise 1. */
+    public static double multiplier(ServerPlayer player) {
+        if (!active(player)) {
+            return 1.0d;
+        }
+        return MULTIPLIER;
+    }
+
+    public static boolean active(ServerPlayer player) {
+        if (player == null) {
+            return false;
+        }
+        return PersistentDataAccess.getLong(player, KEY, 0L) > System.currentTimeMillis();
+    }
+
+    public static void onDeath(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        boolean refreshed = active(player);
+        long until = System.currentTimeMillis() + DURATION_MS;
+        PersistentDataAccess.putLong(player, KEY, until);
+        String body = refreshed
+                ? "§cDeath penalty refreshed. §7TP gain stays at §chalf §7for §f10 minutes§7."
+                : "§cDeath penalty. §7TP gain is cut to §chalf §7for §f10 minutes§7.";
+        msg(player, LmChat.note("TP", body));
+        ScreenNotify.actionBar(player, "TP gain halved", "10m left", "", 0L);
+    }
+
+    public static void onLogin(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        if (!active(player)) {
+            clearExpired(player, false);
+            return;
+        }
+        msg(player, LmChat.note(
+                "TP",
+                "§cDeath penalty §7is still on. TP gain is §chalf §7for §f"
+                        + remainingLabel(player) + "§7."));
+    }
+
+    public static void pulse(MinecraftServer server, int tick) {
+        if (server == null || tick % 20 != 0) {
+            return;
+        }
+        for (ServerPlayer player : server.m_6846_().m_11314_()) {
+            if (player == null) {
+                continue;
+            }
+            long until = PersistentDataAccess.getLong(player, KEY, 0L);
+            if (until <= 0L) {
+                continue;
+            }
+            if (until <= System.currentTimeMillis()) {
+                clearExpired(player, true);
+                continue;
+            }
+            ScreenNotify.actionBar(
+                    player,
+                    "TP gain halved",
+                    remainingLabel(player) + " left",
+                    BAR_KEY,
+                    BAR_COOLDOWN_MS);
+        }
+    }
+
+    public static String remainingLabel(ServerPlayer player) {
+        long rem = Math.max(0L, PersistentDataAccess.getLong(player, KEY, 0L) - System.currentTimeMillis());
+        long totalSec = rem / 1000L;
+        long minutes = totalSec / 60L;
+        long sec = totalSec % 60L;
+        if (minutes <= 0L) {
+            return sec + "s";
+        }
+        return minutes + "m " + sec + "s";
+    }
+
+    private static void clearExpired(ServerPlayer player, boolean announce) {
+        CompoundTag tag = PersistentDataAccess.get(player);
+        if (!PersistentDataAccess.isWritable(tag) || !tag.m_128441_(KEY)) {
+            return;
+        }
+        tag.m_128473_(KEY);
+        if (announce) {
+            msg(player, LmChat.ok("TP", "Death penalty ended. TP gain is back to normal."));
+        }
+    }
+
+    private static void msg(ServerPlayer player, String text) {
+        try {
+            com.dbzlegacy.adaptivedifficulty.util.DmzRewards.msg(player, text);
+        } catch (Throwable ignored) {
+        }
+    }
+}

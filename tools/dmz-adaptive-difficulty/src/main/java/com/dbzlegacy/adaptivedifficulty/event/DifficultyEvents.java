@@ -940,6 +940,12 @@ public final class DifficultyEvents {
             LivingEntity killerLiving = killerEnt instanceof LivingEntity le ? le : null;
             RivalSystem.onDeath(victim, killerLiving);
             SparringSystem.onDeath(victim);
+            if (!event.isCanceled()) {
+                try {
+                    com.dbzlegacy.adaptivedifficulty.progression.tp.DeathTpPenalty.onDeath(victim);
+                } catch (Throwable ignored) {
+                }
+            }
         }
         if (killerEnt instanceof ServerPlayer killer
                 && dead instanceof LivingEntity

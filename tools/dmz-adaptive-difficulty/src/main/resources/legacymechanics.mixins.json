@@ -15,6 +15,7 @@
     "StatsDataGetPlayerMixin",
     "StatsDataSecondaryPlayerMixin",
     "StatsDataStatScalingMixin",
+    "StatsDataDeathTpPenaltyMixin",
     "StatsDataRestoreMultiplierClampMixin",
     "StatsDataLoadClampMixin",
     "ResourcesEnergyDrainGuardMixin",

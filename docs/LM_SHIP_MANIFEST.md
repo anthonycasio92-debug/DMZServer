@@ -8,6 +8,7 @@ When you ask for a behavior change, add a row here and a matching check in `audi
 | ID | Request (summary) | Introduced | Audit |
 |----|-------------------|------------|--------|
 | class-stamina-config-scale | Fighting-class and stamina scaling stay the DragonMineZ config values. LM divides dmzrevamp's prestige coefficient out of `getStatScaling` and does not multiply pools | 4.5.124+ | `audit_overhaul_scale_delegation.py` |
+| death-tp-penalty | Dying cuts TP gain in half for 10 minutes. The timer stays on the player through relog, and a later death refreshes it to 10 minutes | 4.5.125+ | manifest §death tp |
 | prestige-need | First 4 prestiges need 20k each. From the 5th: 50k with 0 held, 100k with 1+ held | 4.5.121+ | `audit_prestige_need_ladder.py`, manifest §prestige |
 | prestige-gui | Main prestige hub: **Need/Held** from wallet; **no Cap** on main; no cap breakthrough button on main (CNPC/chest/CMI) | 4.5.64+ | `audit_prestige_gui_flow.py`, manifest §prestige |
 | skillcheck-gate | **Skill Check** = `legacymechanics.skillcheck` only; **no NPC/session bypass**; staff use **Skills** admin | 4.5.68+ | manifest §access |

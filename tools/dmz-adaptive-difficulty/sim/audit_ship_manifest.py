@@ -60,6 +60,7 @@ def main() -> int:
     check("LM_SHIP_MANIFEST.md present", "prestige-need" in manifest and "rival-challenge-pending" in manifest)
     check("manifest android-saiyan-eligible row", "android-saiyan-eligible" in manifest)
     check("manifest cnpc-preview-live-player row", "cnpc-preview-live-player" in manifest)
+    check("manifest death-tp-penalty row", "death-tp-penalty" in manifest)
 
     skip_gui = os.environ.get("LM_SKIP_GUI", "0") == "1"
     print("\n--- Sub-audits (must PASS) ---")
@@ -90,6 +91,18 @@ def main() -> int:
     check("no prestige.main.cap on chest", "prestige.main.cap" not in chest)
     check("no Level Cap Breakthrough on chest main", "Level Cap Breakthrough" not in chest.split("private Inventory main", 1)[1].split("private Inventory turnIn", 1)[0] if "private Inventory main" in chest else False)
     check("CNPC prestige no cap button on main", "Level Cap" not in cnpc or '"cap", "breakthrough" -> paintMain' in cnpc)
+
+    print("\n--- § death tp ---")
+    death_tp = read(SRC / "progression/tp/DeathTpPenalty.java")
+    death_mixin = read(SRC / "mixin/StatsDataDeathTpPenaltyMixin.java")
+    mixins_json = read(MOD / "src/main/resources/legacymechanics.mixins.json")
+    check("DeathTpPenalty halves for 10 minutes",
+          "MULTIPLIER = 0.5d" in death_tp and "DURATION_MS = 10L * 60L * 1000L" in death_tp)
+    check("death penalty mixin halves calculateTPGain",
+          "calculateTPGain(ILcom/dragonminez/common/config/TpSource;)I" in death_mixin
+          and "Math.floor" in death_mixin)
+    check("mixins.json registers StatsDataDeathTpPenaltyMixin",
+          '"StatsDataDeathTpPenaltyMixin"' in mixins_json)
 
     print("\n--- § access (skillcheck + staff admin) ---")
     skill_svc = read(SRC / "progression/shop/SkillCheckService.java")
