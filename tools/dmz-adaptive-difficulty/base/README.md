@@ -7,7 +7,7 @@
 | **`LegacyMechanics-4.5.49-consolidated.jar`** | Canonical base (ki/stamina + CNPC line deployed 2026-09-22) |
 | `LegacyMechanics-4.5.23-direct-dmz-resource-max.jar` | Legacy fallback only if consolidated base missing |
 
-`build.sh` keeps the base jar's **`legacymechanics.mixins.json`** unchanged (production omits `StatsDataHudPoolMaxMixin` from mixins config). Pool clamp bytecode stays from the base; overlay packages: `gui/cnpc/`, `RivalGuiApi`, `ProgressionGuiApi`, `AdaptiveDifficultyMod`, `AndroidConversion`.
+`build.sh` merges CNPC/GUI from `src/` and overlays a **ki/stamina pool slice** (compiled `DmzResourcePoolClamp`, pool mixins, bridge sync) plus **`legacymechanics.mixins.json`** including `StatsDataHudPoolMaxMixin` so HUD bars use the same cap as clamps.
 
 Refresh from live after a good deploy:
 

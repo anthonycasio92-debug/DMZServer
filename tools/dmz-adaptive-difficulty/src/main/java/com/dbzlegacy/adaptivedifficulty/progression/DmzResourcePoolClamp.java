@@ -45,16 +45,30 @@ public final class DmzResourcePoolClamp {
 
     /** Multiply a native / HUD-formula pool by Overhaul {@code scaleMultiplier} once. */
     public static float applyOverhaulScale(StatsData data, float base) {
+        return applyOverhaulScale(data, base, true);
+    }
+
+    /**
+     * Apply prestige pool scale once. If native {@code getMax*} already matches
+     * HUD × scale (form / restoreMultiplierGains), do not multiply again — that
+     * mismatch caused ki bars stuck at ~⅓ and stamina over max.
+     */
+    private static float applyOverhaulScale(StatsData data, float base, boolean energy) {
         if (!Float.isFinite(base) || base <= POWER_RELEASE_FLOOR) {
             return base;
         }
         try {
             double scale = LmOverhaulPrestigeIntegration.combatScaleMultiplier(data);
-            if (Double.isFinite(scale) && scale > 1.000_001d) {
-                float scaled = (float) (base * scale);
-                if (Float.isFinite(scaled) && scaled > POWER_RELEASE_FLOOR) {
-                    return scaled;
-                }
+            if (!Double.isFinite(scale) || scale <= 1.000_001d) {
+                return base;
+            }
+            float hud = hudFormulaMax(data, energy);
+            if (hud > POWER_RELEASE_FLOOR && base >= hud * (float) scale * 0.88f) {
+                return base;
+            }
+            float scaled = (float) (base * scale);
+            if (Float.isFinite(scaled) && scaled > POWER_RELEASE_FLOOR) {
+                return scaled;
             }
         } catch (Throwable ignored) {
         }
@@ -94,18 +108,18 @@ public final class DmzResourcePoolClamp {
             nativeMax = 0f;
         }
         if (Float.isFinite(nativeMax) && nativeMax > POWER_RELEASE_FLOOR) {
-            return applyOverhaulScale(data, nativeMax);
+            return applyOverhaulScale(data, nativeMax, energy);
         }
         try {
             float hud = hudFormulaMax(data, energy);
             if (Float.isFinite(hud) && hud > POWER_RELEASE_FLOOR) {
-                return applyOverhaulScale(data, hud);
+                return applyOverhaulScale(data, hud, energy);
             }
         } catch (Throwable ignored) {
         }
         float fallback = investedFallback(data, energy);
         if (fallback > POWER_RELEASE_FLOOR) {
-            return applyOverhaulScale(data, fallback);
+            return applyOverhaulScale(data, fallback, energy);
         }
         return 0f;
     }

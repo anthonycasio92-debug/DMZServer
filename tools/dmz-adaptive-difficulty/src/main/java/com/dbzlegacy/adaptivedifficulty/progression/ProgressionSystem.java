@@ -196,8 +196,10 @@ public final class ProgressionSystem {
                 }
                 if (tick % 20 == 0) {
                     try {
-                        com.dbzlegacy.adaptivedifficulty.progression.bridge.OverhaulPrestigeResourceScale
-                                .pulse(player);
+                        if (!LmOverhaulPrestigeIntegration.integrationActive()) {
+                            com.dbzlegacy.adaptivedifficulty.progression.bridge.OverhaulPrestigeResourceScale
+                                    .pulse(player);
+                        }
                     } catch (Throwable ignored) {
                     }
                     try {

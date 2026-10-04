@@ -70,6 +70,15 @@ def main() -> int:
     mixins = (ROOT / "src/main/resources/legacymechanics.mixins.json").read_text(encoding="utf-8")
     if '"StatsDataOverhaulCombatScaleMixin"' not in mixins:
         errors.append("legacymechanics.mixins.json must register StatsDataOverhaulCombatScaleMixin")
+    if '"StatsDataHudPoolMaxMixin"' not in mixins:
+        errors.append("legacymechanics.mixins.json must register StatsDataHudPoolMaxMixin")
+
+    if "0.88f" not in pool:
+        errors.append("DmzResourcePoolClamp must skip double applyOverhaulScale when native already scaled")
+
+    progression = read("progression/ProgressionSystem.java")
+    if "integrationActive()" not in progression or "OverhaulPrestigeResourceScale" not in progression:
+        errors.append("ProgressionSystem must skip OverhaulPrestigeResourceScale.pulse when integrationActive()")
 
     print("=== Overhaul scale delegation audit ===")
     for e in errors:

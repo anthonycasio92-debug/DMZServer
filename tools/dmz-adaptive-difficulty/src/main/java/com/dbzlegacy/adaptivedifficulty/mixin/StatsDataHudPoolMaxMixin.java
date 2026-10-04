@@ -40,9 +40,6 @@ public abstract class StatsDataHudPoolMaxMixin {
         if (!Float.isFinite(canon) || canon <= 1f) {
             return;
         }
-        Float value = cir.getReturnValue();
-        if (value == null || !Float.isFinite(value) || canon > value + 0.01f) {
-            cir.setReturnValue(canon);
-        }
+        cir.setReturnValue(canon);
     }
 }
