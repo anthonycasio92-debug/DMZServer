@@ -101,7 +101,7 @@ public final class CnpcLmRivalGui {
     private static void paintMain(ServerPlayer player, ICustomGui gui) {
         ServerPlayer who = subject(player);
         Map<String, String> ph = RivalGuiApi.placeholders(who);
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandTitle("Rivals"),
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§6Rivals",
                 "§7RP §f" + ph.getOrDefault("rp", "?") + CnpcGuiStyle.SEP + "§7Tier §f"
                         + ph.getOrDefault("tier", "?"));
 
@@ -145,7 +145,7 @@ public final class CnpcLmRivalGui {
     }
 
     private static void paintActions(ServerPlayer player, ICustomGui gui) {
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandSubPage("Rivals", "Actions"),
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Actions"),
                 "§7Declare, pending board, and silent rivals");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, RivalGuiApi.linesForPage(subject(player), "actions"),
                         CnpcGuiStyle.INFO_INLINE_MAX));
@@ -164,7 +164,7 @@ public final class CnpcLmRivalGui {
 
     private static void paintPending(ServerPlayer player, ICustomGui gui) {
         ServerPlayer who = subject(player);
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandSubPage("Rivals", "Declare invites"),
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Declare invites"),
                 "§eRival declare requests — not duel challenges");
         int listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBeforePickList(gui, infoY,
                 RivalGuiApi.linesForPage(who, "pending"), 2));
@@ -206,7 +206,7 @@ public final class CnpcLmRivalGui {
         boolean mutual = card != null && RivalGuiApi.pendingInviteCardMutualConfirm(card);
         String subTitle = outgoing ? "Outgoing declare" : (mutual ? "Mutual confirm" : "Incoming declare");
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_RIVAL, CnpcGuiSupport.W, 300, (pl, gui) -> {
-            int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcGuiStyle.brandSubPage("Rivals", subTitle),
+            int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcGuiStyle.subPage("§6", "Rivals", subTitle),
                     outgoing ? "§7Withdraw or wait for their answer" : "§7Accept or decline below");
             int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, detail, CnpcGuiStyle.INFO_INLINE_MAX));
             row += 8;
@@ -237,7 +237,7 @@ public final class CnpcLmRivalGui {
         List<String> detail = card != null ? RivalGuiApi.rivalCardDetailLines(card)
                 : List.of(RivalGuiApi.displayPickerArg(player, pickerArg), "§7Rival record");
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_RIVAL, CnpcGuiSupport.W, 300, (pl, gui) -> {
-            int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcGuiStyle.brandSubPage("Rivals", "Profile"),
+            int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Profile"),
                     "§7Stats and actions for this rival");
             int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, detail, CnpcGuiStyle.INFO_INLINE_MAX));
             row += 8;
@@ -260,7 +260,7 @@ public final class CnpcLmRivalGui {
         String targetArg = parts[2];
         String display = RivalGuiApi.displayPickerArg(player, targetArg);
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_RIVAL, CnpcGuiSupport.W, 280, (pl, gui) -> {
-            int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcGuiStyle.brandSubPage("Rivals", "Confirm action"), display);
+            int infoY = CnpcGuiSupport.paintHeader(pl, gui, "§eConfirm action", display);
             List<String> lines = List.of(
                     "§7Player " + display,
                     "§8Action §7" + action.replace('_', ' '),
@@ -282,7 +282,7 @@ public final class CnpcLmRivalGui {
 
     private static void paintChallenge(ServerPlayer player, ICustomGui gui) {
         ServerPlayer who = subject(player);
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandSubPage("Rivals", "Challenge"),
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Challenge"),
                 "§7Send duels · pending board · spectate");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, RivalGuiApi.challengeLines(who),
                         CnpcGuiStyle.INFO_INLINE_MAX));
@@ -299,7 +299,7 @@ public final class CnpcLmRivalGui {
 
     private static void paintChallengePending(ServerPlayer player, ICustomGui gui) {
         ServerPlayer who = subject(player);
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandSubPage("Rivals", "Duel requests"),
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Duel requests"),
                 "§eOfficial timed duels — accept, decline, or cancel");
         int listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBeforePickList(gui, infoY,
                 RivalGuiApi.linesForPage(who, "challenge_pending"), 2));
@@ -341,7 +341,7 @@ public final class CnpcLmRivalGui {
         boolean outgoing = card != null && RivalGuiApi.pendingChallengeCardOutgoing(card);
         String subTitle = outgoing ? "Outgoing challenge" : "Incoming challenge";
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_RIVAL, CnpcGuiSupport.W, 300, (pl, gui) -> {
-            int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcGuiStyle.brandSubPage("Rivals", subTitle),
+            int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcGuiStyle.subPage("§6", "Rivals", subTitle),
                     outgoing ? "§7Cancel or keep waiting" : "§7Accept or decline below");
             int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, detail,
                     CnpcGuiStyle.INFO_INLINE_MAX));
@@ -364,7 +364,7 @@ public final class CnpcLmRivalGui {
 
     private static void openChallengeTime(ServerPlayer player, String targetArg) {
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_RIVAL, CnpcGuiSupport.W, 360, (pl, gui) -> {
-            int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcGuiStyle.brandSubPage("Rivals", "Challenge length"),
+            int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Challenge length"),
                     "§7Target " + RivalGuiApi.displayPickerArg(player, targetArg));
             int row = CnpcGuiSupport.bodyBelowHeader(infoY);
             CnpcGuiLayout.GridButton[] grid = new CnpcGuiLayout.GridButton[10];
@@ -381,7 +381,7 @@ public final class CnpcLmRivalGui {
     }
 
     private static void paintProgress(ServerPlayer player, ICustomGui gui) {
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandSubPage("Rivals", "Progress"),
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Progress"),
                 "§7Season, quests, and records");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, RivalGuiApi.linesForPage(subject(player), "progress"),
                         CnpcGuiStyle.INFO_INLINE_MAX));
@@ -396,7 +396,7 @@ public final class CnpcLmRivalGui {
     }
 
     private static void paintRecords(ServerPlayer player, ICustomGui gui) {
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandSubPage("Rivals", "Records"),
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Records"),
                 "§7Titles, achievements, hall of fame, journal");
         int row = CnpcGuiSupport.bodyBelowHeader(infoY);
         CnpcGuiSupport.button(gui, 20, "§eTitle", CnpcGuiSupport.COL_L, row, () -> open(player, "title"));
@@ -411,7 +411,7 @@ public final class CnpcLmRivalGui {
     private static void paintList(ServerPlayer player, ICustomGui gui) {
         ServerPlayer who = subject(player);
         List<String> cards = RivalGuiApi.currentRivalCards(who);
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandSubPage("Rivals", "Your list"),
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Your list"),
                 cards.isEmpty() ? "§7Your list is empty — start from Actions"
                         : "§7" + cards.size() + " rival" + (cards.size() == 1 ? "" : "s")
                                 + " · tap a name for profile, duel, or remove");
@@ -556,7 +556,7 @@ public final class CnpcLmRivalGui {
             open(player, "main");
             return;
         }
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandSubPage("Rivals", "Staff Admin"),
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Staff Admin"),
                 "§7Save data, reload config, print status");
         int row = CnpcGuiSupport.bodyBelowHeader(infoY);
         CnpcGuiSupport.button(gui, 20, "§aSave stores", CnpcGuiSupport.COL_L, row,

@@ -18,7 +18,7 @@ public final class CnpcLmLogsGui {
     }
 
     private static void paint(ServerPlayer player, ICustomGui gui) {
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandTitle("Server event log"),
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§8Server Event Log",
                 "§7Staff event log — toggle or save to disk");
         List<String> lines = MechanicsGuiApi.linesForPage(player, "logs");
         var ph = MechanicsGuiApi.placeholders(player);

@@ -58,7 +58,7 @@ public final class CnpcLmCharacterGui {
     private static void paintMain(ServerPlayer player, ICustomGui gui) {
         ServerPlayer subject = CnpcGuiSupport.target(player);
         var ph = CharacterServicesGuiApi.placeholders(player);
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandTitle("Character services"),
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§fCharacter Services",
                 "§7Race §f" + ph.getOrDefault("current_race", "?") + CnpcGuiStyle.SEP + "§7Class §f"
                         + ph.getOrDefault("current_class", "?"));
 
@@ -104,7 +104,7 @@ public final class CnpcLmCharacterGui {
 
     private static void paintRace(ServerPlayer player, ICustomGui gui) {
         ServerPlayer subject = CnpcGuiSupport.target(player);
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandSubPage("Character", "Change race"),
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§f", "Character", "Change race"),
                 CnpcGuiStyle.HINT_CLICK_ENTRY);
         int listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBeforePickList(gui, infoY,
                 CharacterServicesGuiApi.linesForPage(player, "race"), 2));
@@ -130,7 +130,7 @@ public final class CnpcLmCharacterGui {
         String raceId = bits[0];
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CHARACTER, CnpcGuiSupport.W, 360, (pl, gui) -> {
             ServerPlayer subject = CnpcGuiSupport.target(pl);
-            int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcGuiStyle.brandSubPage("Character", "Keep progress?"),
+            int infoY = CnpcGuiSupport.paintHeader(pl, gui, "§eKeep progress?",
                     "§7Becoming §f" + titleRace(raceId));
             int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintReadOnlyScroll(gui, infoY,
                             CharacterServicesGuiApi.linesForPage(player, "race_pct:" + raceId + ":0")));
@@ -151,7 +151,7 @@ public final class CnpcLmCharacterGui {
     private static void paintRaceConfirm(ServerPlayer player, String raceAndPct) {
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CHARACTER, CnpcGuiSupport.W, 340, (pl, gui) -> {
             ServerPlayer subject = CnpcGuiSupport.target(pl);
-            int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcGuiStyle.brandSubPage("Character", "Confirm race"),
+            int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcGuiStyle.subPage("§f", "Character", "Confirm race"),
                     CnpcGuiStyle.HINT_REVIEW_PAY);
             int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintReadOnlyScroll(gui, infoY,
                             CharacterServicesGuiApi.linesForPage(player, "race_confirm:" + raceAndPct)));
@@ -169,7 +169,7 @@ public final class CnpcLmCharacterGui {
 
     private static void paintClass(ServerPlayer player, ICustomGui gui) {
         ServerPlayer subject = CnpcGuiSupport.target(player);
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandSubPage("Character", "Change class"),
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§f", "Character", "Change class"),
                 CnpcGuiStyle.HINT_CLICK_ENTRY);
         int listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBeforePickList(gui, infoY,
                 CharacterServicesGuiApi.linesForPage(player, "class"), 2));
@@ -193,7 +193,7 @@ public final class CnpcLmCharacterGui {
     private static void paintClassConfirm(ServerPlayer player, String classId) {
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CHARACTER, CnpcGuiSupport.W, 320, (pl, gui) -> {
             ServerPlayer subject = CnpcGuiSupport.target(pl);
-            int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcGuiStyle.brandSubPage("Character", "Confirm class"),
+            int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcGuiStyle.subPage("§f", "Character", "Confirm class"),
                     CnpcGuiStyle.HINT_REVIEW_PAY);
             int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintReadOnlyScroll(gui, infoY,
                             CharacterServicesGuiApi.linesForPage(player, "class_confirm:" + classId)));
@@ -211,7 +211,7 @@ public final class CnpcLmCharacterGui {
         var ph = CharacterServicesGuiApi.placeholders(player);
         int pages = Math.max(1, CosmeticHeadBoneService.pageCount());
         int pg = Math.min(pages - 1, Math.max(0, page));
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandSubPage("Character", "Head bones"),
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§f", "Character", "Head bones"),
                 "§7Page §f" + (pg + 1) + "/" + pages + CnpcGuiStyle.SEP + "§7Active §f"
                         + ph.getOrDefault("active_head_bone", "none"));
         int listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBeforePickList(gui, infoY,
@@ -278,7 +278,7 @@ public final class CnpcLmCharacterGui {
 
     private static void paintReskin(ServerPlayer player, ICustomGui gui) {
         ServerPlayer subject = CnpcGuiSupport.target(player);
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandSubPage("Character", "Reskin"),
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§f", "Character", "Reskin"),
                 "§7Opens the in-game editor");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, CharacterServicesGuiApi.linesForPage(player, "reskin"),
                         CnpcGuiStyle.INFO_INLINE_MAX));
@@ -290,7 +290,7 @@ public final class CnpcLmCharacterGui {
 
     private static void paintReskinConfirm(ServerPlayer player, ICustomGui gui) {
         ServerPlayer subject = CnpcGuiSupport.target(player);
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandSubPage("Character", "Confirm reskin"),
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§f", "Character", "Confirm reskin"),
                 CnpcGuiStyle.HINT_REVIEW_PAY);
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintReadOnlyScroll(gui, infoY,
                 CharacterServicesGuiApi.linesForPage(player, "reskin_confirm")));

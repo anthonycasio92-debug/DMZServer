@@ -18,7 +18,7 @@ public final class CnpcLmAdminGui {
     }
 
     private static void paint(ServerPlayer player, ICustomGui gui) {
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandSubPage("Staff", "Admin"),
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§cStaff Admin",
                 "§7Reload config, progression tools, and event log");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, java.util.List.of(
                 "§7Full commands: §8/lm admin help",

@@ -38,8 +38,8 @@ public final class CnpcLmSkillCheckGui {
     private static void paint(ServerPlayer player, ICustomGui gui, String page, boolean staffAdminBrowser) {
         boolean staffAdmin = staffAdminBrowser;
         int infoY = CnpcGuiSupport.paintHeader(player, gui,
-                staffAdmin ? CnpcGuiStyle.brandSubPage("Skills", "Staff Admin") : CnpcGuiStyle.brandTitle("Skill check"),
-                "Natural, Saga, and Skill Check sessions");
+                staffAdmin ? CnpcGuiStyle.subPage("§e", "Skills", "Staff") : "§eSkill Check",
+                "§7Natural, Saga, and Skill Check sessions");
 
         List<String> lines = ProgressionGuiApi.skillsLines(CnpcGuiSupport.target(player), page);
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX));

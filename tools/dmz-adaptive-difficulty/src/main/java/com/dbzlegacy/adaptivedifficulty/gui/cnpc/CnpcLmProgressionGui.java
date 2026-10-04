@@ -74,9 +74,9 @@ public final class CnpcLmProgressionGui {
 
     private static void paintMainHub(ServerPlayer player, ICustomGui gui) {
         boolean staff = StaffAccess.isStaff(player);
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandTitle("Progression"),
-                staff ? "Staff: TP boost · Android tools · Ancient coins"
-                        : "Module status and progression tools");
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§dProgression",
+                staff ? "§7Staff: TP boost · Android tools · Ancient coins"
+                        : "§7Module status and progression tools");
         List<String> info = new ArrayList<>(ProgressionGuiApi.linesForPage(player, "main"));
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, info, 3));
 
@@ -134,7 +134,7 @@ public final class CnpcLmProgressionGui {
             }
         }
         if ("race".equals(page) && ProgressionConfig.androidConversion()) {
-            grid.add(CnpcGuiLayout.GridButton.run("§6Android tools", () -> open(player, "android_panel")));
+            grid.add(CnpcGuiLayout.GridButton.run("§bAndroid tools", () -> open(player, "android_panel")));
         }
         if (staff && ProgressionGuiApi.flagKeysForPage(page).length > 0) {
             String sectionPage = page;
@@ -185,7 +185,7 @@ public final class CnpcLmProgressionGui {
 
     private static void paintAllFlags(ServerPlayer player, ICustomGui gui) {
         int infoY = CnpcGuiSupport.paintHeader(player, gui,
-                CnpcGuiStyle.brandSubPage("Progression", "All flags"), CnpcGuiStyle.HINT_TOGGLE_STAFF);
+                CnpcGuiStyle.subPage("§d", "Progression", "All flags"), CnpcGuiStyle.HINT_TOGGLE_STAFF);
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of(
                 "§7Turn entire progression modules on or off.",
                 "§8Category pages have the same toggles plus tools."
@@ -222,7 +222,7 @@ public final class CnpcLmProgressionGui {
 
     private static void paintBoostPanel(ServerPlayer player, ICustomGui gui) {
         Map<String, String> ph = ProgressionGuiApi.placeholders(player);
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandSubPage("Progression", "Global TP boost"), "Timed world TP multiplier");
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§6Global TP boost", "§7Timed world TP multiplier");
         List<String> lines = new ArrayList<>();
         lines.add(ph.getOrDefault("boost", "§7Global TP boost: §cOFF"));
         lines.add("§8Presets start a boost · End stops it");
@@ -257,7 +257,7 @@ public final class CnpcLmProgressionGui {
     }
 
     private static void paintAndroidPanel(ServerPlayer player, ICustomGui gui) {
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandSubPage("Progression", "Android tools"),
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§bAndroid tools",
                 "§7Dr. Gero convert · remove upgrade");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of(
                 "§7Convert keeps race · unlocks Android forms",
@@ -275,7 +275,7 @@ public final class CnpcLmProgressionGui {
 
     private static void paintAndroidConvert(ServerPlayer player, ICustomGui gui) {
         ServerPlayer subject = CnpcGuiSupport.target(player);
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandSubPage("Progression", "Android convert"),
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§d", "Progression", "Android convert"),
                 CnpcGuiStyle.HINT_DOUBLE_CLICK_PLAYER);
         int row = CnpcGuiSupport.bodyBelowHeader(infoY);
         CnpcGuiSupport.button(gui, 62, "§aConvert yourself", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
@@ -292,7 +292,7 @@ public final class CnpcLmProgressionGui {
     private static void paintAndroidRemove(ServerPlayer player, ICustomGui gui) {
         ServerPlayer subject = CnpcGuiSupport.target(player);
         boolean staff = StaffAccess.isStaff(player);
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandSubPage("Progression", "Remove Android"),
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§cRemove Android",
                 "§7Two-step confirm within 10 seconds");
         int row = CnpcGuiSupport.bodyBelowHeader(infoY);
         CnpcGuiSupport.button(gui, 63, "§cRemove on yourself", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
@@ -337,7 +337,7 @@ public final class CnpcLmProgressionGui {
     private static void paintEconomy(ServerPlayer player, ICustomGui gui) {
         Map<String, String> ph = ProgressionGuiApi.placeholders(player);
         boolean staffFree = "true".equalsIgnoreCase(ph.getOrDefault("staff_free_ancient_coin_costs", "false"));
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandSubPage("Progression", "Ancient coin economy"),
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§6Ancient coin economy",
                 "§7Staff pricing for LM paid features");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, ProgressionGuiApi.linesForPage(player, "economy"), 4));
         CnpcGuiSupport.button(gui, 20,
@@ -353,16 +353,16 @@ public final class CnpcLmProgressionGui {
 
     private static String sectionTitle(String page) {
         return switch (page) {
-            case "skills" -> CnpcGuiStyle.brandSubPage("Progression", "Skills");
-            case "tp" -> CnpcGuiStyle.brandSubPage("Progression", "TP gains");
-            case "race" -> CnpcGuiStyle.brandSubPage("Progression", "Race and form");
-            case "combat" -> CnpcGuiStyle.brandSubPage("Progression", "Combat");
-            case "end" -> CnpcGuiStyle.brandSubPage("Progression", "End");
-            case "fabled" -> CnpcGuiStyle.brandSubPage("Progression", "Fabled bridges");
-            case "utility" -> CnpcGuiStyle.brandSubPage("Progression", "Utility");
-            case "status" -> CnpcGuiStyle.brandSubPage("Progression", "Status");
-            case "shop" -> CnpcGuiStyle.brandSubPage("Progression", "Shop");
-            default -> CnpcGuiStyle.brandTitle("Progression");
+            case "skills" -> CnpcGuiStyle.subPage("§d", "Progression", "Skills");
+            case "tp" -> CnpcGuiStyle.subPage("§d", "Progression", "TP gains");
+            case "race" -> CnpcGuiStyle.subPage("§d", "Progression", "Race and form");
+            case "combat" -> CnpcGuiStyle.subPage("§d", "Progression", "Combat");
+            case "end" -> CnpcGuiStyle.subPage("§d", "Progression", "End");
+            case "fabled" -> CnpcGuiStyle.subPage("§d", "Progression", "Fabled bridges");
+            case "utility" -> CnpcGuiStyle.subPage("§d", "Progression", "Utility");
+            case "status" -> CnpcGuiStyle.subPage("§d", "Progression", "Status");
+            case "shop" -> CnpcGuiStyle.subPage("§d", "Progression", "Shop");
+            default -> "§dProgression";
         };
     }
 

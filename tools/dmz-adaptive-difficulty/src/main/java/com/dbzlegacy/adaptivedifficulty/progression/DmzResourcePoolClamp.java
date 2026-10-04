@@ -16,14 +16,12 @@ import net.minecraft.server.level.ServerPlayer;
 /**
  * One prestige-aware ki/stamina maximum used by HUD, Fabled, clamps, and Overhaul sync.
  *
- * <p>{@code actualMaxEnergy}/{@code actualMaxStamina} = native {@code getMax*} (Iron
- * {@code max_mana} rejected) × Overhaul {@code scaleMultiplier} once, with HUD-formula
- * fallback when native is stubbed (Mohist null {@code player} field). ENE/STM stay out of
- * {@code getTotalMultiplier} so prestige scale is applied only here (+ HUD mixin below).
- *
- * <p>{@link com.dbzlegacy.adaptivedifficulty.mixin.StatsDataHudPoolMaxMixin} replaces
- * {@code getMaxEnergy}/{@code getMaxStamina} returns with these canonical caps so the bar
- * matches clamp/Fabled. Native reads use {@link #isReadingNativeMax()} to avoid double scale.
+ * <p>{@code actualMaxEnergy}/{@code actualMaxStamina} are the live DMZ
+ * {@code getMaxEnergy}/{@code getMaxStamina} values. The HUD mixin
+ * ({@link com.dbzlegacy.adaptivedifficulty.mixin.StatsDataHudPoolMaxMixin}) multiplies
+ * those returns by Overhaul {@code scaleMultiplier} once — the same rule shipped in
+ * LegacyMechanics 2.4.115 / 4.5.9. Clamps and Fabled call the getters so they share
+ * that cap. Do not rebuild a separate HUD formula for the bar.
  *
  * <p>Currents clamp to those maxima only — never to the unscaled HUD reconstruction
  * (2.4.93) and never by raising the advertised max to the overflowing current.
@@ -43,7 +41,7 @@ public final class DmzResourcePoolClamp {
         return Boolean.TRUE.equals(READING_NATIVE.get());
     }
 
-    /** Multiply a native / HUD-formula pool by Overhaul {@code scaleMultiplier} once. */
+    /** Multiply a native pool by Overhaul {@code scaleMultiplier} once (2.4.115). */
     public static float applyOverhaulScale(StatsData data, float base) {
         if (!Float.isFinite(base) || base <= POWER_RELEASE_FLOOR) {
             return base;
@@ -61,14 +59,14 @@ public final class DmzResourcePoolClamp {
         return base;
     }
 
-    /** Authoritative prestige-aware ki cap (single scale; see {@link #actualMax}). */
+    /** Authoritative ki cap — live {@code getMaxEnergy} (HUD mixin applies scale once). */
     public static float actualMaxEnergy(StatsData data) {
-        return actualMax(data, true);
+        return data == null ? 0f : data.getMaxEnergy();
     }
 
-    /** Authoritative prestige-aware stamina cap (single scale; see {@link #actualMax}). */
+    /** Authoritative stamina cap — live {@code getMaxStamina} (HUD mixin applies scale once). */
     public static float actualMaxStamina(StatsData data) {
-        return actualMax(data, false);
+        return data == null ? 0f : data.getMaxStamina();
     }
 
     /** Alias of {@link #actualMaxEnergy(StatsData)} — one canonical ki max. */

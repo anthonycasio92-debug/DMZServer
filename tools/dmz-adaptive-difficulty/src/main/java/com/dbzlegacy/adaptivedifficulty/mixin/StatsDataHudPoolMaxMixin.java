@@ -14,35 +14,34 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * {@code scaleMultiplier} (ENE/STM stay out of {@code getTotalMultiplier}), so a
  * prestige-scaled current (18k) paints as 300% of an unscaled 6k bar.
  *
- * <p>Replace DMZ return with {@link DmzResourcePoolClamp#actualMaxEnergy} /
- * {@link DmzResourcePoolClamp#actualMaxStamina} so HUD, clamps, and Fabled share one cap.
+ * <p>Same rule as the live 2.4.115 upload: multiply the value this getter already
+ * returned. Do not substitute a reconstructed cap — that split ki to ~⅓ and let
+ * stamina sit above the bar.
  */
 @Mixin(value = StatsData.class, remap = false, priority = 2100)
 public abstract class StatsDataHudPoolMaxMixin {
 
     @Inject(method = "getMaxEnergy", at = @At("RETURN"), cancellable = true, remap = false)
     private void lm$prestigeAwareMaxEnergy(CallbackInfoReturnable<Float> cir) {
-        applyCanonicalMax(cir, true);
+        applyPrestigeAwareMax(cir);
     }
 
     @Inject(method = "getMaxStamina", at = @At("RETURN"), cancellable = true, remap = false)
     private void lm$prestigeAwareMaxStamina(CallbackInfoReturnable<Float> cir) {
-        applyCanonicalMax(cir, false);
+        applyPrestigeAwareMax(cir);
     }
 
-    private void applyCanonicalMax(CallbackInfoReturnable<Float> cir, boolean energy) {
+    private void applyPrestigeAwareMax(CallbackInfoReturnable<Float> cir) {
         if (StatsDataLoadContext.inLoad() || DmzResourcePoolClamp.isReadingNativeMax()) {
             return;
         }
-        StatsData data = (StatsData) (Object) this;
-        float canon = energy ? DmzResourcePoolClamp.actualMaxEnergy(data)
-                : DmzResourcePoolClamp.actualMaxStamina(data);
-        if (!Float.isFinite(canon) || canon <= 1f) {
+        Float value = cir.getReturnValue();
+        if (value == null || !Float.isFinite(value) || value <= 1f) {
             return;
         }
-        Float value = cir.getReturnValue();
-        if (value == null || !Float.isFinite(value) || canon > value + 0.01f) {
-            cir.setReturnValue(canon);
+        float scaled = DmzResourcePoolClamp.applyOverhaulScale((StatsData) (Object) this, value);
+        if (scaled > value + 0.01f) {
+            cir.setReturnValue(scaled);
         }
     }
 }

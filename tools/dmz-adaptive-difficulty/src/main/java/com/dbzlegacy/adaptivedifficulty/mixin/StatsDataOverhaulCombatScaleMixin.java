@@ -8,10 +8,11 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Overhaul {@code scaleMultiplier} is native for fusion + the Statistics "Scale Increase"
- * tooltip, but {@code getBaseStatFormula} / {@code getMeleeDamage} never multiply by it.
- * Apply that same prestige scale to combat {@code getTotalMultiplier} only — ENE/STM stay
- * unscaled so ki/stamina pools are not copied (2.4.85).
+ * dmzrevamp 2.1.x does not apply {@code PrestigeSystem.scaleMultiplier} on
+ * {@code getTotalMultiplier} (fusion mixins only add partner scale). DMZ combat getters use
+ * totalMult, so LM applies Overhaul prestige scale here once via
+ * {@link LmOverhaulPrestigeIntegration#combatScaleMultiplier} — never a local formula.
+ * ENE/STM stay unscaled here; pools use {@link DmzResourcePoolClamp} (2.4.85).
  */
 @Mixin(value = StatsData.class, remap = false, priority = 2100)
 public abstract class StatsDataOverhaulCombatScaleMixin {
