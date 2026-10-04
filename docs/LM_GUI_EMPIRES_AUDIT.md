@@ -6,7 +6,7 @@ Date: 2026-10-04 · Live mod count: **141** jars under `mods/`.
 
 | Mod | Role |
 |-----|------|
-| `LegacyMechanics-4.5.115.jar` | Primary LM Forge CNPC menus (`CnpcGuiSupport`, hub, progression, rival, …) |
+| `LegacyMechanics-4.5.116.jar` | Primary LM Forge CNPC menus (`CnpcGuiSupport`, hub, progression, rival, …) |
 | `Noea-Empires-0.9.9-…jar` | Planet/destroyer empire CNPC GUIs (`com.dmzlegacy.noeaempires.*`) |
 | `Noea_Build-1.1.5.jar` | Dragon Block Noea core (space, bosses, combat) |
 | `ProfTools-0.5.0-alpha24-…jar` | In-game studios (progression/forms); preview UX LM already mirrors |
@@ -47,7 +47,7 @@ Empires does **not** use the right-column **player preview**; LM keeps preview (
 
 ## Recommended follow-ups (not all done here)
 
-- Roll `CnpcGuiStyle.brandTitle(...)` across submenus (Rival, Spar, Prestige, Difficulty, Progression) instead of raw `§f§l` strings.
+- ~~Roll `brandTitle` / `brandSubPage` across submenus~~ (done in 4.5.116).
 - Optional **compact width** preset (`360×260`) for pages **without** player preview (admin-only screens).
 - Align footer nav labels with Empires button spacing where CNPC allows (Empires uses full-width rows at y≈220+).
 - Do **not** shrink global `W` on hub — preview column needs `CnpcPlayerPreview.textBandWidth()`.

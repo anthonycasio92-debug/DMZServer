@@ -59,6 +59,17 @@ public final class CnpcGuiStyle {
         return "§6Legacy Mechanics§8 — §f" + page.trim();
     }
 
+    /** {@code Legacy Mechanics — System · Subpage} (replaces colored {@link #subPage} headers). */
+    public static String brandSubPage(String system, String sub) {
+        if (system == null || system.isBlank()) {
+            return brandTitle(sub);
+        }
+        if (sub == null || sub.isBlank()) {
+            return brandTitle(system.trim());
+        }
+        return brandTitle(system.trim() + " · " + sub.trim());
+    }
+
     public static String subGray(String sentence) {
         if (sentence == null || sentence.isBlank()) {
             return "";

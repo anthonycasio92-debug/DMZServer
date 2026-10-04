@@ -53,7 +53,7 @@ public final class CnpcLmPrestigeGui {
     }
 
     private static void paintMain(ServerPlayer player, ICustomGui gui) {
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§dPrestige",
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandTitle("Prestige"),
                 "§7Turn-ins, skill shop, and permanent unlocks");
         List<String> lines = ProgressionGuiApi.prestigeLines(player, "main");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX));
@@ -77,7 +77,7 @@ public final class CnpcLmPrestigeGui {
         }
         Map<String, String> ph = ProgressionGuiApi.prestigePlaceholders(player);
         int held = parseInt(ph.get("held"), 0);
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§d", "Prestige", "Turn-in"),
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandSubPage("Prestige", "Turn-in"),
                 "§7Each button shows points gained before you confirm");
         List<String> info = new ArrayList<>(ProgressionGuiApi.prestigeLines(player, "turnin"));
         info.add("§7Bulk bonus: §f3→4 §8· §f6→9 §8· §f9→15 §7points");
@@ -118,7 +118,7 @@ public final class CnpcLmPrestigeGui {
         int pages = Math.max(1, parseInt(ph.get("shop_pages"), 1));
         int page = Math.min(pages - 1, Math.max(0, pageIndex));
         int pageSize = Math.max(1, parseInt(ph.get("shop_page_size"), 6));
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§d", "Prestige", "Skill shop"),
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandSubPage("Prestige", "Skill shop"),
                 "§7Page §f" + (page + 1) + "/" + pages + CnpcGuiStyle.SEP + "§7Points §f"
                         + ph.getOrDefault("points", "0"));
 
@@ -199,7 +199,7 @@ public final class CnpcLmPrestigeGui {
         boolean canBuyMutant = "true".equalsIgnoreCase(ph.get("mutant_can_buy"));
         String cost = ph.getOrDefault("form_cost", "5");
 
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§d", "Prestige", "Effects"),
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandSubPage("Prestige", "Effects"),
                 "§7Majin and Mutant · §e" + cost + " §7pts · one form at a time");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY,
                 ProgressionGuiApi.prestigeLines(player, "effects"), CnpcGuiStyle.INFO_INLINE_MAX));
@@ -254,7 +254,7 @@ public final class CnpcLmPrestigeGui {
             return;
         }
         Map<String, String> ph = ProgressionGuiApi.prestigePlaceholders(player);
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§d", "Prestige", "Tiers"),
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandSubPage("Prestige", "Tiers"),
                 "§7Permanent unlocks · tiers T1 through T7");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, ProgressionGuiApi.prestigeLines(player, "tiers"),
                         CnpcGuiStyle.INFO_INLINE_MAX));
@@ -289,7 +289,7 @@ public final class CnpcLmPrestigeGui {
         if ("true".equalsIgnoreCase(ph.get("bridge_ok")) && "true".equalsIgnoreCase(ph.get("system_enabled"))) {
             return true;
         }
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§dPrestige", "§cUnavailable");
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandTitle("Prestige"), "§cUnavailable");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY,
                 ProgressionGuiApi.prestigeLines(player, "main"), 3));
         footer(player, gui, row + 8, backPage);

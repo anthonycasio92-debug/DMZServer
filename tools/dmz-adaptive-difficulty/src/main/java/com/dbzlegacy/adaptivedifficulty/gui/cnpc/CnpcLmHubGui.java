@@ -68,7 +68,7 @@ public final class CnpcLmHubGui {
             return;
         }
 
-        row = CnpcGuiSupport.paintSectionTag(gui, ID_SECTION_COMBAT, row + 4, "§8Combat & world scaling");
+        row = CnpcGuiSupport.paintSectionTag(gui, ID_SECTION_COMBAT, row + 4, "Combat & world scaling");
         systemBtn(gui, player, ph, "difficulty", row, CnpcGuiSupport.COL_L, "§aDifficulty",
                 () -> CnpcLmGui.open(player, "difficulty", "main"));
         systemBtn(gui, player, ph, "rival", row, CnpcGuiSupport.COL_R, "§6Rival",
@@ -81,7 +81,7 @@ public final class CnpcLmHubGui {
                 () -> CnpcLmGui.open(player, "prestige", "main"));
         row += gap + 4;
 
-        row = CnpcGuiSupport.paintSectionTag(gui, ID_SECTION_CHARACTER, row, "§8Character & account");
+        row = CnpcGuiSupport.paintSectionTag(gui, ID_SECTION_CHARACTER, row, "Character & account");
         if (skillCheck) {
             CnpcGuiSupport.button(gui, 24, "§eSkill Check", CnpcGuiSupport.COL_L, row,
                     () -> CnpcLmGui.open(player, "skillcheck", "main"));
@@ -100,7 +100,7 @@ public final class CnpcLmHubGui {
                 () -> CnpcLmGui.open(player, "character", "main"));
         row += gap;
 
-        CnpcGuiSupport.button(gui, 26, "§cRemove Android", CnpcGuiSupport.COL_L, row,
+        CnpcGuiSupport.button(gui, 26, CnpcGuiStyle.brandSubPage("Progression", "Remove Android"), CnpcGuiSupport.COL_L, row,
                 () -> CnpcLmGui.open(player, "android_remove", "main"));
         if (staff) {
             CnpcGuiSupport.button(gui, 27, "§cStaff Admin", CnpcGuiSupport.COL_R, row,
