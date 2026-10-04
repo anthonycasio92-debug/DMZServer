@@ -25,7 +25,7 @@ fi
 KEEP_FORGE="${LM_KEEP_FORGE:-LegacyMechanics-4.5.99.jar}"
 KEEP_GUI="${LM_KEEP_GUI:-}"
 RECYCLE_ALL_GUI="${LM_RECYCLE_ALL_GUI:-0}"
-KEEP_MELEE="${LM_KEEP_MELEE:-dmz_mohist_melee_fix-2.12.21.jar}"
+KEEP_MELEE="${LM_KEEP_MELEE:-dmz_mohist_melee_fix-2.12.22.jar}"
 
 export SSHPASS="$PASS"
 SFTP_CMD=(sshpass -e sftp -o StrictHostKeyChecking=accept-new -P "$PORT")

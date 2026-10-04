@@ -1,5 +1,16 @@
 # Mohist M1: animation but no damage
 
+## Fix v2.12.22 — hard-disable Noea experimental grab (Oct 2026)
+
+`mods/dmz_mohist_melee_fix-2.12.22.jar`
+
+When **Dragon Block Noea** (`noeabosses`) is installed, this jar:
+
+- Cancels all `GrabActionC2SPacket` handling and `GrabService.request` (Z grab/throw).
+- Calls `GrabService.setEnabled(server, false)` on start and every ~10s so `/noea experimental grab on` cannot re-enable it.
+
+Requires a **full server restart** after replacing the melee fix jar (Forge mixins).
+
 ## Fix v2.12.21 — handwear + Apotheosis crash (Sep 2026)
 
 `mods/dmz_mohist_melee_fix-2.12.21.jar`

@@ -19,7 +19,7 @@ public final class DmzMohistMeleeFix {
 
     public DmzMohistMeleeFix() {
         LOGGER.info(
-                "[{}] v2.12.20: ghost party heal + saga guard (no wipe on party/death)",
+                "[{}] v2.12.22: Noea experimental grab hard-disabled + ghost party heal / saga guard",
                 MOD_ID
         );
         ReachRepairEvents.register();
