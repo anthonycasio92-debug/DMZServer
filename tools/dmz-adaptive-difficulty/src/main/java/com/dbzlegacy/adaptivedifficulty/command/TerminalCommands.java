@@ -12,10 +12,23 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 /**
  * {@code /terminal} — Lightman's Currency network terminal.
- * Same Bukkit node as the retired CMI alias ({@code cmi.customalias.terminal}).
+ * Donators ({@code legacymechanics.skillcheck}) or players with the retired CMI node
+ * ({@code cmi.customalias.terminal}).
  */
 public final class TerminalCommands {
+    /** Retired CMI alias node. Still honored so existing grants keep working. */
+    public static final String ALIAS_PERMISSION = "cmi.customalias.terminal";
+
     private TerminalCommands() {}
+
+    /** Donators, or anyone granted {@link #ALIAS_PERMISSION}. */
+    public static boolean allowed(ServerPlayer player) {
+        if (player == null) {
+            return false;
+        }
+        return StaffAccess.hasDonatorPermission(player)
+                || StaffAccess.hasPermission(player, ALIAS_PERMISSION);
+    }
 
     public static void register() {
         MinecraftForge.EVENT_BUS.register(new TerminalCommands());
@@ -30,16 +43,12 @@ public final class TerminalCommands {
         AdaptiveDifficultyMod.LOGGER.info("[{}] registered /terminal", AdaptiveDifficultyMod.MOD_ID);
     }
 
-    /** Players who had the old CMI alias, plus ops. */
+    /** Donators or players with {@link #ALIAS_PERMISSION}. Console cannot open the menu. */
     static boolean mayOpen(CommandSourceStack source) {
         if (source == null || !CommandAccess.isPlayerSlashUser(source)) {
             return false;
         }
-        ServerPlayer player = source.m_230896_();
-        if (player == null) {
-            return false;
-        }
-        return StaffAccess.hasPermission(player, "cmi.customalias.terminal");
+        return allowed(source.m_230896_());
     }
 
     private static int open(CommandSourceStack source) {

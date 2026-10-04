@@ -1652,10 +1652,29 @@ public final class ForgeBridge {
             return "§cCould not reach LegacyMechanics mod.";
         }
         try {
+            ClassLoader loader = nms.getClass().getClassLoader();
+            Class<?> gate = Class.forName(
+                    "com.dbzlegacy.adaptivedifficulty.command.TerminalCommands",
+                    true,
+                    loader);
+            Method allowed = null;
+            for (Method cand : gate.getMethods()) {
+                if ("allowed".equals(cand.getName()) && cand.getParameterCount() == 1) {
+                    allowed = cand;
+                    break;
+                }
+            }
+            if (allowed == null) {
+                return "§cTerminal API missing — update LegacyMechanics jar.";
+            }
+            Object ok = allowed.invoke(null, nms);
+            if (!(ok instanceof Boolean openOk) || !openOk) {
+                return "§cTerminal is for donators, or needs the terminal permission.";
+            }
             Class<?> api = Class.forName(
                     "com.dbzlegacy.adaptivedifficulty.currency.LightmanTerminal",
                     true,
-                    nms.getClass().getClassLoader());
+                    loader);
             Method open = null;
             for (Method cand : api.getMethods()) {
                 if ("open".equals(cand.getName()) && cand.getParameterCount() == 1) {

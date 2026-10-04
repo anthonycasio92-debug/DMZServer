@@ -120,7 +120,7 @@ public final class MohistCommandBridge {
             registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
                     "padmin", List.of(), staffPerm);
             registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
-                    "terminal", List.of(), "cmi.customalias.terminal");
+                    "terminal", List.of(), null);
 
             registered = true;
             AdaptiveDifficultyMod.LOGGER.info(

@@ -64,6 +64,23 @@ public final class StaffAccess {
     }
 
     /**
+     * Donator node only ({@code skillCheckPermission}, default {@code legacymechanics.skillcheck}).
+     * Does not require the Skill Check feature flags, so commands that share the donator node
+     * stay available when that service is off.
+     */
+    public static boolean hasDonatorPermission(ServerPlayer player) {
+        if (player == null) {
+            return false;
+        }
+        DifficultyConfig cfg = DifficultyConfig.get();
+        String node = cfg.skillCheckPermission;
+        if (node == null || node.isBlank()) {
+            node = "legacymechanics.skillcheck";
+        }
+        return hasBukkitPermission(player, node);
+    }
+
+    /**
      * Skill Check (donator) access: configured {@code skillCheckPermission}
      * (default {@code legacymechanics.skillcheck}). Staff are <b>not</b> auto-granted —
      * without the node they use {@code /skills} (admin) and do not see Skill Check in the hub.

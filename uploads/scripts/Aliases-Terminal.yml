@@ -10,7 +10,8 @@
 # Delete this key from plugins/CMI/CustomAlias/CustomAlias.yml if it is still there:
 #   Terminal
 #
-# Players who could use the alias still need cmi.customalias.terminal.
+# Donators (legacymechanics.skillcheck) can open /terminal.
+# Anyone else still needs cmi.customalias.terminal.
 #
 # Do NOT re-add a CustomAlias block for terminal — it shadows the mod.
 #

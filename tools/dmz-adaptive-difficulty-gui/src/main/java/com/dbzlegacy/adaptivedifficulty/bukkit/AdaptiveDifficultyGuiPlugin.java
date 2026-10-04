@@ -888,7 +888,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         return handleDifficulty(sender, args);
     }
 
-    /** {@code /terminal} — Lightman's Currency network terminal. Replaces the Fabled skill alias. */
+    /** {@code /terminal} — Lightman's Currency network terminal. Donators, or the terminal permission. */
     private boolean handleTerminal(CommandSender sender) {
         if (!(sender instanceof Player player)) {
             sender.sendMessage("§cPlayers only.");

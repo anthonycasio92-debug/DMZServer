@@ -7,6 +7,7 @@ When you ask for a behavior change, add a row here and a matching check in `audi
 
 | ID | Request (summary) | Introduced | Audit |
 |----|-------------------|------------|--------|
+| terminal-donator | `/terminal` opens for donators (`legacymechanics.skillcheck`) or players with `cmi.customalias.terminal` | 4.5.130+ | manifest §terminal |
 | held-overhaul-sync | Overhaul prestige count matches the LM held wallet, 1:1 from 0 to 10. A missing wallet is filled from faction, the DMZ prestige skill, or the current Overhaul count before that sync | 4.5.129+ | manifest §held overhaul |
 | farming-building-removed | Farming TP and Building TP are not in LegacyMechanics. Harvesting crops and placing blocks do not award training points from this mod | 4.5.128+ | manifest §farming building |
 | lightman-terminal | `/terminal` opens the Lightman's Currency network terminal. The CMI CustomAlias that force-cast the Fabled Terminal skill is retired | 4.5.127+ | manifest §terminal |

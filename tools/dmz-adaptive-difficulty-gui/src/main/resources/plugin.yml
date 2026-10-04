@@ -1,5 +1,5 @@
 name: LegacyMechanicsGUI
-version: '4.5.129'
+version: '4.5.130'
 main: com.dbzlegacy.adaptivedifficulty.bukkit.AdaptiveDifficultyGuiPlugin
 api-version: '1.20'
 author: DBZ Legacy Reborn
@@ -47,10 +47,8 @@ commands:
     permission: legacymechanics.skillcheck
     permission-message: "§cNo permission: legacymechanics.skillcheck"
   terminal:
-    description: Open the Lightman's Currency network terminal
+    description: Open the Lightman's Currency network terminal (donators, or the terminal permission)
     usage: /terminal
-    permission: cmi.customalias.terminal
-    permission-message: "§cNo permission."
   lmdo:
     description: Internal LegacyMechanics GUI action bridge (CMI clicks — not for players)
     usage: /lmdo <rival|spar|difficulty|lm|progression|prestige|skills|skillcheck> <action> [arg] [page]
@@ -62,7 +60,7 @@ permissions:
     description: Use LegacyMechanics admin commands (op or this node)
     default: op
   cmi.customalias.terminal:
-    description: Open /terminal (Lightman's Currency). Same node as the retired CMI alias.
+    description: Open /terminal (Lightman's Currency). Donators with legacymechanics.skillcheck can also open it.
     default: false
   legacymechanics.skillcheck:
     description: Open Skill Check UI (donator)

@@ -154,19 +154,32 @@ def main() -> int:
     terminal = read(SRC / "currency/LightmanTerminal.java")
     terminal_cmd = read(SRC / "command/TerminalCommands.java")
     terminal_plugin = read(BUKKIT / "AdaptiveDifficultyGuiPlugin.java")
+    terminal_bridge = read(BUKKIT / "ForgeBridge.java")
     terminal_yml = read(GUI / "src/main/resources/plugin.yml")
+    terminal_mohist = read(SRC / "command/MohistCommandBridge.java")
+    terminal_staff = read(SRC / "util/StaffAccess.java")
     alias_note = read(ROOT / "uploads/scripts/Aliases-Terminal.yml")
+    term_block = terminal_yml.split("\n  terminal:", 1)[1].split("\n  lmdo:", 1)[0]
     check("/terminal opens Lightman network terminal",
           "TerminalMenuProvider.OpenMenu" in terminal and "SimpleValidator.NULL" in terminal)
     check("/terminal is a player command",
           'playerRoot("terminal")' in terminal_cmd
-          and "cmi.customalias.terminal" in terminal_cmd)
+          and "cmi.customalias.terminal" in terminal_cmd
+          and "hasDonatorPermission" in terminal_cmd)
     check("bukkit /terminal is registered",
           "\n  terminal:" in terminal_yml
           and "cmi.customalias.terminal" in terminal_yml
+          and "permission:" not in term_block
           and '"terminal".equals(name)' in terminal_plugin)
+    check("/terminal allows donators or the alias permission",
+          "hasDonatorPermission" in terminal_staff
+          and "skillCheckPermission" in terminal_staff.split("hasDonatorPermission", 1)[1].split("hasSkillCheck", 1)[0]
+          and "TerminalCommands" in terminal_bridge
+          and '"allowed".equals' in terminal_bridge
+          and '"terminal", List.of(), null' in terminal_mohist)
     check("CMI terminal alias is not reintroduced",
-          "forcecast" not in alias_note and "CustomAlias:" not in alias_note)
+          "forcecast" not in alias_note and "CustomAlias:" not in alias_note
+          and "legacymechanics.skillcheck" in alias_note)
 
     print("\n--- § access (skillcheck + staff admin) ---")
     skill_svc = read(SRC / "progression/shop/SkillCheckService.java")
