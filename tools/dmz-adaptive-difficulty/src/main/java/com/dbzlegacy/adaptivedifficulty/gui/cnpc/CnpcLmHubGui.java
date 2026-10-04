@@ -52,8 +52,8 @@ public final class CnpcLmHubGui {
         boolean staff = StaffAccess.isStaff(player);
         boolean skillCheck = SkillCheckService.canUse(player);
 
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§f§lLegacy Mechanics",
-                "§7Scaling, rivals, sparring, prestige, and character tools");
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.brandTitle("Main menu"),
+                "Scaling, rivals, sparring, prestige, and character tools");
 
         List<String> lines = CnpcPlayerSnapshot.hubLines(who, ph, staff, skillCheck);
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(
