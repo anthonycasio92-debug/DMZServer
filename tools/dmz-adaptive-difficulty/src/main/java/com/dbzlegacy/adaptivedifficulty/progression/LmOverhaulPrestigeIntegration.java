@@ -125,7 +125,7 @@ public final class LmOverhaulPrestigeIntegration {
             Class<?> cls = Class.forName(
                     "com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeSystem");
             for (Method method : cls.getMethods()) {
-                if ("getHeld".equals(method.getName()) && method.getParameterCount() == 1) {
+                if ("getHeldWallet".equals(method.getName()) && method.getParameterCount() == 1) {
                     return toOverhaulCount(((Number) method.invoke(null, player)).intValue());
                 }
             }

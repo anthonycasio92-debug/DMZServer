@@ -356,9 +356,33 @@ public final class PrestigeSystem {
         }
         CompoundTag tag = PersistentDataAccess.get(player);
         if (PersistentDataAccess.isWritable(tag) && tag.m_128441_(KEY_HELD)) {
-            return Math.max(0, Math.min(MAX_HELD, tag.m_128451_(KEY_HELD)));
+            return Math.max(0, Math.min(MAX_HELD, readStoredInt(tag, KEY_HELD)));
         }
         return 0;
+    }
+
+    /**
+     * First sync after Fabled: if the wallet was never written, keep the held number
+     * that already lives on faction 4, the DMZ prestige skill, or the Overhaul count.
+     */
+    public static void ensureHeldRecorded(ServerPlayer player, int overhaulCount) {
+        if (player == null) {
+            return;
+        }
+        CompoundTag tag = PersistentDataAccess.get(player);
+        if (!PersistentDataAccess.isWritable(tag) || tag.m_128441_(KEY_HELD)) {
+            return;
+        }
+        int faction = 0;
+        Integer factionPoints = readFactionPoints(player, FACTION_HELD_ID);
+        if (factionPoints != null) {
+            faction = Math.max(0, factionPoints);
+        }
+        int skill = Math.max(0, DmzProgression.prestige(player));
+        int seed = Math.max(0, Math.max(overhaulCount, Math.max(faction, skill)));
+        seed = Math.min(MAX_HELD, seed);
+        tag.m_128405_(KEY_HELD, seed);
+        mirrorFactionHeld(player, seed);
     }
 
     /** Drop legacy need floors above the veteran held-table gate (e.g. old 140k/150k ladders). */
@@ -521,17 +545,16 @@ public final class PrestigeSystem {
     }
 
     public static int getHeld(ServerPlayer player) {
-        int nbt = 0;
         CompoundTag tag = PersistentDataAccess.get(player);
         if (PersistentDataAccess.isWritable(tag) && tag.m_128441_(KEY_HELD)) {
-            nbt = Math.max(0, tag.m_128451_(KEY_HELD));
+            return heldCountForNeed(player);
         }
-        // Live Prestige NPC used CNPC faction 4 as held tokens — prefer the higher value.
+        // Wallet not written yet — old Prestige NPC stored held on CNPC faction 4.
         Integer faction = readFactionPoints(player, FACTION_HELD_ID);
         if (faction != null) {
-            return Math.max(0, Math.min(MAX_HELD, Math.max(nbt, faction)));
+            return Math.max(0, Math.min(MAX_HELD, faction));
         }
-        return Math.max(0, Math.min(MAX_HELD, nbt));
+        return 0;
     }
 
     private static void setCompleted(ServerPlayer player, int value) {
@@ -586,6 +609,7 @@ public final class PrestigeSystem {
         if (PersistentDataAccess.isWritable(tag)) {
             tag.m_128405_(KEY_HELD, clamped);
         }
+        mirrorFactionHeld(player, clamped);
         try {
             com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampPrestigeBridge
                     .scheduleSyncAfterStatsReset(player);
@@ -650,6 +674,16 @@ public final class PrestigeSystem {
         } catch (Throwable ignored) {
         }
         return null;
+    }
+
+    /** Keep CNPC faction 4 equal to the wallet so a stale faction cannot disagree with Overhaul. */
+    private static void mirrorFactionHeld(ServerPlayer player, int held) {
+        int target = Math.max(0, Math.min(MAX_HELD, held));
+        Integer current = readFactionPoints(player, FACTION_HELD_ID);
+        if (current == null || current == target) {
+            return;
+        }
+        addFactionPoints(player, FACTION_HELD_ID, target - current);
     }
 
     private static boolean addFactionPoints(ServerPlayer player, int factionId, int delta) {

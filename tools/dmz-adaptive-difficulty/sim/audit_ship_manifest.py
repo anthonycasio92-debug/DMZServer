@@ -126,6 +126,16 @@ def main() -> int:
     check("stamina Fabled drain mixin removed",
           not (SRC / "mixin/ResourcesStaminaDrainGuardMixin.java").is_file())
 
+    print("\n--- § held overhaul ---")
+    held_bridge = read(SRC / "progression/bridge/DmzRevampPrestigeBridge.java")
+    held_wallet = read(SRC / "progression/shop/PrestigeSystem.java")
+    check("Overhaul count is the held wallet 1:1",
+          "getHeldWallet" in held_bridge
+          and "toOverhaulCount" in held_bridge
+          and "ensureHeldRecorded" in held_bridge)
+    check("changing held resyncs Overhaul",
+          "scheduleSyncAfterStatsReset" in held_wallet.split("void setHeldPublic", 1)[1].split("void ", 1)[0])
+
     print("\n--- § farming building ---")
     events = read(SRC / "event/DifficultyEvents.java")
     progression = read(SRC / "progression/ProgressionSystem.java")

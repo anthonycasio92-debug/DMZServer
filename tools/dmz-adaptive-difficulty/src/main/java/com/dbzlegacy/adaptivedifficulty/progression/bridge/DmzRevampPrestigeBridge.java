@@ -5,6 +5,7 @@ import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.DmzResourcePoolClamp;
 import com.dbzlegacy.adaptivedifficulty.progression.DmzSkillUtil;
+import com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulPrestigeIntegration;
 import com.dmzrevamp.revamp.prestige.PrestigeSystem;
 import com.dragonminez.common.network.NetworkHandler;
 import com.dragonminez.common.network.S2C.ProgressionSyncS2C;
@@ -81,9 +82,12 @@ public final class DmzRevampPrestigeBridge {
         if (data == null) {
             return;
         }
-        int want = com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeSystem
-                .getHeldWallet(player);
         int current = PrestigeSystem.count(data);
+        com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeSystem
+                .ensureHeldRecorded(player, current);
+        int want = LmOverhaulPrestigeIntegration.toOverhaulCount(
+                com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeSystem
+                        .getHeldWallet(player));
         if (current != want) {
             PrestigeSystem.setCount(data, want);
         }
