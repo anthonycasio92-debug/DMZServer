@@ -7,7 +7,7 @@
 | **`LegacyMechanics-4.5.49-consolidated.jar`** | Canonical base (ki/stamina + CNPC line deployed 2026-09-22) |
 | `LegacyMechanics-4.5.23-direct-dmz-resource-max.jar` | Legacy fallback only if consolidated base missing |
 
-`build.sh` merges CNPC/GUI from `src/` and overlays a **ki/stamina pool slice** (compiled `DmzResourcePoolClamp`, pool mixins, bridge sync) plus **`legacymechanics.mixins.json`** including `StatsDataHudPoolMaxMixin` so HUD bars use the same cap as clamps.
+`build.sh` merges CNPC/GUI from `src/` and overlays the ki/stamina pool slice plus **`legacymechanics.mixins.json`**. That config must **not** register `StatsDataHudPoolMaxMixin` or `StatsDataOverhaulCombatScaleMixin`. Prestige scale stays with DragonMineZ and dmzrevamp.
 
 Refresh from live after a good deploy:
 

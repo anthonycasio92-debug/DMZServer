@@ -9,11 +9,10 @@ import net.minecraft.server.level.ServerPlayer;
  * Bridge to dmzrevamp Overhaul prestige — LM must <b>not</b> reimplement
  * {@code 1 + count × scaleBonusPerPrestige} or other Overhaul scaling formulas in Java.
  * <p>
- * {@link #combatScaleMultiplier(StatsData)} is the only supported scale source: it reflects
- * {@code com.dmzrevamp.revamp.prestige.PrestigeSystem.scaleMultiplier}. LM applies that value
- * once on combat {@code getTotalMultiplier} ({@code StatsDataOverhaulCombatScaleMixin}) and
- * once on ki/stamina canonical max ({@link DmzResourcePoolClamp#applyOverhaulScale}) with ENE/STM
- * excluded from totalMult so pools are not double-scaled.
+ * {@link #combatScaleMultiplier(StatsData)} only <b>reads</b>
+ * {@code com.dmzrevamp.revamp.prestige.PrestigeSystem.scaleMultiplier} for display.
+ * LM does not multiply combat, ki, or stamina by that value. DragonMineZ and dmzrevamp
+ * already apply their own scale.
  * <p>
  * Level caps and max stat totals are aligned via mixins on Overhaul APIs, not a parallel scale
  * ladder ({@link LmOverhaulCapMath}, {@code DmzRevampPrestigeCapMixin}).

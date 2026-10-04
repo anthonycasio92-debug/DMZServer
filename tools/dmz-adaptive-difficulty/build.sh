@@ -240,7 +240,8 @@ merge_onto_base_jar() {
       cp -a "$OUT/com/dbzlegacy/adaptivedifficulty/progression/bridge/." \
         "$merge/com/dbzlegacy/adaptivedifficulty/progression/bridge/"
     fi
-    for mixin_cls in StatsDataHudPoolMaxMixin ResourcesPoolClampMixin ResourcesLoadClampMixin \
+    for mixin_cls in StatsDataHudPoolMaxMixin StatsDataOverhaulCombatScaleMixin \
+        ResourcesPoolClampMixin ResourcesLoadClampMixin \
         StatsDataRestoreMultiplierClampMixin StatsDataLoadClampMixin; do
       if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/mixin/${mixin_cls}.class" ]]; then
         cp "$OUT/com/dbzlegacy/adaptivedifficulty/mixin/${mixin_cls}.class" \
@@ -257,8 +258,8 @@ merge_onto_base_jar() {
     cp "$RES/legacymechanics.mixins.json" "$merge/legacymechanics.mixins.json"
   fi
   (cd "$merge" && jar cfm "$dest" META-INF/MANIFEST.MF .)
-  if ! unzip -p "$dest" legacymechanics.mixins.json | grep -q '"StatsDataHudPoolMaxMixin"'; then
-    echo "ERROR: shipped mixins.json must register StatsDataHudPoolMaxMixin (HUD/clamp split-brain)" >&2
+  if unzip -p "$dest" legacymechanics.mixins.json | grep -Eq '"StatsDataHudPoolMaxMixin"|"StatsDataOverhaulCombatScaleMixin"'; then
+    echo "ERROR: shipped mixins.json must not register LM prestige scale mixins" >&2
     exit 1
   fi
   rm -rf "$tmp" "$merge"

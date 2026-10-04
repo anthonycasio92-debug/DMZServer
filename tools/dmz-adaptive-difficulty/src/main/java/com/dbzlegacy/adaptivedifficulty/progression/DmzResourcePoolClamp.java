@@ -16,12 +16,9 @@ import net.minecraft.server.level.ServerPlayer;
 /**
  * One prestige-aware ki/stamina maximum used by HUD, Fabled, clamps, and Overhaul sync.
  *
- * <p>{@code actualMaxEnergy}/{@code actualMaxStamina} are the live DMZ
- * {@code getMaxEnergy}/{@code getMaxStamina} values. The HUD mixin
- * ({@link com.dbzlegacy.adaptivedifficulty.mixin.StatsDataHudPoolMaxMixin}) multiplies
- * those returns by Overhaul {@code scaleMultiplier} once — the same rule shipped in
- * LegacyMechanics 2.4.115 / 4.5.9. Clamps and Fabled call the getters so they share
- * that cap. Do not rebuild a separate HUD formula for the bar.
+ * <p>{@code actualMaxEnergy}/{@code actualMaxStamina} are the live
+ * {@code getMaxEnergy}/{@code getMaxStamina} values from DragonMineZ and the other
+ * installed mods. LegacyMechanics does not multiply those caps by a prestige scale.
  *
  * <p>Currents clamp to those maxima only — never to the unscaled HUD reconstruction
  * (2.4.93) and never by raising the advertised max to the overflowing current.
@@ -41,21 +38,8 @@ public final class DmzResourcePoolClamp {
         return Boolean.TRUE.equals(READING_NATIVE.get());
     }
 
-    /** Multiply a native pool by Overhaul {@code scaleMultiplier} once (2.4.115). */
+    /** Identity. Prestige scale is owned by dmzrevamp / DragonMineZ, not LM. */
     public static float applyOverhaulScale(StatsData data, float base) {
-        if (!Float.isFinite(base) || base <= POWER_RELEASE_FLOOR) {
-            return base;
-        }
-        try {
-            double scale = LmOverhaulPrestigeIntegration.combatScaleMultiplier(data);
-            if (Double.isFinite(scale) && scale > 1.000_001d) {
-                float scaled = (float) (base * scale);
-                if (Float.isFinite(scaled) && scaled > POWER_RELEASE_FLOOR) {
-                    return scaled;
-                }
-            }
-        } catch (Throwable ignored) {
-        }
         return base;
     }
 

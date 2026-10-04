@@ -13,9 +13,7 @@ import net.minecraft.world.entity.player.Player;
  * Live combat numbers <b>after</b> Overhaul {@code scaleMultiplier}
  * ({@code 1 + prestige × scaleBonusPerPrestige}).
  * <p>
- * Offense getters ({@code getMeleeDamage}, strike, ki) already include that scale
- * via {@code getTotalMultiplier}. {@code getDefense}/{@code getMaxDefense} do not —
- * they skip total-multiplier — so defense is multiplied here once.
+ * Combat numbers are the live getters. LM does not multiply them by prestige scale.
  */
 public final class LmOverhaulScaledCombat {
     private LmOverhaulScaledCombat() {}
@@ -53,11 +51,11 @@ public final class LmOverhaulScaledCombat {
     }
 
     public static double defense(StatsData data) {
-        return sane(read(data, StatsData::getDefense, 1.0d) * scale(data), 1.0d);
+        return sane(read(data, StatsData::getDefense, 1.0d), 1.0d);
     }
 
     public static double maxDefense(StatsData data) {
-        return sane(read(data, StatsData::getMaxDefense, 1.0d) * scale(data), 1.0d);
+        return sane(read(data, StatsData::getMaxDefense, 1.0d), 1.0d);
     }
 
     public static double health(StatsData data) {

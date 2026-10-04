@@ -1381,12 +1381,12 @@ def main() -> int:
           "maxAssignableTotal" in revamp_cap
           and "LmOverhaulCapMath.maxAssignableTotal" in revamp_cap)
     combat_scale = read(SRC / "com/dbzlegacy/adaptivedifficulty/mixin/StatsDataOverhaulCombatScaleMixin.java")
-    check("Overhaul combat scale uses scaleMultiplier",
-          "getTotalMultiplier" in combat_scale
-          and "combatScaleMultiplier" in combat_scale
-          and "isResourcePoolStat" in combat_scale)
-    check("mixins.json registers combat scale mixin",
-          '"StatsDataOverhaulCombatScaleMixin"' in mixins_json)
+    check("LM combat mixin does not multiply totalMult",
+          "combatScaleMultiplier" not in combat_scale
+          and "setReturnValue" not in combat_scale)
+    check("mixins.json does not register LM prestige scale mixins",
+          '"StatsDataOverhaulCombatScaleMixin"' not in mixins_json
+          and '"StatsDataHudPoolMaxMixin"' not in mixins_json)
     scaled_helper = read(SRC / "com/dbzlegacy/adaptivedifficulty/calc/LmOverhaulScaledCombat.java")
     check("Overhaul scaled combat helper",
           "combatScaleMultiplier" in scaled_helper
@@ -1478,11 +1478,11 @@ def main() -> int:
           and "data.getMaxEnergy()" in pool_clamp)
     hud_pool = read(SRC / "com/dbzlegacy/adaptivedifficulty/mixin/StatsDataHudPoolMaxMixin.java")
     build_sh = read(lm_root / "build.sh")
-    check("build ships StatsDataHudPoolMaxMixin in mixins.json",
-          "StatsDataHudPoolMaxMixin" in build_sh
-          and '"StatsDataHudPoolMaxMixin"' in mixins_json)
-    check("HUD pool max mixin scales getter return once (2.4.115)",
-          "applyOverhaulScale" in hud_pool and "scaled > value" in hud_pool)
+    check("build rejects LM prestige scale mixins",
+          "must not register LM prestige scale mixins" in build_sh
+          and '"StatsDataHudPoolMaxMixin"' not in mixins_json)
+    check("HUD pool mixin does not rescale max",
+          "setReturnValue" not in hud_pool and "applyOverhaulScale" not in hud_pool)
     check("EnergyManaSync does not raise max to overflowing current",
           "maxEnergy = currentEnergy" not in energy_mana
           and "clampCurrentToMax" in energy_mana)

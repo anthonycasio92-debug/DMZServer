@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
-"""Fail if Legacy Mechanics reimplements dmzrevamp Overhaul prestige scale locally.
+"""Fail if Legacy Mechanics applies its own prestige scale.
 
 Policy:
-  - Combat/pool prestige scale must come from dmzrevamp PrestigeSystem.scaleMultiplier only
-    (via LmOverhaulPrestigeIntegration.combatScaleMultiplier).
-  - LM may apply that value once on getTotalMultiplier (combat) and once on pool max (ENE/STM
-    excluded from totalMult). It must not duplicate 1 + count × scaleBonusPerPrestige in Java.
-  - Resource pool ratio scaling in OverhaulPrestigeResourceScale is sync-only when Overhaul
-    prestige is off; when on, only clamp/refill via DmzResourcePoolClamp.
+  - DragonMineZ and dmzrevamp own combat, ki, and stamina scale.
+  - LM may read PrestigeSystem.scaleMultiplier for display only.
+  - LM must not multiply getTotalMultiplier, getMaxEnergy, getMaxStamina, or defense by that scale.
+  - LM must not duplicate 1 + count × scaleBonusPerPrestige in Java.
 """
 from __future__ import annotations
 
@@ -43,16 +41,14 @@ def main() -> int:
                 errors.append(f"{rel}: scaleBonusPerPrestige must not appear in code (delegate to Overhaul)")
 
     combat = read("mixin/StatsDataOverhaulCombatScaleMixin.java")
-    if "combatScaleMultiplier" not in combat:
-        errors.append("StatsDataOverhaulCombatScaleMixin must use combatScaleMultiplier")
-    if "integrationActive()" not in combat:
-        errors.append("StatsDataOverhaulCombatScaleMixin must gate on integrationActive()")
-    if re.search(r"base\s*\*\s*scale\s*\*\s*scale", combat):
-        errors.append("StatsDataOverhaulCombatScaleMixin must not double-multiply scale")
+    if "combatScaleMultiplier" in combat or "base * scale" in combat or "setReturnValue" in combat:
+        errors.append("StatsDataOverhaulCombatScaleMixin must not multiply getTotalMultiplier")
 
     pool = read("progression/DmzResourcePoolClamp.java")
-    if "LmOverhaulPrestigeIntegration.combatScaleMultiplier" not in pool:
-        errors.append("DmzResourcePoolClamp must use combatScaleMultiplier for pool scale")
+    if "combatScaleMultiplier" in pool:
+        errors.append("DmzResourcePoolClamp must not apply combatScaleMultiplier")
+    if re.search(r"base\s*\*\s*scale", pool):
+        errors.append("DmzResourcePoolClamp must not multiply pool max by scale")
 
     resource_scale = read("progression/bridge/OverhaulPrestigeResourceScale.java")
     if "scaleOnMaxIncrease" not in resource_scale:
@@ -61,24 +57,21 @@ def main() -> int:
         errors.append("OverhaulPrestigeResourceScale must branch on overhaulPrestigeEnabled()")
 
     scaled = read("calc/LmOverhaulScaledCombat.java")
-    if scaled.count("* scale(data)") > 2:
-        errors.append("LmOverhaulScaledCombat applies scale too many times (melee/ki use getters; defense at most twice)")
-    melee_block = scaled.split("public static double melee", 1)[-1].split("public static double strike", 1)[0]
-    if "* scale(data)" in melee_block or "* scale(" in melee_block:
-        errors.append("LmOverhaulScaledCombat must not multiply melee by scale (getMeleeDamage already scaled)")
+    if "* scale(data)" in scaled or "* scale(" in scaled:
+        errors.append("LmOverhaulScaledCombat must not multiply combat stats by scale")
 
     mixins = (ROOT / "src/main/resources/legacymechanics.mixins.json").read_text(encoding="utf-8")
-    if '"StatsDataOverhaulCombatScaleMixin"' not in mixins:
-        errors.append("legacymechanics.mixins.json must register StatsDataOverhaulCombatScaleMixin")
-    if '"StatsDataHudPoolMaxMixin"' not in mixins:
-        errors.append("legacymechanics.mixins.json must register StatsDataHudPoolMaxMixin")
+    if '"StatsDataOverhaulCombatScaleMixin"' in mixins:
+        errors.append("legacymechanics.mixins.json must not register StatsDataOverhaulCombatScaleMixin")
+    if '"StatsDataHudPoolMaxMixin"' in mixins:
+        errors.append("legacymechanics.mixins.json must not register StatsDataHudPoolMaxMixin")
 
     if "return data == null ? 0f : data.getMaxEnergy()" not in pool:
-        errors.append("DmzResourcePoolClamp.actualMaxEnergy must be live getMaxEnergy (2.4.115)")
+        errors.append("DmzResourcePoolClamp.actualMaxEnergy must be live getMaxEnergy")
 
     hud = read("mixin/StatsDataHudPoolMaxMixin.java")
-    if "applyOverhaulScale" not in hud or "scaled > value" not in hud:
-        errors.append("StatsDataHudPoolMaxMixin must scale the getter return (2.4.115), not replace it")
+    if "applyOverhaulScale" in hud or "setReturnValue" in hud:
+        errors.append("StatsDataHudPoolMaxMixin must not change getMaxEnergy/getMaxStamina")
 
     print("=== Overhaul scale delegation audit ===")
     for e in errors:
@@ -86,7 +79,7 @@ def main() -> int:
     if errors:
         print(f"\n{len(errors)} error(s)")
         return 1
-    print("  OK  LM delegates prestige scale to dmzrevamp; single apply paths")
+    print("  OK  LM does not apply its own prestige scale")
     return 0
 
 
