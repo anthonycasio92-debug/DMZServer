@@ -13,11 +13,11 @@ progression / CNPC-free / GUI-audit conversation thread — do not revert.
 | Mentor invite **1 hour** (Pending Accept/Decline) | `SparringSystem.MENTOR_INVITE_MS` | locked |
 | Spar Stats: last **3** spars as **individual** report cards | `appendRecentReport` | locked |
 | Spar TP Msg toggle GUI-only (no `/spar tpmsg`) | Spar GUI / `SparGuiApi` | locked |
-| Manual meditation **30 min** / auto **15 min** | `MeditationProgression` | locked |
+| Meditation levels near a Living World circle; no `/progression meditation` slash | `LivingWorldNearbyMeditation` | locked |
 | Player Prestige + Remove Android on hub (not staff-only) | Hub chest/CMI/chat | locked |
-| Player slash whitelist: `/lm` `/spar` `/difficulty` `/rival` `/progression meditation` + `/skillcheck` | Bukkit+Forge gates | locked |
+| Player slash whitelist: `/lm` `/spar` `/difficulty` `/rival` `/skillcheck` | Bukkit+Forge gates | locked |
 | Prestige / android remove / skills via GUI only for players | `/prestige` staff slash; `/lm` hub | locked |
-| `/progression` player root: meditation only | `helpOrGui`, Bukkit tree | locked |
+| `/progression` is staff-only; meditation is not a slash command | `ProgressionCommands`, Bukkit tree | locked |
 | Hub hops via `/lmdo lm open hub` (not bare `/lm`) | All system GUIs | locked |
 | Inspect sessions preserved; `android_remove` inspectable | `AdaptiveDifficultyGuiPlugin` | locked |
 | Chat-backend Remove Android opens inventory confirm | `isAndroidRemovePage` | locked |

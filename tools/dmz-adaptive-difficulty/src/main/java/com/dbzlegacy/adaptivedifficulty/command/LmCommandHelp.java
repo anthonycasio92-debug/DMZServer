@@ -229,11 +229,11 @@ public final class LmCommandHelp {
     public static String progressionPlayer() {
         return LmStaffHelp.build(
                 "Progression",
-                "/progression",
-                "§7Spar to raise Potential Unlock. Prestige and shop live under §f/lm§7.",
-                new LmStaffHelp.Section("Android",
-                        LmStaffHelp.cmd("/progression android remove", "remove android (opens hub flow)"),
-                        LmStaffHelp.note("Prestige and shop: use /lm open prestige")));
+                "/lm",
+                "§7Spar to raise Potential Unlock. Prestige, shop, and Android live under §f/lm§7.",
+                new LmStaffHelp.Section("Hub",
+                        LmStaffHelp.cmd("/lm", "open the hub"),
+                        LmStaffHelp.note("Staff tools: /progression help")));
     }
 
     public static String progressionStaff() {
@@ -264,7 +264,7 @@ public final class LmCommandHelp {
                 new LmStaffHelp.Section("Maintenance",
                         LmStaffHelp.cmd("/enddragon clear", "remove stray end dragons"),
                         LmStaffHelp.cmd("/enddragon repair", "repair End podium"),
-                        LmStaffHelp.cmd("/enddragon spawn", "disabled — use Difficulty menu")));
+                        LmStaffHelp.note("Players summon from the Difficulty menu")));
     }
 
     public static String skillCheck() {

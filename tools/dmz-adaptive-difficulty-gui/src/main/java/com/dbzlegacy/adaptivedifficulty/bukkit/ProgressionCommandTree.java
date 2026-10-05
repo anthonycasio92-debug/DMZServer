@@ -33,7 +33,7 @@ public final class ProgressionCommandTree implements TabCompleter {
     private static final List<String> PAGES = List.of(
             "main", "skills", "tp", "race", "combat", "end", "utility",
             "admin", "flags", "help", "status", "boost_panel",
-            "android_panel", "android_convert", "android_remove", "flags_fabled"
+            "android_panel", "android_convert", "android_remove"
     );
     private static final List<String> FLAGS = List.of(
             "master", "potential",
@@ -137,7 +137,7 @@ public final class ProgressionCommandTree implements TabCompleter {
             }
             // Shorthand: /progression skills|tp|race|… opens that GUI page
             case "skills", "tp", "race", "combat", "end", "utility",
-                 "boost_panel", "android_convert", "android_remove", "android_panel", "flags_fabled" -> {
+                 "boost_panel", "android_convert", "android_remove", "android_panel" -> {
                 plugin.openProgressionRespectingConfig(player, sub);
                 yield true;
             }

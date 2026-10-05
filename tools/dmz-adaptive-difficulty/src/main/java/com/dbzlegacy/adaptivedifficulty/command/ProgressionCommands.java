@@ -22,7 +22,7 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
-/** {@code /progression} — natural progression (staff tools + meditation status). */
+/** {@code /progression} — staff progression tools. Meditation is not a slash command. */
 public final class ProgressionCommands {
     private ProgressionCommands() {}
 
@@ -89,7 +89,6 @@ public final class ProgressionCommands {
                 .requires(StaffAccess::isStaffSource)
                 .executes(ctx -> endDragonHelp(ctx.getSource()))
                 .then(Commands.m_82127_("help").executes(ctx -> endDragonHelp(ctx.getSource())))
-                .then(Commands.m_82127_("spawn").executes(ctx -> endSpawnDenied(ctx.getSource())))
                 .then(Commands.m_82127_("repair").executes(ctx -> endRepair(ctx.getSource())))
                 .then(Commands.m_82127_("clear").executes(ctx -> endClear(ctx.getSource()))));
 
@@ -363,16 +362,6 @@ public final class ProgressionCommands {
         return 1;
     }
 
-    private static int endSpawnDenied(CommandSourceStack source) {
-        ServerPlayer p = playerOrNull(source);
-        if (p == null) {
-            reply(source, null,
-                    "§cStaff can’t spawn dragons from here anymore. §7Players use the Difficulty menu; staff use §f/enddragon clear§7.");
-            return 0;
-        }
-        return com.dbzlegacy.adaptivedifficulty.progression.end.EndDimensionStrength.cmdSpawnDragon(p);
-    }
-
     private static int endRepair(CommandSourceStack source) {
         ServerPlayer p = playerOrNull(source);
         if (p == null) {
@@ -387,9 +376,9 @@ public final class ProgressionCommands {
     }
 
     private static LiteralArgumentBuilder<CommandSourceStack> build(String name) {
-        // Root is open so players can run meditation status + android remove.
-        // Staff-only leaves keep .requires(staff) / handler checks.
+        // Staff and console only. There is no meditation slash command.
         return Commands.m_82127_(name)
+                .requires(StaffAccess::isStaffSource)
                 .executes(ctx -> helpOrGui(ctx.getSource()))
                 .then(Commands.m_82127_("gui")
                         .requires(ProgressionCommands::staff)

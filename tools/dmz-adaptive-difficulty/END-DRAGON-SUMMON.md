@@ -17,7 +17,7 @@
 - Hygiene keeps **at most one living dragon per summoner** and never culls another player's fight.
 
 ## Staff
-- **No staff spawn** — `/enddragon`, `/enddragon spawn`, and `/spawndragon` are denied.
+- **No staff spawn** — `/enddragon spawn` and `/spawndragon` are not commands. Players summon from the Difficulty menu.
 - Clear: `/cleardragons`, `/killdragons`, `/enddragon clear|cleanup`
 - Repair exit podium: `/enddragon repair`
 - Bare `/enddragon` prints staff usage help

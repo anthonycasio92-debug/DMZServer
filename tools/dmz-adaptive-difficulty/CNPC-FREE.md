@@ -17,7 +17,7 @@ reference only** — do not load them while matching `enable*` flags are ON.
 | SkillCheck / SkillUnlock / trigger 21 | `/skillcheck` (perm) · NPC tag `lm_skillcheck` |
 | End Dimension Strength / triggers 50–51 | `/enddragon clear|repair` · `/cleardragons` |
 | Global TP Boost / triggers 30–31 | `/progression boost …` |
-| Meditation + ChangeBiomeMED / trigger 41 | auto rotate · `/progression meditation next` |
+| Meditation + ChangeBiomeMED / trigger 41 | Living World circle; trigger is a no-op |
 | Android trigger 45 | `/progression android [player]` |
 | Flight / SprintJump / Potential / Farming / combat / Fabled bridges / Race Lock / Yardrat / ShadowDummy / StatChecker | automatic (Forge events) |
 

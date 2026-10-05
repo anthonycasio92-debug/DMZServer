@@ -9,17 +9,9 @@
  fights the mod's global trial rotator
  (config/legacymechanics/meditation-trial.json).
 
- Behavior lives in Java with script parity:
-   - 15-minute random trial rotation (avoid immediate repeat)
-   - Focus: first 10s of charge, then release & re-charge
-   - Wrong-biome warn after 10s (60s hard CD)
-   - Same biomes / condition text as the old script
-
- Staff: /progression meditation next
- Status: /progression meditation
-
- Do NOT re-enable the tick handlers below unless you disable
- enableMeditation in the Forge mod.
+ The old trainer and /progression meditation are gone.
+ Meditation levels while the player is already meditating
+ near a Living World circle. Do not re-enable these handlers.
 ============================================================
 */
 

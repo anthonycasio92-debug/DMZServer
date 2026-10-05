@@ -67,7 +67,7 @@ public final class ProgressionGuiApi {
                 "§8       end endportal shadow statchecker");
     }
 
-    /** Text status (flags + active boost + meditation trial). */
+    /** Text status (flags + active boost). */
     public static String statusText() {
         return ProgressionSystem.statusSummary();
     }
@@ -137,10 +137,8 @@ public final class ProgressionGuiApi {
                 com.dbzlegacy.adaptivedifficulty.progression.end.EndDimensionStrength.cmdRepairPodium(actor);
                 yield "";
             }
-            case "spawn", "spawndragon" -> {
-                com.dbzlegacy.adaptivedifficulty.progression.end.EndDimensionStrength.cmdSpawnDragon(actor);
-                yield "";
-            }
+            case "spawn", "spawndragon" ->
+                    "§cStaff dragon spawn is not a command. §7Players summon from §f/difficulty§7.";
             default -> "§7Staff: §fclear§7 / §frepair§7. §8Player summons: Difficulty GUI only.";
         };
     }

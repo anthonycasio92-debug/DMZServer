@@ -187,6 +187,22 @@ def main() -> int:
           and "LivingWorldNearbyMeditation" in prog_sys
           and "MeditationProgression" not in nearby)
 
+    print("\n--- § commands ---")
+    prog_cmds = read(SRC / "command/ProgressionCommands.java")
+    cmd_help = read(SRC / "command/LmCommandHelp.java")
+    build_body = prog_cmds.split("build(String name)")[1].split("private static boolean staff")[0] \
+        if "build(String name)" in prog_cmds else ""
+    check("no meditation slash command",
+          'm_82127_("meditation")' not in prog_cmds
+          and "/progression meditation" not in cmd_help
+          and "/progression meditation" not in prog_cmds)
+    check("enddragon spawn is not a command",
+          'm_82127_("spawn")' not in prog_cmds
+          and "/enddragon spawn" not in cmd_help)
+    check("progression root is staff",
+          ".requires(StaffAccess::isStaffSource)" in build_body
+          and "androidRemoveGuiHint" in prog_cmds)
+
     print("\n--- § fabled removed ---")
     bridge_dir = SRC / "progression/bridge"
     check("FabledBridge class removed", not (bridge_dir / "FabledBridge.java").is_file())

@@ -477,7 +477,7 @@ Purge now discards entities in Java and no-ops when empty (same for crystal clea
 ## Player command whitelist (2.3.54)
 
 Players may slash only:
-`/lm` · `/difficulty` · `/rival` · `/spar` · `/progression meditation` · `/skillcheck` (donator).
+`/lm` · `/difficulty` · `/rival` · `/spar` · `/skillcheck` (donator). `/progression` is staff-only.
 
 Prestige, Remove Android, Skills, and other progression actions are **GUI-only**
 via `/lm` (CMI clicks still use internal `/lmdo`). Staff keep full slash trees.

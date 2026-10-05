@@ -21,7 +21,7 @@ Staff UI (`/progression` / `/prog`) is a **category hub** matching the script fa
 
 | Audience | Commands |
 |----------|----------|
-| All players | `/lm`, `/difficulty`, `/rival`, `/spar`, `/prestige`, `/lm` → Remove Android, `/progression android remove` |
+| All players | `/lm`, `/difficulty`, `/rival`, `/spar`, `/lm` → Prestige · Remove Android |
 | Donators | `/skillcheck` — requires LuckPerms `legacymechanics.skillcheck` |
 | Staff | `/progression` · `/prog` · `/skills` · Flags / Logs · Android convert |
 

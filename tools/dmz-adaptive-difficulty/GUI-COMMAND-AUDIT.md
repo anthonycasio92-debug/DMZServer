@@ -25,7 +25,7 @@ reskin (head parts shop under reskin). Config flags (`raceChange`, `classChange`
 | Prestige | `/prestige` | PrestigeChest / CmiPrestige / inventory fallback | `lm_prestige` | yes | — |
 | Skill Check | `/skillcheck` | SkillsChest / CmiSkills / SkillsMenu | `lm_skillcheck` | donator | — |
 | Skills admin | `/skills` | same Skills GUIs | hub | staff | unlock admin |
-| Progression | `/progression`, `/prog` | ProgressionChest / CmiProg / ProgChat | hub staff | meditation + android remove | flags / boost / convert |
+| Progression | `/progression`, `/prog` | ProgressionChest / CmiProg / ProgChat | hub staff | staff only | flags / boost / convert |
 | Character | `/lmdo lm open character` | CharacterServicesChest | hub slot 30 | services perm | cooldown clear admin |
 | End dragon | `/enddragon clear|repair`, `/cleardragons`, `/killdragons` (`/spawndragon` denied) | — | — | staff (`StaffAccess`) | clear/repair only |
 | Bridge | `/lmdo …` | — | CMI clicks | internal | — |
@@ -104,7 +104,7 @@ CMI inventory clicks → `/lmdo <system> <action> …` → `ForgeBridge.*HandleD
 1. Install matching `LegacyMechanics-2.4.28.jar` + `LegacyMechanicsGUI-2.4.28.jar`.
 2. `/lm` → Difficulty / Rival / Spar / Prestige / Character Services / Remove Android all open.
 3. Hub ← from each system returns to hub (inspect session preserved for staff).
-4. Non-staff: `/progression` help text; `/progression meditation`; `/progression android remove`.
+4. Non-staff: `/lm`, `/difficulty`, `/rival`, `/spar`, `/skillcheck`. `/progression` is staff-only.
 5. Staff: `/progression gui`; `/enddragon` with Bukkit OP (no Forge level-2 required).
 6. Donator: `/skillcheck` / NPC `lm_skillcheck`; staff without node sees Skills not Skill Check.
 7. `guiBackend=chat|chest|cmi`: Remove Android still opens confirm inventory.

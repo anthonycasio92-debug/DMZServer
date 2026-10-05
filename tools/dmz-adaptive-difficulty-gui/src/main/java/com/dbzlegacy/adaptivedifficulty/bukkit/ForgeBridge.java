@@ -1642,7 +1642,7 @@ public final class ForgeBridge {
         }
     }
 
-    /** Staff: End dragon spawn/clear via {@code /lmdo enddragon spawn|clear}. */
+    /** Staff: End dragon clear/repair via {@code /lmdo enddragon clear|repair}. */
     public static String endDragon(Player actor, String action) {
         Object nms = nmsPlayer(actor);
         if (nms == null) {
@@ -1694,7 +1694,7 @@ public final class ForgeBridge {
         return progressionHelp(null);
     }
 
-    /** Chat help; staff/op see full tree, others only meditation. */
+    /** Chat help; staff/op see the full tree, others are pointed at /lm. */
     public static String progressionHelp(Player player) {
         try {
             Object nms = player == null ? null : nmsPlayer(player);
@@ -1719,7 +1719,7 @@ public final class ForgeBridge {
         }
     }
 
-    /** Text flag/boost/meditation status summary. */
+    /** Text flag and boost status summary. */
     public static String progressionStatus() {
         try {
             ClassLoader cl = preferredProgressionClassLoader();
