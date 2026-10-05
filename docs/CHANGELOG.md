@@ -1,8 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** (previous `main`) through **4.5.156**. `main` is at 4.5.153. This branch adds a working android remove, keeps dragon spawn off, and lets every player open Skill Check from the NPC.
+What changed from **4.5.147** (previous `main`) through **4.5.157**. `main` is at 4.5.153. This branch adds a working android remove, keeps dragon spawn off, and lets every player open Skill Check from the NPC.
 
-The live mods folder gets `LegacyMechanics-4.5.156.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.5.157.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+
+## Dojo war tracking
+
+While a dojo war is active, the other dojo's members in your world show up in Noea's tracking signature scan. Open Scan / Track and the compass points at the nearest one until you pick a different signature. Members in another dimension do not show. Positions use the same 4-block snap as other signatures.
 
 ## Meditation
 

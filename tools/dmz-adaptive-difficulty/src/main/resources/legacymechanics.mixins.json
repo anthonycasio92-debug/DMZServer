@@ -22,7 +22,8 @@
     "ResourcesEnergyDrainGuardMixin",
     "ResourcesDeathTpPenaltyMixin",
     "ResourcesPoolClampMixin",
-    "ResourcesLoadClampMixin"
+    "ResourcesLoadClampMixin",
+    "DojoWarSenseMixin"
   ],
   "injectors": {
     "defaultRequire": 1

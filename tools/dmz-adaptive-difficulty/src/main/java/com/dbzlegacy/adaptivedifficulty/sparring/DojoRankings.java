@@ -396,6 +396,51 @@ public final class DojoRankings {
         return 1 + bond.apprenticeCount();
     }
 
+    /**
+     * Online members of the dojo this player is actively at war with, in the same world.
+     * Empty when there is no active war.
+     */
+    public static List<ServerPlayer> onlineWarOpponents(ServerPlayer viewer) {
+        List<ServerPlayer> out = new ArrayList<>();
+        if (viewer == null) {
+            return out;
+        }
+        String key = homeDojoKey(viewer);
+        if (key == null) {
+            return out;
+        }
+        SparStore.DojoChallenge active = activeChallengeFor(key);
+        if (active == null) {
+            return out;
+        }
+        String enemy = key.equalsIgnoreCase(active.fromDojoUuid)
+                ? active.toDojoUuid
+                : active.fromDojoUuid;
+        if (enemy == null || enemy.isBlank()) {
+            return out;
+        }
+        MinecraftServer server = viewer.m_20194_();
+        if (server == null) {
+            return out;
+        }
+        for (ServerPlayer other : server.m_6846_().m_11314_()) {
+            if (other == null || other == viewer) {
+                continue;
+            }
+            if (!other.m_6084_() || other.m_5833_()) {
+                continue;
+            }
+            if (other.m_9236_() != viewer.m_9236_()) {
+                continue;
+            }
+            String theirDojo = homeDojoKey(other);
+            if (theirDojo != null && theirDojo.equalsIgnoreCase(enemy)) {
+                out.add(other);
+            }
+        }
+        return out;
+    }
+
     private static boolean isActiveChallenge(String keyA, String keyB) {
         SparStore.DojoChallenge c = findChallenge(keyA, keyB);
         return c != null && c.active && c.expiresAt > System.currentTimeMillis();
@@ -668,6 +713,7 @@ public final class DojoRankings {
                     : active.fromDojoName;
             lines.add("§6§lActive war §fvs " + blank(rival, "?")
                     + " §8(2× RP)");
+            lines.add("§8Their members show in Noea tracking.");
         }
         return lines;
     }
@@ -688,6 +734,7 @@ public final class DojoRankings {
         String key = homeDojoKey(player);
         lines.add("§7Challenge rival dojos for §f2× season RP§7.");
         lines.add("§8Wars run 24 hours once accepted.");
+        lines.add("§8Their members show in Noea tracking.");
         SparStore.DojoChallenge pending = SparStore.get().dojoChallenges.get(
                 player.m_20148_().toString().toLowerCase(Locale.ROOT));
         if (pending != null && pending.expiresAt > System.currentTimeMillis() && !pending.active) {
@@ -919,7 +966,8 @@ public final class DojoRankings {
         c.expiresAt = System.currentTimeMillis() + CHALLENGE_TTL_MS;
         SparStore.get().markDirty();
         broadcast(LmChat.ok("Dojo", "§6§lDOJO WAR §f" + c.fromDojoName
-                + " §7vs §f" + c.toDojoName + " §8— spars vs that dojo earn 2× ranking points!"));
+                + " §7vs §f" + c.toDojoName
+                + " §8— spars vs that dojo earn 2× ranking points. Their members show in Noea tracking."));
         return "§aDojo war accepted! §7Spars vs §f" + c.fromDojoName + " §anow earn double ranking points.";
     }
 

@@ -21,7 +21,26 @@ public final class LegacyMechanicsMixinPlugin implements IMixinConfigPlugin {
 
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
+        if (!dedicatedServer()) {
+            return false;
+        }
+        if (mixinClassName != null && mixinClassName.endsWith("DojoWarSenseMixin")) {
+            return senseNetworkPresent();
+        }
         return dedicatedServer();
+    }
+
+    /** Noea's tracking channel. Absent on a server that does not run Noea. */
+    private static boolean senseNetworkPresent() {
+        try {
+            Class.forName(
+                    "com.butterjaffa.noeabosses.sense.SenseNetwork",
+                    false,
+                    LegacyMechanicsMixinPlugin.class.getClassLoader());
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
     }
 
     private static boolean dedicatedServer() {
