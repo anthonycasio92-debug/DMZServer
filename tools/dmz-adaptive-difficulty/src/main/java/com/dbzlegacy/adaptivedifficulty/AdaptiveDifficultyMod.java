@@ -32,7 +32,18 @@ public final class AdaptiveDifficultyMod {
     /** Forge modId — lowercase; not used for NBT / GUI class lookup. */
     public static final String MOD_ID = "legacymechanics";
     /** Product line version (was DMZ Adaptive Difficulty 3.3.x). */
-    public static final String VERSION = "4.5.141";
+    public static final String VERSION = "4.5.142";
+
+    /** True on the dedicated server. A failed side check keeps the server startup path. */
+    private static boolean dedicatedServer() {
+        try {
+            Class<?> loader = Class.forName("net.minecraftforge.fml.loading.FMLLoader");
+            Object dist = loader.getMethod("getDist").invoke(null);
+            return dist != null && "DEDICATED_SERVER".equals(String.valueOf(dist));
+        } catch (Throwable ignored) {
+            return true;
+        }
+    }
     public static final String DISPLAY_NAME = "LegacyMechanics";
     public static final Logger LOGGER = LogManager.getLogger(DISPLAY_NAME);
 
@@ -45,6 +56,14 @@ public final class AdaptiveDifficultyMod {
                         (remoteVersion, isFromServer) -> true
                 )
         );
+
+        if (!dedicatedServer()) {
+            LOGGER.info(
+                    "[{}] v{} client: stamina and ki ignore the fighting-class coefficient",
+                    MOD_ID,
+                    VERSION);
+            return;
+        }
 
         DifficultyConfig.load();
         com.dbzlegacy.adaptivedifficulty.progression.race.RaceLockConfig.load();

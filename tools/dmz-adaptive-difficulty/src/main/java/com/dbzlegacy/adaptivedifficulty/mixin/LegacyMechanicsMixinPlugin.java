@@ -7,10 +7,10 @@ import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
 /**
- * Skips dmzrevamp mixins when Overhaul is not installed (dev/test servers).
+ * On a dedicated server every mixin applies. On a client only the stamina and ki
+ * hook applies, so the rest of this server mod stays out of the client.
  */
 public final class LegacyMechanicsMixinPlugin implements IMixinConfigPlugin {
-    private static final String REVAMP_PRESTIGE = "com.dmzrevamp.revamp.prestige.PrestigeSystem";
 
     @Override
     public void onLoad(String mixinPackage) {}
@@ -22,9 +22,20 @@ public final class LegacyMechanicsMixinPlugin implements IMixinConfigPlugin {
 
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
-        // Mixin config is evaluated before mod classes are visible to this classloader;
-        // never skip — dmzrevamp is required on production.
-        return true;
+        if (dedicatedServer()) {
+            return true;
+        }
+        return mixinClassName != null && mixinClassName.endsWith("StatsDataStatScalingMixin");
+    }
+
+    private static boolean dedicatedServer() {
+        try {
+            Class<?> loader = Class.forName("net.minecraftforge.fml.loading.FMLLoader");
+            Object dist = loader.getMethod("getDist").invoke(null);
+            return dist != null && "DEDICATED_SERVER".equals(String.valueOf(dist));
+        } catch (Throwable ignored) {
+            return true;
+        }
     }
 
     @Override
