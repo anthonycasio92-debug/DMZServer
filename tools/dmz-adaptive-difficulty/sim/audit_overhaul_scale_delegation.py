@@ -5,9 +5,12 @@ Policy:
   - Fighting-class and stamina scaling are the live race baseline plus the fighting class.
     Race: config/dragonminez/races/<race>/stats.json classes.race.
     Class: DmzClassConfigManager.getConfiguredClassStats (classes/<class>.json).
+  - Dragon Block Noea DemonRaceConfigInstaller and SphinxianRaceConfigInstaller
+    define a complete class curve. Alien uses the Sphinxian table. LM uses that
+    curve by itself when the race file has no fighting-class row.
   - dmzrevamp FusionRevampLogic.addPartnerScale multiplies getStatScaling by
     PrestigeSystem.scaleMultiplier, including STM. Legacy Saga's RevampClassScalingFix
-    mixin does not load. LM replaces the return with the race+class sum after that multiply.
+    mixin does not load. LM replaces the return after that multiply.
   - LM may read PrestigeSystem.scaleMultiplier for display.
   - LM must not multiply getTotalMultiplier, getMaxEnergy, getMaxStamina, or defense by that scale.
   - LM must not duplicate 1 + count × scaleBonusPerPrestige in Java.
@@ -94,6 +97,8 @@ def main() -> int:
         errors.append("ClassRaceStatScale must read race stats.json scaling, including stamina")
     if "races" not in combined or "classes" not in combined:
         errors.append("ClassRaceStatScale must use config/dragonminez races and classes")
+    if "DemonRaceConfigInstaller" not in combined or "SphinxianRaceConfigInstaller" not in combined:
+        errors.append("ClassRaceStatScale must read Noea demon and sphinxian class curves")
 
     if "return data == null ? 0f : data.getMaxEnergy()" not in pool:
         errors.append("DmzResourcePoolClamp.actualMaxEnergy must be live getMaxEnergy")

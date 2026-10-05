@@ -17,7 +17,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * multiplied the divided value again.
  *
  * <p>Priority 6100 is applied after Overhaul's default 1000, so the value set here
- * is the one callers see. It is the live race baseline plus the fighting class
+ * is the one callers see. It is Noea's complete class curve when that mod defines
+ * one, otherwise the live race baseline plus the fighting class
  * ({@link ClassRaceStatScale}). Fusion players are left to dmzrevamp, because the
  * partner term is not a pure multiply.
  */

@@ -7,6 +7,7 @@ import com.dragonminez.common.stats.character.Character;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -22,21 +23,31 @@ import net.minecraftforge.fml.loading.FMLPaths;
  * {@code DmzClassConfigManager.prepareRaceStats} adds those two. {@code FusionRevampLogic.addPartnerScale}
  * then multiplies the sum by Overhaul prestige ({@code 1 + count × 0.5} on this server).
  *
- * <p>{@code dmzlegacy-legacysaga} {@code RevampClassScalingFix} is the same sum, but its mixin
- * is rejected at startup ({@code missing an @Mixin annotation}), so the sum never replaces
- * the prestiged value. This class applies that sum from the live files. Prestige stays off it.
+ * <p>Dragon Block Noea ({@code Noea_Build}) is the other mod that defines class curves.
+ * {@code DemonRaceConfigInstaller.stats} and {@code SphinxianRaceConfigInstaller.stats}
+ * write a complete curve per fighting class. Alien copies the Sphinxian table.
+ * Those installers only write the file when it is missing, and Overhaul then saves a
+ * race-only file over it, so the curves never reach disk. This class reads them from
+ * the installer. A fighting-class row already stored in the race file wins over that.
+ *
+ * <p>{@code dmzlegacy-legacysaga} {@code RevampClassScalingFix} is the race-plus-class sum,
+ * but its mixin is rejected at startup ({@code missing an @Mixin annotation}). Prestige
+ * stays off the value returned here.
  */
 public final class ClassRaceStatScale {
     private static final String[] RACE_CLASS_KEYS = {
             "race", "default", "racedefault", "race_default", "base"
     };
     private static final ConcurrentHashMap<String, CachedJson> JSON = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, JsonObject> NOEA = new ConcurrentHashMap<>();
+    private static final JsonObject NOEA_MISS = new JsonObject();
 
     private ClassRaceStatScale() {}
 
     /**
-     * Race baseline plus fighting-class scaling for {@code stat} ({@code STR}, {@code STM}, …).
-     * {@link Double#NaN} when the stat or the player race is unknown.
+     * Scaling for {@code stat} ({@code STR}, {@code STM}, …).
+     * Noea's complete class curve when that race has one, otherwise the race baseline
+     * plus the fighting class. {@link Double#NaN} when the stat or the player race is unknown.
      */
     public static double scaling(StatsData data, String stat) {
         try {
@@ -45,11 +56,16 @@ public final class ClassRaceStatScale {
             if (key == null || race.isEmpty()) {
                 return Double.NaN;
             }
+            String cls = classId(data);
+            Part complete = completeClass(race, cls);
+            if (complete != null) {
+                return complete.scaling(key);
+            }
             Part racePart = racePart(race);
-            if (isRaceClass(classId(data))) {
+            if (isRaceClass(cls)) {
                 return racePart.known ? racePart.scaling(key) : Double.NaN;
             }
-            Part classPart = classPart(classId(data));
+            Part classPart = classPart(cls);
             if (!racePart.known && !classPart.known) {
                 return Double.NaN;
             }
@@ -76,8 +92,12 @@ public final class ClassRaceStatScale {
         if (race.isEmpty()) {
             return null;
         }
-        Part racePart = racePart(race);
         String cls = classId(data);
+        Part complete = completeClass(race, cls);
+        if (complete != null) {
+            return basesOf(complete);
+        }
+        Part racePart = racePart(race);
         Part classPart = isRaceClass(cls) ? Part.EMPTY : classPart(cls);
         if (!racePart.known && !classPart.known) {
             return null;
@@ -89,6 +109,34 @@ public final class ClassRaceStatScale {
         out.setVitality(racePart.base("VIT") + classPart.base("VIT"));
         out.setKiPower(racePart.base("PWR") + classPart.base("PWR"));
         out.setEnergy(racePart.base("ENE") + classPart.base("ENE"));
+        return out;
+    }
+
+    /**
+     * Complete fighting-class curve. The race file's class row wins. Otherwise Dragon Block
+     * Noea's installer table for demon, sphinxian, and alien. Null means use race plus class.
+     */
+    private static Part completeClass(String race, String classId) {
+        if (isRaceClass(classId)) {
+            return null;
+        }
+        JsonObject disk = diskClassNode(race, classId);
+        if (disk != null) {
+            return Part.fromJson(disk);
+        }
+        JsonObject noea = noeaRoot(race);
+        JsonObject node = classNode(noea, classId);
+        return node == null ? null : Part.fromJson(node);
+    }
+
+    private static RaceStatsConfig.BaseStats basesOf(Part part) {
+        RaceStatsConfig.BaseStats out = new RaceStatsConfig.BaseStats();
+        out.setStrength(part.base("STR"));
+        out.setStrikePower(part.base("SKP"));
+        out.setResistance(part.base("RES"));
+        out.setVitality(part.base("VIT"));
+        out.setKiPower(part.base("PWR"));
+        out.setEnergy(part.base("ENE"));
         return out;
     }
 
@@ -149,6 +197,58 @@ public final class ClassRaceStatScale {
             }
         }
         return null;
+    }
+
+    /** Fighting-class row stored in the race file. Absent on a race-only Overhaul save. */
+    private static JsonObject diskClassNode(String race, String classId) {
+        JsonObject root = readJson(racesDir().resolve(race).resolve("stats.json"));
+        return classNode(root, classId);
+    }
+
+    private static JsonObject classNode(JsonObject root, String classId) {
+        if (root == null || classId == null || classId.isEmpty()) {
+            return null;
+        }
+        JsonObject classes = root.has("classes") ? root.getAsJsonObject("classes") : root;
+        return object(classes, classId);
+    }
+
+    /**
+     * {@code DemonRaceConfigInstaller} and {@code SphinxianRaceConfigInstaller} stats tables.
+     * Alien uses the Sphinxian table, matching {@code AlienRaceConfigInstaller}.
+     */
+    private static JsonObject noeaRoot(String race) {
+        if (race == null || race.isEmpty()) {
+            return null;
+        }
+        JsonObject cached = NOEA.get(race);
+        if (cached != null) {
+            return cached == NOEA_MISS ? null : cached;
+        }
+        String type = switch (race) {
+            case "demon" -> "com.butterjaffa.noeabosses.DemonRaceConfigInstaller";
+            case "sphinxian", "alien" -> "com.butterjaffa.noeabosses.SphinxianRaceConfigInstaller";
+            default -> null;
+        };
+        JsonObject loaded = type == null ? null : invokeNoeaStats(type);
+        if (loaded == null || classNode(loaded, "warrior") == null) {
+            NOEA.put(race, NOEA_MISS);
+            return null;
+        }
+        NOEA.put(race, loaded);
+        return loaded;
+    }
+
+    private static JsonObject invokeNoeaStats(String className) {
+        try {
+            Class<?> type = Class.forName(className);
+            Method stats = type.getDeclaredMethod("stats");
+            stats.setAccessible(true);
+            Object value = stats.invoke(null);
+            return value instanceof JsonObject json ? json : null;
+        } catch (Throwable ignored) {
+            return null;
+        }
     }
 
     private static JsonObject readJson(Path path) {

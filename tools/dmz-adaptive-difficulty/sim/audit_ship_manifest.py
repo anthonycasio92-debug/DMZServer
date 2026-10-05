@@ -119,6 +119,8 @@ def main() -> int:
           "getConfiguredClassStats" in class_scale
           and "STM_scaling" in class_scale
           and "stats.json" in class_scale
+          and "DemonRaceConfigInstaller" in class_scale
+          and "SphinxianRaceConfigInstaller" in class_scale
           and "ClassRaceStatScale.scaling" in stat_mixin
           and "getInitialBaseStats" in stat_mixin)
 
