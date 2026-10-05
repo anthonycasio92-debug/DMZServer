@@ -93,10 +93,7 @@ Staff `/skills` has no special CNPC name hook — use an NPC interaction command
 
 | Flag | Default | Module |
 |------|---------|--------|
-| `enableProgression` | true | Master for CNPC natural ports |
-| `enableFlightProgression` | false | Retired — another mod owns flight |
-| `enableSprintJump` | false | Retired — another mod owns sprint and jump |
-| `enableMeditation` | false | Retired — another mod owns meditation |
+| `enableProgression` | true | Master switch. Potential Unlock is the only natural skill still in this mod |
 | `enablePotential` | true | Potential Unlock |
 
 ### TP Gains

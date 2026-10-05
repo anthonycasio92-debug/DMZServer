@@ -460,13 +460,6 @@ public final class ProgressionCommands {
                         .then(Commands.m_82127_("end")
                                 .requires(ProgressionCommands::staff)
                                 .executes(ctx -> boostEnd(ctx.getSource()))))
-                .then(Commands.m_82127_("meditation")
-                        .executes(ctx -> meditationStatus(ctx.getSource()))
-                        .then(Commands.m_82127_("status").executes(ctx -> meditationStatus(ctx.getSource())))
-                        .then(Commands.m_82127_("help").executes(ctx -> meditationStatus(ctx.getSource())))
-                        .then(Commands.m_82127_("next")
-                                .requires(ProgressionCommands::staff)
-                                .executes(ctx -> meditationNext(ctx.getSource()))))
                 .then(Commands.m_82127_("android")
                         .executes(ctx -> androidSelfOrHint(ctx.getSource()))
                         .then(Commands.m_82127_("remove")
@@ -594,18 +587,6 @@ public final class ProgressionCommands {
         for (String line : msg.split("\n")) {
             reply(source, actor, line);
         }
-        return 1;
-    }
-
-    private static int meditationStatus(CommandSourceStack source) {
-        ServerPlayer actor = playerOrNull(source);
-        reply(source, actor, com.dbzlegacy.adaptivedifficulty.gui.ProgressionGuiApi.meditationExplain());
-        return 1;
-    }
-
-    private static int meditationNext(CommandSourceStack source) {
-        ServerPlayer actor = playerOrNull(source);
-        reply(source, actor, ProgressionSystem.meditationNext(actor));
         return 1;
     }
 

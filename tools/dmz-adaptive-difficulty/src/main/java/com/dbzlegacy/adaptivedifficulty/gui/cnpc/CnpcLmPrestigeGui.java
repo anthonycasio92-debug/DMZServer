@@ -167,7 +167,7 @@ public final class CnpcLmPrestigeGui {
         List<String> out = new ArrayList<>();
         String raw = ph.getOrDefault("shop_skill_ids", "");
         if (raw == null || raw.isBlank()) {
-            return List.of("meditation", "fly", "sprint", "jump", "potentialunlock");
+            return List.of("potentialunlock");
         }
         for (String part : raw.split(",")) {
             if (part != null && !part.isBlank()) {

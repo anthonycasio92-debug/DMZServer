@@ -18,9 +18,6 @@ public final class CmiProgressionGui {
     private static final Material FILL = Material.BLACK_STAINED_GLASS_PANE;
     private static final Material ACCENT = Material.GRAY_STAINED_GLASS_PANE;
     private static final Map<String, String[]> FLAG_INFO = Map.ofEntries(
-            Map.entry("flight", new String[]{"Flight", "Train fly by flying; Viltrumite max grant.", "/progression"}),
-            Map.entry("sprint", new String[]{"Sprint Jump", "Jump/Sprint — Strength unlocked (invested STR).", "/progression"}),
-            Map.entry("meditation", new String[]{"Meditation", "Charge Ki in the trial biome and meet the trial (/progression meditation).", "/progression meditation"}),
             Map.entry("potential", new String[]{"Potential", "Spar others to raise it (soft-caps at 10 until you beat Piccolo in the skill saga, then to 30).", "/skillcheck"}),
             Map.entry("boost", new String[]{"Global TP Boost", "Timed world TP multiplier.", "/progression boost start|end"}),
             Map.entry("bio", new String[]{"Bio-Android", "Absorb TP / steal skills from drains.", "Passive as Bio-Android"}),

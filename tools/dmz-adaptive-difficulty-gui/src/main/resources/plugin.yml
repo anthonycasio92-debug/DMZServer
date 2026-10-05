@@ -1,5 +1,5 @@
 name: LegacyMechanicsGUI
-version: '4.5.147'
+version: '4.5.148'
 main: com.dbzlegacy.adaptivedifficulty.bukkit.AdaptiveDifficultyGuiPlugin
 api-version: '1.20'
 author: DBZ Legacy Reborn
@@ -29,8 +29,8 @@ commands:
     usage: /padmin points <player> set|add|remove <n>
     aliases: [prestigeadmin]
   progression:
-    description: Players — /progression meditation only; staff — full tree; console — boost + android
-    usage: /progression meditation | android <player> | boost …
+    description: Staff progression tree; console — boost + android. Players use /lm and Skill Check.
+    usage: /progression | android <player> | boost …
     aliases: [prog]
   androidify:
     description: Console/Saga Dr. Gero android conversion (LegacyMechanics)

@@ -149,20 +149,27 @@ def main() -> int:
     prog_cfg = read(SRC / "progression/ProgressionConfig.java")
     prog_sys = read(SRC / "progression/ProgressionSystem.java")
     skill_pulse = read(SRC / "progression/skills/SkillProgression.java")
-    check("flight sprint and meditation stay off",
-          "return false;" in prog_cfg.split("boolean flight()")[1].split("boolean sprintJump()")[0]
-          and "return false;" in prog_cfg.split("boolean sprintJump()")[1].split("boolean meditation()")[0]
-          and "return false;" in prog_cfg.split("boolean meditation()")[1].split("boolean potential()")[0]
+    diff_cfg = read(SRC / "config/DifficultyConfig.java")
+    skill_dir = SRC / "progression/skills"
+    check("flight sprint and meditation are removed",
+          not (skill_dir / "FlightProgression.java").is_file()
+          and not (skill_dir / "SprintJumpProgression.java").is_file()
+          and not (skill_dir / "MeditationProgression.java").is_file()
+          and "boolean flight()" not in prog_cfg
+          and "boolean sprintJump()" not in prog_cfg
+          and "boolean meditation()" not in prog_cfg
           and "enablePotential" in prog_cfg.split("boolean potential()")[1].split("boolean globalTpBoost()")[0]
-          and "FlightProgression.pulse" not in prog_sys
-          and "SprintJumpProgression.pulse" not in prog_sys
+          and "FlightProgression" not in prog_sys
+          and "SprintJumpProgression" not in prog_sys
           and "MeditationProgression" not in prog_sys
           and "FlightProgression" not in skill_pulse
           and "SprintJumpProgression" not in skill_pulse
           and "MeditationProgression" not in skill_pulse
           and "PotentialProgression.onPlayerHurt" in prog_sys
-          and "enableFlightProgression = false" in read(SRC / "config/DifficultyConfig.java")
-          and "enablePotential = true" in read(SRC / "config/DifficultyConfig.java"))
+          and "enableFlightProgression" not in diff_cfg
+          and "enableSprintJump" not in diff_cfg
+          and "enableMeditation" not in diff_cfg
+          and "enablePotential = true" in diff_cfg)
 
     print("\n--- § fabled removed ---")
     bridge_dir = SRC / "progression/bridge"

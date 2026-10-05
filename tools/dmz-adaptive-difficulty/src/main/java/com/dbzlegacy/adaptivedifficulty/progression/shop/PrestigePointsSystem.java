@@ -98,8 +98,7 @@ public final class PrestigePointsSystem {
                 case "fusion", "kaioken" -> 5;
                 case "kiboost" -> 4;
                 case "kicontrol" -> 1;
-                case "meditation", "fly", "sprint", "jump",
-                     "kimanipulation", "kisense", "defense_penetration",
+                case "kimanipulation", "kisense", "defense_penetration",
                      "healing_reduction", "instant_transmission",
                      "ki_infusion", "kiprotection" -> 10;
                 default -> 0;

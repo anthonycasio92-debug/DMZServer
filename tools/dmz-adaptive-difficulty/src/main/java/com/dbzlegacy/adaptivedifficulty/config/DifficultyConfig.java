@@ -204,11 +204,8 @@ public final class DifficultyConfig {
      */
     public boolean enableCnpcDataMigration = true;
 
-    /** Master switch for natural-progression CNPC ports. Potential Unlock stays; flight, sprint, and meditation do not. */
+    /** Master switch. Potential Unlock is the only natural skill this mod still runs. */
     public boolean enableProgression = true;
-    public boolean enableFlightProgression = false;
-    public boolean enableSprintJump = false;
-    public boolean enableMeditation = false;
     public boolean enablePotential = true;
     public boolean enableGlobalTpBoost = true;
     public boolean enableBioAndroid = true;
@@ -1614,10 +1611,6 @@ public final class DifficultyConfig {
         cfg.lmTipNewPlayerMaxLevel = Math.max(1, Math.min(150_000, cfg.lmTipNewPlayerMaxLevel));
         // Product rule: no natural/vanilla auto End Dragon — Difficulty GUI / staff only.
         cfg.enableEndNaturalDragonSpawn = false;
-        // Flight, sprint/jump, and meditation belong to another mod. Potential Unlock stays.
-        cfg.enableFlightProgression = false;
-        cfg.enableSprintJump = false;
-        cfg.enableMeditation = false;
         cfg.nearbyScaleBudgetPerPlayer = cfg.maxScaledMobsPerPlayer;
         // Never allow free tiers via live admin set / bad JSON.
         cfg.unlockTier1Cost = Math.max(1L, cfg.unlockTier1Cost);

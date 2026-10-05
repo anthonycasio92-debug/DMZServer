@@ -15,7 +15,7 @@ import org.bukkit.entity.Player;
 /**
  * Bukkit {@code /progression} / {@code /prog} command tree.
  * <p>
- * <b>Players:</b> {@code /progression meditation} only — other actions via {@code /lm} GUI.
+ * <b>Players:</b> Potential Unlock via {@code /lm} and Skill Check. Other actions use the GUI.
  * <b>Staff:</b> full tree (GUI · boost · android · flags · do).
  * <b>Console:</b> {@code /progression boost …} (store / Tebex) and
  * {@code /progression android <player>} / {@code /androidify <player>} (Saga).
@@ -27,7 +27,7 @@ import org.bukkit.entity.Player;
 public final class ProgressionCommandTree implements TabCompleter {
     private static final List<String> ROOT = List.of(
             "gui", "help", "status", "flags", "admin", "do",
-            "meditation", "android", "boost",
+            "android", "boost",
             "skills", "tp", "race", "combat", "end", "utility"
     );
     private static final List<String> PAGES = List.of(
@@ -45,8 +45,6 @@ public final class ProgressionCommandTree implements TabCompleter {
             "skills", "prestige"
     );
     private static final List<String> ON_OFF = List.of("on", "off");
-    private static final List<String> MEDITATION = List.of("status", "help", "next", "advance", "cycle");
-    private static final List<String> MEDITATION_PLAYER = List.of("status", "help");
     private static final List<String> BOOST = List.of(
             "status", "help", "end", "stop", "start", "1.25", "1.5", "2", "3"
     );
@@ -71,10 +69,6 @@ public final class ProgressionCommandTree implements TabCompleter {
             return true;
         }
 
-        // Player-facing: meditation status/help (no staff gate).
-        if (args.length > 0 && "meditation".equalsIgnoreCase(args[0])) {
-            return meditation(player, args);
-        }
         // Android / other leaves: players use /lm GUI (staff keep slash).
         if (args.length > 0 && "android".equalsIgnoreCase(args[0])) {
             if (!ForgeBridge.isStaff(player)) {
@@ -88,7 +82,7 @@ public final class ProgressionCommandTree implements TabCompleter {
                 return true;
             }
         }
-        // Player-facing help (meditation only).
+        // Player-facing help.
         if (args.length > 0 && ("help".equalsIgnoreCase(args[0]) || "?".equals(args[0]))) {
             GuiChat.sendChatResult(player, ForgeBridge.progressionHelp(player));
             return true;
@@ -97,7 +91,7 @@ public final class ProgressionCommandTree implements TabCompleter {
         if (!ForgeBridge.isStaff(player)) {
             player.sendMessage("§6§lPlayer commands");
             player.sendMessage("§e/lm §7· §e/difficulty §7· §e/rival §7· §e/spar");
-            player.sendMessage("§7Potential Unlock stays. Flight, sprint, and meditation do not.");
+            player.sendMessage("§7Spar to raise Potential Unlock.");
             player.sendMessage("§e/skillcheck §7— donator Skill Check");
             player.sendMessage("§8Everything else: open §f/lm §8and use the GUI.");
             return true;
@@ -212,23 +206,6 @@ public final class ProgressionCommandTree implements TabCompleter {
         return true;
     }
 
-    private boolean meditation(Player player, String[] args) {
-        String medSub = args.length > 1 ? args[1].toLowerCase(Locale.ROOT) : "status";
-        if ("next".equals(medSub) || "advance".equals(medSub) || "cycle".equals(medSub)) {
-            if (!ForgeBridge.isStaff(player)) {
-                // Do not acknowledge staff commands to non-ops — show the trial card only.
-                GuiChat.sendChatResult(player, ForgeBridge.meditationExplain(player));
-                return true;
-            }
-            GuiChat.sendChatResult(player, ForgeBridge.meditationAdvance(player));
-            GuiChat.sendChatResult(player, ForgeBridge.meditationExplain(player));
-            return true;
-        }
-        // Always chat — never stash into GuiFeedback (player has no inventory open).
-        GuiChat.sendChatResult(player, ForgeBridge.meditationExplain(player));
-        return true;
-    }
-
     private boolean admin(Player player, String[] args) {
         // /progression admin                     → flags GUI
         // /progression admin <flag> <on|off>     → toggle
@@ -277,7 +254,6 @@ public final class ProgressionCommandTree implements TabCompleter {
         boolean staff = ForgeBridge.isStaff(player);
         if (args.length == 1) {
             List<String> root = new ArrayList<>();
-            root.add("meditation");
             root.add("help");
             if (staff) {
                 root.add("android");
@@ -285,7 +261,7 @@ public final class ProgressionCommandTree implements TabCompleter {
             }
             return filter(root, args[0]);
         }
-        if (!staff && !(args.length >= 1 && "meditation".equalsIgnoreCase(args[0]))) {
+        if (!staff) {
             return Collections.emptyList();
         }
         String sub = args[0].toLowerCase(Locale.ROOT);
@@ -294,8 +270,6 @@ public final class ProgressionCommandTree implements TabCompleter {
                 case "gui", "menu", "open" -> staff ? filter(PAGES, args[1]) : Collections.emptyList();
                 case "admin" -> staff ? filter(FLAGS, args[1]) : Collections.emptyList();
                 case "do" -> staff ? filter(DO_ACTIONS, args[1]) : Collections.emptyList();
-                case "meditation" -> filter(
-                        ForgeBridge.isStaff(player) ? MEDITATION : MEDITATION_PLAYER, args[1]);
                 case "android" -> {
                     if (!staff) {
                         yield Collections.emptyList();

@@ -167,11 +167,11 @@ public final class DmzSkillUtil {
     }
 
     /**
-     * Skill Check Natural page — Potential Unlock, Flight, Meditation, Jump, Sprint.
-     * Prestige skill shop is limited to these + {@link #SKILL_CHECK_SAGA}.
+     * Skill Check natural skill still owned here — Potential Unlock.
+     * Prestige skill shop is limited to this + {@link #SKILL_CHECK_SAGA}.
      */
     public static final String[] SKILL_CHECK_NATURAL = {
-            "potentialunlock", "fly", "meditation", "jump", "sprint"
+            "potentialunlock"
     };
 
     /**

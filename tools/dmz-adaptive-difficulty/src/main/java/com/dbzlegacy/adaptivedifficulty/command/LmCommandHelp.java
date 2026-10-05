@@ -230,7 +230,7 @@ public final class LmCommandHelp {
         return LmStaffHelp.build(
                 "Progression",
                 "/progression",
-                "§7Potential Unlock stays in LegacyMechanics. Flight, sprint, and meditation do not. Prestige and shop live under §f/lm§7.",
+                "§7Spar to raise Potential Unlock. Prestige and shop live under §f/lm§7.",
                 new LmStaffHelp.Section("Android",
                         LmStaffHelp.cmd("/progression android remove", "remove android (opens hub flow)"),
                         LmStaffHelp.note("Prestige and shop: use /lm open prestige")));

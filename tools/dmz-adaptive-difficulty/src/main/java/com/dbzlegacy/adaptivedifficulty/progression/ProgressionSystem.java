@@ -278,10 +278,6 @@ public final class ProgressionSystem {
         return GlobalTpBoost.endBoost(true);
     }
 
-    public static String meditationNext(ServerPlayer actor) {
-        return "§7Meditation is not run by LegacyMechanics.";
-    }
-
     public static String androidConvert(ServerPlayer target) {
         return AndroidConversion.convert(target);
     }
@@ -302,9 +298,6 @@ public final class ProgressionSystem {
         }
         switch (key.toLowerCase(java.util.Locale.ROOT)) {
             case "master", "progression", "enableprogression" -> cfg.enableProgression = on;
-            case "flight", "fly", "enableflightprogression" -> cfg.enableFlightProgression = false;
-            case "sprint", "sprintjump", "enablesprintjump" -> cfg.enableSprintJump = false;
-            case "meditation", "med", "enablemeditation" -> cfg.enableMeditation = false;
             case "potential", "enablepotential" -> cfg.enablePotential = on;
             case "boost", "globaltpboost", "enableglobaltpboost" -> cfg.enableGlobalTpBoost = on;
             case "bio", "bioandroid", "enablebioandroid" -> cfg.enableBioAndroid = on;

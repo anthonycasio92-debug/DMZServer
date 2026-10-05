@@ -106,9 +106,6 @@ public final class ForgeBridge {
     private static Method skillsPlaceholdersMethod;
     private static Method skillsLinesMethod;
     private static Method skillsHandleDoMethod;
-    private static Method meditationExplainMethod;
-    private static Method meditationExplainForPlayerMethod;
-    private static Method meditationAdvanceMethod;
     private static Method androidConvertMethod;
     private static Method androidConvertConsoleMethod;
     private static Method androidRemoveMethod;
@@ -1527,55 +1524,6 @@ public final class ForgeBridge {
         }, "Progression");
     }
 
-    /** Current meditation trial + how-to (staff hints only if {@code player} is staff/op). */
-    public static String meditationExplain(Player player) {
-        try {
-            Object nms = player == null ? null : nmsPlayer(player);
-            ClassLoader cl = nms != null
-                    ? nms.getClass().getClassLoader()
-                    : preferredProgressionClassLoader();
-            ensureProgressionResolved(cl);
-            if (meditationExplainForPlayerMethod != null && nms != null) {
-                Object raw = meditationExplainForPlayerMethod.invoke(null, nms);
-                return raw == null ? "" : String.valueOf(raw);
-            }
-            if (meditationExplainMethod == null) {
-                return "§cMeditation API missing — update LegacyMechanics jar.";
-            }
-            Object raw = meditationExplainMethod.invoke(null);
-            return raw == null ? "" : String.valueOf(raw);
-        } catch (Throwable t) {
-            Throwable root = t.getCause() == null ? t : t.getCause();
-            return "§cMeditation explain failed: " + root.getClass().getSimpleName()
-                    + (root.getMessage() == null ? "" : " — " + root.getMessage());
-        }
-    }
-
-    /** @deprecated prefer {@link #meditationExplain(Player)} so staff hints stay hidden from players. */
-    public static String meditationExplain() {
-        return meditationExplain(null);
-    }
-
-    /** Staff: rotate + broadcast meditation trial. */
-    public static String meditationAdvance(Player player) {
-        Object nms = nmsPlayer(player);
-        if (nms == null) {
-            return "§cCould not reach LegacyMechanics mod.";
-        }
-        try {
-            ensureProgressionResolved(nms.getClass().getClassLoader());
-            if (meditationAdvanceMethod == null) {
-                return "§cMeditation API missing — update LegacyMechanics jar.";
-            }
-            Object raw = meditationAdvanceMethod.invoke(null, nms);
-            return raw == null ? "" : String.valueOf(raw);
-        } catch (Throwable t) {
-            Throwable root = t.getCause() == null ? t : t.getCause();
-            return "§cMeditation advance failed: " + root.getClass().getSimpleName()
-                    + (root.getMessage() == null ? "" : " — " + root.getMessage());
-        }
-    }
-
     /**
      * Staff: Dr. Gero android conversion for self (blank/null target) or an online player name.
      * Prefer this over {@link #forwardCommand} — Mohist often shadows Forge {@code /progression}.
@@ -2552,27 +2500,6 @@ public final class ForgeBridge {
         // Resolve admin API independently so older jars still load the rest.
         if (prestigeAdminMethod == null) {
             resolvePrestigeAdminMethod(preferred);
-        }
-        if (meditationExplainMethod == null) {
-            try {
-                meditationExplainMethod = api.getMethod("meditationExplain");
-            } catch (Throwable missing) {
-                meditationExplainMethod = null;
-            }
-        }
-        if (meditationExplainForPlayerMethod == null) {
-            try {
-                meditationExplainForPlayerMethod = api.getMethod("meditationExplain", sp);
-            } catch (Throwable missing) {
-                meditationExplainForPlayerMethod = null;
-            }
-        }
-        if (meditationAdvanceMethod == null) {
-            try {
-                meditationAdvanceMethod = api.getMethod("meditationAdvance", sp);
-            } catch (Throwable missing) {
-                meditationAdvanceMethod = null;
-            }
         }
         if (androidConvertMethod == null) {
             try {

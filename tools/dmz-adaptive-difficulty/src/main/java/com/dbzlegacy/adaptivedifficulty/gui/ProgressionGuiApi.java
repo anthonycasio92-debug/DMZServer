@@ -31,33 +31,18 @@ import net.minecraft.server.level.ServerPlayer;
 public final class ProgressionGuiApi {
     private ProgressionGuiApi() {}
 
-    /** Meditation, flight, and sprint are not run by this mod. */
-    public static String meditationExplain() {
-        return "§7Flight, sprint, and meditation are not run by LegacyMechanics. Potential Unlock still is.";
-    }
-
-    /** Meditation, flight, and sprint are not run by this mod. */
-    public static String meditationExplain(ServerPlayer viewer) {
-        return meditationExplain();
-    }
-
-    /** Meditation trials are not run by this mod. */
-    public static String meditationAdvance(ServerPlayer player) {
-        return "§7Meditation is not run by LegacyMechanics.";
-    }
-
     /** Full chat help for {@code /progression} (Bukkit command tree). Staff-only list. */
     public static String commandHelp() {
         return commandHelp(true);
     }
 
-    /** Chat help. Non-staff: meditation only (other actions via /lm GUI). */
+    /** Chat help. Non-staff: Potential Unlock (other actions via /lm GUI). */
     public static String commandHelp(boolean staff) {
         if (!staff) {
             return String.join("\n",
                     "§d§lPotential Unlock",
                     "§8────────────",
-                    "§7Spar to raise Potential Unlock. Flight, sprint, and meditation are not in LegacyMechanics.",
+                    "§7Spar to raise Potential Unlock.",
                     "",
                     "§7Other actions: §f/lm §7→ Prestige · Remove Android · Skill Check");
         }
@@ -68,7 +53,6 @@ public final class ProgressionGuiApi {
                 "§e/progression status §8— flag + boost summary",
                 "§e/progression flags §7· §eadmin §8— flags GUI",
                 "§e/progression admin <flag> <on|off> §8— toggle a module flag",
-                "§e/progression meditation §8— retired (not run by LegacyMechanics)",
                 "§e/progression android [player] §8— Gero android convert",
                 "§e/progression android remove [player] §8— remove Android upgrade",
                 "§e/progression boost §8— TP boost status",
@@ -500,7 +484,6 @@ public final class ProgressionGuiApi {
         out.put("system_enabled", enabled ? "true" : "false");
         out.put("staff", StaffAccess.isStaff(player) ? "true" : "false");
         out.put("boost", GlobalTpBoost.statusLine());
-        out.put("meditation", "§7Meditation is not run by LegacyMechanics.");
         out.put("flags", ProgressionConfig.statusSummary());
         out.put("prestige_enabled", c.enablePrestigeSystem ? "true" : "false");
         out.put("skills_enabled", c.enableSkillUnlockService ? "true" : "false");
@@ -511,9 +494,6 @@ public final class ProgressionGuiApi {
         }
         // Skills
         out.put("flag_master", c.enableProgression ? "true" : "false");
-        out.put("flag_flight", "false");
-        out.put("flag_sprint", "false");
-        out.put("flag_meditation", "false");
         out.put("flag_potential", c.enablePotential ? "true" : "false");
         // TP Gains
         out.put("flag_boost", c.enableGlobalTpBoost ? "true" : "false");
@@ -553,8 +533,8 @@ public final class ProgressionGuiApi {
             case "status" -> statusLines(player);
             case "skills" -> categoryLines(
                     "§e§lSkills",
-                    "§7Potential Unlock. Flight, sprint, and",
-                    "§7meditation are not run here.",
+                    "§7Potential Unlock. Spar to raise it.",
+                    "",
                     ph,
                     flagLine("Potential", "flag_potential"));
             case "tp" -> categoryLines(
@@ -630,8 +610,8 @@ public final class ProgressionGuiApi {
             }
             case "help" -> {
                 List<String> help = new ArrayList<>();
-                help.add("§6§l/progression §8— Natural Progression");
-                help.add("§7Potential Unlock stays. Flight, sprint, and meditation do not.");
+                help.add("§6§l/progression §8— Potential Unlock");
+                help.add("§7Spar to raise Potential Unlock.");
                 if (player != null && StaffAccess.isStaff(player)) {
                     help.add("§e/progression §7— Category hub (flags per section)");
                     help.add("§e/prog do page skills|tp|race|combat|end|utility");
@@ -650,7 +630,6 @@ public final class ProgressionGuiApi {
             default -> {
                 List<String> lore = new ArrayList<>();
                 lore.add(ph.getOrDefault("boost", "§7Global TP boost: §cOFF"));
-                lore.add(ph.getOrDefault("meditation", "§7No active meditation trial."));
                 lore.add("§8Browse categories to see script ports.");
                 yield lore;
             }
@@ -704,9 +683,6 @@ public final class ProgressionGuiApi {
         lore.add("§8Grouped by script category");
         lore.add("");
         lore.add("§e§lSkills");
-        lore.add(flag("flight", ph));
-        lore.add(flag("sprint", ph));
-        lore.add(flag("meditation", ph));
         lore.add(flag("potential", ph));
         lore.add("§6§lTP Gains");
         lore.add(flag("boost", ph));

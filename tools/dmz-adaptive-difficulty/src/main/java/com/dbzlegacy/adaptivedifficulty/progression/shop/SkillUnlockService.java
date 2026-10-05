@@ -6,8 +6,6 @@ import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.DmzSkillUtil;
 import com.dbzlegacy.adaptivedifficulty.progression.InvestedStrength;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionData;
-import com.dbzlegacy.adaptivedifficulty.progression.skills.FlightProgression;
-import com.dbzlegacy.adaptivedifficulty.progression.skills.MeditationProgression;
 import com.dbzlegacy.adaptivedifficulty.progression.skills.PotentialProgression;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
@@ -155,54 +153,6 @@ public final class SkillUnlockService {
         }
     }
 
-    private static void appendFlight(List<String> out, ServerPlayer player, Skills skills) {
-        int level = skillLevel(skills, "fly");
-        int max = skillMax(skills, "fly", 10);
-        if (level >= max && max > 0) {
-            out.add("§bFlight§7: §6§lMAX§r §7(" + level + "/" + max + ")");
-            tip(out, "You've mastered flight.");
-            return;
-        }
-        int next = level + 1;
-        int needSec = FlightProgression.requiredSecondsForLevel(next);
-        String progressNote = "";
-        if (needSec > 0) {
-            long progress = ProgressionData.storedGetLong(player, "fly_training_progress_to_level_" + next, 0L);
-            if (progress > needSec * 20L) {
-                progress = progress / 1000L;
-            }
-            if (progress > needSec) {
-                progress = needSec;
-            }
-            progressNote = " §8· §f" + formatTime(progress) + "/" + formatTime(needSec);
-        }
-        out.add("§bFlight§7: §f" + level + "/" + max + progressNote);
-        tip(out, "Spend more time in the air while flying.");
-    }
-
-    private static void appendMeditation(List<String> out, ServerPlayer player, Skills skills) {
-        int level = skillLevel(skills, "meditation");
-        int max = skillMax(skills, "meditation", 10);
-        if (level >= max && max > 0) {
-            out.add("§aMeditation§7: §6§lMAX§r §7(" + level + "/" + max + ")");
-            tip(out, "You've maxed out meditation.");
-            return;
-        }
-        int next = level + 1;
-        int needSec = MeditationProgression.requiredSecondsForLevel(next);
-        String progressNote = "";
-        if (needSec > 0) {
-            long progress = ProgressionData.storedGetLong(
-                    player, "meditation_restore_progress_to_level_" + next, 0L);
-            if (progress > needSec) {
-                progress = needSec;
-            }
-            progressNote = " §8· §f" + formatTime(progress) + "/" + formatTime(needSec);
-        }
-        out.add("§aMeditation§7: §f" + level + "/" + max + progressNote);
-        tip(out, "Charge Ki in the meditation trial — try /progression meditation.");
-    }
-
     private static void appendSaga(List<String> out, ServerPlayer player, Skills skills) {
         appendSagaSkill(out, player, skills, "kicontrol", "Ki Control", "§3", 1);
         appendSagaSkill(out, player, skills, "kimanipulation", "Ki Manipulation", "§9", 10);
@@ -312,20 +262,6 @@ public final class SkillUnlockService {
             case 10 -> 3500;
             default -> 3500;
         };
-    }
-
-    private static String formatTime(long seconds) {
-        long s = Math.max(0L, seconds);
-        long h = s / 3600L;
-        long m = (s % 3600L) / 60L;
-        long r = s % 60L;
-        if (h > 0) {
-            return h + "h " + m + "m";
-        }
-        if (m > 0) {
-            return m + "m " + r + "s";
-        }
-        return r + "s";
     }
 
     private static int safeLevel(StatsData data) {

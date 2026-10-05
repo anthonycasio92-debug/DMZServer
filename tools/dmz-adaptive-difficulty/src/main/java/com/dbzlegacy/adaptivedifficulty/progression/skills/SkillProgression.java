@@ -4,8 +4,8 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Flight, sprint/jump, and meditation are not run here. Potential Unlock is
- * wired from {@code ProgressionSystem}.
+ * Potential Unlock is wired from {@code ProgressionSystem}. Flight, sprint, and
+ * the old meditation trainer are not in this mod.
  */
 public final class SkillProgression {
     private SkillProgression() {}

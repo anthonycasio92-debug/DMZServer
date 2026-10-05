@@ -93,10 +93,11 @@ def main() -> int:
     ver = mod_version()
     check(f"VERSION {ver}", f'VERSION = "{ver}"' in mod)
 
-    med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
-    check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
-    check("meditation full-ki hint only while charging", 'if (charging)' in med and "Ki full" in med)
-    check("meditation no chat tellCondition", "DmzRewards.msg(player, LmChat.tagged(\"Meditation\", text))" not in med)
+    skills_dir = SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills"
+    check("flight sprint meditation classes removed",
+          not (skills_dir / "FlightProgression.java").is_file()
+          and not (skills_dir / "SprintJumpProgression.java").is_file()
+          and not (skills_dir / "MeditationProgression.java").is_file())
 
     mob_scaling = read(SRC / "com/dbzlegacy/adaptivedifficulty/scaling/MobScaling.java")
     end_str = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/end/EndDimensionStrength.java")
@@ -1118,14 +1119,13 @@ def main() -> int:
 
     print("\n=== Script parity fixes (2.3.54) ===")
     spar = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparringSystem.java")
-    med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("mentor invite 1 hour", "MENTOR_INVITE_MS = 60L * 60L * 1000L" in spar)
     check(
         "invite not 24h / not 2 min",
         "MENTOR_INVITE_MS = 24L" not in spar and "MENTOR_INVITE_MS = 120_000L" not in spar,
     )
-    check("manual meditation 30 min", "MANUAL_TRIAL_DURATION_MS = 30L" in med)
-    check("auto meditation 15 min", "TRIAL_DURATION_MS = 15L" in med)
+    old_med = SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java"
+    check("old meditation trainer removed", not old_med.is_file())
 
     print("\n=== CNPC GUI open no-perm (2.3.54) ===")
     cnpc = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/CnpcGuiOpener.java")
