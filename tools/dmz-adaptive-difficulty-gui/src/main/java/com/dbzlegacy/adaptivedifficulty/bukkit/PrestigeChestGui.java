@@ -248,7 +248,7 @@ public final class PrestigeChestGui implements Listener {
         List<String> out = new ArrayList<>();
         String raw = ph.getOrDefault("shop_skill_ids", "");
         if (raw == null || raw.isBlank()) {
-            return List.of("potentialunlock");
+            return List.of("meditation", "fly", "sprint", "jump", "potentialunlock");
         }
         for (String part : raw.split(",")) {
             if (part != null && !part.isBlank()) {

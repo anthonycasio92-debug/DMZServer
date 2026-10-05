@@ -167,11 +167,12 @@ public final class DmzSkillUtil {
     }
 
     /**
-     * Skill Check natural skill still owned here — Potential Unlock.
-     * Prestige skill shop is limited to this + {@link #SKILL_CHECK_SAGA}.
+     * Permanent prestige-shop skills. Flight, sprint, and meditation no longer
+     * train here; the shop still sells them, plus Potential Unlock.
+     * The Skill Check page lists Potential Unlock from this set.
      */
     public static final String[] SKILL_CHECK_NATURAL = {
-            "potentialunlock"
+            "potentialunlock", "fly", "meditation", "jump", "sprint"
     };
 
     /**
