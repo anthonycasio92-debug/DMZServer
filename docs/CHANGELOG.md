@@ -1,8 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.5.160**.
+What changed from **4.5.147** through **4.5.161**.
 
-The live mods folder gets `LegacyMechanics-4.5.160.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.5.161.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+
+## End Dragon summon
+
+The Difficulty menu can summon the End Dragon again. Personal Adaptive Difficulty must be on, the active tier must be T4–T7, and the summon costs 3 Ancient Netherite unless staff are free. Natural End dragons still do not spawn, and there is still no `/enddragon spawn`. Admins clear dragons with `/enddragon clear`.
 
 ## Meditation rate
 
@@ -66,7 +70,7 @@ The shop still sells **permanent** skill unlocks: Potential Unlock, Fly, Meditat
 
 **Android remove works.** `/progression android remove` removes your own upgrade. Run it again within 10 seconds to confirm. Staff can target another player. The hub Remove Android button does the same thing.
 
-**Dragon spawn does not work.** There is no spawn command, and the Difficulty menu cannot summon a dragon. Admins clear dragons with `/enddragon clear` (console works too). `/enddragon repair` is still there.
+**Difficulty summon is back on in 4.5.161.** There is still no `/enddragon spawn`. Natural End dragons stay off. Admins clear dragons with `/enddragon clear` (console works too). `/enddragon repair` is still there.
 
 Players also use `/lm`, `/difficulty`, `/rival`, `/spar`, and `/skillcheck` (donators). Staff keep progression boosts, flags, and android convert.
 

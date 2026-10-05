@@ -203,8 +203,9 @@ def main() -> int:
     check("enddragon spawn is not a command",
           'm_82127_("spawn")' not in prog_cmds
           and "/enddragon spawn" not in cmd_help
-          and "enableEndPlayerDragonSummon = false" in diff_cfg
-          and "cfg.enableEndPlayerDragonSummon = false" in diff_cfg)
+          and "enableEndPlayerDragonSummon = true" in diff_cfg
+          and "cfg.enableEndPlayerDragonSummon = false" not in diff_cfg
+          and "enableEndNaturalDragonSpawn = false" in diff_cfg)
     check("enddragon clear remains for admins",
           'm_82127_("clear")' in prog_cmds
           and "cmdCleanupDragons" in prog_cmds)
