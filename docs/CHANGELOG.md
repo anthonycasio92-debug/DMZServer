@@ -1,8 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** (previous `main`) through **4.5.158**. `main` is at 4.5.153. This branch adds a working android remove, keeps dragon spawn off, and lets every player open Skill Check from the NPC.
+What changed from **4.5.147** through **4.5.159**.
 
-The live mods folder gets `LegacyMechanics-4.5.158.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.5.159.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+
+## End return portal
+
+Walking through the End return portal back to the overworld does not start the death penalty. Dying still does.
 
 ## Meditation near two NPCs
 

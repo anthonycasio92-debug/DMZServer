@@ -457,6 +457,11 @@ public final class DifficultyEvents {
                     .scheduleReapplyAfterDeath(player);
         } catch (Throwable ignored) {
         }
+        // The End return portal respawns the player with isEndConquered.
+        // That is not a death, so it must not start the death penalty.
+        if (event.isEndConquered()) {
+            return;
+        }
         try {
             com.dbzlegacy.adaptivedifficulty.progression.tp.DeathTpPenalty.tellLiving(player);
         } catch (Throwable ignored) {
