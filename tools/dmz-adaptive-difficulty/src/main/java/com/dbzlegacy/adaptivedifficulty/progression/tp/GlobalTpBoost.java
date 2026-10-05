@@ -303,6 +303,9 @@ public final class GlobalTpBoost {
 
     private static void applyEffect(ServerPlayer player, int amplifier, int durationTicks) {
         try {
+            if (DeathTpPenalty.active(player)) {
+                return;
+            }
             MobEffect effect = MainEffects.TP_GAIN.get();
             if (effect == null || player == null) {
                 return;
@@ -323,6 +326,9 @@ public final class GlobalTpBoost {
 
     private static void removeEffect(ServerPlayer player) {
         try {
+            if (DeathTpPenalty.active(player)) {
+                return;
+            }
             MobEffect effect = MainEffects.TP_GAIN.get();
             if (effect != null && player != null) {
                 player.m_21195_(effect);

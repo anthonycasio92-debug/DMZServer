@@ -16,6 +16,7 @@
     "StatsDataSecondaryPlayerMixin",
     "StatsDataStatScalingMixin",
     "StatsDataDeathTpPenaltyMixin",
+    "PotionEffectHelperTpBonusMixin",
     "StatsDataRestoreMultiplierClampMixin",
     "StatsDataLoadClampMixin",
     "ResourcesEnergyDrainGuardMixin",

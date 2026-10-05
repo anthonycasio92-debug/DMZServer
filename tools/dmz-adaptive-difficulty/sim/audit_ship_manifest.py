@@ -98,21 +98,25 @@ def main() -> int:
     mixins_json = read(MOD / "src/main/resources/legacymechanics.mixins.json")
     check("DeathTpPenalty halves for 10 minutes",
           "MULTIPLIER = 0.5d" in death_tp and "DURATION_MS = 10L * 60L * 1000L" in death_tp)
-    check("death penalty mixin halves calculateTPGain",
-          "calculateTPGain(ILcom/dragonminez/common/config/TpSource;)I" in death_mixin
-          and "applyToGain" in death_mixin
-          and "inGrant" in death_mixin)
-    check("death penalty halves addTrainingPoints",
-          "addTrainingPoints(FZ)V" in read(SRC / "mixin/ResourcesDeathTpPenaltyMixin.java")
-          and "applyToAmount" in death_tp)
+    resources_mixin = read(SRC / "mixin/ResourcesDeathTpPenaltyMixin.java")
+    bonus_mixin = read(SRC / "mixin/PotionEffectHelperTpBonusMixin.java")
     events = read(SRC / "event/DifficultyEvents.java")
-    check("death penalty halves the finished grant and shows before and after",
-          "halveGranted" in death_tp
-          and "explainGrant" in death_tp
-          and "→" in death_tp
-          and "halveGranted" in events
-          and "explainGrant" in events
+    check("death penalty is the TP gain effect at a negative level",
+          "MainEffects.TP_GAIN" in death_tp
+          and "PENALTY_AMPLIFIER = -3" in death_tp
+          and "new MobEffectInstance" in death_tp
           and "tellLiving" in events)
+    check("negative TP gain levels use the same 0.25 step",
+          "getBonusFromAmplifier" in bonus_mixin
+          and "(amplifier + 1) * 0.25d" in bonus_mixin
+          and '"PotionEffectHelperTpBonusMixin"' in mixins_json)
+    check("death penalty does not cut the granted amount",
+          "setReturnValue" not in death_mixin
+          and "applyToGain" not in death_mixin
+          and "applyToAmount" not in death_tp
+          and "halveGranted" not in events
+          and "addTrainingPoints(FZ)V" in resources_mixin
+          and "return amount" in resources_mixin)
     check("death penalty timer is copied onto the respawned player",
           "DeathTpPenalty.KEY" in read(SRC / "event/DifficultyEvents.java")
           and "DeathTpPenalty.FRAC_KEY" in read(SRC / "event/DifficultyEvents.java"))

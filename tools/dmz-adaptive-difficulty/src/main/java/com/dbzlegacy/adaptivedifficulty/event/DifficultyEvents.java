@@ -288,15 +288,6 @@ public final class DifficultyEvents {
             } catch (Throwable ignored) {
             }
         }
-        int before = event.getTpGain();
-        if (before <= 0) {
-            return;
-        }
-        int after = com.dbzlegacy.adaptivedifficulty.progression.tp.DeathTpPenalty.halveGranted(player, before);
-        if (after != before) {
-            event.setTpGain(after);
-        }
-        com.dbzlegacy.adaptivedifficulty.progression.tp.DeathTpPenalty.explainGrant(player, before, after);
     }
 
     /**
