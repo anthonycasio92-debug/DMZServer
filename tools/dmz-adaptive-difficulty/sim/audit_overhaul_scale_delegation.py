@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
-"""Fail if Legacy Mechanics keeps the fighting-class share of stamina or ki.
+"""Fail if Legacy Mechanics rewrites class stat scaling or runs on a client.
 
 Policy:
-  - STM and ENE subtract the class-file coefficient times the Overhaul prestige
-    multiplier already inside the live return. A class change leaves those pools
-    on the race baseline. The file still contains the token live / scale and must
-    not contain live * scale. No ClassRaceStatScale.
-  - Other stats and getInitialBaseStats keep the DragonMineZ / dmzrevamp return.
-  - LM may read PrestigeSystem.scaleMultiplier for that subtraction.
+  - getStatScaling and getInitialBaseStats keep the DragonMineZ / dmzrevamp return
+    so the server pool matches the client bar. The file still contains the token
+    live / scale and must not contain live * scale. No ClassRaceStatScale.
+  - Mixins apply on the dedicated server only.
+  - LM may read PrestigeSystem.scaleMultiplier for display.
   - LM must not multiply getTotalMultiplier, getMaxEnergy, getMaxStamina, or defense by that scale.
   - LM must not duplicate 1 + count × scaleBonusPerPrestige in Java.
 """
@@ -75,21 +74,16 @@ def main() -> int:
         errors.append("legacymechanics.mixins.json must register StatsDataStatScalingMixin")
 
     stat_scaling = read("mixin/StatsDataStatScalingMixin.java")
-    scaling_method, _, base_method = stat_scaling.partition("lm$keepLiveBaseStats")
     if "live / scale" not in stat_scaling:
         errors.append("StatsDataStatScalingMixin must keep the live / scale token")
-    if "setReturnValue" not in scaling_method:
-        errors.append("StatsDataStatScalingMixin must remove the class share from stamina and ki")
-    if "classScale * prestige" not in scaling_method:
-        errors.append("StatsDataStatScalingMixin must subtract the prestiged class coefficient")
-    if "setReturnValue" in base_method:
-        errors.append("StatsDataStatScalingMixin must not replace getInitialBaseStats")
-    if "getConfiguredClassStats" not in stat_scaling or "getStaminaScaling" not in stat_scaling or "getEnergyScaling" not in stat_scaling:
-        errors.append("StatsDataStatScalingMixin must read the class file stamina and ki coefficient")
-    if "getClassStats(" in stat_scaling:
-        errors.append("StatsDataStatScalingMixin must not call getClassStats for the pool coefficient")
-    if "combatScaleMultiplier" not in scaling_method:
-        errors.append("StatsDataStatScalingMixin must read the Overhaul prestige multiplier")
+    if "setReturnValue" in stat_scaling:
+        errors.append("StatsDataStatScalingMixin must not replace getStatScaling or getInitialBaseStats")
+    if "getConfiguredClassStats" in stat_scaling or "getClassStats(" in stat_scaling:
+        errors.append("StatsDataStatScalingMixin must not read a class coefficient")
+    if "getStaminaScaling" in stat_scaling or "getEnergyScaling" in stat_scaling:
+        errors.append("StatsDataStatScalingMixin must not read a class stamina or ki coefficient")
+    if "combatScaleMultiplier" in stat_scaling:
+        errors.append("StatsDataStatScalingMixin must not apply a prestige scale")
     if "ClassRaceStatScale" in stat_scaling:
         errors.append("StatsDataStatScalingMixin must not replace getStatScaling with ClassRaceStatScale")
     if "getStatScaling" not in stat_scaling or "getInitialBaseStats" not in stat_scaling:
@@ -99,8 +93,13 @@ def main() -> int:
     if re.search(r"live\s*\*\s*scale", stat_scaling):
         errors.append("StatsDataStatScalingMixin must not multiply getStatScaling")
     plugin = read("mixin/LegacyMechanicsMixinPlugin.java")
-    if "StatsDataStatScalingMixin" not in plugin or "DEDICATED_SERVER" not in plugin:
-        errors.append("LegacyMechanicsMixinPlugin must keep only the pool hook on a client")
+    if "return dedicatedServer();" not in plugin or "DEDICATED_SERVER" not in plugin:
+        errors.append("LegacyMechanicsMixinPlugin must apply mixins on the dedicated server only")
+    if "StatsDataStatScalingMixin" in plugin:
+        errors.append("LegacyMechanicsMixinPlugin must not keep a client pool hook")
+    mod = read("AdaptiveDifficultyMod.java")
+    if "client:" in mod:
+        errors.append("AdaptiveDifficultyMod must not start a client feature path")
 
     pool_text = pool
     if "ClassRaceStatScale" in pool_text:

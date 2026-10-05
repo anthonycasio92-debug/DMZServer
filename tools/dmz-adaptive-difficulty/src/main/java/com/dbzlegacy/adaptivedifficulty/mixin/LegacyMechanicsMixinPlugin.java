@@ -7,8 +7,7 @@ import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
 /**
- * On a dedicated server every mixin applies. On a client only the stamina and ki
- * hook applies, so the rest of this server mod stays out of the client.
+ * LegacyMechanics runs on the dedicated server only. A client copy applies no mixins.
  */
 public final class LegacyMechanicsMixinPlugin implements IMixinConfigPlugin {
 
@@ -22,10 +21,7 @@ public final class LegacyMechanicsMixinPlugin implements IMixinConfigPlugin {
 
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
-        if (dedicatedServer()) {
-            return true;
-        }
-        return mixinClassName != null && mixinClassName.endsWith("StatsDataStatScalingMixin");
+        return dedicatedServer();
     }
 
     private static boolean dedicatedServer() {

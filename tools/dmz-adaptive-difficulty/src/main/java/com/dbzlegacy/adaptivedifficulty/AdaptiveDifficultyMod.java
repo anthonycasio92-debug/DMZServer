@@ -32,7 +32,7 @@ public final class AdaptiveDifficultyMod {
     /** Forge modId — lowercase; not used for NBT / GUI class lookup. */
     public static final String MOD_ID = "legacymechanics";
     /** Product line version (was DMZ Adaptive Difficulty 3.3.x). */
-    public static final String VERSION = "4.5.142";
+    public static final String VERSION = "4.5.143";
 
     /** True on the dedicated server. A failed side check keeps the server startup path. */
     private static boolean dedicatedServer() {
@@ -58,10 +58,6 @@ public final class AdaptiveDifficultyMod {
         );
 
         if (!dedicatedServer()) {
-            LOGGER.info(
-                    "[{}] v{} client: stamina and ki ignore the fighting-class coefficient",
-                    MOD_ID,
-                    VERSION);
             return;
         }
 
