@@ -7,14 +7,14 @@ When you ask for a behavior change, add a row here and a matching check in `audi
 
 | ID | Request (summary) | Introduced | Audit |
 |----|-------------------|------------|--------|
-| cnpc-ui-scale | CNPC menus fit Auto and GUI scale 4 and 5. The layout keeps its shape (one scale for width and height) and stays on screen | 4.5.132+ | manifest §ui scale |
+| cnpc-ui-scale | CNPC menus fit the GUI scale Minecraft actually uses (Auto, which is also what a manual 4 or 5 becomes when the screen cannot show a tighter step). Width and height share one layout scale. Label text is not shrunk a second time | 4.5.135+ | manifest §ui scale |
 | terminal-donator | `/terminal` opens for donators (`legacymechanics.skillcheck`) or players with `cmi.customalias.terminal` | 4.5.130+ | manifest §terminal |
 | held-overhaul-sync | Overhaul prestige count matches the LM held wallet, 1:1 from 0 to 10. A missing wallet is filled from faction, the DMZ prestige skill, or the current Overhaul count before that sync | 4.5.129+ | manifest §held overhaul |
 | farming-building-removed | Farming TP and Building TP are not in LegacyMechanics. Harvesting crops and placing blocks do not award training points from this mod | 4.5.128+ | manifest §farming building |
 | lightman-terminal | `/terminal` opens the Lightman's Currency network terminal. The CMI CustomAlias that force-cast the Fabled Terminal skill is retired | 4.5.127+ | manifest §terminal |
 | fabled-removed | Fabled bridges are gone. Prestige, spar, and Overhaul count use the LM held wallet. Race lock does not reset a character for a missing skill | 4.5.126+ | manifest §fabled removed |
-| class-stamina-config-scale | Fighting-class and stamina scaling are the race baseline in `races/<race>/stats.json` plus the fighting class in `classes/<class>.json`. Dragon Block Noea's demon, sphinxian, and alien installers define a complete class curve (alien uses the sphinxian table); that curve is used by itself when the race file has no class row. Overhaul prestige does not multiply the result. Legacy Saga's class-scaling mixin does not load, so LM applies it | 4.5.134+ | `audit_overhaul_scale_delegation.py` |
-| death-tp-penalty | Dying cuts TP gain in half for 10 minutes. The timer is copied onto the respawned player, and a later death refreshes it to 10 minutes | 4.5.132+ | manifest §death tp |
+| class-stamina-config-scale | Fighting-class coefficients and stamina are the live values DragonMineZ and the other installed mods already computed. LegacyMechanics does not replace `getStatScaling` or multiply `getMaxStamina`, the same way it stopped multiplying ki | 4.5.135+ | `audit_overhaul_scale_delegation.py` |
+| death-tp-penalty | Dying cuts the TP you actually receive in half for 10 minutes. Chat shows the full grant and the half (20 → 10). The timer is copied onto the respawned player, who sees that line, and a later death refreshes it to 10 minutes | 4.5.135+ | manifest §death tp |
 | prestige-need | First 4 prestiges need 20k each. From the 5th: 50k with 0 held, 100k with 1+ held | 4.5.121+ | `audit_prestige_need_ladder.py`, manifest §prestige |
 | prestige-gui | Main prestige hub: **Need/Held** from wallet; **no Cap** on main; no cap breakthrough button on main (CNPC/chest/CMI) | 4.5.64+ | `audit_prestige_gui_flow.py`, manifest §prestige |
 | skillcheck-gate | **Skill Check** = `legacymechanics.skillcheck` only; **no NPC/session bypass**; staff use **Skills** admin | 4.5.68+ | manifest §access |

@@ -5,17 +5,16 @@ import noppes.npcs.api.IScreenSize;
 import noppes.npcs.api.entity.IPlayer;
 import noppes.npcs.api.gui.ICustomGui;
 import noppes.npcs.api.gui.ICustomGuiComponent;
-import noppes.npcs.api.gui.IEntityDisplay;
-import noppes.npcs.api.gui.ILabel;
 import noppes.npcs.api.wrapper.gui.GuiComponentsScrollableWrapper;
 
 /**
  * Fits Legacy Mechanics CNPC menus to the player's UI scale.
  *
  * <p>CustomNPCs reports the framebuffer size. Minecraft draws GUI widgets in scaled pixels
- * ({@code framebuffer / guiScale}). Auto is the largest scale Minecraft offers.
- * GUI scale 4 and 5 are tighter than Auto on some resolutions, so the menu fits
- * the tightest of those. Width and height use one scale so the layout keeps its shape.
+ * ({@code framebuffer / guiScale}). Auto, and a manual 4 or 5 that the framebuffer
+ * cannot actually show, all resolve to that same scale. The menu uses it. Width and
+ * height share one layout scale so the layout keeps its shape. Label text is left at
+ * the size the menu was drawn at.
  */
 public final class CnpcUiFit {
     /** Same floor Minecraft uses when choosing GUI scale. */
@@ -42,25 +41,6 @@ public final class CnpcUiFit {
             scale++;
         }
         return scale;
-    }
-
-    /**
-     * Tightest GUI scale the menu must fit: Auto, plus 4 and 5 when the framebuffer
-     * can actually show that step. Scale 5 on 1080p is shorter than Auto, so a menu
-     * sized only for Auto still runs off the screen.
-     */
-    public static int tightScale(int framebufferWidth, int framebufferHeight) {
-        int tight = guiScale(framebufferWidth, framebufferHeight);
-        for (int step : new int[] {4, 5}) {
-            if (step <= tight) {
-                continue;
-            }
-            if (framebufferWidth / step >= MIN_SCALED_WIDTH
-                    && framebufferHeight / step >= 180) {
-                tight = step;
-            }
-        }
-        return tight;
     }
 
     /** GUI pixels along one axis at {@code scale} ({@code ceil(framebuffer / scale)}). */
@@ -91,7 +71,7 @@ public final class CnpcUiFit {
         if (fb == null) {
             return new int[] {designedWidth, designedHeight};
         }
-        int scale = tightScale(fb[0], fb[1]);
+        int scale = guiScale(fb[0], fb[1]);
         int boxW = Math.max(1, guiPixels(fb[0], scale) - SCREEN_MARGIN);
         int boxH = Math.max(1, guiPixels(fb[1], scale) - SCREEN_MARGIN);
         return new int[] {
@@ -176,17 +156,6 @@ public final class CnpcUiFit {
             h = Math.max(1, Math.round(h * sy));
         }
         component.setSize(w, h);
-        float fit = Math.min(sx, sy);
-        if (fit >= 0.999f) {
-            return;
-        }
-        if (component instanceof ILabel label) {
-            float scale = label.getScale();
-            label.setScale((scale <= 0f ? 1f : scale) * fit);
-        } else if (component instanceof IEntityDisplay display) {
-            float scale = display.getScale();
-            display.setScale((scale <= 0f ? 1f : scale) * fit);
-        }
     }
 
     private static GuiComponentsScrollableWrapper scrollPanel(ICustomGui gui) {

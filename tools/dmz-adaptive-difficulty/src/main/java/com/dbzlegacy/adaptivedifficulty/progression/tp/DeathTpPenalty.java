@@ -3,6 +3,8 @@ package com.dbzlegacy.adaptivedifficulty.progression.tp;
 import com.dbzlegacy.adaptivedifficulty.util.LmChat;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import com.dbzlegacy.adaptivedifficulty.util.ScreenNotify;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -22,8 +24,9 @@ public final class DeathTpPenalty {
     public static final String KEY = "lm.death_tp_penalty_until";
     /** Leftover half-point so a 1 TP hit still becomes half a point over two hits. */
     public static final String FRAC_KEY = "lm.death_tp_penalty_frac";
-    private static final String BAR_KEY = "lm.death.tp.bar";
-    private static final long BAR_COOLDOWN_MS = 8_000L;
+    /** Living-player explanation, so a corpse chat and the respawn chat are not the same slot. */
+    private static final ConcurrentHashMap<UUID, Long> LIVING_TOLD = new ConcurrentHashMap<>();
+    private static final long LIVING_TELL_GAP_MS = 3_000L;
     /** Depth of an {@code addTrainingPoints} call that already applied the cut. */
     private static final ThreadLocal<Integer> GRANT_DEPTH = ThreadLocal.withInitial(() -> 0);
 
@@ -62,6 +65,34 @@ public final class DeathTpPenalty {
     }
 
     /**
+     * Half of the training points DragonMineZ has already finished calculating.
+     * A leftover half-point carries to the next grant so 1 TP is not deleted.
+     */
+    public static int halveGranted(ServerPlayer player, int gain) {
+        if (player == null || gain <= 0 || !active(player)) {
+            return gain;
+        }
+        return Math.max(0, (int) applyToAmount(player, gain));
+    }
+
+    /** Chat and hotbar line: the full grant, then the half that is actually added. */
+    public static void explainGrant(ServerPlayer player, int before, int after) {
+        if (player == null || before <= 0 || !active(player)) {
+            return;
+        }
+        msg(player, LmChat.note(
+                "TP",
+                "§7Death penalty §f" + before + " §7→ §c" + after
+                        + "§7. §8Half for " + remainingLabel(player) + "."));
+        ScreenNotify.actionBar(
+                player,
+                before + " → " + after,
+                remainingLabel(player) + " left",
+                "",
+                0L);
+    }
+
+    /**
      * Same cut for a raw {@code addTrainingPoints} amount that never reaches
      * {@code calculateTPGain} (Mohist leaves the resources player null).
      */
@@ -90,13 +121,30 @@ public final class DeathTpPenalty {
             return;
         }
         boolean refreshed = active(player);
-        long until = System.currentTimeMillis() + DURATION_MS;
-        PersistentDataAccess.putLong(player, KEY, until);
-        String body = refreshed
-                ? "§cDeath penalty refreshed. §7TP gain stays at §chalf §7for §f10 minutes§7."
-                : "§cDeath penalty. §7TP gain is cut to §chalf §7for §f10 minutes§7.";
-        msg(player, LmChat.note("TP", body));
-        ScreenNotify.actionBar(player, "TP gain halved", "10m left", "", 0L);
+        stamp(player);
+        tell(player, refreshed);
+    }
+
+    /**
+     * The dying entity's chat is gone after respawn. Say the penalty again on the
+     * player who is actually on screen, including when the timer was already copied.
+     */
+    public static void tellLiving(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        boolean refreshed = active(player);
+        if (!refreshed) {
+            stamp(player);
+        }
+        long now = System.currentTimeMillis();
+        UUID id = player.m_20148_();
+        Long last = LIVING_TOLD.get(id);
+        if (last != null && now - last < LIVING_TELL_GAP_MS) {
+            return;
+        }
+        LIVING_TOLD.put(id, now);
+        tellSeen(player);
     }
 
     public static void onLogin(ServerPlayer player) {
@@ -109,8 +157,9 @@ public final class DeathTpPenalty {
         }
         msg(player, LmChat.note(
                 "TP",
-                "§cDeath penalty §7is still on. TP gain is §chalf §7for §f"
-                        + remainingLabel(player) + "§7."));
+                "§cDeath penalty §7is still on. Each grant is cut in half for §f"
+                        + remainingLabel(player) + "§7. §f20 §7→ §c10§7."));
+        ScreenNotify.hint(player, "TP halved", "20 → 10", "", 0L);
     }
 
     public static void pulse(MinecraftServer server, int tick) {
@@ -129,13 +178,30 @@ public final class DeathTpPenalty {
                 clearExpired(player, true);
                 continue;
             }
-            ScreenNotify.actionBar(
-                    player,
-                    "TP gain halved",
-                    remainingLabel(player) + " left",
-                    BAR_KEY,
-                    BAR_COOLDOWN_MS);
         }
+    }
+
+    private static void stamp(ServerPlayer player) {
+        PersistentDataAccess.putLong(player, KEY, System.currentTimeMillis() + DURATION_MS);
+    }
+
+    private static void tell(ServerPlayer player, boolean refreshed) {
+        String body = refreshed
+                ? "§cDeath penalty refreshed. §7Each TP grant is still cut in half for §f10 minutes§7. §f20 §7→ §c10§7."
+                : "§cDeath penalty. §7Each TP grant is cut in half for §f10 minutes§7. §f20 §7→ §c10§7.";
+        msg(player, LmChat.note("TP", body));
+        ScreenNotify.hint(player, "TP halved", "20 → 10", "", 0L);
+        ScreenNotify.actionBar(player, "20 → 10", remainingLabel(player) + " left", "", 0L);
+    }
+
+    /** What the player who is actually on screen sees, including a copied timer. */
+    private static void tellSeen(ServerPlayer player) {
+        msg(player, LmChat.note(
+                "TP",
+                "§cDeath penalty. §7Each TP grant is cut in half for §f"
+                        + remainingLabel(player) + "§7. §f20 §7→ §c10§7."));
+        ScreenNotify.hint(player, "TP halved", "20 → 10", "", 0L);
+        ScreenNotify.actionBar(player, "20 → 10", remainingLabel(player) + " left", "", 0L);
     }
 
     public static String remainingLabel(ServerPlayer player) {

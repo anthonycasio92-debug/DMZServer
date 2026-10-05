@@ -105,6 +105,14 @@ def main() -> int:
     check("death penalty halves addTrainingPoints",
           "addTrainingPoints(FZ)V" in read(SRC / "mixin/ResourcesDeathTpPenaltyMixin.java")
           and "applyToAmount" in death_tp)
+    events = read(SRC / "event/DifficultyEvents.java")
+    check("death penalty halves the finished grant and shows before and after",
+          "halveGranted" in death_tp
+          and "explainGrant" in death_tp
+          and "→" in death_tp
+          and "halveGranted" in events
+          and "explainGrant" in events
+          and "tellLiving" in events)
     check("death penalty timer is copied onto the respawned player",
           "DeathTpPenalty.KEY" in read(SRC / "event/DifficultyEvents.java")
           and "DeathTpPenalty.FRAC_KEY" in read(SRC / "event/DifficultyEvents.java"))
@@ -113,16 +121,15 @@ def main() -> int:
           and '"ResourcesDeathTpPenaltyMixin"' in mixins_json)
 
     print("\n--- § class stamina ---")
-    class_scale = read(SRC / "progression/ClassRaceStatScale.java")
     stat_mixin = read(SRC / "mixin/StatsDataStatScalingMixin.java")
-    check("class and stamina scaling is race baseline plus fighting class",
-          "getConfiguredClassStats" in class_scale
-          and "STM_scaling" in class_scale
-          and "stats.json" in class_scale
-          and "DemonRaceConfigInstaller" in class_scale
-          and "SphinxianRaceConfigInstaller" in class_scale
-          and "ClassRaceStatScale.scaling" in stat_mixin
-          and "getInitialBaseStats" in stat_mixin)
+    pool = read(SRC / "progression/DmzResourcePoolClamp.java")
+    check("class and stamina scaling is the live value, not an LM multiply",
+          "getInitialBaseStats" in stat_mixin
+          and "live / scale" in stat_mixin
+          and "setReturnValue" not in stat_mixin
+          and "ClassRaceStatScale" not in stat_mixin
+          and "ClassRaceStatScale" not in pool
+          and "return data == null ? 0f : data.getMaxStamina()" in pool)
 
     print("\n--- § fabled removed ---")
     bridge_dir = SRC / "progression/bridge"
@@ -346,9 +353,12 @@ def main() -> int:
     check("CNPC menus read the player screen size",
           "getScreenSize" in ui_fit and "compressToWindow" in ui_fit
           and "CnpcUiFit.fit" in cnpc_support and "compressToWindow" in cnpc_support)
-    check("GUI scale 4 and 5 use one layout scale",
-          "tightScale" in ui_fit and "Math.min(sx, sy)" in ui_fit
-          and "new int[] {4, 5}" in ui_fit)
+    check("menus fit Minecraft's real GUI scale without a second font shrink",
+          "guiScale(fb[0], fb[1])" in ui_fit
+          and "Math.min(sx, sy)" in ui_fit
+          and "tightScale" not in ui_fit
+          and "label.setScale" not in ui_fit
+          and "new int[] {4, 5}" not in ui_fit)
     check("GUI scale uses Minecraft's 320x240 floor",
           "MIN_SCALED_WIDTH = 320" in ui_fit and "MIN_SCALED_HEIGHT = 240" in ui_fit
           and "framebufferWidth / (scale + 1)" in ui_fit)

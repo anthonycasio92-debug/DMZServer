@@ -1,14 +1,10 @@
 package com.dbzlegacy.adaptivedifficulty.progression;
 
-import com.dbzlegacy.adaptivedifficulty.character.DmzContentDiscovery;
-import com.dragonminez.common.config.ConfigManager;
-import com.dragonminez.common.config.RaceStatsConfig;
 import com.dragonminez.common.network.NetworkHandler;
 import com.dragonminez.common.network.S2C.ResourceSyncS2C;
 import com.dragonminez.common.network.S2C.StatsSyncS2C;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.BonusStats;
-import com.dragonminez.common.stats.character.Character;
 import com.dragonminez.common.stats.character.Resources;
 import com.dragonminez.common.stats.character.Stats;
 import net.minecraft.server.level.ServerPlayer;
@@ -223,9 +219,8 @@ public final class DmzResourcePoolClamp {
 
     /**
      * Same arithmetic as {@code StatsData.getMaxEnergy}/{@code getMaxStamina} with the
-     * secondary attribute forced to 20. Does not call those getters. Does not call
-     * {@code getStatScaling} first — that creates an empty warrior/tank row (all 1.0)
-     * when live race JSON only has {@code classes.race}.
+     * secondary attribute forced to 20. Does not call those getters. The scale is the
+     * live {@code getStatScaling} those mods already computed.
      */
     private static float hudFormulaMax(StatsData data, boolean energy) {
         Stats stats = data.getStats();
@@ -260,134 +255,19 @@ public final class DmzResourcePoolClamp {
     }
 
     /**
-     * Race baseline plus fighting class, same sum as {@link ClassRaceStatScale}.
-     * Never calls {@code RaceStatsConfig#getClassStats} for a missing id — that inserts an
-     * empty ClassStats with 1.0 defaults and poisons later {@code getStatScaling} reads.
-     * The on-disk race file only lists {@code classes.race}, so a class-id lookup there
-     * is the race row alone and drops the fighting class.
+     * Live {@code getStatScaling}. DragonMineZ and the other installed mods already
+     * summed race, class, and prestige. Replacing that here was the same extra
+     * multiply that used to sit on ki.
      */
     private static double resolveHudScaling(StatsData data, String key) {
         try {
-            double combined = ClassRaceStatScale.scaling(data, key);
-            if (Double.isFinite(combined) && combined > 0.0d) {
-                return combined;
-            }
-        } catch (Throwable ignored) {
-        }
-        String race = raceId(data);
-        String cls = classId(data);
-        if (race != null && classConfigured(race, cls)) {
-            Double fromClass = scalingFromConfig(race, cls, key);
-            if (fromClass != null) {
-                return fromClass;
-            }
-        }
-        if (race != null && classConfigured(race, "race")) {
-            Double fromRace = scalingFromConfig(race, "race", key);
-            if (fromRace != null) {
-                return fromRace;
-            }
-        }
-        try {
             double live = data.getStatScaling(key);
-            if (Double.isFinite(live) && live > 0.0d && live != 1.0d) {
+            if (Double.isFinite(live) && live > 0.0d) {
                 return live;
             }
         } catch (Throwable ignored) {
         }
         return 1.0d;
-    }
-
-    private static String raceId(StatsData data) {
-        try {
-            Character ch = data.getCharacter();
-            if (ch == null) {
-                return null;
-            }
-            String race = ch.getRaceName();
-            if (race == null || race.isBlank()) {
-                race = ch.getRace();
-            }
-            if (race == null || race.isBlank()) {
-                return null;
-            }
-            return race.trim().toLowerCase();
-        } catch (Throwable ignored) {
-            return null;
-        }
-    }
-
-    private static String classId(StatsData data) {
-        try {
-            Character ch = data.getCharacter();
-            if (ch == null) {
-                return null;
-            }
-            String cls = ch.getCharacterClass();
-            if (cls == null || cls.isBlank()) {
-                return null;
-            }
-            return cls.trim().toLowerCase();
-        } catch (Throwable ignored) {
-            return null;
-        }
-    }
-
-    private static boolean classConfigured(String race, String classId) {
-        if (race == null || race.isBlank() || classId == null || classId.isBlank()) {
-            return false;
-        }
-        try {
-            for (String id : DmzContentDiscovery.classIdsForRace(race)) {
-                if (id != null && classId.equalsIgnoreCase(id.trim())) {
-                    return true;
-                }
-            }
-        } catch (Throwable ignored) {
-        }
-        return false;
-    }
-
-    private static Double scalingFromConfig(String race, String classId, String key) {
-        if (race == null || classId == null || key == null) {
-            return null;
-        }
-        try {
-            RaceStatsConfig cfg = ConfigManager.getRaceStats(race);
-            if (cfg == null) {
-                return null;
-            }
-            String canonical = null;
-            try {
-                for (String id : cfg.getAllClasses()) {
-                    if (id != null && classId.equalsIgnoreCase(id.trim())) {
-                        canonical = id.trim();
-                        break;
-                    }
-                }
-            } catch (Throwable ignored) {
-            }
-            if (canonical == null) {
-                canonical = classId;
-            }
-            RaceStatsConfig.ClassStats classStats = cfg.getClassStats(canonical);
-            if (classStats == null) {
-                return null;
-            }
-            RaceStatsConfig.StatScaling scaling = classStats.getStatScaling();
-            if (scaling == null) {
-                return null;
-            }
-            Double value = "ENE".equalsIgnoreCase(key)
-                    ? scaling.getEnergyScaling()
-                    : scaling.getStaminaScaling();
-            if (value == null || !Double.isFinite(value) || value <= 0.0d) {
-                return null;
-            }
-            return value;
-        } catch (Throwable ignored) {
-            return null;
-        }
     }
 
     private static double sanePositive(double value, double fallback) {

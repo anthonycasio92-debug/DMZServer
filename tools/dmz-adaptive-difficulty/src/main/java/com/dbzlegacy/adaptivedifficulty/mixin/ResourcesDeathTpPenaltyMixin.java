@@ -13,12 +13,13 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Halve TP at the method that actually adds it.
+ * When the resources player is null, DragonMineZ skips {@code calculateTPGain}
+ * and adds the raw amount. That path is halved here.
  * <p>
- * Combat, kills, and crafting call {@code addTrainingPoints} after their own
- * boost math. When the resources player is null, DragonMineZ skips
- * {@code calculateTPGain} and adds the full amount. This cut runs first, and
- * {@link StatsDataDeathTpPenaltyMixin} does not cut again on that same grant.
+ * When the player is set, DragonMineZ posts {@code TPGainEvent} and replaces
+ * the gain with {@code calculateTPGain}. Halving the raw input hides the cut
+ * inside that boost. The finished grant is halved once, after that math, and
+ * {@link StatsDataDeathTpPenaltyMixin} does not cut again on the same call.
  */
 @Mixin(value = Resources.class, remap = false, priority = 6200)
 public abstract class ResourcesDeathTpPenaltyMixin {
@@ -50,10 +51,17 @@ public abstract class ResourcesDeathTpPenaltyMixin {
                 resolved = player;
             }
         }
+        if (player instanceof ServerPlayer) {
+            return amount;
+        }
         if (!(resolved instanceof ServerPlayer sp)) {
             return amount;
         }
-        return DeathTpPenalty.applyToAmount(sp, amount);
+        float next = DeathTpPenalty.applyToAmount(sp, amount);
+        if (next != amount) {
+            DeathTpPenalty.explainGrant(sp, Math.max(0, (int) amount), Math.max(0, (int) next));
+        }
+        return next;
     }
 
     @Inject(method = "addTrainingPoints(FZ)V", at = @At("RETURN"), remap = false)

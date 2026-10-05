@@ -273,23 +273,30 @@ public final class DifficultyEvents {
         if (!(event.getPlayer() instanceof ServerPlayer player)) {
             return;
         }
-        if (!DifficultyConfig.get().enablePrestigeSystem) {
+        if (DifficultyConfig.get().enablePrestigeSystem) {
+            try {
+                var data = DmzProgression.stats(player);
+                if (data != null) {
+                    int raw = Math.max(0, data.getLevel());
+                    int cap = com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem
+                            .effectiveMaxLevel(player);
+                    if (raw >= cap) {
+                        event.setTpGain(0);
+                        return;
+                    }
+                }
+            } catch (Throwable ignored) {
+            }
+        }
+        int before = event.getTpGain();
+        if (before <= 0) {
             return;
         }
-        try {
-            var data = DmzProgression.stats(player);
-            if (data == null) {
-                return;
-            }
-            int raw = Math.max(0, data.getLevel());
-            int cap = com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem
-                    .effectiveMaxLevel(player);
-            if (raw < cap) {
-                return;
-            }
-            event.setTpGain(0);
-        } catch (Throwable ignored) {
+        int after = com.dbzlegacy.adaptivedifficulty.progression.tp.DeathTpPenalty.halveGranted(player, before);
+        if (after != before) {
+            event.setTpGain(after);
         }
+        com.dbzlegacy.adaptivedifficulty.progression.tp.DeathTpPenalty.explainGrant(player, before, after);
     }
 
     /**
@@ -433,9 +440,7 @@ public final class DifficultyEvents {
         CombatGravity.clearPlayer(old);
         if (event.isWasDeath()) {
             try {
-                if (!com.dbzlegacy.adaptivedifficulty.progression.tp.DeathTpPenalty.active(neu)) {
-                    com.dbzlegacy.adaptivedifficulty.progression.tp.DeathTpPenalty.onDeath(neu);
-                }
+                com.dbzlegacy.adaptivedifficulty.progression.tp.DeathTpPenalty.tellLiving(neu);
             } catch (Throwable ignored) {
             }
             try {
@@ -461,7 +466,7 @@ public final class DifficultyEvents {
         } catch (Throwable ignored) {
         }
         try {
-            com.dbzlegacy.adaptivedifficulty.progression.tp.DeathTpPenalty.onLogin(player);
+            com.dbzlegacy.adaptivedifficulty.progression.tp.DeathTpPenalty.tellLiving(player);
         } catch (Throwable ignored) {
         }
     }
