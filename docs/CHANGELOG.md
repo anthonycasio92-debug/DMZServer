@@ -1,8 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.5.161**.
+What changed from **4.5.147** through **4.5.162**.
 
-The live mods folder gets `LegacyMechanics-4.5.161.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.5.162.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+
+## Difficulty mob fight rhythm
+
+Each kit pulse now commits to one action, picked by range, using the moves that mob already had. Close is a slam, a shock, or a short blast while the mob steps back. Mid is a dash, a laser, or a leap. Far is a beam. A pack no longer refreshes slowness, mining fatigue, or wither on the same tick — one nearby mob owns each of those. Melee sidesteps while closing, and a retreat paths back in.
 
 ## End Dragon summon
 

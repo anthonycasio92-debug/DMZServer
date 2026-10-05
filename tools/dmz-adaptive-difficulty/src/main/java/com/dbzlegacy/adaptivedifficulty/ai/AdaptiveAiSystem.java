@@ -29,6 +29,7 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.monster.Ghast;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
@@ -45,6 +46,8 @@ public final class AdaptiveAiSystem {
     private static final Map<UUID, Long> KI_CHARGE_COOLDOWN = new ConcurrentHashMap<>();
     /** One pack-call per target player every 80 ticks. */
     private static final Map<UUID, Long> PACK_COOLDOWN = new ConcurrentHashMap<>();
+    /** Per-player, per-effect pressure gap so a pack does not refresh the same debuff together. */
+    private static final Map<String, Long> PRESSURE_COOLDOWN = new ConcurrentHashMap<>();
 
     private AdaptiveAiSystem() {}
 
@@ -152,6 +155,13 @@ public final class AdaptiveAiSystem {
             int amp = tier.ordinalPower() >= DifficultyTier.MYTHIC.ordinalPower() ? 2
                     : tier.ordinalPower() >= DifficultyTier.ADVANCED.ordinalPower() ? 1 : 0;
             mob.m_7292_(new MobEffectInstance(MobEffects.f_19596_, 40, amp, false, false)); // SPEED
+            // Sidestep while closing so the chase is not a straight line into the player's ki.
+            if (!(mob instanceof Ghast)) {
+                double gap = mob.m_20270_(target);
+                if (gap > 3.4 && gap < 13.0) {
+                    strafe(mob, target);
+                }
+            }
         }
 
         // Master+: rare pack call via combat-index peers (no world scan)
@@ -170,22 +180,24 @@ public final class AdaptiveAiSystem {
             mob.m_7292_(new MobEffectInstance(MobEffects.f_19603_, 40, 1, false, false)); // JUMP_BOOST
         }
 
-        // Impossible+: periodic pressure pulse (slowness)
+        long now = level.m_46467_();
+
+        // Impossible+: one mob owns the slowness pulse so a pack does not refresh it together.
         if (target instanceof ServerPlayer sp
                 && tier.ordinalPower() >= DifficultyTier.IMPOSSIBLE.ordinalPower()
-                && mob.f_19797_ % 80 == 0
-                && mob.m_20270_(sp) < 10.0f) {
-            sp.m_7292_(new MobEffectInstance(MobEffects.f_19597_, 35, 1, false, true));
+                && mob.m_20270_(sp) < 10.0f
+                && claimPressure(sp, "slow", now, 55L)) {
+            sp.m_7292_(new MobEffectInstance(MobEffects.f_19597_, 50, 1, false, true));
         }
 
         // Transcendent+: mining fatigue / hunger pressure in melee range
         if (target instanceof ServerPlayer sp
                 && tier.ordinalPower() >= DifficultyTier.TRANSCENDENT.ordinalPower()
-                && mob.f_19797_ % 100 == 0
-                && mob.m_20270_(sp) < 6.0f) {
-            sp.m_7292_(new MobEffectInstance(MobEffects.f_19599_, 60, 0, false, true)); // MINING_FATIGUE
+                && mob.m_20270_(sp) < 6.0f
+                && claimPressure(sp, "fatigue", now, 80L)) {
+            sp.m_7292_(new MobEffectInstance(MobEffects.f_19599_, 70, 0, false, true)); // MINING_FATIGUE
             if (tier.ordinalPower() >= DifficultyTier.ETERNAL.ordinalPower()) {
-                sp.m_7292_(new MobEffectInstance(MobEffects.f_19605_, 60, 1, false, true)); // HUNGER
+                sp.m_7292_(new MobEffectInstance(MobEffects.f_19605_, 70, 1, false, true)); // HUNGER
             }
         }
 
@@ -200,12 +212,12 @@ public final class AdaptiveAiSystem {
             frenzyAllies(mob, level, Math.min(10.0, scan));
         }
 
-        // Absolute+: wither touch while in melee
+        // Absolute+: wither touch while in melee. One mob owns it.
         if (target instanceof ServerPlayer sp
                 && tier.ordinalPower() >= DifficultyTier.ABSOLUTE.ordinalPower()
                 && mob.m_20270_(sp) < 3.5f
-                && mob.f_19797_ % 40 == 0) {
-            sp.m_7292_(new MobEffectInstance(MobEffects.f_19615_, 60, 0, false, true)); // WITHER
+                && claimPressure(sp, "wither", now, 45L)) {
+            sp.m_7292_(new MobEffectInstance(MobEffects.f_19615_, 50, 0, false, true)); // WITHER
         }
     }
 
@@ -392,6 +404,38 @@ public final class AdaptiveAiSystem {
             return;
         }
         mob.m_5997_((dx / len) * 0.9, 0.2, (dz / len) * 0.9);
+        // Step back, then path in again so the retreat is a beat and not a wander-off.
+        double reengage = tier.ordinalPower() >= DifficultyTier.GOD.ordinalPower() ? 1.2 : 1.05;
+        mob.m_21573_().m_5624_(target, reengage);
+    }
+
+    /** One nearby mob applies this debuff. The rest wait out the gap. */
+    private static boolean claimPressure(ServerPlayer player, String kind, long now, long gapTicks) {
+        if (player == null || kind == null) {
+            return false;
+        }
+        String key = player.m_20148_() + ":" + kind;
+        Long last = PRESSURE_COOLDOWN.get(key);
+        if (last != null && now - last < gapTicks) {
+            return false;
+        }
+        PRESSURE_COOLDOWN.put(key, now);
+        if (PRESSURE_COOLDOWN.size() > 256) {
+            PRESSURE_COOLDOWN.clear();
+        }
+        return true;
+    }
+
+    private static void strafe(Mob mob, LivingEntity target) {
+        double dx = target.m_20185_() - mob.m_20185_();
+        double dz = target.m_20189_() - mob.m_20189_();
+        double len = Math.sqrt(dx * dx + dz * dz);
+        if (len < 0.001) {
+            return;
+        }
+        double side = ((mob.f_19797_ / 40) % 2 == 0) ? 1.0 : -1.0;
+        double speed = 0.28;
+        mob.m_5997_((-dz / len) * speed * side, 0.0, (dx / len) * speed * side);
     }
 
     private static void coordinate(Mob mob, ServerLevel level, double radius, int maxAllies) {

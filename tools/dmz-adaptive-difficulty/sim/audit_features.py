@@ -270,7 +270,9 @@ def main() -> int:
     check("DmzProgression.skillLevel helper", "skillLevel(" in progression and "skillActive(" in progression)
     check("melee painted shock / slam damage", has(evo, "paintedMeleeHit", "dmz_ad_melee_shock"))
     check("zombie Awakened+ chase speed", "AWAKENED" in evo and "m_21573_" in evo)
+    check("one kit action marker", "dmz_ad_kit_act" in evo and "pushAway" in evo)
     check("Adaptive AI speed from Enhanced+", "ENHANCED" in ai and "f_19596_" in ai)
+    check("one owner per pressure debuff", "claimPressure" in ai)
     check("tier move bump on paint", "tierBump" in mob or "case 1 -> 1.06" in mob)
 
     print("\n=== Combat gravity cleanup (1.0.21) ===")

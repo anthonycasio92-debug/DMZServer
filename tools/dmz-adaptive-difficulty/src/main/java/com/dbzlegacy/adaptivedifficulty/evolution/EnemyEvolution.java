@@ -46,6 +46,8 @@ import net.minecraft.world.phys.Vec3;
 
 /**
  * Per-mob evolution kits unlocked by difficulty tiers.
+ * Each behavior pulse commits to one action chosen by range, so dash, leap,
+ * slam, and ki do not dump on the same tick.
  * Endermen / Wardens apply stacked DMZ gravity-chamber pressure to aggro'd players.
  */
 public final class EnemyEvolution {
@@ -347,6 +349,7 @@ public final class EnemyEvolution {
         int power = tier.ordinalPower();
 
         // Close the gap — Awakened+ chase speed so melee aren't wet noodles vs ki kits.
+        // A kiting player gets a small extra push so the dash is not the only answer.
         if (dist < 22.0 && power >= DifficultyTier.AWAKENED.ordinalPower()) {
             int amp = power >= DifficultyTier.MYTHIC.ordinalPower() ? 2
                     : power >= DifficultyTier.ELITE.ordinalPower() ? 1 : 0;
@@ -354,57 +357,56 @@ public final class EnemyEvolution {
             double chase = power >= DifficultyTier.GOD.ordinalPower() ? 1.55
                     : power >= DifficultyTier.ELITE.ordinalPower() ? 1.40
                     : power >= DifficultyTier.ENHANCED.ordinalPower() ? 1.28 : 1.18;
+            if (targetKiting(mob, target)) {
+                chase += 0.12;
+            }
             mob.m_21573_().m_5624_(target, chase);
         }
 
-        // Short dash — faster at high tiers / vs countered class+top stats
+        // One committed action: close = slam or shock, mid = dash, far = leap.
         long dashCd = kitCd(mob, power >= DifficultyTier.MYTHIC.ordinalPower() ? 16
                 : power >= DifficultyTier.GOD.ordinalPower() ? 24
                 : power >= DifficultyTier.ELITE.ordinalPower() ? 32 : 40);
-        if (dist > 1.8 && dist < 8.0 && age - tag.m_128454_("dmz_ad_dash") > dashCd
+        long leapCd = kitCd(mob, power >= DifficultyTier.TRANSCENDENT.ordinalPower() ? 18
+                : power >= DifficultyTier.ADVANCED.ordinalPower() ? 30 : 50);
+        long shockCd = kitCd(mob, power >= DifficultyTier.MYTHIC.ordinalPower() ? 28
+                : power >= DifficultyTier.GOD.ordinalPower() ? 36 : 48);
+        long slamEvery = kitCd(mob, power >= DifficultyTier.IMPOSSIBLE.ordinalPower() ? 30
+                : power >= DifficultyTier.DIVINE.ordinalPower() ? 42 : 58);
+        boolean close = dist < 3.8;
+        if (close && power >= DifficultyTier.ADVANCED.ordinalPower()
+                && age - tag.m_128454_("dmz_ad_slam") > slamEvery) {
+            tag.m_128356_("dmz_ad_slam", age);
+            markKitAct(tag, age);
+            int amp = power >= DifficultyTier.OMEGA.ordinalPower() ? 2 : 1;
+            groundSlam(mob, target, 3.2 + Math.min(2.2, power * 0.12), amp);
+            if (power >= DifficultyTier.ABSOLUTE.ordinalPower() && target instanceof ServerPlayer sp) {
+                sp.m_7292_(new MobEffectInstance(MobEffects.f_19615_, 50, 0, false, true)); // WITHER
+            }
+        } else if (close && power >= DifficultyTier.ELITE.ordinalPower()
+                && age - tag.m_128454_("dmz_ad_melee_shock") > shockCd) {
+            tag.m_128356_("dmz_ad_melee_shock", age);
+            markKitAct(tag, age);
+            double ratio = power >= DifficultyTier.OMEGA.ordinalPower() ? 0.72
+                    : power >= DifficultyTier.GOD.ordinalPower() ? 0.60
+                    : power >= DifficultyTier.MASTER.ordinalPower() ? 0.52 : 0.42;
+            paintedMeleeHit(mob, target, (float) ratio);
+        } else if (dist > 1.8 && dist < 8.0 && age - tag.m_128454_("dmz_ad_dash") > dashCd
                 && power >= DifficultyTier.AWAKENED.ordinalPower()) {
             tag.m_128356_("dmz_ad_dash", age);
+            markKitAct(tag, age);
             double force = power >= DifficultyTier.OMEGA.ordinalPower() ? 1.45
                     : power >= DifficultyTier.ELITE.ordinalPower() ? 1.15 : 1.00;
             pushToward(mob, target, force, 0.14);
-        }
-
-        // Leap — Enhanced+; chained Master+; rapid Transcendent+
-        long leapCd = kitCd(mob, power >= DifficultyTier.TRANSCENDENT.ordinalPower() ? 18
-                : power >= DifficultyTier.ADVANCED.ordinalPower() ? 30 : 50);
-        if (dist > 2.5 && dist < 15.0 && age - tag.m_128454_("dmz_ad_leap") > leapCd
+        } else if (dist > 6.0 && dist < 15.0 && age - tag.m_128454_("dmz_ad_leap") > leapCd
                 && power >= DifficultyTier.ENHANCED.ordinalPower()) {
             tag.m_128356_("dmz_ad_leap", age);
+            markKitAct(tag, age);
             pushToward(mob, target, 1.35 + Math.min(0.7, power * 0.045), 0.62);
             if (power >= DifficultyTier.MASTER.ordinalPower()
                     && age - tag.m_128454_("dmz_ad_leap2") > kitCd(mob, 18)) {
                 tag.m_128356_("dmz_ad_leap2", age);
                 mob.m_5997_(0, 0.28, 0);
-            }
-        }
-
-        // Close-range shock pulse — Elite+ painted ATK so melee threaten without contact RNG.
-        long shockCd = kitCd(mob, power >= DifficultyTier.MYTHIC.ordinalPower() ? 28
-                : power >= DifficultyTier.GOD.ordinalPower() ? 36 : 48);
-        if (dist < 3.8 && power >= DifficultyTier.ELITE.ordinalPower()
-                && age - tag.m_128454_("dmz_ad_melee_shock") > shockCd) {
-            tag.m_128356_("dmz_ad_melee_shock", age);
-            double ratio = power >= DifficultyTier.OMEGA.ordinalPower() ? 0.72
-                    : power >= DifficultyTier.GOD.ordinalPower() ? 0.60
-                    : power >= DifficultyTier.MASTER.ordinalPower() ? 0.52 : 0.42;
-            paintedMeleeHit(mob, target, (float) ratio);
-        }
-
-        // Ground slam — Advanced+; more frequent Impossible+ / vs tanks
-        long slamEvery = kitCd(mob, power >= DifficultyTier.IMPOSSIBLE.ordinalPower() ? 30
-                : power >= DifficultyTier.DIVINE.ordinalPower() ? 42 : 58);
-        if (dist < 3.8 && power >= DifficultyTier.ADVANCED.ordinalPower()
-                && age - tag.m_128454_("dmz_ad_slam") > slamEvery) {
-            tag.m_128356_("dmz_ad_slam", age);
-            int amp = power >= DifficultyTier.OMEGA.ordinalPower() ? 2 : 1;
-            groundSlam(mob, target, 3.2 + Math.min(2.2, power * 0.12), amp);
-            if (power >= DifficultyTier.ABSOLUTE.ordinalPower() && target instanceof ServerPlayer sp) {
-                sp.m_7292_(new MobEffectInstance(MobEffects.f_19615_, 50, 0, false, true)); // WITHER
             }
         }
 
@@ -469,11 +471,62 @@ public final class EnemyEvolution {
         long barrageCd = kitCd(mob, power >= DifficultyTier.ZENITH.ordinalPower() ? 140
                 : power >= DifficultyTier.OMEGA.ordinalPower() ? 160 : 180);
 
+        // Close: step off the player and fire a blast. Beams wait until there is space.
+        if (dist < 6.0f) {
+            if (power >= DifficultyTier.ENHANCED.ordinalPower()) {
+                pushAway(mob, target, power >= DifficultyTier.GOD.ordinalPower() ? 0.72 : 0.48);
+            }
+            if (power >= DifficultyTier.AWAKENED.ordinalPower()
+                    && age - tag.m_128454_("dmz_ad_ki_blast") >= blastCd) {
+                boolean burning = power >= DifficultyTier.GOD.ordinalPower();
+                if (KiAttackHelper.fireKiBlast(mob, target, tier, burning)) {
+                    markSkeletonKiShot(tag, age, "dmz_ad_ki_blast");
+                    markKitAct(tag, age);
+                }
+            }
+            return;
+        }
+
+        // Mid: laser, then blast, then a short barrage. Not the charged beam.
+        if (dist < 16.0f) {
+            if (power >= DifficultyTier.ELITE.ordinalPower()
+                    && age - tag.m_128454_("dmz_ad_ki_laser") >= laserCd
+                    && dist < 22.0f) {
+                if (KiAttackHelper.fireKiLaser(mob, target, tier)) {
+                    markSkeletonKiShot(tag, age, "dmz_ad_ki_laser");
+                    markKitAct(tag, age);
+                    return;
+                }
+            }
+            if (power >= DifficultyTier.AWAKENED.ordinalPower()
+                    && age - tag.m_128454_("dmz_ad_ki_blast") >= blastCd
+                    && dist < 18.0f) {
+                boolean burning = power >= DifficultyTier.GOD.ordinalPower();
+                if (KiAttackHelper.fireKiBlast(mob, target, tier, burning)) {
+                    markSkeletonKiShot(tag, age, "dmz_ad_ki_blast");
+                    markKitAct(tag, age);
+                    return;
+                }
+            }
+            if (power >= DifficultyTier.IMPOSSIBLE.ordinalPower()
+                    && age - tag.m_128454_("dmz_ad_ki_barrage") >= barrageCd
+                    && dist < 20.0f) {
+                int shots = 2 + Math.min(3, (power - DifficultyTier.IMPOSSIBLE.ordinalPower()) / 2);
+                if (KiAttackHelper.fireKiBarrage(mob, target, tier, shots, power >= DifficultyTier.OMEGA.ordinalPower()) > 0) {
+                    markSkeletonKiShot(tag, age, "dmz_ad_ki_barrage");
+                    markKitAct(tag, age);
+                }
+            }
+            return;
+        }
+
+        // Far: beam zones. Charged beam, then beam, then laser, then blast.
         if (power >= DifficultyTier.MASTER.ordinalPower()
                 && age - tag.m_128454_("dmz_ad_ki_charged") >= chargedCd
                 && dist < 26.0f) {
             if (KiAttackHelper.fireKiBeam(mob, target, tier, true)) {
                 markSkeletonKiShot(tag, age, "dmz_ad_ki_charged");
+                markKitAct(tag, age);
                 return;
             }
         }
@@ -482,6 +535,7 @@ public final class EnemyEvolution {
                 && dist < 24.0f) {
             if (KiAttackHelper.fireKiBeam(mob, target, tier, false)) {
                 markSkeletonKiShot(tag, age, "dmz_ad_ki_beam");
+                markKitAct(tag, age);
                 return;
             }
         }
@@ -490,6 +544,7 @@ public final class EnemyEvolution {
                 && dist < 22.0f) {
             if (KiAttackHelper.fireKiLaser(mob, target, tier)) {
                 markSkeletonKiShot(tag, age, "dmz_ad_ki_laser");
+                markKitAct(tag, age);
                 return;
             }
         }
@@ -499,17 +554,7 @@ public final class EnemyEvolution {
             boolean burning = power >= DifficultyTier.GOD.ordinalPower();
             if (KiAttackHelper.fireKiBlast(mob, target, tier, burning)) {
                 markSkeletonKiShot(tag, age, "dmz_ad_ki_blast");
-                return;
-            }
-        }
-
-        // Impossible+: short barrage volleys (fewer shots, longer gap).
-        if (power >= DifficultyTier.IMPOSSIBLE.ordinalPower()
-                && age - tag.m_128454_("dmz_ad_ki_barrage") >= barrageCd
-                && dist < 20.0f) {
-            int shots = 2 + Math.min(3, (power - DifficultyTier.IMPOSSIBLE.ordinalPower()) / 2);
-            if (KiAttackHelper.fireKiBarrage(mob, target, tier, shots, power >= DifficultyTier.OMEGA.ordinalPower()) > 0) {
-                markSkeletonKiShot(tag, age, "dmz_ad_ki_barrage");
+                markKitAct(tag, age);
             }
         }
     }
@@ -582,25 +627,21 @@ public final class EnemyEvolution {
             CombatGravity.contribute(player, ender.m_20148_(), g, 45);
         }
 
-        // Solar Flare
+        // One action: flare up close, otherwise a blink. Chase speed still runs.
+        long tpCd = kitCd(ender, tier.ordinalPower() >= DifficultyTier.MASTER.ordinalPower() ? 35
+                : tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower() ? 55 : 80);
         if (tier.ordinalPower() >= DifficultyTier.ENHANCED.ordinalPower()
                 && age - tag.m_128454_("dmz_ad_flare") >= kitCd(ender, 90)
                 && dist < 14.0f) {
             tag.m_128356_("dmz_ad_flare", age);
+            markKitAct(tag, age);
             solarFlare(level, ender, 10.0);
-        }
-
-        // Teleport combos — more aggressive at high tiers
-        long tpCd = kitCd(ender, tier.ordinalPower() >= DifficultyTier.MASTER.ordinalPower() ? 35
-                : tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower() ? 55 : 80);
-        if (tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower()
-                && age - tag.m_128454_("dmz_ad_tp") > tpCd) {
+        } else if (tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower()
+                && age - tag.m_128454_("dmz_ad_tp") > tpCd
+                && dist > 4.0f) {
             tag.m_128356_("dmz_ad_tp", age);
-            teleportNear(ender, player, 2.5);
-            if (tier.ordinalPower() >= DifficultyTier.ADVANCED.ordinalPower()) {
-                // Combo: second blink after brief delay feel via immediate second hop
-                teleportNear(ender, player, 1.5);
-            }
+            markKitAct(tag, age);
+            teleportNear(ender, player, dist < 10.0f ? 3.5 : 2.5);
         }
 
         if (tier.ordinalPower() >= DifficultyTier.MASTER.ordinalPower()) {
@@ -635,56 +676,53 @@ public final class EnemyEvolution {
             CombatGravity.contribute(focused, warden.m_20148_(), g, 45);
         }
 
-        // Leap
-        if (dist > 4.0 && dist < 16.0 && age - tag.m_128454_("dmz_ad_leap") > kitCd(warden, 50)
-                && tier.ordinalPower() >= DifficultyTier.ENHANCED.ordinalPower()) {
-            tag.m_128356_("dmz_ad_leap", age);
-            pushToward(warden, target, 1.35, 0.65);
-        }
-
-        // Rapid blasts / Ki barrage — longer CD, small volley (was up to 8 same-tick).
-        if (tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower()
-                && age - tag.m_128454_("dmz_ad_ki_barrage") >= kitCd(warden, 95)
-                && dist < 22.0f) {
-            int shots = 2 + Math.min(1, tier.ordinalPower() / 4);
-            if (KiAttackHelper.fireKiBarrage(warden, target, tier, shots) > 0) {
-                tag.m_128356_("dmz_ad_ki_barrage", age);
+        // One action: close = wave or leap, mid = large or barrage, far = beam or blink.
+        if (dist < 6.0f) {
+            if (tier.ordinalPower() >= DifficultyTier.MASTER.ordinalPower()
+                    && age - tag.m_128454_("dmz_ad_wave") >= kitCd(warden, 140)) {
+                if (KiAttackHelper.fireExplosiveWave(warden, target, tier)) {
+                    tag.m_128356_("dmz_ad_wave", age);
+                    markKitAct(tag, age);
+                }
+            } else if (dist > 4.0 && age - tag.m_128454_("dmz_ad_leap") > kitCd(warden, 50)
+                    && tier.ordinalPower() >= DifficultyTier.ENHANCED.ordinalPower()) {
+                tag.m_128356_("dmz_ad_leap", age);
+                markKitAct(tag, age);
+                pushToward(warden, target, 1.35, 0.65);
             }
-        }
-
-        // Large blast
-        if (tier.ordinalPower() >= DifficultyTier.ADVANCED.ordinalPower()
-                && age - tag.m_128454_("dmz_ad_large") >= kitCd(warden, 85)
-                && dist < 24.0f) {
-            if (KiAttackHelper.fireLargeBlast(warden, target, tier)) {
+        } else if (dist < 16.0f) {
+            if (tier.ordinalPower() >= DifficultyTier.ADVANCED.ordinalPower()
+                    && age - tag.m_128454_("dmz_ad_large") >= kitCd(warden, 85)
+                    && dist < 24.0f
+                    && KiAttackHelper.fireLargeBlast(warden, target, tier)) {
                 tag.m_128356_("dmz_ad_large", age);
+                markKitAct(tag, age);
+            } else if (tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower()
+                    && age - tag.m_128454_("dmz_ad_ki_barrage") >= kitCd(warden, 95)
+                    && dist < 22.0f) {
+                int shots = 2 + Math.min(1, tier.ordinalPower() / 4);
+                if (KiAttackHelper.fireKiBarrage(warden, target, tier, shots) > 0) {
+                    tag.m_128356_("dmz_ad_ki_barrage", age);
+                    markKitAct(tag, age);
+                }
+            } else if (age - tag.m_128454_("dmz_ad_leap") > kitCd(warden, 50)
+                    && tier.ordinalPower() >= DifficultyTier.ENHANCED.ordinalPower()) {
+                tag.m_128356_("dmz_ad_leap", age);
+                markKitAct(tag, age);
+                pushToward(warden, target, 1.35, 0.65);
             }
-        }
-
-        // Explosive wave
-        if (tier.ordinalPower() >= DifficultyTier.MASTER.ordinalPower()
-                && age - tag.m_128454_("dmz_ad_wave") >= kitCd(warden, 140)
-                && dist < 12.0f) {
-            if (KiAttackHelper.fireExplosiveWave(warden, target, tier)) {
-                tag.m_128356_("dmz_ad_wave", age);
-            }
-        }
-
-        // Beam
-        if (tier.ordinalPower() >= DifficultyTier.ADVANCED.ordinalPower()
+        } else if (tier.ordinalPower() >= DifficultyTier.ADVANCED.ordinalPower()
                 && age - tag.m_128454_("dmz_ad_ki_beam") >= kitCd(warden, 100)
-                && dist < 26.0f) {
-            if (KiAttackHelper.fireKiBeam(warden, target, tier,
-                    tier.ordinalPower() >= DifficultyTier.MASTER.ordinalPower())) {
-                tag.m_128356_("dmz_ad_ki_beam", age);
-            }
-        }
-
-        // Teleport
-        if (tier.ordinalPower() >= DifficultyTier.MASTER.ordinalPower()
+                && dist < 26.0f
+                && KiAttackHelper.fireKiBeam(warden, target, tier,
+                        tier.ordinalPower() >= DifficultyTier.MASTER.ordinalPower())) {
+            tag.m_128356_("dmz_ad_ki_beam", age);
+            markKitAct(tag, age);
+        } else if (tier.ordinalPower() >= DifficultyTier.MASTER.ordinalPower()
                 && age - tag.m_128454_("dmz_ad_tp") >= kitCd(warden, 100)
-                && dist > 5.0f) {
+                && dist > 12.0f) {
             tag.m_128356_("dmz_ad_tp", age);
+            markKitAct(tag, age);
             teleportNear(warden, target, 2.0);
         }
     }
@@ -713,12 +751,28 @@ public final class EnemyEvolution {
             return;
         }
 
+        // Inside melee, step back and use one blast. Barrage waits until there is range.
+        if (dist < 6.0f) {
+            if (tier.ordinalPower() >= DifficultyTier.ENHANCED.ordinalPower()) {
+                pushAway(blaze, target, 0.55);
+            }
+            if (tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower()
+                    && age - tag.m_128454_("dmz_ad_ki_blast") >= kitCd(blaze, 70)) {
+                if (KiAttackHelper.fireKiBlast(blaze, target, tier, true)) {
+                    markBlazeKiShot(tag, age, "dmz_ad_ki_blast");
+                    markKitAct(tag, age);
+                }
+            }
+            return;
+        }
+
         if (tier.ordinalPower() >= DifficultyTier.AWAKENED.ordinalPower()
                 && age - tag.m_128454_("dmz_ad_ki_barrage") >= kitCd(blaze, 85)
                 && dist < 18.0f) {
             int shots = 2 + Math.min(1, tier.ordinalPower() / 5);
             if (KiAttackHelper.fireKiBarrage(blaze, target, tier, shots, true) > 0) {
                 markBlazeKiShot(tag, age, "dmz_ad_ki_barrage");
+                markKitAct(tag, age);
                 return;
             }
         }
@@ -727,6 +781,7 @@ public final class EnemyEvolution {
                 && dist < 20.0f) {
             if (KiAttackHelper.fireKiBlast(blaze, target, tier, true)) {
                 markBlazeKiShot(tag, age, "dmz_ad_ki_blast");
+                markKitAct(tag, age);
                 return;
             }
         }
@@ -735,6 +790,7 @@ public final class EnemyEvolution {
                 && dist < 16.0f) {
             if (KiAttackHelper.fireExplosionBlast(blaze, target, tier)) {
                 markBlazeKiShot(tag, age, "dmz_ad_explode");
+                markKitAct(tag, age);
             }
         }
         // Intentionally no per-tick ignite — burning is applied by successful ki hits only.
@@ -792,28 +848,28 @@ public final class EnemyEvolution {
             return;
         }
 
-        // Large blast starts at Enhanced — Awakened (T1) keeps vanilla fireballs only.
-        if (tier.ordinalPower() >= DifficultyTier.ENHANCED.ordinalPower()
-                && age - tag.m_128454_("dmz_ad_large") >= kitCd(ghast, 50)
-                && dist < 40.0f) {
-            if (KiAttackHelper.fireLargeBlast(ghast, target, tier)) {
-                tag.m_128356_("dmz_ad_large", age);
-                target.m_20254_(3);
-            }
-        }
-        if (tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower()
+        // One shot: far beam, close wave, otherwise the large blast.
+        if (dist >= 18.0f
+                && tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower()
                 && age - tag.m_128454_("dmz_ad_ki_beam") >= kitCd(ghast, 80)
-                && dist < 42.0f) {
-            if (KiAttackHelper.fireKiBeam(ghast, target, tier, true, true)) {
-                tag.m_128356_("dmz_ad_ki_beam", age);
-            }
-        }
-        if (tier.ordinalPower() >= DifficultyTier.ADVANCED.ordinalPower()
+                && dist < 42.0f
+                && KiAttackHelper.fireKiBeam(ghast, target, tier, true, true)) {
+            tag.m_128356_("dmz_ad_ki_beam", age);
+            markKitAct(tag, age);
+        } else if (dist < 22.0f
+                && tier.ordinalPower() >= DifficultyTier.ADVANCED.ordinalPower()
                 && age - tag.m_128454_("dmz_ad_wave") >= kitCd(ghast, 120)
-                && dist < 28.0f) {
-            if (KiAttackHelper.fireExplosiveWave(ghast, target, tier)) {
-                tag.m_128356_("dmz_ad_wave", age);
-            }
+                && KiAttackHelper.fireExplosiveWave(ghast, target, tier)) {
+            tag.m_128356_("dmz_ad_wave", age);
+            markKitAct(tag, age);
+        } else if (tier.ordinalPower() >= DifficultyTier.ENHANCED.ordinalPower()
+                && age - tag.m_128454_("dmz_ad_large") >= kitCd(ghast, 50)
+                && dist < 40.0f
+                && KiAttackHelper.fireLargeBlast(ghast, target, tier)) {
+            // Large blast starts at Enhanced — Awakened (T1) keeps vanilla fireballs only.
+            tag.m_128356_("dmz_ad_large", age);
+            markKitAct(tag, age);
+            target.m_20254_(3);
         }
     }
 
@@ -833,28 +889,30 @@ public final class EnemyEvolution {
         long age = piglin.f_19797_;
         double dist = piglin.m_20270_(target);
 
-        if (dist > 3.0 && dist < 12.0 && age - tag.m_128454_("dmz_ad_leap") > kitCd(piglin, 55)
-                && tier.ordinalPower() >= DifficultyTier.ENHANCED.ordinalPower()) {
-            tag.m_128356_("dmz_ad_leap", age);
-            pushToward(piglin, target, 1.2, 0.55);
-        }
-        if (tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower()
-                && age - tag.m_128454_("dmz_ad_ki_blast") >= kitCd(piglin, 50)
-                && dist < 16.0) {
-            if (KiAttackHelper.fireKiBlast(piglin, target, tier)) {
-                tag.m_128356_("dmz_ad_ki_blast", age);
-            }
-        }
         if (dist < 16.0 && tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower()) {
+            double chase = targetKiting(piglin, target) ? 1.52 : 1.4;
             piglin.m_7292_(new MobEffectInstance(MobEffects.f_19596_, 40, 1, false, false));
-            piglin.m_21573_().m_5624_(target, 1.4);
+            piglin.m_21573_().m_5624_(target, chase);
         }
         if (dist < 3.0 && tier.ordinalPower() >= DifficultyTier.ADVANCED.ordinalPower()
                 && age - tag.m_128454_("dmz_ad_rush") >= kitCd(piglin, 60)) {
             tag.m_128356_("dmz_ad_rush", age);
+            markKitAct(tag, age);
             // Rush combo — slam + brief strength
             groundSlam(piglin, target, 2.5, 0);
             piglin.m_7292_(new MobEffectInstance(MobEffects.f_19600_, 40, 1, false, true));
+        } else if (dist > 3.0 && dist < 12.0 && age - tag.m_128454_("dmz_ad_leap") > kitCd(piglin, 55)
+                && tier.ordinalPower() >= DifficultyTier.ENHANCED.ordinalPower()) {
+            tag.m_128356_("dmz_ad_leap", age);
+            markKitAct(tag, age);
+            pushToward(piglin, target, 1.2, 0.55);
+        } else if (tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower()
+                && age - tag.m_128454_("dmz_ad_ki_blast") >= kitCd(piglin, 50)
+                && dist >= 4.0 && dist < 16.0) {
+            if (KiAttackHelper.fireKiBlast(piglin, target, tier)) {
+                tag.m_128356_("dmz_ad_ki_blast", age);
+                markKitAct(tag, age);
+            }
         }
     }
 
@@ -874,17 +932,23 @@ public final class EnemyEvolution {
         long age = zp.f_19797_;
         double dist = zp.m_20270_(target);
 
-        if (dist > 3.0 && dist < 13.0 && age - tag.m_128454_("dmz_ad_leap") > kitCd(zp, 50)
+        if (dist < 3.5 && tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower()
+                && age - tag.m_128454_("dmz_ad_melee_shock") > kitCd(zp, 36)) {
+            tag.m_128356_("dmz_ad_melee_shock", age);
+            markKitAct(tag, age);
+            paintedMeleeHit(zp, target, tier.ordinalPower() >= DifficultyTier.GOD.ordinalPower() ? 0.48f : 0.36f);
+        } else if (dist > 3.0 && dist < 13.0 && age - tag.m_128454_("dmz_ad_leap") > kitCd(zp, 50)
                 && tier.ordinalPower() >= DifficultyTier.ENHANCED.ordinalPower()) {
             tag.m_128356_("dmz_ad_leap", age);
+            markKitAct(tag, age);
             pushToward(zp, target, 1.3, 0.6);
-        }
-        if (tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower()
+        } else if (tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower()
                 && age - tag.m_128454_("dmz_ad_ki_barrage") >= kitCd(zp, 65)
-                && dist < 18.0) {
+                && dist >= 5.0 && dist < 18.0) {
             int shots = 2 + Math.min(4, tier.ordinalPower() / 2);
             if (KiAttackHelper.fireKiBarrage(zp, target, tier, shots) > 0) {
                 tag.m_128356_("dmz_ad_ki_barrage", age);
+                markKitAct(tag, age);
             }
         }
         // Aggressive swarm — combat-index peers only (no world AABB)
@@ -980,12 +1044,38 @@ public final class EnemyEvolution {
         target.m_6469_(mob.m_269291_().m_269333_(mob), dmg);
     }
 
+    private static void markKitAct(CompoundTag tag, long age) {
+        if (tag != null) {
+            tag.m_128356_("dmz_ad_kit_act", age);
+        }
+    }
+
+    /** True when the target's horizontal motion is carrying them away from the mob. */
+    private static boolean targetKiting(Mob mob, LivingEntity target) {
+        if (mob == null || target == null) {
+            return false;
+        }
+        Vec3 motion = target.m_20184_();
+        double dx = target.m_20185_() - mob.m_20185_();
+        double dz = target.m_20189_() - mob.m_20189_();
+        return motion.f_82479_ * dx + motion.f_82481_ * dz > 0.03;
+    }
+
     private static void pushToward(Mob mob, LivingEntity target, double horizontal, double upward) {
         double dx = target.m_20185_() - mob.m_20185_();
         double dz = target.m_20189_() - mob.m_20189_();
         double len = Math.sqrt(dx * dx + dz * dz);
         if (len > 0.001) {
             mob.m_5997_((dx / len) * horizontal, upward, (dz / len) * horizontal);
+        }
+    }
+
+    private static void pushAway(Mob mob, LivingEntity target, double horizontal) {
+        double dx = mob.m_20185_() - target.m_20185_();
+        double dz = mob.m_20189_() - target.m_20189_();
+        double len = Math.sqrt(dx * dx + dz * dz);
+        if (len > 0.001) {
+            mob.m_5997_((dx / len) * horizontal, 0.04, (dz / len) * horizontal);
         }
     }
 
