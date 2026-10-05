@@ -114,6 +114,10 @@ public final class ProgressionSystem {
             StaminaRegenGuard.onLogout(player);
         } catch (Throwable ignored) {
         }
+        try {
+            PersonalLevelCapMirror.forget(player);
+        } catch (Throwable ignored) {
+        }
         ProgressionData.clearPlayer(player.m_20148_());
     }
 

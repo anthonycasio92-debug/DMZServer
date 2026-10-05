@@ -137,6 +137,13 @@ merge_onto_base_jar() {
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigeSystem.class" \
       "$merge/com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigeSystem.class"
   fi
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigePointsSystem.class" ]]; then
+    mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/progression/shop"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigePointsSystem.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigePointsSystem.class"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigePointsSystem\$"*.class \
+      "$merge/com/dbzlegacy/adaptivedifficulty/progression/shop/" 2>/dev/null || true
+  fi
   # Hub/chat fallback + /lm open|page — must ship from src (base jar may still reference /lmdo).
   for class in MechanicsChatMenu DifficultyChatMenu RivalChatMenu SparChatMenu ProgressionChatMenu; do
     if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/gui/${class}.class" ]]; then
@@ -228,7 +235,8 @@ merge_onto_base_jar() {
     mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/progression/bridge" \
       "$merge/com/dbzlegacy/adaptivedifficulty/mixin"
     for pool_cls in DmzResourcePoolClamp LmOverhaulPrestigeIntegration ProgressionSystem \
-        StaminaRegenGuard StatsDataLoadContext; do
+        StaminaRegenGuard StatsDataLoadContext PersonalLevelCapMirror LmOverhaulCapMath \
+        LmStatsDataAccess; do
       if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/progression/${pool_cls}.class" ]]; then
         cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/${pool_cls}.class" \
           "$merge/com/dbzlegacy/adaptivedifficulty/progression/${pool_cls}.class"
@@ -242,7 +250,7 @@ merge_onto_base_jar() {
     fi
     for mixin_cls in StatsDataHudPoolMaxMixin StatsDataOverhaulCombatScaleMixin \
         ResourcesPoolClampMixin ResourcesLoadClampMixin \
-        StatsDataRestoreMultiplierClampMixin StatsDataLoadClampMixin; do
+        StatsDataRestoreMultiplierClampMixin StatsDataLoadClampMixin StatsDataMixin; do
       if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/mixin/${mixin_cls}.class" ]]; then
         cp "$OUT/com/dbzlegacy/adaptivedifficulty/mixin/${mixin_cls}.class" \
           "$merge/com/dbzlegacy/adaptivedifficulty/mixin/${mixin_cls}.class"

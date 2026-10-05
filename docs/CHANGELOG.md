@@ -1,8 +1,14 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6**.
+What changed from **4.5.147** through **4.6.1**.
 
-The live mods folder gets `LegacyMechanics-4.6.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.6.1.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+
+## Level cap cache
+
+Stat getters no longer re-read breakthrough NBT or sync the client. The personal cap is cached per player and refreshed on login, logout, and a breakthrough purchase. A sync packet goes out only when that number changes.
+
+
 
 ## Dead facades
 

@@ -985,6 +985,7 @@ public final class PrestigePointsSystem {
             DmzSkillUtil.sync(player);
         } catch (Throwable ignored) {
         }
+        PersonalLevelCapMirror.markSynced(player, effectiveMaxLevel(n));
     }
 
     /** Personal DMZ level cap: 100k + breakthroughs×10k (mixin + soft-locks). */
