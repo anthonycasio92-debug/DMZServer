@@ -1,8 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.5.163**.
+What changed from **4.5.147** through **4.5.164**.
 
-The live mods folder gets `LegacyMechanics-4.5.163.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.5.164.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+
+## Dead facades
+
+Chest-menu bridges `BukkitGuiBridge` and `CmiGuiBridge` are gone. So are the unused facades `SkillProgression`, `RaceProgression`, `TpProgression`, and `CnpcBridge`. `ProgressionSystem` already calls the race and training pulses directly.
 
 ## Hot-path guards
 

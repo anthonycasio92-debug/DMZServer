@@ -253,6 +253,14 @@ merge_onto_base_jar() {
       cp "$RES/legacymechanics.refmap.json" "$merge/legacymechanics.refmap.json"
     fi
   fi
+  # Retired facades. A base jar can still contain these classes after the sources are gone.
+  rm -f \
+    "$merge/com/dbzlegacy/adaptivedifficulty/gui/BukkitGuiBridge.class" \
+    "$merge/com/dbzlegacy/adaptivedifficulty/gui/CmiGuiBridge.class" \
+    "$merge/com/dbzlegacy/adaptivedifficulty/progression/skills/SkillProgression.class" \
+    "$merge/com/dbzlegacy/adaptivedifficulty/progression/race/RaceProgression.class" \
+    "$merge/com/dbzlegacy/adaptivedifficulty/progression/tp/TpProgression.class" \
+    "$merge/com/dbzlegacy/adaptivedifficulty/progression/bridge/CnpcBridge.class"
   cp "$RES/META-INF/mods.toml" "$merge/META-INF/mods.toml"
   if [[ ! -f "$merge/legacymechanics.mixins.json" ]]; then
     cp "$RES/legacymechanics.mixins.json" "$merge/legacymechanics.mixins.json"

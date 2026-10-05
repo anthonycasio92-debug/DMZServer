@@ -148,7 +148,6 @@ def main() -> int:
     print("\n--- § natural skills ---")
     prog_cfg = read(SRC / "progression/ProgressionConfig.java")
     prog_sys = read(SRC / "progression/ProgressionSystem.java")
-    skill_pulse = read(SRC / "progression/skills/SkillProgression.java")
     diff_cfg = read(SRC / "config/DifficultyConfig.java")
     skill_dir = SRC / "progression/skills"
     check("flight sprint and meditation are removed",
@@ -162,9 +161,7 @@ def main() -> int:
           and "FlightProgression" not in prog_sys
           and "SprintJumpProgression" not in prog_sys
           and "MeditationProgression" not in prog_sys
-          and "FlightProgression" not in skill_pulse
-          and "SprintJumpProgression" not in skill_pulse
-          and "MeditationProgression" not in skill_pulse
+          and not (skill_dir / "SkillProgression.java").is_file()
           and "PotentialProgression.onPlayerHurt" in prog_sys
           and "enableFlightProgression" not in diff_cfg
           and "enableSprintJump" not in diff_cfg
