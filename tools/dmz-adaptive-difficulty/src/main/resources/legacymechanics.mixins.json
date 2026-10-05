@@ -19,6 +19,7 @@
     "StatsDataRestoreMultiplierClampMixin",
     "StatsDataLoadClampMixin",
     "ResourcesEnergyDrainGuardMixin",
+    "ResourcesDeathTpPenaltyMixin",
     "ResourcesPoolClampMixin",
     "ResourcesLoadClampMixin"
   ],

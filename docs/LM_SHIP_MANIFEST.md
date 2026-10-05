@@ -7,14 +7,14 @@ When you ask for a behavior change, add a row here and a matching check in `audi
 
 | ID | Request (summary) | Introduced | Audit |
 |----|-------------------|------------|--------|
-| cnpc-ui-scale | CNPC menus fit the player's UI scale. A larger GUI scale uses a shorter window and squeezes the layout so it stays on screen | 4.5.131+ | manifest §ui scale |
+| cnpc-ui-scale | CNPC menus fit Auto and GUI scale 4 and 5. The layout keeps its shape (one scale for width and height) and stays on screen | 4.5.132+ | manifest §ui scale |
 | terminal-donator | `/terminal` opens for donators (`legacymechanics.skillcheck`) or players with `cmi.customalias.terminal` | 4.5.130+ | manifest §terminal |
 | held-overhaul-sync | Overhaul prestige count matches the LM held wallet, 1:1 from 0 to 10. A missing wallet is filled from faction, the DMZ prestige skill, or the current Overhaul count before that sync | 4.5.129+ | manifest §held overhaul |
 | farming-building-removed | Farming TP and Building TP are not in LegacyMechanics. Harvesting crops and placing blocks do not award training points from this mod | 4.5.128+ | manifest §farming building |
 | lightman-terminal | `/terminal` opens the Lightman's Currency network terminal. The CMI CustomAlias that force-cast the Fabled Terminal skill is retired | 4.5.127+ | manifest §terminal |
 | fabled-removed | Fabled bridges are gone. Prestige, spar, and Overhaul count use the LM held wallet. Race lock does not reset a character for a missing skill | 4.5.126+ | manifest §fabled removed |
 | class-stamina-config-scale | Fighting-class and stamina scaling stay the DragonMineZ config values. LM divides dmzrevamp's prestige coefficient out of `getStatScaling` and does not multiply pools | 4.5.124+ | `audit_overhaul_scale_delegation.py` |
-| death-tp-penalty | Dying cuts TP gain in half for 10 minutes. The timer stays on the player through relog, and a later death refreshes it to 10 minutes | 4.5.125+ | manifest §death tp |
+| death-tp-penalty | Dying cuts TP gain in half for 10 minutes. The timer is copied onto the respawned player, and a later death refreshes it to 10 minutes | 4.5.132+ | manifest §death tp |
 | prestige-need | First 4 prestiges need 20k each. From the 5th: 50k with 0 held, 100k with 1+ held | 4.5.121+ | `audit_prestige_need_ladder.py`, manifest §prestige |
 | prestige-gui | Main prestige hub: **Need/Held** from wallet; **no Cap** on main; no cap breakthrough button on main (CNPC/chest/CMI) | 4.5.64+ | `audit_prestige_gui_flow.py`, manifest §prestige |
 | skillcheck-gate | **Skill Check** = `legacymechanics.skillcheck` only; **no NPC/session bypass**; staff use **Skills** admin | 4.5.68+ | manifest §access |

@@ -40,14 +40,12 @@ public abstract class StatsDataDeathTpPenaltyMixin {
         if (!(player instanceof ServerPlayer sp)) {
             return;
         }
-        double mult = DeathTpPenalty.multiplier(sp);
-        if (!Double.isFinite(mult) || mult >= 0.999d || mult <= 0.0d) {
+        // addTrainingPoints already halved this grant. Cutting calculateTPGain
+        // again would turn the penalty into a quarter.
+        if (DeathTpPenalty.inGrant()) {
             return;
         }
-        int next = (int) Math.floor(gain * mult);
-        if (next < 1) {
-            next = 1;
-        }
+        int next = DeathTpPenalty.applyToGain(sp, gain);
         if (next != gain) {
             cir.setReturnValue(next);
         }

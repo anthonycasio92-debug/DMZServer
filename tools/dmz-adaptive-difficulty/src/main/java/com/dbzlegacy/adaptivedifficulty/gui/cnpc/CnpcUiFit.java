@@ -13,14 +13,16 @@ import noppes.npcs.api.wrapper.gui.GuiComponentsScrollableWrapper;
  * Fits Legacy Mechanics CNPC menus to the player's UI scale.
  *
  * <p>CustomNPCs reports the framebuffer size. Minecraft draws GUI widgets in scaled pixels
- * ({@code framebuffer / guiScale}). The largest scale the video settings allow is the same
- * value Auto picks ({@code Window.calculateScale}). Menus are sized for that scale, then
- * squeezed so buttons and the character preview stay inside the window.
+ * ({@code framebuffer / guiScale}). Auto is the largest scale Minecraft offers.
+ * GUI scale 4 and 5 are tighter than Auto on some resolutions, so the menu fits
+ * the tightest of those. Width and height use one scale so the layout keeps its shape.
  */
 public final class CnpcUiFit {
     /** Same floor Minecraft uses when choosing GUI scale. */
     static final int MIN_SCALED_WIDTH = 320;
     static final int MIN_SCALED_HEIGHT = 240;
+    /** Gap so the window is not flush with the edge of the screen. */
+    private static final int SCREEN_MARGIN = 8;
 
     private CnpcUiFit() {}
 
@@ -40,6 +42,25 @@ public final class CnpcUiFit {
             scale++;
         }
         return scale;
+    }
+
+    /**
+     * Tightest GUI scale the menu must fit: Auto, plus 4 and 5 when the framebuffer
+     * can actually show that step. Scale 5 on 1080p is shorter than Auto, so a menu
+     * sized only for Auto still runs off the screen.
+     */
+    public static int tightScale(int framebufferWidth, int framebufferHeight) {
+        int tight = guiScale(framebufferWidth, framebufferHeight);
+        for (int step : new int[] {4, 5}) {
+            if (step <= tight) {
+                continue;
+            }
+            if (framebufferWidth / step >= MIN_SCALED_WIDTH
+                    && framebufferHeight / step >= 180) {
+                tight = step;
+            }
+        }
+        return tight;
     }
 
     /** GUI pixels along one axis at {@code scale} ({@code ceil(framebuffer / scale)}). */
@@ -70,17 +91,19 @@ public final class CnpcUiFit {
         if (fb == null) {
             return new int[] {designedWidth, designedHeight};
         }
-        int scale = guiScale(fb[0], fb[1]);
+        int scale = tightScale(fb[0], fb[1]);
+        int boxW = Math.max(1, guiPixels(fb[0], scale) - SCREEN_MARGIN);
+        int boxH = Math.max(1, guiPixels(fb[1], scale) - SCREEN_MARGIN);
         return new int[] {
-                fitWindow(designedWidth, guiPixels(fb[0], scale)),
-                fitWindow(designedHeight, guiPixels(fb[1], scale))
+                fitWindow(designedWidth, boxW),
+                fitWindow(designedHeight, boxH)
         };
     }
 
     /**
      * Shrink widget positions so a layout drawn for the design size stays inside the window.
-     * Width and height scale independently: a short screen compresses rows without narrowing
-     * buttons unless the window is also narrower than the layout.
+     * One scale is used for both axes ({@code Math.min(sx, sy)}) so buttons stay the same
+     * shape. The window is then pulled in around that layout so it stays centered.
      */
     public static void compressToWindow(ICustomGui gui) {
         if (gui == null) {
@@ -108,29 +131,34 @@ public final class CnpcUiFit {
             maxRight = Math.max(maxRight, panel.x + panel.width);
             maxBottom = Math.max(maxBottom, panel.y + panel.height);
         }
-        float sx = maxRight > width ? (width - 1f) / maxRight : 1f;
-        float sy = maxBottom > height ? (height - 1f) / maxBottom : 1f;
-        if (sx > 0.999f && sy > 0.999f) {
+        float sx = maxRight > width ? (width - 2f) / maxRight : 1f;
+        float sy = maxBottom > height ? (height - 2f) / maxBottom : 1f;
+        float scale = Math.min(sx, sy);
+        if (scale > 0.999f) {
             return;
         }
-        sx = Math.min(1f, Math.max(0.05f, sx));
-        sy = Math.min(1f, Math.max(0.05f, sy));
+        scale = Math.min(1f, Math.max(0.05f, scale));
         if (components != null) {
             for (ICustomGuiComponent component : components) {
-                scaleComponent(component, sx, sy);
+                scaleComponent(component, scale, scale);
             }
         }
         if (panel != null && panel.width > 0 && panel.height > 0) {
-            panel.x = Math.round(panel.x * sx);
-            panel.y = Math.round(panel.y * sy);
-            panel.width = Math.max(1, Math.round(panel.width * sx));
-            panel.height = Math.max(1, Math.round(panel.height * sy));
+            panel.x = Math.round(panel.x * scale);
+            panel.y = Math.round(panel.y * scale);
+            panel.width = Math.max(1, Math.round(panel.width * scale));
+            panel.height = Math.max(1, Math.round(panel.height * scale));
             List<ICustomGuiComponent> inner = panel.getComponents();
             if (inner != null) {
                 for (ICustomGuiComponent component : inner) {
-                    scaleComponent(component, sx, sy);
+                    scaleComponent(component, scale, scale);
                 }
             }
+        }
+        int fittedW = Math.max(1, Math.min(width, Math.round(maxRight * scale) + 2));
+        int fittedH = Math.max(1, Math.min(height, Math.round(maxBottom * scale) + 2));
+        if (fittedW < width || fittedH < height) {
+            gui.setSize(fittedW, fittedH);
         }
     }
 

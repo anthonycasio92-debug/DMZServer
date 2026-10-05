@@ -433,6 +433,12 @@ public final class DifficultyEvents {
         CombatGravity.clearPlayer(old);
         if (event.isWasDeath()) {
             try {
+                if (!com.dbzlegacy.adaptivedifficulty.progression.tp.DeathTpPenalty.active(neu)) {
+                    com.dbzlegacy.adaptivedifficulty.progression.tp.DeathTpPenalty.onDeath(neu);
+                }
+            } catch (Throwable ignored) {
+            }
+            try {
                 com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem
                         .scheduleReapplyAfterDeath(neu);
             } catch (Throwable ignored) {
@@ -452,6 +458,10 @@ public final class DifficultyEvents {
         try {
             com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem
                     .scheduleReapplyAfterDeath(player);
+        } catch (Throwable ignored) {
+        }
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.tp.DeathTpPenalty.onLogin(player);
         } catch (Throwable ignored) {
         }
     }
@@ -480,6 +490,9 @@ public final class DifficultyEvents {
         copyTagIfPresent(from, to, "lm_prestige_confirm_until");
         copyTagIfPresent(from, to, "lm_cnpc_player_migrated");
         copyTagIfPresent(from, to, "lm_shadow_dummy_cd_until");
+        // Death TP penalty is stamped on the dying entity. Respawn is a new entity.
+        copyTagIfPresent(from, to, com.dbzlegacy.adaptivedifficulty.progression.tp.DeathTpPenalty.KEY);
+        copyTagIfPresent(from, to, com.dbzlegacy.adaptivedifficulty.progression.tp.DeathTpPenalty.FRAC_KEY);
     }
 
     private static void copyTagIfPresent(CompoundTag from, CompoundTag to, String key) {
@@ -920,7 +933,9 @@ public final class DifficultyEvents {
             LivingEntity killerLiving = killerEnt instanceof LivingEntity le ? le : null;
             RivalSystem.onDeath(victim, killerLiving);
             SparringSystem.onDeath(victim);
-            if (!event.isCanceled()) {
+            // A canceled death that still kills the player (custom KO) must start the timer.
+            // A canceled death that leaves them alive is not a death.
+            if (!event.isCanceled() || !victim.m_6084_() || victim.m_21223_() <= 0.0f) {
                 try {
                     com.dbzlegacy.adaptivedifficulty.progression.tp.DeathTpPenalty.onDeath(victim);
                 } catch (Throwable ignored) {

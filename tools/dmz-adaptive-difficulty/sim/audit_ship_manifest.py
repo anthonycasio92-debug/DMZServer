@@ -100,9 +100,17 @@ def main() -> int:
           "MULTIPLIER = 0.5d" in death_tp and "DURATION_MS = 10L * 60L * 1000L" in death_tp)
     check("death penalty mixin halves calculateTPGain",
           "calculateTPGain(ILcom/dragonminez/common/config/TpSource;)I" in death_mixin
-          and "Math.floor" in death_mixin)
+          and "applyToGain" in death_mixin
+          and "inGrant" in death_mixin)
+    check("death penalty halves addTrainingPoints",
+          "addTrainingPoints(FZ)V" in read(SRC / "mixin/ResourcesDeathTpPenaltyMixin.java")
+          and "applyToAmount" in death_tp)
+    check("death penalty timer is copied onto the respawned player",
+          "DeathTpPenalty.KEY" in read(SRC / "event/DifficultyEvents.java")
+          and "DeathTpPenalty.FRAC_KEY" in read(SRC / "event/DifficultyEvents.java"))
     check("mixins.json registers StatsDataDeathTpPenaltyMixin",
-          '"StatsDataDeathTpPenaltyMixin"' in mixins_json)
+          '"StatsDataDeathTpPenaltyMixin"' in mixins_json
+          and '"ResourcesDeathTpPenaltyMixin"' in mixins_json)
 
     print("\n--- § fabled removed ---")
     bridge_dir = SRC / "progression/bridge"
@@ -326,6 +334,9 @@ def main() -> int:
     check("CNPC menus read the player screen size",
           "getScreenSize" in ui_fit and "compressToWindow" in ui_fit
           and "CnpcUiFit.fit" in cnpc_support and "compressToWindow" in cnpc_support)
+    check("GUI scale 4 and 5 use one layout scale",
+          "tightScale" in ui_fit and "Math.min(sx, sy)" in ui_fit
+          and "new int[] {4, 5}" in ui_fit)
     check("GUI scale uses Minecraft's 320x240 floor",
           "MIN_SCALED_WIDTH = 320" in ui_fit and "MIN_SCALED_HEIGHT = 240" in ui_fit
           and "framebufferWidth / (scale + 1)" in ui_fit)
