@@ -179,6 +179,10 @@ final class GuiLoreChunks {
             return "&cLocked";
         }
         String first = skillLore.get(0);
+        String plain = stripColor(first);
+        if (plain.contains("· Locked") || plain.contains("· Unlocked") || plain.contains("· Max")) {
+            return "";
+        }
         if (first.contains("MAX")) {
             return "&6Maxed";
         }

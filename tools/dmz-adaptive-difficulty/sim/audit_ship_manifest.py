@@ -266,6 +266,13 @@ def main() -> int:
           and "Natural skills" in cnpc_sk
           and "§dSaga skills" not in cnpc_sk
           and "navSubmenu" not in cnpc_sk)
+    unlock = read(SRC / "progression/shop/SkillUnlockService.java")
+    check("skill lines show level and locked unlocked or max",
+          "§8· §cLocked" in unlock
+          and "§8· §aUnlocked" in unlock
+          and "§8· §6Max" in unlock
+          and "SOFT CAP" in unlock
+          and "Spar with other players" in unlock)
 
     print("\n--- § rival ---")
     rival_api = read(SRC / "gui/RivalGuiApi.java")

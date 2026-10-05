@@ -76,8 +76,8 @@ public final class CmiSkillsGui {
         boolean systemOn = bridgeOk && !"false".equalsIgnoreCase(ph.getOrDefault("system_enabled", "false"));
         String statusName = !bridgeOk ? "&c&lUNAVAILABLE"
                 : !systemOn ? "&c&lSKILLS DISABLED"
-                : skillCheckUi ? title + " Skill Check"
-                : staffAdmin ? title + " (Admin)" : title + " Skills";
+                : skillCheckUi ? "&eSkill Check"
+                : "&eSkills";
         // Skill Check: EXPERIENCE_BOTTLE header. Staff Skills: BOOK.
         Material headerMat = skillCheckUi ? Material.EXPERIENCE_BOTTLE : Material.BOOK;
         CMIGuiButton status = new CMIGuiButton(4, headerMat, statusName);
@@ -136,8 +136,11 @@ public final class CmiSkillsGui {
                         lore.add(skill.get(i));
                     }
                 }
-                lore.add("");
-                lore.add(GuiLoreChunks.skillStatusFooter(skill));
+                String footer = GuiLoreChunks.skillStatusFooter(skill);
+                if (footer != null && !footer.isBlank()) {
+                    lore.add("");
+                    lore.add(footer);
+                }
                 btn.addLore(lore);
                 gui.addButton(btn);
             }
@@ -151,7 +154,7 @@ public final class CmiSkillsGui {
         }
 
         gui.addButton(pageBtn(player, 45, "skills.main.skills", Material.BOOK, "&eSkills", "core", skillCheckUi,
-                "&7Potential Unlock and saga skills"));
+                "&7Level, locked, unlocked, or max"));
 
         gui.addButton(hubBtn(49));
         if (staffAdmin) {

@@ -1940,7 +1940,7 @@
       "skills": {
         "name": "&eSkills",
         "lore": [
-          "&7Potential Unlock and saga skills"
+          "&7Level, locked, unlocked, or max"
         ]
       },
       "progression": {

@@ -851,9 +851,12 @@ def main() -> int:
     check("Skill Check prepareForRead before read", "DmzSkillUtil.prepareForRead(skills)" in skill_unlock)
     check("Skill Check prestige floor fallback", "effectiveSkillLevel" in skill_unlock
           and "PrestigePointsSystem.getPurchasedSkillLevels" in skill_unlock)
-    check("saga tips tiered locked/training/maxed", "sagaUnlock" in skill_unlock
-          and "sagaTraining" in skill_unlock and "sagaMastered" in skill_unlock
-          and "levelsNaturallyAfterSaga" in skill_unlock)
+    check("saga skill line is level plus locked unlocked or max",
+          "§8· §cLocked" in skill_unlock
+          and "§8· §aUnlocked" in skill_unlock
+          and "§8· §6Max" in skill_unlock
+          and "SOFT CAP" in skill_unlock
+          and "Spar with other players" in skill_unlock)
     check("GUI skill status footer helper", "skillStatusFooter" in read(gui_root / "GuiLoreChunks.java"))
 
     print("\n=== Spar TP message toggle (2.3.54) ===")

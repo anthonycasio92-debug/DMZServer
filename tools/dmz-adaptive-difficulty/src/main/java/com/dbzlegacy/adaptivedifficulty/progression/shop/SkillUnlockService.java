@@ -224,16 +224,13 @@ public final class SkillUnlockService {
         int level = effectiveSkillLevel(player, skills, id);
         int max = skillMax(skills, id, fallbackMax);
         if (level < 1) {
-            out.add(color + name + "§7: §f0/" + max);
-            tip(out, sagaUnlock(id));
+            out.add(color + name + "§7: §f0/" + max + " §8· §cLocked");
             return;
         }
         if (level >= max) {
-            out.add(color + name + "§7: §6§lMAX§r §7(" + level + "/" + max + ")");
-            tip(out, sagaMastered(id));
+            out.add(color + name + "§7: §f" + level + "/" + max + " §8· §6Max");
         } else {
-            out.add(color + name + "§7: §f" + level + "/" + max);
-            tip(out, sagaTraining(id));
+            out.add(color + name + "§7: §f" + level + "/" + max + " §8· §aUnlocked");
         }
     }
 
@@ -274,67 +271,6 @@ public final class SkillUnlockService {
             return "You've invested enough Strength — keep using " + skill + " to progress.";
         }
         return "Invest more Strength to unlock the next " + skill + " level.";
-    }
-
-    private static String sagaUnlock(String id) {
-        return switch (id == null ? "" : id.toLowerCase(Locale.ROOT)) {
-            case "kicontrol" -> "You haven't unlocked this yet — keep going in the skill saga.";
-            case "kimanipulation" -> "You haven't unlocked this yet — keep going in the skill saga.";
-            case "kisense" -> "You haven't unlocked this yet — keep going in the skill saga.";
-            case "defense_penetration" -> "You haven't unlocked this yet — keep going in the skill saga.";
-            case "healing_reduction" -> "You haven't unlocked this yet — keep going in the skill saga.";
-            case "instant_transmission" -> "You haven't unlocked this yet — keep going in the skill saga.";
-            case "ki_infusion" -> "You haven't unlocked this yet — keep going in the skill saga.";
-            case "kiboost" -> "You haven't unlocked this yet — keep going in the skill saga.";
-            case "kiprotection" -> "You haven't unlocked this yet — keep going in the skill saga.";
-            case "kaioken" -> "Unlock Kaioken in the skill saga first — then level it in combat.";
-            case "fusion" -> "Unlock Fusion in the skill saga first — then level it by practicing fusion.";
-            default -> "You haven't unlocked this yet — keep going in the skill saga.";
-        };
-    }
-
-    private static String sagaTraining(String id) {
-        if (levelsNaturallyAfterSaga(id)) {
-            return switch (id == null ? "" : id.toLowerCase(Locale.ROOT)) {
-                case "kaioken" -> "Use Kaioken in combat to level it up.";
-                case "fusion" -> "Practice fusion to level it up.";
-                default -> "Keep using this in combat to level it up.";
-            };
-        }
-        return "Keep going through the skill saga to raise this.";
-    }
-
-    private static String sagaMastered(String id) {
-        String name = sagaDisplayName(id);
-        return "You've maxed out " + name + ".";
-    }
-
-    private static String sagaDisplayName(String id) {
-        return switch (id == null ? "" : id.toLowerCase(Locale.ROOT)) {
-            case "kicontrol" -> "Ki Control";
-            case "kimanipulation" -> "Ki Manipulation";
-            case "kisense" -> "Ki Sense";
-            case "defense_penetration" -> "Defense Penetration";
-            case "healing_reduction" -> "Healing Reduction";
-            case "instant_transmission" -> "Instant Transmission";
-            case "ki_infusion" -> "Ki Infusion";
-            case "kiboost" -> "Ki Boost";
-            case "kiprotection" -> "Ki Protection";
-            case "kaioken" -> "Kaioken";
-            case "fusion" -> "Fusion";
-            default -> "this skill";
-        };
-    }
-
-    /** Saga unlock, then levels through natural play (combat / practice) — not more saga steps. */
-    private static boolean levelsNaturallyAfterSaga(String id) {
-        if (id == null) {
-            return false;
-        }
-        return switch (id.toLowerCase(Locale.ROOT)) {
-            case "kaioken", "fusion" -> true;
-            default -> false;
-        };
     }
 
     /**

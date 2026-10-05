@@ -116,8 +116,7 @@ public final class SkillsChestGui implements Listener {
                     List.of("&7Every tracked skill")));
             Material headerMat = skillCheckUi ? Material.EXPERIENCE_BOTTLE : Material.BOOK;
             put(holder, inv, 4, item(headerMat,
-                    skillCheckUi ? title + " Skill Check"
-                            : staffAdmin ? title + " (Admin)" : title + " Skills",
+                    skillCheckUi ? "&eSkill Check" : "&eSkills",
                     headerLore));
 
             int[] slots = GuiBoardHelper.centeredSlots(split.skills.size());
@@ -141,8 +140,11 @@ public final class SkillsChestGui implements Listener {
                         lore.add(skill.get(i));
                     }
                 }
-                lore.add("");
-                lore.add(GuiLoreChunks.skillStatusFooter(skill));
+                String footer = GuiLoreChunks.skillStatusFooter(skill);
+                if (footer != null && !footer.isBlank()) {
+                    lore.add("");
+                    lore.add(footer);
+                }
                 put(holder, inv, slot, item(icon, name, lore));
             }
             if (placed == 0) {
@@ -152,7 +154,7 @@ public final class SkillsChestGui implements Listener {
         }
 
         put(holder, inv, 45, pageBtn(viewer, "skills.main.skills", Material.BOOK, "&eSkills",
-                        "&7Potential Unlock and saga skills"),
+                        "&7Level, locked, unlocked, or max"),
                 SlotAction.page("core"));
         put(holder, inv, 49, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         if (staffAdmin) {

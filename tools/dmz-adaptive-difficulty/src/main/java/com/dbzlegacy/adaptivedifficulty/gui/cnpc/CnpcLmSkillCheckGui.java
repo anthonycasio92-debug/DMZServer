@@ -39,7 +39,7 @@ public final class CnpcLmSkillCheckGui {
         boolean staffAdmin = staffAdminBrowser;
         int infoY = CnpcGuiSupport.paintHeader(player, gui,
                 staffAdmin ? CnpcGuiStyle.subPage("§e", "Skills", "Staff") : "§eSkill Check",
-                "§7Every tracked skill is on this page.");
+                "§7Level, locked, unlocked, or max.");
 
         List<String> lines = ProgressionGuiApi.skillsLines(CnpcGuiSupport.target(player), "core");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX));
