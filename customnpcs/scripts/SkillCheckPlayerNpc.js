@@ -14,7 +14,7 @@
  *      instead of this script.
  *   5. Do not put Rival, Spar, or other menu scripts on this NPC.
  *
- * Needs LegacyMechanics 4.5.155 or newer on the server.
+ * Needs LegacyMechanics 4.5.156 or newer, and a panel restart after the jar upload.
  * ============================================================
  */
 

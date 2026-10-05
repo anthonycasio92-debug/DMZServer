@@ -127,12 +127,9 @@ public final class SkillCheckService {
         com.dbzlegacy.adaptivedifficulty.gui.SkillsMenu.openSkillCheck(player, "core");
     }
 
-    /** Trigger 21 / dialog script path — same donator permission as slash {@code /skillcheck}. */
+    /** Trigger 21 / dialog script path. The NPC is the gate. Slash {@code /skillcheck} still uses {@link #canUse}. */
     public static void trigger21(ServerPlayer player) {
-        if (player == null) {
-            return;
-        }
-        open(player, "core");
+        openAtNpc(player);
     }
 
     public static boolean looksLikeCustomNpc(Entity entity) {

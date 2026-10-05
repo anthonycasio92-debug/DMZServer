@@ -1,8 +1,8 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** (previous `main`) through **4.5.155**. `main` is at 4.5.153. This branch adds a working android remove, keeps dragon spawn off, and lets every player open Skill Check from the NPC.
+What changed from **4.5.147** (previous `main`) through **4.5.156**. `main` is at 4.5.153. This branch adds a working android remove, keeps dragon spawn off, and lets every player open Skill Check from the NPC.
 
-The live mods folder gets `LegacyMechanics-4.5.155.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.5.156.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
 
 ## Meditation
 
@@ -56,7 +56,7 @@ Players also use `/lm`, `/difficulty`, `/rival`, `/spar`, and `/skillcheck` (don
 
 ## Skill Check NPC
 
-Any player can open Skill Check by right-clicking the Skill Check NPC. Paste `customnpcs/scripts/SkillCheckPlayerNpc.js` onto that NPC. Slash `/skillcheck` and the hub button still need the donator permission `legacymechanics.skillcheck`.
+Any player can open Skill Check by right-clicking the Skill Check NPC, including dialog trigger 21. Paste `customnpcs/scripts/SkillCheckPlayerNpc.js` onto that NPC. Slash `/skillcheck` and the hub button still need the donator permission `legacymechanics.skillcheck`. The running server keeps the previous jar until a panel restart.
 
 ## Already on main before this merge
 

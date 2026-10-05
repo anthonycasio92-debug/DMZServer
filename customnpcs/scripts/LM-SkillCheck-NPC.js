@@ -6,7 +6,7 @@
  * Right-click opens Skill Check for every player.
  * Slash /skillcheck still requires legacymechanics.skillcheck.
  *
- * Needs LegacyMechanics 4.5.155 or newer.
+ * Needs LegacyMechanics 4.5.156 or newer, and a panel restart after the jar upload.
  * ============================================================
  */
 

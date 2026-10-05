@@ -3,7 +3,7 @@
  SkillCheckCommand.js — DISABLED STUB → Java
  Trigger ID: 21
 
- Forwards to SkillCheckService.trigger21 (no permission — NPC/trigger gate).
+ Forwards to SkillCheckService.trigger21. Any player may open it from the NPC.
  Prefer: LM-SkillCheck-NPC.js on the NPC, or /skillcheck (donator perm).
 ============================================================
 */
