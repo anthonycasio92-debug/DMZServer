@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
-"""Fail if Legacy Mechanics applies its own prestige scale.
+"""Fail if Legacy Mechanics applies its own class or prestige scale.
 
 Policy:
-  - Stamina and ki read getStatScaling. LM writes the class file's own STM and ENE
-    coefficient from DmzClassConfigManager.getConfiguredClassStats. It does not add
-    the race baseline and it does not multiply those two stats.
-  - Every other stat still writes live / scale so the summed config coefficient
-    remains after fusion's prestige multiply. No live * scale, and no ClassRaceStatScale.
-  - LM may read PrestigeSystem.scaleMultiplier for display and for that divide.
+  - getStatScaling and getInitialBaseStats keep the DragonMineZ / dmzrevamp return
+    for every stat, fused or unfused. LM does not write a coefficient.
+  - The mixin file still contains the token live / scale and must not contain
+    live * scale. No ClassRaceStatScale.
+  - LM may read PrestigeSystem.scaleMultiplier for display.
   - LM must not multiply getTotalMultiplier, getMaxEnergy, getMaxStamina, or defense by that scale.
   - LM must not duplicate 1 + count × scaleBonusPerPrestige in Java.
 """
@@ -75,25 +74,20 @@ def main() -> int:
         errors.append("legacymechanics.mixins.json must register StatsDataStatScalingMixin")
 
     stat_scaling = read("mixin/StatsDataStatScalingMixin.java")
-    scaling_method, _, base_method = stat_scaling.partition("lm$keepLiveBaseStats")
-    pool_at = stat_scaling.find("private Double lm$classPoolScale")
-    pool_body = stat_scaling[pool_at:].split("lm$keepLiveBaseStats", 1)[0] if pool_at >= 0 else ""
-    if "live / scale" not in scaling_method:
-        errors.append("StatsDataStatScalingMixin must restore config scaling with live / scale")
-    if "setReturnValue" not in scaling_method:
-        errors.append("StatsDataStatScalingMixin must write the config coefficient back")
-    if "getConfiguredClassStats" not in pool_body or "getStaminaScaling" not in pool_body or "getEnergyScaling" not in pool_body:
-        errors.append("StatsDataStatScalingMixin must use the class file coefficient for stamina and ki")
-    if "live / scale" in pool_body or re.search(r"live\s*\*\s*scale", pool_body):
-        errors.append("StatsDataStatScalingMixin must not scale the class file stamina or ki coefficient")
-    if "getClassStats(" in pool_body:
-        errors.append("StatsDataStatScalingMixin must not call getClassStats for the pool coefficient")
-    if "setReturnValue" in base_method:
-        errors.append("StatsDataStatScalingMixin must not replace getInitialBaseStats")
+    if "live / scale" not in stat_scaling:
+        errors.append("StatsDataStatScalingMixin must keep the live / scale token")
+    if "setReturnValue" in stat_scaling:
+        errors.append("StatsDataStatScalingMixin must not replace getStatScaling or getInitialBaseStats")
+    if "getConfiguredClassStats" in stat_scaling or "getClassStats(" in stat_scaling:
+        errors.append("StatsDataStatScalingMixin must not read a class coefficient")
+    if "getStaminaScaling" in stat_scaling or "getEnergyScaling" in stat_scaling:
+        errors.append("StatsDataStatScalingMixin must not read a class stamina or ki coefficient")
+    if "combatScaleMultiplier" in stat_scaling:
+        errors.append("StatsDataStatScalingMixin must not apply a prestige scale")
     if "ClassRaceStatScale" in stat_scaling:
         errors.append("StatsDataStatScalingMixin must not replace getStatScaling with ClassRaceStatScale")
-    if "getInitialBaseStats" not in stat_scaling:
-        errors.append("StatsDataStatScalingMixin must still target getInitialBaseStats")
+    if "getStatScaling" not in stat_scaling or "getInitialBaseStats" not in stat_scaling:
+        errors.append("StatsDataStatScalingMixin must still target getStatScaling and getInitialBaseStats")
     if "priority = 6100" not in stat_scaling:
         errors.append("StatsDataStatScalingMixin must stay priority 6100 so it runs after Overhaul fusion")
     if re.search(r"live\s*\*\s*scale", stat_scaling):
