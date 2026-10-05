@@ -261,8 +261,11 @@ def main() -> int:
     check("CNPC staff admin no CNPC migrate button", "CNPC data migrate" not in cnpc_admin and "migrate-cnpc" not in cnpc_admin)
     check("hub Skill Check tile donator-gated", "ForgeBridge.hasSkillCheck(player)" in hub)
     cnpc_sk = read(SRC / "gui/cnpc/CnpcLmSkillCheckGui.java")
-    check("CNPC skillcheck Natural/Saga tabs only (no saga Back)",
-          "Natural ↔ Saga via tabs only" in cnpc_sk and 'navSubmenu' not in cnpc_sk)
+    check("CNPC skillcheck is one Skills tab",
+          "one Skills tab" in cnpc_sk
+          and "Natural skills" in cnpc_sk
+          and "§dSaga skills" not in cnpc_sk
+          and "navSubmenu" not in cnpc_sk)
 
     print("\n--- § rival ---")
     rival_api = read(SRC / "gui/RivalGuiApi.java")

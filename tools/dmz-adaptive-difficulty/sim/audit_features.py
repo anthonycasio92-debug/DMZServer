@@ -598,10 +598,10 @@ def main() -> int:
           "fillEmpty(gui, 6)" in cmi_sk159 and "GuiBoardHelper.centeredSlots" in cmi_sk159
           and "fillFrameOnly" not in cmi_sk159)
     check(
-        "skills.main.header short Natural · Saga",
-        '"&7Natural · Saga"' in tips_json159
-        or "Train naturally or through the skill saga" in tips_json159
-        or "&7Natural · Saga" in skills,
+        "skills.main.header is one skill list",
+        '"&7Every tracked skill"' in tips_json159
+        and 'SlotAction.page("saga")' not in skills
+        and '"&dSaga"' not in cmi_sk159,
     )
     check("Prestige main hub @40 like Spar",
           "put(holder, inv, 40, hubBtn()" in prestige

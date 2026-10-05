@@ -66,14 +66,9 @@ public final class SkillsChestGui implements Listener {
             return;
         }
         String p = page == null || page.isBlank() ? "core" : page.toLowerCase(Locale.ROOT);
-        Inventory inv = switch (p) {
-            // Advanced folded into Saga — alias keeps old links working.
-            case "advanced", "dmz", "saga" ->
-                    pageInv(viewer, subject, "saga", "&dSaga", Material.AMETHYST_SHARD, skillCheckMode);
-            case "help" -> pageInv(viewer, subject, "core", "&aNatural", Material.FEATHER, skillCheckMode);
-            case "natural" -> pageInv(viewer, subject, "core", "&aNatural", Material.FEATHER, skillCheckMode);
-            default -> pageInv(viewer, subject, "core", "&aNatural", Material.FEATHER, skillCheckMode);
-        };
+        Inventory inv = "help".equals(p)
+                ? pageInv(viewer, subject, "help", "&eSkills", Material.BOOK, skillCheckMode)
+                : pageInv(viewer, subject, "core", "&eSkills", Material.BOOK, skillCheckMode);
         GuiFeedback.openChest(viewer, inv);
     }
 
@@ -105,7 +100,7 @@ public final class SkillsChestGui implements Listener {
         List<String> raw = toAmp(ForgeBridge.skillsLines(subject, page));
         if ("help".equals(page)) {
             put(holder, inv, 4, item(mat, title, prependBlank(raw.isEmpty()
-                    ? List.of("&7Use Natural · Saga tabs.") : raw)));
+                    ? List.of("&7Every tracked skill is on this page.") : raw)));
         } else {
             GuiLoreChunks.SkillPage split = GuiLoreChunks.splitSkillsPage(raw);
             List<String> headerLore = new ArrayList<>();
@@ -118,7 +113,7 @@ public final class SkillsChestGui implements Listener {
             }
             headerLore.add("");
             headerLore.addAll(GuiTooltips.lore("skills.main.header",
-                    List.of(skillCheckUi ? "&7Natural · Saga progress" : "&7Natural · Saga")));
+                    List.of("&7Every tracked skill")));
             Material headerMat = skillCheckUi ? Material.EXPERIENCE_BOTTLE : Material.BOOK;
             put(holder, inv, 4, item(headerMat,
                     skillCheckUi ? title + " Skill Check"
@@ -156,12 +151,9 @@ public final class SkillsChestGui implements Listener {
             }
         }
 
-        put(holder, inv, 45, pageBtn(viewer, "skills.main.natural", Material.FEATHER, "&aNatural",
-                        "&7Potential · Flight · Meditation · Jump · Sprint"),
+        put(holder, inv, 45, pageBtn(viewer, "skills.main.skills", Material.BOOK, "&eSkills",
+                        "&7Potential Unlock and saga skills"),
                 SlotAction.page("core"));
-        put(holder, inv, 46, pageBtn(viewer, "skills.main.saga", Material.AMETHYST_SHARD, "&dSaga",
-                        "&7Unlocked in the skill saga — some level there, some level naturally after."),
-                SlotAction.page("saga"));
         put(holder, inv, 49, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         if (staffAdmin) {
             put(holder, inv, 51, tipBtn(viewer, "skills.main.progression", Material.BREWING_STAND, "&dProgression",

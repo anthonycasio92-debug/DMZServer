@@ -39,11 +39,12 @@ public final class CnpcLmSkillCheckGui {
         boolean staffAdmin = staffAdminBrowser;
         int infoY = CnpcGuiSupport.paintHeader(player, gui,
                 staffAdmin ? CnpcGuiStyle.subPage("§e", "Skills", "Staff") : "§eSkill Check",
-                "§7Natural, Saga, and Skill Check sessions");
+                "§7Every tracked skill is on this page.");
 
-        List<String> lines = ProgressionGuiApi.skillsLines(CnpcGuiSupport.target(player), page);
+        List<String> lines = ProgressionGuiApi.skillsLines(CnpcGuiSupport.target(player), "core");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX));
-        CnpcGuiSupport.button(gui, 20, "§aNatural skills", CnpcGuiSupport.COL_L, row, () -> {
+        // Natural skills and saga skills share this one Skills tab.
+        CnpcGuiSupport.button(gui, 20, "§eSkills", CnpcGuiSupport.COL_L, row, () -> {
             if (staffAdmin) {
                 com.dbzlegacy.adaptivedifficulty.gui.SkillsMenu.open(player, "core");
             } else {
@@ -51,19 +52,8 @@ public final class CnpcLmSkillCheckGui {
                 show(player, "core", false);
             }
         });
-        CnpcGuiSupport.button(gui, 21, "§dSaga skills", CnpcGuiSupport.COL_R, row, () -> {
-            if (staffAdmin) {
-                com.dbzlegacy.adaptivedifficulty.gui.SkillsMenu.open(player, "saga");
-            } else {
-                SkillCheckService.open(player, "saga");
-                show(player, "saga", false);
-            }
-        });
         row += 24;
-        // Natural ↔ Saga via tabs only — no separate Back (matches chest/CMI Skill Check).
         CnpcGuiSupport.navSystemRoot(player, gui, row);
-        if ("core".equals(page)) {
-            CnpcGuiSupport.paintSystemMainPreview(CnpcGuiSupport.target(player), gui, player);
-        }
+        CnpcGuiSupport.paintSystemMainPreview(CnpcGuiSupport.target(player), gui, player);
     }
 }

@@ -1467,16 +1467,14 @@ public final class ProgressionGuiApi {
             return List.of("§cSkill unlock service is disabled.");
         }
         String p = page == null || page.isBlank() ? "core" : page.toLowerCase(Locale.ROOT);
-        return switch (p) {
-            case "advanced", "dmz", "saga" -> SkillUnlockService.sagaLines(player);
-            case "help" -> List.of(
+        if ("help".equals(p)) {
+            return List.of(
                     "§6§l/skills §8— Skill Progress (staff)",
-                    "§e/skills §7— Natural progression",
-                    "§e/skills do page saga §7— Saga skills from the skill saga",
+                    "§e/skills §7— every tracked skill on one page",
                     "§e/skillcheck §7— Donator Skill Check"
             );
-            default -> SkillUnlockService.coreLines(player);
-        };
+        }
+        return SkillUnlockService.coreLines(player);
     }
 
     /**

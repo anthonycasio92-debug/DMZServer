@@ -1935,18 +1935,12 @@
   "skills": {
     "main": {
       "header": [
-        "&7Train naturally or through the skill saga"
+        "&7Every tracked skill"
       ],
-      "natural": {
-        "name": "&aNatural",
+      "skills": {
+        "name": "&eSkills",
         "lore": [
-          "&7Potential · Flight · Meditation · Jump · Sprint"
-        ]
-      },
-      "saga": {
-        "name": "&dSaga",
-        "lore": [
-          "&7Unlock these in the skill saga — some levels there, some from natural play."
+          "&7Potential Unlock and saga skills"
         ]
       },
       "progression": {

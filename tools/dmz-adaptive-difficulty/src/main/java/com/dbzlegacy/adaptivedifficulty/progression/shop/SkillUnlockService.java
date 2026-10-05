@@ -17,11 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.HoverEvent;
-import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.chat.Style;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
@@ -45,17 +41,8 @@ public final class SkillUnlockService {
         if (!DifficultyConfig.get().enableSkillUnlockService || player == null) {
             return;
         }
-        if (page == null || page.isBlank() || "main".equalsIgnoreCase(page) || "core".equalsIgnoreCase(page)
-                || "natural".equalsIgnoreCase(page)) {
-            showPage(player, "core", skillCheck);
-        } else if ("saga".equalsIgnoreCase(page)
-                || "advanced".equalsIgnoreCase(page)
-                || "dmz".equalsIgnoreCase(page)) {
-            // Advanced was folded into Saga — keep aliases so old links still work.
-            showPage(player, "saga", skillCheck);
-        } else {
-            showPage(player, "core", skillCheck);
-        }
+        // core, natural, saga, and advanced all open the same skill list.
+        showPage(player, "core", skillCheck);
         SystemTelemetry.log(
                 skillCheck ? "skillcheck" : "skills",
                 "open",
@@ -115,10 +102,9 @@ public final class SkillUnlockService {
                 + " §8(§f" + investedStr + "§8 invested) §8"
                 + LmOverhaulScaledCombat.formatScale(data));
         out.add("§8----------------------------");
-        switch (page.toLowerCase(Locale.ROOT)) {
-            case "saga", "advanced", "dmz" -> appendSaga(out, player, skills);
-            default -> appendNatural(out, player, skills, investedStr);
-        }
+        out.add("§6§lSkills");
+        appendPotential(out, player, skills);
+        appendSaga(out, player, skills);
         return out;
     }
 
@@ -129,7 +115,6 @@ public final class SkillUnlockService {
             return;
         }
 
-        String cmdRoot = skillCheck ? "/skillcheck" : "/skills";
         send(player, "");
         send(player, skillCheck
                 ? "§6§l------ Skill Check ------§r"
@@ -137,27 +122,7 @@ public final class SkillUnlockService {
         for (String line : lines) {
             send(player, line);
         }
-
-        MutableComponent nav = Component.m_237113_("§7")
-                .m_7220_(btn(pageEquals(page, "core") ? "§e[Natural]" : "§7[Natural]",
-                        cmdRoot + " do page core", "Natural progression"))
-                .m_7220_(Component.m_237113_(" "))
-                .m_7220_(btn(pageEquals(page, "saga") ? "§e[Saga]" : "§7[Saga]",
-                        cmdRoot + " do page saga", "Saga skills — unlock and track them here."));
-        send(player, nav);
         send(player, "§8────────────────");
-    }
-
-    /**
-     * Natural page keeps Potential Unlock. Flight, meditation, jump, and sprint
-     * are trained by another mod.
-     */
-    private static void appendNatural(
-            List<String> out, ServerPlayer player, Skills skills, int investedStr
-    ) {
-        out.add("§6§lNatural Progression§r");
-        out.add("§8Potential Unlock levels by sparring. Flight, sprint, and meditation are not here.");
-        appendPotential(out, player, skills);
     }
 
     private static void appendPotential(List<String> out, ServerPlayer player, Skills skills) {
@@ -239,8 +204,6 @@ public final class SkillUnlockService {
     }
 
     private static void appendSaga(List<String> out, ServerPlayer player, Skills skills) {
-        out.add("§6§lSaga Skills§r");
-        out.add("§8Unlock in the skill saga — some level there, others level naturally after.");
         appendSagaSkill(out, player, skills, "kicontrol", "Ki Control", "§3", 1);
         appendSagaSkill(out, player, skills, "kimanipulation", "Ki Manipulation", "§9", 10);
         appendSagaSkill(out, player, skills, "kisense", "Ki Sense", "§5", 10);
@@ -461,10 +424,6 @@ public final class SkillUnlockService {
         }
     }
 
-    private static boolean pageEquals(String a, String b) {
-        return a != null && a.equalsIgnoreCase(b);
-    }
-
     private static String format(double v) {
         if (v >= 1000) {
             return DmzRewards.formatWhole(v);
@@ -472,17 +431,7 @@ public final class SkillUnlockService {
         return String.format(Locale.ROOT, "%.1f", v);
     }
 
-    private static MutableComponent btn(String label, String command, String hover) {
-        return Component.m_237113_(label).m_6270_(Style.f_131099_
-                .m_131142_(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command))
-                .m_131144_(new HoverEvent(HoverEvent.Action.f_130831_, Component.m_237113_(hover))));
-    }
-
     private static void send(ServerPlayer player, String text) {
         player.m_213846_(Component.m_237113_(text));
-    }
-
-    private static void send(ServerPlayer player, Component text) {
-        player.m_213846_(text);
     }
 }

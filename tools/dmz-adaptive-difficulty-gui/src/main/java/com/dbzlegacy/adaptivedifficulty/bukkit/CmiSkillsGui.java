@@ -12,7 +12,7 @@ import org.bukkit.entity.Player;
 
 /**
  * CMILib inventory GUI — Legacy Mechanics Skills / Skill Check.
- * Pages: Natural (core) · Saga. Centered skill tiles; chrome matches Spar/Prestige.
+ * One Skills page. Centered skill tiles; chrome matches Spar/Prestige.
  */
 public final class CmiSkillsGui {
     private static final Material FILL = Material.BLACK_STAINED_GLASS_PANE;
@@ -50,12 +50,10 @@ public final class CmiSkillsGui {
         }
         String p = page == null || page.isBlank() ? "core" : page.toLowerCase(Locale.ROOT);
         try {
-            switch (p) {
-                case "advanced", "dmz", "saga" ->
-                        openPage(player, "saga", "&dSaga", Material.AMETHYST_SHARD, skillCheckMode);
-                case "help" -> openPage(player, "core", "&aNatural", Material.FEATHER, skillCheckMode);
-                case "natural" -> openPage(player, "core", "&aNatural", Material.FEATHER, skillCheckMode);
-                default -> openPage(player, "core", "&aNatural", Material.FEATHER, skillCheckMode);
+            if ("help".equals(p)) {
+                openPage(player, "help", "&eSkills", Material.BOOK, skillCheckMode);
+            } else {
+                openPage(player, "core", "&eSkills", Material.BOOK, skillCheckMode);
             }
             return true;
         } catch (Throwable t) {
@@ -97,7 +95,7 @@ public final class CmiSkillsGui {
         List<String> raw = toAmp(ForgeBridge.skillsLines(player, page));
         if ("help".equals(page)) {
             status.addLore(prependBlank(raw.isEmpty()
-                    ? List.of("&7Use Natural · Saga tabs.")
+                    ? List.of("&7Every tracked skill is on this page.")
                     : raw));
             gui.addButton(status);
         } else {
@@ -111,7 +109,7 @@ public final class CmiSkillsGui {
             }
             headerLore.add("");
             headerLore.addAll(GuiTooltips.lore("skills.main.header",
-                    List.of(skillCheckUi ? "&7Natural · Saga progress" : "&7Natural · Saga")));
+                    List.of("&7Every tracked skill")));
             status.addLore(headerLore);
             gui.addButton(status);
 
@@ -152,10 +150,8 @@ public final class CmiSkillsGui {
             }
         }
 
-        gui.addButton(pageBtn(player, 45, "skills.main.natural", Material.FEATHER, "&aNatural", "core", skillCheckUi,
-                "&7Potential · Flight · Meditation · Jump · Sprint"));
-        gui.addButton(pageBtn(player, 46, "skills.main.saga", Material.AMETHYST_SHARD, "&dSaga", "saga", skillCheckUi,
-                "&7Unlocked in the skill saga — some level there, some level naturally after."));
+        gui.addButton(pageBtn(player, 45, "skills.main.skills", Material.BOOK, "&eSkills", "core", skillCheckUi,
+                "&7Potential Unlock and saga skills"));
 
         gui.addButton(hubBtn(49));
         if (staffAdmin) {

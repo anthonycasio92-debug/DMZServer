@@ -74,6 +74,7 @@ final class GuiLoreChunks {
                         || plain.equalsIgnoreCase("Natural Progression")
                         || plain.equalsIgnoreCase("DragonMineZ 2.1 Skills")
                         || plain.equalsIgnoreCase("Saga Skills")
+                        || plain.equalsIgnoreCase("Skills")
                         || plain.toLowerCase(Locale.ROOT).startsWith("levels from play")
                         || plain.toLowerCase(Locale.ROOT).startsWith("level these by playing")
                         || plain.toLowerCase(Locale.ROOT).startsWith("unlock in the skill saga")
