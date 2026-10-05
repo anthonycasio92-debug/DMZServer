@@ -1137,8 +1137,9 @@ def main() -> int:
     check("no soft contains(rival)", 'hay.contains("rival")' not in cnpc)
     check("events call tryOpenFromNpc", "CnpcGuiOpener.tryOpenFromNpc" in events)
     check("CnpcGuiOpener tryOpenFromNpc uses tags or names", "tryOpenFromTags" in cnpc and "tryOpenFromName" in cnpc)
-    check("Skill Check NPC requires canUse",
-          "canUse(player)" in skill.split("tryOpenFromNpc", 1)[1].split("trigger21", 1)[0]
+    check("Skill Check NPC opens for any player",
+          "openAtNpc(player)" in skill.split("tryOpenFromNpc", 1)[1].split("trigger21", 1)[0]
+          and "canUse(player)" in skill.split("public static void open(", 1)[1].split("tryOpenFromNpc", 1)[0]
           and "openFromNpc" not in skill)
     check("End hitcap not undone by raw minFrac", "setAmount(mitigated)" in end and "Math.max(mitigated, raw" not in end)
     check("egg clear not end_portal", "isDragonEggBlock" in end and "Blocks.f_50259_" not in end.split("clearDragonEggBlocks")[1].split("findDragons")[0])

@@ -1,8 +1,8 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** (previous `main`) to **4.5.153**. This is the build on `main` after the meditation and command cleanup.
+What changed from **4.5.147** (previous `main`) through **4.5.155**. `main` is at 4.5.153. This branch adds a working android remove, keeps dragon spawn off, and lets every player open Skill Check from the NPC.
 
-The live mods folder already has `LegacyMechanics-4.5.153.jar`. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.5.155.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
 
 ## Meditation
 
@@ -53,6 +53,10 @@ The shop still sells **permanent** skill unlocks: Potential Unlock, Fly, Meditat
 **Dragon spawn does not work.** There is no spawn command, and the Difficulty menu cannot summon a dragon. Admins clear dragons with `/enddragon clear` (console works too). `/enddragon repair` is still there.
 
 Players also use `/lm`, `/difficulty`, `/rival`, `/spar`, and `/skillcheck` (donators). Staff keep progression boosts, flags, and android convert.
+
+## Skill Check NPC
+
+Any player can open Skill Check by right-clicking the Skill Check NPC. Paste `customnpcs/scripts/SkillCheckPlayerNpc.js` onto that NPC. Slash `/skillcheck` and the hub button still need the donator permission `legacymechanics.skillcheck`.
 
 ## Already on main before this merge
 

@@ -13,7 +13,7 @@ public final class CnpcLmSkillCheckGui {
     private CnpcLmSkillCheckGui() {}
 
     public static void open(ServerPlayer player, String page) {
-        if (!SkillCheckService.canUse(player)) {
+        if (!SkillCheckService.canUse(player) && !SkillCheckService.inSession(player)) {
             CnpcGuiSupport.denyToHub(player,
                     "§cSkill Check needs donator access.\n§7Ask staff if you think you should have it.");
             return;

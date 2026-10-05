@@ -79,7 +79,7 @@ public final class SkillCheckService {
             DmzRewards.msg(player, "§cSkill Check is disabled.");
             return;
         }
-        if (!canUse(player)) {
+        if (!canUse(player) && !inSession(player)) {
             DmzRewards.msg(player, "§cNo permission: legacymechanics.skillcheck");
             return;
         }
@@ -89,8 +89,8 @@ public final class SkillCheckService {
     }
 
     /**
-     * CNPC right-click: Skill Check marker opens the donator UI only when
-     * {@link #canUse} ({@code legacymechanics.skillcheck}) is granted.
+     * CNPC right-click: a Skill Check NPC opens the menu for every player.
+     * Slash {@code /skillcheck} still requires {@link #canUse}.
      */
     public static boolean tryOpenFromNpc(ServerPlayer player, Entity npc) {
         if (player == null || npc == null) {
@@ -106,12 +106,25 @@ public final class SkillCheckService {
             DmzRewards.msg(player, "§cSkill Check is disabled.");
             return true;
         }
-        if (!canUse(player)) {
-            DmzRewards.msg(player, "§cNo permission: legacymechanics.skillcheck");
-            return true;
-        }
-        open(player, "core");
+        // Slash /skillcheck still uses canUse(player). This NPC is for every player.
+        openAtNpc(player);
         return true;
+    }
+
+    /**
+     * Right-click Skill Check NPC. Any online player may open it.
+     * Slash {@code /skillcheck} still requires {@link #canUse}.
+     */
+    public static void openAtNpc(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        if (!DifficultyConfig.get().enableSkillCheck || !DifficultyConfig.get().enableSkillUnlockService) {
+            DmzRewards.msg(player, "§cSkill Check is disabled.");
+            return;
+        }
+        markSession(player);
+        com.dbzlegacy.adaptivedifficulty.gui.SkillsMenu.openSkillCheck(player, "core");
     }
 
     /** Trigger 21 / dialog script path — same donator permission as slash {@code /skillcheck}. */

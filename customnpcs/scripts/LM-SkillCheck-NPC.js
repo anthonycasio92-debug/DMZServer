@@ -2,26 +2,16 @@
  * ============================================================
  * LegacyMechanics — Skill Check CNPC (interact)
  * ============================================================
- * Setup (CustomNPCs):
- *   1. Edit NPC → Advanced → Scripts
- *   2. Enable scripts, language: ECMAScript / JavaScript
- *   3. Paste this file into the NPC script (or load as Script File)
- *   4. Install LegacyMechanics-2.3.47+ (Forge soft-match no longer steals this click)
- *
- * Recommended (either works):
- *   - NPC display name contains "Skill Check" / "SkillCheck" / "Skill Progress"
- *   - OR scoreboard tag: /tag @e[type=!player,distance=..3] add lm_skillcheck
- *
- * Do NOT leave Rival / Spar scripts or lm_rival tags on this NPC.
- *
- * Right-click opens Skill Check for ANY player (no LuckPerms needed).
+ * Same behavior as SkillCheckPlayerNpc.js.
+ * Right-click opens Skill Check for every player.
  * Slash /skillcheck still requires legacymechanics.skillcheck.
+ *
+ * Needs LegacyMechanics 4.5.155 or newer.
  * ============================================================
  */
 
 function interact(event) {
     try {
-        /* Stop other CNPC dialogs / Forge name steal from fighting this open. */
         try {
             if (event != null && typeof event.setCanceled === "function") {
                 event.setCanceled(true);
@@ -48,12 +38,11 @@ function interact(event) {
             }
         }
         if (mcPlayer == null) {
-            player.message("\u00A7cSkill Check: could not resolve player entity.");
+            player.message("\u00A7cSkill Check: could not resolve your player.");
             return;
         }
 
-        /* Opens CMI/chest Skill Check GUI — no permission check (NPC is the gate). */
-        SkillCheck.openFromNpc(mcPlayer, "core");
+        SkillCheck.openAtNpc(mcPlayer);
     } catch (err) {
         try {
             if (event.player != null) {

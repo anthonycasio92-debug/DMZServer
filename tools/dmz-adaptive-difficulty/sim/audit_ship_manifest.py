@@ -292,7 +292,9 @@ def main() -> int:
     staff = read(SRC / "util/StaffAccess.java")
     plugin = read(BUKKIT / "AdaptiveDifficultyGuiPlugin.java")
     yml = read(GUI / "src/main/resources/plugin.yml")
-    check("SkillCheck NPC requires canUse", "canUse(player)" in skill_svc.split("tryOpenFromNpc", 1)[1])
+    check("Skill Check NPC opens for any player",
+          "openAtNpc(player)" in skill_svc.split("tryOpenFromNpc", 1)[1].split("trigger21", 1)[0]
+          and "canUse(player)" in skill_svc)
     check("no openFromNpc bypass", "openFromNpc" not in skill_svc)
     check("hasSkillCheck does not auto-grant staff", "isStaff(player)" not in staff.split("hasSkillCheck", 1)[1].split("hasBukkitIsOp", 1)[0])
     check("ensureSkillsGuiAccess in plugin", "ensureSkillsGuiAccess" in plugin)

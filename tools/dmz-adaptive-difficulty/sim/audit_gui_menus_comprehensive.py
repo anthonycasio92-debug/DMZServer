@@ -163,7 +163,9 @@ def main() -> int:
 
     print("\n=== Skill Check / Staff Admin access gates ===")
     skill_svc = read(MOD / "src/main/java/com/dbzlegacy/adaptivedifficulty/progression/shop/SkillCheckService.java")
-    ok("Skill Check NPC requires canUse", "canUse(player)" in skill_svc.split("tryOpenFromNpc", 1)[1])
+    ok("Skill Check NPC opens for any player",
+       "openAtNpc(player)" in skill_svc.split("tryOpenFromNpc", 1)[1].split("trigger21", 1)[0]
+       and "canUse(player)" in skill_svc)
     ok("no openFromNpc permission bypass", "openFromNpc" not in skill_svc)
     cnpc_sk = read(CNPC_DIR / "CnpcLmSkillCheckGui.java")
     ok("CNPC skillcheck donator-only open", "SkillCheckService.canUse(player)" in cnpc_sk
