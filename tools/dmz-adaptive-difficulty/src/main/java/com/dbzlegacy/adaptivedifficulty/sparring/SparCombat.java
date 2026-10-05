@@ -612,7 +612,10 @@ public final class SparCombat {
             amount = (float) Math.floor(amount * (1.0f + bondBonus));
         }
         float bpMult = battlePowerMultiplier(Math.min(a.bp, b.bp) > 0 ? Math.min(a.bp, b.bp) : Math.max(a.bp, b.bp));
-        float actionCap = maxTpForAction(bpMult) * GLOBAL_TP_GAIN_MULT;
+        // The hit cap used to ignore the closeness bonus, so a full rival
+        // multiplier never increased TP once other factors already filled it.
+        float rival = rivalMultiplier(a.bp, b.bp);
+        float actionCap = maxTpForAction(bpMult) * GLOBAL_TP_GAIN_MULT * Math.max(1.0f, rival);
         if (bondBonus > 0.0f) {
             actionCap *= (1.0f + bondBonus);
         }

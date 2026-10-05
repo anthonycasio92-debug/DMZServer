@@ -316,6 +316,10 @@ def main() -> int:
     check("spar Training bonds wording", "Training bonds" in cnpc_spar and "Training bonds" in spar_chest)
     spar_main = spar_chest.split("private Inventory main", 1)[1].split("private Inventory top", 1)[0] if "private Inventory main" in spar_chest else ""
     check("spar main no End Session button", "spar.main.end_session" not in spar_main)
+    spar_combat = read(SRC / "sparring/SparCombat.java")
+    award = spar_combat.split("int awardCombatTp", 1)[1].split("awardDamageTp", 1)[0] if "int awardCombatTp" in spar_combat else ""
+    check("spar rival bonus raises the action cap",
+          "Math.max(1.0f, rival)" in award and "actionCap" in award)
 
     print("\n--- § difficulty ---")
     cnpc_diff = read(SRC / "gui/cnpc/CnpcLmDifficultyGui.java")

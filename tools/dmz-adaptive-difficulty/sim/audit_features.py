@@ -900,6 +900,9 @@ def main() -> int:
     check("TP activeBonusTags", "activeBonusTags" in spar_c145)
     check("MOMENTUM_MULTIPLIERS script values",
           "1.05f, 1.10f, 1.20f, 1.35f, 1.50f, 2.00f" in spar_c145)
+    award_fn = spar_c145.split("int awardCombatTp", 1)[1].split("awardDamageTp", 1)[0] if "int awardCombatTp" in spar_c145 else ""
+    check("rival bonus scales the spar action cap",
+          "Math.max(1.0f, rival)" in award_fn and "actionCap" in award_fn)
 
     print("\n=== Spar TP lines player/staff (2.3.147) ===")
     spar_c147 = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparCombat.java")
