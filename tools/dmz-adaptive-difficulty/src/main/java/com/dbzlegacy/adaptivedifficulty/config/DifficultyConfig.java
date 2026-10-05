@@ -210,11 +210,11 @@ public final class DifficultyConfig {
     /**
      * Players in Living World's meditation state gain DragonMineZ Meditation
      * while another meditating player is in range, or while two living NPCs
-     * in a meditation circle are in range. One NPC is not enough. Standing
+     * that are meditating are in range. One NPC is not enough. Standing
      * nearby without meditating does not count.
      */
     public boolean enableLivingWorldMeditation = true;
-    /** Blocks from an active Living World meditation-circle fighter. */
+    /** Blocks from another meditating player or a meditating living NPC. */
     public int meditationDetectionRadius = 16;
     /**
      * Seconds of nearby time required to reach each Meditation level.

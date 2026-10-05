@@ -1,8 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** (previous `main`) through **4.5.157**. `main` is at 4.5.153. This branch adds a working android remove, keeps dragon spawn off, and lets every player open Skill Check from the NPC.
+What changed from **4.5.147** (previous `main`) through **4.5.158**. `main` is at 4.5.153. This branch adds a working android remove, keeps dragon spawn off, and lets every player open Skill Check from the NPC.
 
-The live mods folder gets `LegacyMechanics-4.5.157.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.5.158.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+
+## Meditation near two NPCs
+
+Time now counts while you are already meditating within 16 blocks of two living NPCs that are themselves meditating. The circle flag is not required. One NPC still does not count, and standing nearby without meditating still does not count. Two players meditating near each other is unchanged.
 
 ## Dojo war tracking
 
@@ -13,7 +17,7 @@ While a dojo war is active, the other dojo's members in your world show up in No
 Meditation is no longer a trainer, a trial, or a slash command. DragonMineZ Meditation goes up while you are **already meditating** in Living World, and only in one of these situations:
 
 - **Two players** are both meditating within 16 blocks of each other. Both gain time.
-- **One player** is meditating within 16 blocks of **two living NPCs** that are in a Living World meditation circle.
+- **One player** is meditating within 16 blocks of **two living NPCs** that are meditating.
 
 One NPC is not enough. Standing nearby without meditating does not count. The mod does not start meditation for you. If a partner and a circle are both nearby, you still gain one stretch of real time.
 

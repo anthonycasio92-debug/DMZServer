@@ -9,7 +9,9 @@ import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import com.dragonminez.common.stats.skills.Skills;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -18,19 +20,20 @@ import net.minecraft.world.entity.Entity;
 /**
  * DragonMineZ Meditation levels while the player is already in Living World's
  * meditation state and either another meditating player is within range, or
- * two living NPCs in a meditation circle are within range. One NPC is not
+ * two living NPCs that are meditating are within range. One NPC is not
  * enough. Standing nearby without meditating does not count. This class does
  * not start meditation for them.
  *
- * <p>Living World 2.4.3 marks a real circle only after
- * {@code beginMeditationCircle}: {@code beginMeditation} clears
- * {@code MEDITATION_CIRCLE_MEMBER}, then {@code setMeditationCircleCenter}
- * sets it again. Solo NPC meditation stays {@code isMeditating} with the
- * circle flag off, so both public checks are required. Player meditation is
- * {@code MeditationCompat.isPlayerMeditating}, which reads the bundled
- * meditation session. There is no public circle-center getter; each living
- * circle fighter's position is used. Two players, or two NPCs, still credit
- * one real-time sample.
+ * <p>Living World 2.4.3 {@code beginSharedMeditation} calls
+ * {@code beginMeditation}, which clears {@code MEDITATION_CIRCLE_MEMBER}.
+ * The pose a player can stand next to is {@code isMeditating}. The circle
+ * flag is resolved so a Living World build without it disables this pulse,
+ * but it is not required. Mohist can load {@code AmbientFighterEntity} on
+ * another class loader than {@code Class.forName}, so a fighter is also
+ * recognized by class name and {@code isMeditating} is invoked on that
+ * entity's own class. Player meditation is
+ * {@code MeditationCompat.isPlayerMeditating}. Two players, or two NPCs,
+ * still credit one real-time sample.
  */
 public final class LivingWorldNearbyMeditation {
     private static final String FIGHTER = "com.dmzlivingworld.entity.AmbientFighterEntity";
@@ -49,6 +52,8 @@ public final class LivingWorldNearbyMeditation {
     private static Method isMeditating;
     private static Method isMeditationCircleMember;
     private static Method isPlayerMeditating;
+    /** Methods from the entity's own class when Mohist split the fighter class. */
+    private static final Map<Class<?>, Method> meditatingOnClass = new HashMap<>();
 
     private LivingWorldNearbyMeditation() {}
 
@@ -59,7 +64,7 @@ public final class LivingWorldNearbyMeditation {
         if (tick % 20 != 0 || !resolveApi()) {
             return;
         }
-        List<Entity> circles = activeCircles(server);
+        List<Entity> circles = meditatingFighters(server);
         List<ServerPlayer> players = server.m_6846_().m_11314_();
         long now = System.currentTimeMillis();
         int radius = DifficultyConfig.get().meditationDetectionRadius;
@@ -99,7 +104,7 @@ public final class LivingWorldNearbyMeditation {
         out.add("§5Meditation§7: §f" + level + "/" + cap);
         out.add("§8  - §7Progress §f" + compact(progress) + " / " + compact(need));
         out.add("§8  - §7Remaining §f" + compact(left));
-        out.add("§8  - §7Meditate near another player, or near two living NPCs in a circle.");
+        out.add("§8  - §7Meditate near another player, or near two living NPCs.");
     }
 
     private static boolean resolveApi() {
@@ -128,7 +133,7 @@ public final class LivingWorldNearbyMeditation {
         }
     }
 
-    private static List<Entity> activeCircles(MinecraftServer server) {
+    private static List<Entity> meditatingFighters(MinecraftServer server) {
         List<Entity> centers = new ArrayList<>();
         for (ServerLevel level : server.m_129785_()) {
             if (level == null) {
@@ -143,14 +148,50 @@ public final class LivingWorldNearbyMeditation {
         return centers;
     }
 
-    /** True only while this fighter is meditating as a circle member. */
+    /**
+     * True while this living fighter is meditating. One nearby fighter is not
+     * a pair. {@code isMeditationCircleMember} is not the gate: shared
+     * meditation clears that flag inside {@code beginMeditation}.
+     */
     private static boolean circleMember(Entity entity) {
-        if (entity == null || fighterClass == null || !fighterClass.isInstance(entity) || !entity.m_6084_()) {
+        if (entity == null || !entity.m_6084_() || !isFighter(entity)) {
             return false;
         }
+        return fighterMeditating(entity);
+    }
+
+    private static boolean isFighter(Entity entity) {
+        if (fighterClass != null && fighterClass.isInstance(entity)) {
+            return true;
+        }
+        for (Class<?> type = entity.getClass(); type != null && type != Object.class; type = type.getSuperclass()) {
+            if (FIGHTER.equals(type.getName())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean fighterMeditating(Entity entity) {
+        if (fighterClass != null && fighterClass.isInstance(entity) && isMeditating != null) {
+            try {
+                return Boolean.TRUE.equals(isMeditating.invoke(entity));
+            } catch (Throwable ignored) {
+                // The resolved class is not this entity's class. Use its own method.
+            }
+        }
+        Class<?> type = entity.getClass();
+        Method live = meditatingOnClass.get(type);
+        if (live == null) {
+            try {
+                live = type.getMethod("isMeditating");
+                meditatingOnClass.put(type, live);
+            } catch (Throwable ignored) {
+                return false;
+            }
+        }
         try {
-            return Boolean.TRUE.equals(isMeditating.invoke(entity))
-                    && Boolean.TRUE.equals(isMeditationCircleMember.invoke(entity));
+            return Boolean.TRUE.equals(live.invoke(entity));
         } catch (Throwable ignored) {
             return false;
         }
@@ -168,9 +209,9 @@ public final class LivingWorldNearbyMeditation {
         }
     }
 
-/**
+    /**
      * Counts when two players are meditating within range of each other, or
-     * when this player is within range of two living NPCs in a circle.
+     * when this player is within range of two living NPCs that are meditating.
      */
     private static boolean counts(
             ServerPlayer player, List<ServerPlayer> players, List<Entity> circles, double r2) {
@@ -197,7 +238,7 @@ public final class LivingWorldNearbyMeditation {
         return false;
     }
 
-    /** One living circle NPC is not enough. Both must be alive and in range. */
+    /** One living NPC is not enough. Both must be alive, meditating, and in range. */
     private static boolean nearTwoLivingCircleNpcs(
             ServerPlayer player, List<Entity> circles, double r2) {
         if (circles == null) {
