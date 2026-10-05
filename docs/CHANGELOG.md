@@ -46,20 +46,13 @@ The shop still sells **permanent** skill unlocks: Potential Unlock, Fly, Meditat
 
 ## Commands
 
-`/progression` is **staff-only**. These commands are gone because they did not do the thing they advertised:
+`/progression meditation`, `/enddragon spawn`, and `/progression flags_fabled` are gone.
 
-- `/progression meditation`
-- `/enddragon spawn`
-- `/progression flags_fabled`
-- Player `/progression android remove` (it only printed a hint)
+**Android remove works.** `/progression android remove` removes your own upgrade. Run it again within 10 seconds to confirm. Staff can target another player. The hub Remove Android button does the same thing.
 
-Players use:
+**Dragon spawn does not work.** There is no spawn command, and the Difficulty menu cannot summon a dragon. Admins clear dragons with `/enddragon clear` (console works too). `/enddragon repair` is still there.
 
-- `/lm` for the hub, including Prestige and Remove Android
-- `/difficulty`, `/rival`, `/spar`
-- `/skillcheck` for donators
-
-Staff keep progression boosts, flags, android convert and remove, `/enddragon clear`, and `/enddragon repair`. Players summon the End Dragon from the Difficulty menu.
+Players also use `/lm`, `/difficulty`, `/rival`, `/spar`, and `/skillcheck` (donators). Staff keep progression boosts, flags, and android convert.
 
 ## Already on main before this merge
 

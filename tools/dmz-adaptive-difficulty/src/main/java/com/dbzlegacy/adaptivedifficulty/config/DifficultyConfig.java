@@ -246,7 +246,7 @@ public final class DifficultyConfig {
      * Difficulty GUI paid End Dragon summon (T4–T7, Ancient Netherite cost).
      * Natural spawn stays off while this is the intended player path.
      */
-    public boolean enableEndPlayerDragonSummon = true;
+    public boolean enableEndPlayerDragonSummon = false;
     /** Ancient Netherite coins charged for a player GUI End Dragon summon. */
     public int endDragonSummonNetheriteCost = 3;
     /**
@@ -1625,8 +1625,9 @@ public final class DifficultyConfig {
         cfg.lmTipNewPlayerIntervalSeconds = Math.max(45, Math.min(3600, cfg.lmTipNewPlayerIntervalSeconds));
         cfg.lmTipLoginDelaySeconds = Math.max(15, Math.min(600, cfg.lmTipLoginDelaySeconds));
         cfg.lmTipNewPlayerMaxLevel = Math.max(1, Math.min(150_000, cfg.lmTipNewPlayerMaxLevel));
-        // Product rule: no natural/vanilla auto End Dragon — Difficulty GUI / staff only.
+        // Product rule: dragons are not spawned. Admins clear with /enddragon clear.
         cfg.enableEndNaturalDragonSpawn = false;
+        cfg.enableEndPlayerDragonSummon = false;
         if (cfg.meditationDetectionRadius < 1) {
             cfg.meditationDetectionRadius = 16;
         }

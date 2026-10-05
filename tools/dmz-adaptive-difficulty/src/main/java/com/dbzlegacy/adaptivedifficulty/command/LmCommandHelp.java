@@ -230,7 +230,10 @@ public final class LmCommandHelp {
         return LmStaffHelp.build(
                 "Progression",
                 "/lm",
-                "§7Spar to raise Potential Unlock. Prestige, shop, and Android live under §f/lm§7.",
+                "§7Spar to raise Potential Unlock. Prestige and the shop live under §f/lm§7.",
+                new LmStaffHelp.Section("Android",
+                        LmStaffHelp.cmd("/progression android remove", "remove your Android upgrade"),
+                        LmStaffHelp.note("Run it again within 10 seconds to confirm")),
                 new LmStaffHelp.Section("Hub",
                         LmStaffHelp.cmd("/lm", "open the hub"),
                         LmStaffHelp.note("Staff tools: /progression help")));

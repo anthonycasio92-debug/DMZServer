@@ -514,7 +514,9 @@ public final class CnpcLmDifficultyGui {
         } else {
             gui.addLabel(CnpcGuiSupport.ID_INLINE_NOTE,
                     CnpcGuiSupport.safeChat(CnpcGuiStyle.readableInfoLine(
-                            "§eFix requirements above to summon.")),
+                            DifficultyConfig.get().enableEndPlayerDragonSummon
+                                    ? "§eFix requirements above to summon."
+                                    : "§7Admins clear with §f/enddragon clear§7.")),
                     CnpcGuiSupport.COL_L, row + 4, CnpcGuiSupport.BTN_W, 14);
             row += 8;
         }

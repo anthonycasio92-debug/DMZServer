@@ -713,11 +713,11 @@ public final class EndDimensionStrength {
         return spawned;
     }
 
-    /** Staff spawn removed — use Difficulty GUI player summon. Clear via {@link #cmdCleanupDragons}. */
+    /** Spawn is disabled. Admins clear with {@link #cmdCleanupDragons}. */
     public static int cmdSpawnDragon(ServerPlayer player) {
         if (player != null) {
-            msg(player, "§c[The End] Staff dragon spawn is disabled."
-                    + " §7Players summon from §f/difficulty§7; staff clear with §f/cleardragons§7.");
+            msg(player, "§c[The End] Dragon spawn is disabled."
+                    + " §7Admins clear dragons with §f/enddragon clear§7.");
         }
         return 0;
     }
@@ -737,7 +737,7 @@ public final class EndDimensionStrength {
             return "§cEnd Dimension Strength is disabled.";
         }
         if (!DifficultyConfig.get().enableEndPlayerDragonSummon) {
-            return "§cPlayer End Dragon summons are disabled.";
+            return "§cDragon spawn is disabled. §7Admins clear dragons with §f/enddragon clear§7.";
         }
         if (!SystemGate.participates(player)) {
             return "§cTurn personal Adaptive Difficulty ON to summon the End Dragon.";
@@ -848,7 +848,8 @@ public final class EndDimensionStrength {
             return lines;
         }
         if (!DifficultyConfig.get().enableEndPlayerDragonSummon) {
-            lines.add("§cPlayer End Dragon summons are disabled.");
+            lines.add("§cDragon spawn is disabled.");
+            lines.add("§7Admins clear dragons with §f/enddragon clear§7.");
             return lines;
         }
         if (player == null) {
@@ -1061,6 +1062,14 @@ public final class EndDimensionStrength {
     /** Trigger 51 — clear End dragons. */
     public static int cmdCleanupDragons(ServerPlayer player) {
         MinecraftServer server = player == null ? null : player.m_20194_();
+        return cmdCleanupDragons(server, player);
+    }
+
+    /** Admin clear from a command source. {@code player} may be null for console. */
+    public static int cmdCleanupDragons(MinecraftServer server, ServerPlayer player) {
+        if (server == null && player != null) {
+            server = player.m_20194_();
+        }
         if (server == null) {
             return 0;
         }

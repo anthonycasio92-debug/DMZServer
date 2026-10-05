@@ -138,7 +138,7 @@ public final class ProgressionGuiApi {
                 yield "";
             }
             case "spawn", "spawndragon" ->
-                    "§cStaff dragon spawn is not a command. §7Players summon from §f/difficulty§7.";
+                    "§cDragon spawn is disabled. §7Admins clear dragons with §f/enddragon clear§7.";
             default -> "§7Staff: §fclear§7 / §frepair§7. §8Player summons: Difficulty GUI only.";
         };
     }

@@ -371,14 +371,21 @@ public final class ProgressionCommands {
     }
 
     private static int endClear(CommandSourceStack source) {
-        return com.dbzlegacy.adaptivedifficulty.progression.end.EndDimensionStrength.cmdCleanupDragons(
-                playerOrNull(source));
+        ServerPlayer player = playerOrNull(source);
+        int removed = com.dbzlegacy.adaptivedifficulty.progression.end.EndDimensionStrength
+                .cmdCleanupDragons(source.m_81377_(), player);
+        if (player == null) {
+            int count = removed;
+            source.m_288197_(() -> Component.m_237113_(
+                    "§7[The End] Cleared §f" + count + "§7 dragon(s)."), true);
+        }
+        return 1;
     }
 
     private static LiteralArgumentBuilder<CommandSourceStack> build(String name) {
-        // Staff and console only. There is no meditation slash command.
+        // Players may run android remove. Every other leaf is staff-only.
+        // There is no meditation slash command.
         return Commands.m_82127_(name)
-                .requires(StaffAccess::isStaffSource)
                 .executes(ctx -> helpOrGui(ctx.getSource()))
                 .then(Commands.m_82127_("gui")
                         .requires(ProgressionCommands::staff)
@@ -580,15 +587,14 @@ public final class ProgressionCommands {
     }
 
     private static int androidRemoveGuiHint(CommandSourceStack source) {
-        if (staff(source)) {
-            return androidRemoveSelf(source);
-        }
-        reply(source, playerOrNull(source),
-                "§7Use §f/lm §7and choose Remove Android in the menu.");
-        return 0;
+        return androidRemoveSelf(source);
     }
 
     private static int androidSelfOrHint(CommandSourceStack source) {
+        if (!staff(source)) {
+            reply(source, playerOrNull(source), LmCommandMessages.STAFF_ONLY);
+            return 0;
+        }
         return androidSelf(source);
     }
 

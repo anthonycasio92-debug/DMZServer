@@ -69,16 +69,19 @@ public final class ProgressionCommandTree implements TabCompleter {
             return true;
         }
 
-        // Android / other leaves: players use /lm GUI (staff keep slash).
+        // Players may remove their own Android upgrade. Convert stays staff-only.
         if (args.length > 0 && "android".equalsIgnoreCase(args[0])) {
-            if (!ForgeBridge.isStaff(player)) {
-                player.sendMessage("§7Open §f/lm §7→ §cRemove Android §7(GUI).");
-                return true;
-            }
             if (args.length > 1 && ("remove".equalsIgnoreCase(args[1])
                     || "unandroid".equalsIgnoreCase(args[1]))) {
-                String target = args.length > 2 ? args[2] : "";
+                String target = "";
+                if (ForgeBridge.isStaff(player) && args.length > 2) {
+                    target = args[2];
+                }
                 sendMultiline(player, ForgeBridge.androidRemove(player, target));
+                return true;
+            }
+            if (!ForgeBridge.isStaff(player)) {
+                player.sendMessage("§7Remove your own upgrade with §f/progression android remove§7.");
                 return true;
             }
         }

@@ -258,7 +258,7 @@ public final class AndroidConversion {
                     : "§f" + target.m_7755_().getString();
             return "§6[Android] §cWarning: §7This will remove the Android upgrade from " + who + "§7.\n"
                     + "§7Race, stats, skills, and progression stay — form skills are restored.\n"
-                    + "§eClick Remove again within 10 seconds to confirm.";
+                    + "§eConfirm again within 10 seconds.";
         } catch (Throwable t) {
             return "§c[Android Remove Error] §f" + t;
         }

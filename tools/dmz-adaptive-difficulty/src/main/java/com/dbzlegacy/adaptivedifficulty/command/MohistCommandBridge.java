@@ -106,7 +106,7 @@ public final class MohistCommandBridge {
             registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
                     "skillcheck", List.of(), skillPerm);
             registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
-                    "progression", List.of(), staffPerm);
+                    "progression", List.of(), null);
             registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
                     "prestige", List.of(), staffPerm);
             registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,

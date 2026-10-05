@@ -296,7 +296,7 @@ public final class CnpcLmProgressionGui {
         int row = CnpcGuiSupport.bodyBelowHeader(infoY);
         CnpcGuiSupport.button(gui, 63, "§cRemove on yourself", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                 player,
-                () -> ProgressionGuiApi.handleDo(player, "android_remove", subject.m_7755_().getString(),
+                () -> ProgressionGuiApi.handleDo(player, "android_remove", "",
                         "android_remove"),
                 () -> open(player, "android_remove")));
         row += CnpcGuiSupport.ROW_STEP + 4;

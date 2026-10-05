@@ -320,7 +320,10 @@ public final class ProgressionSystem {
                 // Natural spawn is retired — always force off.
                 cfg.enableEndNaturalDragonSpawn = false;
             }
-            case "endsummon", "enableendplayerdragonsummon", "enddragonsummon" -> cfg.enableEndPlayerDragonSummon = on;
+            case "endsummon", "enableendplayerdragonsummon", "enddragonsummon" -> {
+                // Spawn stays off. Admins clear with /enddragon clear.
+                cfg.enableEndPlayerDragonSummon = false;
+            }
             case "shadow", "shadowdummy", "enableshadowdummylimiter" -> cfg.enableShadowDummyLimiter = on;
             case "statchecker", "playerstatchecker", "enableplayerstatchecker" -> cfg.enablePlayerStatChecker = on;
             case "skills", "skillunlock", "enableskillunlockservice" -> cfg.enableSkillUnlockService = on;

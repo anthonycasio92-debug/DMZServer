@@ -10,7 +10,8 @@ import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Player-facing slash commands: {@code /lm}, {@code /diff}, {@code /difficulty},
- * {@code /rival}, {@code /spar}, and {@code /skillcheck} (donators). Everything else is staff.
+ * {@code /rival}, {@code /spar}, {@code /skillcheck} (donators), and
+ * {@code /progression android remove} (self only). Everything else is staff.
  */
 public final class CommandAccess {
     private CommandAccess() {}
@@ -72,7 +73,7 @@ public final class CommandAccess {
             return false;
         }
         return switch (label.toLowerCase()) {
-            case "progression", "prestige", "skills", "character", "enddragon", "androidify", "padmin" -> true;
+            case "prestige", "skills", "character", "enddragon", "androidify", "padmin" -> true;
             default -> false;
         };
     }
