@@ -131,10 +131,13 @@ def main() -> int:
     print("\n--- § class stamina ---")
     stat_mixin = read(SRC / "mixin/StatsDataStatScalingMixin.java")
     pool = read(SRC / "progression/DmzResourcePoolClamp.java")
-    check("class and stamina scaling is the live value, not an LM multiply",
+    scaling_method, _, base_method = stat_mixin.partition("lm$keepLiveBaseStats")
+    check("class and stamina scaling is the config coefficient, ki stays live",
           "getInitialBaseStats" in stat_mixin
-          and "live / scale" in stat_mixin
-          and "setReturnValue" not in stat_mixin
+          and "live / scale" in scaling_method
+          and "setReturnValue" in scaling_method
+          and 'equalsIgnoreCase("ENE")' in stat_mixin
+          and "setReturnValue" not in base_method
           and "ClassRaceStatScale" not in stat_mixin
           and "ClassRaceStatScale" not in pool
           and "return data == null ? 0f : data.getMaxStamina()" in pool)

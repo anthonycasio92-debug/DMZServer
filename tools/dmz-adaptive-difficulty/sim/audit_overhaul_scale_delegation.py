@@ -2,12 +2,13 @@
 """Fail if Legacy Mechanics applies its own prestige scale.
 
 Policy:
-  - Fighting-class coefficients and stamina are the live getStatScaling / getMaxStamina
-    DragonMineZ and the other installed mods already computed. LM does not replace
-    or multiply them. That is the same rule as ki: the getMaxEnergy mixin is empty.
-  - dmzrevamp FusionRevampLogic.addPartnerScale may still multiply getStatScaling.
-    Dividing that back (live / scale) does not stick, and LM must not multiply again.
-  - LM may read PrestigeSystem.scaleMultiplier for display.
+  - Fighting-class coefficients and stamina read getStatScaling after dmzrevamp has
+    summed race + class and multiplied by prestige. LM writes live / scale for every
+    stat except ENE, so those coefficients match the config. Ki (ENE) stays on the
+    live return, the same way getMaxEnergy does.
+  - LM must not multiply getStatScaling (no live * scale) and must not replace it
+    with its own race/class table.
+  - LM may read PrestigeSystem.scaleMultiplier for display and for that divide.
   - LM must not multiply getTotalMultiplier, getMaxEnergy, getMaxStamina, or defense by that scale.
   - LM must not duplicate 1 + count × scaleBonusPerPrestige in Java.
 """
@@ -75,10 +76,17 @@ def main() -> int:
         errors.append("legacymechanics.mixins.json must register StatsDataStatScalingMixin")
 
     stat_scaling = read("mixin/StatsDataStatScalingMixin.java")
-    if "live / scale" not in stat_scaling:
-        errors.append("StatsDataStatScalingMixin must record why live / scale does not stick")
-    if "ClassRaceStatScale" in stat_scaling or "setReturnValue" in stat_scaling:
-        errors.append("StatsDataStatScalingMixin must not replace getStatScaling or getInitialBaseStats")
+    scaling_method, _, base_method = stat_scaling.partition("lm$keepLiveBaseStats")
+    if "live / scale" not in scaling_method:
+        errors.append("StatsDataStatScalingMixin must restore config scaling with live / scale")
+    if "setReturnValue" not in scaling_method:
+        errors.append("StatsDataStatScalingMixin must write the config coefficient back")
+    if 'equalsIgnoreCase("ENE")' not in stat_scaling:
+        errors.append("StatsDataStatScalingMixin must leave ENE on the live ki return")
+    if "setReturnValue" in base_method:
+        errors.append("StatsDataStatScalingMixin must not replace getInitialBaseStats")
+    if "ClassRaceStatScale" in stat_scaling:
+        errors.append("StatsDataStatScalingMixin must not replace getStatScaling with ClassRaceStatScale")
     if "getInitialBaseStats" not in stat_scaling:
         errors.append("StatsDataStatScalingMixin must still target getInitialBaseStats")
     if "priority = 6100" not in stat_scaling:
