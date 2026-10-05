@@ -5,6 +5,7 @@ import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.DmzSkillUtil;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionData;
+import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeSystem;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import com.dragonminez.common.stats.skills.Skills;
 import java.lang.reflect.Method;
@@ -33,7 +34,9 @@ import net.minecraft.world.entity.Entity;
  * recognized by class name and {@code isMeditating} is invoked on that
  * entity's own class. Player meditation is
  * {@code MeditationCompat.isPlayerMeditating}. Two players, or two NPCs,
- * still credit one real-time sample.
+ * still credit one sample. Extra players do not raise it. Two living NPCs
+ * credit 75% of the player rate. Each held prestige adds 10% on top of
+ * whichever rate is already in use.
  */
 public final class LivingWorldNearbyMeditation {
     private static final String FIGHTER = "com.dmzlivingworld.entity.AmbientFighterEntity";
@@ -46,6 +49,10 @@ public final class LivingWorldNearbyMeditation {
     private static final String TEMP_LAST = "lm.lw_med.last_ms";
     /** Ignore a stalled pulse longer than this so a hung tick cannot dump hours. */
     private static final long MAX_DELTA_MS = 60_000L;
+    /** Two living NPCs credit this percent of the same time spent with a player. */
+    private static final int NPC_RATE_PERCENT = 75;
+    /** Each held prestige adds this percent. More nearby players do not. */
+    private static final int HELD_RATE_PERCENT = 10;
 
     private static volatile boolean lookupFailed;
     private static Class<?> fighterClass;
@@ -73,13 +80,17 @@ public final class LivingWorldNearbyMeditation {
             if (player == null) {
                 continue;
             }
-            if (!player.m_6084_() || player.m_5833_()
-                    || !playerMeditating(player)
-                    || !counts(player, players, circles, r2)) {
+            if (!player.m_6084_() || player.m_5833_() || !playerMeditating(player)) {
                 clearNear(player);
                 continue;
             }
-            credit(player, now);
+            boolean withPlayer = nearMeditatingPlayer(player, players, r2);
+            boolean withNpcs = nearTwoLivingCircleNpcs(player, circles, r2);
+            if (!withPlayer && !withNpcs) {
+                clearNear(player);
+                continue;
+            }
+            credit(player, now, withPlayer);
         }
     }
 
@@ -105,6 +116,8 @@ public final class LivingWorldNearbyMeditation {
         out.add("§8  - §7Progress §f" + compact(progress) + " / " + compact(need));
         out.add("§8  - §7Remaining §f" + compact(left));
         out.add("§8  - §7Meditate near another player, or near two living NPCs.");
+        out.add("§8  - §7NPCs count at 75%. More players do not add time.");
+        out.add("§8  - §7Each held prestige adds 10%.");
     }
 
     private static boolean resolveApi() {
@@ -209,16 +222,7 @@ public final class LivingWorldNearbyMeditation {
         }
     }
 
-    /**
-     * Counts when two players are meditating within range of each other, or
-     * when this player is within range of two living NPCs that are meditating.
-     */
-    private static boolean counts(
-            ServerPlayer player, List<ServerPlayer> players, List<Entity> circles, double r2) {
-        return nearMeditatingPlayer(player, players, r2)
-                || nearTwoLivingCircleNpcs(player, circles, r2);
-    }
-
+    /** One other meditating player is the full rate. A third player does not raise it. */
     private static boolean nearMeditatingPlayer(
             ServerPlayer player, List<ServerPlayer> players, double r2) {
         if (players == null) {
@@ -276,7 +280,7 @@ public final class LivingWorldNearbyMeditation {
      * First sample while meditating inside the radius only stamps the clock.
      * Time spent standing nearby, or time after meditation ends, is not added.
      */
-    private static void credit(ServerPlayer player, long now) {
+    private static void credit(ServerPlayer player, long now, boolean withPlayer) {
         boolean wasNear = "1".equals(ProgressionData.tempGet(player, TEMP_NEAR, ""));
         long last = ProgressionData.tempGetLong(player, TEMP_LAST, 0L);
         ProgressionData.tempPut(player, TEMP_NEAR, "1");
@@ -291,7 +295,28 @@ public final class LivingWorldNearbyMeditation {
         if (delta > MAX_DELTA_MS) {
             delta = MAX_DELTA_MS;
         }
-        addTime(player, delta);
+        addTime(player, creditedMs(player, delta, withPlayer));
+    }
+
+    /**
+     * A player partner is full time. Two living NPCs are {@value #NPC_RATE_PERCENT}%
+     * of that. Each held prestige then adds {@value #HELD_RATE_PERCENT}%.
+     * A player nearby wins over NPCs, so the two rates are not added together.
+     */
+    private static long creditedMs(ServerPlayer player, long deltaMs, boolean withPlayer) {
+        long base = withPlayer ? deltaMs : (deltaMs * NPC_RATE_PERCENT) / 100L;
+        int held = 0;
+        try {
+            held = PrestigeSystem.heldCountForNeed(player);
+        } catch (Throwable ignored) {
+        }
+        if (held < 0) {
+            held = 0;
+        }
+        if (held > 10) {
+            held = 10;
+        }
+        return base + (base * held * HELD_RATE_PERCENT) / 100L;
     }
 
     private static void addTime(ServerPlayer player, long deltaMs) {

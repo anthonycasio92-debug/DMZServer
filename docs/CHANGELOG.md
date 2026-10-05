@@ -1,8 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.5.159**.
+What changed from **4.5.147** through **4.5.160**.
 
-The live mods folder gets `LegacyMechanics-4.5.159.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.5.160.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+
+## Meditation rate
+
+Training with another player is full time. More players nearby do not add more. Two living NPCs credit 75% of that time. Each held prestige adds 10% on top of whichever rate you are using. One NPC still does not count.
 
 ## End return portal
 

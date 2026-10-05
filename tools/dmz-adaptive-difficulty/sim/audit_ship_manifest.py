@@ -180,6 +180,9 @@ def main() -> int:
           and "nearMeditatingPlayer" in nearby
           and "nearTwoLivingCircleNpcs" in nearby
           and "found >= 2" in nearby
+          and "NPC_RATE_PERCENT = 75" in nearby
+          and "HELD_RATE_PERCENT = 10" in nearby
+          and "heldCountForNeed" in nearby
           and "startPlayerMeditation" not in nearby
           and "lm.lw_med.progress_ms" in nearby
           and "MEDITATION BREAKTHROUGH" in nearby
