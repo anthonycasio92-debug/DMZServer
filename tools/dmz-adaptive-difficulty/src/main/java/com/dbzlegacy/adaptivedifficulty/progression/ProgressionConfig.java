@@ -12,16 +12,19 @@ public final class ProgressionConfig {
         return DifficultyConfig.get().enableProgression;
     }
 
+    /** Flight training belongs to another mod. */
     public static boolean flight() {
-        return masterEnabled() && DifficultyConfig.get().enableFlightProgression;
+        return false;
     }
 
+    /** Sprint and jump training belong to another mod. */
     public static boolean sprintJump() {
-        return masterEnabled() && DifficultyConfig.get().enableSprintJump;
+        return false;
     }
 
+    /** Meditation trials belong to another mod. */
     public static boolean meditation() {
-        return masterEnabled() && DifficultyConfig.get().enableMeditation;
+        return false;
     }
 
     public static boolean potential() {
@@ -100,10 +103,8 @@ public final class ProgressionConfig {
     public static String statusSummary() {
         DifficultyConfig c = DifficultyConfig.get();
         return "§eSkills§7: master=" + onOff(c.enableProgression)
-                + " fly=" + onOff(c.enableFlightProgression)
-                + " sprint=" + onOff(c.enableSprintJump)
-                + " med=" + onOff(c.enableMeditation)
                 + " pot=" + onOff(c.enablePotential)
+                + " §8flight/sprint/meditation off"
                 + "\n§6TP§7: boost=" + onOff(c.enableGlobalTpBoost)
                 + " bio=" + onOff(c.enableBioAndroid)
                 + "\n§bRace§7: lock=" + onOff(c.enableRaceLock)

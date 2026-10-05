@@ -780,7 +780,8 @@ def main() -> int:
     gui_api = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/ProgressionGuiApi.java")
     # Non-staff commandHelp block (first join after if (!staff)).
     ns_help = gui_api.split("if (!staff)")[1].split("return String.join")[1].split(");")[0] if "if (!staff)" in gui_api else ""
-    check("non-staff commandHelp has meditation", "/progression meditation" in ns_help)
+    check("non-staff commandHelp keeps potential unlock",
+          "Potential Unlock" in ns_help and "/progression meditation" not in ns_help)
     check("non-staff commandHelp no android slash", "/progression android remove" not in ns_help)
     check("non-staff commandHelp points to /lm", "/lm" in ns_help)
     check("player bare progression lists /lm /skillcheck",

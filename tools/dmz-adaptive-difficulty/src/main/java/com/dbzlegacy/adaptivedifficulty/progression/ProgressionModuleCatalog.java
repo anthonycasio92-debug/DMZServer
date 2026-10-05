@@ -15,12 +15,6 @@ public final class ProgressionModuleCatalog {
     public record ModuleInfo(String title, String configKey, String javaClass, String legacyScript) {}
 
     private static final Map<String, ModuleInfo> BY_FLAG = Map.ofEntries(
-            Map.entry("flight", info("Flight", "enableFlightProgression",
-                    "progression.skills.FlightProgression", "kubejs fly progression")),
-            Map.entry("sprint", info("Sprint Jump", "enableSprintJump",
-                    "progression.skills.SprintJumpProgression", "kubejs sprint/jump")),
-            Map.entry("meditation", info("Meditation", "enableMeditation",
-                    "progression.skills.MeditationProgression", "kubejs meditation trial")),
             Map.entry("potential", info("Potential", "enablePotential",
                     "progression.skills.PotentialProgression", "kubejs potential / spar")),
             Map.entry("boost", info("Global TP Boost", "enableGlobalTpBoost",
@@ -77,7 +71,7 @@ public final class ProgressionModuleCatalog {
             return new String[0];
         }
         return switch (page.toLowerCase(Locale.ROOT)) {
-            case "skills" -> new String[]{"flight", "sprint", "meditation", "potential"};
+            case "skills" -> new String[]{"potential"};
             case "tp" -> new String[]{"boost", "bio"};
             case "race" -> new String[]{"racelock", "yardrat", "spiritualist", "android"};
             case "combat" -> new String[]{"kiweapons", "piercing", "dot", "apothic"};

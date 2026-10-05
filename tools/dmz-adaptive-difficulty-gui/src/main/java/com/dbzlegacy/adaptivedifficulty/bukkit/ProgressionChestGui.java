@@ -70,7 +70,7 @@ public final class ProgressionChestGui implements Listener {
         String p = page == null || page.isBlank() ? "main" : page.toLowerCase(Locale.ROOT);
         Inventory inv = switch (p) {
             case "skills" -> sectionFlags(viewer, subject, "skills", "&eSkills", Material.BOOK,
-                    new String[]{"flight", "sprint", "meditation", "potential"});
+                    new String[]{"potential"});
             case "tp" -> sectionFlags(viewer, subject, "tp", "&6TP Gains", Material.GOLDEN_CARROT,
                     new String[]{"boost", "bio"});
             case "boost_panel", "tpboost" ->
@@ -131,7 +131,7 @@ public final class ProgressionChestGui implements Listener {
                 "&5End", "&7Utility"
         };
         String[] tips = {
-                "&7Flight · Sprint · Meditation · Potential",
+                "&7Potential Unlock",
                 "&7Boost · Bio-Android",
                 "&7Race lock · Yardrat · Spiritualist · Android",
                 "&7Ki weapons · Piercing · DoT · Apothic",
@@ -157,7 +157,7 @@ public final class ProgressionChestGui implements Listener {
     }
 
     private static final String[] ALL_PROGRESSION_FLAG_KEYS = {
-            "flight", "sprint", "meditation", "potential",
+            "potential",
             "boost", "bio",
             "racelock", "yardrat", "spiritualist", "android",
             "kiweapons", "piercing", "dot", "apothic",

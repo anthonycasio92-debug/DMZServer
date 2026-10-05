@@ -145,6 +145,25 @@ def main() -> int:
           and "return dedicatedServer();" in plugin
           and "return data == null ? 0f : data.getMaxStamina()" in pool)
 
+    print("\n--- § natural skills ---")
+    prog_cfg = read(SRC / "progression/ProgressionConfig.java")
+    prog_sys = read(SRC / "progression/ProgressionSystem.java")
+    skill_pulse = read(SRC / "progression/skills/SkillProgression.java")
+    check("flight sprint and meditation stay off",
+          "return false;" in prog_cfg.split("boolean flight()")[1].split("boolean sprintJump()")[0]
+          and "return false;" in prog_cfg.split("boolean sprintJump()")[1].split("boolean meditation()")[0]
+          and "return false;" in prog_cfg.split("boolean meditation()")[1].split("boolean potential()")[0]
+          and "enablePotential" in prog_cfg.split("boolean potential()")[1].split("boolean globalTpBoost()")[0]
+          and "FlightProgression.pulse" not in prog_sys
+          and "SprintJumpProgression.pulse" not in prog_sys
+          and "MeditationProgression" not in prog_sys
+          and "FlightProgression" not in skill_pulse
+          and "SprintJumpProgression" not in skill_pulse
+          and "MeditationProgression" not in skill_pulse
+          and "PotentialProgression.onPlayerHurt" in prog_sys
+          and "enableFlightProgression = false" in read(SRC / "config/DifficultyConfig.java")
+          and "enablePotential = true" in read(SRC / "config/DifficultyConfig.java"))
+
     print("\n--- § fabled removed ---")
     bridge_dir = SRC / "progression/bridge"
     check("FabledBridge class removed", not (bridge_dir / "FabledBridge.java").is_file())

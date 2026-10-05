@@ -52,7 +52,7 @@ public final class CmiProgressionGui {
         try {
             switch (p) {
                 case "skills" -> openSection(player, "skills", "&eSkills", Material.BOOK,
-                        new String[]{"flight", "sprint", "meditation", "potential"});
+                        new String[]{"potential"});
                 case "tp" -> openSection(player, "tp", "&6TP Gains", Material.GOLDEN_CARROT,
                         new String[]{"boost", "bio"});
                 case "boost_panel", "tpboost" -> {
@@ -138,7 +138,7 @@ public final class CmiProgressionGui {
                 "&5End", "&7Utility"
         };
         String[] tips = {
-                "&7Flight · Sprint · Meditation · Potential",
+                "&7Potential Unlock",
                 "&7Boost · Bio-Android",
                 "&7Race lock · Yardrat · Spiritualist · Android",
                 "&7Ki weapons · Piercing · DoT · Apothic",

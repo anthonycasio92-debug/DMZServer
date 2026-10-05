@@ -94,9 +94,9 @@ Staff `/skills` has no special CNPC name hook — use an NPC interaction command
 | Flag | Default | Module |
 |------|---------|--------|
 | `enableProgression` | true | Master for CNPC natural ports |
-| `enableFlightProgression` | true | Flight / Viltrumite / Yardrat fly |
-| `enableSprintJump` | true | Sprint + Jump invested STR |
-| `enableMeditation` | true | Meditation |
+| `enableFlightProgression` | false | Retired — another mod owns flight |
+| `enableSprintJump` | false | Retired — another mod owns sprint and jump |
+| `enableMeditation` | false | Retired — another mod owns meditation |
 | `enablePotential` | true | Potential Unlock |
 
 ### TP Gains

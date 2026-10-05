@@ -230,10 +230,7 @@ public final class LmCommandHelp {
         return LmStaffHelp.build(
                 "Progression",
                 "/progression",
-                "§7Check your meditation trial here. Prestige and shop live under §f/lm§7.",
-                new LmStaffHelp.Section("Meditation",
-                        LmStaffHelp.cmd("/progression meditation", "current meditation trial status"),
-                        LmStaffHelp.cmd("/progression meditation status", "same as meditation")),
+                "§7Potential Unlock stays in LegacyMechanics. Flight, sprint, and meditation do not. Prestige and shop live under §f/lm§7.",
                 new LmStaffHelp.Section("Android",
                         LmStaffHelp.cmd("/progression android remove", "remove android (opens hub flow)"),
                         LmStaffHelp.note("Prestige and shop: use /lm open prestige")));
@@ -246,8 +243,6 @@ public final class LmCommandHelp {
                 "§7Staff progression tools—boosts, flags, and android conversion.",
                 new LmStaffHelp.Section("Menus",
                         LmStaffHelp.cmd("/progression", "open progression staff menu (CNPC)")),
-                new LmStaffHelp.Section("Meditation",
-                        LmStaffHelp.cmd("/progression meditation next", "rotate meditation trial (staff)")),
                 new LmStaffHelp.Section("Natural boost",
                         LmStaffHelp.cmd("/progression boost status", "show active boost"),
                         LmStaffHelp.cmd("/progression boost end", "end active boost"),

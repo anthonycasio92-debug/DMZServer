@@ -36,7 +36,7 @@ public final class ProgressionCommandTree implements TabCompleter {
             "android_panel", "android_convert", "android_remove", "flags_fabled"
     );
     private static final List<String> FLAGS = List.of(
-            "master", "flight", "sprint", "meditation", "potential",
+            "master", "potential",
             "boost", "bio",
             "racelock", "yardrat", "spiritualist", "android",
             "kiweapons", "piercing", "dot", "apothic",
@@ -97,7 +97,7 @@ public final class ProgressionCommandTree implements TabCompleter {
         if (!ForgeBridge.isStaff(player)) {
             player.sendMessage("§6§lPlayer commands");
             player.sendMessage("§e/lm §7· §e/difficulty §7· §e/rival §7· §e/spar");
-            player.sendMessage("§e/progression meditation §7— trial status");
+            player.sendMessage("§7Potential Unlock stays. Flight, sprint, and meditation do not.");
             player.sendMessage("§e/skillcheck §7— donator Skill Check");
             player.sendMessage("§8Everything else: open §f/lm §8and use the GUI.");
             return true;

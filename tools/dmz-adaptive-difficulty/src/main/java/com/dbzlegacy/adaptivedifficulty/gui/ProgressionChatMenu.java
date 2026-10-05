@@ -2,7 +2,6 @@ package com.dbzlegacy.adaptivedifficulty.gui;
 
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionModuleCatalog;
-import com.dbzlegacy.adaptivedifficulty.progression.skills.MeditationProgression;
 import com.dbzlegacy.adaptivedifficulty.progression.tp.GlobalTpBoost;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import java.util.List;
@@ -42,7 +41,7 @@ public final class ProgressionChatMenu {
         send(player, Component.m_237113_(""));
         send(player, Component.m_237113_("§8── §fLegacy Mechanics · Progression §8──"));
         send(player, Component.m_237113_(GlobalTpBoost.statusLine()));
-        send(player, Component.m_237113_(MeditationProgression.statusLine()));
+        send(player, Component.m_237113_("§7Potential Unlock stays. Flight, sprint, and meditation do not."));
         send(player, Component.m_237113_(""));
         send(player, Component.m_237113_("§7")
                 .m_7220_(btn("§e[Skills]", "/prog do page skills", "Passive skill unlocks"))

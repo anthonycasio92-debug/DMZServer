@@ -11,7 +11,6 @@ import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeAdmin;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeSystem;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.SkillUnlockService;
-import com.dbzlegacy.adaptivedifficulty.progression.skills.MeditationProgression;
 import com.dbzlegacy.adaptivedifficulty.progression.tp.GlobalTpBoost;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import com.dbzlegacy.adaptivedifficulty.util.PaidFeatureAccess;
@@ -32,22 +31,19 @@ import net.minecraft.server.level.ServerPlayer;
 public final class ProgressionGuiApi {
     private ProgressionGuiApi() {}
 
-    /** Player-facing meditation trial help (no staff command hints). */
+    /** Meditation, flight, and sprint are not run by this mod. */
     public static String meditationExplain() {
-        return MeditationProgression.explainTrials(false);
+        return "§7Flight, sprint, and meditation are not run by LegacyMechanics. Potential Unlock still is.";
     }
 
-    /**
-     * Meditation trial help for {@code viewer}. Staff/op see rotate command; others never do.
-     */
+    /** Meditation, flight, and sprint are not run by this mod. */
     public static String meditationExplain(ServerPlayer viewer) {
-        boolean staff = viewer != null && StaffAccess.isStaff(viewer);
-        return MeditationProgression.explainTrials(staff);
+        return meditationExplain();
     }
 
-    /** Staff: rotate + broadcast the global meditation trial. */
+    /** Meditation trials are not run by this mod. */
     public static String meditationAdvance(ServerPlayer player) {
-        return MeditationProgression.advanceTrial(player);
+        return "§7Meditation is not run by LegacyMechanics.";
     }
 
     /** Full chat help for {@code /progression} (Bukkit command tree). Staff-only list. */
@@ -59,10 +55,9 @@ public final class ProgressionGuiApi {
     public static String commandHelp(boolean staff) {
         if (!staff) {
             return String.join("\n",
-                    "§d§lMeditation Trial",
+                    "§d§lPotential Unlock",
                     "§8────────────",
-                    "§e/progression meditation §7— where to go, what to do, timer",
-                    "§8Charge Ki in the trial biome while meeting the trial.",
+                    "§7Spar to raise Potential Unlock. Flight, sprint, and meditation are not in LegacyMechanics.",
                     "",
                     "§7Other actions: §f/lm §7→ Prestige · Remove Android · Skill Check");
         }
@@ -70,11 +65,10 @@ public final class ProgressionGuiApi {
                 "§6§l/progression §8(alias §7/prog§8) §7— command tree",
                 "§e/progression §7· §e/progression gui [page] §8— open GUI",
                 "§e/progression help §8— this list",
-                "§e/progression status §8— flag + boost + meditation summary",
+                "§e/progression status §8— flag + boost summary",
                 "§e/progression flags §7· §eadmin §8— flags GUI",
                 "§e/progression admin <flag> <on|off> §8— toggle a module flag",
-                "§e/progression meditation §8— trial help",
-                "§e/progression meditation next §8— rotate + broadcast trial",
+                "§e/progression meditation §8— retired (not run by LegacyMechanics)",
                 "§e/progression android [player] §8— Gero android convert",
                 "§e/progression android remove [player] §8— remove Android upgrade",
                 "§e/progression boost §8— TP boost status",
@@ -84,7 +78,7 @@ public final class ProgressionGuiApi {
                 "§e/progression do <action> [arg] [page] §8— GUI actions",
                 "§8Pages: main · skills · tp · race · combat · end · utility · economy · admin · help",
                 "§8Economy: staff free Ancient Coin costs — §f/lm §7→ Progression → Ancient Coins",
-                "§8Flags: flight sprint meditation potential boost bio",
+                "§8Flags: potential boost bio",
                 "§8       racelock yardrat spiritualist android kiweapons piercing dot apothic",
                 "§8       end endportal shadow statchecker");
     }
@@ -506,7 +500,7 @@ public final class ProgressionGuiApi {
         out.put("system_enabled", enabled ? "true" : "false");
         out.put("staff", StaffAccess.isStaff(player) ? "true" : "false");
         out.put("boost", GlobalTpBoost.statusLine());
-        out.put("meditation", MeditationProgression.statusLine());
+        out.put("meditation", "§7Meditation is not run by LegacyMechanics.");
         out.put("flags", ProgressionConfig.statusSummary());
         out.put("prestige_enabled", c.enablePrestigeSystem ? "true" : "false");
         out.put("skills_enabled", c.enableSkillUnlockService ? "true" : "false");
@@ -517,9 +511,9 @@ public final class ProgressionGuiApi {
         }
         // Skills
         out.put("flag_master", c.enableProgression ? "true" : "false");
-        out.put("flag_flight", c.enableFlightProgression ? "true" : "false");
-        out.put("flag_sprint", c.enableSprintJump ? "true" : "false");
-        out.put("flag_meditation", c.enableMeditation ? "true" : "false");
+        out.put("flag_flight", "false");
+        out.put("flag_sprint", "false");
+        out.put("flag_meditation", "false");
         out.put("flag_potential", c.enablePotential ? "true" : "false");
         // TP Gains
         out.put("flag_boost", c.enableGlobalTpBoost ? "true" : "false");
@@ -559,12 +553,9 @@ public final class ProgressionGuiApi {
             case "status" -> statusLines(player);
             case "skills" -> categoryLines(
                     "§e§lSkills",
-                    "§7Passive skill unlocks from Fly, SprintJump,",
-                    "§7Meditation, and Potential scripts.",
+                    "§7Potential Unlock. Flight, sprint, and",
+                    "§7meditation are not run here.",
                     ph,
-                    flagLine("Flight", "flag_flight"),
-                    flagLine("Sprint Jump", "flag_sprint"),
-                    flagLine("Meditation", "flag_meditation"),
                     flagLine("Potential", "flag_potential"));
             case "tp" -> categoryLines(
                     "§6§lTP Gains",
@@ -640,11 +631,10 @@ public final class ProgressionGuiApi {
             case "help" -> {
                 List<String> help = new ArrayList<>();
                 help.add("§6§l/progression §8— Natural Progression");
-                help.add("§e/progression meditation §7— Current trial + how to train");
+                help.add("§7Potential Unlock stays. Flight, sprint, and meditation do not.");
                 if (player != null && StaffAccess.isStaff(player)) {
                     help.add("§e/progression §7— Category hub (flags per section)");
                     help.add("§e/prog do page skills|tp|race|combat|end|utility");
-                    help.add("§e/progression meditation next §7— cycle + broadcast trial");
                     help.add("§e/progression boost §7— status · start &lt;mult&gt; &lt;min&gt; · end");
                     help.add("§e/progression android [player] §7— Android convert (Gero)");
                     help.add("§e/progression android remove [player] §7— remove Android upgrade");
@@ -654,7 +644,6 @@ public final class ProgressionGuiApi {
                     help.add("§8Staff · tap flags in section GUIs · §f/prog do module_doc <section>");
                 } else {
                     help.add("§7Other actions: §f/lm §7→ Prestige · Remove Android");
-                    help.add("§8Charge Ki in the trial biome while meeting the trial.");
                 }
                 yield help;
             }

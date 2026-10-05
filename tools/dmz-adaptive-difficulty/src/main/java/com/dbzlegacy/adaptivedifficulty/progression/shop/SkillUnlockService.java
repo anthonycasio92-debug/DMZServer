@@ -149,19 +149,15 @@ public final class SkillUnlockService {
     }
 
     /**
-     * Natural: Potential Unlock, Flight, Meditation, Jump, Sprint.
-     * Strength-gated Jump/Sprint stay here; saga unlocks live on Saga.
+     * Natural page keeps Potential Unlock. Flight, meditation, jump, and sprint
+     * are trained by another mod.
      */
     private static void appendNatural(
             List<String> out, ServerPlayer player, Skills skills, int investedStr
     ) {
         out.add("§6§lNatural Progression§r");
-        out.add("§8Level these by playing — not through the prestige shop.");
+        out.add("§8Potential Unlock levels by sparring. Flight, sprint, and meditation are not here.");
         appendPotential(out, player, skills);
-        appendFlight(out, player, skills);
-        appendMeditation(out, player, skills);
-        appendStrengthLine(out, skills, "jump", "Jump", "§a", investedStr);
-        appendStrengthLine(out, skills, "sprint", "Sprint", "§e", investedStr);
     }
 
     private static void appendPotential(List<String> out, ServerPlayer player, Skills skills) {

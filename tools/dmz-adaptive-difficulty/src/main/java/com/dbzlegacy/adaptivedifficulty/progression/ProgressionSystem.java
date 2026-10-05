@@ -9,10 +9,7 @@ import com.dbzlegacy.adaptivedifficulty.progression.race.RaceLock;
 import com.dbzlegacy.adaptivedifficulty.progression.race.SpiritualistKiControl;
 import com.dbzlegacy.adaptivedifficulty.progression.race.YardratProgression;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.ShopProgression;
-import com.dbzlegacy.adaptivedifficulty.progression.skills.FlightProgression;
-import com.dbzlegacy.adaptivedifficulty.progression.skills.MeditationProgression;
 import com.dbzlegacy.adaptivedifficulty.progression.skills.PotentialProgression;
-import com.dbzlegacy.adaptivedifficulty.progression.skills.SprintJumpProgression;
 import com.dbzlegacy.adaptivedifficulty.progression.tp.BioAndroidAbsorb;
 import com.dbzlegacy.adaptivedifficulty.progression.tp.DeathTpPenalty;
 import com.dbzlegacy.adaptivedifficulty.progression.tp.GlobalTpBoost;
@@ -102,14 +99,6 @@ public final class ProgressionSystem {
             return;
         }
         try {
-            FlightProgression.onLogout(player);
-        } catch (Throwable ignored) {
-        }
-        try {
-            MeditationProgression.onLogout(player);
-        } catch (Throwable ignored) {
-        }
-        try {
             CombatProgression.onLogout(player);
         } catch (Throwable ignored) {
         }
@@ -150,25 +139,9 @@ public final class ProgressionSystem {
                 CombatProgression.pulse(server, tick);
             } catch (Throwable ignored) {
             }
-            try {
-                MeditationProgression.worldPulse(server, tick);
-            } catch (Throwable ignored) {
-            }
             for (ServerPlayer player : server.m_6846_().m_11314_()) {
                 if (player == null) {
                     continue;
-                }
-                try {
-                    FlightProgression.pulse(player, now);
-                } catch (Throwable ignored) {
-                }
-                try {
-                    SprintJumpProgression.pulse(player, now);
-                } catch (Throwable ignored) {
-                }
-                try {
-                    MeditationProgression.pulse(player, now);
-                } catch (Throwable ignored) {
                 }
                 try {
                     BioAndroidAbsorb.pulse(player, now);
@@ -247,15 +220,6 @@ public final class ProgressionSystem {
                     PotentialProgression.onPlayerHurt(victimPlayer, attacker, source);
                 } catch (Throwable ignored) {
                 }
-                try {
-                    MeditationProgression.onHurt(victimPlayer);
-                } catch (Throwable ignored) {
-                }
-            } else {
-                try {
-                    MeditationProgression.onHurt(victimPlayer);
-                } catch (Throwable ignored) {
-                }
             }
         }
         if (causing instanceof ServerPlayer attacker && victim != null) {
@@ -273,10 +237,6 @@ public final class ProgressionSystem {
         }
         try {
             PotentialProgression.onPlayerHurt(victim, attacker, source);
-        } catch (Throwable ignored) {
-        }
-        try {
-            MeditationProgression.onHurt(victim);
         } catch (Throwable ignored) {
         }
     }
@@ -319,7 +279,7 @@ public final class ProgressionSystem {
     }
 
     public static String meditationNext(ServerPlayer actor) {
-        return MeditationProgression.advanceTrial(actor);
+        return "§7Meditation is not run by LegacyMechanics.";
     }
 
     public static String androidConvert(ServerPlayer target) {
@@ -332,8 +292,7 @@ public final class ProgressionSystem {
 
     public static String statusSummary() {
         return ProgressionConfig.statusSummary()
-                + "\n" + GlobalTpBoost.statusLine()
-                + "\n" + MeditationProgression.statusLine();
+                + "\n" + GlobalTpBoost.statusLine();
     }
 
     public static boolean setFlag(String key, boolean on) {
@@ -343,9 +302,9 @@ public final class ProgressionSystem {
         }
         switch (key.toLowerCase(java.util.Locale.ROOT)) {
             case "master", "progression", "enableprogression" -> cfg.enableProgression = on;
-            case "flight", "fly", "enableflightprogression" -> cfg.enableFlightProgression = on;
-            case "sprint", "sprintjump", "enablesprintjump" -> cfg.enableSprintJump = on;
-            case "meditation", "med", "enablemeditation" -> cfg.enableMeditation = on;
+            case "flight", "fly", "enableflightprogression" -> cfg.enableFlightProgression = false;
+            case "sprint", "sprintjump", "enablesprintjump" -> cfg.enableSprintJump = false;
+            case "meditation", "med", "enablemeditation" -> cfg.enableMeditation = false;
             case "potential", "enablepotential" -> cfg.enablePotential = on;
             case "boost", "globaltpboost", "enableglobaltpboost" -> cfg.enableGlobalTpBoost = on;
             case "bio", "bioandroid", "enablebioandroid" -> cfg.enableBioAndroid = on;
