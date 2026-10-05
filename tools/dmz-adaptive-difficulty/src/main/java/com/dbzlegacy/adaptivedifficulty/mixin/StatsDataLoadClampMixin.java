@@ -24,7 +24,7 @@ public abstract class StatsDataLoadClampMixin {
      * load inside try/finally.
      */
     @Inject(method = "load", at = @At("HEAD"), cancellable = true, remap = false)
-    private void lm$loadGuarded(CompoundTag tag, CallbackInfo ci) {
+    private void lm$loadGuarded(CompoundTag tag, CallbackInfo ci) throws ClassNotFoundException {
         if (REENTRY.get()) {
             return;
         }
