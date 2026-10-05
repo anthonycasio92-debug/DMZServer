@@ -2,10 +2,13 @@
 """Fail if Legacy Mechanics applies its own prestige scale.
 
 Policy:
-  - Fighting-class and stamina scaling stay the DragonMineZ config values.
-  - dmzrevamp multiplies getStatScaling by PrestigeSystem.scaleMultiplier.
-    That hits STM and every class stat the same way. LM divides it back out.
-  - LM may read PrestigeSystem.scaleMultiplier for that undo and for display.
+  - Fighting-class and stamina scaling are the live race baseline plus the fighting class.
+    Race: config/dragonminez/races/<race>/stats.json classes.race.
+    Class: DmzClassConfigManager.getConfiguredClassStats (classes/<class>.json).
+  - dmzrevamp FusionRevampLogic.addPartnerScale multiplies getStatScaling by
+    PrestigeSystem.scaleMultiplier, including STM. Legacy Saga's RevampClassScalingFix
+    mixin does not load. LM replaces the return with the race+class sum after that multiply.
+  - LM may read PrestigeSystem.scaleMultiplier for display.
   - LM must not multiply getTotalMultiplier, getMaxEnergy, getMaxStamina, or defense by that scale.
   - LM must not duplicate 1 + count × scaleBonusPerPrestige in Java.
 """
@@ -74,9 +77,23 @@ def main() -> int:
 
     stat_scaling = read("mixin/StatsDataStatScalingMixin.java")
     if "live / scale" not in stat_scaling:
-        errors.append("StatsDataStatScalingMixin must divide the prestige coefficient out of getStatScaling")
+        errors.append("StatsDataStatScalingMixin must record why live / scale does not stick")
+    if "ClassRaceStatScale.scaling" not in stat_scaling:
+        errors.append("StatsDataStatScalingMixin must replace getStatScaling with ClassRaceStatScale")
+    if "getInitialBaseStats" not in stat_scaling:
+        errors.append("StatsDataStatScalingMixin must replace getInitialBaseStats with the race+class base")
+    if "priority = 6100" not in stat_scaling:
+        errors.append("StatsDataStatScalingMixin must stay priority 6100 so it runs after Overhaul fusion")
     if re.search(r"live\s*\*\s*scale", stat_scaling) or "setReturnValue(live *" in stat_scaling:
         errors.append("StatsDataStatScalingMixin must not multiply getStatScaling")
+
+    combined = read("progression/ClassRaceStatScale.java")
+    if "getConfiguredClassStats" not in combined or "createRaceDefaultStats" not in combined:
+        errors.append("ClassRaceStatScale must read Overhaul class stats and the race-default fallback")
+    if "stats.json" not in combined or "STR_scaling" not in combined or "STM_scaling" not in combined:
+        errors.append("ClassRaceStatScale must read race stats.json scaling, including stamina")
+    if "races" not in combined or "classes" not in combined:
+        errors.append("ClassRaceStatScale must use config/dragonminez races and classes")
 
     if "return data == null ? 0f : data.getMaxEnergy()" not in pool:
         errors.append("DmzResourcePoolClamp.actualMaxEnergy must be live getMaxEnergy")

@@ -260,11 +260,20 @@ public final class DmzResourcePoolClamp {
     }
 
     /**
-     * Fighting-class scaling when that id is in the race JSON; otherwise {@code classes.race}.
+     * Race baseline plus fighting class, same sum as {@link ClassRaceStatScale}.
      * Never calls {@code RaceStatsConfig#getClassStats} for a missing id — that inserts an
      * empty ClassStats with 1.0 defaults and poisons later {@code getStatScaling} reads.
+     * The on-disk race file only lists {@code classes.race}, so a class-id lookup there
+     * is the race row alone and drops the fighting class.
      */
     private static double resolveHudScaling(StatsData data, String key) {
+        try {
+            double combined = ClassRaceStatScale.scaling(data, key);
+            if (Double.isFinite(combined) && combined > 0.0d) {
+                return combined;
+            }
+        } catch (Throwable ignored) {
+        }
         String race = raceId(data);
         String cls = classId(data);
         if (race != null && classConfigured(race, cls)) {

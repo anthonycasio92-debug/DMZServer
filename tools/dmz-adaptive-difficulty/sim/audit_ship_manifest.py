@@ -112,6 +112,16 @@ def main() -> int:
           '"StatsDataDeathTpPenaltyMixin"' in mixins_json
           and '"ResourcesDeathTpPenaltyMixin"' in mixins_json)
 
+    print("\n--- § class stamina ---")
+    class_scale = read(SRC / "progression/ClassRaceStatScale.java")
+    stat_mixin = read(SRC / "mixin/StatsDataStatScalingMixin.java")
+    check("class and stamina scaling is race baseline plus fighting class",
+          "getConfiguredClassStats" in class_scale
+          and "STM_scaling" in class_scale
+          and "stats.json" in class_scale
+          and "ClassRaceStatScale.scaling" in stat_mixin
+          and "getInitialBaseStats" in stat_mixin)
+
     print("\n--- § fabled removed ---")
     bridge_dir = SRC / "progression/bridge"
     check("FabledBridge class removed", not (bridge_dir / "FabledBridge.java").is_file())
