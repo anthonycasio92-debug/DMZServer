@@ -16,10 +16,11 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 
 /**
- * DragonMineZ Meditation levels from time spent meditating near an active
- * Living World meditation circle. Standing nearby is not enough. The player
- * must already be in Living World's player meditation state. They do not
- * join the NPC circle, and this class does not start meditation for them.
+ * DragonMineZ Meditation levels while the player is already in Living World's
+ * meditation state and either another meditating player is within range, or
+ * two living NPCs in a meditation circle are within range. One NPC is not
+ * enough. Standing nearby without meditating does not count. This class does
+ * not start meditation for them.
  *
  * <p>Living World 2.4.3 marks a real circle only after
  * {@code beginMeditationCircle}: {@code beginMeditation} clears
@@ -27,9 +28,9 @@ import net.minecraft.world.entity.Entity;
  * sets it again. Solo NPC meditation stays {@code isMeditating} with the
  * circle flag off, so both public checks are required. Player meditation is
  * {@code MeditationCompat.isPlayerMeditating}, which reads the bundled
- * meditation session. There is no public circle-center getter; the meditating
- * fighter's position is the center. Overlapping circles credit a player once
- * per real-time sample.
+ * meditation session. There is no public circle-center getter; each living
+ * circle fighter's position is used. Two players, or two NPCs, still credit
+ * one real-time sample.
  */
 public final class LivingWorldNearbyMeditation {
     private static final String FIGHTER = "com.dmzlivingworld.entity.AmbientFighterEntity";
@@ -58,17 +59,18 @@ public final class LivingWorldNearbyMeditation {
         if (tick % 20 != 0 || !resolveApi()) {
             return;
         }
-        List<Entity> centers = activeCircles(server);
+        List<Entity> circles = activeCircles(server);
+        List<ServerPlayer> players = server.m_6846_().m_11314_();
         long now = System.currentTimeMillis();
         int radius = DifficultyConfig.get().meditationDetectionRadius;
         double r2 = (double) radius * (double) radius;
-        for (ServerPlayer player : server.m_6846_().m_11314_()) {
+        for (ServerPlayer player : players) {
             if (player == null) {
                 continue;
             }
             if (!player.m_6084_() || player.m_5833_()
                     || !playerMeditating(player)
-                    || !nearAny(player, centers, r2)) {
+                    || !counts(player, players, circles, r2)) {
                 clearNear(player);
                 continue;
             }
@@ -97,7 +99,7 @@ public final class LivingWorldNearbyMeditation {
         out.add("§5Meditation§7: §f" + level + "/" + cap);
         out.add("§8  - §7Progress §f" + compact(progress) + " / " + compact(need));
         out.add("§8  - §7Remaining §f" + compact(left));
-        out.add("§8  - §7Meditate near a Living World meditation circle.");
+        out.add("§8  - §7Meditate near another player, or near two living NPCs in a circle.");
     }
 
     private static boolean resolveApi() {
@@ -166,22 +168,62 @@ public final class LivingWorldNearbyMeditation {
         }
     }
 
-    private static boolean nearAny(ServerPlayer player, List<Entity> centers, double r2) {
-        if (centers == null || centers.isEmpty()) {
+/**
+     * Counts when two players are meditating within range of each other, or
+     * when this player is within range of two living NPCs in a circle.
+     */
+    private static boolean counts(
+            ServerPlayer player, List<ServerPlayer> players, List<Entity> circles, double r2) {
+        return nearMeditatingPlayer(player, players, r2)
+                || nearTwoLivingCircleNpcs(player, circles, r2);
+    }
+
+    private static boolean nearMeditatingPlayer(
+            ServerPlayer player, List<ServerPlayer> players, double r2) {
+        if (players == null) {
             return false;
         }
-        for (Entity center : centers) {
-            if (center == null || player.m_9236_() != center.m_9236_()) {
+        for (ServerPlayer other : players) {
+            if (other == null || other == player || !other.m_6084_() || other.m_5833_()) {
                 continue;
             }
-            double dx = player.m_20185_() - center.m_20185_();
-            double dy = player.m_20186_() - center.m_20186_();
-            double dz = player.m_20189_() - center.m_20189_();
-            if (dx * dx + dy * dy + dz * dz <= r2) {
+            if (player.m_9236_() != other.m_9236_() || !playerMeditating(other)) {
+                continue;
+            }
+            if (dist2(player, other) <= r2) {
                 return true;
             }
         }
         return false;
+    }
+
+    /** One living circle NPC is not enough. Both must be alive and in range. */
+    private static boolean nearTwoLivingCircleNpcs(
+            ServerPlayer player, List<Entity> circles, double r2) {
+        if (circles == null) {
+            return false;
+        }
+        int found = 0;
+        for (Entity npc : circles) {
+            if (npc == null || !npc.m_6084_() || player.m_9236_() != npc.m_9236_()) {
+                continue;
+            }
+            if (dist2(player, npc) > r2) {
+                continue;
+            }
+            found++;
+            if (found >= 2) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static double dist2(Entity a, Entity b) {
+        double dx = a.m_20185_() - b.m_20185_();
+        double dy = a.m_20186_() - b.m_20186_();
+        double dz = a.m_20189_() - b.m_20189_();
+        return dx * dx + dy * dy + dz * dz;
     }
 
     private static void clearNear(ServerPlayer player) {

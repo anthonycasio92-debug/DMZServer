@@ -177,6 +177,9 @@ def main() -> int:
           and "isMeditating" in nearby
           and "isMeditationCircleMember" in nearby
           and "isPlayerMeditating" in nearby
+          and "nearMeditatingPlayer" in nearby
+          and "nearTwoLivingCircleNpcs" in nearby
+          and "found >= 2" in nearby
           and "startPlayerMeditation" not in nearby
           and "lm.lw_med.progress_ms" in nearby
           and "MEDITATION BREAKTHROUGH" in nearby

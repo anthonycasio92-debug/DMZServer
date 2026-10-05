@@ -16,7 +16,7 @@ public final class ProgressionConfig {
         return masterEnabled() && DifficultyConfig.get().enablePotential;
     }
 
-    /** Time in Living World's meditation state near an active circle. */
+    /** Time meditating near another player, or near two living circle NPCs. */
     public static boolean livingWorldMeditation() {
         return masterEnabled() && DifficultyConfig.get().enableLivingWorldMeditation;
     }
