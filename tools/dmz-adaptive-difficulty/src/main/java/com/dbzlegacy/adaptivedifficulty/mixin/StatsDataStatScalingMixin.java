@@ -1,8 +1,10 @@
 package com.dbzlegacy.adaptivedifficulty.mixin;
 
 import com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulPrestigeIntegration;
+import com.dmzrevamp.revamp.classes.DmzClassConfigManager;
 import com.dragonminez.common.config.RaceStatsConfig;
 import com.dragonminez.common.stats.StatsData;
+import com.dragonminez.common.stats.character.Character;
 import com.dragonminez.common.stats.character.Status;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -11,22 +13,29 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * Stamina and ki both read {@code getStatScaling} ({@code STM} and {@code ENE}).
- * dmzrevamp's fusion hook multiplies that return by Overhaul prestige
- * ({@code 1 + count × scaleBonusPerPrestige}) even when the player is not fused.
- * The class file and the race baseline are already summed before that multiply,
- * so the fighting-class coefficient on both pools comes out past the config.
+ * dmzrevamp sums the race baseline with the class file, then its fusion hook
+ * multiplies that sum by Overhaul prestige. Either step changes the pool with
+ * the fighting class.
  *
- * <p>This mixin writes {@code live / scale} back for every stat, stamina and ki
- * included. Priority 6100 runs after fusion's default priority, so that write
- * is the one that sticks. LegacyMechanics does not apply a scale of its own.
- * A fused player keeps the fusion return, because the partner term is not a
- * pure multiply.
+ * <p>For those two stats this mixin writes the class file's own coefficient
+ * from {@code DmzClassConfigManager}. It does not add the race baseline and it
+ * does not multiply. Other stats still write {@code live / scale}, which is
+ * the summed config coefficient. Priority 6100 runs after fusion.
+ * A fused player keeps the fusion return on those other stats, because the
+ * partner term is not a pure multiply.
  */
 @Mixin(value = StatsData.class, remap = false, priority = 6100)
 public abstract class StatsDataStatScalingMixin {
 
     @Inject(method = "getStatScaling", at = @At("RETURN"), cancellable = true, remap = false, require = 0)
     private void lm$keepConfigStatScaling(String stat, CallbackInfoReturnable<Double> cir) {
+        if (pool(stat)) {
+            Double classScale = lm$classPoolScale(stat);
+            if (classScale != null && Double.isFinite(classScale) && classScale > 0.0d) {
+                cir.setReturnValue(classScale);
+            }
+            return;
+        }
         if (fused()) {
             return;
         }
@@ -47,6 +56,41 @@ public abstract class StatsDataStatScalingMixin {
 
     @Inject(method = "getInitialBaseStats", at = @At("RETURN"), cancellable = true, remap = false, require = 0)
     private void lm$keepLiveBaseStats(CallbackInfoReturnable<RaceStatsConfig.BaseStats> cir) {
+    }
+
+    /** Class-file stamina or ki coefficient. No race add and no prestige multiply. */
+    private Double lm$classPoolScale(String stat) {
+        try {
+            Character character = ((StatsData) (Object) this).getCharacter();
+            if (character == null) {
+                return null;
+            }
+            String classId = character.getCharacterClass();
+            if (classId == null || classId.isBlank()) {
+                return null;
+            }
+            RaceStatsConfig.ClassStats classStats = DmzClassConfigManager.getConfiguredClassStats(classId);
+            if (classStats == null || classStats.getStatScaling() == null) {
+                return null;
+            }
+            RaceStatsConfig.StatScaling scaling = classStats.getStatScaling();
+            if (stat.equalsIgnoreCase("STM") || stat.equalsIgnoreCase("STAMINA")) {
+                return scaling.getStaminaScaling();
+            }
+            if (stat.equalsIgnoreCase("ENE") || stat.equalsIgnoreCase("ENERGY")) {
+                return scaling.getEnergyScaling();
+            }
+        } catch (Throwable ignored) {
+        }
+        return null;
+    }
+
+    private static boolean pool(String stat) {
+        return stat != null
+                && (stat.equalsIgnoreCase("STM")
+                        || stat.equalsIgnoreCase("STAMINA")
+                        || stat.equalsIgnoreCase("ENE")
+                        || stat.equalsIgnoreCase("ENERGY"));
     }
 
     private boolean fused() {

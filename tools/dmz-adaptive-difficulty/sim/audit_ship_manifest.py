@@ -132,12 +132,16 @@ def main() -> int:
     stat_mixin = read(SRC / "mixin/StatsDataStatScalingMixin.java")
     pool = read(SRC / "progression/DmzResourcePoolClamp.java")
     scaling_method, _, base_method = stat_mixin.partition("lm$keepLiveBaseStats")
-    check("class scaling for stamina and ki is the config coefficient",
+    pool_at = stat_mixin.find("private Double lm$classPoolScale")
+    pool_body = stat_mixin[pool_at:].split("lm$keepLiveBaseStats", 1)[0] if pool_at >= 0 else ""
+    check("class scaling for stamina and ki is the class file coefficient",
           "getInitialBaseStats" in stat_mixin
           and "live / scale" in scaling_method
           and "setReturnValue" in scaling_method
-          and 'equalsIgnoreCase("ENE")' not in stat_mixin
-          and 'equalsIgnoreCase("STM")' not in stat_mixin
+          and "getConfiguredClassStats" in pool_body
+          and "getStaminaScaling" in pool_body
+          and "getEnergyScaling" in pool_body
+          and "live / scale" not in pool_body
           and "setReturnValue" not in base_method
           and "ClassRaceStatScale" not in stat_mixin
           and "ClassRaceStatScale" not in pool
