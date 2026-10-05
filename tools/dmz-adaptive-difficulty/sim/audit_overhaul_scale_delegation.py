@@ -2,12 +2,11 @@
 """Fail if Legacy Mechanics applies its own prestige scale.
 
 Policy:
-  - Fighting-class coefficients and stamina read getStatScaling after dmzrevamp has
-    summed race + class and multiplied by prestige. LM writes live / scale for every
-    stat except ENE, so those coefficients match the config. Ki (ENE) stays on the
-    live return, the same way getMaxEnergy does.
-  - LM must not multiply getStatScaling (no live * scale) and must not replace it
-    with its own race/class table.
+  - Stamina and ki both read getStatScaling after dmzrevamp has summed race + class
+    and multiplied by prestige. LM writes live / scale for every stat, including
+    STM and ENE, so both pool coefficients match the config.
+  - LM must not special-case ENE, must not multiply getStatScaling (no live * scale),
+    and must not replace it with its own race/class table.
   - LM may read PrestigeSystem.scaleMultiplier for display and for that divide.
   - LM must not multiply getTotalMultiplier, getMaxEnergy, getMaxStamina, or defense by that scale.
   - LM must not duplicate 1 + count × scaleBonusPerPrestige in Java.
@@ -81,8 +80,8 @@ def main() -> int:
         errors.append("StatsDataStatScalingMixin must restore config scaling with live / scale")
     if "setReturnValue" not in scaling_method:
         errors.append("StatsDataStatScalingMixin must write the config coefficient back")
-    if 'equalsIgnoreCase("ENE")' not in stat_scaling:
-        errors.append("StatsDataStatScalingMixin must leave ENE on the live ki return")
+    if 'equalsIgnoreCase("ENE")' in stat_scaling or 'equalsIgnoreCase("STM")' in stat_scaling:
+        errors.append("StatsDataStatScalingMixin must not special-case stamina or ki")
     if "setReturnValue" in base_method:
         errors.append("StatsDataStatScalingMixin must not replace getInitialBaseStats")
     if "ClassRaceStatScale" in stat_scaling:

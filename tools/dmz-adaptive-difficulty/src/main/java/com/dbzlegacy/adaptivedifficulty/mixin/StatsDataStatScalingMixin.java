@@ -10,18 +10,15 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Fighting-class coefficients and stamina both read {@code getStatScaling}.
+ * Stamina and ki both read {@code getStatScaling} ({@code STM} and {@code ENE}).
  * dmzrevamp's fusion hook multiplies that return by Overhaul prestige
  * ({@code 1 + count × scaleBonusPerPrestige}) even when the player is not fused.
  * The class file and the race baseline are already summed before that multiply,
- * so strength, stamina, and the other class stats come out past the config.
+ * so the fighting-class coefficient on both pools comes out past the config.
  *
- * <p>Ki is the other case. {@code getMaxEnergy} reads {@code ENE}, and that
- * prestige multiply is the one scale the ki pool is supposed to keep. This
- * mixin leaves {@code ENE} on that live return. For every other stat it writes
- * {@code live / scale} back, which is the config coefficient. Priority 6100
- * runs after fusion's default priority, so that write is the one that sticks.
- * LegacyMechanics does not apply a scale of its own.
+ * <p>This mixin writes {@code live / scale} back for every stat, stamina and ki
+ * included. Priority 6100 runs after fusion's default priority, so that write
+ * is the one that sticks. LegacyMechanics does not apply a scale of its own.
  * A fused player keeps the fusion return, because the partner term is not a
  * pure multiply.
  */
@@ -30,7 +27,7 @@ public abstract class StatsDataStatScalingMixin {
 
     @Inject(method = "getStatScaling", at = @At("RETURN"), cancellable = true, remap = false, require = 0)
     private void lm$keepConfigStatScaling(String stat, CallbackInfoReturnable<Double> cir) {
-        if (energy(stat) || fused()) {
+        if (fused()) {
             return;
         }
         Double boxed = cir.getReturnValue();
@@ -50,11 +47,6 @@ public abstract class StatsDataStatScalingMixin {
 
     @Inject(method = "getInitialBaseStats", at = @At("RETURN"), cancellable = true, remap = false, require = 0)
     private void lm$keepLiveBaseStats(CallbackInfoReturnable<RaceStatsConfig.BaseStats> cir) {
-    }
-
-    /** Ki pool. Prestige on {@code ENE} stays, the same way {@code getMaxEnergy} does. */
-    private static boolean energy(String stat) {
-        return stat != null && (stat.equalsIgnoreCase("ENE") || stat.equalsIgnoreCase("ENERGY"));
     }
 
     private boolean fused() {
