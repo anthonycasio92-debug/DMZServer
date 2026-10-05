@@ -204,9 +204,23 @@ public final class DifficultyConfig {
      */
     public boolean enableCnpcDataMigration = true;
 
-    /** Master switch. Potential Unlock is the only natural skill this mod still runs. */
+    /** Master switch for LegacyMechanics progression modules. */
     public boolean enableProgression = true;
     public boolean enablePotential = true;
+    /**
+     * Nearby players gain DragonMineZ Meditation while a Living World fighter
+     * is in an active meditation circle. Solo NPC meditation does not count.
+     */
+    public boolean enableLivingWorldMeditation = true;
+    /** Blocks from an active Living World meditation-circle fighter. */
+    public int meditationDetectionRadius = 16;
+    /**
+     * Seconds of nearby time required to reach each Meditation level.
+     * Index 0 is level 1. Defaults total 31 hours 51 minutes to level 10.
+     */
+    public int[] meditationLevelSeconds = new int[] {
+            60, 300, 900, 1800, 3600, 7200, 14400, 21600, 28800, 36000
+    };
     public boolean enableGlobalTpBoost = true;
     public boolean enableBioAndroid = true;
     public boolean enableRaceLock = true;
@@ -1611,6 +1625,23 @@ public final class DifficultyConfig {
         cfg.lmTipNewPlayerMaxLevel = Math.max(1, Math.min(150_000, cfg.lmTipNewPlayerMaxLevel));
         // Product rule: no natural/vanilla auto End Dragon — Difficulty GUI / staff only.
         cfg.enableEndNaturalDragonSpawn = false;
+        if (cfg.meditationDetectionRadius < 1) {
+            cfg.meditationDetectionRadius = 16;
+        }
+        cfg.meditationDetectionRadius = Math.min(128, cfg.meditationDetectionRadius);
+        int[] meditationDefaults = {60, 300, 900, 1800, 3600, 7200, 14400, 21600, 28800, 36000};
+        if (cfg.meditationLevelSeconds == null || cfg.meditationLevelSeconds.length == 0) {
+            cfg.meditationLevelSeconds = meditationDefaults.clone();
+        } else {
+            int[] next = new int[meditationDefaults.length];
+            for (int i = 0; i < next.length; i++) {
+                int value = i < cfg.meditationLevelSeconds.length
+                        ? cfg.meditationLevelSeconds[i]
+                        : meditationDefaults[i];
+                next[i] = Math.max(1, value);
+            }
+            cfg.meditationLevelSeconds = next;
+        }
         cfg.nearbyScaleBudgetPerPlayer = cfg.maxScaledMobsPerPlayer;
         // Never allow free tiers via live admin set / bad JSON.
         cfg.unlockTier1Cost = Math.max(1L, cfg.unlockTier1Cost);

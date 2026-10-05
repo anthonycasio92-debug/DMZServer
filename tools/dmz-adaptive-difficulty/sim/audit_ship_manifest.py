@@ -170,6 +170,20 @@ def main() -> int:
           and "enableSprintJump" not in diff_cfg
           and "enableMeditation" not in diff_cfg
           and "enablePotential = true" in diff_cfg)
+    nearby = read(skill_dir / "LivingWorldNearbyMeditation.java")
+    check("nearby living world meditation",
+          "class LivingWorldNearbyMeditation" in nearby
+          and "AmbientFighterEntity" in nearby
+          and "isMeditating" in nearby
+          and "isMeditationCircleMember" in nearby
+          and "lm.lw_med.progress_ms" in nearby
+          and "MEDITATION BREAKTHROUGH" in nearby
+          and "DmzSkillUtil.setLevel" in nearby
+          and "meditationDetectionRadius = 16" in diff_cfg
+          and "enableLivingWorldMeditation" in diff_cfg
+          and "60, 300, 900, 1800, 3600, 7200, 14400, 21600, 28800, 36000" in diff_cfg
+          and "LivingWorldNearbyMeditation" in prog_sys
+          and "MeditationProgression" not in nearby)
 
     print("\n--- § fabled removed ---")
     bridge_dir = SRC / "progression/bridge"

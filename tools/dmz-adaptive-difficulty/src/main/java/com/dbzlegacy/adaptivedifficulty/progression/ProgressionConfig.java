@@ -16,6 +16,11 @@ public final class ProgressionConfig {
         return masterEnabled() && DifficultyConfig.get().enablePotential;
     }
 
+    /** Nearby time around an active Living World meditation circle. */
+    public static boolean livingWorldMeditation() {
+        return masterEnabled() && DifficultyConfig.get().enableLivingWorldMeditation;
+    }
+
     public static boolean globalTpBoost() {
         return masterEnabled() && DifficultyConfig.get().enableGlobalTpBoost;
     }
@@ -89,6 +94,7 @@ public final class ProgressionConfig {
         DifficultyConfig c = DifficultyConfig.get();
         return "§eSkills§7: master=" + onOff(c.enableProgression)
                 + " pot=" + onOff(c.enablePotential)
+                + " med=" + onOff(c.enableLivingWorldMeditation)
                 + "\n§6TP§7: boost=" + onOff(c.enableGlobalTpBoost)
                 + " bio=" + onOff(c.enableBioAndroid)
                 + "\n§bRace§7: lock=" + onOff(c.enableRaceLock)

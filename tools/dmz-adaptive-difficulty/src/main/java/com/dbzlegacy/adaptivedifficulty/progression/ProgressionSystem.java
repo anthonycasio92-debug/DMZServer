@@ -124,6 +124,11 @@ public final class ProgressionSystem {
         if (ProgressionConfig.masterEnabled()) {
             long now = System.currentTimeMillis();
             try {
+                com.dbzlegacy.adaptivedifficulty.progression.skills.LivingWorldNearbyMeditation
+                        .pulse(server, tick);
+            } catch (Throwable ignored) {
+            }
+            try {
                 GlobalTpBoost.pulse(server, tick);
             } catch (Throwable ignored) {
             }

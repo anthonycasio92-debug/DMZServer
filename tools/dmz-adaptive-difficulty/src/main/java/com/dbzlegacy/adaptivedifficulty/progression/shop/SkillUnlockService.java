@@ -6,6 +6,7 @@ import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.DmzSkillUtil;
 import com.dbzlegacy.adaptivedifficulty.progression.InvestedStrength;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionData;
+import com.dbzlegacy.adaptivedifficulty.progression.skills.LivingWorldNearbyMeditation;
 import com.dbzlegacy.adaptivedifficulty.progression.skills.PotentialProgression;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
@@ -102,6 +103,7 @@ public final class SkillUnlockService {
         out.add("§8----------------------------");
         out.add("§6§lSkills");
         appendPotential(out, player, skills);
+        LivingWorldNearbyMeditation.appendLines(out, player, skills);
         appendSaga(out, player, skills);
         return out;
     }
