@@ -1,8 +1,8 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.5.164**.
+What changed from **4.5.147** through **4.6**.
 
-The live mods folder gets `LegacyMechanics-4.5.164.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.6.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
 
 ## Dead facades
 
