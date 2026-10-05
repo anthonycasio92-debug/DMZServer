@@ -176,6 +176,8 @@ def main() -> int:
           and "AmbientFighterEntity" in nearby
           and "isMeditating" in nearby
           and "isMeditationCircleMember" in nearby
+          and "isPlayerMeditating" in nearby
+          and "startPlayerMeditation" not in nearby
           and "lm.lw_med.progress_ms" in nearby
           and "MEDITATION BREAKTHROUGH" in nearby
           and "DmzSkillUtil.setLevel" in nearby

@@ -16,7 +16,7 @@ public final class ProgressionConfig {
         return masterEnabled() && DifficultyConfig.get().enablePotential;
     }
 
-    /** Nearby time around an active Living World meditation circle. */
+    /** Time in Living World's meditation state near an active circle. */
     public static boolean livingWorldMeditation() {
         return masterEnabled() && DifficultyConfig.get().enableLivingWorldMeditation;
     }

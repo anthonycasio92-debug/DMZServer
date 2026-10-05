@@ -16,19 +16,24 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 
 /**
- * DragonMineZ Meditation levels from time spent near an active Living World
- * meditation circle. Players do not join the circle.
+ * DragonMineZ Meditation levels from time spent meditating near an active
+ * Living World meditation circle. Standing nearby is not enough. The player
+ * must already be in Living World's player meditation state. They do not
+ * join the NPC circle, and this class does not start meditation for them.
  *
  * <p>Living World 2.4.3 marks a real circle only after
  * {@code beginMeditationCircle}: {@code beginMeditation} clears
  * {@code MEDITATION_CIRCLE_MEMBER}, then {@code setMeditationCircleCenter}
  * sets it again. Solo NPC meditation stays {@code isMeditating} with the
- * circle flag off, so both public checks are required. There is no public
- * circle-center getter; the meditating fighter's position is the center.
- * Overlapping circles credit a player once per real-time sample.
+ * circle flag off, so both public checks are required. Player meditation is
+ * {@code MeditationCompat.isPlayerMeditating}, which reads the bundled
+ * meditation session. There is no public circle-center getter; the meditating
+ * fighter's position is the center. Overlapping circles credit a player once
+ * per real-time sample.
  */
 public final class LivingWorldNearbyMeditation {
     private static final String FIGHTER = "com.dmzlivingworld.entity.AmbientFighterEntity";
+    private static final String PLAYER_STATE = "com.dmzlivingworld.compat.MeditationCompat";
     private static final String SKILL = "meditation";
     static final String KEY_PROGRESS = "lm.lw_med.progress_ms";
     static final String KEY_LIFETIME = "lm.lw_med.lifetime_ms";
@@ -42,6 +47,7 @@ public final class LivingWorldNearbyMeditation {
     private static Class<?> fighterClass;
     private static Method isMeditating;
     private static Method isMeditationCircleMember;
+    private static Method isPlayerMeditating;
 
     private LivingWorldNearbyMeditation() {}
 
@@ -60,7 +66,9 @@ public final class LivingWorldNearbyMeditation {
             if (player == null) {
                 continue;
             }
-            if (!player.m_6084_() || player.m_5833_() || !nearAny(player, centers, r2)) {
+            if (!player.m_6084_() || player.m_5833_()
+                    || !playerMeditating(player)
+                    || !nearAny(player, centers, r2)) {
                 clearNear(player);
                 continue;
             }
@@ -89,13 +97,12 @@ public final class LivingWorldNearbyMeditation {
         out.add("§5Meditation§7: §f" + level + "/" + cap);
         out.add("§8  - §7Progress §f" + compact(progress) + " / " + compact(need));
         out.add("§8  - §7Remaining §f" + compact(left));
-        if (level <= 0 && progress <= 0L) {
-            out.add("§8  - §7Stay near a Living World meditation circle.");
-        }
+        out.add("§8  - §7Meditate near a Living World meditation circle.");
     }
 
     private static boolean resolveApi() {
-        if (isMeditating != null && isMeditationCircleMember != null && fighterClass != null) {
+        if (isMeditating != null && isMeditationCircleMember != null
+                && isPlayerMeditating != null && fighterClass != null) {
             return true;
         }
         if (lookupFailed) {
@@ -103,8 +110,10 @@ public final class LivingWorldNearbyMeditation {
         }
         try {
             Class<?> cls = Class.forName(FIGHTER);
+            Class<?> compat = Class.forName(PLAYER_STATE);
             isMeditating = cls.getMethod("isMeditating");
             isMeditationCircleMember = cls.getMethod("isMeditationCircleMember");
+            isPlayerMeditating = compat.getMethod("isPlayerMeditating", ServerPlayer.class);
             fighterClass = cls;
             return true;
         } catch (Throwable t) {
@@ -145,6 +154,18 @@ public final class LivingWorldNearbyMeditation {
         }
     }
 
+    /** Living World's own player session. Standing nearby does not set this. */
+    private static boolean playerMeditating(ServerPlayer player) {
+        if (player == null || isPlayerMeditating == null) {
+            return false;
+        }
+        try {
+            return Boolean.TRUE.equals(isPlayerMeditating.invoke(null, player));
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
     private static boolean nearAny(ServerPlayer player, List<Entity> centers, double r2) {
         if (centers == null || centers.isEmpty()) {
             return false;
@@ -169,8 +190,8 @@ public final class LivingWorldNearbyMeditation {
     }
 
     /**
-     * First sample inside the radius only stamps the clock. Away time is not
-     * added, and a later circle does not pay for the gap.
+     * First sample while meditating inside the radius only stamps the clock.
+     * Time spent standing nearby, or time after meditation ends, is not added.
      */
     private static void credit(ServerPlayer player, long now) {
         boolean wasNear = "1".equals(ProgressionData.tempGet(player, TEMP_NEAR, ""));
