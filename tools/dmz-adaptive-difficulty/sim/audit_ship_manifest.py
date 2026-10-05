@@ -107,8 +107,12 @@ def main() -> int:
           and "new MobEffectInstance" in death_tp
           and "tellLiving" in events)
     check("negative TP gain levels use the same 0.25 step",
-          "getBonusFromAmplifier" in bonus_mixin
+          "getMultiplierFromEffect" in bonus_mixin
+          and "getBonusFromAmplifier" in bonus_mixin
           and "(amplifier + 1) * 0.25d" in bonus_mixin
+          and '"tp_gain"' in bonus_mixin
+          and "require = 0" not in bonus_mixin
+          and "Effect: x0.5" in death_tp
           and '"PotionEffectHelperTpBonusMixin"' in mixins_json)
     check("death penalty does not cut the granted amount",
           "setReturnValue" not in death_mixin

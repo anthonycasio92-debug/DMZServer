@@ -6,9 +6,13 @@ import com.dbzlegacy.adaptivedifficulty.util.ScreenNotify;
 import com.dragonminez.common.init.MainEffects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerBossEvent;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.BossEvent;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 
@@ -30,6 +34,12 @@ public final class DeathTpPenalty {
      * so DragonMineZ's effect multiplier is {@code 0.5}.
      */
     public static final int PENALTY_AMPLIFIER = -3;
+    /**
+     * What the character-stats tooltip would print for this level: multiplier
+     * {@code 0.5}, formatted as {@code Effect: x0.5}. Stock clients hide that line
+     * because they treat a negative level as no bonus, so the bar shows it too.
+     */
+    public static final String EFFECT_LABEL = "Effect: x0.5";
     /** Copied onto the respawned player. Forge does not always keep persistent data across death. */
     public static final String KEY = "lm.death_tp_penalty_until";
     /** Leftover from the old point-bank cut. Cleared so it cannot linger. */
@@ -37,6 +47,7 @@ public final class DeathTpPenalty {
     private static final int EFFECT_REFRESH_BUFFER_TICKS = 100;
     /** Living-player explanation, so a corpse chat and the respawn chat are not the same slot. */
     private static final ConcurrentHashMap<UUID, Long> LIVING_TOLD = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<UUID, ServerBossEvent> BARS = new ConcurrentHashMap<>();
     private static final long LIVING_TELL_GAP_MS = 3_000L;
 
     private DeathTpPenalty() {}
@@ -92,9 +103,9 @@ public final class DeathTpPenalty {
         applyEffect(player);
         msg(player, LmChat.note(
                 "TP",
-                "§cDeath penalty §7is still on. TP gain effect §c-50% §7for §f"
-                        + remainingLabel(player) + "§7."));
-        ScreenNotify.hint(player, "TP gain -50%", remainingLabel(player), "", 0L);
+                "§cDeath penalty §7is still on. §c" + EFFECT_LABEL
+                        + " §7for §f" + remainingLabel(player) + "§7."));
+        ScreenNotify.hint(player, EFFECT_LABEL, remainingLabel(player), "", 0L);
     }
 
     public static void pulse(MinecraftServer server, int tick) {
@@ -130,6 +141,7 @@ public final class DeathTpPenalty {
             if (effect == null) {
                 return;
             }
+            showBar(player);
             long remainingMs = PersistentDataAccess.getLong(player, KEY, 0L) - System.currentTimeMillis();
             int ticks = Math.max(
                     EFFECT_REFRESH_BUFFER_TICKS,
@@ -168,19 +180,19 @@ public final class DeathTpPenalty {
 
     private static void tell(ServerPlayer player, boolean refreshed) {
         String body = refreshed
-                ? "§cDeath penalty refreshed. §7TP gain effect stays §c-50% §7for §f10 minutes§7."
-                : "§cDeath penalty. §7TP gain effect §c-50% §7for §f10 minutes§7.";
+                ? "§cDeath penalty refreshed. §7" + EFFECT_LABEL + " §7stays for §f10 minutes§7."
+                : "§cDeath penalty. §c" + EFFECT_LABEL + " §7for §f10 minutes§7.";
         msg(player, LmChat.note("TP", body));
-        ScreenNotify.hint(player, "TP gain -50%", "10 minutes", "", 0L);
+        ScreenNotify.hint(player, EFFECT_LABEL, "10 minutes", "", 0L);
     }
 
     /** What the player who is actually on screen sees, including a copied timer. */
     private static void tellSeen(ServerPlayer player) {
         msg(player, LmChat.note(
                 "TP",
-                "§cDeath penalty. §7TP gain effect §c-50% §7for §f"
+                "§cDeath penalty. §c" + EFFECT_LABEL + " §7for §f"
                         + remainingLabel(player) + "§7."));
-        ScreenNotify.hint(player, "TP gain -50%", remainingLabel(player), "", 0L);
+        ScreenNotify.hint(player, EFFECT_LABEL, remainingLabel(player), "", 0L);
     }
 
     public static String remainingLabel(ServerPlayer player) {
@@ -198,13 +210,68 @@ public final class DeathTpPenalty {
         CompoundTag tag = PersistentDataAccess.get(player);
         if (!PersistentDataAccess.isWritable(tag) || !tag.m_128441_(KEY)) {
             removePenaltyEffect(player);
+            hideBar(player);
             return;
         }
         tag.m_128473_(KEY);
         tag.m_128473_(FRAC_KEY);
         removePenaltyEffect(player);
+        hideBar(player);
         if (announce) {
             msg(player, LmChat.ok("TP", "Death penalty ended. TP gain is back to normal."));
+        }
+    }
+
+    /** Drop the bar when the player leaves so it does not stick on the next join. */
+    public static void onLogout(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        hideBar(player);
+    }
+
+    private static void showBar(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        try {
+            UUID id = player.m_20148_();
+            Component name = Component.m_237113_(EFFECT_LABEL).m_130940_(ChatFormatting.RED);
+            ServerBossEvent bar = BARS.get(id);
+            if (bar == null) {
+                bar = new ServerBossEvent(
+                        name,
+                        BossEvent.BossBarColor.RED,
+                        BossEvent.BossBarOverlay.PROGRESS);
+                bar.m_7003_(false);
+                bar.m_7005_(false);
+                bar.m_7006_(false);
+                BARS.put(id, bar);
+            }
+            if (!bar.m_8324_().contains(player)) {
+                bar.m_7706_();
+                bar.m_6543_(player);
+            }
+            bar.m_6456_(name);
+            long rem = Math.max(0L, PersistentDataAccess.getLong(player, KEY, 0L) - System.currentTimeMillis());
+            float progress = (float) Math.max(0d, Math.min(1d, rem / (double) DURATION_MS));
+            bar.m_142711_(progress);
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static void hideBar(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        try {
+            ServerBossEvent bar = BARS.remove(player.m_20148_());
+            if (bar == null) {
+                return;
+            }
+            bar.m_6539_(player);
+            bar.m_7706_();
+        } catch (Throwable ignored) {
         }
     }
 
