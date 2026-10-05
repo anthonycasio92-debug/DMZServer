@@ -483,11 +483,13 @@ def main() -> int:
         check("VERSION == mods.toml == plugin.yml", v_mod == v_toml == v_yml, f"{v_mod!r} / {v_toml!r} / {v_yml!r}")
     if v_mod:
         forge_jar = ROOT / "mods" / f"LegacyMechanics-{v_mod}.jar"
-        gui_jar = ROOT / "plugins" / f"LegacyMechanicsGUI-{v_mod}.jar"
-        if skip_gui:
-            check(f"Forge jar exists for {v_mod}", forge_jar.is_file())
-        else:
-            check(f"built jars exist for {v_mod}", forge_jar.is_file() and gui_jar.is_file())
+        check(f"Forge jar exists for {v_mod}", forge_jar.is_file())
+        shipped_gui = list((ROOT / "plugins").glob("LegacyMechanicsGUI-*.jar"))
+        check(
+            "plugins/ does not ship LegacyMechanicsGUI",
+            not shipped_gui,
+            ", ".join(p.name for p in shipped_gui) if shipped_gui else "",
+        )
         if forge_jar.is_file():
             r = subprocess.run(
                 ["javap", "-classpath", str(forge_jar), "-public",

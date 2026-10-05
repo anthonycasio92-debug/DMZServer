@@ -310,8 +310,8 @@ python3 "$HERE_SIM/audit_tier_level_matrix.py"
 python3 "$HERE_SIM/validate_scaling.py"
 python3 "$HERE_SIM/simulate_build_matrix.py" --check
 python3 "$HERE_SIM/audit_concept.py"
-if [[ -f "$ROOT/plugins/LegacyMechanicsGUI-${VERSION}.jar" ]] || [[ -f "$ROOT/mods/LegacyMechanics-${VERSION}.jar" ]]; then
+if [[ -f "$ROOT/mods/LegacyMechanics-${VERSION}.jar" ]]; then
   python3 "$HERE_SIM/audit_gui_abi.py"
 else
-  echo "WARN: LegacyMechanicsGUI-${VERSION}.jar missing — skip GUI ABI audit" >&2
+  echo "WARN: LegacyMechanics-${VERSION}.jar missing — skip GUI ABI audit" >&2
 fi

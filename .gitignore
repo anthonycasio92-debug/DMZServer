@@ -26,8 +26,10 @@ kubejs/probe/
 kubejs/config/
 kubejs/exported/
 
-# Adaptive difficulty GUI build output
+# Adaptive difficulty GUI build output. The Bukkit plugin jar is not shipped.
 tools/dmz-adaptive-difficulty-gui/build/
+/plugins/LegacyMechanicsGUI-*.jar
+/plugins/AdaptiveDifficultyGUI-*.jar
 tools/dmz-adaptive-difficulty/build/
 
 # Local convenience copies from adaptive-difficulty build.sh

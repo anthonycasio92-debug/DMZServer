@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Audit LegacyMechanics Forge jar ABI required by LegacyMechanicsGUI reflection.
+"""Audit LegacyMechanics Forge jar ABI required by the Bukkit GUI sources.
 
-Fail-closed: any missing required class/method/field exits non-zero.
-Optional symbols (gracefully null'd by ForgeBridge) are reported as WARN.
+The LegacyMechanicsGUI jar is not shipped. Version and plugin entrypoints
+are checked against source. Fail-closed: any missing required class, method,
+or field exits non-zero. Optional symbols (gracefully null'd by ForgeBridge)
+are reported as WARN.
 """
 from __future__ import annotations
 
@@ -14,6 +16,19 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 GUI_YML = ROOT / "tools" / "dmz-adaptive-difficulty-gui" / "src" / "main" / "resources" / "plugin.yml"
+GUI_PLUGIN_JAVA = (
+    ROOT
+    / "tools"
+    / "dmz-adaptive-difficulty-gui"
+    / "src"
+    / "main"
+    / "java"
+    / "com"
+    / "dbzlegacy"
+    / "adaptivedifficulty"
+    / "bukkit"
+    / "AdaptiveDifficultyGuiPlugin.java"
+)
 
 
 def latest_jar(directory: Path, prefix: str) -> Path | None:
@@ -24,9 +39,6 @@ def latest_jar(directory: Path, prefix: str) -> Path | None:
 FORGE_JAR = latest_jar(ROOT / "mods", "LegacyMechanics")
 if FORGE_JAR is None:
     FORGE_JAR = latest_jar(ROOT / "mods", "AdaptiveDifficulty")
-GUI_JAR = latest_jar(ROOT / "plugins", "LegacyMechanicsGUI")
-if GUI_JAR is None:
-    GUI_JAR = latest_jar(ROOT / "plugins", "AdaptiveDifficultyGUI")
 
 # Required: ensureResolved() hard-fails without these.
 REQUIRED_CLASSES = [
@@ -378,13 +390,6 @@ def plugin_yml_version() -> str | None:
     return m.group(1).strip() if m else None
 
 
-def jar_plugin_version(jar: Path) -> str | None:
-    with zipfile.ZipFile(jar) as zf:
-        text = zf.read("plugin.yml").decode("utf-8")
-    m = re.search(r"^version:\s*['\"]?([^'\"\n]+)", text, re.M)
-    return m.group(1).strip() if m else None
-
-
 def jar_mods_toml_version(jar: Path) -> str | None:
     with zipfile.ZipFile(jar) as zf:
         text = zf.read("META-INF/mods.toml").decode("utf-8")
@@ -392,33 +397,48 @@ def jar_mods_toml_version(jar: Path) -> str | None:
     return m.group(1).strip() if m else None
 
 
+def shipped_gui_jars() -> list[Path]:
+    plugins = ROOT / "plugins"
+    found: list[Path] = []
+    for prefix in ("LegacyMechanicsGUI", "AdaptiveDifficultyGUI"):
+        found.extend(plugins.glob(f"{prefix}-*.jar"))
+    return found
+
+
+def source_has_method(text: str, name: str, hint: str) -> bool:
+    for line in text.splitlines():
+        if f"void {name}(" in line and hint in line:
+            return True
+    return False
+
+
 def main() -> int:
     errors: list[str] = []
     warns: list[str] = []
 
     if FORGE_JAR is None or not FORGE_JAR.is_file():
-        print(f"FAIL: missing mods/LegacyMechanics-*.jar", file=sys.stderr)
-        return 2
-    if GUI_JAR is None or not GUI_JAR.is_file():
-        print(f"FAIL: missing plugins/LegacyMechanicsGUI-*.jar", file=sys.stderr)
+        print("FAIL: missing mods/LegacyMechanics-*.jar", file=sys.stderr)
         return 2
     print(f"Forge jar: {FORGE_JAR.name}")
-    print(f"GUI jar:   {GUI_JAR.name}")
+    stray = shipped_gui_jars()
+    if stray:
+        names = ", ".join(p.name for p in stray)
+        errors.append(f"plugins/ must not ship a GUI plugin jar ({names})")
+        print(f"  FAIL plugins/ GUI jar present: {names}")
+    else:
+        print("  OK no LegacyMechanicsGUI jar in plugins/")
 
     forge_ver = read_constant_string(FORGE_JAR, "com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod", "VERSION")
     toml_ver = jar_mods_toml_version(FORGE_JAR)
-    gui_ver = jar_plugin_version(GUI_JAR)
     src_ver = plugin_yml_version()
 
     print("=== Version handshake ===")
     print(f"  AdaptiveDifficultyMod.VERSION = {forge_ver}")
     print(f"  mods.toml version             = {toml_ver}")
-    print(f"  GUI plugin.yml (jar)          = {gui_ver}")
     print(f"  GUI plugin.yml (source)       = {src_ver}")
     for label, a, b in [
         ("Forge VERSION vs mods.toml", forge_ver, toml_ver),
-        ("Forge VERSION vs GUI jar", forge_ver, gui_ver),
-        ("GUI jar vs source plugin.yml", gui_ver, src_ver),
+        ("Forge VERSION vs source plugin.yml", forge_ver, src_ver),
     ]:
         if a != b:
             errors.append(f"version skew ({label}): {a!r} != {b!r}")
@@ -489,14 +509,14 @@ def main() -> int:
                 warns.append(f"missing optional field {fqcn}.{name}")
                 print(f"  WARN {fqcn}.{name}")
 
-    print("\n=== GUI plugin Forge entrypoints ===")
+    print("\n=== GUI plugin Forge entrypoints (source) ===")
     gui_cls = "com.dbzlegacy.adaptivedifficulty.bukkit.AdaptiveDifficultyGuiPlugin"
-    if not jar_has_class(GUI_JAR, gui_cls):
-        errors.append(f"missing GUI class {gui_cls}")
+    if not GUI_PLUGIN_JAVA.is_file():
+        errors.append(f"missing GUI source {GUI_PLUGIN_JAVA.name}")
     else:
-        out = javap_public(GUI_JAR, gui_cls)
+        gui_src = GUI_PLUGIN_JAVA.read_text(encoding="utf-8")
         for name, hint in GUI_REQUIRED_METHODS:
-            if method_present(out, name, hint):
+            if source_has_method(gui_src, name, hint):
                 print(f"  OK {gui_cls}.{name}({hint})")
             else:
                 errors.append(f"missing GUI method {gui_cls}.{name}({hint})")

@@ -204,14 +204,13 @@ def main() -> int:
     code, _ = run_subaudit("audit_gui_tooltips.py")
     ok("GUI tooltips policy", code == 0)
 
-    print("\n=== GUI ABI (when jars present) ===")
+    print("\n=== GUI ABI (Forge jar; plugin jar is not shipped) ===")
     mods = list((ROOT / "mods").glob("LegacyMechanics-*.jar"))
-    plugins = list((ROOT / "plugins").glob("LegacyMechanicsGUI-*.jar"))
-    if mods and plugins:
+    if mods:
         code, _ = run_subaudit("audit_gui_abi.py")
         ok("Forge↔Bukkit ABI", code == 0)
     else:
-        warnings.append("skipped audit_gui_abi.py (jars not in workspace)")
+        warnings.append("skipped audit_gui_abi.py (Forge jar not in workspace)")
 
     # Anti-pattern: raw /difficulty do in chest click handlers
     bad_do = re.compile(r'addCommand\s*\(\s*"[^"]*\s+do\s+')

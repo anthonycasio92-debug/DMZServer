@@ -52,15 +52,14 @@ When you ask for a behavior change, add a row here and a matching check in `audi
 | progression-no-flag-gui | Progression GUIs have no All Flags / subflags boards or per-module toggle tiles | 4.5.90+ | manifest §progression |
 | cnpc-preview-live-player | Main-system CNPC menus: character preview uses **live player sync** (inventory-style) before Gecko clone fallback | 4.5.84+ | manifest §cnpc |
 | prestige-cnpc-tier-ids | Prestige **Tiers** grid must not reuse CNPC flash widget ids (50+) — avoids menu errors after buy/turn-in | 4.5.85+ | manifest §prestige |
-| version-handshake | Forge `VERSION`, `mods.toml`, GUI `plugin.yml`, and built jar names **same version** | always | `audit_gui_abi.py`, manifest §version |
+| version-handshake | Forge `VERSION`, `mods.toml`, and GUI `plugin.yml` source are the **same version**. `plugins/` does not ship `LegacyMechanicsGUI-*.jar` | always | `audit_gui_abi.py`, manifest §version |
 
 ## Deploy process (do not skip)
 
 1. `bash tools/dmz-adaptive-difficulty/build.sh` — must pass all audits including **ship manifest**.
-2. `bash tools/dmz-adaptive-difficulty-gui/build.sh` — ABI handshake with Forge jar.
-3. `LM_DEPLOY_VERSION=x.y.z DEPLOY_LIVE_CONFIRM=LIVE bash scripts/deploy-lm-live.sh` — script re-runs manifest audit before upload.
-4. **Full server restart** after Forge jar change (not GUI-only reload).
-5. Confirm live: only one `LegacyMechanics-*.jar` and one `LegacyMechanicsGUI-*.jar` in active folders.
+2. `LM_DEPLOY_VERSION=x.y.z DEPLOY_LIVE_CONFIRM=LIVE LM_SKIP_GUI=1 bash scripts/deploy-lm-live.sh` — script re-runs manifest audit before upload. Forge only.
+3. **Full server restart** after Forge jar change.
+4. Confirm live: only one `LegacyMechanics-*.jar` in `mods/`, and no `LegacyMechanicsGUI-*.jar` in `plugins/`.
 
 ## Why regressions happened (2026-09)
 

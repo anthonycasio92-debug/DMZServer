@@ -22,7 +22,8 @@ fi
 SRC="$HERE/src/main/java"
 RES="$HERE/src/main/resources"
 OUT="$HERE/build/classes"
-JAR="$ROOT/plugins/${NAME}-${VERSION}.jar"
+# Retired Bukkit plugin. Keep a local class jar under build/ (gitignored). Never install it into plugins/.
+JAR="$HERE/build/${NAME}-${VERSION}.jar"
 
 for f in "$PAPER" "$PAPI" "$CMILIB" "$ADV_API" "$ADV_KEY" "$EXAM_API" "$EXAM_STR" "$BUNGEE" "$GSON" "$GP"; do
   if [[ ! -f "$f" ]]; then
@@ -31,11 +32,7 @@ for f in "$PAPER" "$PAPI" "$CMILIB" "$ADV_API" "$ADV_KEY" "$EXAM_API" "$EXAM_STR
   fi
 done
 
-# Replace this version's GUI jar. Older LegacyMechanicsGUI jars are removed after a successful build.
-rm -f "$JAR" \
-      "$ROOT"/plugins/AdaptiveDifficultyGUI-"${VERSION}".jar \
-      "$ROOT"/plugins/dmz_adaptive_difficulty_gui-"${VERSION}".jar \
-      "$ROOT"/plugins/DMZAdaptiveDifficultyGUI-"${VERSION}".jar
+rm -f "$JAR"
 rm -rf "$OUT"
 mkdir -p "$OUT"
 
@@ -52,8 +49,13 @@ javac --release 17 -proc:none -cp "$CP" -d "$OUT" "${SOURCES[@]}"
 )
 jar uf "$JAR" -C "$RES" plugin.yml
 jar uf "$JAR" -C "$RES" gui-tooltips.json
-echo "Built $JAR"
-find "$ROOT/plugins" -maxdepth 1 -type f -name 'LegacyMechanicsGUI-*.jar' ! -name "LegacyMechanicsGUI-${VERSION}.jar" -delete
+echo "Built $JAR (not installed to plugins/)"
+find "$ROOT/plugins" -maxdepth 1 -type f \( \
+  -name 'LegacyMechanicsGUI-*.jar' -o \
+  -name 'AdaptiveDifficultyGUI-*.jar' -o \
+  -name 'dmz_adaptive_difficulty_gui-*.jar' -o \
+  -name 'DMZAdaptiveDifficultyGUI-*.jar' \
+\) -delete
 jar tf "$JAR" | head -40
 
 # Cross-check Forge reflection surface after GUI rebuild.

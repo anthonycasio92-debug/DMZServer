@@ -37,7 +37,7 @@ run audit_tier_level_matrix python3 "$HERE/audit_tier_level_matrix.py" || FAILS=
 run validate_scaling python3 "$HERE/validate_scaling.py" || FAILS=$((FAILS + 1))
 run simulate_build_matrix python3 "$HERE/simulate_build_matrix.py" --check || FAILS=$((FAILS + 1))
 run audit_concept python3 "$HERE/audit_concept.py" || FAILS=$((FAILS + 1))
-if [[ -f "$REPO/mods/LegacyMechanics-${VERSION}.jar" ]] || [[ -f "$REPO/plugins/LegacyMechanicsGUI-${VERSION}.jar" ]]; then
+if [[ -f "$REPO/mods/LegacyMechanics-${VERSION}.jar" ]]; then
   run audit_gui_abi python3 "$HERE/audit_gui_abi.py" || FAILS=$((FAILS + 1))
 else
   echo "audit_gui_abi|SKIP (jars missing)" >>"$OUT/.audit-results.tmp"
