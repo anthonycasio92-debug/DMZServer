@@ -92,6 +92,7 @@ public final class DifficultyEvents {
     private static final Map<UUID, String> LAST_RACE = new ConcurrentHashMap<>();
     /** Last polled form key — catches future races that swap forms without mult spikes. */
     private static final Map<UUID, String> LAST_FORM_KEY = new ConcurrentHashMap<>();
+    private static final Map<String, Long> PULSE_WARN_AT = new ConcurrentHashMap<>();
 
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
@@ -653,11 +654,30 @@ public final class DifficultyEvents {
             return;
         }
         // Even when master is OFF, drain claims + revert scaled hostiles.
-        BehaviorScheduler.pulse(server, server.m_129921_()); // getTickCount
-        RivalSystem.pulse(server, server.m_129921_());
-        SparringSystem.pulse(server, server.m_129921_());
-        ProgressionSystem.pulse(server, server.m_129921_());
-        DifficultyActions.pulseLevelPulls(server);
+        // Each pulse is isolated so one throw cannot skip the rest of the tick.
+        int tick = server.m_129921_(); // getTickCount
+        safePulse("mob-scaling", () -> BehaviorScheduler.pulse(server, tick));
+        safePulse("rival", () -> RivalSystem.pulse(server, tick));
+        safePulse("sparring", () -> SparringSystem.pulse(server, tick));
+        safePulse("progression", () -> ProgressionSystem.pulse(server, tick));
+        safePulse("level-pull", () -> DifficultyActions.pulseLevelPulls(server));
+    }
+
+    private static void safePulse(String name, Runnable pulse) {
+        try {
+            pulse.run();
+        } catch (Throwable t) {
+            long now = System.currentTimeMillis();
+            Long last = PULSE_WARN_AT.get(name);
+            if (last == null || now - last > 20_000L) {
+                PULSE_WARN_AT.put(name, now);
+                AdaptiveDifficultyMod.LOGGER.warn(
+                        "[{}] {} pulse failed: {}",
+                        AdaptiveDifficultyMod.MOD_ID,
+                        name,
+                        t.toString());
+            }
+        }
     }
 
     @SubscribeEvent

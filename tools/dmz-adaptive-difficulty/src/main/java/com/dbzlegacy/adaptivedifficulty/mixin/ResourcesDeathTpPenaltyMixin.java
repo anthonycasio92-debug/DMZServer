@@ -17,7 +17,8 @@ public abstract class ResourcesDeathTpPenaltyMixin {
             at = @At("HEAD"),
             argsOnly = true,
             ordinal = 0,
-            remap = false
+            remap = false,
+            require = 0
     )
     private float lm$leaveTrainingPoints(float amount) {
         return amount;

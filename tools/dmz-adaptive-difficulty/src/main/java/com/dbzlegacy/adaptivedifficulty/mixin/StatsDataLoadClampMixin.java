@@ -15,14 +15,30 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  */
 @Mixin(value = StatsData.class, remap = false)
 public abstract class StatsDataLoadClampMixin {
+    /** Stops the cancelled head call from re-entering the guard. */
+    private static final ThreadLocal<Boolean> REENTRY = ThreadLocal.withInitial(() -> Boolean.FALSE);
 
-    @Inject(method = "load", at = @At("HEAD"), remap = false)
-    private void lm$loadEnter(CompoundTag tag, CallbackInfo ci) {
-        StatsDataLoadContext.enter();
-    }
-
-    @Inject(method = "load", at = @At("RETURN"), remap = false)
-    private void lm$loadExit(CompoundTag tag, CallbackInfo ci) {
-        StatsDataLoadContext.exit();
+    /**
+     * A RETURN inject does not run when {@code load} throws, which left the
+     * load flag stuck on that thread. Cancel the outer call and run the real
+     * load inside try/finally.
+     */
+    @Inject(method = "load", at = @At("HEAD"), cancellable = true, remap = false)
+    private void lm$loadGuarded(CompoundTag tag, CallbackInfo ci) {
+        if (REENTRY.get()) {
+            return;
+        }
+        ci.cancel();
+        REENTRY.set(Boolean.TRUE);
+        try {
+            StatsDataLoadContext.enter();
+            try {
+                ((StatsData) (Object) this).load(tag);
+            } finally {
+                StatsDataLoadContext.exit();
+            }
+        } finally {
+            REENTRY.set(Boolean.FALSE);
+        }
     }
 }

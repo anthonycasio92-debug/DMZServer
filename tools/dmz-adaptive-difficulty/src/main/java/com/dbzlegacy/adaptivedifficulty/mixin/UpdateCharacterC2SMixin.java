@@ -83,8 +83,12 @@ public abstract class UpdateCharacterC2SMixin {
         }
     }
 
-    /** After DMZ applies {@code UpdateCharacterC2S} (enqueueWork), not at {@code handle} return. */
-    @Inject(method = "lambda$handle$0", at = @At("RETURN"), remap = false)
+    /**
+     * After DMZ applies {@code UpdateCharacterC2S} (enqueueWork), not at {@code handle} return.
+     * Dragon Mine Z 2.1.3 has no named apply method — the body is only {@code lambda$handle$0}.
+     * {@code require = 0} so a lambda renumber skips this hook instead of refusing to boot.
+     */
+    @Inject(method = "lambda$handle$0", at = @At("RETURN"), remap = false, require = 0)
     private static void lm$afterUpdateCharacterApplied(
             UpdateCharacterC2S packet,
             ServerPlayer player,

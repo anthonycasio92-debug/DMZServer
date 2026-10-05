@@ -51,7 +51,7 @@ else
   JAR="$ROOT/mods/${NAME}-${VERSION}.jar"
 fi
 
-# Replace only this version's jar (keep older LegacyMechanics-x.y.z in mods/ for history).
+# Replace this version's jar. Older LegacyMechanics jars are removed after a successful build.
 rm -f "$JAR" \
       "$ROOT"/mods/AdaptiveDifficulty-"${VERSION}".jar \
       "$ROOT"/mods/dmz_adaptive_difficulty-"${VERSION}".jar
@@ -285,6 +285,8 @@ fi
 # StatsData#load (mixins → DmzResourcePoolClamp) and clients see "Invalid player data".
 
 echo "Built $JAR (base: $(basename "$BASE_JAR"))"
+# A second LegacyMechanics jar in mods/ crashes a fresh server on startup.
+find "$ROOT/mods" -maxdepth 1 -type f -name 'LegacyMechanics-*.jar' ! -name "LegacyMechanics-${VERSION}.jar" -delete
 jar tf "$JAR"
 
 # Fail-closed audits: product features, combat scaling sim, GUI ABI.

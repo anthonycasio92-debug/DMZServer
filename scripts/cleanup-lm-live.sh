@@ -22,7 +22,13 @@ if [[ -z "$HOST" || -z "$USER" || -z "$PASS" ]]; then
   exit 1
 fi
 
-KEEP_FORGE="${LM_KEEP_FORGE:-LegacyMechanics-4.5.99.jar}"
+VERSION_JAVA="$ROOT/tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.java"
+DEFAULT_VER="$(grep -oP 'public static final String VERSION = "\K[0-9.]+(?=")' "$VERSION_JAVA" || true)"
+if [[ -z "$DEFAULT_VER" ]]; then
+  echo "Could not read LM version for the keep jar." >&2
+  exit 1
+fi
+KEEP_FORGE="${LM_KEEP_FORGE:-LegacyMechanics-${DEFAULT_VER}.jar}"
 KEEP_GUI="${LM_KEEP_GUI:-}"
 RECYCLE_ALL_GUI="${LM_RECYCLE_ALL_GUI:-0}"
 KEEP_MELEE="${LM_KEEP_MELEE:-dmz_mohist_melee_fix-2.12.22.jar}"

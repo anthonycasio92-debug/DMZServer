@@ -22,6 +22,8 @@ public final class StaminaRegenGuard {
 
     private static final Map<UUID, Float> LAST_STAMINA = new ConcurrentHashMap<>();
     private static final Map<UUID, Integer> STALL_STAMINA = new ConcurrentHashMap<>();
+    /** Last pause+drain sample. Unchanged means Mohist stalled DMZ's own tick. */
+    private static final Map<UUID, Integer> LAST_COOLDOWN_SAMPLE = new ConcurrentHashMap<>();
 
     private StaminaRegenGuard() {}
 
@@ -37,10 +39,11 @@ public final class StaminaRegenGuard {
         if (cds == null) {
             return;
         }
-        try {
-            cds.tick();
-        } catch (Throwable ignored) {
-        }
+        // DMZ StatsData.tick and TickHandler already call Cooldowns.tick.
+        // Ticking here as well decays dash, drain, and pause twice as fast.
+        // Only tick when the sample did not move since the last pulse.
+        UUID id = player.m_20148_();
+        nudgeCooldownIfStalled(id, cds);
 
         Resources res = data.getResources();
         if (res == null) {
@@ -80,7 +83,6 @@ public final class StaminaRegenGuard {
             }
         }
 
-        UUID id = player.m_20148_();
         try {
             float maxS = DmzResourcePoolClamp.actualMaxStamina(data);
             float curS = res.getCurrentStamina();
@@ -134,6 +136,48 @@ public final class StaminaRegenGuard {
             STALL_STAMINA.put(id, 0);
         }
         LAST_STAMINA.put(id, res.getCurrentStamina());
+    }
+
+    public static void onLogout(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        UUID id = player.m_20148_();
+        LAST_STAMINA.remove(id);
+        STALL_STAMINA.remove(id);
+        LAST_COOLDOWN_SAMPLE.remove(id);
+    }
+
+    private static void nudgeCooldownIfStalled(UUID id, Cooldowns cds) {
+        int sample = cooldownSample(cds);
+        Integer previous = LAST_COOLDOWN_SAMPLE.get(id);
+        if (sample <= 0) {
+            LAST_COOLDOWN_SAMPLE.remove(id);
+            return;
+        }
+        if (previous == null || sample != previous) {
+            LAST_COOLDOWN_SAMPLE.put(id, sample);
+            return;
+        }
+        try {
+            cds.tick();
+        } catch (Throwable ignored) {
+        }
+        LAST_COOLDOWN_SAMPLE.put(id, cooldownSample(cds));
+    }
+
+    private static int cooldownSample(Cooldowns cds) {
+        int sample = 0;
+        if (cds.hasCooldown(Cooldowns.STAMINA_PAUSE)) {
+            sample += cds.getCooldown(Cooldowns.STAMINA_PAUSE);
+        }
+        if (cds.hasCooldown(Cooldowns.DRAIN)) {
+            sample += cds.getCooldown(Cooldowns.DRAIN);
+        }
+        if (cds.hasCooldown(Cooldowns.DRAIN_ACTIVE)) {
+            sample += cds.getCooldown(Cooldowns.DRAIN_ACTIVE);
+        }
+        return sample;
     }
 
     private static void clearStall(UUID id) {

@@ -25,6 +25,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class StatsDataGetPlayerMixin {
     private static final Map<StatsData, UUID> OWNER_UUID =
             Collections.synchronizedMap(new WeakHashMap<>());
+    /** Skip the online-player scan after a miss. Regen and HUD call getPlayer() every tick. */
+    private static final Map<StatsData, Long> MISS_UNTIL =
+            Collections.synchronizedMap(new WeakHashMap<>());
+    private static final long NEGATIVE_TTL_NANOS = 500_000_000L;
 
     @Inject(method = "getPlayer", at = @At("RETURN"), cancellable = true, remap = false)
     private void lm$resolveOwner(CallbackInfoReturnable<Player> cir) {
@@ -32,14 +36,16 @@ public abstract class StatsDataGetPlayerMixin {
             return;
         }
         Player existing = cir.getReturnValue();
+        StatsData self = (StatsData) (Object) this;
         if (existing instanceof ServerPlayer sp && sp.m_6084_()) {
-            OWNER_UUID.put((StatsData) (Object) this, sp.m_20148_());
+            OWNER_UUID.put(self, sp.m_20148_());
+            MISS_UNTIL.remove(self);
             return;
         }
         if (existing != null && existing.m_6084_()) {
+            MISS_UNTIL.remove(self);
             return;
         }
-        StatsData self = (StatsData) (Object) this;
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null) {
             return;
@@ -48,9 +54,15 @@ public abstract class StatsDataGetPlayerMixin {
         if (cached != null) {
             ServerPlayer sp = server.m_6846_().m_11259_(cached);
             if (sp != null && sp.m_6084_()) {
+                MISS_UNTIL.remove(self);
                 cir.setReturnValue(sp);
                 return;
             }
+        }
+        long now = System.nanoTime();
+        Long missUntil = MISS_UNTIL.get(self);
+        if (missUntil != null && now < missUntil) {
+            return;
         }
         for (ServerPlayer sp : server.m_6846_().m_11314_()) {
             if (sp == null || !sp.m_6084_()) {
@@ -59,11 +71,13 @@ public abstract class StatsDataGetPlayerMixin {
             try {
                 if (DmzProgression.stats(sp) == self) {
                     OWNER_UUID.put(self, sp.m_20148_());
+                    MISS_UNTIL.remove(self);
                     cir.setReturnValue(sp);
                     return;
                 }
             } catch (Throwable ignored) {
             }
         }
+        MISS_UNTIL.put(self, now + NEGATIVE_TTL_NANOS);
     }
 }

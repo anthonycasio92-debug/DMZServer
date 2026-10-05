@@ -11,12 +11,16 @@ import com.dragonminez.common.stats.skills.Skills;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.phys.AABB;
 
 /**
  * DragonMineZ Meditation levels while the player is already in Living World's
@@ -61,6 +65,8 @@ public final class LivingWorldNearbyMeditation {
     private static Method isPlayerMeditating;
     /** Methods from the entity's own class when Mohist split the fighter class. */
     private static final Map<Class<?>, Method> meditatingOnClass = new HashMap<>();
+    /** Class-name walk result. Hot entities otherwise repeat the hierarchy walk. */
+    private static final Map<Class<?>, Boolean> fighterType = new HashMap<>();
 
     private LivingWorldNearbyMeditation() {}
 
@@ -71,11 +77,11 @@ public final class LivingWorldNearbyMeditation {
         if (tick % 20 != 0 || !resolveApi()) {
             return;
         }
-        List<Entity> circles = meditatingFighters(server);
         List<ServerPlayer> players = server.m_6846_().m_11314_();
         long now = System.currentTimeMillis();
         int radius = DifficultyConfig.get().meditationDetectionRadius;
         double r2 = (double) radius * (double) radius;
+        List<ServerPlayer> meditating = new ArrayList<>();
         for (ServerPlayer player : players) {
             if (player == null) {
                 continue;
@@ -84,6 +90,13 @@ public final class LivingWorldNearbyMeditation {
                 clearNear(player);
                 continue;
             }
+            meditating.add(player);
+        }
+        if (meditating.isEmpty()) {
+            return;
+        }
+        List<Entity> circles = meditatingFightersNear(meditating, radius);
+        for (ServerPlayer player : meditating) {
             boolean withPlayer = nearMeditatingPlayer(player, players, r2);
             boolean withNpcs = nearTwoLivingCircleNpcs(player, circles, r2);
             if (!withPlayer && !withNpcs) {
@@ -146,13 +159,20 @@ public final class LivingWorldNearbyMeditation {
         }
     }
 
-    private static List<Entity> meditatingFighters(MinecraftServer server) {
+    /** Fighters inside the detection box of a meditating player. Not every entity in every level. */
+    private static List<Entity> meditatingFightersNear(List<ServerPlayer> meditating, double radius) {
         List<Entity> centers = new ArrayList<>();
-        for (ServerLevel level : server.m_129785_()) {
-            if (level == null) {
+        Set<Entity> seen = java.util.Collections.newSetFromMap(new IdentityHashMap<>());
+        double reach = Math.max(1.0, radius);
+        for (ServerPlayer player : meditating) {
+            if (player == null || !(player.m_9236_() instanceof ServerLevel level)) {
                 continue;
             }
-            for (Entity entity : level.m_8583_()) {
+            AABB box = player.m_20191_().m_82400_(reach);
+            for (LivingEntity entity : level.m_45976_(LivingEntity.class, box)) {
+                if (entity == null || !seen.add(entity)) {
+                    continue;
+                }
                 if (circleMember(entity)) {
                     centers.add(entity);
                 }
@@ -177,12 +197,20 @@ public final class LivingWorldNearbyMeditation {
         if (fighterClass != null && fighterClass.isInstance(entity)) {
             return true;
         }
-        for (Class<?> type = entity.getClass(); type != null && type != Object.class; type = type.getSuperclass()) {
-            if (FIGHTER.equals(type.getName())) {
-                return true;
+        Class<?> type = entity.getClass();
+        Boolean known = fighterType.get(type);
+        if (known != null) {
+            return known;
+        }
+        boolean match = false;
+        for (Class<?> cursor = type; cursor != null && cursor != Object.class; cursor = cursor.getSuperclass()) {
+            if (FIGHTER.equals(cursor.getName())) {
+                match = true;
+                break;
             }
         }
-        return false;
+        fighterType.put(type, match);
+        return match;
     }
 
     private static boolean fighterMeditating(Entity entity) {

@@ -1,8 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.5.162**.
+What changed from **4.5.147** through **4.5.163**.
 
-The live mods folder gets `LegacyMechanics-4.5.162.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.5.163.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+
+## Hot-path guards
+
+Owner lookup caches a miss for half a second instead of scanning every online player on each regen read. Stats load clears its thread flag if `load` throws. Stamina regen no longer ticks Dragon Mine Z cooldowns while those cooldowns are already moving, and it drops its maps on logout. A failed mob-scaling pulse no longer skips rival, sparring, and progression for that tick. Meditation looks only near players who are already meditating. The repo keeps one LegacyMechanics jar, one melee-fix jar, and one sdu jar.
 
 ## Difficulty mob fight rhythm
 

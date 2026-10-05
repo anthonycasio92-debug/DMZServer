@@ -110,6 +110,10 @@ public final class ProgressionSystem {
             ShopProgression.onLogout(player);
         } catch (Throwable ignored) {
         }
+        try {
+            StaminaRegenGuard.onLogout(player);
+        } catch (Throwable ignored) {
+        }
         ProgressionData.clearPlayer(player.m_20148_());
     }
 

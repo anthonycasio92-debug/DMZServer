@@ -31,7 +31,7 @@ for f in "$PAPER" "$PAPI" "$CMILIB" "$ADV_API" "$ADV_KEY" "$EXAM_API" "$EXAM_STR
   fi
 done
 
-# Replace only this version's GUI jar (keep older LegacyMechanicsGUI-x.y.z in plugins/).
+# Replace this version's GUI jar. Older LegacyMechanicsGUI jars are removed after a successful build.
 rm -f "$JAR" \
       "$ROOT"/plugins/AdaptiveDifficultyGUI-"${VERSION}".jar \
       "$ROOT"/plugins/dmz_adaptive_difficulty_gui-"${VERSION}".jar \
@@ -53,6 +53,7 @@ javac --release 17 -proc:none -cp "$CP" -d "$OUT" "${SOURCES[@]}"
 jar uf "$JAR" -C "$RES" plugin.yml
 jar uf "$JAR" -C "$RES" gui-tooltips.json
 echo "Built $JAR"
+find "$ROOT/plugins" -maxdepth 1 -type f -name 'LegacyMechanicsGUI-*.jar' ! -name "LegacyMechanicsGUI-${VERSION}.jar" -delete
 jar tf "$JAR" | head -40
 
 # Cross-check Forge reflection surface after GUI rebuild.
