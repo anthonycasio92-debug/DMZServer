@@ -12,14 +12,12 @@ Reload with `/difficulty reload` (or restart). KubeJS padlock sync re-reads the 
     {
       "id": "ancient_saiyan",
       "fabledSkill": "Ancient Saiyan",
-      "displayName": "Ancient Saiyan",
-      "prestigeTooltip": 10
+      "displayName": "Ancient Saiyan"
     },
     {
       "id": "sento_saiyan",
       "fabledSkill": "Sento Saiyan",
-      "displayName": "Sento Saiyan",
-      "prestigeTooltip": 1
+      "displayName": "Sento Saiyan"
     }
   ]
 }
@@ -30,7 +28,8 @@ Reload with `/difficulty reload` (or restart). KubeJS padlock sync re-reads the 
 | `id` | DMZ race id (e.g. `ancient_saiyan`) |
 | `fabledSkill` | Fabled skill name that permanently unlocks the race (level ≥ 1) |
 | `displayName` | Lock title / messages |
-| `prestigeTooltip` | Padlock UI hint only (“Requires Prestige N”) — **not** enforced by Java |
+
+The padlock’s “Requires Prestige N” hint is not in this file. KubeJS `race_lock_gui_sync.js` still sends that number for the race-select UI. The Java lock does not read it.
 
 ## Behavior
 - If a finished character is on a listed race **without** the Fabled skill → reset (`dmzstats reset …`)

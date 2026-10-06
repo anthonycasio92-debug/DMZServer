@@ -230,6 +230,12 @@ merge_onto_base_jar() {
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/race/AndroidConversion.class" \
       "$merge/com/dbzlegacy/adaptivedifficulty/progression/race/AndroidConversion.class"
   fi
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/progression/race/RaceLockConfig.class" ]]; then
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/race/RaceLockConfig.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/progression/race/RaceLockConfig.class"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/race/RaceLockConfig\$"*.class \
+      "$merge/com/dbzlegacy/adaptivedifficulty/progression/race/"
+  fi
   if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/progression/ProgressionModuleCatalog.class" ]]; then
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/ProgressionModuleCatalog.class" \
       "$merge/com/dbzlegacy/adaptivedifficulty/progression/ProgressionModuleCatalog.class"

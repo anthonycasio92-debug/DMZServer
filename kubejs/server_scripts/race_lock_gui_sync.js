@@ -8,6 +8,7 @@
 //
 // Unlock gate (permanent): Fabled race-unlock skill level >= 1.
 // required = tooltip only while locked ("Requires Prestige N").
+// That number is not in race-lock.json.
 
 var CHANNEL = "dmz_race_locks";
 var SYNC_INTERVAL_TICKS = 40;
@@ -17,6 +18,11 @@ var DEFAULT_RESTRICTED = [
   { id: "ancient_saiyan", skill: "Ancient Saiyan", prestigeLevel: 10 },
   { id: "sento_saiyan", skill: "Sento Saiyan", prestigeLevel: 1 },
 ];
+
+var PRESTIGE_TOOLTIP = {
+  ancient_saiyan: 10,
+  sento_saiyan: 1,
+};
 
 var RaceLockConfig = null;
 try {
@@ -93,10 +99,11 @@ function loadRestrictedFromConfig() {
       var e = list.get(i);
       if (!e || !e.id) continue;
       var skill = e.fabledSkill || e.displayName || String(e.id);
-      var tip = Number(e.prestigeTooltip);
+      var id = String(e.id).toLowerCase();
+      var tip = Number(PRESTIGE_TOOLTIP[id]);
       if (!isFinite(tip) || tip < 0) tip = 1;
       out.push({
-        id: String(e.id).toLowerCase(),
+        id: id,
         skill: String(skill),
         prestigeLevel: tip,
       });

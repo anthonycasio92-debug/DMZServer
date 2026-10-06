@@ -1,8 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.7**.
+What changed from **4.5.147** through **4.6.8**.
 
-The live mods folder gets `LegacyMechanics-4.6.7.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.6.8.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+
+## Race lock config
+
+`race-lock.json` no longer has `prestigeTooltip`. The Java lock still keys off the Fabled skill. The padlock hint stays in the KubeJS race-lock sync script.
 
 ## Inflated max reset
 

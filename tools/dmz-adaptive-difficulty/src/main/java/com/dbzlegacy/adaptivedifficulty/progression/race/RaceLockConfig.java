@@ -130,7 +130,6 @@ public final class RaceLockConfig {
             keep.displayName = entry.displayName == null || entry.displayName.isBlank()
                     ? keep.fabledSkill
                     : entry.displayName.trim();
-            keep.prestigeTooltip = Math.max(0, entry.prestigeTooltip);
             cleaned.add(keep);
         }
         // First boot / empty file → ship the live defaults.
@@ -167,11 +166,6 @@ public final class RaceLockConfig {
         public String fabledSkill = "";
         /** Player-facing name in lock messages. */
         public String displayName = "";
-        /**
-         * Tooltip-only prestige hint for the race-select padlock UI
-         * (KubeJS {@code dmz_race_locks}). Not enforced by the Java lock.
-         */
-        public int prestigeTooltip = 1;
     }
 
     private static final class FileBlob {
@@ -180,17 +174,16 @@ public final class RaceLockConfig {
         static FileBlob defaults() {
             FileBlob blob = new FileBlob();
             blob.restricted = new ArrayList<>();
-            blob.restricted.add(entry("ancient_saiyan", "Ancient Saiyan", "Ancient Saiyan", 10));
-            blob.restricted.add(entry("sento_saiyan", "Sento Saiyan", "Sento Saiyan", 1));
+            blob.restricted.add(entry("ancient_saiyan", "Ancient Saiyan", "Ancient Saiyan"));
+            blob.restricted.add(entry("sento_saiyan", "Sento Saiyan", "Sento Saiyan"));
             return blob;
         }
 
-        private static RestrictedRace entry(String id, String skill, String display, int tip) {
+        private static RestrictedRace entry(String id, String skill, String display) {
             RestrictedRace r = new RestrictedRace();
             r.id = id;
             r.fabledSkill = skill;
             r.displayName = display;
-            r.prestigeTooltip = tip;
             return r;
         }
     }
