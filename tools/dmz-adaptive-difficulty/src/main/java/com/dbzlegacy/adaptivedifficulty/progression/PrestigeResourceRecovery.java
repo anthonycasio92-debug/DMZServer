@@ -83,7 +83,6 @@ public final class PrestigeResourceRecovery {
         }
         try {
             DmzResourcePoolClamp.syncToClient(player);
-            DmzVanillaAttributeSync.reconcile(player);
         } catch (Throwable ignored) {
         }
     }

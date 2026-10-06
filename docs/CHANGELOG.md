@@ -1,12 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.3**.
+What changed from **4.5.147** through **4.6.4**.
 
-The live mods folder gets `LegacyMechanics-4.6.3.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.6.4.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
 
-## HUD max attribute sync
+## Attribute writer removed
 
-Once a second, and immediately after a pool sync, the server writes the vanilla `MAX_ENERGY` and `MAX_STAMINA` attribute bases so the client HUD matches the server's computed max. The write happens only when the base has drifted. Class changes, prestige, and other mods that change the max are covered by the same poll.
+4.6.3 wrote the vanilla max-ki and max-stamina bases from the server's computed max. That max already included those bases, so each pass added them again and ki climbed without a cap. 4.6.4 removes that writer. Resource packets from 4.6.2 stay.
 
 ## Class-change resource sync
 

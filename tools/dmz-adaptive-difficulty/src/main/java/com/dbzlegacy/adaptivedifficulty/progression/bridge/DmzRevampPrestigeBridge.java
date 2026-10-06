@@ -5,7 +5,6 @@ import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.DmzResourcePoolClamp;
 import com.dbzlegacy.adaptivedifficulty.progression.DmzSkillUtil;
-import com.dbzlegacy.adaptivedifficulty.progression.DmzVanillaAttributeSync;
 import com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulPrestigeIntegration;
 import com.dmzrevamp.revamp.prestige.PrestigeSystem;
 import com.dragonminez.common.network.NetworkHandler;
@@ -95,7 +94,6 @@ public final class DmzRevampPrestigeBridge {
         OverhaulPrestigeResourceScale.pulse(player);
         DmzSkillUtil.sync(player);
         DmzResourcePoolClamp.syncToClient(player);
-        DmzVanillaAttributeSync.reconcile(player);
         NetworkHandler.sendToPlayer(new ProgressionSyncS2C(player), player);
     }
 
