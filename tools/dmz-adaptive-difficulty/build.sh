@@ -73,6 +73,27 @@ $ROOT/libraries/org/slf4j/slf4j-api/2.0.1/slf4j-api-2.0.1.jar:\
 $CNPC:\
 $DMZ"
 
+NOEA="${NOEA_JAR:-}"
+if [[ -z "$NOEA" ]]; then
+  for candidate in \
+    /tmp/noea-1.2.0.jar \
+    /tmp/noea.jar \
+    "$ROOT"/mods/Noea-1.2*.jar \
+    "$ROOT"/mods/Noea*.jar
+  do
+    if [[ -f "$candidate" ]]; then
+      NOEA="$candidate"
+      break
+    fi
+  done
+fi
+if [[ ! -f "$NOEA" ]]; then
+  echo "Missing Noea jar for absorption mixin compile (set NOEA_JAR)." >&2
+  exit 1
+fi
+echo "Using Noea jar for compile: $NOEA"
+CP="$CP:$NOEA"
+
 rm -rf "$OUT"
 mkdir -p "$OUT"
 
@@ -271,12 +292,18 @@ merge_onto_base_jar() {
     fi
     for mixin_cls in StatsDataHudPoolMaxMixin StatsDataOverhaulCombatScaleMixin \
         ResourcesPoolClampMixin ResourcesLoadClampMixin \
-        StatsDataRestoreMultiplierClampMixin StatsDataLoadClampMixin StatsDataMixin; do
+        StatsDataRestoreMultiplierClampMixin StatsDataLoadClampMixin StatsDataMixin \
+        LegacyMechanicsMixinPlugin; do
       if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/mixin/${mixin_cls}.class" ]]; then
         cp "$OUT/com/dbzlegacy/adaptivedifficulty/mixin/${mixin_cls}.class" \
           "$merge/com/dbzlegacy/adaptivedifficulty/mixin/${mixin_cls}.class"
       fi
     done
+    if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/mixin/noea/NoeaAbsorptionBonusGateMixin.class" ]]; then
+      mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/mixin/noea"
+      cp "$OUT/com/dbzlegacy/adaptivedifficulty/mixin/noea/NoeaAbsorptionBonusGateMixin.class" \
+        "$merge/com/dbzlegacy/adaptivedifficulty/mixin/noea/NoeaAbsorptionBonusGateMixin.class"
+    fi
     cp "$RES/legacymechanics.mixins.json" "$merge/legacymechanics.mixins.json"
     if [[ -f "$RES/legacymechanics.refmap.json" ]]; then
       cp "$RES/legacymechanics.refmap.json" "$merge/legacymechanics.refmap.json"

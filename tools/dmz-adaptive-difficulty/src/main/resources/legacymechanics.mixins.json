@@ -23,7 +23,8 @@
     "ResourcesDeathTpPenaltyMixin",
     "ResourcesPoolClampMixin",
     "ResourcesLoadClampMixin",
-    "DojoWarSenseMixin"
+    "DojoWarSenseMixin",
+    "noea.NoeaAbsorptionBonusGateMixin"
   ],
   "injectors": {
     "defaultRequire": 1

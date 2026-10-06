@@ -1,8 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.9**.
+What changed from **4.5.147** through **4.6.10**.
 
-The live mods folder gets `LegacyMechanics-4.6.9.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.6.10.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+
+## Majin absorption bonus
+
+Noea's stored melee and ki absorption bonus applies only while absorption is selected and the player is a Majin. When it is not, the read subtracts that stored bonus back out. The stored number itself is left alone. Battle power is unchanged.
 
 ## Race lock removed
 

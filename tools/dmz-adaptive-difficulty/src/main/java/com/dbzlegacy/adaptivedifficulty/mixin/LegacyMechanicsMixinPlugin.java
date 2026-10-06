@@ -27,7 +27,23 @@ public final class LegacyMechanicsMixinPlugin implements IMixinConfigPlugin {
         if (mixinClassName != null && mixinClassName.endsWith("DojoWarSenseMixin")) {
             return senseNetworkPresent();
         }
+        if (mixinClassName != null && mixinClassName.endsWith("NoeaAbsorptionBonusGateMixin")) {
+            return absorptionServicePresent();
+        }
         return dedicatedServer();
+    }
+
+    /** Noea absorption service. Absent on a server that does not run Noea. */
+    private static boolean absorptionServicePresent() {
+        try {
+            Class.forName(
+                    "com.butterjaffa.noeabosses.MajinAbsorptionService",
+                    false,
+                    LegacyMechanicsMixinPlugin.class.getClassLoader());
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
     }
 
     /** Noea's tracking channel. Absent on a server that does not run Noea. */
