@@ -1489,7 +1489,7 @@ def main() -> int:
     check("Revamp prestige does not refill after afterSetCount",
           "refillPoolsLikeOverhaulPrestige" not in bridge
           and "clampToOverhaulPool" in bridge
-          and "StatsSyncS2C" in bridge)
+          and "DmzResourcePoolClamp.syncToClient" in bridge)
     check("stat screen Fabled mirror removed",
           not (SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/StatScreenSync.java").is_file()
           and "actualMaxStamina" in pool_clamp)
