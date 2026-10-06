@@ -1,8 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.2**.
+What changed from **4.5.147** through **4.6.3**.
 
-The live mods folder gets `LegacyMechanics-4.6.2.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.6.3.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+
+## HUD max attribute sync
+
+Once a second, and immediately after a pool sync, the server writes the vanilla `MAX_ENERGY` and `MAX_STAMINA` attribute bases so the client HUD matches the server's computed max. The write happens only when the base has drifted. Class changes, prestige, and other mods that change the max are covered by the same poll.
 
 ## Class-change resource sync
 

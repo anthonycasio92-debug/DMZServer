@@ -3,6 +3,7 @@ package com.dbzlegacy.adaptivedifficulty.character;
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.progression.DmzResourcePoolClamp;
+import com.dbzlegacy.adaptivedifficulty.progression.DmzVanillaAttributeSync;
 import com.dragonminez.common.config.ConfigManager;
 import com.dragonminez.common.config.RaceStatsConfig;
 import com.dragonminez.common.network.NetworkHandler;
@@ -136,6 +137,10 @@ public final class DmzFightingClassStatsSync {
         }
         try {
             NetworkHandler.sendToTrackingEntityAndSelf(new ResourceSyncS2C(player), player);
+        } catch (Throwable ignored) {
+        }
+        try {
+            DmzVanillaAttributeSync.reconcile(player);
         } catch (Throwable ignored) {
         }
         try {
