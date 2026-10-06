@@ -299,10 +299,10 @@ merge_onto_base_jar() {
           "$merge/com/dbzlegacy/adaptivedifficulty/mixin/${mixin_cls}.class"
       fi
     done
-    if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/mixin/noea/NoeaAbsorptionBonusGateMixin.class" ]]; then
+    if [[ -d "$OUT/com/dbzlegacy/adaptivedifficulty/mixin/noea" ]]; then
       mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/mixin/noea"
-      cp "$OUT/com/dbzlegacy/adaptivedifficulty/mixin/noea/NoeaAbsorptionBonusGateMixin.class" \
-        "$merge/com/dbzlegacy/adaptivedifficulty/mixin/noea/NoeaAbsorptionBonusGateMixin.class"
+      cp -a "$OUT/com/dbzlegacy/adaptivedifficulty/mixin/noea/." \
+        "$merge/com/dbzlegacy/adaptivedifficulty/mixin/noea/"
     fi
     cp "$RES/legacymechanics.mixins.json" "$merge/legacymechanics.mixins.json"
     if [[ -f "$RES/legacymechanics.refmap.json" ]]; then

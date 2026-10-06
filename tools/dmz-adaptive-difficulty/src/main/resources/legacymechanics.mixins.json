@@ -24,7 +24,8 @@
     "ResourcesPoolClampMixin",
     "ResourcesLoadClampMixin",
     "DojoWarSenseMixin",
-    "noea.NoeaAbsorptionBonusGateMixin"
+    "noea.NoeaAbsorptionBonusGateMixin",
+    "noea.NoeaTravelSafetyCorpseFixMixin"
   ],
   "injectors": {
     "defaultRequire": 1

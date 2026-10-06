@@ -30,6 +30,9 @@ public final class LegacyMechanicsMixinPlugin implements IMixinConfigPlugin {
         if (mixinClassName != null && mixinClassName.endsWith("NoeaAbsorptionBonusGateMixin")) {
             return absorptionServicePresent();
         }
+        if (mixinClassName != null && mixinClassName.endsWith("NoeaTravelSafetyCorpseFixMixin")) {
+            return travelSafetyPresent();
+        }
         return dedicatedServer();
     }
 
@@ -38,6 +41,19 @@ public final class LegacyMechanicsMixinPlugin implements IMixinConfigPlugin {
         try {
             Class.forName(
                     "com.butterjaffa.noeabosses.MajinAbsorptionService",
+                    false,
+                    LegacyMechanicsMixinPlugin.class.getClassLoader());
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    /** Noea off-world inventory. Absent on a server that does not run Noea. */
+    private static boolean travelSafetyPresent() {
+        try {
+            Class.forName(
+                    "com.butterjaffa.noeabosses.TravelSafetyService",
                     false,
                     LegacyMechanicsMixinPlugin.class.getClassLoader());
             return true;

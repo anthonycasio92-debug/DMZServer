@@ -1,8 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.10**.
+What changed from **4.5.147** through **4.6.11**.
 
-The live mods folder gets `LegacyMechanics-4.6.10.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.6.11.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+
+## Corpses in protected dimensions
+
+Deaths in space, Namek, Beerus' planet, and the other Noea travel dimensions still clear the dropped items and restore the inventory on respawn. The death event is no longer cancelled, so a corpse can spawn. That corpse is empty.
 
 ## Majin absorption bonus
 
