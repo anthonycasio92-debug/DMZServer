@@ -1,8 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.1**.
+What changed from **4.5.147** through **4.6.2**.
 
-The live mods folder gets `LegacyMechanics-4.6.1.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.6.2.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+
+## Class-change resource sync
+
+A fighting-class change now sends `ResourceSyncS2C` with the other class-change packets. That packet carries current and max ki and stamina, so the HUD picks up the new pool caps immediately.
 
 ## Level cap cache
 

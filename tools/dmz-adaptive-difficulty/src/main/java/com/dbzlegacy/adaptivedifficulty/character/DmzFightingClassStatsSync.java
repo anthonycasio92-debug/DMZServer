@@ -8,6 +8,7 @@ import com.dragonminez.common.config.RaceStatsConfig;
 import com.dragonminez.common.network.NetworkHandler;
 import com.dragonminez.common.network.S2C.AppearanceSyncS2C;
 import com.dragonminez.common.network.S2C.ProgressionSyncS2C;
+import com.dragonminez.common.network.S2C.ResourceSyncS2C;
 import com.dragonminez.common.network.S2C.StatsSyncS2C;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.Resources;
@@ -131,6 +132,10 @@ public final class DmzFightingClassStatsSync {
         }
         try {
             NetworkHandler.sendToTrackingEntityAndSelf(new StatsSyncS2C(player), player);
+        } catch (Throwable ignored) {
+        }
+        try {
+            NetworkHandler.sendToTrackingEntityAndSelf(new ResourceSyncS2C(player), player);
         } catch (Throwable ignored) {
         }
         try {
