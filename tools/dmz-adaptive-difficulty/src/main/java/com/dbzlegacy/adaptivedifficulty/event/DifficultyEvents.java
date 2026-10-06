@@ -10,7 +10,6 @@ import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.evolution.CombatGravity;
 import com.dbzlegacy.adaptivedifficulty.evolution.EnemyEvolution;
-import com.dbzlegacy.adaptivedifficulty.progression.DmzVanillaAttributeSync;
 import com.dbzlegacy.adaptivedifficulty.progression.PlayerStatChecker;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionSystem;
 import com.dbzlegacy.adaptivedifficulty.progression.end.EndProgression;
@@ -683,18 +682,8 @@ public final class DifficultyEvents {
 
     @SubscribeEvent
     public void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || !(event.player instanceof ServerPlayer player)) {
-            return;
-        }
-        // Vanilla attribute reconciler for the client HUD (mod-agnostic).
-        // Runs for every player regardless of difficulty gates.
-        if (player.f_19797_ % 20 == 0) {
-            try {
-                DmzVanillaAttributeSync.reconcile(player);
-            } catch (Throwable ignored) {
-            }
-        }
-        if (SystemGate.isDisabled() || !SystemGate.allows(player)) {
+        if (event.phase != TickEvent.Phase.END || !(event.player instanceof ServerPlayer player)
+                || SystemGate.isDisabled() || !SystemGate.allows(player)) {
             return;
         }
         // Level / prestige / transform-power / form-mult poll.
