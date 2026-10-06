@@ -1,8 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.2**.
+What changed from **4.5.147** through **4.6.7**.
 
-The live mods folder gets `LegacyMechanics-4.6.2.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.6.7.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+
+## Inflated max reset
+
+4.6.3 saved huge max-ki and max-stamina bases on the player. 4.6.2 does not rewrite them, so both sides keep showing that number. On login, a base above 100 times the registered default (20, so anything above 2,000) is set back to that default. There is no repeating reconciler.
 
 ## Class-change resource sync
 

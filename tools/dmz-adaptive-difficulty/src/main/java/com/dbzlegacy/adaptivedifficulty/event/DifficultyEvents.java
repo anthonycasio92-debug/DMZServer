@@ -10,6 +10,7 @@ import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.evolution.CombatGravity;
 import com.dbzlegacy.adaptivedifficulty.evolution.EnemyEvolution;
+import com.dbzlegacy.adaptivedifficulty.progression.DmzInflatedAttributeReset;
 import com.dbzlegacy.adaptivedifficulty.progression.PlayerStatChecker;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionSystem;
 import com.dbzlegacy.adaptivedifficulty.progression.end.EndProgression;
@@ -190,6 +191,7 @@ public final class DifficultyEvents {
     @SubscribeEvent
     public void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
+            DmzInflatedAttributeReset.onLogin(player);
             var data = DifficultyCache.data(player);
             // Every server boot: personal difficulty starts OFF for everyone.
             // First login that boot forces it; reconnects later in the same uptime keep the toggle.
