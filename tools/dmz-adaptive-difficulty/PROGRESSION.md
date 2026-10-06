@@ -107,7 +107,7 @@ Staff `/skills` has no special CNPC name hook — use an NPC interaction command
 
 | Flag | Default | Module |
 |------|---------|--------|
-| `enableRaceLock` | true | Race lock |
+| `enableRaceLock` | false | Retired. Race lock is removed and the flag stays off. |
 | `enableYardrat` | true | Yardrat race / skills |
 | `enableSpiritualistKi` | true | Spiritualist Ki Control |
 | `enableAndroidConversion` | true | Android convert + remove |

@@ -1,5 +1,4 @@
-// Client: feed SDU RaceLockClient so race Select shows padlock + blocks click.
-// SDU tooltip: "Requires Prestige N"
+// Client: apply dmz_race_locks. The server now sends an empty list so no race is padlocked.
 
 var CHANNEL = "dmz_race_locks";
 

@@ -231,10 +231,19 @@ merge_onto_base_jar() {
       "$merge/com/dbzlegacy/adaptivedifficulty/progression/race/AndroidConversion.class"
   fi
   if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/progression/race/RaceLockConfig.class" ]]; then
+    rm -f "$merge/com/dbzlegacy/adaptivedifficulty/progression/race/RaceLockConfig\$"*.class
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/race/RaceLockConfig.class" \
       "$merge/com/dbzlegacy/adaptivedifficulty/progression/race/RaceLockConfig.class"
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/race/RaceLockConfig\$"*.class \
-      "$merge/com/dbzlegacy/adaptivedifficulty/progression/race/"
+      "$merge/com/dbzlegacy/adaptivedifficulty/progression/race/" 2>/dev/null || true
+  fi
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/progression/race/RaceLock.class" ]]; then
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/race/RaceLock.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/progression/race/RaceLock.class"
+  fi
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/progression/ProgressionConfig.class" ]]; then
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/ProgressionConfig.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/progression/ProgressionConfig.class"
   fi
   if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/progression/ProgressionModuleCatalog.class" ]]; then
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/ProgressionModuleCatalog.class" \

@@ -63,7 +63,7 @@ public final class ProgressionGuiApi {
                 "§8Pages: main · skills · tp · race · combat · end · utility · economy · admin · help",
                 "§8Economy: staff free Ancient Coin costs — §f/lm §7→ Progression → Ancient Coins",
                 "§8Flags: potential boost bio",
-                "§8       racelock yardrat spiritualist android kiweapons piercing dot apothic",
+                "§8       yardrat spiritualist android kiweapons piercing dot apothic",
                 "§8       end endportal shadow statchecker");
     }
 
@@ -497,7 +497,6 @@ public final class ProgressionGuiApi {
         out.put("flag_boost", c.enableGlobalTpBoost ? "true" : "false");
         out.put("flag_bio", c.enableBioAndroid ? "true" : "false");
         // Race & Form
-        out.put("flag_racelock", c.enableRaceLock ? "true" : "false");
         out.put("flag_yardrat", c.enableYardrat ? "true" : "false");
         out.put("flag_spiritualist", c.enableSpiritualistKi ? "true" : "false");
         out.put("flag_android", c.enableAndroidConversion ? "true" : "false");
@@ -544,10 +543,9 @@ public final class ProgressionGuiApi {
                     flagLine("Bio-Android Absorb", "flag_bio"));
             case "race" -> categoryLines(
                     "§b§lRace & Form",
-                    "§7Race lock, Yardrat, Spiritualist Ki,",
-                    "§7and Android conversion ports.",
+                    "§7Yardrat, Spiritualist Ki,",
+                    "§7and Android conversion.",
                     ph,
-                    flagLine("DMZ Race Lock", "flag_racelock"),
                     flagLine("Yardrat", "flag_yardrat"),
                     flagLine("Spiritualist Ki", "flag_spiritualist"),
                     flagLine("Android Conversion", "flag_android"));
@@ -686,7 +684,6 @@ public final class ProgressionGuiApi {
         lore.add(flag("boost", ph));
         lore.add(flag("bio", ph));
         lore.add("§b§lRace & Form");
-        lore.add(flag("racelock", ph));
         lore.add(flag("yardrat", ph));
         lore.add(flag("spiritualist", ph));
         lore.add(flag("android", ph));

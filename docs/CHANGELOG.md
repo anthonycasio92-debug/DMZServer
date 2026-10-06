@@ -1,12 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.8**.
+What changed from **4.5.147** through **4.6.9**.
 
-The live mods folder gets `LegacyMechanics-4.6.8.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.6.9.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
 
-## Race lock config
+## Race lock removed
 
-`race-lock.json` no longer has `prestigeTooltip`. The Java lock still keys off the Fabled skill. The padlock hint stays in the KubeJS race-lock sync script.
+No race is blocked, reset, or padlocked. `race-lock.json` is deleted on load. The race-select sync sends an empty lock list so an old padlock clears. The staff Race Lock toggle is gone. Stuck saga difficulty still clears while character creation is incomplete.
 
 ## Inflated max reset
 

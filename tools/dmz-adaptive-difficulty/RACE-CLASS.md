@@ -11,7 +11,7 @@ When `enableRaceClassSync` is on, LegacyMechanics:
 
 ## Purchase gates (not auto-granted)
 
-Skills listed as `fabledSkill` in `config/legacymechanics/race-lock.json` (Ancient Saiyan, Sento Saiyan by default) are **never** auto-granted — players still buy them from the Prestige tree. Race Lock keeps enforcing those.
+Race lock no longer blocks a race or resets a character. Prestige skills are still bought from the Prestige tree; this sync does not grant those.
 
 ## Toggle
 

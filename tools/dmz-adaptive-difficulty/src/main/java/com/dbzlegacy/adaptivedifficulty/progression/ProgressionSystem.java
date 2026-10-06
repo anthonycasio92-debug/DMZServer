@@ -314,7 +314,7 @@ public final class ProgressionSystem {
             case "potential", "enablepotential" -> cfg.enablePotential = on;
             case "boost", "globaltpboost", "enableglobaltpboost" -> cfg.enableGlobalTpBoost = on;
             case "bio", "bioandroid", "enablebioandroid" -> cfg.enableBioAndroid = on;
-            case "racelock", "lock", "enableracelock" -> cfg.enableRaceLock = on;
+            case "racelock", "lock", "enableracelock" -> cfg.enableRaceLock = false;
             case "yardrat", "enableyardrat" -> cfg.enableYardrat = on;
             case "spiritualist", "spirit", "enablespiritualistki" -> cfg.enableSpiritualistKi = on;
             case "android", "enableandroidconversion" -> cfg.enableAndroidConversion = on;
