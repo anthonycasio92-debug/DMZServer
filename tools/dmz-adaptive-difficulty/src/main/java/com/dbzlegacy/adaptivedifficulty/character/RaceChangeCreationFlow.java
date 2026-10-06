@@ -2,6 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.character;
 
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.progression.DmzResourcePoolClamp;
+import com.dbzlegacy.adaptivedifficulty.progression.DmzVanillaAttributeSync;
 import com.dbzlegacy.adaptivedifficulty.progression.race.AndroidConversion;
 import com.dragonminez.common.network.NetworkHandler;
 import com.dragonminez.common.network.S2C.ProgressionSyncS2C;
@@ -155,6 +156,7 @@ public final class RaceChangeCreationFlow {
         }
         try {
             DmzResourcePoolClamp.syncToClient(player);
+            DmzVanillaAttributeSync.reconcile(player);
         } catch (Throwable ignored) {
         }
     }
