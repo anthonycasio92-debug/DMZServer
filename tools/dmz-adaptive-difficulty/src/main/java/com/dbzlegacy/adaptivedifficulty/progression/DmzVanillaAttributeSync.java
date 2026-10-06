@@ -31,6 +31,11 @@ public final class DmzVanillaAttributeSync {
 
     /** Skip writes below this delta to avoid spamming vanilla attribute syncs. */
     private static final double EPSILON = 0.5d;
+    /**
+     * 4.6.3 stored the whole attribute value as the base, so ki climbed into the millions.
+     * A base more than this many times the registered default (20 → 2,000) is that damage.
+     */
+    private static final double INFLATED_BASE_MULTIPLE = 100d;
 
     /**
      * Reconcile both attributes for one player. Cheap and idempotent —
@@ -53,6 +58,21 @@ public final class DmzVanillaAttributeSync {
 
     private static void syncOne(ServerPlayer player, StatsData data, boolean energy) {
         try {
+            AttributeInstance inst;
+            try {
+                inst = player.m_21051_(
+                        (energy ? MainAttributes.MAX_ENERGY : MainAttributes.MAX_STAMINA).get());
+            } catch (Throwable t) {
+                return;
+            }
+            if (inst == null) {
+                return;
+            }
+            // Inflated bases are saved in player NBT. Reset and wait for the next poll,
+            // which reads getMaxEnergy() against the clean default.
+            if (resetInflatedBase(inst)) {
+                return;
+            }
             float targetMax = energy ? data.getMaxEnergy() : data.getMaxStamina();
             if (!Float.isFinite(targetMax) || targetMax <= 0f) {
                 return;
@@ -83,16 +103,6 @@ public final class DmzVanillaAttributeSync {
             if (!Double.isFinite(targetSecondary) || targetSecondary < 0d) {
                 return;
             }
-            AttributeInstance inst;
-            try {
-                inst = player.m_21051_(
-                        (energy ? MainAttributes.MAX_ENERGY : MainAttributes.MAX_STAMINA).get());
-            } catch (Throwable t) {
-                return;
-            }
-            if (inst == null) {
-                return;
-            }
             // getMaxEnergy()/getMaxStamina() read getValue() via getSecondaryAttributeValue.
             // Comparing against getBaseValue() stacks modifiers into the base every pass.
             double currentValue;
@@ -116,6 +126,24 @@ public final class DmzVanillaAttributeSync {
             }
             inst.m_22100_(newBase);
         } catch (Throwable ignored) {
+        }
+    }
+
+    /** @return true when the base was reset and this pass must not reconcile */
+    private static boolean resetInflatedBase(AttributeInstance inst) {
+        try {
+            double registered = inst.m_22099_().m_22082_();
+            if (!Double.isFinite(registered) || registered <= 0d) {
+                return false;
+            }
+            double base = inst.m_22115_();
+            if (!Double.isFinite(base) || base <= registered * INFLATED_BASE_MULTIPLE) {
+                return false;
+            }
+            inst.m_22100_(registered);
+            return true;
+        } catch (Throwable ignored) {
+            return false;
         }
     }
 
