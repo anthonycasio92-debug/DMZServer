@@ -37,7 +37,7 @@ def main() -> int:
     check(
         "DmzClassCommandApply sets class and syncs without raising pools",
         "setCharacterClass" in apply
-        and "StatsSyncS2C" in apply
+        and "DmzResourcePoolClamp.syncToClient" in apply
         and "restoreMultiplierGains" not in apply
         and "DmzResourcePoolClamp.clamp" in apply,
         errors,

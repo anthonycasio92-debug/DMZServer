@@ -99,6 +99,11 @@ merge_onto_base_jar() {
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/rival/RivalSystem.class" \
       "$merge/com/dbzlegacy/adaptivedifficulty/rival/RivalSystem.class"
   fi
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/rival/RivalFusion.class" ]]; then
+    mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/rival"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/rival/RivalFusion.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/rival/RivalFusion.class"
+  fi
   if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/gui/RivalGuiApi.class" ]]; then
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/gui/RivalGuiApi.class" \
       "$merge/com/dbzlegacy/adaptivedifficulty/gui/RivalGuiApi.class"
@@ -185,7 +190,8 @@ merge_onto_base_jar() {
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/character/CharacterServicesSystem.class" \
       "$merge/com/dbzlegacy/adaptivedifficulty/character/CharacterServicesSystem.class"
   fi
-  for class in CharacterServicesAccess CharacterServicesPermissionBootstrap DmzFightingClassStatsSync; do
+  for class in CharacterServicesAccess CharacterServicesPermissionBootstrap DmzFightingClassStatsSync \
+      DmzClassCommandApply RaceChangeCreationFlow; do
     if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/character/${class}.class" ]]; then
       mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/character"
       cp "$OUT/com/dbzlegacy/adaptivedifficulty/character/${class}.class" \
@@ -236,7 +242,7 @@ merge_onto_base_jar() {
       "$merge/com/dbzlegacy/adaptivedifficulty/mixin"
     for pool_cls in DmzResourcePoolClamp LmOverhaulPrestigeIntegration ProgressionSystem \
         StaminaRegenGuard StatsDataLoadContext PersonalLevelCapMirror LmOverhaulCapMath \
-        LmStatsDataAccess; do
+        LmStatsDataAccess PrestigeResourceRecovery; do
       if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/progression/${pool_cls}.class" ]]; then
         cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/${pool_cls}.class" \
           "$merge/com/dbzlegacy/adaptivedifficulty/progression/${pool_cls}.class"

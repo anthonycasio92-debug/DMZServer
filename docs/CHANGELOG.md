@@ -6,7 +6,7 @@ The live mods folder gets `LegacyMechanics-4.6.2.jar` on deploy. The running ser
 
 ## Class-change resource sync
 
-A fighting-class change now sends `ResourceSyncS2C` with the other class-change packets. That packet carries current and max ki and stamina, so the HUD picks up the new pool caps immediately.
+Paths that change max ki or stamina now send `ResourceSyncS2C` as well as the stats packet. A fighting-class change sends it next to the other class-change packets. Class commands, race creation, prestige count changes, prestige recovery, and rival fusion go through `DmzResourcePoolClamp.syncToClient`, which sends both packets. `DmzSkillUtil.sync` stays stats-only.
 
 ## Level cap cache
 

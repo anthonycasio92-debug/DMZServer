@@ -2,9 +2,8 @@ package com.dbzlegacy.adaptivedifficulty.rival;
 
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
+import com.dbzlegacy.adaptivedifficulty.progression.DmzResourcePoolClamp;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
-import com.dragonminez.common.network.NetworkHandler;
-import com.dragonminez.common.network.S2C.StatsSyncS2C;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.BonusStats;
 import com.dragonminez.common.stats.character.Status;
@@ -186,7 +185,7 @@ public final class RivalFusion {
 
     private static void sync(ServerPlayer player) {
         try {
-            NetworkHandler.sendToTrackingEntityAndSelf(new StatsSyncS2C(player), player);
+            DmzResourcePoolClamp.syncToClient(player);
         } catch (Throwable ignored) {
         }
     }

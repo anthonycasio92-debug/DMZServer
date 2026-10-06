@@ -2,8 +2,6 @@ package com.dbzlegacy.adaptivedifficulty.progression;
 
 import com.dbzlegacy.adaptivedifficulty.progression.bridge.OverhaulPrestigeResourceScale;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
-import com.dragonminez.common.network.NetworkHandler;
-import com.dragonminez.common.network.S2C.StatsSyncS2C;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.Cooldowns;
 import net.minecraft.server.MinecraftServer;
@@ -84,7 +82,7 @@ public final class PrestigeResourceRecovery {
         } catch (Throwable ignored) {
         }
         try {
-            NetworkHandler.sendToTrackingEntityAndSelf(new StatsSyncS2C(player), player);
+            DmzResourcePoolClamp.syncToClient(player);
         } catch (Throwable ignored) {
         }
     }

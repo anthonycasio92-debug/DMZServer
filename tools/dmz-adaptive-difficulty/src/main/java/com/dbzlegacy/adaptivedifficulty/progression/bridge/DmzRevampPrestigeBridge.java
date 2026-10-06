@@ -9,7 +9,6 @@ import com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulPrestigeIntegratio
 import com.dmzrevamp.revamp.prestige.PrestigeSystem;
 import com.dragonminez.common.network.NetworkHandler;
 import com.dragonminez.common.network.S2C.ProgressionSyncS2C;
-import com.dragonminez.common.network.S2C.StatsSyncS2C;
 import com.dragonminez.common.stats.StatsData;
 import java.lang.reflect.Method;
 import java.util.UUID;
@@ -94,7 +93,7 @@ public final class DmzRevampPrestigeBridge {
         DmzResourcePoolClamp.clampToOverhaulPool(data);
         OverhaulPrestigeResourceScale.pulse(player);
         DmzSkillUtil.sync(player);
-        NetworkHandler.sendToTrackingEntityAndSelf(new StatsSyncS2C(player), player);
+        DmzResourcePoolClamp.syncToClient(player);
         NetworkHandler.sendToPlayer(new ProgressionSyncS2C(player), player);
     }
 
