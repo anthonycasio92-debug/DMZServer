@@ -19,7 +19,7 @@ public final class DmzMohistMeleeFix {
 
     public DmzMohistMeleeFix() {
         LOGGER.info(
-                "[{}] v2.12.22: Noea experimental grab hard-disabled + ghost party heal / saga guard",
+                "[{}] v2.12.23: Noea grab disabled; flow shockwave leaves blocks intact",
                 MOD_ID
         );
         ReachRepairEvents.register();

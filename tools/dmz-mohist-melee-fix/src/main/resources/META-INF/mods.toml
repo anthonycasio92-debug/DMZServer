@@ -4,7 +4,7 @@ license = "MIT"
 
 [[mods]]
 modId = "dmz_mohist_melee_fix"
-version = "2.12.22"
+version = "2.12.23"
 displayName = "DMZ Mohist Melee Fix"
 authors = "DBZ Legacy Reborn"
 description = '''
@@ -24,6 +24,7 @@ Clears ghost party UI state when PartyManager SavedData is solo but quest NBT
 still has an activePartyId (leave/login heal + LeavePartyC2S mixin).
 No ki_damage writes / damage redirects.
 Hard-disables Dragon Block Noea experimental grab (Z grab/throw) when noeabosses is installed.
+Noea flow-state shockwaves still play visuals and knockback, but destroyRing no longer breaks blocks.
 '''
 
 [[mixins]]

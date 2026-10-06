@@ -1,5 +1,13 @@
 # Mohist M1: animation but no damage
 
+## Fix v2.12.23 — Noea flow shockwave leaves blocks intact (Oct 2026)
+
+`mods/dmz_mohist_melee_fix-2.12.23.jar`
+
+`FlowShockwaveNoDestroyMixin` cancels `FlowShockwaveService.destroyRing` and returns 0. Shockwave visuals and knockback still run. Terrain is not carved.
+
+Requires a **full server restart** after replacing the melee fix jar (Forge mixins).
+
 ## Fix v2.12.22 — hard-disable Noea experimental grab (Oct 2026)
 
 `mods/dmz_mohist_melee_fix-2.12.22.jar`

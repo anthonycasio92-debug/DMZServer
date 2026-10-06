@@ -35,7 +35,7 @@ fi
 SRC="$(cd "$(dirname "$0")" && pwd)/src/main/java"
 RES="$(cd "$(dirname "$0")" && pwd)/src/main/resources"
 OUT="$(cd "$(dirname "$0")" && pwd)/build/classes"
-JAR="$ROOT/mods/dmz_mohist_melee_fix-2.12.22.jar"
+JAR="$ROOT/mods/dmz_mohist_melee_fix-2.12.23.jar"
 
 rm -f "$ROOT"/mods/dmz_mohist_melee_fix-*.jar
 rm -f "$ROOT"/dmz_mohist_melee_fix-*.jar
@@ -70,6 +70,7 @@ fi
 NOEA="${NOEA_JAR:-}"
 if [[ -z "$NOEA" ]]; then
   for candidate in \
+    /tmp/noea.jar \
     /tmp/noea/Noea_Build-1.1.5.jar \
     /tmp/noea/NoeaBosses*.jar \
     "$ROOT/mods"/Noea*.jar \
@@ -106,6 +107,6 @@ echo '{}' > /tmp/dmz_mohist_melee_fix.refmap.json
     -C "$RES" pack.mcmeta
 )
 jar uf "$JAR" -C /tmp dmz_mohist_melee_fix.refmap.json
-cp -f "$JAR" "$ROOT/dmz_mohist_melee_fix-2.12.22.jar"
+cp -f "$JAR" "$ROOT/dmz_mohist_melee_fix-2.12.23.jar"
 echo "Built $JAR"
 jar tf "$JAR"
