@@ -14,7 +14,8 @@ public final class CnpcLmAdminGui {
             CnpcGuiSupport.denyToHub(player, "§cStaff only.");
             return;
         }
-        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_ADMIN, CnpcGuiSupport.W, 280, (pl, gui) -> paintMain(pl, gui));
+        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_ADMIN, CnpcGuiSupport.W,
+                CnpcGuiSupport.window(280), (pl, gui) -> paintMain(pl, gui));
     }
 
     private static void paintMain(ServerPlayer player, ICustomGui gui) {

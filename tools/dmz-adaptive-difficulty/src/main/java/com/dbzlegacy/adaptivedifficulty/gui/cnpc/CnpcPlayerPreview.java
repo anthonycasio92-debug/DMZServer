@@ -22,7 +22,9 @@ public final class CnpcPlayerPreview {
     /** Gap between button columns and the preview slot. */
     public static final int SLOT_GAP = 8;
 
+    /** Tuned for a 1.8-block player inside the 88×110 slot. */
     private static final float PREVIEW_SCALE = 0.78f;
+    private static final float REF_PLAYER_HEIGHT = 1.8f;
 
     private CnpcPlayerPreview() {}
 
@@ -72,9 +74,10 @@ public final class CnpcPlayerPreview {
                 display.setVisible(false);
                 return;
             }
-            tuneDisplay(display, true);
+            float scale = previewScaleFor(player);
+            tuneDisplay(display, true, scale);
             display.setSize(SLOT_W, SLOT_H);
-            display.setScale(PREVIEW_SCALE);
+            display.setScale(scale);
             display.setBackground(false);
             try {
                 display.setFollowingCursor(true);
@@ -117,9 +120,10 @@ public final class CnpcPlayerPreview {
                 }
             }
 
-            tuneDisplay(display, liveSync);
+            float scale = previewScaleFor(player);
+            tuneDisplay(display, liveSync, scale);
             display.setSize(SLOT_W, SLOT_H);
-            display.setScale(PREVIEW_SCALE);
+            display.setScale(scale);
             display.setBackground(false);
             try {
                 display.setFollowingCursor(true);
@@ -162,12 +166,30 @@ public final class CnpcPlayerPreview {
         }
     }
 
-    private static void tuneDisplay(IEntityDisplay display, boolean liveSync) {
+    /**
+     * Scale the slot model to the player's real height. A giant form uses a smaller scale so it
+     * stays inside the slot; a short form uses a larger one so it does not disappear.
+     */
+    private static float previewScaleFor(ServerPlayer player) {
+        float bbHeight = REF_PLAYER_HEIGHT;
+        try {
+            if (player != null) {
+                bbHeight = Math.max(0.6f, player.m_20206_());
+            }
+        } catch (Throwable ignored) {
+        }
+        float scale = PREVIEW_SCALE * (REF_PLAYER_HEIGHT / bbHeight);
+        return Math.min(1.0f, Math.max(0.2f, scale));
+    }
+
+    /** {@code scaleRatio} keeps the feet planted when the model is larger or smaller than 1.8 blocks. */
+    private static void tuneDisplay(IEntityDisplay display, boolean liveSync, float scale) {
+        float scaleRatio = PREVIEW_SCALE <= 0f ? 1f : scale / PREVIEW_SCALE;
         try {
             var x = display.getClass().getField("offsetX");
             var y = display.getClass().getField("offsetY");
             x.setFloat(display, 0f);
-            y.setFloat(display, liveSync ? 4f : 8f);
+            y.setFloat(display, (liveSync ? 4f : 8f) * scaleRatio);
         } catch (Throwable ignored) {
         }
     }

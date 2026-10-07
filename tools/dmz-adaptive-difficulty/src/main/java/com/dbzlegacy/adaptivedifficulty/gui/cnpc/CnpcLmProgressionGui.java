@@ -26,11 +26,11 @@ public final class CnpcLmProgressionGui {
             return;
         }
         int h = switch (p) {
-            case "android_convert", "android_remove" -> 320;
+            case "android_convert", "android_remove" -> CnpcGuiSupport.window(320);
             case "skills", "tp", "race", "combat", "end", "utility", "status", "shop" ->
                     sectionHeight(player, p);
             case "flags" -> flagsPageHeight();
-            default -> H_MAIN;
+            default -> CnpcGuiSupport.window(H_MAIN);
         };
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_PROGRESSION, CnpcGuiSupport.W, h,
                 (pl, gui) -> paint(pl, gui, p));

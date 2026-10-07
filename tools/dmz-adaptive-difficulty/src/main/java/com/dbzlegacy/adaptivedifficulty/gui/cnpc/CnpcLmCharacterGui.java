@@ -30,7 +30,8 @@ public final class CnpcLmCharacterGui {
             return;
         }
         if ("reskin_confirm".equals(p)) {
-            CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CHARACTER, CnpcGuiSupport.W, 320,
+            CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CHARACTER, CnpcGuiSupport.W,
+                    CnpcGuiSupport.window(320),
                     (pl, gui) -> paintReskinConfirm(pl, gui));
             return;
         }
@@ -43,8 +44,8 @@ public final class CnpcLmCharacterGui {
         }
         int height = switch (p) {
             case "race", "class" -> CnpcGuiSupport.suggestHeight(280);
-            case "reskin" -> 320;
-            default -> H_MAIN;
+            case "reskin" -> CnpcGuiSupport.window(320);
+            default -> CnpcGuiSupport.window(H_MAIN);
         };
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CHARACTER, CnpcGuiSupport.W, height, (pl, gui) -> {
             switch (p) {
@@ -144,7 +145,8 @@ public final class CnpcLmCharacterGui {
         }
         int keepSelected = selected;
         String confirmArg = raceId + ":" + keepSelected;
-        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CHARACTER, CnpcGuiSupport.W, 420, (pl, gui) -> {
+        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CHARACTER, CnpcGuiSupport.W,
+                CnpcGuiSupport.window(420), (pl, gui) -> {
             int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcGuiStyle.subPage("§f", "Character", "Confirm race"),
                     "§7Becoming §f" + titleRace(raceId) + " §8· §7keep §f" + keepSelected + "%");
             int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintReadOnlyScroll(gui, infoY,
@@ -191,7 +193,8 @@ public final class CnpcLmCharacterGui {
     }
 
     private static void paintClassConfirm(ServerPlayer player, String classId) {
-        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CHARACTER, CnpcGuiSupport.W, 320, (pl, gui) -> {
+        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CHARACTER, CnpcGuiSupport.W,
+                CnpcGuiSupport.window(320), (pl, gui) -> {
             ServerPlayer subject = CnpcGuiSupport.target(pl);
             int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcGuiStyle.subPage("§f", "Character", "Confirm class"),
                     CnpcGuiStyle.HINT_REVIEW_PAY);

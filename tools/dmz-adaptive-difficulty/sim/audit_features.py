@@ -1771,6 +1771,31 @@ def main() -> int:
           and "Duel requests" in rival_records
           and "Declare invites" in rival_records)
 
+    print("\n=== CNPC layout fit (4.6.25) ===")
+    preview = read(cnpc_dir / "CnpcPlayerPreview.java")
+    feedback = read(cnpc_dir / "CnpcMenuFeedback.java")
+    ui_fit = read(cnpc_dir / "CnpcUiFit.java")
+    layout_support = read(cnpc_dir / "CnpcGuiSupport.java")
+    check("preview scale follows the player's height",
+          "previewScaleFor" in preview
+          and "m_20206_()" in preview
+          and "REF_PLAYER_HEIGHT = 1.8f" in preview
+          and "offsetY" in preview
+          and "scale / PREVIEW_SCALE" in preview)
+    check("pending notice reserves window height",
+          "FLASH_MAX_H = 56" in layout_support
+          and "flashReserve" in layout_support
+          and "height + flashReserve" in layout_support
+          and "boolean hasPending" in feedback
+          and "pendingLineCount" in feedback
+          and "available < 48" in layout_support
+          and "window(" in read(cnpc_dir / "CnpcLmDifficultyGui.java")
+          and "window(" in read(cnpc_dir / "CnpcLmRivalGui.java")
+          and "window(" in read(cnpc_dir / "CnpcLmSparGui.java")
+          and "window(" in read(cnpc_dir / "CnpcLmCharacterGui.java"))
+    check("compressed menus are logged",
+          "compressed to" in ui_fit and "0.9f" in ui_fit)
+
     print("\n=== CNPC list scroll (4.6.24) ===")
     support = read(cnpc_dir / "CnpcGuiSupport.java")
     scroll_start = support.find("public static IScroll scroll(")

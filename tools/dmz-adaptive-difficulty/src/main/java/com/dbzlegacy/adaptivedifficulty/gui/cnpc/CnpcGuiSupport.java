@@ -51,6 +51,8 @@ public final class CnpcGuiSupport {
     private static final int SCROLL_ROW_H = 14;
     /** Space reserved at bottom for nav / close row (pixels). */
     public static final int FOOTER_RESERVE = 48;
+    /** Notice band: three lines plus padding. Added only when a notice is waiting. */
+    public static final int FLASH_MAX_H = 56;
 
     /** Reserved widget ids — one role per screen; never reuse on the same gui instance. */
     public static final int ID_TITLE = 1;
@@ -121,7 +123,7 @@ public final class CnpcGuiSupport {
     }
 
     public static void show(ServerPlayer player, int guiId, Painter painter) {
-        showSized(player, guiId, W, H, painter);
+        showSized(player, guiId, W, window(H), painter);
     }
 
     public static void showSized(ServerPlayer player, int guiId, int width, int height, Painter painter) {
@@ -131,7 +133,8 @@ public final class CnpcGuiSupport {
             return;
         }
         try {
-            int[] fitted = CnpcUiFit.fit(ip, width, height);
+            int designed = height + flashReserve(player);
+            int[] fitted = CnpcUiFit.fit(ip, width, designed);
             ICustomGui gui = NpcAPI.Instance().createCustomGui(guiId, fitted[0], fitted[1], false, ip);
             gui.setClosesOnEsc(true);
             painter.paint(player, gui);
@@ -186,6 +189,19 @@ public final class CnpcGuiSupport {
         CnpcLmHubGui.open(player, "main");
     }
 
+    /** Pixels to add to a window when a notice is waiting. Does not consume the notice. */
+    public static int flashReserve(ServerPlayer player) {
+        return CnpcMenuFeedback.hasPending(player) ? FLASH_MAX_H : 0;
+    }
+
+    /**
+     * Clamp a designed window the same way {@link #suggestHeight} does.
+     * A pending notice is added later in {@link #showSized}.
+     */
+    public static int window(int designedHeight) {
+        return suggestHeight(designedHeight - FOOTER_RESERVE - 8);
+    }
+
     /**
      * Max list scroll height that fits above footer rows. {@code rowsBelowList} = button rows under
      * the list (actions + nav, or nav only).
@@ -196,7 +212,13 @@ public final class CnpcGuiSupport {
         }
         int rows = Math.max(1, rowsBelowList);
         int maxBottom = gui.getHeight() - FOOTER_RESERVE - rows * ROW_STEP - 4;
-        return Math.max(48, Math.min(SCROLL_LIST_H, maxBottom - listY));
+        int available = maxBottom - listY;
+        if (available < 48) {
+            // Not enough room — the window should have reserved the notice band.
+            // Keep a minimum and let compressToWindow handle the rest.
+            return 48;
+        }
+        return Math.min(SCROLL_LIST_H, available);
     }
 
     /** Nav row Y after a scroll list. {@code extraActionRows} = full button rows above nav. */

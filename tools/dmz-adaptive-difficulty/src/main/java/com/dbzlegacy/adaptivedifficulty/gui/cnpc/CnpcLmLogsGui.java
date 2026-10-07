@@ -14,7 +14,8 @@ public final class CnpcLmLogsGui {
             CnpcGuiSupport.denyToHub(player, "§cStaff only.");
             return;
         }
-        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_LOGS, CnpcGuiSupport.W, 280, (pl, gui) -> paintMain(pl, gui));
+        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_LOGS, CnpcGuiSupport.W,
+                CnpcGuiSupport.window(280), (pl, gui) -> paintMain(pl, gui));
     }
 
     private static void paintMain(ServerPlayer player, ICustomGui gui) {

@@ -30,10 +30,10 @@ public final class CnpcLmSparGui {
             openPickConfirm(player, raw.substring("pick_confirm:".length()).trim());
             return;
         }
-        int height = switch (lower) {
+        int height = CnpcGuiSupport.window(switch (lower) {
             case "stats" -> 420;
             default -> (lower.startsWith("pick_") || dojoTab(lower) != null) ? 440 : H;
-        };
+        });
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_SPAR, CnpcGuiSupport.W, height, (pl, gui) -> {
             if (lower.startsWith("top_")) {
                 paintTop(pl, gui, lower.substring(4).trim());
@@ -170,7 +170,7 @@ public final class CnpcLmSparGui {
         boolean outgoing = "OUT".equalsIgnoreCase(dir);
         String who = CnpcGuiSupport.humanizePickerArg(picker);
         String pickerFinal = picker;
-        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_SPAR, CnpcGuiSupport.W, 300, (pl, gui) -> {
+        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_SPAR, CnpcGuiSupport.W, CnpcGuiSupport.window(300), (pl, gui) -> {
             int infoY = CnpcGuiSupport.paintHeader(pl, gui,
                     CnpcGuiStyle.subPage("§b", "Sparring", "Training bond invite"), "§f" + who);
             List<String> body = outgoing
@@ -208,7 +208,7 @@ public final class CnpcLmSparGui {
         String who = "mentor".equals(action) && "leave".equalsIgnoreCase(targetArg)
                 ? "Your master"
                 : CnpcGuiSupport.humanizePickerArg(targetArg);
-        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_SPAR, CnpcGuiSupport.W, 280, (pl, gui) -> {
+        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_SPAR, CnpcGuiSupport.W, CnpcGuiSupport.window(280), (pl, gui) -> {
             int infoY = CnpcGuiSupport.paintHeader(pl, gui, copy[0], "§f" + who);
             int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of(copy[1]), 3));
             row += 8;
@@ -385,7 +385,7 @@ public final class CnpcLmSparGui {
     }
 
     private static void openDojoWarDecide(ServerPlayer player, String pickerArg) {
-        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_SPAR, CnpcGuiSupport.W, 300, (pl, gui) -> {
+        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_SPAR, CnpcGuiSupport.W, CnpcGuiSupport.window(300), (pl, gui) -> {
             int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcGuiStyle.subPage("§b", "Sparring", "Dojo war request"),
                     "§f" + CnpcGuiSupport.humanizePickerArg(pickerArg));
             int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of(

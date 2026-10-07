@@ -38,7 +38,8 @@ public final class CnpcLmDifficultyGui {
         String p = raw.toLowerCase(Locale.ROOT);
         if (p.startsWith("title_detail:")) {
             String titleId = raw.substring("title_detail:".length()).trim();
-            CnpcGuiSupport.showSized(player, CnpcLmGui.ID_DIFFICULTY, CnpcGuiSupport.W, 320, (pl, gui) ->
+            CnpcGuiSupport.showSized(player, CnpcLmGui.ID_DIFFICULTY, CnpcGuiSupport.W,
+                    CnpcGuiSupport.window(320), (pl, gui) ->
                     paintTitleDetail(pl, gui, titleId));
             return;
         }
@@ -46,13 +47,13 @@ public final class CnpcLmDifficultyGui {
             p = "main";
         }
         String pageFinal = p;
-        int height = switch (pageFinal) {
+        int height = CnpcGuiSupport.window(switch (pageFinal) {
             case "stats", "statistics", "details" -> 340;
             case "titles", "title" -> 360;
             case "end_dragon", "dragon", "summon_dragon" -> 340;
             case "admin" -> 300;
             default -> H;
-        };
+        });
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_DIFFICULTY, CnpcGuiSupport.W, height, (pl, gui) -> {
             switch (pageFinal) {
                 case "tiers", "buy", "tier", "purchase", "unlock", "adjust", "change", "set", "lower" ->

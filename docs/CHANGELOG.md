@@ -1,8 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.24**.
+What changed from **4.5.147** through **4.6.25**.
 
-The live mods folder gets `LegacyMechanics-4.6.24.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.6.25.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+
+## Menu layout
+
+The character preview shrinks when you are larger than a normal player, and grows when you are smaller, so a giant form stays inside the preview box. A result notice makes the menu taller instead of squishing the buttons.
 
 ## List scrolling
 

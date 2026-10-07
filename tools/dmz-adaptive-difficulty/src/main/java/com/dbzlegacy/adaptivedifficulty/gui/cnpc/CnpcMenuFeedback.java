@@ -27,6 +27,23 @@ public final class CnpcMenuFeedback {
         }
     }
 
+    /** True when a notice is waiting. Does not consume it. */
+    public static boolean hasPending(ServerPlayer player) {
+        return pendingLineCount(player) > 0;
+    }
+
+    /** Lines waiting for the next menu, capped at the inline notice band. Does not consume them. */
+    public static int pendingLineCount(ServerPlayer player) {
+        if (player == null) {
+            return 0;
+        }
+        List<String> lines = PENDING.get(player.m_20148_());
+        if (lines == null || lines.isEmpty()) {
+            return 0;
+        }
+        return Math.min(CnpcGuiStyle.INFO_INLINE_MAX, lines.size());
+    }
+
     /** Removes and returns pending lines for this player (shown once per menu open). */
     public static List<String> take(ServerPlayer player) {
         if (player == null) {

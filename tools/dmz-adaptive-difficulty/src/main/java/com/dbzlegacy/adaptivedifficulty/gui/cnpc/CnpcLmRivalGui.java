@@ -77,16 +77,16 @@ public final class CnpcLmRivalGui {
 
     private static int heightForPage(String page) {
         if (recordsTab(page) != null) {
-            return 440;
+            return CnpcGuiSupport.window(440);
         }
-        return switch (page) {
+        return CnpcGuiSupport.window(switch (page) {
             case "list" -> 400;
             case "pending", "invites", "challenge_pending", "challenge_requests" -> 400;
             case "pick_declare", "pick_silent", "pick_challenge", "pick_spectate",
                     "pick_accept", "pick_decline", "pick_replace_mutual" -> 380;
             case "top", "leaderboard" -> 420;
             default -> H;
-        };
+        });
     }
 
     /**
@@ -239,7 +239,7 @@ public final class CnpcLmRivalGui {
         boolean outgoing = card != null && RivalGuiApi.pendingInviteCardOutgoing(card);
         boolean mutual = card != null && RivalGuiApi.pendingInviteCardMutualConfirm(card);
         String subTitle = outgoing ? "Outgoing declare" : (mutual ? "Mutual confirm" : "Incoming declare");
-        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_RIVAL, CnpcGuiSupport.W, 300, (pl, gui) -> {
+        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_RIVAL, CnpcGuiSupport.W, CnpcGuiSupport.window(300), (pl, gui) -> {
             int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcGuiStyle.subPage("§6", "Rivals", subTitle),
                     outgoing ? "§7Withdraw or wait for their answer" : "§7Accept or decline below");
             int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, detail, CnpcGuiStyle.INFO_INLINE_MAX));
@@ -275,7 +275,7 @@ public final class CnpcLmRivalGui {
         String card = CnpcGuiSupport.findCardByPickerArg(cards, pickerArg);
         List<String> detail = card != null ? RivalGuiApi.rivalCardDetailLines(card)
                 : List.of(RivalGuiApi.displayPickerArg(player, pickerArg), "§7Rival record");
-        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_RIVAL, CnpcGuiSupport.W, 300, (pl, gui) -> {
+        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_RIVAL, CnpcGuiSupport.W, CnpcGuiSupport.window(300), (pl, gui) -> {
             int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Profile"),
                     "§7Stats and actions for this rival");
             int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, detail, CnpcGuiStyle.INFO_INLINE_MAX));
@@ -302,7 +302,7 @@ public final class CnpcLmRivalGui {
         String returnPage = parts[1];
         String targetArg = parts[2];
         String display = RivalGuiApi.displayPickerArg(player, targetArg);
-        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_RIVAL, CnpcGuiSupport.W, 280, (pl, gui) -> {
+        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_RIVAL, CnpcGuiSupport.W, CnpcGuiSupport.window(280), (pl, gui) -> {
             int infoY = CnpcGuiSupport.paintHeader(pl, gui, confirmTitle(action), display);
             List<String> lines = confirmBody(action, display);
             int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX));
@@ -417,7 +417,7 @@ public final class CnpcLmRivalGui {
                 : List.of("§7Pending challenge", RivalGuiApi.displayPickerArg(player, pickerArg));
         boolean outgoing = card != null && RivalGuiApi.pendingChallengeCardOutgoing(card);
         String subTitle = outgoing ? "Outgoing challenge" : "Incoming challenge";
-        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_RIVAL, CnpcGuiSupport.W, 300, (pl, gui) -> {
+        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_RIVAL, CnpcGuiSupport.W, CnpcGuiSupport.window(300), (pl, gui) -> {
             int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcGuiStyle.subPage("§6", "Rivals", subTitle),
                     outgoing ? "§7Cancel or keep waiting" : "§7Accept or decline below");
             int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, detail,
@@ -445,7 +445,7 @@ public final class CnpcLmRivalGui {
     }
 
     private static void openChallengeTime(ServerPlayer player, String targetArg) {
-        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_RIVAL, CnpcGuiSupport.W, 360, (pl, gui) -> {
+        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_RIVAL, CnpcGuiSupport.W, CnpcGuiSupport.window(360), (pl, gui) -> {
             int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Challenge length"),
                     "§7Target " + RivalGuiApi.displayPickerArg(player, targetArg));
             int row = CnpcGuiSupport.bodyBelowHeader(infoY);

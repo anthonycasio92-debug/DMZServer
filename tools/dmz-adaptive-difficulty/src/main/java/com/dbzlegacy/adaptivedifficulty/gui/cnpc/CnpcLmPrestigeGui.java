@@ -33,13 +33,13 @@ public final class CnpcLmPrestigeGui {
         }
         final int shopPageFinal = Math.max(0, shopPage);
         final String pageKey = p;
-        int height = switch (p) {
+        int height = CnpcGuiSupport.window(switch (p) {
             case "turnin", "points" -> 360;
             case "shop", "skills" -> 360;
             case "tiers", "tier" -> 380;
             case "forms", "effects", "effect" -> 380;
             default -> 320;
-        };
+        });
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_PRESTIGE, CnpcGuiSupport.W, height, (pl, gui) -> {
             switch (pageKey) {
                 case "turnin", "points" -> paintTurnIn(pl, gui);
