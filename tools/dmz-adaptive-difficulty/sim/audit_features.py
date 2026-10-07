@@ -1643,6 +1643,20 @@ def main() -> int:
           and "explosion" in spar_punch
           and "dragonbreath" in spar_punch)
 
+    print("\n=== Spar menu copy (4.6.15) ===")
+    cnpc_spar_menu = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmSparGui.java")
+    dojo_score = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/DojoRankings.java")
+    check("spar leaderboard does not offer a fake wins tab",
+          "top_wins" not in cnpc_spar_menu and "top_streak" not in cnpc_spar_menu)
+    check("dojo wars category scores war wins",
+          '"wars", "war"' in dojo_score and "war wins" in dojo_score)
+    check("outgoing bond invite can be withdrawn",
+          "Withdraw invite" in cnpc_spar_menu
+          and "pick_confirm:mentor|mentor|leave" in cnpc_spar_menu
+          and "Decline / revoke" not in cnpc_spar_menu)
+    check("view-only hint",
+          "nothing to change here" in read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcGuiStyle.java"))
+
     print("\n=== Summary ===")
     for w in warns:
         print(f"WARN: {w}")

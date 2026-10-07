@@ -211,7 +211,7 @@ public final class SparGuiApi {
 
     public static List<String> mentorLines(ServerPlayer player) {
         List<String> lines = new ArrayList<>();
-        lines.add("§8── §bMentor §8──");
+        lines.add("§8── §bTraining bonds §8──");
         if (player == null || !DifficultyConfig.get().enableSparringSystem) {
             lines.add("§cSparring system is disabled.");
             return lines;
@@ -250,9 +250,9 @@ public final class SparGuiApi {
         }
         int pending = SparringSystem.pendingMentorInviteCount(player);
         if (pending > 0) {
-            lines.add("§ePending invites §f" + pending + " §8— open Pending (§f1h§8)");
+            lines.add("§ePending invites §f" + pending + " §8— open Bond invites (§f1h§8)");
         } else {
-            lines.add("§8Invite · Pending · Dojo · Leave / Release");
+            lines.add("§8Recruit apprentice · Request a master · Bond invites · Release · Dojo home");
         }
         return lines;
     }
@@ -370,7 +370,7 @@ public final class SparGuiApi {
             case "pending", "invites", "pendinginvites" -> pendingMentorLines(player);
             case "help" -> List.of(
                     "§6§l/spar §8— Sparring TP",
-                    "§7Mentor bonds: GUI → Mentor Actions",
+                    "§7Mentor bonds: GUI → Training bonds",
                     "§e/spar stats|end|top [category]",
                     "§8Commands still work for staff / scripts"
             );
@@ -400,7 +400,7 @@ public final class SparGuiApi {
                                 + "  §7streak §f" + ph.getOrDefault("streak", "0"));
                     }
                 } else {
-                    lore.add("§7No mentor bond. §8Use Mentor page to invite");
+                    lore.add("§7No mentor bond. §8Use Training bonds to invite");
                 }
                 yield lore;
             }
@@ -495,7 +495,7 @@ public final class SparGuiApi {
                 boolean hasApprentice = bond != null && bond.apprenticeCount() > 0;
                 if (hasMentor && hasApprentice) {
                     return "§eChoose: §fLeave mentor §8or §fRelease apprentice"
-                            + "\n§8GUI: Mentor Actions → Leave / Release…";
+                            + "\n§8GUI: Training bonds → Leave mentor / Release apprentice…";
                 }
                 return SparringSystem.removeBond(player);
             }

@@ -1298,7 +1298,7 @@ public final class SparringSystem {
         SparStore.get().markDirty();
         DmzRewards.msg(target, LmChat.note("Mentor", "§f" + invite.fromName
                 + " §ewants you as their Apprentice."));
-        DmzRewards.msg(target, LmChat.tip("/spar", "→ Mentor → Pending to Accept or Decline"));
+        DmzRewards.msg(target, LmChat.tip("/spar", "→ Training bonds → Bond invites to Accept or Decline"));
         return "§aInvite sent to §f" + target.m_7755_().getString() + "§a.";
     }
 
@@ -1331,7 +1331,7 @@ public final class SparringSystem {
         SparStore.get().markDirty();
         DmzRewards.msg(target, LmChat.note("Mentor", "§f" + invite.fromName
                 + " §ewants you as their Mentor."));
-        DmzRewards.msg(target, LmChat.tip("/spar", "→ Mentor → Pending to Accept or Decline"));
+        DmzRewards.msg(target, LmChat.tip("/spar", "→ Training bonds → Bond invites to Accept or Decline"));
         return "§aInvite sent to §f" + target.m_7755_().getString() + "§a.";
     }
 
@@ -1532,7 +1532,7 @@ public final class SparringSystem {
         }
         if (hasMentor && hasApprentice) {
             return "§eChoose: §fLeave mentor §8or §fRelease apprentice"
-                    + "\n§8GUI: Mentor Actions → Leave / Release…";
+                    + "\n§8GUI: Training bonds → Leave mentor / Release apprentice…";
         }
         return "§cYou have no mentor bond to remove.";
     }
@@ -1577,7 +1577,7 @@ public final class SparringSystem {
         } else {
             return "§ePick which apprentice to release (§f"
                     + bond.apprenticeNamesSummary()
-                    + "§e).\n§8GUI: Mentor Actions → Release… / Dojo";
+                    + "§e).\n§8GUI: Training bonds → Release apprentice…";
         }
         clearBond(appUuid, player.m_20148_().toString(), true);
         return "§7Released apprentice §f" + name + "§7. 12-hour cooldown started.";

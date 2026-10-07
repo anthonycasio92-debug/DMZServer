@@ -1,8 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.14**.
+What changed from **4.5.147** through **4.6.15**.
 
-The live mods folder gets `LegacyMechanics-4.6.14.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.6.15.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+
+## Sparring menus
+
+The player leaderboard no longer has Wins or Win streak tabs. Those boards were showing Training Points. The dojo Wars tab now lists war wins. Button names match the pages they open. Leaving a master asks for confirmation. An invite you sent can be withdrawn. An invite sent to you can be accepted or declined.
 
 ## Sparring non-combat damage
 
