@@ -17,9 +17,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * block ({@code getPowerRelease() / 100}), or removes it when absorption
  * power is not above zero. The adjustment is {@code stored * (factor - 1)}
  * so it lands on the scaled bonus whether this injector runs before or
- * after Noea's. A missing Noea method is skipped ({@code require = 0}).
+ * after Noea's. Priority 1001 is applied before Noea's default 1000, so this
+ * return callback sees the value after Noea has added the raw bonus.
+ * A missing Noea method is skipped ({@code require = 0}).
  */
-@Mixin(value = StatsData.class, remap = false)
+@Mixin(value = StatsData.class, remap = false, priority = 1001)
 public abstract class NoeaAbsorptionBonusGateMixin {
 
     @Inject(method = {"getMeleeDamage", "getMaxMeleeDamage"},
@@ -60,11 +62,13 @@ public abstract class NoeaAbsorptionBonusGateMixin {
                 return;
             }
             double power = data.absorptionPower;
+            // 0% power strips the whole stored bonus. Above 0, replace Noea's raw
+            // add with stored * (power release / 100). Unset release stays at 1.0.
             double multiplier = Double.isFinite(power) && power > 0d
                     ? limitReleaseMultiplier(stats)
                     : 0d;
-            double scaled = current + absorbed * (multiplier - 1.0d);
-            cir.setReturnValue(Math.max(0d, scaled));
+            double scaledBonus = absorbed * multiplier;
+            cir.setReturnValue(Math.max(0d, current - absorbed + scaledBonus));
         } catch (Throwable ignored) {
         }
     }

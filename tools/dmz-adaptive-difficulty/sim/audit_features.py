@@ -1874,7 +1874,7 @@ def main() -> int:
           and "require = 0" in corpse_fix
           and "private static void lm$disableDropSuppression" in corpse_fix)
 
-    print("\n=== Majin absorption bonus (4.6.28) ===")
+    print("\n=== Majin absorption bonus (4.6.29) ===")
     absorb_gate = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/noea/NoeaAbsorptionBonusGateMixin.java")
     absorb_store = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/noea/MajinAbsorptionStore.java")
     absorb_reset = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/StatsDataResetPrestigeSyncMixin.java")
@@ -1883,7 +1883,8 @@ def main() -> int:
           "absorptionPower" in absorb_gate
           and "isActive" not in absorb_gate
           and "getPowerRelease()" in absorb_gate
-          and "absorbed * (multiplier - 1.0d)" in absorb_gate
+          and "priority = 1001" in absorb_gate
+          and "current - absorbed + scaledBonus" in absorb_gate
           and "data.absorptionMelee = 0" in absorb_store
           and "data.absorptionKi = 0" in absorb_store
           and "data.absorptionPower = 0" in absorb_store
