@@ -1,8 +1,8 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.26**.
+What changed from **4.5.147** through **4.6.27**.
 
-The live mods folder gets `LegacyMechanics-4.6.26.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.6.27.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
 
 ## List selection
 
@@ -74,7 +74,7 @@ Sparring pays TP when a player deals damage to another player. A left-click with
 
 ## Corpses in protected dimensions
 
-Deaths in space, Namek, Beerus' planet, and the other Noea travel dimensions still clear the dropped items and restore the inventory on respawn. The death event is no longer cancelled, so a corpse can spawn. That corpse is empty.
+Death in space, Namek, Beerus' planet, and the other Noea travel dimensions uses the same corpse as everywhere else. The items go into the corpse. They are not returned on respawn. A corpse in the void stays in the void.
 
 ## Majin absorption bonus
 

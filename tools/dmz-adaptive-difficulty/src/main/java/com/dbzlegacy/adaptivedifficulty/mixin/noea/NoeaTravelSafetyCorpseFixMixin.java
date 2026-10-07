@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.mixin.noea;
 
+import com.butterjaffa.noeabosses.TravelSafetyService;
 import net.minecraftforge.event.entity.living.LivingDropsEvent;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -7,27 +8,26 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Noea's travel safety cancels LivingDropsEvent on death in protected
- * dimensions, which also suppresses the Corpse mod (corelib spawns corpses
- * from its own LivingDropsEvent handler, skipped for cancelled events).
- * This stops Noea's method just before setCanceled(true) — drops stay
- * cleared, the event stays alive, corelib spawns the corpse, and Noea
- * still restores the inventory on respawn. No duplication, no loss.
+ * Noea's off-world protection confirms a saved inventory, clears the drop
+ * list, and cancels LivingDropsEvent. Corpse stores items from that event,
+ * so a cancelled event leaves an empty corpse and the saved copy comes back
+ * on respawn.
+ *
+ * <p>{@code suppressConfirmedDrops} is static, so this injector is static.
+ * Cancelling at the start skips the confirm flag, the drop clear, and the
+ * event cancel. The items stay on the drop list. Respawn restore runs only
+ * after that confirm flag, so it does not put them back.
  */
-@Mixin(targets = "com.butterjaffa.noeabosses.TravelSafetyService", remap = false)
+@Mixin(value = TravelSafetyService.class, remap = false)
 public abstract class NoeaTravelSafetyCorpseFixMixin {
 
-    @Inject(method = "suppressConfirmedDrops",
-            at = @At(value = "INVOKE",
-                     target = "Lnet/minecraftforge/event/entity/living/LivingDropsEvent;setCanceled(Z)V",
-                     remap = false),
+    @Inject(
+            method = "suppressConfirmedDrops",
+            at = @At("HEAD"),
             cancellable = true,
             remap = false,
             require = 0)
-    private static void lm$keepDropsEventAlive(LivingDropsEvent event, CallbackInfo ci) {
-        try {
-            ci.cancel();
-        } catch (Throwable ignored) {
-        }
+    private static void lm$disableDropSuppression(LivingDropsEvent event, CallbackInfo ci) {
+        ci.cancel();
     }
 }

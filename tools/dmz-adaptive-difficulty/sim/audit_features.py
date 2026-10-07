@@ -1863,6 +1863,17 @@ def main() -> int:
           and "setOnDoubleClick" in prog_menu
           and '"challenge_pick".equals(action) ? "pick_challenge"' in rival_records)
 
+    print("\n=== Noea corpse drops (4.6.27) ===")
+    corpse_fix = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/noea/NoeaTravelSafetyCorpseFixMixin.java")
+    check("noea drop suppression stops before it clears items",
+          'at = @At("HEAD")' in corpse_fix
+          and "cancellable = true" in corpse_fix
+          and "ci.cancel()" in corpse_fix
+          and "setCanceled" not in corpse_fix
+          and "suppressConfirmedDrops" in corpse_fix
+          and "require = 0" in corpse_fix
+          and "private static void lm$disableDropSuppression" in corpse_fix)
+
     print("\n=== Summary ===")
     for w in warns:
         print(f"WARN: {w}")
