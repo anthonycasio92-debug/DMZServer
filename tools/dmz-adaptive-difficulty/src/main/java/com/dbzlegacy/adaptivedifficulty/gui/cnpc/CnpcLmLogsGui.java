@@ -14,29 +14,29 @@ public final class CnpcLmLogsGui {
             CnpcGuiSupport.denyToHub(player, "§cStaff only.");
             return;
         }
-        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_LOGS, CnpcGuiSupport.W, 280, (pl, gui) -> paint(pl, gui));
+        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_LOGS, CnpcGuiSupport.W, 280, (pl, gui) -> paintMain(pl, gui));
     }
 
-    private static void paint(ServerPlayer player, ICustomGui gui) {
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§8Event Log",
+    private static void paintMain(ServerPlayer player, ICustomGui gui) {
+        int infoY = CnpcGuiSupport.paintHeader(player, gui,
+                CnpcGuiStyle.subPage("§c", "Staff Admin", "Event log"),
                 "§7Staff event log — toggle or write logs to disk");
         List<String> lines = MechanicsGuiApi.linesForPage(player, "logs");
         var ph = MechanicsGuiApi.placeholders(player);
         boolean syslogOn = "true".equalsIgnoreCase(ph.getOrDefault("syslog", "false"));
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX));
-        row += 8;
         CnpcGuiSupport.button(gui, 20,
                 syslogOn ? CnpcGuiStyle.toggleOn("Event log") : CnpcGuiStyle.toggleOff("Event log"),
                 CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> MechanicsGuiApi.handleDo(player, "syslog", syslogOn ? "off" : "on", "logs"),
                 () -> open(player, "main")));
-        row += 24;
-        CnpcGuiSupport.button(gui, 22, "§7Write logs to disk", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
+        CnpcGuiSupport.button(gui, 22, "§7Write logs to disk", CnpcGuiSupport.COL_R, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> MechanicsGuiApi.handleDo(player, "syslog", "flush", "logs"),
                 () -> open(player, "main")));
-        row += 24;
+        row += CnpcGuiSupport.ROW_STEP;
         CnpcGuiSupport.navSubmenu(player, gui, row, () -> CnpcLmAdminGui.open(player, "main"), "§7« Back");
+        CnpcGuiSupport.paintSystemMainPreview(CnpcGuiSupport.target(player), gui, player);
     }
 }

@@ -1705,6 +1705,21 @@ def main() -> int:
           and '${class}\\$"*.class' in confirm_tail
           and "GuiClickConfirm\\$Pending.class" in build_sh)
 
+    print("\n=== Menu notices and jar inners (4.6.19) ===")
+    support = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcGuiSupport.java")
+    check("long menu notices are also sent to chat",
+          "feedbackChat(player, msg)" in support
+          and 'split("\\n", -1).length > CnpcGuiStyle.INFO_INLINE_MAX - 1' in support)
+    check("packaging cleans compile output before javac",
+          'rm -rf "$OUT"' in build_sh
+          and build_sh.find('rm -rf "$OUT"') < build_sh.find("javac --release 17"))
+    check("jar self-check requires referenced inner classes",
+          "audit_jar_inner_classes.py" in build_sh
+          and "Outer$Inner" in read(ROOT / "tools/dmz-adaptive-difficulty/sim/audit_jar_inner_classes.py"))
+    check("boost preset ids do not share the grid base",
+          "ID_BOOST_PRESET_BASE = 210" in support
+          and "ID_BOOST_PRESET_BASE = 120" not in support)
+
     print("\n=== Summary ===")
     for w in warns:
         print(f"WARN: {w}")

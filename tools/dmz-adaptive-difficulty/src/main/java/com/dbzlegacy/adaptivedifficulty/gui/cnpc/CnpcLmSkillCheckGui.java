@@ -52,7 +52,7 @@ public final class CnpcLmSkillCheckGui {
                 show(player, "core", false);
             }
         });
-        row += 24;
+        row += CnpcGuiSupport.ROW_STEP;
         CnpcGuiSupport.navSystemRoot(player, gui, row);
         CnpcGuiSupport.paintSystemMainPreview(CnpcGuiSupport.target(player), gui, player);
     }

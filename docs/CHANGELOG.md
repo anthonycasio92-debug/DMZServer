@@ -1,8 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.18**.
+What changed from **4.5.147** through **4.6.19**.
 
-The live mods folder gets `LegacyMechanics-4.6.18.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.6.19.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+
+## Menus
+
+Long menu results that say "check chat for details" are also sent to chat. Screen titles use the same System · page form. Info blocks use three lines. Button rows use one step. Difficulty tiers, prestige forms, and spar leaderboard tabs use the shared button grid. A missing inner class fails the build before the jar is uploaded.
 
 ## Confirm clicks
 

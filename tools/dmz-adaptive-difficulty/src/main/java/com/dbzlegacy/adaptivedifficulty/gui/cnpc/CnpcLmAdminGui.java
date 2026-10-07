@@ -14,17 +14,16 @@ public final class CnpcLmAdminGui {
             CnpcGuiSupport.denyToHub(player, "§cStaff only.");
             return;
         }
-        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_ADMIN, CnpcGuiSupport.W, 280, (pl, gui) -> paint(pl, gui));
+        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_ADMIN, CnpcGuiSupport.W, 280, (pl, gui) -> paintMain(pl, gui));
     }
 
-    private static void paint(ServerPlayer player, ICustomGui gui) {
+    private static void paintMain(ServerPlayer player, ICustomGui gui) {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, "§cStaff Admin",
                 "§7Reload config, progression tools, and event log");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, java.util.List.of(
                 "§7Full commands: §8/lm admin help",
                 "§8/lm admin inspect … §7· §8/difficulty admin …"
-        ), 2));
-        row += 4;
+        ), CnpcGuiStyle.INFO_INLINE_MAX));
         CnpcGuiSupport.button(gui, 20, "§aReload Legacy Mechanics config", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> DifficultyConfig.reload()
@@ -33,10 +32,11 @@ public final class CnpcLmAdminGui {
                 () -> open(player, "main")));
         CnpcGuiSupport.button(gui, 21, "§dProgression panel", CnpcGuiSupport.COL_R, row,
                 () -> CnpcLmGui.open(player, "progression", "main"));
-        row += 24;
-        CnpcGuiSupport.button(gui, 22, "§8Event log", CnpcGuiSupport.COL_L, row,
-                () -> CnpcLmLogsGui.open(player, "main"));
-        row += CnpcGuiSupport.ROW_STEP + 4;
+        row += CnpcGuiSupport.ROW_STEP;
+        CnpcGuiSupport.buttonSmallFull(gui, 22, "§8Event log", CnpcGuiSupport.M, row,
+                CnpcGuiSupport.textBandWidth(), () -> CnpcLmLogsGui.open(player, "main"));
+        row += CnpcGuiSupport.ROW_STEP;
         CnpcGuiSupport.navSystemRoot(player, gui, row);
+        CnpcGuiSupport.paintSystemMainPreview(CnpcGuiSupport.target(player), gui, player);
     }
 }

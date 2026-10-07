@@ -94,11 +94,40 @@ fi
 echo "Using Noea jar for compile: $NOEA"
 CP="$CP:$NOEA"
 
+echo "Cleaning compile output before packaging"
 rm -rf "$OUT"
 mkdir -p "$OUT"
 
 mapfile -t SOURCES < <(find "$SRC" -name '*.java' | sort)
 javac --release 17 -proc:none -cp "$CP" -d "$OUT" "${SOURCES[@]}"
+
+# For every class this compile actually overlaid, drop base-jar inner classes the
+# new bytecode does not emit, and copy the inner classes it does emit.
+sync_overlaid_inners() {
+  local out_dir="$1" merge_dir="$2"
+  local src rel dest base dest_dir src_dir stale name inner
+  while IFS= read -r -d '' src; do
+    rel="${src#"$out_dir"/}"
+    dest="$merge_dir/$rel"
+    [[ -f "$dest" ]] || continue
+    cmp -s "$src" "$dest" || continue
+    base="$(basename "$rel" .class)"
+    [[ "$base" == *\$* ]] && continue
+    dest_dir="$(dirname "$dest")"
+    src_dir="$(dirname "$src")"
+    shopt -s nullglob
+    for stale in "$dest_dir/${base}\$"*.class; do
+      name="$(basename "$stale")"
+      if [[ ! -f "$src_dir/$name" ]]; then
+        rm -f "$stale"
+      fi
+    done
+    for inner in "$src_dir/${base}\$"*.class; do
+      cp "$inner" "$dest_dir/"
+    done
+    shopt -u nullglob
+  done < <(find "$out_dir" -name '*.class' -print0)
+}
 
 merge_onto_base_jar() {
   local base="$1" dest="$2"
@@ -109,6 +138,7 @@ merge_onto_base_jar() {
   # Overlay selected compiled packages (CNPC GUI work) — everything else stays from live base jar.
   local rel
   if [[ -d "$OUT/com/dbzlegacy/adaptivedifficulty/gui/cnpc" ]]; then
+    rm -rf "$merge/com/dbzlegacy/adaptivedifficulty/gui/cnpc"
     mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/gui/cnpc"
     cp -a "$OUT/com/dbzlegacy/adaptivedifficulty/gui/cnpc/." "$merge/com/dbzlegacy/adaptivedifficulty/gui/cnpc/"
   fi
@@ -322,6 +352,9 @@ merge_onto_base_jar() {
     "$merge/com/dbzlegacy/adaptivedifficulty/progression/race/RaceProgression.class" \
     "$merge/com/dbzlegacy/adaptivedifficulty/progression/tp/TpProgression.class" \
     "$merge/com/dbzlegacy/adaptivedifficulty/progression/bridge/CnpcBridge.class"
+  # Classes copied from this compile must ship their inner classes, and must
+  # not keep a stale base-jar inner the new bytecode no longer emits.
+  sync_overlaid_inners "$OUT" "$merge"
   cp "$RES/META-INF/mods.toml" "$merge/META-INF/mods.toml"
   if [[ ! -f "$merge/legacymechanics.mixins.json" ]]; then
     cp "$RES/legacymechanics.mixins.json" "$merge/legacymechanics.mixins.json"
@@ -358,6 +391,7 @@ if ! jar tf "$JAR" | grep -q 'gui/GuiClickConfirm\$Pending.class'; then
   echo "ERROR: GuiClickConfirm\$Pending.class missing from $JAR (confirm clicks crash the server)" >&2
   exit 1
 fi
+python3 "$HERE/sim/audit_jar_inner_classes.py" "$JAR"
 # A second LegacyMechanics jar in mods/ crashes a fresh server on startup.
 find "$ROOT/mods" -maxdepth 1 -type f -name 'LegacyMechanics-*.jar' ! -name "LegacyMechanics-${VERSION}.jar" -delete
 jar tf "$JAR"

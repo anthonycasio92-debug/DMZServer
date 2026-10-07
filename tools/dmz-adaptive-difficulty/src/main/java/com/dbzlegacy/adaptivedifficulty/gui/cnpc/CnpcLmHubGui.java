@@ -65,6 +65,7 @@ public final class CnpcLmHubGui {
                     CnpcGuiSupport.M, row, CnpcGuiSupport.textBandWidth(), 14);
             row += gap;
             CnpcGuiSupport.footerCloseRefresh(player, gui, row, () -> paintMain(player));
+            CnpcGuiSupport.paintSystemMainPreview(who, gui, player);
             return;
         }
 

@@ -81,8 +81,8 @@ public final class CnpcGuiSupport {
     public static final int ID_GRID_BASE = 120;
     /** Prestige permanent tier shop (7 buttons — must not overlap flash band 50–59). */
     public static final int ID_PRESTIGE_TIER_GRID = 200;
-    /** Progression TP boost presets (must not overlap {@link #ID_FLASH_LABEL_BASE}). */
-    public static final int ID_BOOST_PRESET_BASE = 120;
+    /** Progression TP boost presets. Not {@link #ID_GRID_BASE} — those ids share one screen only by accident. */
+    public static final int ID_BOOST_PRESET_BASE = 210;
 
     /** Shorter divider so labels do not wrap oddly in CNPC. */
     private static String dividerText() {
@@ -822,6 +822,11 @@ public final class CnpcGuiSupport {
         String msg = action.get();
         if (msg != null && !msg.isBlank()) {
             pushMenuMessage(player, msg);
+            // The flash band fits INFO_INLINE_MAX-1 = 2 message lines; longer messages
+            // truncate with "check chat for details", so actually send them to chat.
+            if (msg.split("\n", -1).length > CnpcGuiStyle.INFO_INLINE_MAX - 1) {
+                feedbackChat(player, msg);
+            }
         }
         if (reopen != null) {
             runDeferred(player, reopen);

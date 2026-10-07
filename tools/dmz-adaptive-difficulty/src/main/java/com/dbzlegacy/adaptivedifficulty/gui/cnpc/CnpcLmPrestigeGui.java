@@ -62,12 +62,12 @@ public final class CnpcLmPrestigeGui {
                 () -> ProgressionGuiApi.handlePrestigeDo(player, "confirm", "", "main"),
                 () -> open(player, "main")));
         CnpcGuiSupport.button(gui, 21, "§eTurn in held", CnpcGuiSupport.COL_R, row, () -> open(player, "turnin"));
-        row += 24;
+        row += CnpcGuiSupport.ROW_STEP;
         CnpcGuiSupport.button(gui, 22, "§bSkill shop", CnpcGuiSupport.COL_L, row, () -> open(player, "shop"));
         CnpcGuiSupport.button(gui, 23, "§5Forms", CnpcGuiSupport.COL_R, row, () -> open(player, "forms"));
-        row += 24;
+        row += CnpcGuiSupport.ROW_STEP;
         CnpcGuiSupport.button(gui, 24, "§6Difficulty tiers", CnpcGuiSupport.COL_L, row, () -> open(player, "tiers"));
-        row += 24;
+        row += CnpcGuiSupport.ROW_STEP;
         footer(player, gui, row, null);
     }
 
@@ -124,7 +124,9 @@ public final class CnpcLmPrestigeGui {
 
         List<String> ids = shopSkillIds(ph);
         int from = page * pageSize;
-        int row = CnpcGuiSupport.bodyBelowHeader(infoY);
+        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of(
+                "§7Permanent skill levels · survive prestige"
+        ), CnpcGuiStyle.INFO_INLINE_MAX));
         int placed = 0;
         List<CnpcGuiLayout.GridButton> grid = new ArrayList<>();
         for (int i = from; i < ids.size() && placed < pageSize; i++, placed++) {
@@ -159,7 +161,7 @@ public final class CnpcLmPrestigeGui {
             CnpcGuiSupport.buttonSmallFull(gui, 91, "§7Next »", CnpcGuiSupport.COL_R, row, CnpcGuiSupport.BTN_W,
                     () -> open(player, "shop:" + (page + 1)));
         }
-        row += CnpcGuiSupport.ROW_STEP + 4;
+        row += CnpcGuiSupport.ROW_STEP;
         footer(player, gui, row, "main");
     }
 
@@ -203,49 +205,44 @@ public final class CnpcLmPrestigeGui {
                 "§7Majin and Mutant · §e" + cost + " §7pts · one form at a time");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY,
                 ProgressionGuiApi.prestigeLines(player, "effects"), CnpcGuiStyle.INFO_INLINE_MAX));
-        row += 4;
-
-        // Stacked rows — side-by-side labels overlapped when Mutant owned (long hint text).
+        List<CnpcGuiLayout.GridButton> grid = new ArrayList<>();
         if (hasMajin) {
-            gui.addLabel(40, "§aMajin §8· owned", CnpcGuiSupport.M, row + 4, CnpcGuiSupport.textBandWidth(), 14);
+            grid.add(CnpcGuiLayout.GridButton.disabled("§aMajin · owned"));
         } else if (canBuyMajin) {
-            CnpcGuiSupport.button(gui, 40, "§dBuy Majin · §6" + cost + " pts", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
-                    player,
+            grid.add(CnpcGuiLayout.GridButton.action(
+                    "§dBuy Majin · §6" + cost + " pts",
                     () -> ProgressionGuiApi.handlePrestigeDo(player, "majin", "", "effects"),
                     () -> open(player, "effects")));
         } else {
-            gui.addLabel(40, "§8Majin §7— remove Mutant first", CnpcGuiSupport.M, row + 4,
-                    CnpcGuiSupport.textBandWidth(), 14);
+            grid.add(CnpcGuiLayout.GridButton.disabled("§8Majin · remove Mutant first"));
         }
-        row += CnpcGuiSupport.ROW_STEP;
-
         if (hasMutant) {
-            gui.addLabel(41, "§aMutant §8· owned", CnpcGuiSupport.M, row + 4, CnpcGuiSupport.textBandWidth(), 14);
+            grid.add(CnpcGuiLayout.GridButton.disabled("§aMutant · owned"));
         } else if (canBuyMutant) {
-            CnpcGuiSupport.button(gui, 41, "§dBuy Mutant · §6" + cost + " pts", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
-                    player,
+            grid.add(CnpcGuiLayout.GridButton.action(
+                    "§dBuy Mutant · §6" + cost + " pts",
                     () -> ProgressionGuiApi.handlePrestigeDo(player, "mutant", "", "effects"),
                     () -> open(player, "effects")));
         } else {
-            gui.addLabel(41, "§8Mutant §7— remove Majin first", CnpcGuiSupport.M, row + 4,
-                    CnpcGuiSupport.textBandWidth(), 14);
+            grid.add(CnpcGuiLayout.GridButton.disabled("§8Mutant · remove Majin first"));
         }
-        row += CnpcGuiSupport.ROW_STEP;
-
         if (hasMajin) {
-            CnpcGuiSupport.button(gui, 42, "§cRemove Majin", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
-                    player,
+            grid.add(CnpcGuiLayout.GridButton.action(
+                    "§cRemove Majin",
                     () -> ProgressionGuiApi.handlePrestigeDo(player, "unmajin", "", "effects"),
                     () -> open(player, "effects")));
         } else if (hasMutant) {
-            CnpcGuiSupport.button(gui, 42, "§cRemove Mutant", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
-                    player,
+            grid.add(CnpcGuiLayout.GridButton.action(
+                    "§cRemove Mutant",
                     () -> ProgressionGuiApi.handlePrestigeDo(player, "unmutant", "", "effects"),
                     () -> open(player, "effects")));
         } else {
-            gui.addLabel(42, "§7Nothing to remove", CnpcGuiSupport.M, row + 4, CnpcGuiSupport.textBandWidth(), 14);
+            grid.add(CnpcGuiLayout.GridButton.disabled("§7Nothing to remove"));
         }
-        row += CnpcGuiSupport.ROW_STEP;
+        row = CnpcGuiLayout.paintTwoColumnButtonGrid(
+                player, gui, row, CnpcGuiSupport.ID_GRID_BASE,
+                grid.toArray(CnpcGuiLayout.GridButton[]::new),
+                () -> open(player, "effects"));
         footer(player, gui, row, "main");
     }
 
@@ -291,7 +288,7 @@ public final class CnpcLmPrestigeGui {
         }
         int infoY = CnpcGuiSupport.paintHeader(player, gui, "§dPrestige", "§cUnavailable");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY,
-                ProgressionGuiApi.prestigeLines(player, "main"), 3));
+                ProgressionGuiApi.prestigeLines(player, "main"), CnpcGuiStyle.INFO_INLINE_MAX));
         footer(player, gui, row + 8, backPage);
         return false;
     }
