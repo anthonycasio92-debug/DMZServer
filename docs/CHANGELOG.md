@@ -1,8 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.21**.
+What changed from **4.5.147** through **4.6.22**.
 
-The live mods folder gets `LegacyMechanics-4.6.21.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.6.22.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+
+## Rival records
+
+History, stats, season, quests, achievements, hall of fame, journal, and title are one Records page. The section you are reading is highlighted. Older links to those pages open the same page on that section. Leaderboard stays its own page.
 
 ## Head part preview
 

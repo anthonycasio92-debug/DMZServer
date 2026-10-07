@@ -1758,6 +1758,19 @@ def main() -> int:
           and "§dForms" in read(cnpc_dir / "CnpcLmPrestigeGui.java")
           and "§9Progression panel" in read(cnpc_dir / "CnpcLmAdminGui.java"))
 
+    print("\n=== CNPC rival records (4.6.22) ===")
+    rival_records = read(cnpc_dir / "CnpcLmRivalGui.java")
+    check("CNPC rival records are one tabbed page",
+          "records:" in rival_records
+          and "void paintProgress" not in rival_records
+          and "Hall of fame" in rival_records
+          and "§6Records" in rival_records
+          and 'open(player, "history")' not in rival_records
+          and 'open(player, "progress")' not in rival_records
+          and 'open(player, "stats")' not in rival_records
+          and "Duel requests" in rival_records
+          and "Declare invites" in rival_records)
+
     print("\n=== Summary ===")
     for w in warns:
         print(f"WARN: {w}")

@@ -43,23 +43,18 @@ public final class CnpcLmRivalGui {
         }
         int height = heightForPage(lower);
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_RIVAL, CnpcGuiSupport.W, height, (pl, gui) -> {
+            String records = recordsTab(lower);
+            if (records != null) {
+                paintRecords(pl, gui, records);
+                return;
+            }
             switch (lower) {
                 case "list" -> paintList(pl, gui);
                 case "actions" -> paintActions(pl, gui);
                 case "pending", "invites" -> paintPending(pl, gui);
-                case "history", "past" -> paintScroll(pl, gui, CnpcGuiStyle.subPage("§6", "Rivals", "History"), RivalGuiApi.linesForPage(subject(pl), "history"), "main");
                 case "challenge", "challenges" -> paintChallenge(pl, gui);
                 case "challenge_pending", "challenge_requests" -> paintChallengePending(pl, gui);
-                case "stats" -> paintScroll(pl, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Stats"), RivalGuiApi.statsLines(subject(pl)), "progress");
                 case "top", "leaderboard" -> paintScroll(pl, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Leaderboard"), RivalGuiApi.topLines(subject(pl)), "main");
-                case "progress" -> paintProgress(pl, gui);
-                case "records", "more" -> paintRecords(pl, gui);
-                case "season" -> paintScroll(pl, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Season"), RivalGuiApi.seasonLines(subject(pl)), "progress");
-                case "quests" -> paintScroll(pl, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Quests"), RivalGuiApi.questLines(subject(pl)), "progress");
-                case "achievements", "achs" -> paintScroll(pl, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Achievements"), RivalGuiApi.achievementLines(subject(pl)), "records");
-                case "hof", "hall" -> paintScroll(pl, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Hall of fame"), RivalGuiApi.hofLines(subject(pl)), "records");
-                case "journal" -> paintScroll(pl, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Journal"), RivalGuiApi.journalLines(subject(pl)), "records");
-                case "title", "titles" -> paintScroll(pl, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Title"), RivalGuiApi.titleLines(subject(pl)), "records");
                 case "pick_declare" -> paintNamePick(pl, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Declare rival"), RivalGuiApi.onlinePlayerNames(subject(pl)),
                         "declare", "actions");
                 case "pick_silent" -> paintNamePick(pl, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Silent rival"), RivalGuiApi.onlinePlayerNames(subject(pl)),
@@ -80,15 +75,41 @@ public final class CnpcLmRivalGui {
     }
 
     private static int heightForPage(String page) {
+        if (recordsTab(page) != null) {
+            return 440;
+        }
         return switch (page) {
             case "list" -> 400;
             case "pending", "invites", "challenge_pending", "challenge_requests" -> 400;
             case "pick_declare", "pick_silent", "pick_challenge", "pick_spectate",
                     "pick_accept", "pick_decline", "pick_replace_mutual" -> 380;
-            case "progress", "records" -> 300;
-            case "history", "past", "stats", "top", "leaderboard", "season", "quests",
-                    "achievements", "achs", "hof", "hall", "journal", "title", "titles" -> 420;
+            case "top", "leaderboard" -> 420;
             default -> H;
+        };
+    }
+
+    /**
+     * History, stats, progress, season, quests, achievements, hall of fame, journal,
+     * and title share one Records page. {@code null} means this page is not records.
+     */
+    private static String recordsTab(String page) {
+        if (page == null || page.isBlank()) {
+            return null;
+        }
+        String p = page.toLowerCase(Locale.ROOT);
+        if (p.startsWith("records:")) {
+            p = p.substring("records:".length()).trim();
+        }
+        return switch (p) {
+            case "history", "past", "previous", "records", "more" -> "history";
+            case "progress", "season" -> "season";
+            case "stats", "statistics" -> "stats";
+            case "quests", "quest" -> "quests";
+            case "achievements", "achs", "ach" -> "achievements";
+            case "hof", "hall" -> "hof";
+            case "journal" -> "journal";
+            case "title", "titles" -> "title";
+            default -> null;
         };
     }
 
@@ -123,8 +144,7 @@ public final class CnpcLmRivalGui {
         CnpcGuiSupport.button(gui, 22, "§cChallenge", CnpcGuiSupport.COL_L, row, () -> open(player, "challenge"));
         CnpcGuiSupport.button(gui, 23, "§dLeaderboard", CnpcGuiSupport.COL_R, row, () -> open(player, "top"));
         row += CnpcGuiSupport.ROW_STEP;
-        CnpcGuiSupport.button(gui, 24, "§8History", CnpcGuiSupport.COL_L, row, () -> open(player, "history"));
-        CnpcGuiSupport.button(gui, 25, "§bProgress", CnpcGuiSupport.COL_R, row, () -> open(player, "progress"));
+        CnpcGuiSupport.button(gui, 24, "§6Records", CnpcGuiSupport.COL_L, row, () -> open(player, "records"));
         row += CnpcGuiSupport.ROW_STEP;
         boolean tpOn = "true".equalsIgnoreCase(ph.get("tpMsg"));
         CnpcGuiSupport.button(gui, 26, tpOn ? CnpcGuiStyle.toggleOn("TP")
@@ -433,34 +453,51 @@ public final class CnpcLmRivalGui {
         });
     }
 
-    private static void paintProgress(ServerPlayer player, ICustomGui gui) {
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Progress"),
-                "§7Season, quests, and records");
-        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, RivalGuiApi.linesForPage(subject(player), "progress"),
-                        CnpcGuiStyle.INFO_INLINE_MAX));
-        row += 8;
-        CnpcGuiSupport.button(gui, 20, "§eStats", CnpcGuiSupport.COL_L, row, () -> open(player, "stats"));
-        CnpcGuiSupport.button(gui, 21, "§aSeason", CnpcGuiSupport.COL_R, row, () -> open(player, "season"));
-        row += CnpcGuiSupport.ROW_STEP;
-        CnpcGuiSupport.button(gui, 22, "§bQuests", CnpcGuiSupport.COL_L, row, () -> open(player, "quests"));
-        CnpcGuiSupport.button(gui, 23, "§6More records", CnpcGuiSupport.COL_R, row, () -> open(player, "records"));
-        row += CnpcGuiSupport.ROW_STEP;
-        footer(player, gui, row, "main");
+    private static void paintRecords(ServerPlayer player, ICustomGui gui, String tab) {
+        String key = tab == null || tab.isBlank() ? "history" : tab;
+        String label = recordsLabel(key);
+        int infoY = CnpcGuiSupport.paintHeader(player, gui,
+                CnpcGuiStyle.subPage("§6", "Rivals", "Records · " + label),
+                CnpcGuiStyle.HINT_READ_ONLY);
+        int row = CnpcGuiSupport.bodyBelowHeader(infoY);
+        String[] ids = {"history", "stats", "season", "quests", "achievements", "hof", "journal", "title"};
+        CnpcGuiLayout.GridButton[] tabs = new CnpcGuiLayout.GridButton[ids.length];
+        for (int i = 0; i < ids.length; i++) {
+            String id = ids[i];
+            String name = recordsLabel(id);
+            String button = id.equals(key) ? "§6" + name : "§7" + name;
+            tabs[i] = CnpcGuiLayout.GridButton.run(button, () -> open(player, "records:" + id));
+        }
+        row = CnpcGuiLayout.paintTwoColumnButtonGrid(player, gui, row, CnpcGuiSupport.ID_GRID_BASE, tabs, () -> {});
+        int bodyBottom = CnpcGuiSupport.paintLongReadOnlyBody(gui, row, recordsLines(player, key));
+        footer(player, gui, bodyBottom, "main");
     }
 
-    private static void paintRecords(ServerPlayer player, ICustomGui gui) {
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Records"),
-                "§7Titles, achievements, hall of fame, journal");
-        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of(
-                "§7Titles, achievements, hall of fame, and journal"
-        ), CnpcGuiStyle.INFO_INLINE_MAX));
-        CnpcGuiSupport.button(gui, 20, "§eTitle", CnpcGuiSupport.COL_L, row, () -> open(player, "title"));
-        CnpcGuiSupport.button(gui, 21, "§dAchievements", CnpcGuiSupport.COL_R, row, () -> open(player, "achievements"));
-        row += CnpcGuiSupport.ROW_STEP;
-        CnpcGuiSupport.button(gui, 22, "§6Hall of fame", CnpcGuiSupport.COL_L, row, () -> open(player, "hof"));
-        CnpcGuiSupport.button(gui, 23, "§fJournal", CnpcGuiSupport.COL_R, row, () -> open(player, "journal"));
-        row += CnpcGuiSupport.ROW_STEP;
-        footer(player, gui, row, "progress");
+    private static String recordsLabel(String key) {
+        return switch (key) {
+            case "stats" -> "Stats";
+            case "season" -> "Season";
+            case "quests" -> "Quests";
+            case "achievements" -> "Achievements";
+            case "hof" -> "Hall of fame";
+            case "journal" -> "Journal";
+            case "title" -> "Title";
+            default -> "History";
+        };
+    }
+
+    private static List<String> recordsLines(ServerPlayer player, String key) {
+        ServerPlayer who = subject(player);
+        return switch (key) {
+            case "stats" -> RivalGuiApi.statsLines(who);
+            case "season" -> RivalGuiApi.seasonLines(who);
+            case "quests" -> RivalGuiApi.questLines(who);
+            case "achievements" -> RivalGuiApi.achievementLines(who);
+            case "hof" -> RivalGuiApi.hofLines(who);
+            case "journal" -> RivalGuiApi.journalLines(who);
+            case "title" -> RivalGuiApi.titleLines(who);
+            default -> RivalGuiApi.linesForPage(who, "history");
+        };
     }
 
     private static void paintList(ServerPlayer player, ICustomGui gui) {
@@ -494,8 +531,8 @@ public final class CnpcLmRivalGui {
         int actionRow = CnpcGuiSupport.navRowAfterScroll(bandY, scrollH);
         CnpcGuiSupport.buttonSmallFull(gui, 94, "§aActions", CnpcGuiSupport.COL_L, actionRow, CnpcGuiSupport.BTN_W,
                 () -> open(player, "actions"));
-        CnpcGuiSupport.buttonSmallFull(gui, 95, "§8History", CnpcGuiSupport.COL_R, actionRow, CnpcGuiSupport.BTN_W,
-                () -> open(player, "history"));
+        CnpcGuiSupport.buttonSmallFull(gui, 95, "§6Records", CnpcGuiSupport.COL_R, actionRow, CnpcGuiSupport.BTN_W,
+                () -> open(player, "records"));
         int navRow = actionRow + CnpcGuiSupport.ROW_STEP;
         footer(player, gui, navRow, "main");
     }
