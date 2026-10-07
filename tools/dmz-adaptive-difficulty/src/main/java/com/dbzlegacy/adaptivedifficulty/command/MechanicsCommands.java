@@ -104,7 +104,7 @@ public final class MechanicsCommands {
 
     private static LiteralArgumentBuilder<CommandSourceStack> adminClearRoot() {
         return Commands.m_82127_("clear")
-                .then(LmCommandSuggestions.playerWord("player")
+                .then(LmCommandSuggestions.word("player", LmCommandSuggestions.CLEAR_TARGETS)
                         .executes(ctx -> adminClear(
                                 ctx.getSource(),
                                 StringArgumentType.getString(ctx, "player"),

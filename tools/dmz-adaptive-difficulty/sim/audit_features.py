@@ -519,6 +519,8 @@ def main() -> int:
     check("ForgeBridge.clearPlayerData", "clearPlayerData" in bridge)
     check("RivalProgression.clearPlayer", "clearPlayer(String uuid)" in read(
         SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalProgression.java"))
+    check("offline clear reads player cache and saved file",
+          "m_129927_" in clearer and "ForgeData" in clearer and "LevelResource.f_78176_" in clearer)
 
     print("\n=== Spar recent sessions (2.3.54) ===")
     spar_store = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparStore.java")

@@ -1,8 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.12**.
+What changed from **4.5.147** through **4.6.13**.
 
-The live mods folder gets `LegacyMechanics-4.6.12.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.6.13.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+
+## Offline player clear
+
+`/lm admin clear <player>` works when that player is offline. A name is taken from who is online, sparring, rivals, dojos, or the server player cache. A UUID always works. Two people with the same name need a UUID. Spar and rival data clear from their stores, including that player's dojo season row, profile, and wars. Difficulty and progression for someone who is offline are removed from their saved player file. Training points already on the character stay.
 
 ## Sparring TP
 

@@ -33,7 +33,7 @@ public final class LmCommandHelp {
                         LmStaffHelp.cmd("/lm admin migrate-cnpc force", "wipe LM stores, then re-import"),
                         LmStaffHelp.note("Backup: config/legacymechanics/cnpc-import-backup/")),
                 new LmStaffHelp.Section("Player resets",
-                        LmStaffHelp.cmd("/lm admin clear <player>", "clear all LM data for a player"),
+                        LmStaffHelp.cmd("/lm admin clear <player>", "clear all LM data, online or offline"),
                         LmStaffHelp.cmd("/lm admin clear <player> rival", "clear rival data only"),
                         LmStaffHelp.cmd("/lm admin clear <player> spar", "clear spar data only"),
                         LmStaffHelp.cmd("/lm admin clear <player> difficulty", "clear difficulty data only"),
