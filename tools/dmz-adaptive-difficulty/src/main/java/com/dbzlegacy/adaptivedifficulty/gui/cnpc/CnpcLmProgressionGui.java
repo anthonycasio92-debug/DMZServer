@@ -275,7 +275,7 @@ public final class CnpcLmProgressionGui {
                 "§7Eligible races:",
                 "§f" + com.dbzlegacy.adaptivedifficulty.progression.race.AndroidConversion.eligibleRaceHint(),
                 "§7Remove restores prior forms (confirm within 10s)"
-        ), 3));
+        ), CnpcGuiStyle.INFO_INLINE_MAX));
         CnpcGuiSupport.button(gui, 60, "§aConvert to Android…", CnpcGuiSupport.COL_L, row,
                 () -> open(player, "android_convert"));
         CnpcGuiSupport.button(gui, 61, "§cRemove Android…", CnpcGuiSupport.COL_R, row,
