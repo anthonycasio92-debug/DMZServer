@@ -1697,6 +1697,13 @@ def main() -> int:
           "Action §7" not in rival_gui and "Declare rival" in rival_gui)
     check("tier buy asks before it charges",
           "diff-tier:" in read(SRC / "com/dbzlegacy/adaptivedifficulty/service/DifficultyActions.java"))
+    build_sh = read(ROOT / "tools/dmz-adaptive-difficulty/build.sh")
+    confirm_at = build_sh.find("GuiClickConfirm DifficultyTeamGuiApi")
+    confirm_tail = build_sh[confirm_at:confirm_at + 700] if confirm_at >= 0 else ""
+    check("click confirm pending class is copied into the jar",
+          "class Pending" in read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/GuiClickConfirm.java")
+          and '${class}\\$"*.class' in confirm_tail
+          and "GuiClickConfirm\\$Pending.class" in build_sh)
 
     print("\n=== Summary ===")
     for w in warns:

@@ -1,8 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.17**.
+What changed from **4.5.147** through **4.6.18**.
 
-The live mods folder gets `LegacyMechanics-4.6.17.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.6.18.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+
+## Confirm clicks
+
+A second click that confirms a paid action no longer crashes the server. The pending-click class is included in the jar.
 
 ## Menu wording
 

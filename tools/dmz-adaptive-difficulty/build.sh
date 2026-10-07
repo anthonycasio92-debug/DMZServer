@@ -175,6 +175,10 @@ merge_onto_base_jar() {
     if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/gui/${class}.class" ]]; then
       cp "$OUT/com/dbzlegacy/adaptivedifficulty/gui/${class}.class" \
         "$merge/com/dbzlegacy/adaptivedifficulty/gui/${class}.class"
+      # Inner classes (GuiClickConfirm$Pending) are separate files. Copying only the
+      # outer class throws NoClassDefFoundError the first time a confirm click runs.
+      cp "$OUT/com/dbzlegacy/adaptivedifficulty/gui/${class}\$"*.class \
+        "$merge/com/dbzlegacy/adaptivedifficulty/gui/" 2>/dev/null || true
     fi
   done
   if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/command/MechanicsCommands.class" ]]; then
@@ -350,6 +354,10 @@ fi
 # StatsData#load (mixins → DmzResourcePoolClamp) and clients see "Invalid player data".
 
 echo "Built $JAR (base: $(basename "$BASE_JAR"))"
+if ! jar tf "$JAR" | grep -q 'gui/GuiClickConfirm\$Pending.class'; then
+  echo "ERROR: GuiClickConfirm\$Pending.class missing from $JAR (confirm clicks crash the server)" >&2
+  exit 1
+fi
 # A second LegacyMechanics jar in mods/ crashes a fresh server on startup.
 find "$ROOT/mods" -maxdepth 1 -type f -name 'LegacyMechanics-*.jar' ! -name "LegacyMechanics-${VERSION}.jar" -delete
 jar tf "$JAR"
