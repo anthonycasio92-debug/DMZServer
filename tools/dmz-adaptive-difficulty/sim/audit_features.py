@@ -1657,6 +1657,23 @@ def main() -> int:
     check("view-only hint",
           "nothing to change here" in read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcGuiStyle.java"))
 
+    print("\n=== Reskin gender and head bone preview (4.6.16) ===")
+    gender_mixin = read(SRC / "com/dbzlegacy/adaptivedifficulty/mixin/StatsSyncC2SGenderMixin.java")
+    mixins_json = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/resources/legacymechanics.mixins.json")
+    bones = read(SRC / "com/dbzlegacy/adaptivedifficulty/character/CosmeticHeadBoneService.java")
+    bone_gui = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmCharacterGui.java")
+    check("reskin gender mixin honors the packet during a session",
+          "getDeclaredField(\"gender\")" in gender_mixin
+          and "canHaveGender" in gender_mixin
+          and "ReskinSessionGuard.lockedClass" in gender_mixin
+          and "StatsSyncC2SGenderMixin" in mixins_json)
+    check("head bone card previews before it charges",
+          "previewBone" in bones
+          and "PREVIEW_STASH" in bones
+          and "bone_preview" in bone_gui
+          and "paintSubjectPreview" in bone_gui
+          and "Unlock & equip" in bone_gui)
+
     print("\n=== Summary ===")
     for w in warns:
         print(f"WARN: {w}")

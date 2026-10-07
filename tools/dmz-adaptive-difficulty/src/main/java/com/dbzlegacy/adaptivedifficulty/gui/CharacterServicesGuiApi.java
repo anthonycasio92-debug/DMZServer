@@ -234,6 +234,12 @@ public final class CharacterServicesGuiApi {
         if ("reskin_confirm".equals(act)) {
             return CharacterServicesSystem.executeReskin(player);
         }
+        if ("bone_preview".equals(act)) {
+            return CosmeticHeadBoneService.previewBone(player, a);
+        }
+        if ("bone_restore".equals(act)) {
+            return CosmeticHeadBoneService.restorePreview(player);
+        }
         if ("bone_unlock".equals(act)) {
             return CosmeticHeadBoneService.executeUnlock(player, a);
         }

@@ -9,14 +9,113 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.server.level.ServerPlayer;
 
 /** Global head-bone unlock shop and equip (cross-race cosmetics). */
 public final class CosmeticHeadBoneService {
     public static final int CARDS_PER_PAGE = 14;
 
+    /** Prior active bone while a shop card is being previewed. Not written to player json. */
+    private static final Map<UUID, String> PREVIEW_STASH = new ConcurrentHashMap<>();
+
     private CosmeticHeadBoneService() {}
+
+    public static boolean isPreviewing(ServerPlayer player) {
+        return player != null && PREVIEW_STASH.containsKey(player.m_20148_());
+    }
+
+    /** Bone currently shown, when a preview is active. */
+    public static String previewBoneId(ServerPlayer player) {
+        return isPreviewing(player) ? activeBone(player) : "";
+    }
+
+    public static String previewLabel(ServerPlayer player) {
+        String id = previewBoneId(player);
+        if (id.isBlank()) {
+            return "";
+        }
+        CosmeticHeadBoneCatalog.Entry entry = CosmeticHeadBoneCatalog.get(id);
+        return entry == null ? CosmeticHeadBoneCatalog.prettyId(id) : entry.displayName();
+    }
+
+    /**
+     * Show {@code boneId} on the player without charging, unlocking, or saving
+     * {@code equippedHeadBone}. The bone they had on is kept until restore, a new preview,
+     * or a real equip.
+     */
+    public static String previewBone(ServerPlayer player, String boneId) {
+        if (!canUse(player)) {
+            return "§cHead bone shop is unavailable.";
+        }
+        if (boneId == null || boneId.isBlank()) {
+            return "§cPick a head part.";
+        }
+        String bone = boneId.trim().toLowerCase(Locale.ROOT);
+        if (!CosmeticHeadBoneCatalog.isKnown(bone)) {
+            return "§cUnknown head part.";
+        }
+        Character ch = DmzProgression.character(player);
+        if (ch == null) {
+            return "§cCharacter data unavailable.";
+        }
+        PREVIEW_STASH.putIfAbsent(player.m_20148_(), activeBone(player));
+        try {
+            if (!bone.equalsIgnoreCase(activeBone(player))) {
+                ch.setActiveHeadBone(bone);
+                RaceHeadBoneSync.syncClient(player);
+            }
+            return "";
+        } catch (Throwable t) {
+            return "§cCould not preview that head part.";
+        }
+    }
+
+    /** Put back the bone from before the preview. */
+    public static String restorePreview(ServerPlayer player) {
+        if (player == null) {
+            return "";
+        }
+        String prior = PREVIEW_STASH.remove(player.m_20148_());
+        if (prior == null) {
+            return "";
+        }
+        return applyActiveOnly(player, prior);
+    }
+
+    /** Drop the stash without restoring. A purchase or real equip replaces the preview. */
+    public static void discardPreview(ServerPlayer player) {
+        if (player != null) {
+            PREVIEW_STASH.remove(player.m_20148_());
+        }
+    }
+
+    /**
+     * After a restart, an unpaid preview must not stay on the character. A saved
+     * equipped bone wins. A bone the player does not own is cleared.
+     */
+    public static void settleAfterLogin(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        PREVIEW_STASH.remove(player.m_20148_());
+        String equipped = equippedBone(player).toLowerCase(Locale.ROOT);
+        String active = activeBone(player).toLowerCase(Locale.ROOT);
+        if (!equipped.isEmpty() && isBoneAllowed(player, equipped) && !equipped.equals(active)) {
+            applyActiveOnly(player, equipped);
+            return;
+        }
+        if (!active.isEmpty() && !isBoneAllowed(player, active)) {
+            String fallback = unequipHeadBoneId(player);
+            if (!fallback.isEmpty() && !isBoneAllowed(player, fallback)) {
+                fallback = "";
+            }
+            applyActiveOnly(player, fallback);
+        }
+    }
 
     public static boolean shopEnabled() {
         return CharacterServicesConfig.get().enabled
@@ -188,6 +287,10 @@ public final class CosmeticHeadBoneService {
     }
 
     private static String resolveEquippedBone(ServerPlayer player) {
+        if (isPreviewing(player)) {
+            String stored = equippedBone(player);
+            return stored.isEmpty() ? "" : stored.toLowerCase(Locale.ROOT);
+        }
         String stored = equippedBone(player);
         if (!stored.isEmpty()) {
             return stored.toLowerCase(Locale.ROOT);
@@ -284,6 +387,7 @@ public final class CosmeticHeadBoneService {
         if (cost > 0L && !AncientCoinEconomy.charge(player, cost)) {
             return "§c" + AncientCoinEconomy.missingText(player, cost);
         }
+        discardPreview(player);
         CharacterServicesStore.PlayerRecord rec =
                 CharacterServicesStore.get().record(player.m_20148_().toString());
         if (rec.unlockedHeadBones == null) {
@@ -322,6 +426,7 @@ public final class CosmeticHeadBoneService {
         if (player == null) {
             return;
         }
+        discardPreview(player);
         String prior = priorActiveBone == null ? "" : priorActiveBone.trim();
         if (!prior.isEmpty() && isBoneAllowed(player, prior)) {
             Character ch = DmzProgression.character(player);
@@ -390,6 +495,7 @@ public final class CosmeticHeadBoneService {
         if (ch == null) {
             return "§cCharacter data unavailable.";
         }
+        discardPreview(player);
         try {
             String normalized = bone == null ? "" : bone.trim().toLowerCase(Locale.ROOT);
             ch.setActiveHeadBone(normalized);
@@ -426,6 +532,7 @@ public final class CosmeticHeadBoneService {
         if (ch == null) {
             return "§cCharacter data unavailable.";
         }
+        discardPreview(player);
         try {
             ch.setActiveHeadBone(bone);
             persistEquippedBone(player, bone);
@@ -435,6 +542,22 @@ public final class CosmeticHeadBoneService {
             return "§aEquipped head part §f" + label + "§a.";
         } catch (Throwable t) {
             return "§cCould not equip that head part.";
+        }
+    }
+
+    /** Visual only. Does not write {@code equippedHeadBone}. */
+    private static String applyActiveOnly(ServerPlayer player, String bone) {
+        Character ch = DmzProgression.character(player);
+        if (ch == null) {
+            return "§cCharacter data unavailable.";
+        }
+        try {
+            String normalized = bone == null ? "" : bone.trim().toLowerCase(Locale.ROOT);
+            ch.setActiveHeadBone(normalized);
+            RaceHeadBoneSync.syncClient(player);
+            return "§7Restored your previous head part.";
+        } catch (Throwable t) {
+            return "§cCould not restore that head part.";
         }
     }
 }

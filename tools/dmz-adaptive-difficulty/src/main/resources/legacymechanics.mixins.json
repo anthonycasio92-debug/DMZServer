@@ -11,6 +11,7 @@
     "DmzRevampPrestigeCapMixin",
     "PrestigeServiceIntegrationMixin",
     "UpdateCharacterC2SMixin",
+    "StatsSyncC2SGenderMixin",
     "CreateCharacterC2SMixin",
     "StatsDataGetPlayerMixin",
     "StatsDataSecondaryPlayerMixin",

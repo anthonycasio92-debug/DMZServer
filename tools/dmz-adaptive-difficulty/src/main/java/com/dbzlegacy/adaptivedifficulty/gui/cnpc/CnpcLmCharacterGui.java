@@ -211,14 +211,20 @@ public final class CnpcLmCharacterGui {
         var ph = CharacterServicesGuiApi.placeholders(player);
         int pages = Math.max(1, CosmeticHeadBoneService.pageCount());
         int pg = Math.min(pages - 1, Math.max(0, page));
+        String previewId = CosmeticHeadBoneService.previewBoneId(player);
+        String previewName = CosmeticHeadBoneService.previewLabel(player);
+        String subtitle = previewName.isBlank()
+                ? "§7Page §f" + (pg + 1) + "/" + pages + CnpcGuiStyle.SEP + "§7Active §f"
+                        + ph.getOrDefault("active_head_bone", "none")
+                : "§ePreviewing §f" + previewName;
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§f", "Character", "Head bones"),
-                "§7Page §f" + (pg + 1) + "/" + pages + CnpcGuiStyle.SEP + "§7Active §f"
-                        + ph.getOrDefault("active_head_bone", "none"));
+                subtitle);
         int listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBeforePickList(gui, infoY,
                 CharacterServicesGuiApi.linesForPage(player, "bones:" + pg), 2));
 
         List<String> cards = CharacterServicesGuiApi.headBoneCards(player, pg);
-        int rowsBelow = 3;
+        boolean previewing = !previewId.isBlank();
+        int rowsBelow = previewing ? 4 : 3;
         String[] labels = CnpcGuiSupport.cardLabels(cards, 1);
         int bandY = CnpcGuiSupport.pickListBandY(listY, rowsBelow, gui, labels.length);
         int scrollBottom = CnpcGuiSupport.pickListScrollBottom(listY, rowsBelow, gui, labels.length);
@@ -233,12 +239,31 @@ public final class CnpcLmCharacterGui {
                 String id = selectedCardId(cards, sc);
                 if (id != null) {
                     CnpcGuiSupport.act(player,
-                            () -> CharacterServicesGuiApi.handleDo(player, "bone_unlock", id, "bones"),
+                            () -> CharacterServicesGuiApi.handleDo(player, "bone_preview", id, "bones"),
                             () -> open(player, "bones:" + pg));
                 }
             });
         }
         int row = scrollBottom + 8;
+        if (previewing) {
+            boolean locked = !CosmeticHeadBoneService.hasUnlock(player, previewId);
+            String buy = locked
+                    ? "§aUnlock & equip §f" + com.dbzlegacy.adaptivedifficulty.character.CharacterServicesSystem
+                            .formatCost(CosmeticHeadBoneService.unlockCost(player, previewId))
+                    : "§aEquip";
+            String buyAction = locked ? "bone_unlock" : "bone_equip";
+            CnpcGuiSupport.buttonSmall(gui, 64, buy, CnpcGuiSupport.COL_L, row, CnpcGuiSupport.BTN_W,
+                    () -> CnpcGuiSupport.act(
+                            player,
+                            () -> CharacterServicesGuiApi.handleDo(player, buyAction, previewId, "bones"),
+                            () -> open(player, "bones:" + pg)));
+            CnpcGuiSupport.buttonSmall(gui, 65, "§7Restore", CnpcGuiSupport.COL_R, row, CnpcGuiSupport.BTN_W,
+                    () -> CnpcGuiSupport.act(
+                            player,
+                            () -> CharacterServicesGuiApi.handleDo(player, "bone_restore", "", "bones"),
+                            () -> open(player, "bones:" + pg)));
+            row += CnpcGuiSupport.ROW_STEP;
+        }
         CnpcGuiSupport.buttonSmall(gui, 60, "§aEquip race default", CnpcGuiSupport.COL_L, row, CnpcGuiSupport.BTN_W,
                 () -> CnpcGuiSupport.act(
                         player,
@@ -259,7 +284,11 @@ public final class CnpcLmCharacterGui {
                     () -> open(player, "bones:" + (pg + 1)));
         }
         row += CnpcGuiSupport.ROW_STEP + 4;
-        CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "main"), "§7« Back");
+        CnpcGuiSupport.navSubmenu(player, gui, row, () -> {
+            CosmeticHeadBoneService.restorePreview(player);
+            open(player, "main");
+        }, "§7« Back");
+        CnpcGuiSupport.paintSubjectPreview(subject, gui, player);
     }
 
     private static int parseBonePage(String page) {

@@ -1,8 +1,16 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.15**.
+What changed from **4.5.147** through **4.6.16**.
 
-The live mods folder gets `LegacyMechanics-4.6.15.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.6.16.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+
+## Reskin gender
+
+During a reskin, the gender picked in the editor is saved. Races that do not have a gender stay male.
+
+## Head bone preview
+
+Clicking a head part shows it on you before it charges. Unlock & equip, Equip, or Restore. Back puts the old part back. The menu model cannot wear a second parts model, so the preview is the one on your character.
 
 ## Sparring menus
 

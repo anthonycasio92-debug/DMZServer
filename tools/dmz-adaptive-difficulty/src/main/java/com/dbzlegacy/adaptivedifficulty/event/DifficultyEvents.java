@@ -178,6 +178,7 @@ public final class DifficultyEvents {
                         .syncFromLegacy(player);
                 com.dbzlegacy.adaptivedifficulty.progression.PersonalLevelCapMirror.publish(player);
                 com.dbzlegacy.adaptivedifficulty.progression.PrestigeResourceRecovery.pulse(player);
+                com.dbzlegacy.adaptivedifficulty.character.CosmeticHeadBoneService.settleAfterLogin(player);
             } catch (Throwable ignored) {
             }
         };
@@ -401,6 +402,7 @@ public final class DifficultyEvents {
             LAST_FORM_KEY.remove(player.m_20148_());
             AncientCoinEconomy.clearMigrateFlag(player.m_20148_());
             com.dbzlegacy.adaptivedifficulty.character.ReskinSessionGuard.clear(player);
+            com.dbzlegacy.adaptivedifficulty.character.CosmeticHeadBoneService.restorePreview(player);
             AreaDifficulty.clearCache();
             RivalSystem.onLogout(player);
             SparringSystem.onLogout(player);

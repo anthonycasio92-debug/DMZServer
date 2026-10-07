@@ -212,7 +212,7 @@ merge_onto_base_jar() {
       "$merge/com/dbzlegacy/adaptivedifficulty/character/CharacterServicesSystem.class"
   fi
   for class in CharacterServicesAccess CharacterServicesPermissionBootstrap DmzFightingClassStatsSync \
-      DmzClassCommandApply RaceChangeCreationFlow; do
+      DmzClassCommandApply RaceChangeCreationFlow CosmeticHeadBoneService; do
     if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/character/${class}.class" ]]; then
       mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/character"
       cp "$OUT/com/dbzlegacy/adaptivedifficulty/character/${class}.class" \
@@ -293,6 +293,7 @@ merge_onto_base_jar() {
     for mixin_cls in StatsDataHudPoolMaxMixin StatsDataOverhaulCombatScaleMixin \
         ResourcesPoolClampMixin ResourcesLoadClampMixin \
         StatsDataRestoreMultiplierClampMixin StatsDataLoadClampMixin StatsDataMixin \
+        StatsSyncC2SGenderMixin \
         LegacyMechanicsMixinPlugin; do
       if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/mixin/${mixin_cls}.class" ]]; then
         cp "$OUT/com/dbzlegacy/adaptivedifficulty/mixin/${mixin_cls}.class" \
