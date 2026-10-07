@@ -1,8 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.11**.
+What changed from **4.5.147** through **4.6.12**.
 
-The live mods folder gets `LegacyMechanics-4.6.11.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.6.12.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+
+## Sparring TP
+
+Sparring pays TP when a player deals damage to another player. A left-click with an ordinary item is not that damage, so it does not start a spar, keep one going, or grant TP. Empty-hand melee, a registered weapon, and ki still do.
 
 ## Corpses in protected dimensions
 

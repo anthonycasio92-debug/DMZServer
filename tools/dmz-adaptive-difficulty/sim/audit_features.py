@@ -1629,6 +1629,13 @@ def main() -> int:
           read(SRC / "com/dbzlegacy/adaptivedifficulty/config/DifficultyConfig.java"))
     check("3 netherite cost constant", "PLAYER_SUMMON_NETHERITE_COST = 3" in end_str)
 
+    print("\n=== Spar item punch (4.6.12) ===")
+    spar_punch = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparringSystem.java")
+    check("item punch does not grant spar TP",
+          "isItemPunch" in spar_punch
+          and "WeaponRegistry.getAttributes" in spar_punch
+          and "isPlayerMeleeSource" in spar_punch)
+
     print("\n=== Summary ===")
     for w in warns:
         print(f"WARN: {w}")

@@ -8,6 +8,7 @@ import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import com.dbzlegacy.adaptivedifficulty.util.LmChat;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
+import com.dragonminez.common.combat.logic.weapon.WeaponRegistry;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.Status;
 import java.util.ArrayList;
@@ -19,6 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.item.ItemStack;
 
 /** Sparring Tp System 3.2.11 facade. */
 public final class SparringSystem {
@@ -139,6 +141,12 @@ public final class SparringSystem {
             return;
         }
         boolean ki = DmzRewards.isKiDamage(source);
+        // A left-click with a non-DMZ item stays vanilla item damage. CombatEvent
+        // does not rewrite it into melee. That hit must not start a spar, keep one
+        // alive, or pay TP — only damage the attacker actually deals does.
+        if (!ki && isItemPunch(attacker, source)) {
+            return;
+        }
         String kiKind = ki ? SparCombat.classifyKiType(source) : "";
         recordCombatExchange(attacker, victim, ki, kiKind);
         SparPlayerRuntime vRt = runtime(victim.m_20148_());
@@ -200,6 +208,33 @@ public final class SparringSystem {
             rt.sessionBlocks++;
             rt.styleBlock += 1.0; // script: +1 per block, not HP lost
             SparCombat.awardCombatTp(player, attacker, rt, SparCombat.BLOCK_TP_BASE, "melee");
+        }
+    }
+
+    /**
+     * Vanilla player-attack while the main hand is a non-DMZ item.
+     * Empty hand and registered weapons are real melee. Ki is handled earlier.
+     */
+    private static boolean isItemPunch(ServerPlayer attacker, DamageSource source) {
+        if (attacker == null || !isPlayerMeleeSource(source)) {
+            return false;
+        }
+        try {
+            ItemStack main = attacker.m_21205_();
+            if (main == null || main.m_41619_()) {
+                return false;
+            }
+            return WeaponRegistry.getAttributes(main) == null;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    private static boolean isPlayerMeleeSource(DamageSource source) {
+        try {
+            return source != null && "player".equals(source.m_19385_());
+        } catch (Throwable ignored) {
+            return false;
         }
     }
 
