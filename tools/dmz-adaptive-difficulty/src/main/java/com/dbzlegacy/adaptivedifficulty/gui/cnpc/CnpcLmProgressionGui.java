@@ -311,10 +311,10 @@ public final class CnpcLmProgressionGui {
         int infoY = CnpcGuiSupport.paintHeader(player, gui,
                 CnpcGuiStyle.subPage("§d", "Progression", "Remove Android"),
                 "§7Two-step confirm within 10 seconds");
-        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of(
+        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBeforePickList(gui, infoY, List.of(
                 "§7Removes Android forms and restores what you had.",
                 "§eClick again within 10 seconds to confirm."
-        ), CnpcGuiStyle.INFO_INLINE_MAX));
+        ), CnpcGuiStyle.INFO_LIST_HEADER_MAX));
         CnpcGuiSupport.button(gui, 63, "§cRemove on yourself", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> ProgressionGuiApi.handleDo(player, "android_remove", "",
