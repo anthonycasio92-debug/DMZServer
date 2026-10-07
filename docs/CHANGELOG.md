@@ -1,8 +1,8 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.31**.
+What changed from **4.5.147** through **4.6.32**.
 
-The live mods folder gets `LegacyMechanics-4.6.31.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.6.32.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
 
 ## List selection
 
@@ -78,7 +78,7 @@ Death in space, Namek, Beerus' planet, and the other Noea travel dimensions uses
 
 ## Majin absorption bonus
 
-The stored melee and ki bonus applies while absorption power is above zero, scaled by the same power-release percent as melee and ki. The read happens after Noea adds the raw bonus, then replaces that raw add with the scaled one. At zero power the bonus is left out of the damage read and the stored numbers stay, so absorbing again still adds to them. `/dmzstats reset` clears those stored numbers from `StatsCommand.resetStats`. The melee self form clears them from its own executor. Dende's reset (action 2) clears them from `handleDende`. A race change clears them in character services, and finishing a new character clears them again before the new race is applied. The console prints `[LM] wipeAbsorption firing for <name> via <method>` for each of those. Battle power is unchanged.
+The stored melee and ki bonus applies while absorption power is above zero, scaled by the same power-release percent as melee and ki. The read happens after Noea adds the raw bonus, then replaces that raw add with the scaled one. At zero power the bonus is left out of the damage read and the stored numbers stay, so absorbing again still adds to them. `/dmzstats reset` clears those stored numbers from `StatsCommand.resetStats`. The melee self form clears them from its own executor. Dende's reset (action 2) clears them from `handleDende`. A race change clears them in character services, and finishing a new character clears them again before the new race is applied. The console prints `[LM] wipeAbsorption firing for <name> via <method>` for each of those, then whether Noea's data copy was present, the stored melee before it was zeroed, and the melee read back after save. Battle power is unchanged.
 
 ## Race lock removed
 

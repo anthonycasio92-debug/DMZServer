@@ -11,22 +11,54 @@ import net.minecraft.world.entity.player.Player;
 public final class MajinAbsorptionStore {
     private MajinAbsorptionStore() {}
 
-    /** Zero the bonus numbers and save them. The absorbed-fighter list is left in place. */
+    /**
+     * Zero the bonus numbers and save them. The absorbed-fighter list is left in place.
+     * {@code data()} is a copy read from player NBT, so the readback is a second copy.
+     */
     public static void clear(Player player) {
-        if (!(player instanceof ServerPlayer serverPlayer)) {
+        String name = "null";
+        if (player != null) {
+            try {
+                name = player.m_7755_().getString();
+            } catch (Throwable ignored) {
+                name = "?";
+            }
+        }
+        System.out.println("[LM] clear() called for " + name);
+        if (player == null) {
+            System.out.println("[LM] ABORT: player is null, cannot wipe");
             return;
         }
         try {
-            V090Data data = MajinAbsorptionService.data(serverPlayer);
+            V090Data data = MajinAbsorptionService.data(player);
+            System.out.println("[LM] data object: " + (data == null
+                    ? "NULL"
+                    : "present, melee=" + data.absorptionMelee
+                            + " ki=" + data.absorptionKi
+                            + " power=" + data.absorptionPower
+                            + " id=" + System.identityHashCode(data)));
             if (data == null) {
+                System.out.println("[LM] ABORT: data is null, cannot wipe");
                 return;
             }
             data.absorptionMelee = 0;
             data.absorptionKi = 0;
             data.absorptionPower = 0;
-            V090Data.save(serverPlayer, data);
-            MajinAbsorptionService.sync(serverPlayer);
-        } catch (Throwable ignored) {
+            System.out.println("[LM] fields zeroed, calling save...");
+            V090Data.save(player, data);
+            System.out.println("[LM] save complete, calling sync...");
+            if (player instanceof ServerPlayer serverPlayer) {
+                MajinAbsorptionService.sync(serverPlayer);
+            }
+            V090Data again = MajinAbsorptionService.data(player);
+            System.out.println("[LM] readback melee=" + (again == null ? "NULL" : again.absorptionMelee)
+                    + " ki=" + (again == null ? "NULL" : again.absorptionKi)
+                    + " power=" + (again == null ? "NULL" : again.absorptionPower)
+                    + " id=" + (again == null ? "NULL" : System.identityHashCode(again)));
+            System.out.println("[LM] wipe complete");
+        } catch (Throwable t) {
+            System.out.println("[LM] wipe FAILED: " + t);
+            t.printStackTrace();
         }
     }
 
