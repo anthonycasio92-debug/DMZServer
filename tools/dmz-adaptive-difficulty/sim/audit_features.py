@@ -1874,6 +1874,17 @@ def main() -> int:
           and "require = 0" in corpse_fix
           and "private static void lm$disableDropSuppression" in corpse_fix)
 
+    print("\n=== Dragon ball pickup (4.6.34) ===")
+    dball = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/DragonBallPickupMixin.java")
+    check("right-click deposits one dragon ball",
+          "DragonBallBlock.class" in dball
+          and 'method = "m_6227_"' in dball
+          and "InteractionResult.PASS" in dball
+          and "m_150109_().m_36054_(stack)" in dball
+          and "unregisterConsumedDragonBalls" in dball
+          and "m_6144_()" in dball
+          and "require = 0" in dball)
+
     print("\n=== Majin absorption bonus (4.6.33) ===")
     absorb_gate = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/noea/NoeaAbsorptionBonusGateMixin.java")
     absorb_store = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/noea/MajinAbsorptionStore.java")

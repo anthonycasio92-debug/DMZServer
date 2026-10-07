@@ -1,8 +1,8 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.33**.
+What changed from **4.5.147** through **4.6.34**.
 
-The live mods folder gets `LegacyMechanics-4.6.33.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.6.34.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
 
 ## List selection
 
@@ -75,6 +75,10 @@ Sparring pays TP when a player deals damage to another player. A left-click with
 ## Corpses in protected dimensions
 
 Death in space, Namek, Beerus' planet, and the other Noea travel dimensions uses the same corpse as everywhere else. The items go into the corpse. They are not returned on respawn. A corpse in the void stays in the void.
+
+## Dragon balls
+
+Right-click a placed dragon ball and that ball goes into your inventory. A full inventory drops the leftover at your feet. The radar forgets that spot. Sneak and right-click does the same thing when all seven are already together. A normal right-click with all seven still summons the dragon.
 
 ## Majin absorption bonus
 

@@ -12,6 +12,7 @@
     "MeleeStatsResetAbsorptionWipeMixin",
     "DendeResetAbsorptionWipeMixin",
     "CreateCharacterAbsorptionWipeMixin",
+    "DragonBallPickupMixin",
     "DmzRevampPrestigeCapMixin",
     "PrestigeServiceIntegrationMixin",
     "UpdateCharacterC2SMixin",
