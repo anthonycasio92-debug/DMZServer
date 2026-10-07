@@ -1771,6 +1771,20 @@ def main() -> int:
           and "Duel requests" in rival_records
           and "Declare invites" in rival_records)
 
+    print("\n=== CNPC list scroll (4.6.24) ===")
+    support = read(cnpc_dir / "CnpcGuiSupport.java")
+    scroll_start = support.find("public static IScroll scroll(")
+    scroll_end = support.find("public static int paintReadOnlyScroll", scroll_start)
+    scroll_fn = support[scroll_start:scroll_end] if scroll_start >= 0 and scroll_end > scroll_start else ""
+    check("pick lists are one scroll on the GUI",
+          "gui.addScroll(id, x, y, useW, h, copy)" in scroll_fn
+          and "getScrollingPanel" not in scroll_fn
+          and "setHasSearch(true)" in support
+          and "one scroll region" in support
+          and "scrollPickList" in read(cnpc_dir / "CnpcLmCharacterGui.java")
+          and "scrollPickList" in read(cnpc_dir / "CnpcLmRivalGui.java")
+          and "scrollPickList" in read(cnpc_dir / "CnpcLmSparGui.java"))
+
     print("\n=== CNPC menu flatten (4.6.23) ===")
     hub_gui = read(cnpc_dir / "CnpcLmHubGui.java")
     char_gui = read(cnpc_dir / "CnpcLmCharacterGui.java")

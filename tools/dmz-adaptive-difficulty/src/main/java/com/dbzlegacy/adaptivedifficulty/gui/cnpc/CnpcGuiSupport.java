@@ -172,7 +172,7 @@ public final class CnpcGuiSupport {
         if (raw.size() + 1 > max) {
             box.set(max - 1, "§e+" + (raw.size() + 1 - max) + " more — check chat for details");
         }
-        // Never use the scrolling panel here — the main page may need it for scrollPickList.
+        // Stay inline. A pick list is the menu's one scroll; a long read-only body may still use the panel.
         return paintInfoBlock(gui, y, box, max, true, ID_FLASH_LABEL_BASE);
     }
 
@@ -418,8 +418,9 @@ public final class CnpcGuiSupport {
     }
 
     /**
-     * Interactive pick list inside the scrolling panel (clicks work). Mouse wheel on the list uses
-     * the on-screen scroll bar; {@link #paintInfoBlock} status bands use wheel via label stacks.
+     * One pick list on the menu. CustomNPCs only supports one scroll region, so this calls
+     * {@link ICustomGui#addScroll} directly. Nesting the list in {@link ICustomGui#getScrollingPanel()}
+     * makes the panel take the mouse wheel.
      */
     public static IScroll scroll(ICustomGui gui, int id, int x, int y, int w, int h, String[] items) {
         String[] safe = items == null ? new String[0] : items;
@@ -429,9 +430,7 @@ public final class CnpcGuiSupport {
         }
         int bandW = textBandWidth();
         int useW = Math.min(w, bandW);
-        IComponentsScrollableWrapper panel = gui.getScrollingPanel();
-        panel.init(x, y, useW, h);
-        return panel.addScroll(id, 0, 0, useW, h, copy);
+        return gui.addScroll(id, x, y, useW, h, copy);
     }
 
     /** Long read-only copy — inline when short, scroll band only when needed. */

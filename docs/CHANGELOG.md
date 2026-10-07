@@ -1,8 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.23**.
+What changed from **4.5.147** through **4.6.24**.
 
-The live mods folder gets `LegacyMechanics-4.6.23.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.6.24.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+
+## List scrolling
+
+Head parts, rival picks, spar picks, and the other player lists scroll with the mouse wheel. The list is the menu's scroll, so the wheel is not stolen by a second scroll region.
 
 ## Menus
 
