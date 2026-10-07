@@ -21,7 +21,8 @@ public final class CnpcLmCharacterGui {
             return;
         }
         if (p.startsWith("race_pct:")) {
-            paintRacePct(player, p.substring("race_pct:".length()));
+            String rest = p.substring("race_pct:".length());
+            paintRaceConfirm(player, rest.contains(":") ? rest : rest + ":0");
             return;
         }
         if (p.startsWith("class_confirm:")) {
@@ -81,6 +82,8 @@ public final class CnpcLmCharacterGui {
             if ("true".equals(ph.get("can_head_bones"))) {
                 actions.add(CnpcGuiLayout.GridButton.run("§fHead parts", () -> open(player, "bones:0")));
             }
+            actions.add(CnpcGuiLayout.GridButton.run("§cRemove Android",
+                    () -> CnpcLmGui.open(player, "android_remove", "main")));
             if (actions.isEmpty()) {
                 String note = "false".equals(ph.get("can_services"))
                         ? "§7Character Services are locked for your account. Ask staff if you need access."
@@ -97,6 +100,9 @@ public final class CnpcLmCharacterGui {
         } else {
             gui.addLabel(CnpcGuiSupport.ID_INLINE_NOTE, "§cCharacter Services unavailable.",
                     CnpcGuiSupport.M, row + 4, CnpcGuiSupport.listWidth(), 14);
+            row += CnpcGuiSupport.ROW_STEP;
+            CnpcGuiSupport.button(gui, 40, "§cRemove Android", CnpcGuiSupport.COL_L, row,
+                    () -> CnpcLmGui.open(player, "android_remove", "main"));
             row += CnpcGuiSupport.ROW_STEP;
         }
         footer(player, gui, row, null, subject);
@@ -119,52 +125,45 @@ public final class CnpcLmCharacterGui {
         scroll.setOnClick((g, sc) -> {
             String id = selectedCardId(cards, sc);
             if (id != null) {
-                open(player, "race_pct:" + id);
+                open(player, "race_confirm:" + id + ":0");
             }
         });
         footer(player, gui, CnpcGuiSupport.navRowAfterScroll(bandY, scrollH), "main", subject);
     }
 
-    private static void paintRacePct(ServerPlayer player, String raceAndMaybePct) {
-        String[] bits = raceAndMaybePct.split(":", 2);
+    private static void paintRaceConfirm(ServerPlayer player, String raceAndPct) {
+        String[] bits = raceAndPct.split(":", 2);
         String raceId = bits[0];
-        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CHARACTER, CnpcGuiSupport.W, 360, (pl, gui) -> {
-            ServerPlayer subject = CnpcGuiSupport.target(pl);
-            int infoY = CnpcGuiSupport.paintHeader(pl, gui,
-                    CnpcGuiStyle.subPage("§f", "Character", "Keep progress"),
-                    "§7Becoming §f" + titleRace(raceId));
+        int selected = 0;
+        if (bits.length > 1) {
+            try {
+                selected = Integer.parseInt(bits[1].trim());
+            } catch (NumberFormatException ignored) {
+                selected = 0;
+            }
+        }
+        int keepSelected = selected;
+        String confirmArg = raceId + ":" + keepSelected;
+        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CHARACTER, CnpcGuiSupport.W, 420, (pl, gui) -> {
+            int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcGuiStyle.subPage("§f", "Character", "Confirm race"),
+                    "§7Becoming §f" + titleRace(raceId) + " §8· §7keep §f" + keepSelected + "%");
             int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintReadOnlyScroll(gui, infoY,
-                            CharacterServicesGuiApi.linesForPage(player, "race_pct:" + raceId + ":0")));
-            row = CnpcGuiSupport.paintSectionTag(gui, 15, row + 4, "§8Progress kept after change");
+                            CharacterServicesGuiApi.linesForPage(player, "race_confirm:" + confirmArg)));
             int[] pcts = {0, 25, 50, 75, 100};
             CnpcGuiLayout.GridButton[] grid = new CnpcGuiLayout.GridButton[pcts.length];
             for (int i = 0; i < pcts.length; i++) {
                 int keep = pcts[i];
-                grid[i] = CnpcGuiLayout.GridButton.run("§fKeep " + keep + "% progress",
+                String label = (keep == keepSelected ? "§6" : "§7") + "Keep " + keep + "%";
+                grid[i] = CnpcGuiLayout.GridButton.run(label,
                         () -> open(player, "race_confirm:" + raceId + ":" + keep));
             }
             row = CnpcGuiLayout.paintTwoColumnButtonGrid(player, gui, row, CnpcGuiSupport.ID_GRID_BASE, grid, () -> {});
-            row += 4;
-            CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "race"), "§7« Back");
-        });
-    }
-
-    private static void paintRaceConfirm(ServerPlayer player, String raceAndPct) {
-        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CHARACTER, CnpcGuiSupport.W, 340, (pl, gui) -> {
-            ServerPlayer subject = CnpcGuiSupport.target(pl);
-            int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcGuiStyle.subPage("§f", "Character", "Confirm race"),
-                    CnpcGuiStyle.HINT_REVIEW_PAY);
-            int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintReadOnlyScroll(gui, infoY,
-                            CharacterServicesGuiApi.linesForPage(player, "race_confirm:" + raceAndPct)));
             CnpcGuiSupport.button(gui, 20, "§aConfirm & pay", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                     player,
-                    () -> CharacterServicesGuiApi.handleDo(player, "race_confirm", raceAndPct, "main"),
+                    () -> CharacterServicesGuiApi.handleDo(player, "race_confirm", confirmArg, "main"),
                     () -> CnpcLmHubGui.open(player, "main")));
             row += CnpcGuiSupport.ROW_STEP + 8;
-            CnpcGuiSupport.navSubmenu(player, gui, row, () -> {
-                String race = raceAndPct.split(":", 2)[0];
-                open(player, "race_pct:" + race);
-            }, "§7« Back");
+            CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "race"), "§7« Back");
         });
     }
 

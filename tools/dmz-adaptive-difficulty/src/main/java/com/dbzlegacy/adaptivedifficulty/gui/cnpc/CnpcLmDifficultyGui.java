@@ -62,6 +62,7 @@ public final class CnpcLmDifficultyGui {
                 case "end_dragon", "dragon", "summon_dragon" -> paintEndDragon(pl, gui);
                 case "admin" -> paintStaffAdmin(pl, gui);
                 case "stats", "statistics", "details" -> paintStats(pl, gui);
+                case "settings" -> paintSettings(pl, gui);
                 default -> paintMain(pl, gui);
             }
         });
@@ -112,25 +113,33 @@ public final class CnpcLmDifficultyGui {
                 () -> DifficultyActions.handleArgNoReopen(subject, "toggle_personal", "0", "main").message(),
                 () -> open(player, "main")));
         row += CnpcGuiSupport.ROW_STEP;
-        CnpcGuiSupport.button(gui, 24, "§aEnd Dragon…", CnpcGuiSupport.COL_L, row,
+        CnpcGuiSupport.button(gui, 24, "§aEnd Dragon", CnpcGuiSupport.COL_L, row,
                 () -> open(player, "end_dragon"));
-        CnpcGuiSupport.button(gui, 25, "§6Rival system", CnpcGuiSupport.COL_R, row,
-                () -> CnpcLmGui.open(player, "rival", "main"));
+        CnpcGuiSupport.button(gui, 25, "§7Settings", CnpcGuiSupport.COL_R, row,
+                () -> open(player, "settings"));
         row += CnpcGuiSupport.ROW_STEP;
+        navFooter(player, gui, row, null, subject);
+    }
+
+    private static void paintSettings(ServerPlayer player, ICustomGui gui) {
+        ServerPlayer subject = who(player);
         PlayerDifficultyData d = DifficultyCache.data(subject);
         boolean coinChat = d != null && d.isCoinDropChat();
-        CnpcGuiSupport.button(gui, 26, coinChat ? CnpcGuiStyle.toggleOn("Coin messages")
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§a", "Difficulty", "Settings"),
+                "§7Messages and staff readouts");
+        int row = CnpcGuiSupport.bodyBelowHeader(infoY);
+        CnpcGuiSupport.button(gui, 20, coinChat ? CnpcGuiStyle.toggleOn("Coin messages")
                 : CnpcGuiStyle.toggleOff("Coin messages"), CnpcGuiSupport.COL_L, row,
                 () -> CnpcGuiSupport.act(
                         player,
-                        () -> DifficultyActions.handleArgNoReopen(subject, "toggle_coin_chat", "0", "main").message(),
-                        () -> open(player, "main")));
+                        () -> DifficultyActions.handleArgNoReopen(subject, "toggle_coin_chat", "0", "settings").message(),
+                        () -> open(player, "settings")));
         if (StaffAccess.isStaff(player)) {
-            CnpcGuiSupport.button(gui, 27, "§8Staff details", CnpcGuiSupport.COL_R, row,
+            CnpcGuiSupport.button(gui, 21, "§8Staff details", CnpcGuiSupport.COL_R, row,
                     () -> open(player, "stats"));
         }
         row += CnpcGuiSupport.ROW_STEP;
-        navFooter(player, gui, row, null, subject);
+        navFooter(player, gui, row, "main", subject);
     }
 
     private static void paintStats(ServerPlayer player, ICustomGui gui) {
@@ -163,7 +172,7 @@ public final class CnpcLmDifficultyGui {
                 "§7Combat rating and scaled stats (read-only)");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX));
         row += 8;
-        navFooter(player, gui, row, "main", subject);
+        navFooter(player, gui, row, "settings", subject);
     }
 
     private static String blankNone(String s) {

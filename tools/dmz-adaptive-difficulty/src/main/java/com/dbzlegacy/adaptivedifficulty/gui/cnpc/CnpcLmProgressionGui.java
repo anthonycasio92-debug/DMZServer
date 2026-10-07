@@ -80,21 +80,16 @@ public final class CnpcLmProgressionGui {
         List<String> info = new ArrayList<>(ProgressionGuiApi.linesForPage(player, "main"));
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, info, CnpcGuiStyle.INFO_INLINE_MAX));
 
-        row = placeRow(gui, player, row, 20, "§9Skills", CnpcGuiSupport.COL_L, () -> open(player, "skills"));
-        placeRow(gui, player, row, 21, "§9TP Gains", CnpcGuiSupport.COL_R, () -> open(player, "tp"));
-        row += CnpcGuiSupport.ROW_STEP;
-        placeRow(gui, player, row, 22, "§9Race & Form", CnpcGuiSupport.COL_L, () -> open(player, "race"));
-        placeRow(gui, player, row, 23, "§9Combat", CnpcGuiSupport.COL_R, () -> open(player, "combat"));
-        row += CnpcGuiSupport.ROW_STEP;
-        placeRow(gui, player, row, 24, "§9End", CnpcGuiSupport.COL_L, () -> open(player, "end"));
-        placeRow(gui, player, row, 25, "§9Utility", CnpcGuiSupport.COL_R, () -> open(player, "utility"));
-        row += CnpcGuiSupport.ROW_STEP;
-        placeRow(gui, player, row, 26, "§9Status", CnpcGuiSupport.COL_L, () -> open(player, "status"));
-        row += CnpcGuiSupport.ROW_STEP;
-
+        row = placeRow(gui, player, row, 20, "§9Modules", CnpcGuiSupport.COL_L, () -> open(player, "skills"));
         if (staff) {
-            placeRow(gui, player, row, 28, "§9Ancient coins", CnpcGuiSupport.COL_L, () -> open(player, "economy"));
-            placeRow(gui, player, row, 29, "§9All flags", CnpcGuiSupport.COL_R, () -> open(player, "flags"));
+            placeRow(gui, player, row, 21, "§6TP boost", CnpcGuiSupport.COL_R, () -> open(player, "boost_panel"));
+            row += CnpcGuiSupport.ROW_STEP;
+            if (ProgressionConfig.androidConversion()) {
+                placeRow(gui, player, row, 22, "§9Android tools", CnpcGuiSupport.COL_L, () -> open(player, "android_panel"));
+            }
+            placeRow(gui, player, row, 23, "§9Ancient coins", CnpcGuiSupport.COL_R, () -> open(player, "economy"));
+            row += CnpcGuiSupport.ROW_STEP;
+            placeRow(gui, player, row, 29, "§9All flags", CnpcGuiSupport.COL_L, () -> open(player, "flags"));
             row += CnpcGuiSupport.ROW_STEP;
         } else {
             row += CnpcGuiSupport.ROW_STEP;
@@ -114,10 +109,21 @@ public final class CnpcLmProgressionGui {
         String title = sectionTitle(page);
         String hint = staff ? CnpcGuiStyle.HINT_TOGGLE_STAFF : CnpcGuiStyle.HINT_READ_ONLY;
         int infoY = CnpcGuiSupport.paintHeader(player, gui, title, hint);
+        int row = CnpcGuiSupport.bodyBelowHeader(infoY);
+        String[] moduleIds = {"skills", "tp", "race", "combat", "end", "utility", "status", "shop"};
+        String[] moduleNames = {"Skills", "TP Gains", "Race & Form", "Combat", "End", "Utility", "Status", "Shop"};
+        CnpcGuiLayout.GridButton[] moduleTabs = new CnpcGuiLayout.GridButton[moduleIds.length];
+        for (int i = 0; i < moduleIds.length; i++) {
+            String id = moduleIds[i];
+            String button = id.equals(page) ? "§9" + moduleNames[i] : "§7" + moduleNames[i];
+            moduleTabs[i] = CnpcGuiLayout.GridButton.run(button, () -> open(player, id));
+        }
+        row = CnpcGuiLayout.paintTwoColumnButtonGrid(
+                player, gui, row, CnpcGuiSupport.ID_GRID_BASE, moduleTabs, () -> {});
         List<String> sectionLines = ProgressionGuiApi.linesForPage(player, page);
-        int row = sectionLines.size() > 2
-                ? CnpcGuiSupport.paintLongReadOnlyBody(gui, infoY, sectionLines)
-                : CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, sectionLines, CnpcGuiStyle.INFO_INLINE_MAX));
+        row = sectionLines.size() > 2
+                ? CnpcGuiSupport.paintLongReadOnlyBody(gui, row, sectionLines)
+                : CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, row, sectionLines, CnpcGuiStyle.INFO_INLINE_MAX));
 
         Map<String, String> ph = ProgressionGuiApi.placeholders(player);
         List<CnpcGuiLayout.GridButton> grid = new ArrayList<>();
@@ -220,7 +226,7 @@ public final class CnpcLmProgressionGui {
         int flags = staff ? ProgressionGuiApi.flagKeysForPage(page).length : 0;
         int extra = staff && flags > 0 ? 1 : 0;
         int gridItems = flags + tools + extra;
-        return CnpcGuiSupport.suggestHeight(200 + ((gridItems + 1) / 2) * CnpcGuiSupport.ROW_STEP + 72);
+        return CnpcGuiSupport.suggestHeight(280 + ((gridItems + 1) / 2) * CnpcGuiSupport.ROW_STEP + 96);
     }
 
     private static int flagsPageHeight() {

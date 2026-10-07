@@ -1,8 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.22**.
+What changed from **4.5.147** through **4.6.23**.
 
-The live mods folder gets `LegacyMechanics-4.6.22.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.6.23.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+
+## Menus
+
+Spar dojo home, members, hall of fame, and rankings are one Dojo page. Dojo war stays its own page. Progression sections are tabs on Modules. Difficulty, Rival, and Spar toggles live on Settings. The hub no longer shows section labels or a welcome line. Remove Android is on Character Services. Race change asks how much progress to keep on the confirm page. Rival actions stay their own page. Prestige forms stay their own page.
 
 ## Rival records
 

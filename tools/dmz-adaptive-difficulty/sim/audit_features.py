@@ -1771,6 +1771,43 @@ def main() -> int:
           and "Duel requests" in rival_records
           and "Declare invites" in rival_records)
 
+    print("\n=== CNPC menu flatten (4.6.23) ===")
+    hub_gui = read(cnpc_dir / "CnpcLmHubGui.java")
+    char_gui = read(cnpc_dir / "CnpcLmCharacterGui.java")
+    spar_gui = read(cnpc_dir / "CnpcLmSparGui.java")
+    diff_gui = read(cnpc_dir / "CnpcLmDifficultyGui.java")
+    prog_menu = read(cnpc_dir / "CnpcLmProgressionGui.java")
+    prestige_gui = read(cnpc_dir / "CnpcLmPrestigeGui.java")
+    snapshot = read(cnpc_dir / "CnpcPlayerSnapshot.java")
+    check("hub drops the welcome line and section tags",
+          "Welcome back" not in snapshot
+          and "Combat & progression" not in hub_gui
+          and "Remove Android" not in hub_gui
+          and "§eSkill Check" in hub_gui)
+    check("character hosts remove android and race keep percent",
+          "§cRemove Android" in char_gui
+          and "Keep " in char_gui
+          and "race_confirm:" in char_gui)
+    check("spar dojo tabs keep war and training bonds separate",
+          "Dojo · " in spar_gui
+          and "Chat settings" in spar_gui
+          and "Training bonds" in spar_gui
+          and "void paintDojoWar" in spar_gui
+          and 'toggleOn("TP")' in spar_gui)
+    check("rival actions and prestige forms stay their own pages",
+          "void paintActions" in rival_records
+          and "void paintSettings" in rival_records
+          and "void paintEffects" in prestige_gui
+          and "§dForms" in prestige_gui)
+    check("progression sections are module tabs",
+          "§9Modules" in prog_menu
+          and "moduleIds" in prog_menu
+          and '!"android_remove".equals(page)' in prog_menu)
+    check("difficulty coin messages live on settings",
+          "Coin messages" in diff_gui
+          and "§6Rival system" not in diff_gui
+          and "§aEnd Dragon" in diff_gui)
+
     print("\n=== Summary ===")
     for w in warns:
         print(f"WARN: {w}")

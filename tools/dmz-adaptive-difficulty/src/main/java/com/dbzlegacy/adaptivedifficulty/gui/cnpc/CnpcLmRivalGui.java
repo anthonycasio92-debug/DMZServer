@@ -69,6 +69,7 @@ public final class CnpcLmRivalGui {
                         RivalChallengeManager.get().activeFighterNames(),
                         "spectate", "challenge");
                 case "admin" -> paintAdmin(pl, gui);
+                case "settings" -> paintSettings(pl, gui);
                 default -> paintMain(pl, gui);
             }
         });
@@ -145,19 +146,7 @@ public final class CnpcLmRivalGui {
         CnpcGuiSupport.button(gui, 23, "§dLeaderboard", CnpcGuiSupport.COL_R, row, () -> open(player, "top"));
         row += CnpcGuiSupport.ROW_STEP;
         CnpcGuiSupport.button(gui, 24, "§6Records", CnpcGuiSupport.COL_L, row, () -> open(player, "records"));
-        row += CnpcGuiSupport.ROW_STEP;
-        boolean tpOn = "true".equalsIgnoreCase(ph.get("tpMsg"));
-        CnpcGuiSupport.button(gui, 26, tpOn ? CnpcGuiStyle.toggleOn("TP")
-                : CnpcGuiStyle.toggleOff("TP"),
-                CnpcGuiSupport.COL_L, row, () -> act(
-                player, "tpmsg", "toggle", "main"));
-        if ("true".equalsIgnoreCase(ph.get("instinct_feature"))) {
-            boolean instinctOn = "true".equalsIgnoreCase(ph.get("instinct"));
-            CnpcGuiSupport.button(gui, 27, instinctOn ? CnpcGuiStyle.toggleOn("Rival instinct")
-                    : CnpcGuiStyle.toggleOff("Rival instinct"),
-                    CnpcGuiSupport.COL_R, row,
-                    () -> act(player, "instinct", "toggle", "main"));
-        }
+        CnpcGuiSupport.button(gui, 25, "§7Settings", CnpcGuiSupport.COL_R, row, () -> open(player, "settings"));
         row += CnpcGuiSupport.ROW_STEP;
         if (StaffAccess.isStaff(player)) {
             CnpcGuiSupport.buttonSmall(gui, CnpcGuiSupport.ID_STAFF_EXTRA, "§cStaff Admin", CnpcGuiSupport.COL_L, row,
@@ -165,6 +154,28 @@ public final class CnpcLmRivalGui {
             row += CnpcGuiSupport.ROW_STEP;
         }
         footer(player, gui, row, null);
+    }
+
+    private static void paintSettings(ServerPlayer player, ICustomGui gui) {
+        ServerPlayer who = subject(player);
+        Map<String, String> ph = RivalGuiApi.placeholders(who);
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Settings"),
+                "§7Chat and instinct");
+        int row = CnpcGuiSupport.bodyBelowHeader(infoY);
+        boolean tpOn = "true".equalsIgnoreCase(ph.get("tpMsg"));
+        CnpcGuiSupport.button(gui, 26, tpOn ? CnpcGuiStyle.toggleOn("TP")
+                : CnpcGuiStyle.toggleOff("TP"),
+                CnpcGuiSupport.COL_L, row, () -> act(
+                player, "tpmsg", "toggle", "settings"));
+        if ("true".equalsIgnoreCase(ph.get("instinct_feature"))) {
+            boolean instinctOn = "true".equalsIgnoreCase(ph.get("instinct"));
+            CnpcGuiSupport.button(gui, 27, instinctOn ? CnpcGuiStyle.toggleOn("Rival instinct")
+                    : CnpcGuiStyle.toggleOff("Rival instinct"),
+                    CnpcGuiSupport.COL_R, row,
+                    () -> act(player, "instinct", "toggle", "settings"));
+        }
+        row += CnpcGuiSupport.ROW_STEP;
+        footer(player, gui, row, "main");
     }
 
     private static void paintActions(ServerPlayer player, ICustomGui gui) {

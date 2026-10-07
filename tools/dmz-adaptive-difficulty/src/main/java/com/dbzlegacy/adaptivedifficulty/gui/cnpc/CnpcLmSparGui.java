@@ -31,30 +31,30 @@ public final class CnpcLmSparGui {
             return;
         }
         int height = switch (lower) {
-            case "stats", "dojo_hof" -> 420;
-            default -> lower.startsWith("pick_") ? 380 : H;
+            case "stats" -> 420;
+            default -> (lower.startsWith("pick_") || dojoTab(lower) != null) ? 440 : H;
         };
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_SPAR, CnpcGuiSupport.W, height, (pl, gui) -> {
             if (lower.startsWith("top_")) {
                 paintTop(pl, gui, lower.substring(4).trim());
                 return;
             }
-            if (lower.startsWith("dojo_top_")) {
-                paintDojoTop(pl, gui, lower.substring(9).trim());
+            String dojo = dojoTab(lower);
+            if (dojo != null) {
+                String cat = "rp";
+                if (lower.startsWith("dojo_top_")) {
+                    cat = lower.substring("dojo_top_".length()).trim();
+                }
+                paintDojo(pl, gui, dojo, cat);
                 return;
             }
             switch (lower) {
                 case "stats" -> paintScroll(pl, gui, CnpcGuiStyle.subPage("§b", "Sparring", "Spar stats"), SparGuiApi.linesForPage(subject(pl), "stats"), "main");
                 case "top", "leaderboard" -> paintTop(pl, gui, "tp");
-                case "dojo_top", "dojo_rank", "dojo_rankings" -> paintDojoTop(pl, gui, "rp");
                 case "mentor", "actions" -> paintMentor(pl, gui);
                 case "pending", "invites" -> paintPending(pl, gui);
-                case "dojo", "roster" -> paintDojo(pl, gui);
                 case "dojo_war" -> paintDojoWar(pl, gui);
                 case "dojo_war_pending" -> paintDojoWarPending(pl, gui);
-                case "dojo_hof" -> paintScroll(pl, gui, CnpcGuiStyle.subPage("§b", "Sparring", "Dojo hall of fame"),
-                        SparGuiApi.linesForPage(subject(pl), "dojo_hof"), "dojo");
-                case "dojo_members" -> paintDojoMembers(pl, gui);
                 case "pick_apprentice" -> paintOnlinePick(pl, gui, CnpcGuiStyle.subPage("§b", "Sparring", "Invite apprentice"), "mentor_invite", "mentor");
                 case "pick_mentor" -> paintOnlinePick(pl, gui, CnpcGuiStyle.subPage("§b", "Sparring", "Ask as apprentice"), "apprentice_invite", "mentor");
                 case "pick_accept" -> paintMentorArgPick(pl, gui, CnpcGuiStyle.subPage("§b", "Sparring", "Accept mentor invite"), "mentor_accept", "pending");
@@ -62,6 +62,7 @@ public final class CnpcLmSparGui {
                 case "pick_release" -> paintReleasePick(pl, gui);
                 case "pick_dojo_challenge" -> paintDojoChallengePick(pl, gui);
                 case "admin" -> paintAdmin(pl, gui);
+                case "settings" -> paintChatSettings(pl, gui);
                 default -> paintMain(pl, gui);
             }
         });
@@ -94,19 +95,12 @@ public final class CnpcLmSparGui {
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, SparGuiApi.linesForPage(who, "main"),
                 CnpcGuiStyle.INFO_INLINE_MAX));
         CnpcGuiSupport.button(gui, 20, "§eStats", CnpcGuiSupport.COL_L, row, () -> open(player, "stats"));
-        CnpcGuiSupport.button(gui, 21, "§6Dojo rankings", CnpcGuiSupport.COL_R, row, () -> open(player, "dojo_rank"));
+        CnpcGuiSupport.button(gui, 21, "§dLeaderboard", CnpcGuiSupport.COL_R, row, () -> open(player, "top"));
         row += CnpcGuiSupport.ROW_STEP;
-        CnpcGuiSupport.button(gui, 22, "§dLeaderboard", CnpcGuiSupport.COL_L, row, () -> open(player, "top"));
-        CnpcGuiSupport.button(gui, 23, "§bTraining bonds", CnpcGuiSupport.COL_R, row, () -> open(player, "mentor"));
+        CnpcGuiSupport.button(gui, 22, "§bTraining bonds", CnpcGuiSupport.COL_L, row, () -> open(player, "mentor"));
+        CnpcGuiSupport.button(gui, 23, "§bDojo", CnpcGuiSupport.COL_R, row, () -> open(player, "dojo"));
         row += CnpcGuiSupport.ROW_STEP;
-        boolean tpOn = "true".equalsIgnoreCase(ph.get("tpMsg"));
-        CnpcGuiSupport.button(gui, 24, tpOn ? CnpcGuiStyle.toggleOn("TP")
-                : CnpcGuiStyle.toggleOff("TP"), CnpcGuiSupport.COL_L, row,
-                () -> act(player, "tpmsg", "toggle", "main"));
-        boolean mentorTpOn = "true".equalsIgnoreCase(ph.get("mentorTpMsg"));
-        CnpcGuiSupport.button(gui, 25, mentorTpOn ? CnpcGuiStyle.toggleOn("Mentor TP")
-                : CnpcGuiStyle.toggleOff("Mentor TP"), CnpcGuiSupport.COL_R, row,
-                () -> act(player, "mentor_tpmsg", "toggle", "main"));
+        CnpcGuiSupport.button(gui, 24, "§7Chat settings", CnpcGuiSupport.COL_L, row, () -> open(player, "settings"));
         row += CnpcGuiSupport.ROW_STEP;
         if (StaffAccess.isStaff(player)) {
             CnpcGuiSupport.buttonSmall(gui, CnpcGuiSupport.ID_STAFF_EXTRA, "§cStaff Admin", CnpcGuiSupport.COL_L, row, CnpcGuiSupport.BTN_W,
@@ -264,19 +258,90 @@ public final class CnpcLmSparGui {
         };
     }
 
-    private static void paintDojo(ServerPlayer player, ICustomGui gui) {
+    private static String dojoTab(String page) {
+        if (page == null || page.isBlank()) {
+            return null;
+        }
+        if (page.startsWith("dojo_top")) {
+            return "rankings";
+        }
+        return switch (page) {
+            case "dojo", "roster" -> "home";
+            case "dojo_members" -> "members";
+            case "dojo_hof" -> "hof";
+            case "dojo_rank", "dojo_rankings" -> "rankings";
+            default -> null;
+        };
+    }
+
+    private static void paintDojo(ServerPlayer player, ICustomGui gui, String tab, String rankCat) {
+        String key = tab == null || tab.isBlank() ? "home" : tab;
+        String cat = rankCat == null || rankCat.isBlank() ? "rp" : rankCat;
+        String label = switch (key) {
+            case "members" -> "Members";
+            case "hof" -> "Hall of fame";
+            case "rankings" -> "Rankings";
+            default -> "Home";
+        };
         ServerPlayer who = subject(player);
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§b", "Sparring", "Dojo home"),
-                "§7Rankings, war, and members");
-        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, SparGuiApi.linesForPage(who, "dojo"),
-                CnpcGuiStyle.INFO_INLINE_MAX));
-        CnpcGuiSupport.button(gui, 20, "§6Rankings", CnpcGuiSupport.COL_L, row, () -> open(player, "dojo_rank"));
-        CnpcGuiSupport.button(gui, 21, "§cDojo war", CnpcGuiSupport.COL_R, row, () -> open(player, "dojo_war"));
+        int infoY = CnpcGuiSupport.paintHeader(player, gui,
+                CnpcGuiStyle.subPage("§b", "Sparring", "Dojo · " + label),
+                "§7Home, members, hall of fame, and rankings");
+        int row = CnpcGuiSupport.bodyBelowHeader(infoY);
+        String[] ids = {"home", "members", "hof", "rankings"};
+        String[] names = {"Home", "Members", "Hall of fame", "Rankings"};
+        CnpcGuiLayout.GridButton[] tabs = new CnpcGuiLayout.GridButton[ids.length];
+        for (int i = 0; i < ids.length; i++) {
+            String id = ids[i];
+            String page = switch (id) {
+                case "members" -> "dojo_members";
+                case "hof" -> "dojo_hof";
+                case "rankings" -> "dojo_rank";
+                default -> "dojo";
+            };
+            String button = id.equals(key) ? "§b" + names[i] : "§7" + names[i];
+            tabs[i] = CnpcGuiLayout.GridButton.run(button, () -> open(player, page));
+        }
+        row = CnpcGuiLayout.paintTwoColumnButtonGrid(player, gui, row, CnpcGuiSupport.ID_GRID_BASE, tabs, () -> {});
+        switch (key) {
+            case "members" -> row = CnpcGuiSupport.paintLongReadOnlyBody(gui, row, SparGuiApi.dojoMemberLines(who));
+            case "hof" -> row = CnpcGuiSupport.paintLongReadOnlyBody(gui, row, SparGuiApi.linesForPage(who, "dojo_hof"));
+            case "rankings" -> {
+                row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, row,
+                        SparGuiApi.dojoTopLines(who, cat), CnpcGuiStyle.INFO_INLINE_MAX));
+                CnpcGuiLayout.GridButton[] ranks = new CnpcGuiLayout.GridButton[] {
+                        leaderboardTab(player, "rp".equalsIgnoreCase(cat) ? "§bReputation" : "§7Reputation", "dojo_top_rp"),
+                        leaderboardTab(player, "wars".equalsIgnoreCase(cat) ? "§bWars" : "§7Wars", "dojo_top_wars"),
+                };
+                row = CnpcGuiLayout.paintTwoColumnButtonGrid(player, gui, row, 160, ranks, () -> {});
+            }
+            default -> {
+                row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, row,
+                        SparGuiApi.linesForPage(who, "dojo"), CnpcGuiStyle.INFO_INLINE_MAX));
+                CnpcGuiSupport.button(gui, 20, "§cDojo war", CnpcGuiSupport.COL_L, row,
+                        () -> open(player, "dojo_war"));
+                row += CnpcGuiSupport.ROW_STEP;
+            }
+        }
+        footer(player, gui, row, "main");
+    }
+
+    private static void paintChatSettings(ServerPlayer player, ICustomGui gui) {
+        ServerPlayer who = subject(player);
+        Map<String, String> ph = SparGuiApi.placeholders(who);
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§b", "Sparring", "Chat settings"),
+                "§7Training point messages");
+        int row = CnpcGuiSupport.bodyBelowHeader(infoY);
+        boolean tpOn = "true".equalsIgnoreCase(ph.get("tpMsg"));
+        CnpcGuiSupport.button(gui, 24, tpOn ? CnpcGuiStyle.toggleOn("TP")
+                : CnpcGuiStyle.toggleOff("TP"), CnpcGuiSupport.COL_L, row,
+                () -> act(player, "tpmsg", "toggle", "settings"));
+        boolean mentorTpOn = "true".equalsIgnoreCase(ph.get("mentorTpMsg"));
+        CnpcGuiSupport.button(gui, 25, mentorTpOn ? CnpcGuiStyle.toggleOn("Mentor TP")
+                : CnpcGuiStyle.toggleOff("Mentor TP"), CnpcGuiSupport.COL_R, row,
+                () -> act(player, "mentor_tpmsg", "toggle", "settings"));
         row += CnpcGuiSupport.ROW_STEP;
-        CnpcGuiSupport.button(gui, 22, "§eMembers", CnpcGuiSupport.COL_L, row, () -> open(player, "dojo_members"));
-        CnpcGuiSupport.button(gui, 23, "§6Hall of fame", CnpcGuiSupport.COL_R, row, () -> open(player, "dojo_hof"));
-        row += CnpcGuiSupport.ROW_STEP;
-        footer(player, gui, row, "mentor");
+        footer(player, gui, row, "main");
     }
 
     private static void paintDojoWar(ServerPlayer player, ICustomGui gui) {
@@ -336,15 +401,6 @@ public final class CnpcLmSparGui {
         });
     }
 
-    private static void paintDojoMembers(ServerPlayer player, ICustomGui gui) {
-        ServerPlayer who = subject(player);
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§b", "Sparring", "Dojo members"),
-                "§7Roster snapshot");
-        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, SparGuiApi.dojoMemberLines(who),
-                CnpcGuiStyle.INFO_INLINE_MAX));
-        footer(player, gui, row + 8, "dojo");
-    }
-
     private static void paintTop(ServerPlayer player, ICustomGui gui, String category) {
         String cat = category == null || category.isBlank() ? "tp" : category;
         // Wins and win streak are not stored on the spar leaderboard. Those tabs used to show Training Points.
@@ -367,22 +423,6 @@ public final class CnpcLmSparGui {
         row = CnpcGuiLayout.paintTwoColumnButtonGrid(player, gui, row, CnpcGuiSupport.ID_GRID_BASE, tabs,
                 () -> {});
         footer(player, gui, row, "main");
-    }
-
-    private static void paintDojoTop(ServerPlayer player, ICustomGui gui, String category) {
-        String cat = category == null || category.isBlank() ? "rp" : category;
-        int infoY = CnpcGuiSupport.paintHeader(player, gui,
-                CnpcGuiStyle.subPage("§b", "Sparring", "Dojo rankings · " + CnpcGuiStyle.sparLeaderboardTab(cat)),
-                "§7Top dojos");
-        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, SparGuiApi.dojoTopLines(subject(player), cat),
-                CnpcGuiStyle.INFO_INLINE_MAX));
-        CnpcGuiLayout.GridButton[] tabs = new CnpcGuiLayout.GridButton[] {
-                leaderboardTab(player, "§7Reputation", "dojo_top_rp"),
-                leaderboardTab(player, "§7Wars", "dojo_top_wars"),
-        };
-        row = CnpcGuiLayout.paintTwoColumnButtonGrid(player, gui, row, CnpcGuiSupport.ID_GRID_BASE, tabs,
-                () -> open(player, "dojo_top_" + cat));
-        footer(player, gui, row, "dojo");
     }
 
     private static void paintScroll(ServerPlayer player, ICustomGui gui, String title, List<String> body, String back) {

@@ -25,8 +25,6 @@ public final class CnpcPlayerSnapshot {
         if (who == null) {
             return lines;
         }
-        lines.add("§7Welcome back, §f" + who.m_7755_().getString() + "§7.");
-
         try {
             int level = DmzProgression.guiDisplayDmzLevel(who);
             String scale = hubPh == null ? "x1" : hubPh.getOrDefault("overhaul_scale", "x1");
