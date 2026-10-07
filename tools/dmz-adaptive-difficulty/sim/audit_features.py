@@ -1743,7 +1743,7 @@ def main() -> int:
           "§9Progression" in prog
           and "§dProgression" not in prog
           and "§dOpen Prestige" in prog
-          and "§9End" in prog
+          and 'subPage("§9", "Progression", "End")' in prog
           and "§e2× · 30m" in prog
           and "§e2× · 60m" in prog)
     check("inline on and off match the toggle colors",
