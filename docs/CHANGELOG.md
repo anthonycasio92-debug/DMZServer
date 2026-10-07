@@ -1,8 +1,16 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.20**.
+What changed from **4.5.147** through **4.6.21**.
 
-The live mods folder gets `LegacyMechanics-4.6.20.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.6.21.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+
+## Head part preview
+
+The head-parts menu shows your own character, not a stand-in model. The part is already on you, so the menu uses that same model. Step back and look closes the menu and leaves the preview on so you can look at it. Back puts the old part back.
+
+## Menu colors
+
+Progression titles and its own buttons are blue. Prestige stays pink, including Open Prestige. Forms stays the Prestige color. Confirm summon is green. Inactive team modes are gray. The 2× boost presets match the other presets. Dojo home uses the spar color. The staff progression panel uses the progression color. On and off on the boost line match the toggle colors.
 
 ## Android tools
 
@@ -26,7 +34,7 @@ During a reskin, the gender picked in the editor is saved. Races that do not hav
 
 ## Head bone preview
 
-Clicking a head part shows it on you before it charges. Unlock & equip, Equip, or Restore. Back puts the old part back. The menu model cannot wear a second parts model, so the preview is the one on your character.
+Clicking a head part shows it on you before it charges. Unlock & equip, Equip, or Restore. Back puts the old part back.
 
 ## Sparring menus
 

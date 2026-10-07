@@ -129,7 +129,7 @@ public final class CnpcLmSparGui {
         row += CnpcGuiSupport.ROW_STEP;
         CnpcGuiSupport.button(gui, 24, "§cLeave mentor", CnpcGuiSupport.COL_L, row,
                 () -> open(player, "pick_confirm:mentor|mentor|leave"));
-        CnpcGuiSupport.button(gui, 25, "§5Dojo home", CnpcGuiSupport.COL_R, row, () -> open(player, "dojo"));
+        CnpcGuiSupport.button(gui, 25, "§bDojo home", CnpcGuiSupport.COL_R, row, () -> open(player, "dojo"));
         row += CnpcGuiSupport.ROW_STEP;
         footer(player, gui, row, "main");
     }

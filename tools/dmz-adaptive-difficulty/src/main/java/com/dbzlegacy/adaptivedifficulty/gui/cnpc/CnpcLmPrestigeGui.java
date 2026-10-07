@@ -64,7 +64,7 @@ public final class CnpcLmPrestigeGui {
         CnpcGuiSupport.button(gui, 21, "§eTurn in held", CnpcGuiSupport.COL_R, row, () -> open(player, "turnin"));
         row += CnpcGuiSupport.ROW_STEP;
         CnpcGuiSupport.button(gui, 22, "§bSkill shop", CnpcGuiSupport.COL_L, row, () -> open(player, "shop"));
-        CnpcGuiSupport.button(gui, 23, "§5Forms", CnpcGuiSupport.COL_R, row, () -> open(player, "forms"));
+        CnpcGuiSupport.button(gui, 23, "§dForms", CnpcGuiSupport.COL_R, row, () -> open(player, "forms"));
         row += CnpcGuiSupport.ROW_STEP;
         CnpcGuiSupport.button(gui, 24, "§6Difficulty tiers", CnpcGuiSupport.COL_L, row, () -> open(player, "tiers"));
         row += CnpcGuiSupport.ROW_STEP;

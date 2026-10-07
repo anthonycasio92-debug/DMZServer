@@ -49,6 +49,45 @@ public final class CnpcPlayerPreview {
         paint(player, gui, componentId, slotX(), y);
     }
 
+    /**
+     * Head-part shop: show this player's live entity. {@code previewBone} already
+     * wrote the bone and synced it, so DMZ's own renderer draws the part.
+     * A Gecko CNPC clone does not.
+     */
+    public static void paintLive(ServerPlayer player, ICustomGui gui, int anchorY) {
+        if (player == null || gui == null) {
+            return;
+        }
+        int y = Math.max(CnpcGuiSupport.M, anchorY);
+        try {
+            if (!NpcAPI.IsAvailable()) {
+                return;
+            }
+            IEntity live = NpcAPI.Instance().getIEntity(player);
+            if (live == null) {
+                return;
+            }
+            IEntityDisplay display = gui.addEntityDisplay(CnpcGuiSupport.ID_ENTITY_PREVIEW, slotX(), y, live);
+            if (!tryBindLivePlayer(display, live)) {
+                display.setVisible(false);
+                return;
+            }
+            tuneDisplay(display, true);
+            display.setSize(SLOT_W, SLOT_H);
+            display.setScale(PREVIEW_SCALE);
+            display.setBackground(false);
+            try {
+                display.setFollowingCursor(true);
+            } catch (Throwable ignored) {
+            }
+            display.setVisible(true);
+            display.setEnabled(true);
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.debug("[{}] live player preview skipped: {}",
+                    AdaptiveDifficultyMod.MOD_ID, t.toString());
+        }
+    }
+
     public static void paint(ServerPlayer player, ICustomGui gui, int componentId, int x, int y) {
         if (player == null || gui == null) {
             return;

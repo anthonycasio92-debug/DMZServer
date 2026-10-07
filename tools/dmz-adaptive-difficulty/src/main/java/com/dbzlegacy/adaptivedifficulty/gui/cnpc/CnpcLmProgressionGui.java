@@ -74,27 +74,27 @@ public final class CnpcLmProgressionGui {
 
     private static void paintMainHub(ServerPlayer player, ICustomGui gui) {
         boolean staff = StaffAccess.isStaff(player);
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§dProgression",
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§9Progression",
                 staff ? "§7Staff: Global TP boost · Android tools · Ancient Coins"
                         : "§7Module status and progression tools");
         List<String> info = new ArrayList<>(ProgressionGuiApi.linesForPage(player, "main"));
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, info, CnpcGuiStyle.INFO_INLINE_MAX));
 
-        row = placeRow(gui, player, row, 20, "§eSkills", CnpcGuiSupport.COL_L, () -> open(player, "skills"));
-        placeRow(gui, player, row, 21, "§6TP Gains", CnpcGuiSupport.COL_R, () -> open(player, "tp"));
+        row = placeRow(gui, player, row, 20, "§9Skills", CnpcGuiSupport.COL_L, () -> open(player, "skills"));
+        placeRow(gui, player, row, 21, "§9TP Gains", CnpcGuiSupport.COL_R, () -> open(player, "tp"));
         row += CnpcGuiSupport.ROW_STEP;
-        placeRow(gui, player, row, 22, "§bRace & Form", CnpcGuiSupport.COL_L, () -> open(player, "race"));
-        placeRow(gui, player, row, 23, "§cCombat", CnpcGuiSupport.COL_R, () -> open(player, "combat"));
+        placeRow(gui, player, row, 22, "§9Race & Form", CnpcGuiSupport.COL_L, () -> open(player, "race"));
+        placeRow(gui, player, row, 23, "§9Combat", CnpcGuiSupport.COL_R, () -> open(player, "combat"));
         row += CnpcGuiSupport.ROW_STEP;
-        placeRow(gui, player, row, 24, "§5End", CnpcGuiSupport.COL_L, () -> open(player, "end"));
-        placeRow(gui, player, row, 25, "§7Utility", CnpcGuiSupport.COL_R, () -> open(player, "utility"));
+        placeRow(gui, player, row, 24, "§9End", CnpcGuiSupport.COL_L, () -> open(player, "end"));
+        placeRow(gui, player, row, 25, "§9Utility", CnpcGuiSupport.COL_R, () -> open(player, "utility"));
         row += CnpcGuiSupport.ROW_STEP;
-        placeRow(gui, player, row, 26, "§eStatus", CnpcGuiSupport.COL_L, () -> open(player, "status"));
+        placeRow(gui, player, row, 26, "§9Status", CnpcGuiSupport.COL_L, () -> open(player, "status"));
         row += CnpcGuiSupport.ROW_STEP;
 
         if (staff) {
-            placeRow(gui, player, row, 28, "§6Ancient coins", CnpcGuiSupport.COL_L, () -> open(player, "economy"));
-            placeRow(gui, player, row, 29, "§eAll flags", CnpcGuiSupport.COL_R, () -> open(player, "flags"));
+            placeRow(gui, player, row, 28, "§9Ancient coins", CnpcGuiSupport.COL_L, () -> open(player, "economy"));
+            placeRow(gui, player, row, 29, "§9All flags", CnpcGuiSupport.COL_R, () -> open(player, "flags"));
             row += CnpcGuiSupport.ROW_STEP;
         } else {
             row += CnpcGuiSupport.ROW_STEP;
@@ -133,7 +133,7 @@ public final class CnpcLmProgressionGui {
             }
         }
         if (staff && "race".equals(page) && ProgressionConfig.androidConversion()) {
-            grid.add(CnpcGuiLayout.GridButton.run("§bAndroid tools", () -> open(player, "android_panel")));
+            grid.add(CnpcGuiLayout.GridButton.run("§9Android tools", () -> open(player, "android_panel")));
         }
         if ("shop".equals(page)) {
             grid.add(CnpcGuiLayout.GridButton.run("§dOpen Prestige",
@@ -190,7 +190,7 @@ public final class CnpcLmProgressionGui {
 
     private static void paintAllFlags(ServerPlayer player, ICustomGui gui) {
         int infoY = CnpcGuiSupport.paintHeader(player, gui,
-                CnpcGuiStyle.subPage("§d", "Progression", "All flags"), CnpcGuiStyle.HINT_TOGGLE_STAFF);
+                CnpcGuiStyle.subPage("§9", "Progression", "All flags"), CnpcGuiStyle.HINT_TOGGLE_STAFF);
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of(
                 "§7Turn entire progression modules on or off.",
                 "§8Category pages have the same toggles plus tools."
@@ -231,7 +231,7 @@ public final class CnpcLmProgressionGui {
     private static void paintBoostPanel(ServerPlayer player, ICustomGui gui) {
         Map<String, String> ph = ProgressionGuiApi.placeholders(player);
         int infoY = CnpcGuiSupport.paintHeader(player, gui,
-                CnpcGuiStyle.subPage("§d", "Progression", "TP boost"), "§7Timed world TP multiplier");
+                CnpcGuiStyle.subPage("§9", "Progression", "TP boost"), "§7Timed world TP multiplier");
         List<String> lines = new ArrayList<>();
         lines.add(ph.getOrDefault("boost", "§7Global TP boost: §cOFF"));
         lines.add("§8Presets start a boost · End stops it");
@@ -241,8 +241,8 @@ public final class CnpcLmProgressionGui {
         row = boostPreset(gui, player, row, b, "§e1.25× · 30m", CnpcGuiSupport.COL_L, "1.25:30");
         boostPreset(gui, player, row, b + 1, "§e1.5× · 30m", CnpcGuiSupport.COL_R, "1.5:30");
         row += CnpcGuiSupport.ROW_STEP;
-        boostPreset(gui, player, row, b + 2, "§62× · 30m", CnpcGuiSupport.COL_L, "2:30");
-        boostPreset(gui, player, row, b + 3, "§62× · 60m", CnpcGuiSupport.COL_R, "2:60");
+        boostPreset(gui, player, row, b + 2, "§e2× · 30m", CnpcGuiSupport.COL_L, "2:30");
+        boostPreset(gui, player, row, b + 3, "§e2× · 60m", CnpcGuiSupport.COL_R, "2:60");
         row += CnpcGuiSupport.ROW_STEP;
         boostPreset(gui, player, row, b + 4, "§e3× · 30m", CnpcGuiSupport.COL_L, "3:30");
         CnpcGuiSupport.button(gui, b + 5, "§cEnd boost", CnpcGuiSupport.COL_R, row, () -> CnpcGuiSupport.act(
@@ -266,7 +266,7 @@ public final class CnpcLmProgressionGui {
 
     private static void paintAndroidPanel(ServerPlayer player, ICustomGui gui) {
         int infoY = CnpcGuiSupport.paintHeader(player, gui,
-                CnpcGuiStyle.subPage("§d", "Progression", "Android tools"),
+                CnpcGuiStyle.subPage("§9", "Progression", "Android tools"),
                 "§7Android convert · Remove Android");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of(
                 "§7Convert keeps race · unlocks Android forms",
@@ -284,7 +284,7 @@ public final class CnpcLmProgressionGui {
 
     private static void paintAndroidConvert(ServerPlayer player, ICustomGui gui) {
         ServerPlayer subject = CnpcGuiSupport.target(player);
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§d", "Progression", "Android convert"),
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§9", "Progression", "Android convert"),
                 CnpcGuiStyle.HINT_DOUBLE_CLICK_PLAYER);
         boolean self = subject.m_20148_().equals(player.m_20148_());
         String who = subject.m_7755_().getString();
@@ -309,7 +309,7 @@ public final class CnpcLmProgressionGui {
     private static void paintAndroidRemove(ServerPlayer player, ICustomGui gui) {
         boolean staff = StaffAccess.isStaff(player);
         int infoY = CnpcGuiSupport.paintHeader(player, gui,
-                CnpcGuiStyle.subPage("§d", "Progression", "Remove Android"),
+                CnpcGuiStyle.subPage("§9", "Progression", "Remove Android"),
                 "§7Two-step confirm within 10 seconds");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBeforePickList(gui, infoY, List.of(
                 "§7Removes Android forms and restores what you had.",
@@ -358,7 +358,7 @@ public final class CnpcLmProgressionGui {
         Map<String, String> ph = ProgressionGuiApi.placeholders(player);
         boolean staffFree = "true".equalsIgnoreCase(ph.getOrDefault("staff_free_ancient_coin_costs", "false"));
         int infoY = CnpcGuiSupport.paintHeader(player, gui,
-                CnpcGuiStyle.subPage("§d", "Progression", "Ancient coins"),
+                CnpcGuiStyle.subPage("§9", "Progression", "Ancient coins"),
                 "§7Staff pricing for LM paid features");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY,
                 ProgressionGuiApi.linesForPage(player, "economy"), CnpcGuiStyle.INFO_INLINE_MAX));
@@ -375,15 +375,15 @@ public final class CnpcLmProgressionGui {
 
     private static String sectionTitle(String page) {
         return switch (page) {
-            case "skills" -> CnpcGuiStyle.subPage("§d", "Progression", "Skills");
-            case "tp" -> CnpcGuiStyle.subPage("§d", "Progression", "TP Gains");
-            case "race" -> CnpcGuiStyle.subPage("§d", "Progression", "Race & Form");
-            case "combat" -> CnpcGuiStyle.subPage("§d", "Progression", "Combat");
-            case "end" -> CnpcGuiStyle.subPage("§d", "Progression", "End");
-            case "utility" -> CnpcGuiStyle.subPage("§d", "Progression", "Utility");
-            case "status" -> CnpcGuiStyle.subPage("§d", "Progression", "Status");
-            case "shop" -> CnpcGuiStyle.subPage("§d", "Progression", "Shop");
-            default -> "§dProgression";
+            case "skills" -> CnpcGuiStyle.subPage("§9", "Progression", "Skills");
+            case "tp" -> CnpcGuiStyle.subPage("§9", "Progression", "TP Gains");
+            case "race" -> CnpcGuiStyle.subPage("§9", "Progression", "Race & Form");
+            case "combat" -> CnpcGuiStyle.subPage("§9", "Progression", "Combat");
+            case "end" -> CnpcGuiStyle.subPage("§9", "Progression", "End");
+            case "utility" -> CnpcGuiStyle.subPage("§9", "Progression", "Utility");
+            case "status" -> CnpcGuiStyle.subPage("§9", "Progression", "Status");
+            case "shop" -> CnpcGuiStyle.subPage("§9", "Progression", "Shop");
+            default -> "§9Progression";
         };
     }
 

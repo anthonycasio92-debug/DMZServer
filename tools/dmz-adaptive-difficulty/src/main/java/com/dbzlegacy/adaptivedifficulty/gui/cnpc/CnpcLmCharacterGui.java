@@ -208,7 +208,6 @@ public final class CnpcLmCharacterGui {
     }
 
     private static void paintBones(ServerPlayer player, ICustomGui gui, int page) {
-        ServerPlayer subject = CnpcGuiSupport.target(player);
         var ph = CharacterServicesGuiApi.placeholders(player);
         int pages = Math.max(1, CosmeticHeadBoneService.pageCount());
         int pg = Math.min(pages - 1, Math.max(0, page));
@@ -225,7 +224,7 @@ public final class CnpcLmCharacterGui {
 
         List<String> cards = CharacterServicesGuiApi.headBoneCards(player, pg);
         boolean previewing = !previewId.isBlank();
-        int rowsBelow = previewing ? 4 : 3;
+        int rowsBelow = previewing ? 5 : 3;
         String[] labels = CnpcGuiSupport.cardLabels(cards, 1);
         int bandY = CnpcGuiSupport.pickListBandY(listY, rowsBelow, gui, labels.length);
         int scrollBottom = CnpcGuiSupport.pickListScrollBottom(listY, rowsBelow, gui, labels.length);
@@ -258,6 +257,9 @@ public final class CnpcLmCharacterGui {
                             () -> CharacterServicesGuiApi.handleDo(player, "bone_restore", "", "bones"),
                             () -> open(player, "bones:" + pg)));
             row += CnpcGuiSupport.ROW_STEP;
+            CnpcGuiSupport.buttonSmallFull(gui, 66, "§eStep back and look", CnpcGuiSupport.M, row,
+                    CnpcGuiSupport.textBandWidth(), () -> { });
+            row += CnpcGuiSupport.ROW_STEP;
         }
         CnpcGuiSupport.buttonSmall(gui, 60, "§aEquip race default", CnpcGuiSupport.COL_L, row, CnpcGuiSupport.BTN_W,
                 () -> CnpcGuiSupport.act(
@@ -283,7 +285,7 @@ public final class CnpcLmCharacterGui {
             CosmeticHeadBoneService.restorePreview(player);
             open(player, "main");
         }, "§7« Back");
-        CnpcGuiSupport.paintSubjectPreview(subject, gui, player);
+        CnpcGuiSupport.paintLivePlayerPreview(player, gui);
     }
 
     private static int parseBonePage(String page) {

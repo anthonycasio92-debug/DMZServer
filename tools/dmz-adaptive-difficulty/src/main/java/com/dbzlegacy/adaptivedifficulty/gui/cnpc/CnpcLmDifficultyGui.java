@@ -112,7 +112,7 @@ public final class CnpcLmDifficultyGui {
                 () -> DifficultyActions.handleArgNoReopen(subject, "toggle_personal", "0", "main").message(),
                 () -> open(player, "main")));
         row += CnpcGuiSupport.ROW_STEP;
-        CnpcGuiSupport.button(gui, 24, "§5End Dragon…", CnpcGuiSupport.COL_L, row,
+        CnpcGuiSupport.button(gui, 24, "§aEnd Dragon…", CnpcGuiSupport.COL_L, row,
                 () -> open(player, "end_dragon"));
         CnpcGuiSupport.button(gui, 25, "§6Rival system", CnpcGuiSupport.COL_R, row,
                 () -> CnpcLmGui.open(player, "rival", "main"));
@@ -442,14 +442,14 @@ public final class CnpcLmDifficultyGui {
                 () -> DifficultyTeamGuiApi.handleDo(subject, "mode", "personal", "team"),
                 () -> open(player, "team")));
         CnpcGuiSupport.button(gui, 41,
-                mode == TeamMode.THRESHOLD_BONUS_ONLY ? CnpcGuiStyle.toggleOn("Threshold") : "§eThreshold",
+                mode == TeamMode.THRESHOLD_BONUS_ONLY ? CnpcGuiStyle.toggleOn("Threshold") : "§7Threshold",
                 CnpcGuiSupport.COL_R, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> DifficultyTeamGuiApi.handleDo(subject, "mode", "threshold", "team"),
                 () -> open(player, "team")));
         row += CnpcGuiSupport.ROW_STEP;
         CnpcGuiSupport.button(gui, 42,
-                mode == TeamMode.FULL_TEAM_SCALING ? CnpcGuiStyle.toggleOn("Full team") : "§aFull team",
+                mode == TeamMode.FULL_TEAM_SCALING ? CnpcGuiStyle.toggleOn("Full team") : "§7Full team",
                 CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> DifficultyTeamGuiApi.handleDo(subject, "mode", "full", "team"),
@@ -490,13 +490,13 @@ public final class CnpcLmDifficultyGui {
         ServerPlayer subject = who(player);
         DifficultyActions.prepareGui(subject);
         boolean canSummon = EndDimensionStrength.canOpenSummonMenu(subject);
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§5", "Difficulty", "End Dragon"),
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§a", "Difficulty", "End Dragon"),
                 "§7Paid summon · AD boss profile · summoner-only damage");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY,
                 EndDimensionStrength.summonMenuLines(subject), CnpcGuiStyle.INFO_INLINE_MAX));
         row += 8;
         if (canSummon) {
-            CnpcGuiSupport.button(gui, 20, "§5Confirm summon", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
+            CnpcGuiSupport.button(gui, 20, "§aConfirm summon", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                     player,
                     () -> DifficultyActions.handleArgNoReopen(subject, "summon_end_dragon", "0", "end_dragon").message(),
                     () -> open(player, "end_dragon")));

@@ -30,7 +30,7 @@ public final class CnpcLmAdminGui {
                         ? "§aLegacy Mechanics config reloaded."
                         : "§cConfig reload failed.",
                 () -> open(player, "main")));
-        CnpcGuiSupport.button(gui, 21, "§dProgression panel", CnpcGuiSupport.COL_R, row,
+        CnpcGuiSupport.button(gui, 21, "§9Progression panel", CnpcGuiSupport.COL_R, row,
                 () -> CnpcLmGui.open(player, "progression", "main"));
         row += CnpcGuiSupport.ROW_STEP;
         CnpcGuiSupport.buttonSmallFull(gui, 22, "§8Event log", CnpcGuiSupport.M, row,

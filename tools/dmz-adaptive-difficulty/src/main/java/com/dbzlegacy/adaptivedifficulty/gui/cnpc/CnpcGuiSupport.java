@@ -375,6 +375,16 @@ public final class CnpcGuiSupport {
         CnpcPlayerPreview.paint(player, gui, anchorY);
     }
 
+    /**
+     * Head-part preview uses the viewer's own entity, not a CNPC clone.
+     * Layout Y still follows the viewer so the slot clears the notice band.
+     */
+    public static void paintLivePlayerPreview(ServerPlayer viewer, ICustomGui gui) {
+        if (viewer != null) {
+            CnpcPlayerPreview.paintLive(viewer, gui, previewAnchorY(viewer));
+        }
+    }
+
     /** Paint preview last at {@link #previewAnchorY(ServerPlayer)} (ProfTools-style). */
     public static void paintSubjectPreview(ServerPlayer subject, ICustomGui gui, ServerPlayer layoutViewer) {
         if (subject != null && layoutViewer != null) {
@@ -997,7 +1007,7 @@ public final class CnpcGuiSupport {
 
     public static String flagOnOff(java.util.Map<String, String> ph, String key) {
         boolean on = "true".equalsIgnoreCase(ph.getOrDefault("flag_" + key, "false"));
-        return on ? "§aOn" : "§cOff";
+        return on ? "§2§lON" : "§8§lOFF";
     }
 
     @FunctionalInterface

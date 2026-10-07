@@ -1676,8 +1676,15 @@ def main() -> int:
           "previewBone" in bones
           and "PREVIEW_STASH" in bones
           and "bone_preview" in bone_gui
-          and "paintSubjectPreview" in bone_gui
+          and "paintLivePlayerPreview" in bone_gui
           and "Unlock & equip" in bone_gui)
+    preview_src = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcPlayerPreview.java")
+    live_preview = preview_src.split("void paintLive", 1)[1].split("void paint(", 1)[0]
+    check("head bone menu shows the player's own model",
+          "tryBindLivePlayer" in live_preview
+          and "setEntitySyncedById" in preview_src
+          and "CnpcGeckoPreviewBridge" not in live_preview
+          and "Step back and look" in bone_gui)
 
     print("\n=== GUI humanization (4.6.17) ===")
     rival_chat = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/RivalChatMenu.java")
@@ -1724,6 +1731,32 @@ def main() -> int:
     check("boost preset ids do not share the grid base",
           "ID_BOOST_PRESET_BASE = 210" in support
           and "ID_BOOST_PRESET_BASE = 120" not in support)
+
+    print("\n=== CNPC screen colors (4.6.21) ===")
+    cnpc_dir = SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc"
+    cnpc_src = "\n".join(p.read_text(encoding="utf-8") for p in sorted(cnpc_dir.glob("*.java")))
+    prog = read(cnpc_dir / "CnpcLmProgressionGui.java")
+    diff = read(cnpc_dir / "CnpcLmDifficultyGui.java")
+    check("CNPC screens do not use purple section codes",
+          "§5" not in cnpc_src)
+    check("progression titles are blue and prestige stays pink",
+          "§9Progression" in prog
+          and "§dProgression" not in prog
+          and "§dOpen Prestige" in prog
+          and "§9End" in prog
+          and "§e2× · 30m" in prog
+          and "§e2× · 60m" in prog)
+    check("inline on and off match the toggle colors",
+          'return on ? "§2§lON" : "§8§lOFF";' in support)
+    check("difficulty confirm and inactive modes use the shared colors",
+          "§aConfirm summon" in diff
+          and "§aEnd Dragon" in diff
+          and "§7Threshold" in diff
+          and "§7Full team" in diff)
+    check("spar dojo home and prestige forms use their system colors",
+          "§bDojo home" in read(cnpc_dir / "CnpcLmSparGui.java")
+          and "§dForms" in read(cnpc_dir / "CnpcLmPrestigeGui.java")
+          and "§9Progression panel" in read(cnpc_dir / "CnpcLmAdminGui.java"))
 
     print("\n=== Summary ===")
     for w in warns:
