@@ -1,8 +1,8 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.35**.
+What changed from **4.5.147** through **4.6.36**.
 
-The live mods folder gets `LegacyMechanics-4.6.35.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.6.36.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
 
 ## List selection
 
@@ -78,7 +78,7 @@ Death in space, Namek, Beerus' planet, and the other Noea travel dimensions uses
 
 ## Dragon balls
 
-Left-click a placed dragon ball once with the radar for that set and the ball goes into your inventory. The Earth radar takes Earth balls. The Namek radar takes Namek balls. A different radar leaves the ball where it is. A full inventory drops the leftover at your feet. The radar forgets that spot. Right-click with all seven still summons the dragon.
+Left-click a placed dragon ball once with the radar for that set and the ball goes into your inventory. The Earth radar takes Earth balls. The Namek radar takes Namek balls. A different radar leaves the ball where it is. That click still works inside an FTB Chunks claim or a GriefPrevention claim. Other blocks in those claims stay protected. A full inventory drops the leftover at your feet. The radar forgets that spot. Right-click with all seven still summons the dragon.
 
 ## Majin absorption bonus
 

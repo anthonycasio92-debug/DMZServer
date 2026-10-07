@@ -1874,7 +1874,7 @@ def main() -> int:
           and "require = 0" in corpse_fix
           and "private static void lm$disableDropSuppression" in corpse_fix)
 
-    print("\n=== Dragon ball pickup (4.6.35) ===")
+    print("\n=== Dragon ball pickup (4.6.36) ===")
     dball = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/event/DragonBallRadarPickup.java")
     dball_events = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/event/DifficultyEvents.java")
     dball_mixins = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/resources/legacymechanics.mixins.json")
@@ -1886,6 +1886,10 @@ def main() -> int:
           and "m_150109_().m_36054_(stack)" in dball
           and "unregisterConsumedDragonBalls" in dball
           and "DragonBallRadarPickup.onLeftClickBlock" in dball_events
+          and "receiveCanceled = true" in dball_events
+          and "BreakEvent" in dball
+          and "BlockBreakEvent" in dball
+          and "setCancelled" in dball
           and "DragonBallPickupMixin" not in dball_mixins)
 
     print("\n=== Majin absorption bonus (4.6.33) ===")

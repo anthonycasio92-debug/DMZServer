@@ -67,6 +67,7 @@ import net.minecraftforge.event.entity.living.LivingChangeTargetEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingDamageEvent;
 import net.minecraftforge.event.entity.living.LivingDropsEvent;
+import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.living.MobSpawnEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
@@ -133,6 +134,7 @@ public final class DifficultyEvents {
     @SubscribeEvent
     public void onServerStarted(ServerStartedEvent event) {
         com.dbzlegacy.adaptivedifficulty.command.MohistCommandBridge.tryRegister(event.getServer());
+        DragonBallRadarPickup.registerGriefPrevention();
         VanillaDifficultyGuard.restoreIfPeaceful(event.getServer());
         try {
             com.dbzlegacy.adaptivedifficulty.data.CnpcDataMigrator.migrateWorldIfNeeded(event.getServer());
@@ -913,10 +915,19 @@ public final class DifficultyEvents {
         EndProgression.onRightClickBlock(event);
     }
 
-    /** One left-click with the matching dragon radar takes that ball. */
-    @SubscribeEvent
+    /**
+     * One left-click with the matching dragon radar takes that ball.
+     * Runs even after a claim plugin cancels the click. Only that ball is taken.
+     */
+    @SubscribeEvent(priority = EventPriority.HIGHEST, receiveCanceled = true)
     public void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
         DragonBallRadarPickup.onLeftClickBlock(event);
+    }
+
+    /** A claim plugin may still cancel the break. Allow it only for this radar click. */
+    @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
+    public void onDragonBallBreak(BlockEvent.BreakEvent event) {
+        DragonBallRadarPickup.onBreak(event);
     }
 
     /** Sneak + right-click another player → DMZ stat dump (PlayerStatChecker.js).
