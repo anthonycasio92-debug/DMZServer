@@ -1,8 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.25**.
+What changed from **4.5.147** through **4.6.26**.
 
-The live mods folder gets `LegacyMechanics-4.6.25.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.6.26.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+
+## List selection
+
+Highlighting a row no longer previews or opens it. Head parts uses a Preview button on the highlighted part. Race and class use Choose this race and Choose this class. Rival, spar, and difficulty lists use Open, Choose, or Details on the highlighted row. Double-click still equips a title. The wheel scrolls the list.
 
 ## Menu layout
 

@@ -934,21 +934,53 @@ public final class CnpcGuiSupport {
         });
     }
 
-    /** Single-click opens a detail / confirm screen (does not close GUI). */
-    public static void wireScrollOpenDetail(
-            IScroll scroll,
-            List<String> cards,
-            int argField,
-            Consumer<String> onOpen
-    ) {
-        if (scroll == null || onOpen == null) {
-            return;
+    /** Highlighted row in a plain string list. Null when nothing is selected. */
+    public static String selectedLine(IScroll scroll, String[] items) {
+        if (scroll == null || items == null) {
+            return null;
         }
-        scroll.setOnClick((g, sc) -> {
-            String arg = cardField(cards, sc, argField);
-            if (arg != null) {
-                afterGuiClosed(g, () -> onOpen.accept(arg));
+        int[] sel = scroll.getSelection();
+        if (sel == null || sel.length == 0 || sel[0] < 0 || sel[0] >= items.length) {
+            return null;
+        }
+        String value = items[sel[0]];
+        return value == null || value.isBlank() ? null : value;
+    }
+
+    /**
+     * Button for the highlighted row. Does not call {@link IScroll#setOnClick} — that handler
+     * takes the mouse wheel away from the list. The selection is read on press, before the menu closes.
+     */
+    public static void selectionButton(
+            ServerPlayer player,
+            ICustomGui gui,
+            int id,
+            String label,
+            int x,
+            int y,
+            int width,
+            Supplier<String> selected,
+            Consumer<String> onSelected,
+            Runnable reopen) {
+        int w = width > 0 ? width : BTN_W;
+        IButton b = gui.addButton(id, safeChat(compactButton(label)), x, y, w, BTN_H);
+        b.setOnPress((g, btn) -> {
+            String arg = selected == null ? null : selected.get();
+            if (arg == null || arg.isBlank()) {
+                afterGuiClosed(g, () -> {
+                    pushMenuMessage(player, "§eSelect a row first.");
+                    if (reopen != null) {
+                        reopen.run();
+                    }
+                });
+                return;
             }
+            String chosen = arg;
+            afterGuiClosed(g, () -> {
+                if (onSelected != null) {
+                    onSelected.accept(chosen);
+                }
+            });
         });
     }
 

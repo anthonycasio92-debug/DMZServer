@@ -209,24 +209,23 @@ public final class CnpcLmRivalGui {
                     CnpcGuiSupport.M, listY + 4, CnpcGuiSupport.textBandWidth(), 14);
             footer(player, gui, listY + 28, "actions");
         } else {
-            int rowsBelow = 1;
+            int rowsBelow = 2;
             String[] pendingLabels = RivalGuiApi.pendingInviteScrollLabels(cards);
             int bandY = CnpcGuiSupport.pickListBandY(listY, rowsBelow, gui, pendingLabels.length);
             int scrollH = CnpcGuiSupport.listScrollHeight(gui, bandY, rowsBelow);
             IScroll scroll = CnpcGuiSupport.scrollPickList(gui, listY, rowsBelow, pendingLabels);
-            scroll.setOnClick((g, sc) -> {
-                int[] sel = sc.getSelection();
-                if (sel == null || sel.length == 0 || sel[0] < 0 || sel[0] >= cards.size()) {
-                    return;
-                }
-                String card = cards.get(sel[0]);
-                String picker = CnpcGuiSupport.rivalPickerArgFromCard(card);
-                if (picker == null) {
-                    return;
-                }
-                CnpcGuiSupport.afterGuiClosed(g, () -> open(player, "pending_decide:" + picker));
-            });
-            footer(player, gui, CnpcGuiSupport.navRowAfterScroll(bandY, scrollH), "actions");
+            int row = CnpcGuiSupport.navRowAfterScroll(bandY, scrollH);
+            CnpcGuiSupport.selectionButton(player, gui, 30, "§eOpen", CnpcGuiSupport.COL_L, row,
+                    CnpcGuiSupport.BTN_W, () -> {
+                        int[] sel = scroll.getSelection();
+                        if (sel == null || sel.length == 0 || sel[0] < 0 || sel[0] >= cards.size()) {
+                            return null;
+                        }
+                        return CnpcGuiSupport.rivalPickerArgFromCard(cards.get(sel[0]));
+                    },
+                    picker -> open(player, "pending_decide:" + picker),
+                    () -> open(player, "pending"));
+            footer(player, gui, row + CnpcGuiSupport.ROW_STEP, "actions");
         }
     }
 
@@ -388,24 +387,23 @@ public final class CnpcLmRivalGui {
                     CnpcGuiSupport.textBandWidth(), 14);
             footer(player, gui, listY + 28, "challenge");
         } else {
-            int rowsBelow = 1;
+            int rowsBelow = 2;
             String[] challengeLabels = RivalGuiApi.pendingChallengeScrollLabels(cards);
             int bandY = CnpcGuiSupport.pickListBandY(listY, rowsBelow, gui, challengeLabels.length);
             int scrollH = CnpcGuiSupport.listScrollHeight(gui, bandY, rowsBelow);
             IScroll scroll = CnpcGuiSupport.scrollPickList(gui, listY, rowsBelow, challengeLabels);
-            scroll.setOnClick((g, sc) -> {
-                int[] sel = sc.getSelection();
-                if (sel == null || sel.length == 0 || sel[0] < 0 || sel[0] >= cards.size()) {
-                    return;
-                }
-                String card = cards.get(sel[0]);
-                String picker = CnpcGuiSupport.rivalPickerArgFromCard(card);
-                if (picker == null) {
-                    return;
-                }
-                CnpcGuiSupport.afterGuiClosed(g, () -> open(player, "challenge_decide:" + picker));
-            });
-            footer(player, gui, CnpcGuiSupport.navRowAfterScroll(bandY, scrollH), "challenge");
+            int row = CnpcGuiSupport.navRowAfterScroll(bandY, scrollH);
+            CnpcGuiSupport.selectionButton(player, gui, 30, "§eOpen", CnpcGuiSupport.COL_L, row,
+                    CnpcGuiSupport.BTN_W, () -> {
+                        int[] sel = scroll.getSelection();
+                        if (sel == null || sel.length == 0 || sel[0] < 0 || sel[0] >= cards.size()) {
+                            return null;
+                        }
+                        return CnpcGuiSupport.rivalPickerArgFromCard(cards.get(sel[0]));
+                    },
+                    picker -> open(player, "challenge_decide:" + picker),
+                    () -> open(player, "challenge_pending"));
+            footer(player, gui, row + CnpcGuiSupport.ROW_STEP, "challenge");
         }
     }
 
@@ -517,7 +515,7 @@ public final class CnpcLmRivalGui {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Your list"),
                 cards.isEmpty() ? "§7Your list is empty — start from Actions"
                         : "§7" + cards.size() + " rival" + (cards.size() == 1 ? "" : "s")
-                                + " · tap a name for profile, duel, or remove");
+                                + " · select a name, then Open");
         int listY = CnpcGuiSupport.bodyBelowHeader(infoY);
         if (cards.isEmpty()) {
             listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY,
@@ -525,21 +523,22 @@ public final class CnpcLmRivalGui {
             footer(player, gui, listY + 8, "main");
             return;
         }
-        int rowsBelow = 2;
+        int rowsBelow = 3;
         int bandY = CnpcGuiSupport.pickListBandY(listY, rowsBelow, gui, cards.size());
         int scrollH = CnpcGuiSupport.listScrollHeight(gui, bandY, rowsBelow);
         IScroll scroll = CnpcGuiSupport.scrollPickList(gui, listY, rowsBelow, CnpcGuiSupport.cardLabels(cards, 1));
-        scroll.setOnClick((g, sc) -> {
-            int[] sel = sc.getSelection();
-            if (sel == null || sel.length == 0 || sel[0] < 0 || sel[0] >= cards.size()) {
-                return;
-            }
-            String picker = CnpcGuiSupport.rivalPickerArgFromCard(cards.get(sel[0]));
-            if (picker != null) {
-                CnpcGuiSupport.afterGuiClosed(g, () -> open(player, "list_detail:" + picker));
-            }
-        });
         int actionRow = CnpcGuiSupport.navRowAfterScroll(bandY, scrollH);
+        CnpcGuiSupport.selectionButton(player, gui, 93, "§eOpen", CnpcGuiSupport.COL_L, actionRow,
+                CnpcGuiSupport.BTN_W, () -> {
+                    int[] sel = scroll.getSelection();
+                    if (sel == null || sel.length == 0 || sel[0] < 0 || sel[0] >= cards.size()) {
+                        return null;
+                    }
+                    return CnpcGuiSupport.rivalPickerArgFromCard(cards.get(sel[0]));
+                },
+                picker -> open(player, "list_detail:" + picker),
+                () -> open(player, "list"));
+        actionRow += CnpcGuiSupport.ROW_STEP;
         CnpcGuiSupport.buttonSmallFull(gui, 94, "§aActions", CnpcGuiSupport.COL_L, actionRow, CnpcGuiSupport.BTN_W,
                 () -> open(player, "actions"));
         CnpcGuiSupport.buttonSmallFull(gui, 95, "§6Records", CnpcGuiSupport.COL_R, actionRow, CnpcGuiSupport.BTN_W,
@@ -568,18 +567,16 @@ public final class CnpcLmRivalGui {
             return;
         }
         String[] items = names.toArray(String[]::new);
-        int rowsBelow = 1;
+        int rowsBelow = 2;
         int bandY = CnpcGuiSupport.pickListBandY(listY, rowsBelow, gui, items.length);
         int scrollH = CnpcGuiSupport.listScrollHeight(gui, bandY, rowsBelow);
         IScroll scroll = CnpcGuiSupport.scrollPickList(gui, listY, rowsBelow, items);
-        scroll.setOnClick((g, sc) -> {
-            int[] sel = sc.getSelection();
-            if (sel != null && sel.length > 0 && sel[0] >= 0 && sel[0] < items.length) {
-                String name = items[sel[0]];
-                CnpcGuiSupport.afterGuiClosed(g, () -> open(player, "pick_confirm:" + action + "|" + returnPage + "|" + name));
-            }
-        });
-        footer(player, gui, CnpcGuiSupport.navRowAfterScroll(bandY, scrollH), returnPage);
+        int row = CnpcGuiSupport.navRowAfterScroll(bandY, scrollH);
+        CnpcGuiSupport.selectionButton(player, gui, 30, "§eChoose", CnpcGuiSupport.COL_L, row,
+                CnpcGuiSupport.BTN_W, () -> CnpcGuiSupport.selectedLine(scroll, items),
+                name -> open(player, "pick_confirm:" + action + "|" + returnPage + "|" + name),
+                () -> open(player, "challenge_pick".equals(action) ? "pick_challenge" : "pick_" + action));
+        footer(player, gui, row + CnpcGuiSupport.ROW_STEP, returnPage);
     }
 
     private static void paintArgPick(
@@ -604,13 +601,16 @@ public final class CnpcLmRivalGui {
         for (int i = 0; i < cards.size(); i++) {
             labels[i] = RivalGuiApi.displayPickerArg(player, cards.get(i));
         }
-        int rowsBelow = 1;
+        int rowsBelow = 2;
         int bandY = CnpcGuiSupport.pickListBandY(listY, rowsBelow, gui, labels.length);
         int scrollH = CnpcGuiSupport.listScrollHeight(gui, bandY, rowsBelow);
         IScroll scroll = CnpcGuiSupport.scrollPickList(gui, listY, rowsBelow, labels);
-        CnpcGuiSupport.wireScrollOpenDetail(scroll, cards, 0,
-                arg -> open(player, "pick_confirm:" + action + "|" + returnPage + "|" + arg));
-        footer(player, gui, CnpcGuiSupport.navRowAfterScroll(bandY, scrollH), returnPage);
+        int row = CnpcGuiSupport.navRowAfterScroll(bandY, scrollH);
+        CnpcGuiSupport.selectionButton(player, gui, 30, "§eChoose", CnpcGuiSupport.COL_L, row,
+                CnpcGuiSupport.BTN_W, () -> CnpcGuiSupport.cardField(cards, scroll, 0),
+                arg -> open(player, "pick_confirm:" + action + "|" + returnPage + "|" + arg),
+                () -> open(player, returnPage));
+        footer(player, gui, row + CnpcGuiSupport.ROW_STEP, returnPage);
     }
 
     /** Remove / replace mutual — uses encoded rival cards so names show instead of raw {@code uuid:}. */
@@ -632,21 +632,23 @@ public final class CnpcLmRivalGui {
             return;
         }
         String[] labels = CnpcGuiSupport.cardLabels(cards, 1);
-        int rowsBelow = 1;
+        int rowsBelow = 2;
         int bandY = CnpcGuiSupport.pickListBandY(listY, rowsBelow, gui, labels.length);
         int scrollH = CnpcGuiSupport.listScrollHeight(gui, bandY, rowsBelow);
         IScroll scroll = CnpcGuiSupport.scrollPickList(gui, listY, rowsBelow, labels);
-        scroll.setOnClick((g, sc) -> {
-            int[] sel = sc.getSelection();
-            if (sel == null || sel.length == 0 || sel[0] < 0 || sel[0] >= cards.size()) {
-                return;
-            }
-            String arg = RivalGuiApi.pickerArgFromRivalCard(cards.get(sel[0]));
-            if (!arg.isBlank()) {
-                CnpcGuiSupport.afterGuiClosed(g, () -> open(player, "pick_confirm:" + action + "|" + returnPage + "|" + arg));
-            }
-        });
-        footer(player, gui, CnpcGuiSupport.navRowAfterScroll(bandY, scrollH), returnPage);
+        int row = CnpcGuiSupport.navRowAfterScroll(bandY, scrollH);
+        CnpcGuiSupport.selectionButton(player, gui, 30, "§eChoose", CnpcGuiSupport.COL_L, row,
+                CnpcGuiSupport.BTN_W, () -> {
+                    int[] sel = scroll.getSelection();
+                    if (sel == null || sel.length == 0 || sel[0] < 0 || sel[0] >= cards.size()) {
+                        return null;
+                    }
+                    String arg = RivalGuiApi.pickerArgFromRivalCard(cards.get(sel[0]));
+                    return arg == null || arg.isBlank() ? null : arg;
+                },
+                arg -> open(player, "pick_confirm:" + action + "|" + returnPage + "|" + arg),
+                () -> open(player, returnPage));
+        footer(player, gui, row + CnpcGuiSupport.ROW_STEP, returnPage);
     }
 
     private static void paintScroll(ServerPlayer player, ICustomGui gui, String title, List<String> body, String backPage) {

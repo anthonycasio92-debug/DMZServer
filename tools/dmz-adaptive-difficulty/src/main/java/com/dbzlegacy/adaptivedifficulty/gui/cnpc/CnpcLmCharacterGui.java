@@ -112,24 +112,23 @@ public final class CnpcLmCharacterGui {
     private static void paintRace(ServerPlayer player, ICustomGui gui) {
         ServerPlayer subject = CnpcGuiSupport.target(player);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§f", "Character", "Change race"),
-                CnpcGuiStyle.HINT_CLICK_ENTRY);
+                "§7Select a race, then choose it");
         int listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBeforePickList(gui, infoY,
                 CharacterServicesGuiApi.linesForPage(player, "race"), 2));
 
         List<String> cards = CharacterServicesGuiApi.raceCards(player);
         String[] labels = raceClassLabels(cards);
 
-        int rowsBelow = 1;
+        int rowsBelow = 2;
         int bandY = CnpcGuiSupport.pickListBandY(listY, rowsBelow, gui, labels.length);
         int scrollH = CnpcGuiSupport.listScrollHeight(gui, bandY, rowsBelow);
         IScroll scroll = CnpcGuiSupport.scrollPickList(gui, listY, rowsBelow, labels);
-        scroll.setOnClick((g, sc) -> {
-            String id = selectedCardId(cards, sc);
-            if (id != null) {
-                open(player, "race_confirm:" + id + ":0");
-            }
-        });
-        footer(player, gui, CnpcGuiSupport.navRowAfterScroll(bandY, scrollH), "main", subject);
+        int row = CnpcGuiSupport.navRowAfterScroll(bandY, scrollH);
+        CnpcGuiSupport.selectionButton(player, gui, 30, "§eChoose this race", CnpcGuiSupport.COL_L, row,
+                CnpcGuiSupport.BTN_W, () -> selectedCardId(cards, scroll),
+                id -> open(player, "race_confirm:" + id + ":0"),
+                () -> open(player, "race"));
+        footer(player, gui, row + CnpcGuiSupport.ROW_STEP, "main", subject);
     }
 
     private static void paintRaceConfirm(ServerPlayer player, String raceAndPct) {
@@ -172,24 +171,23 @@ public final class CnpcLmCharacterGui {
     private static void paintClass(ServerPlayer player, ICustomGui gui) {
         ServerPlayer subject = CnpcGuiSupport.target(player);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§f", "Character", "Change class"),
-                CnpcGuiStyle.HINT_CLICK_ENTRY);
+                "§7Select a class, then choose it");
         int listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBeforePickList(gui, infoY,
                 CharacterServicesGuiApi.linesForPage(player, "class"), 2));
 
         List<String> cards = CharacterServicesGuiApi.classCards(player);
         String[] labels = raceClassLabels(cards);
 
-        int rowsBelow = 1;
+        int rowsBelow = 2;
         int bandY = CnpcGuiSupport.pickListBandY(listY, rowsBelow, gui, labels.length);
         int scrollH = CnpcGuiSupport.listScrollHeight(gui, bandY, rowsBelow);
         IScroll scroll = CnpcGuiSupport.scrollPickList(gui, listY, rowsBelow, labels);
-        scroll.setOnClick((g, sc) -> {
-            String id = selectedCardId(cards, sc);
-            if (id != null) {
-                open(player, "class_confirm:" + id);
-            }
-        });
-        footer(player, gui, CnpcGuiSupport.navRowAfterScroll(bandY, scrollH), "main", subject);
+        int row = CnpcGuiSupport.navRowAfterScroll(bandY, scrollH);
+        CnpcGuiSupport.selectionButton(player, gui, 30, "§eChoose this class", CnpcGuiSupport.COL_L, row,
+                CnpcGuiSupport.BTN_W, () -> selectedCardId(cards, scroll),
+                id -> open(player, "class_confirm:" + id),
+                () -> open(player, "class"));
+        footer(player, gui, row + CnpcGuiSupport.ROW_STEP, "main", subject);
     }
 
     private static void paintClassConfirm(ServerPlayer player, String classId) {
@@ -226,21 +224,29 @@ public final class CnpcLmCharacterGui {
 
         List<String> cards = CharacterServicesGuiApi.headBoneCards(player, pg);
         boolean previewing = !previewId.isBlank();
-        int rowsBelow = previewing ? 5 : 3;
+        int rowsBelow = previewing ? 6 : 4;
         String[] labels = CnpcGuiSupport.cardLabels(cards, 1);
         int bandY = CnpcGuiSupport.pickListBandY(listY, rowsBelow, gui, labels.length);
         int scrollBottom = CnpcGuiSupport.pickListScrollBottom(listY, rowsBelow, gui, labels.length);
+        IScroll scroll = null;
         if (cards.isEmpty()) {
             gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER, "§7No head parts on this page.",
                     CnpcGuiSupport.M, bandY + 4, CnpcGuiSupport.listWidth(), 14);
             scrollBottom = bandY + 20;
         } else {
-            IScroll scroll = CnpcGuiSupport.scrollPickList(gui, listY, rowsBelow, labels);
-            CnpcGuiSupport.wireScrollOpenDetail(scroll, cards, 0, id -> CnpcGuiSupport.act(player,
-                    () -> CharacterServicesGuiApi.handleDo(player, "bone_preview", id, "bones"),
-                    () -> open(player, "bones:" + pg)));
+            scroll = CnpcGuiSupport.scrollPickList(gui, listY, rowsBelow, labels);
         }
         int row = scrollBottom + 8;
+        if (scroll != null) {
+            IScroll picked = scroll;
+            CnpcGuiSupport.selectionButton(player, gui, 67, "§ePreview", CnpcGuiSupport.M, row,
+                    CnpcGuiSupport.textBandWidth(), () -> CnpcGuiSupport.cardField(cards, picked, 0),
+                    id -> CnpcGuiSupport.act(player,
+                            () -> CharacterServicesGuiApi.handleDo(player, "bone_preview", id, "bones"),
+                            () -> open(player, "bones:" + pg)),
+                    () -> open(player, "bones:" + pg));
+            row += CnpcGuiSupport.ROW_STEP;
+        }
         if (previewing) {
             boolean locked = !CosmeticHeadBoneService.hasUnlock(player, previewId);
             String buy = locked

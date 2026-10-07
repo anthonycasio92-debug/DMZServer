@@ -1847,6 +1847,22 @@ def main() -> int:
           and "§6Rival system" not in diff_gui
           and "§aEnd Dragon" in diff_gui)
 
+    print("\n=== CNPC scroll selection (4.6.26) ===")
+    check("scroll lists use a selection button instead of setOnClick",
+          "setOnClick(" not in support
+          and "setOnClick(" not in char_gui
+          and "setOnClick(" not in rival_records
+          and "setOnClick(" not in spar_gui
+          and "setOnClick(" not in diff_gui
+          and "setOnClick(" not in prog_menu
+          and "selectionButton" in support
+          and "§ePreview" in char_gui
+          and "Choose this race" in char_gui
+          and "Choose this class" in char_gui
+          and "wireScrollDoublePick" in diff_gui
+          and "setOnDoubleClick" in prog_menu
+          and '"challenge_pick".equals(action) ? "pick_challenge"' in rival_records)
+
     print("\n=== Summary ===")
     for w in warns:
         print(f"WARN: {w}")

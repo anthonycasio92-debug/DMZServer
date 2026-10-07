@@ -315,17 +315,21 @@ public final class CnpcLmDifficultyGui {
             labels.add(label);
             cards.add(t.id + "\t" + label);
         }
-        int rowsBelow = 2;
+        int rowsBelow = 3;
         int bandY = CnpcGuiSupport.pickListBandY(listY, rowsBelow, gui, labels.size());
         int scrollH = CnpcGuiSupport.listScrollHeight(gui, bandY, rowsBelow);
         IScroll scroll = CnpcGuiSupport.scrollPickList(gui, listY, rowsBelow, labels.toArray(String[]::new));
-        CnpcGuiSupport.wireScrollOpenDetail(scroll, cards, 0, id -> open(player, "title_detail:" + id));
         CnpcGuiSupport.wireScrollDoublePick(scroll, cards, 0, id -> CnpcGuiSupport.act(
                 player,
                 () -> DifficultyActions.handleArgNoReopen(subject, "equip_title", id, "titles").message(),
                 () -> open(player, "titles")));
 
         int row = CnpcGuiSupport.navRowAfterScroll(bandY, scrollH);
+        CnpcGuiSupport.selectionButton(player, gui, 22, "§eDetails", CnpcGuiSupport.COL_L, row,
+                CnpcGuiSupport.BTN_W, () -> CnpcGuiSupport.cardField(cards, scroll, 0),
+                id -> open(player, "title_detail:" + id),
+                () -> open(player, "titles"));
+        row += CnpcGuiSupport.ROW_STEP;
         PlayerDifficultyData data = DifficultyCache.data(subject);
         boolean sense = data.titleProgress().titleSenseChat();
         CnpcGuiSupport.buttonSmall(gui, 20, sense ? CnpcGuiStyle.toggleOn("Title Sense")
