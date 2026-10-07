@@ -45,7 +45,8 @@ public abstract class CreateCharacterAbsorptionWipeMixin {
         }
         try {
             MajinAbsorptionStore.clear(player);
-        } catch (Throwable ignored) {
+        } catch (Throwable t) {
+            AbsorptionClearLog.failure(t);
         }
     }
 }

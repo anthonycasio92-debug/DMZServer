@@ -44,7 +44,8 @@ public abstract class MeleeStatsResetAbsorptionWipeMixin {
         }
         try {
             MajinAbsorptionStore.clear(player);
-        } catch (Throwable ignored) {
+        } catch (Throwable t) {
+            AbsorptionClearLog.failure(t);
         }
     }
 }

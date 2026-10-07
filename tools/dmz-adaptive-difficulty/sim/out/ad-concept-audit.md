@@ -57,8 +57,8 @@ Fail-closed checks against the player's stated balance concept.
 
 ## 6) Version / formula revision
 
-- ✅ VERSION 4.5.98
-- ✅ RaceSkillSync present
+- ✅ VERSION 4.6.33
+- ✅ Fabled race skill bridge removed
 - ✅ formula revision 45
 - ✅ KP hit-cap relief wired
 - ✅ DEF/enchant paint relief

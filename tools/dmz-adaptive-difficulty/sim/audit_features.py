@@ -1874,7 +1874,7 @@ def main() -> int:
           and "require = 0" in corpse_fix
           and "private static void lm$disableDropSuppression" in corpse_fix)
 
-    print("\n=== Majin absorption bonus (4.6.32) ===")
+    print("\n=== Majin absorption bonus (4.6.33) ===")
     absorb_gate = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/noea/NoeaAbsorptionBonusGateMixin.java")
     absorb_store = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/noea/MajinAbsorptionStore.java")
     absorb_reset = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/StatsDataResetPrestigeSyncMixin.java")
@@ -1883,6 +1883,7 @@ def main() -> int:
     absorb_dende = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/DendeResetAbsorptionWipeMixin.java")
     absorb_create = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/CreateCharacterAbsorptionWipeMixin.java")
     absorb_services = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/character/CharacterServicesSystem.java")
+    absorb_log = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/AbsorptionClearLog.java")
     check("absorption bonus follows power and limit release",
           "absorptionPower" in absorb_gate
           and "isActive" not in absorb_gate
@@ -1911,7 +1912,15 @@ def main() -> int:
           and 'method = "lambda$handle$0"' in absorb_create
           and "isHasCreatedCharacter" in absorb_create
           and "via CreateCharacterC2S" in absorb_create
-          and "via CharacterServicesSystem.executeRaceChange" in absorb_services)
+          and "via CharacterServicesSystem.executeRaceChange" in absorb_services
+          and "[LM] clear() threw: " in absorb_log
+          and "AbsorptionClearLog.failure" in absorb_cmd
+          and "AbsorptionClearLog.failure" in absorb_reset
+          and "AbsorptionClearLog.failure" in absorb_melee
+          and "AbsorptionClearLog.failure" in absorb_dende
+          and "AbsorptionClearLog.failure" in absorb_create
+          and "AbsorptionClearLog.failure" in absorb_services
+          and "AbsorptionClearLog.failure" in absorb_store)
 
     print("\n=== Summary ===")
     for w in warns:

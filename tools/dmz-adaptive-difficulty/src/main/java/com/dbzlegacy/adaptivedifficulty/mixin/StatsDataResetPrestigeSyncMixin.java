@@ -34,7 +34,8 @@ public abstract class StatsDataResetPrestigeSyncMixin {
         }
         try {
             MajinAbsorptionStore.clear(player);
-        } catch (Throwable ignored) {
+        } catch (Throwable t) {
+            AbsorptionClearLog.failure(t);
         }
         try {
             PrestigeResourceRecovery.afterDmzStatsReset(player);
@@ -76,7 +77,8 @@ public abstract class StatsDataResetPrestigeSyncMixin {
     ) {
         try {
             MajinAbsorptionStore.clearIfRaceChanges((StatsData) (Object) this, race);
-        } catch (Throwable ignored) {
+        } catch (Throwable t) {
+            AbsorptionClearLog.failure(t);
         }
     }
 }

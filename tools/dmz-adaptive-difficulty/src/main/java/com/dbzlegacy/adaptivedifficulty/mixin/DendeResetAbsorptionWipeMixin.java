@@ -34,7 +34,8 @@ public abstract class DendeResetAbsorptionWipeMixin {
         }
         try {
             MajinAbsorptionStore.clear(player);
-        } catch (Throwable ignored) {
+        } catch (Throwable t) {
+            AbsorptionClearLog.failure(t);
         }
     }
 }

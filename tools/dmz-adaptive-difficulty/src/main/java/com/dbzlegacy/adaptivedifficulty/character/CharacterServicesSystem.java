@@ -347,7 +347,8 @@ public final class CharacterServicesSystem {
                 System.out.println("[LM] wipeAbsorption firing for " + player.m_7755_().getString()
                         + " via CharacterServicesSystem.executeRaceChange");
                 MajinAbsorptionStore.clear(player);
-            } catch (Throwable ignored) {
+            } catch (Throwable t) {
+                com.dbzlegacy.adaptivedifficulty.mixin.AbsorptionClearLog.failure(t);
             }
             clearForms(ch, player);
             String priorHeadBone = CosmeticHeadBoneService.activeBone(player);

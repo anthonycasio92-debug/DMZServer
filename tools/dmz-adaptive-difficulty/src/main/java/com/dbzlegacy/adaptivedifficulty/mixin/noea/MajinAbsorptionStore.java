@@ -81,7 +81,8 @@ public final class MajinAbsorptionStore {
         }
         try {
             clear(stats.getPlayer());
-        } catch (Throwable ignored) {
+        } catch (Throwable t) {
+            com.dbzlegacy.adaptivedifficulty.mixin.AbsorptionClearLog.failure(t);
         }
     }
 }
