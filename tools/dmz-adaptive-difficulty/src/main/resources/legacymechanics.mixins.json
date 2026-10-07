@@ -10,6 +10,8 @@
     "StatsDataResetPrestigeSyncMixin",
     "DmzStatsResetAbsorptionWipeMixin",
     "MeleeStatsResetAbsorptionWipeMixin",
+    "DendeResetAbsorptionWipeMixin",
+    "CreateCharacterAbsorptionWipeMixin",
     "DmzRevampPrestigeCapMixin",
     "PrestigeServiceIntegrationMixin",
     "UpdateCharacterC2SMixin",

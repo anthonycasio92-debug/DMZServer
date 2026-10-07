@@ -337,6 +337,8 @@ merge_onto_base_jar() {
         StatsDataResetPrestigeSyncMixin \
         DmzStatsResetAbsorptionWipeMixin \
         MeleeStatsResetAbsorptionWipeMixin \
+        DendeResetAbsorptionWipeMixin \
+        CreateCharacterAbsorptionWipeMixin \
         LegacyMechanicsMixinPlugin; do
       if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/mixin/${mixin_cls}.class" ]]; then
         cp "$OUT/com/dbzlegacy/adaptivedifficulty/mixin/${mixin_cls}.class" \

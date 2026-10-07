@@ -344,6 +344,8 @@ public final class CharacterServicesSystem {
                 return "§cCharacter data unavailable.";
             }
             try {
+                System.out.println("[LM] wipeAbsorption firing for " + player.m_7755_().getString()
+                        + " via CharacterServicesSystem.executeRaceChange");
                 MajinAbsorptionStore.clear(player);
             } catch (Throwable ignored) {
             }
