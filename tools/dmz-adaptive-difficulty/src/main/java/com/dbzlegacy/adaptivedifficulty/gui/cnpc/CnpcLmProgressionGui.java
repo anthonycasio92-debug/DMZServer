@@ -53,10 +53,8 @@ public final class CnpcLmProgressionGui {
     }
 
     private static boolean requiresStaff(String page) {
-        // Players can open Android tools, convert, and remove. Other progression screens are staff.
-        return !"android_remove".equals(page)
-                && !"android_panel".equals(page)
-                && !"android_convert".equals(page);
+        // Players may only use Remove Android. Android tools and convert stay staff-only.
+        return !"android_remove".equals(page);
     }
 
     private static void paint(ServerPlayer player, ICustomGui gui, String page) {
@@ -134,7 +132,7 @@ public final class CnpcLmProgressionGui {
                         "§6Global TP boost §8· " + CnpcGuiSupport.flagOnOff(ph, "boost")));
             }
         }
-        if ("race".equals(page) && ProgressionConfig.androidConversion()) {
+        if (staff && "race".equals(page) && ProgressionConfig.androidConversion()) {
             grid.add(CnpcGuiLayout.GridButton.run("§bAndroid tools", () -> open(player, "android_panel")));
         }
         if ("shop".equals(page)) {
@@ -281,11 +279,7 @@ public final class CnpcLmProgressionGui {
         CnpcGuiSupport.button(gui, 61, "§cRemove Android…", CnpcGuiSupport.COL_R, row,
                 () -> open(player, "android_remove"));
         row += CnpcGuiSupport.ROW_STEP;
-        if (StaffAccess.isStaff(player)) {
-            CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "race"), "§7« Back");
-        } else {
-            CnpcGuiSupport.navSubmenu(player, gui, row, () -> CnpcLmHubGui.open(player, "main"), "§7« Back");
-        }
+        CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "race"), "§7« Back");
     }
 
     private static void paintAndroidConvert(ServerPlayer player, ICustomGui gui) {
@@ -329,8 +323,10 @@ public final class CnpcLmProgressionGui {
         row += CnpcGuiSupport.ROW_STEP;
         if (staff) {
             row = paintNameScroll(player, gui, row, "android_remove", "android_remove");
+            CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "android_panel"), "§7« Back");
+        } else {
+            CnpcGuiSupport.navSubmenu(player, gui, row, () -> CnpcLmHubGui.open(player, "main"), "§7« Back");
         }
-        CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "android_panel"), "§7« Back");
     }
 
     /** @return Y row for footer after list (or after empty label). */

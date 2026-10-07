@@ -1,8 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.19**.
+What changed from **4.5.147** through **4.6.20**.
 
-The live mods folder gets `LegacyMechanics-4.6.19.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.6.20.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+
+## Android tools
+
+Android tools and convert stay staff-only. Players can use Remove Android, and Back returns them to the main menu.
 
 ## Menus
 
