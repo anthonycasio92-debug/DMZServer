@@ -53,8 +53,10 @@ public final class CnpcLmProgressionGui {
     }
 
     private static boolean requiresStaff(String page) {
-        // Players may only use Remove Android (hub); all other progression screens are staff.
-        return !"android_remove".equals(page);
+        // Players can open Android tools, convert, and remove. Other progression screens are staff.
+        return !"android_remove".equals(page)
+                && !"android_panel".equals(page)
+                && !"android_convert".equals(page);
     }
 
     private static void paint(ServerPlayer player, ICustomGui gui, String page) {
@@ -279,7 +281,11 @@ public final class CnpcLmProgressionGui {
         CnpcGuiSupport.button(gui, 61, "§cRemove Android…", CnpcGuiSupport.COL_R, row,
                 () -> open(player, "android_remove"));
         row += CnpcGuiSupport.ROW_STEP;
-        CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "race"), "§7« Back");
+        if (StaffAccess.isStaff(player)) {
+            CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "race"), "§7« Back");
+        } else {
+            CnpcGuiSupport.navSubmenu(player, gui, row, () -> CnpcLmHubGui.open(player, "main"), "§7« Back");
+        }
     }
 
     private static void paintAndroidConvert(ServerPlayer player, ICustomGui gui) {

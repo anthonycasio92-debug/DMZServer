@@ -1230,8 +1230,9 @@ def main() -> int:
         "private static int paintNameScroll", 1
     )[0]
     check(
-        "CNPC android remove back goes to LM hub for players",
-        "CnpcLmHubGui.open(player, \"main\")" in remove_block,
+        "CNPC android remove back returns to Android tools",
+        "open(player, \"android_panel\")" in remove_block
+        and "CnpcLmHubGui.open(player, \"main\")" not in remove_block,
     )
     check(
         "MechanicsCommands android_remove opens GUI",
