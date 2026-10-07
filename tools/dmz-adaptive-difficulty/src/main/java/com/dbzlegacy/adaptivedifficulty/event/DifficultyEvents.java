@@ -913,6 +913,12 @@ public final class DifficultyEvents {
         EndProgression.onRightClickBlock(event);
     }
 
+    /** One left-click with the matching dragon radar takes that ball. */
+    @SubscribeEvent
+    public void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
+        DragonBallRadarPickup.onLeftClickBlock(event);
+    }
+
     /** Sneak + right-click another player → DMZ stat dump (PlayerStatChecker.js).
      * Also Skill Check / Rival / Spar / Hub / Difficulty / Prestige CNPC interact. */
     @SubscribeEvent

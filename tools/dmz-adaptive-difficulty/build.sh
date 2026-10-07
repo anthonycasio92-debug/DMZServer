@@ -270,6 +270,13 @@ merge_onto_base_jar() {
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/event/DifficultyEvents\$"*.class \
       "$merge/com/dbzlegacy/adaptivedifficulty/event/" 2>/dev/null || true
   fi
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/event/DragonBallRadarPickup.class" ]]; then
+    mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/event"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/event/DragonBallRadarPickup.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/event/DragonBallRadarPickup.class"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/event/DragonBallRadarPickup\$"*.class \
+      "$merge/com/dbzlegacy/adaptivedifficulty/event/" 2>/dev/null || true
+  fi
   if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/util/StaffAccess.class" ]]; then
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/util/StaffAccess.class" \
       "$merge/com/dbzlegacy/adaptivedifficulty/util/StaffAccess.class"
@@ -339,7 +346,6 @@ merge_onto_base_jar() {
         MeleeStatsResetAbsorptionWipeMixin \
         DendeResetAbsorptionWipeMixin \
         CreateCharacterAbsorptionWipeMixin \
-        DragonBallPickupMixin \
         AbsorptionClearLog \
         LegacyMechanicsMixinPlugin; do
       if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/mixin/${mixin_cls}.class" ]]; then
