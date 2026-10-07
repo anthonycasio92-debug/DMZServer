@@ -328,6 +328,7 @@ merge_onto_base_jar() {
         ResourcesPoolClampMixin ResourcesLoadClampMixin \
         StatsDataRestoreMultiplierClampMixin StatsDataLoadClampMixin StatsDataMixin \
         StatsSyncC2SGenderMixin \
+        StatsDataResetPrestigeSyncMixin \
         LegacyMechanicsMixinPlugin; do
       if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/mixin/${mixin_cls}.class" ]]; then
         cp "$OUT/com/dbzlegacy/adaptivedifficulty/mixin/${mixin_cls}.class" \

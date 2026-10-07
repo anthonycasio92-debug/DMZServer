@@ -1,7 +1,9 @@
 package com.dbzlegacy.adaptivedifficulty.mixin;
 
+import com.dbzlegacy.adaptivedifficulty.mixin.noea.MajinAbsorptionStore;
 import com.dbzlegacy.adaptivedifficulty.progression.PrestigeResourceRecovery;
 import com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampPrestigeBridge;
+import com.dragonminez.common.hair.CustomHair;
 import com.dragonminez.common.stats.StatsData;
 import net.minecraft.server.level.ServerPlayer;
 import org.spongepowered.asm.mixin.Mixin;
@@ -27,11 +29,49 @@ public abstract class StatsDataResetPrestigeSyncMixin {
             return;
         }
         try {
+            MajinAbsorptionStore.clear(player);
+        } catch (Throwable ignored) {
+        }
+        try {
             PrestigeResourceRecovery.afterDmzStatsReset(player);
         } catch (Throwable ignored) {
         }
         try {
             DmzRevampPrestigeBridge.scheduleSyncAfterStatsReset(player);
+        } catch (Throwable ignored) {
+        }
+    }
+
+    /**
+     * Character creation applies the race at the start of this method.
+     * A different race drops the stored absorption bonus first.
+     * {@code require = 0} so a signature change skips the hook.
+     */
+    @Inject(method = "initializeWithRaceAndClass", at = @At("HEAD"), remap = false, require = 0)
+    private void lm$wipeAbsorptionBeforeRaceInit(
+            String race,
+            String characterClass,
+            String gender,
+            int hairId,
+            CustomHair customHair,
+            int bodyType,
+            int eyesType,
+            int noseType,
+            int mouthType,
+            int tattooType,
+            float boobScale,
+            String activeHeadBone,
+            String hairColor,
+            String bodyColor,
+            String bodyColor2,
+            String bodyColor3,
+            String eye1Color,
+            String eye2Color,
+            String auraColor,
+            CallbackInfo ci
+    ) {
+        try {
+            MajinAbsorptionStore.clearIfRaceChanges((StatsData) (Object) this, race);
         } catch (Throwable ignored) {
         }
     }

@@ -1,8 +1,8 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.27**.
+What changed from **4.5.147** through **4.6.28**.
 
-The live mods folder gets `LegacyMechanics-4.6.27.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.6.28.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
 
 ## List selection
 
@@ -78,7 +78,7 @@ Death in space, Namek, Beerus' planet, and the other Noea travel dimensions uses
 
 ## Majin absorption bonus
 
-Noea's stored melee and ki absorption bonus applies only while absorption is selected and the player is a Majin. When it is not, the read subtracts that stored bonus back out. The stored number itself is left alone. Battle power is unchanged.
+The stored melee and ki bonus applies while absorption power is above zero, scaled by the same power-release percent as melee and ki. At zero power the bonus is left out of the damage read and the stored numbers stay, so absorbing again still adds to them. `/dmzstats reset`, Dende's reset, a 0% race wipe, and a race change clear those stored numbers. Battle power is unchanged.
 
 ## Race lock removed
 

@@ -2,6 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.character;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
+import com.dbzlegacy.adaptivedifficulty.mixin.noea.MajinAbsorptionStore;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.progression.race.RaceLock;
@@ -341,6 +342,10 @@ public final class CharacterServicesSystem {
             if (ch == null) {
                 refund(player, cost);
                 return "§cCharacter data unavailable.";
+            }
+            try {
+                MajinAbsorptionStore.clear(player);
+            } catch (Throwable ignored) {
             }
             clearForms(ch, player);
             String priorHeadBone = CosmeticHeadBoneService.activeBone(player);
