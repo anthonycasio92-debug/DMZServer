@@ -240,7 +240,7 @@ public final class CharacterServicesSystem {
 
     public static String cooldownLine(ServerPlayer player, String kind) {
         if (CharacterServicesAccess.bypassCooldown(player)) {
-            return "§aReady whenever you are §8(staff bypass)";
+            return "§aReady whenever you are §8(staff waived)";
         }
         CharacterServicesStore.PlayerRecord rec =
                 CharacterServicesStore.get().record(player.m_20148_().toString());

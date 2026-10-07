@@ -11,15 +11,15 @@ public final class CnpcLmLogsGui {
 
     public static void open(ServerPlayer player, String page) {
         if (!StaffAccess.isStaff(player)) {
-            CnpcGuiSupport.denyToHub(player, "§cStaff only — event log is for staff.");
+            CnpcGuiSupport.denyToHub(player, "§cStaff only.");
             return;
         }
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_LOGS, CnpcGuiSupport.W, 280, (pl, gui) -> paint(pl, gui));
     }
 
     private static void paint(ServerPlayer player, ICustomGui gui) {
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§8Server Event Log",
-                "§7Staff event log — toggle or save to disk");
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§8Event Log",
+                "§7Staff event log — toggle or write logs to disk");
         List<String> lines = MechanicsGuiApi.linesForPage(player, "logs");
         var ph = MechanicsGuiApi.placeholders(player);
         boolean syslogOn = "true".equalsIgnoreCase(ph.getOrDefault("syslog", "false"));
@@ -32,7 +32,7 @@ public final class CnpcLmLogsGui {
                 () -> MechanicsGuiApi.handleDo(player, "syslog", syslogOn ? "off" : "on", "logs"),
                 () -> open(player, "main")));
         row += 24;
-        CnpcGuiSupport.button(gui, 22, "§7Flush to disk", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
+        CnpcGuiSupport.button(gui, 22, "§7Write logs to disk", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> MechanicsGuiApi.handleDo(player, "syslog", "flush", "logs"),
                 () -> open(player, "main")));

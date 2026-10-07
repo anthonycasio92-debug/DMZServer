@@ -82,8 +82,12 @@ public final class CharacterServicesGuiApi {
                 return lines;
             }
             lines.add("§7Choose the race you want to become.");
-            lines.add("§7Use §f0% §7for a free full wipe (new race, nothing carried over).");
-            lines.add("§7You keep ki skills, techniques, and shared form progress.");
+            lines.add("§7Use §f0% §7for a free full wipe (stats wiped; head-part unlocks and coins kept).");
+            if (CharacterServicesConfig.get().raceChange.keepSkillsOnRaceChange) {
+                lines.add("§7You keep ki skills, techniques, and shared form progress.");
+            } else {
+                lines.add("§7Ki skills, techniques, and shared form progress reset with this race.");
+            }
             lines.add("§8Race-only form ladders reset when the new race does not use them.");
             lines.add(CharacterServicesSystem.cooldownLine(player, "race"));
             return lines;
@@ -99,23 +103,25 @@ public final class CharacterServicesGuiApi {
             }
             lines.add("§7Pick a new fighting class for your §fcurrent race§7.");
             lines.add("§7Only classes from your race's DMZ stats are listed.");
-            lines.add("§7Your base combat stats stay — class skills and perks reset.");
+            lines.add(CharacterServicesConfig.get().classChange.preserveBaseStats
+                    ? "§7Your base combat stats stay — class skills and progression reset."
+                    : "§7Class skills and progression reset.");
             lines.add(costLine(player, CharacterServicesSystem.classCost(player)));
             lines.add(CharacterServicesSystem.cooldownLine(player, "class"));
             return lines;
         }
         if (p.startsWith("bones:") || "bones".equals(p)) {
             if (!CharacterServicesConfig.get().headBoneShop.enabled) {
-                lines.add("§cHead Parts Shop is turned off on this server.");
+                lines.add("§cHead parts is turned off on this server.");
                 return lines;
             }
             if (!CharacterServicesAccess.canHeadBoneShop(player)) {
-                lines.add("§cYou do not have permission for the Head Parts Shop.");
+                lines.add("§cYou do not have permission for head parts.");
                 return lines;
             }
             int bonePage = parseBonePage(p);
             lines.add("§7Unlock parts from any race · yours are free, others cost coins.");
-            lines.add("§7Click a row to unlock or equip · search filters the list · drag the scrollbar.");
+            lines.add("§7Click a row to preview. Unlock & equip charges Ancient Coins. Search filters the list.");
             return lines;
         }
         if ("reskin".equals(p)) {
@@ -128,7 +134,7 @@ public final class CharacterServicesGuiApi {
                 return lines;
             }
             lines.add("§7Change hair, colors, and other cosmetics.");
-            lines.add("§7Use §fHead Parts Shop §7here for cross-race ears, horns, and more.");
+            lines.add("§7Use §fHead parts §7for cross-race ears, horns, and more.");
             lines.add("§7Fighting class cannot be changed during a reskin.");
             lines.add("§7Level, stats, and race are unchanged.");
             lines.add(costLine(player, CharacterServicesSystem.reskinCost(player)));
@@ -146,7 +152,7 @@ public final class CharacterServicesGuiApi {
                 lines.add("§cYou do not have permission for reskin.");
                 return lines;
             }
-            lines.add("§7Opens the appearance editor (hair, colors, body).");
+            lines.add("§7Opens the appearance editor (hair, colors, body, gender).");
             lines.add("§7Level, stats, race, and class stay locked during the session.");
             lines.add(costLine(player, CharacterServicesSystem.reskinCost(player)));
             lines.add(CharacterServicesSystem.reskinCostExplanation(player));
@@ -164,7 +170,9 @@ public final class CharacterServicesGuiApi {
             lines.addAll(CharacterServicesSystem.statPreviewLines(player, pct));
             lines.add(costLine(player, CharacterServicesSystem.raceCost(player, pct)));
             if (pct > 0) {
-                lines.add("§8Scales with your DMZ level");
+                lines.add(CharacterServicesConfig.get().raceChange.levelCostMultiplier
+                        ? "§8Scales with your DMZ level"
+                        : "§8Flat cost (server default)");
             } else {
                 lines.add("§8Free — full wipe, then DMZ class & look setup");
             }
@@ -189,11 +197,11 @@ public final class CharacterServicesGuiApi {
             lines.add("§7New class: §f" + FightingClassLabels.display(cls));
             lines.add(costLine(player, CharacterServicesSystem.classCost(player)));
             lines.add("§8Pay-up OK · change returned");
-            lines.add("§8Class progression and class skills will reset.");
+            lines.add("§8Class skills and progression will reset.");
             return lines;
         }
         lines.add("§7Rebuild your character without starting from zero.");
-        lines.add("§7Race · class · reskin · head parts (under Reskin).");
+        lines.add("§7Race · class · reskin · head parts.");
         return lines;
     }
 
@@ -272,9 +280,9 @@ public final class CharacterServicesGuiApi {
         }
         if (CharacterServicesAccess.bypassCost(player)) {
             if (DifficultyConfig.get().staffFreeAncientCoinCosts && StaffAccess.isStaff(player)) {
-                return "§7Cost §afree §8(staff free coins ON)";
+                return "§7Cost §afree §8(staff waived)";
             }
-            return "§7Cost §afree §8(bypass permission)";
+            return "§7Cost §afree §8(cost waived)";
         }
         return "§7Cost §f" + CharacterServicesSystem.formatCost(copperCost) + " §7Ancient Coins";
     }

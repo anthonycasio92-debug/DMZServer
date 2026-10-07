@@ -11,7 +11,7 @@ public final class CnpcLmAdminGui {
 
     public static void open(ServerPlayer player, String page) {
         if (!StaffAccess.isStaff(player)) {
-            CnpcGuiSupport.denyToHub(player, "§cStaff only — that panel is for staff.");
+            CnpcGuiSupport.denyToHub(player, "§cStaff only.");
             return;
         }
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_ADMIN, CnpcGuiSupport.W, 280, (pl, gui) -> paint(pl, gui));
@@ -25,13 +25,13 @@ public final class CnpcLmAdminGui {
                 "§8/lm admin inspect … §7· §8/difficulty admin …"
         ), 2));
         row += 4;
-        CnpcGuiSupport.button(gui, 20, "§aReload LM config", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
+        CnpcGuiSupport.button(gui, 20, "§aReload Legacy Mechanics config", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> DifficultyConfig.reload()
                         ? "§aLegacy Mechanics config reloaded."
                         : "§cConfig reload failed.",
                 () -> open(player, "main")));
-        CnpcGuiSupport.button(gui, 21, "§5Progression panel", CnpcGuiSupport.COL_R, row,
+        CnpcGuiSupport.button(gui, 21, "§dProgression panel", CnpcGuiSupport.COL_R, row,
                 () -> CnpcLmGui.open(player, "progression", "main"));
         row += 24;
         CnpcGuiSupport.button(gui, 22, "§8Event log", CnpcGuiSupport.COL_L, row,

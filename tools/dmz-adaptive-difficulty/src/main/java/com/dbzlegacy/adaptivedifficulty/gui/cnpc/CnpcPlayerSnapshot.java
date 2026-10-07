@@ -30,7 +30,7 @@ public final class CnpcPlayerSnapshot {
         try {
             int level = DmzProgression.guiDisplayDmzLevel(who);
             String scale = hubPh == null ? "x1" : hubPh.getOrDefault("overhaul_scale", "x1");
-            lines.add("§7DMZ level §f" + DmzRewards.formatWhole(level) + " §8· §7Growth pace §f" + scale);
+            lines.add("§7DMZ level §f" + DmzRewards.formatWhole(level) + " §8· §7Overhaul scale §f" + scale);
         } catch (Throwable ignored) {
         }
 
@@ -41,7 +41,7 @@ public final class CnpcPlayerSnapshot {
         if (skillCheck && hubPh != null && "true".equals(hubPh.get("skillcheck_session"))) {
             lines.add("§7Skill Check session is open — finish it from the hub when ready.");
         } else if (staff) {
-            lines.add("§7Staff tip: §fStaff Admin §7and §fProgression §7live under this hub.");
+            lines.add("§7Staff tip: §fStaff Admin §7lives under this hub (Progression is inside it).");
         }
 
         return lines;
@@ -54,7 +54,7 @@ public final class CnpcPlayerSnapshot {
         try {
             DifficultySnapshot snap = DifficultyCache.refresh(who);
             if (!snap.personalEnabled) {
-                lines.add("§7Difficulty §cPersonal OFF §8— open §fDifficulty §8to apply your tier again");
+                lines.add("§7Difficulty §ePersonal OFF §8— open §fDifficulty §8to turn it on and pick a tier");
                 return;
             }
             if (snap.activeTier <= 0 || snap.activeDifficulty <= 0) {

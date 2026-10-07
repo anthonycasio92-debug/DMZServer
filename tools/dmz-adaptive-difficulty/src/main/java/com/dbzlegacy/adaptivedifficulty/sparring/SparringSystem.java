@@ -1116,7 +1116,14 @@ public final class SparringSystem {
     public static List<String> topLines(String category, int limit) {
         List<String> lines = new ArrayList<>();
         String cat = category == null || category.isBlank() ? "tp" : category.trim().toLowerCase();
-        lines.add("§6§lSparring Top §8— §f" + cat);
+        String label = switch (cat) {
+            case "sessions", "session" -> "Sessions";
+            case "perfect", "perfects" -> "Perfect spars";
+            case "combo" -> "Combo";
+            case "time" -> "Time";
+            default -> "Training points";
+        };
+        lines.add("§6§lSparring leaderboard §8— §f" + label);
         List<Map.Entry<String, SparStore.LeaderboardEntry>> entries =
                 new ArrayList<>(SparStore.get().leaderboard.entrySet());
         entries.sort((a, b) -> {

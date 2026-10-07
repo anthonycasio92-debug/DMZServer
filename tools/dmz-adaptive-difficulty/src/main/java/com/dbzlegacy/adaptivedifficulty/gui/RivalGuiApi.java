@@ -164,7 +164,7 @@ public final class RivalGuiApi {
     public static List<String> challengeLines(ServerPlayer player) {
         List<String> lines = new ArrayList<>();
         lines.add("§8── §cChallenge §8──");
-        lines.add("§7Send a duel · respond on §eDuel requests");
+        lines.add("§7Send a challenge · respond on §eChallenge requests");
         if (player != null && RivalChallengeManager.get().isInChallenge(player.m_20148_())) {
             lines.add("§eChallenge active");
         } else {
@@ -526,9 +526,9 @@ public final class RivalGuiApi {
             case "pending", "invites", "pendinginvites" -> RivalSystem.pendingInviteLines(player);
             case "actions" -> List.of(
                     "§6§lRival actions",
-                    "§7Pending board — tap a name to accept or decline an invite",
-                    "§7Declare a rivalry, send a silent rival, or remove someone from your list",
-                    "§8Flow: Silent → Declared → Pending invite → Mutual rival"
+                    "§7Declare invites — tap a name to accept, decline, or withdraw",
+                    "§7Declare a rivalry, mark a silent rival, or remove someone from your list",
+                    "§8Silent → Declared → accept in Declare invites → Mutual"
             );
             case "stats", "statistics" -> statsLines(player);
             case "challenge", "challenges" -> challengeLines(player);
@@ -731,12 +731,12 @@ public final class RivalGuiApi {
             RivalStore.get().markDirty();
             RivalStore.get().save();
             RivalProgression.get().save();
-            return "§aRival store + progression saved.";
+            return "§aRival data saved.";
         }
         if (sub.startsWith("refresh") || sub.startsWith("reload")) {
             RivalStore.get().load();
             RivalProgression.get().load();
-            return "§aRival store + progression reloaded.";
+            return "§aRival data reloaded.";
         }
         if (sub.startsWith("status")) {
             boolean on = DifficultyConfig.get().enableRivalSystem;
@@ -752,7 +752,7 @@ public final class RivalGuiApi {
                 + "§e/rival admin refresh|reload §7— reload stores from disk\n"
                 + "§e/rival admin status §7— enabled + path summary\n"
                 + "§e/rival admin open [page] §7— open rival GUI\n"
-                + "§8GUI buttons call these directly (no Forge perm-level gate).";
+                + "§8GUI buttons run these directly.";
     }
 
     /** Detail lore for a tab-encoded {@link com.dbzlegacy.adaptivedifficulty.rival.RivalSystem#currentRivalCards} row. */
@@ -774,7 +774,7 @@ public final class RivalGuiApi {
         lines.add("§7Status §f" + status + "  §8·  §7Tier §6" + tier);
         lines.add("§7RP §f" + rp + "  §8·  §7W/L/D §f" + wins + "/" + losses + "/" + draws);
         if (p.length > 8) {
-            lines.add("§7Deaths lost/won §f" + p[8] + "/" + (p.length > 9 ? p[9] : "0"));
+            lines.add("§7Challenge deaths §fyou " + p[8] + " §8/ them " + (p.length > 9 ? p[9] : "0"));
         }
         lines.add("§8Tap Remove to end this rivalry.");
         return lines;
@@ -795,7 +795,7 @@ public final class RivalGuiApi {
         if ("IN".equalsIgnoreCase(dir)) {
             if (mutual) {
                 lines.add("§eIncoming mutual confirm");
-                lines.add("§7Both players Silent'd — Accept to confirm.");
+                lines.add("§7You both picked Silent — Accept to go Mutual.");
             } else {
                 lines.add("§aIncoming declare");
                 lines.add("§7Accept to become Mutual · Decline to ignore.");

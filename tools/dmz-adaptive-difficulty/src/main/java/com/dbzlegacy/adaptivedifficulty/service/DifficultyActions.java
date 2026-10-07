@@ -6,6 +6,7 @@ import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.calc.PlayerCombatProfile;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
+import com.dbzlegacy.adaptivedifficulty.gui.GuiClickConfirm;
 import com.dbzlegacy.adaptivedifficulty.gui.ProgressionGuiApi;
 import com.dbzlegacy.adaptivedifficulty.gui.ProgressionMenu;
 import com.dbzlegacy.adaptivedifficulty.util.PaidFeatureAccess;
@@ -244,8 +245,14 @@ public final class DifficultyActions {
             return equipTitle(player, arg, page == null || page.isBlank() ? "titles" : page);
         }
         if (ACT_CLEAR_TITLE.equals(act) || "unequip_title".equals(act)) {
+            String titlePage = page == null || page.isBlank() ? "titles" : page;
+            if (!GuiClickConfirm.confirmed(player.m_20148_(), "clear-title")) {
+                openGui(player, titlePage);
+                return Result.ok("§eUnequip your title? §7You can re-equip it any time. "
+                        + "§eClick again within 10 seconds.");
+            }
             TitleSystem.clear(player);
-            openGui(player, page == null || page.isBlank() ? "titles" : page);
+            openGui(player, titlePage);
             return Result.ok("Title unequipped.");
         }
         if ("up".equals(act) || "upgrade".equals(act) || "set_max".equals(act)
@@ -287,8 +294,8 @@ public final class DifficultyActions {
                 || "zero".equals(act) || "clear".equals(act))) {
             openGui(player, page == null || page.isBlank() ? "main" : page);
             String hint = ACT_TEAM.equals(act)
-                    ? "§cTurn personal difficulty ON first §7— use Personal scaling on the main menu, then pick a team mode."
-                    : "§cTurn personal difficulty ON first §7— use Personal scaling on the main menu, then pick a tier.";
+                    ? "§cTurn personal difficulty ON first §7— use Personal difficulty on the main menu, then pick a team mode."
+                    : "§cTurn personal difficulty ON first §7— use Personal difficulty on the main menu, then pick a tier.";
             return Result.fail(hint);
         }
 
@@ -513,6 +520,11 @@ public final class DifficultyActions {
 
         // Lowering / lateral via buy menu is free (still must be eligible).
         if (tier.id < current) {
+            if (!GuiClickConfirm.confirmed(player.m_20148_(), "diff-tier:" + tier.id)) {
+                openGui(player, returnPage);
+                return Result.ok("§eSwitch to §f" + tier.display
+                        + " §e(free)? Click again within 10 seconds.");
+            }
             applyTier(data, player, tier);
             openGui(player, returnPage);
             return Result.ok("Lowered to " + tier.display + " (T" + tier.id + ") — free.");
@@ -529,6 +541,11 @@ public final class DifficultyActions {
         if (charge > 0L && !AncientCoinEconomy.canAfford(player, charge)) {
             openGui(player, returnPage);
             return Result.fail(AncientCoinEconomy.missingText(player, charge));
+        }
+        if (!GuiClickConfirm.confirmed(player.m_20148_(), "diff-tier:" + tier.id)) {
+            openGui(player, returnPage);
+            return Result.ok("§eBuy §f" + tier.display + " §efor §6" + costText
+                    + "§e? Click again within 10 seconds.");
         }
         if (charge > 0L && !AncientCoinEconomy.charge(player, charge)) {
             openGui(player, returnPage);
@@ -614,6 +631,11 @@ public final class DifficultyActions {
     }
 
     private static Result resetActive(ServerPlayer player, String page) {
+        if (!GuiClickConfirm.confirmed(player.m_20148_(), "clear-active-tier")) {
+            openGui(player, page);
+            return Result.ok("§eClear active tier? §7Team mode resets to Personal. "
+                    + "Unlocks and Ancient Coins kept. §eClick again within 10 seconds.");
+        }
         PlayerDifficultyData data = DifficultyCache.data(player);
         data.resetTemporary();
         DifficultyCache.save(player);
@@ -621,7 +643,7 @@ public final class DifficultyActions {
         ScaledMobTracker.releaseAndRevertPlayer(player);
         NearbyMobScaler.processEvictions();
         openGui(player, page);
-        return Result.ok("Difficulty cleared. Unlocks and Ancient Coins kept.");
+        return Result.ok("Difficulty cleared. Team mode reset to Personal. Unlocks and Ancient Coins kept.");
     }
 
     private static Result characterReset(ServerPlayer player, String page) {

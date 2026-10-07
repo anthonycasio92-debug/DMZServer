@@ -25,7 +25,7 @@ public final class ProgressionModuleCatalog {
                     "progression.race.YardratProgression", "kubejs yardrat")),
             Map.entry("spiritualist", info("Spiritualist Ki", "enableSpiritualistKi",
                     "progression.race.SpiritualistKiControl", "kubejs spiritualist")),
-            Map.entry("android", info("Android Conversion", "enableAndroidConversion",
+            Map.entry("android", info("Android convert", "enableAndroidConversion",
                     "progression.race.AndroidConversion", "CNPC Dr. Gero script")),
             Map.entry("kiweapons", info("Ki Weapons", "enableKiWeapons",
                     "progression.combat.KiWeapons", "kubejs ki weapons")),

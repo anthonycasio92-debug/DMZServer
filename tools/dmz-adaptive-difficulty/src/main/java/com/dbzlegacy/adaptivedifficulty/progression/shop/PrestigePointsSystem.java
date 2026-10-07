@@ -2,6 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.progression.shop;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.progression.DmzSkillUtil;
+import com.dbzlegacy.adaptivedifficulty.gui.GuiClickConfirm;
 import com.dbzlegacy.adaptivedifficulty.progression.PersonalLevelCapMirror;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionData;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
@@ -381,7 +382,7 @@ public final class PrestigePointsSystem {
         String perPoint = levelsPerPoint(offer.id) > 1
                 ? " §8(" + levelsPerPoint(offer.id) + " levels/point in shop)"
                 : "";
-        return "§a" + offer.label + " §7prestige floor §f" + before + " §7→ §f" + next
+        return "§a" + offer.label + " §7kept level §f" + before + " §7→ §f" + next
                 + " §8/ §f" + offer.maxLevel + perPoint
                 + "\n§7Live skill §f" + liveBefore + " §7→ §f" + liveAfter
                 + " §8(" + player.m_6302_() + ")";
@@ -436,7 +437,7 @@ public final class PrestigePointsSystem {
         int purchased = getPurchasedSkillLevels(player, offer.id);
         int floorMax = Math.max(1, offer.maxLevel);
         if (purchased >= floorMax) {
-            return "§c" + offer.label + " prestige floor is maxed (§f" + floorMax + "§c).";
+            return "§c" + offer.label + " kept level is maxed (§f" + floorMax + "§c).";
         }
         int points = getPoints(player);
         if (points < SKILL_POINT_COST) {
@@ -445,7 +446,7 @@ public final class PrestigePointsSystem {
         int levelsPerPoint = levelsPerPoint(offer.id);
         int room = Math.max(0, floorMax - purchased);
         if (room <= 0) {
-            return "§c" + offer.label + " prestige floor is maxed (§f" + floorMax + "§c).";
+            return "§c" + offer.label + " kept level is maxed (§f" + floorMax + "§c).";
         }
         int gain = Math.min(levelsPerPoint, room);
         setPoints(player, points - SKILL_POINT_COST);
@@ -476,9 +477,9 @@ public final class PrestigePointsSystem {
         String liveNote = liveAfter > liveBefore
                 ? " → §fLv " + liveAfter
                 : " §8(live already §f" + liveBefore + "§8)";
-        return "§a+" + gain + " §7" + offer.label + " prestige floor §f" + purchased
+        return "§a+" + gain + " §7" + offer.label + " kept level §f" + purchased
                 + " §7→ §f" + nextPurchased + liveNote
-                + " §8(§e" + SKILL_POINT_COST + "§8 pt)"
+                + " §8(survives prestige)"
                 + "\n§7Points left: §e" + getPoints(player);
     }
 
@@ -705,6 +706,10 @@ public final class PrestigePointsSystem {
             return "§cNeed §e" + cost + " §cpoint" + (cost == 1 ? "" : "s")
                     + " (have §e" + points + "§c).";
         }
+        if (!GuiClickConfirm.confirmed(player.m_20148_(), "prestige-tier:" + tierId)) {
+            return "§eUnlock permanent §fT" + tierId + " §efor §6" + cost
+                    + " §epoints? Click again within 10 seconds.";
+        }
         setPoints(player, points - cost);
         ProgressionData.storedPutBool(player, KEY_TIER_PREFIX + tierId, true);
         // Apply unlock bits for every permanently purchased tier (fills gaps).
@@ -888,11 +893,15 @@ public final class PrestigePointsSystem {
         }
         if (majin && hasMutant(player)) {
             return "§cYou have §fPermanent Mutant§c."
-                    + "\n§7Unpurchase Mutant first (§cno refund§7), then buy Majin.";
+                    + "\n§7Remove Mutant first (§cno refund§7), then buy Majin.";
         }
         if (!majin && hasMajin(player)) {
             return "§cYou have §fPermanent Majin§c."
-                    + "\n§7Unpurchase Majin first (§cno refund§7), then buy Mutant.";
+                    + "\n§7Remove Majin first (§cno refund§7), then buy Mutant.";
+        }
+        if (!GuiClickConfirm.confirmed(player.m_20148_(), "form-buy:" + label)) {
+            return "§eBuy §f" + label + " §efor §6" + FORM_COST
+                    + " §epoints? Click again within 10 seconds.";
         }
         setPoints(player, points - FORM_COST);
         ProgressionData.storedPutBool(player, majin ? KEY_MAJIN : KEY_MUTANT, true);
@@ -902,7 +911,7 @@ public final class PrestigePointsSystem {
         ));
         return "§aUnlocked §f" + label + " §7(§e-" + FORM_COST + " §7points)"
                 + "\n§7Points left: §e" + getPoints(player)
-                + "\n§8To switch: unpurchase (no refund), then buy the other form.";
+                + "\n§8To switch: remove it (no refund), then buy the other form.";
     }
 
     private static String unbuyForm(ServerPlayer player, boolean majin) {
@@ -912,6 +921,10 @@ public final class PrestigePointsSystem {
         String label = majin ? "Permanent Majin" : "Permanent Mutant";
         if (!(majin ? hasMajin(player) : hasMutant(player))) {
             return "§eYou do not own §f" + label + "§e.";
+        }
+        if (!GuiClickConfirm.confirmed(player.m_20148_(), "form-remove:" + label)) {
+            return "§eRemove §f" + label + "§e? You will §cnot §eget your "
+                    + FORM_COST + " points back. Click again within 10 seconds.";
         }
         clearForm(player, majin);
         SystemTelemetry.log("prestige_points", majin ? "unbuy_majin" : "unbuy_mutant", player, null, Map.of());

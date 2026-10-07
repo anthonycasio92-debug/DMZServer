@@ -50,6 +50,26 @@ public final class RivalChallengeManager {
         return id == null ? null : activeById.get(id);
     }
 
+    /** Names of players in a live or countdown challenge, for the spectate picker. */
+    public java.util.List<String> activeFighterNames() {
+        java.util.List<String> names = new java.util.ArrayList<>();
+        for (RivalChallenge ch : activeById.values()) {
+            if (ch == null || ch.status == RivalChallenge.Phase.ENDED) {
+                continue;
+            }
+            if (ch.status != RivalChallenge.Phase.ACTIVE && ch.status != RivalChallenge.Phase.COUNTDOWN) {
+                continue;
+            }
+            if (ch.nameA != null && !ch.nameA.isBlank() && !names.contains(ch.nameA)) {
+                names.add(ch.nameA);
+            }
+            if (ch.nameB != null && !ch.nameB.isBlank() && !names.contains(ch.nameB)) {
+                names.add(ch.nameB);
+            }
+        }
+        return names;
+    }
+
     public RivalChallenge anyActive() {
         for (RivalChallenge ch : activeById.values()) {
             if (ch != null && ch.status != RivalChallenge.Phase.ENDED

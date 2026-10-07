@@ -63,7 +63,7 @@ public final class CnpcLmCharacterGui {
                         + ph.getOrDefault("current_class", "?"));
 
         List<String> lines = new ArrayList<>(CharacterServicesGuiApi.linesForPage(player, "main"));
-        lines.add(0, "§6Coins §f" + ph.getOrDefault("ancient_coins", "0") + " §7Ancient Coins");
+        lines.add(0, "§6Ancient Coins §f" + ph.getOrDefault("ancient_coins", "0"));
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 3));
 
         boolean ok = "true".equals(ph.get("bridge_ok")) && "true".equals(ph.get("enabled"));
@@ -79,7 +79,7 @@ public final class CnpcLmCharacterGui {
                 actions.add(CnpcGuiLayout.GridButton.run("§dReskin", () -> open(player, "reskin")));
             }
             if ("true".equals(ph.get("can_head_bones"))) {
-                actions.add(CnpcGuiLayout.GridButton.run("§fHead bones", () -> open(player, "bones:0")));
+                actions.add(CnpcGuiLayout.GridButton.run("§fHead parts", () -> open(player, "bones:0")));
             }
             if (actions.isEmpty()) {
                 String note = "false".equals(ph.get("can_services"))
@@ -217,7 +217,7 @@ public final class CnpcLmCharacterGui {
                 ? "§7Page §f" + (pg + 1) + "/" + pages + CnpcGuiStyle.SEP + "§7Active §f"
                         + ph.getOrDefault("active_head_bone", "none")
                 : "§ePreviewing §f" + previewName;
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§f", "Character", "Head bones"),
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§f", "Character", "Head parts"),
                 subtitle);
         int listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBeforePickList(gui, infoY,
                 CharacterServicesGuiApi.linesForPage(player, "bones:" + pg), 2));
@@ -269,7 +269,7 @@ public final class CnpcLmCharacterGui {
                         player,
                         () -> CharacterServicesGuiApi.handleDo(player, "bone_race_default", "", "bones"),
                         () -> open(player, "bones:" + pg)));
-        CnpcGuiSupport.buttonSmall(gui, 61, "§7Unequip bone", CnpcGuiSupport.COL_R, row, CnpcGuiSupport.BTN_W,
+        CnpcGuiSupport.buttonSmall(gui, 61, "§7Reset to natural look", CnpcGuiSupport.COL_R, row, CnpcGuiSupport.BTN_W,
                 () -> CnpcGuiSupport.act(
                         player,
                         () -> CharacterServicesGuiApi.handleDo(player, "bone_unequip", "", "bones"),
@@ -308,7 +308,7 @@ public final class CnpcLmCharacterGui {
     private static void paintReskin(ServerPlayer player, ICustomGui gui) {
         ServerPlayer subject = CnpcGuiSupport.target(player);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§f", "Character", "Reskin"),
-                "§7Opens the in-game editor");
+                "§7Opens the appearance editor");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, CharacterServicesGuiApi.linesForPage(player, "reskin"),
                         CnpcGuiStyle.INFO_INLINE_MAX));
         CnpcGuiSupport.button(gui, 20, "§eReview cost & continue", CnpcGuiSupport.COL_L, row,

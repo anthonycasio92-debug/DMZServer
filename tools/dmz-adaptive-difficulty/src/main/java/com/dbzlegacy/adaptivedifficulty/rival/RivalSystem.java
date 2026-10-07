@@ -665,7 +665,7 @@ public final class RivalSystem {
         lines.add("§7You do not have any rivals on your list yet.");
         lines.add("§7From the main Rival menu, open §fActions §7→ §fDeclare… §7and choose a player.");
         lines.add("§7When you both accept, they appear here for duels, rival TP, and progress.");
-        lines.add("§8Silent rivals and pending invites use other pages — check Actions and Pending.");
+        lines.add("§8Silent rivals and declare invites live on other pages — check Actions → Declare invites.");
         return lines;
     }
 
@@ -696,7 +696,7 @@ public final class RivalSystem {
             RivalConstants.RpTier tier = RivalConstants.tierFor(link.points);
             lines.add("§f" + link.name + " §8[" + st.label() + "] §"
                     + tier.color() + tier.name() + " §7RP §f" + (int) link.points
-                    + (link.deathLosses > 0 ? " §cDL " + link.deathLosses : ""));
+                    + (link.deathLosses > 0 ? " §7deaths §c" + link.deathLosses : ""));
             lines.addAll(ProvingGrounds.listLines(link));
         }
         return lines;
@@ -788,7 +788,7 @@ public final class RivalSystem {
             lines.add("§8Incoming: they Declared you — Accept or Decline.");
             return lines;
         }
-        lines.add("§e§lPending Invites");
+        lines.add("§e§lDeclare Invites");
         for (String card : cards) {
             String[] p = card.split("\t", -1);
             if (p.length < 3) {
@@ -971,7 +971,7 @@ public final class RivalSystem {
         RivalConstants.RpTier tier = RivalConstants.tierFor(me.totalRp);
         lines.add("§7Total RP §f" + (int) me.totalRp + " §8(§" + tier.color() + tier.name() + "§8)");
         lines.add("§7Title perk §e" + (tier.perk() == null || tier.perk().isBlank() ? "None" : tier.perk()));
-        lines.add("§7Title TP §a" + Math.round(tier.tpMult() * 100.0) + "%");
+        lines.add("§7Rival TP bonus §a+" + Math.round(tier.tpMult() * 100.0) + "%");
         lines.add("§7Record §a" + me.officialWins + "§7/§c" + me.officialLosses + "§7/§e" + me.officialDraws
                 + " §8(KO " + me.knockouts + ")");
         lines.add("§7Streak §f" + me.currentWinStreak + " §8(best " + me.bestWinStreak + ")");
@@ -1021,7 +1021,7 @@ public final class RivalSystem {
             case "battles", "battle", "challenges" -> "Battles";
             default -> "RP";
         };
-        lines.add("§6§lRival " + label + " Top");
+        lines.add("rp".equals(cat) ? "§6§lRival Leaderboard" : "§6§lRival " + label + " Leaderboard");
         int i = 1;
         for (RivalPlayerRecord rec : RivalStore.get().topBy(limit, cat)) {
             String value = switch (cat) {

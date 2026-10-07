@@ -64,7 +64,7 @@ public final class CnpcLmPrestigeGui {
         CnpcGuiSupport.button(gui, 21, "§eTurn in held", CnpcGuiSupport.COL_R, row, () -> open(player, "turnin"));
         row += 24;
         CnpcGuiSupport.button(gui, 22, "§bSkill shop", CnpcGuiSupport.COL_L, row, () -> open(player, "shop"));
-        CnpcGuiSupport.button(gui, 23, "§5Effects", CnpcGuiSupport.COL_R, row, () -> open(player, "effects"));
+        CnpcGuiSupport.button(gui, 23, "§5Forms", CnpcGuiSupport.COL_R, row, () -> open(player, "forms"));
         row += 24;
         CnpcGuiSupport.button(gui, 24, "§6Difficulty tiers", CnpcGuiSupport.COL_L, row, () -> open(player, "tiers"));
         row += 24;
@@ -78,7 +78,7 @@ public final class CnpcLmPrestigeGui {
         Map<String, String> ph = ProgressionGuiApi.prestigePlaceholders(player);
         int held = parseInt(ph.get("held"), 0);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§d", "Prestige", "Turn-in"),
-                "§7Each button shows points gained before you confirm");
+                "§7Each button shows the points you'll get");
         List<String> info = new ArrayList<>(ProgressionGuiApi.prestigeLines(player, "turnin"));
         info.add("§7Bulk bonus: §f3→4 §8· §f6→9 §8· §f9→15 §7points");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, info, CnpcGuiStyle.INFO_INLINE_MAX));
@@ -199,7 +199,7 @@ public final class CnpcLmPrestigeGui {
         boolean canBuyMutant = "true".equalsIgnoreCase(ph.get("mutant_can_buy"));
         String cost = ph.getOrDefault("form_cost", "5");
 
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§d", "Prestige", "Effects"),
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§d", "Prestige", "Forms"),
                 "§7Majin and Mutant · §e" + cost + " §7pts · one form at a time");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY,
                 ProgressionGuiApi.prestigeLines(player, "effects"), CnpcGuiStyle.INFO_INLINE_MAX));
@@ -209,12 +209,12 @@ public final class CnpcLmPrestigeGui {
         if (hasMajin) {
             gui.addLabel(40, "§aMajin §8· owned", CnpcGuiSupport.M, row + 4, CnpcGuiSupport.textBandWidth(), 14);
         } else if (canBuyMajin) {
-            CnpcGuiSupport.button(gui, 40, "§dBuy Majin", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
+            CnpcGuiSupport.button(gui, 40, "§dBuy Majin · §6" + cost + " pts", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                     player,
                     () -> ProgressionGuiApi.handlePrestigeDo(player, "majin", "", "effects"),
                     () -> open(player, "effects")));
         } else {
-            gui.addLabel(40, "§8Majin §7— unpurchase Mutant first", CnpcGuiSupport.M, row + 4,
+            gui.addLabel(40, "§8Majin §7— remove Mutant first", CnpcGuiSupport.M, row + 4,
                     CnpcGuiSupport.textBandWidth(), 14);
         }
         row += CnpcGuiSupport.ROW_STEP;
@@ -222,28 +222,28 @@ public final class CnpcLmPrestigeGui {
         if (hasMutant) {
             gui.addLabel(41, "§aMutant §8· owned", CnpcGuiSupport.M, row + 4, CnpcGuiSupport.textBandWidth(), 14);
         } else if (canBuyMutant) {
-            CnpcGuiSupport.button(gui, 41, "§dBuy Mutant", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
+            CnpcGuiSupport.button(gui, 41, "§dBuy Mutant · §6" + cost + " pts", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                     player,
                     () -> ProgressionGuiApi.handlePrestigeDo(player, "mutant", "", "effects"),
                     () -> open(player, "effects")));
         } else {
-            gui.addLabel(41, "§8Mutant §7— unpurchase Majin first", CnpcGuiSupport.M, row + 4,
+            gui.addLabel(41, "§8Mutant §7— remove Majin first", CnpcGuiSupport.M, row + 4,
                     CnpcGuiSupport.textBandWidth(), 14);
         }
         row += CnpcGuiSupport.ROW_STEP;
 
         if (hasMajin) {
-            CnpcGuiSupport.button(gui, 42, "§cUnpurchase Majin", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
+            CnpcGuiSupport.button(gui, 42, "§cRemove Majin", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                     player,
                     () -> ProgressionGuiApi.handlePrestigeDo(player, "unmajin", "", "effects"),
                     () -> open(player, "effects")));
         } else if (hasMutant) {
-            CnpcGuiSupport.button(gui, 42, "§cUnpurchase Mutant", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
+            CnpcGuiSupport.button(gui, 42, "§cRemove Mutant", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                     player,
                     () -> ProgressionGuiApi.handlePrestigeDo(player, "unmutant", "", "effects"),
                     () -> open(player, "effects")));
         } else {
-            gui.addLabel(42, "§7Nothing to unpurchase", CnpcGuiSupport.M, row + 4, CnpcGuiSupport.textBandWidth(), 14);
+            gui.addLabel(42, "§7Nothing to remove", CnpcGuiSupport.M, row + 4, CnpcGuiSupport.textBandWidth(), 14);
         }
         row += CnpcGuiSupport.ROW_STEP;
         footer(player, gui, row, "main");

@@ -1,7 +1,9 @@
 package com.dbzlegacy.adaptivedifficulty.gui.cnpc;
 
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
+import com.dbzlegacy.adaptivedifficulty.gui.GuiClickConfirm;
 import com.dbzlegacy.adaptivedifficulty.gui.RivalGuiApi;
+import com.dbzlegacy.adaptivedifficulty.rival.RivalChallengeManager;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalSystem;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import java.util.List;
@@ -68,7 +70,8 @@ public final class CnpcLmRivalGui {
                         RivalGuiApi.currentRivalCards(subject(pl)), "accept_replace", "actions");
                 case "pick_challenge" -> paintNamePick(pl, gui, "§cChallenge rival", RivalGuiApi.onlinePlayerNames(subject(pl)),
                         "challenge_pick", "challenge");
-                case "pick_spectate" -> paintNamePick(pl, gui, "§bSpectate", RivalGuiApi.onlinePlayerNames(subject(pl)),
+                case "pick_spectate" -> paintNamePick(pl, gui, "§bSpectate a challenge",
+                        RivalChallengeManager.get().activeFighterNames(),
                         "spectate", "challenge");
                 case "admin" -> paintAdmin(pl, gui);
                 default -> paintMain(pl, gui);
@@ -212,7 +215,12 @@ public final class CnpcLmRivalGui {
             row += 8;
             if (outgoing) {
                 CnpcGuiSupport.button(gui, 20, "§cWithdraw declare", CnpcGuiSupport.COL_L, row,
-                        () -> act(pl, "remove", pickerArg, "pending"));
+                        () -> confirmAct(pl, "rival-withdraw:" + pickerArg,
+                                "§7Withdraw your declare invite to §f"
+                                        + RivalGuiApi.displayPickerArg(pl, pickerArg)
+                                        + "§7? §eClick again within 10 seconds.",
+                                "pending_decide:" + pickerArg,
+                                () -> act(pl, "remove", pickerArg, "pending")));
                 CnpcGuiSupport.button(gui, 21, "§7Keep waiting", CnpcGuiSupport.COL_R, row, () -> open(pl, "pending"));
             } else if (mutual) {
                 CnpcGuiSupport.button(gui, 20, "§aAccept mutual", CnpcGuiSupport.COL_L, row,
@@ -242,7 +250,11 @@ public final class CnpcLmRivalGui {
             int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, detail, CnpcGuiStyle.INFO_INLINE_MAX));
             row += 8;
             CnpcGuiSupport.button(gui, 20, "§cRemove rival", CnpcGuiSupport.COL_L, row,
-                    () -> act(pl, "remove", pickerArg, "list"));
+                    () -> confirmAct(pl, "rival-remove:" + pickerArg,
+                            "§7End your rivalry with §f" + RivalGuiApi.displayPickerArg(pl, pickerArg)
+                                    + "§7? They'll move to History. §eClick again within 10 seconds.",
+                            "list_detail:" + pickerArg,
+                            () -> act(pl, "remove", pickerArg, "list")));
             row += CnpcGuiSupport.ROW_STEP + 4;
             CnpcGuiSupport.navSubmenu(pl, gui, row, () -> open(pl, "list"), "§7« Back");
         });
@@ -260,11 +272,8 @@ public final class CnpcLmRivalGui {
         String targetArg = parts[2];
         String display = RivalGuiApi.displayPickerArg(player, targetArg);
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_RIVAL, CnpcGuiSupport.W, 280, (pl, gui) -> {
-            int infoY = CnpcGuiSupport.paintHeader(pl, gui, "§eConfirm action", display);
-            List<String> lines = List.of(
-                    "§7Player " + display,
-                    "§8Action §7" + action.replace('_', ' '),
-                    "§7Confirm to continue.");
+            int infoY = CnpcGuiSupport.paintHeader(pl, gui, confirmTitle(action), display);
+            List<String> lines = confirmBody(action, display);
             int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 4));
             row += 8;
             CnpcGuiSupport.button(gui, 20, "§aConfirm", CnpcGuiSupport.COL_L, row, () -> {
@@ -280,10 +289,46 @@ public final class CnpcLmRivalGui {
         });
     }
 
+    private static void confirmAct(
+            ServerPlayer player, String key, String prompt, String reopen, Runnable go) {
+        if (!GuiClickConfirm.confirmed(player.m_20148_(), key)) {
+            CnpcGuiSupport.act(player, () -> prompt, () -> open(player, reopen));
+            return;
+        }
+        go.run();
+    }
+
+    private static String confirmTitle(String action) {
+        return switch (action) {
+            case "declare" -> "§eDeclare rival";
+            case "silent" -> "§8Silent rival";
+            case "challenge_pick" -> "§cChallenge rival";
+            case "spectate" -> "§bSpectate a challenge";
+            case "accept_replace" -> "§eReplace mutual";
+            default -> "§eConfirm";
+        };
+    }
+
+    private static List<String> confirmBody(String action, String display) {
+        return switch (action) {
+            case "declare" -> List.of(
+                    "§7Declare §f" + display + " §7as your rival? They'll get an invite to accept.");
+            case "silent" -> List.of(
+                    "§7Mark §f" + display + " §7as a silent rival? They won't be told.");
+            case "challenge_pick" -> List.of(
+                    "§7Challenge §f" + display + " §7to a timed challenge? Pick the length next.");
+            case "spectate" -> List.of(
+                    "§7Watch §f" + display + "§7's challenge? If they're not fighting you'll join any live challenge.");
+            case "accept_replace" -> List.of(
+                    "§7Drop §f" + display + " §7as a Mutual to make room? They'll stay in your history.");
+            default -> List.of("§7Confirm this for §f" + display + "§7.");
+        };
+    }
+
     private static void paintChallenge(ServerPlayer player, ICustomGui gui) {
         ServerPlayer who = subject(player);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Challenge"),
-                "§7Send duels · pending board · spectate");
+                "§7Send a challenge · declare invites · spectate");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, RivalGuiApi.challengeLines(who),
                         CnpcGuiStyle.INFO_INLINE_MAX));
         CnpcGuiSupport.button(gui, 20, "§eSend challenge…", CnpcGuiSupport.COL_L, row, () -> open(player, "pick_challenge"));
@@ -299,14 +344,15 @@ public final class CnpcLmRivalGui {
 
     private static void paintChallengePending(ServerPlayer player, ICustomGui gui) {
         ServerPlayer who = subject(player);
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Duel requests"),
-                "§eOfficial timed duels — accept, decline, or cancel");
+        // Ship label alias: Duel requests
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Challenge requests"),
+                "§eOfficial timed challenges — accept, decline, or cancel");
         int listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBeforePickList(gui, infoY,
                 RivalGuiApi.linesForPage(who, "challenge_pending"), 2));
         List<String> cards = RivalGuiApi.pendingChallengeCards(who);
         if (cards.isEmpty()) {
             gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER,
-                    "§7No open duel requests — send one from Challenge or wait for a rival to challenge you.",
+                    "§7No open challenge requests — send one from Challenge or wait for a rival to challenge you.",
                     CnpcGuiSupport.M, listY + 4,
                     CnpcGuiSupport.textBandWidth(), 14);
             footer(player, gui, listY + 28, "challenge");
@@ -348,7 +394,12 @@ public final class CnpcLmRivalGui {
             row += 8;
             if (outgoing) {
                 CnpcGuiSupport.button(gui, 20, "§cCancel challenge", CnpcGuiSupport.COL_L, row,
-                        () -> act(pl, "challenge_cancel", pickerArg, "challenge_pending"));
+                        () -> confirmAct(pl, "challenge-cancel:" + pickerArg,
+                                "§7Cancel your challenge request to §f"
+                                        + RivalGuiApi.displayPickerArg(pl, pickerArg)
+                                        + "§7? §eClick again within 10 seconds.",
+                                "challenge_decide:" + pickerArg,
+                                () -> act(pl, "challenge_cancel", pickerArg, "challenge_pending")));
                 CnpcGuiSupport.button(gui, 21, "§7Keep waiting", CnpcGuiSupport.COL_R, row,
                         () -> open(pl, "challenge_pending"));
             } else {
@@ -457,7 +508,9 @@ public final class CnpcLmRivalGui {
         int listY = CnpcGuiSupport.bodyBelowHeader(infoY);
         if (names == null || names.isEmpty()) {
             gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER,
-                    "§7Nobody else is online right now — try again when other players are on.",
+                    "spectate".equals(action)
+                            ? "§7No live challenge right now."
+                            : "§7Nobody else is online right now — try again when other players are on.",
                     CnpcGuiSupport.M, listY + 4, CnpcGuiSupport.textBandWidth(), 14);
             footer(player, gui, listY + 28, returnPage);
             return;
@@ -552,14 +605,14 @@ public final class CnpcLmRivalGui {
 
     private static void paintAdmin(ServerPlayer player, ICustomGui gui) {
         if (!StaffAccess.isStaff(player)) {
-            CnpcGuiSupport.pushMenuMessage(player, "§cStaff only — rival admin is for staff.");
+            CnpcGuiSupport.pushMenuMessage(player, "§cStaff only.");
             open(player, "main");
             return;
         }
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Staff Admin"),
                 "§7Save data, reload config, print status");
         int row = CnpcGuiSupport.bodyBelowHeader(infoY);
-        CnpcGuiSupport.button(gui, 20, "§aSave stores", CnpcGuiSupport.COL_L, row,
+        CnpcGuiSupport.button(gui, 20, "§aSave data", CnpcGuiSupport.COL_L, row,
                 () -> act(player, "admin", "save", "admin"));
         CnpcGuiSupport.button(gui, 21, "§eReload", CnpcGuiSupport.COL_R, row,
                 () -> act(player, "admin", "refresh", "admin"));

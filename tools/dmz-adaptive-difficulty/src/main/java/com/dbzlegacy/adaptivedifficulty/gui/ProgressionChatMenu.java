@@ -164,7 +164,7 @@ public final class ProgressionChatMenu {
         boolean on = DifficultyConfig.get().staffFreeAncientCoinCosts;
         send(player, Component.m_237113_(""));
         send(player, btn(
-                on ? "§e[Turn staff free coins OFF]" : "§a[Turn staff free coins ON]",
+                on ? "§e[Turn staff free costs OFF]" : "§a[Turn staff free costs ON]",
                 "/prog do toggle_staff_free_coins " + (on ? "off" : "on") + " economy",
                 "Applies to all LM Ancient Coin charges"));
         send(player, btn("§7« Back", "/prog do page main", "Main"));

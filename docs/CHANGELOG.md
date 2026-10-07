@@ -1,8 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.16**.
+What changed from **4.5.147** through **4.6.17**.
 
-The live mods folder gets `LegacyMechanics-4.6.16.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.6.17.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+
+## Menu wording
+
+Rival chat [Cancel] no longer forfeits a live challenge under a "cancel yours" hover. A live challenge shows Forfeit. A pending request shows Cancel request. Tier buys, permanent tier buys, Majin and Mutant buy and remove, global TP boost start and end, Android convert, title unequip, and clearing the active tier ask you to click again within 10 seconds. Android convert names who it will convert and says Super forms and Legendary forms are deleted. The spectate list is only people in a live challenge. Spar chat [TP], [Sessions], and [Perfect] open those boards. A 0% race wipe says head-part unlocks and coins stay. Player screens use Head parts, Training bonds, Bond invites, Challenge, and Ancient Coins.
 
 ## Reskin gender
 

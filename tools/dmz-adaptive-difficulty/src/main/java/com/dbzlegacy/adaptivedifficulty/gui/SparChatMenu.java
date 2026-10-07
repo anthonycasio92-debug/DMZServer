@@ -28,10 +28,12 @@ public final class SparChatMenu {
             main(player);
         } else if ("stats".equalsIgnoreCase(page)) {
             stats(player);
-        } else if ("top".equalsIgnoreCase(page) || page.toLowerCase().startsWith("top ")) {
-            String cat = page.toLowerCase().startsWith("top ")
+        } else if ("top".equalsIgnoreCase(page) || page.toLowerCase().startsWith("top ")
+                || page.toLowerCase().startsWith("top_")) {
+            String lower = page.toLowerCase();
+            String cat = lower.startsWith("top ")
                     ? page.substring(4).trim()
-                    : "tp";
+                    : (lower.startsWith("top_") ? page.substring(4).trim() : "tp");
             top(player, cat);
         } else if ("mentor".equalsIgnoreCase(page)) {
             mentor(player);
@@ -88,15 +90,15 @@ public final class SparChatMenu {
                 .m_7220_(Component.m_237113_("  "))
                 .m_7220_(btn("§f[Top]", "/spar do page top", "Leaderboard"))
                 .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§b[Mentor]", "/spar do page mentor", "Mentor controls"))
+                .m_7220_(btn("§b[Training bonds]", "/spar do page mentor", "Training bonds"))
                 .m_7220_(Component.m_237113_("  "))
                 .m_7220_(btn(tpOn ? "§a[TP ON]" : "§8[TP OFF]",
                         "/spar do tpmsg toggle main",
                         tpOn ? "Mute spar TP chat while fighting" : "Show spar TP chat while fighting"));
         row.m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn(mentorTpOn ? "§a[Mentor TP ON]" : "§8[Mentor TP OFF]",
+                .m_7220_(btn(mentorTpOn ? "§a[Bond TP ON]" : "§8[Bond TP OFF]",
                         "/spar do mentor_tpmsg toggle main",
-                        mentorTpOn ? "Mute mentor share TP chat" : "Show mentor share TP in chat"));
+                        mentorTpOn ? "Mute bond share TP chat" : "Show bond share TP in chat"));
         if (rt != null && rt.active) {
             row.m_7220_(Component.m_237113_("  "))
                     .m_7220_(btn("§c[End]", "/spar do end main", "End spar session"));
@@ -135,7 +137,7 @@ public final class SparChatMenu {
 
     private static void mentor(ServerPlayer player) {
         send(player, Component.m_237113_(""));
-        send(player, Component.m_237113_("§8── §bMentor §8──"));
+        send(player, Component.m_237113_("§8── §bTraining bonds §8──"));
         SparStore.MentorBond bond = SparStore.get().bond(player.m_20148_());
         boolean hasMentor = bond != null
                 && bond.mentorUuid != null && !bond.mentorUuid.isBlank();
@@ -152,7 +154,7 @@ public final class SparChatMenu {
             send(player, Component.m_237113_("§7Streak §f" + bond.streakCurrent + " §8best §f" + bond.streakBest));
         } else {
             send(player, Component.m_237113_("§7Use §bTraining bonds §7in the Spar GUI"));
-            send(player, Component.m_237113_("§8Invite · Ask · Pending · Dojo · Leave / Release"));
+            send(player, Component.m_237113_("§8Invite apprentice · Request a master · Bond invites · Dojo · Leave / Release"));
             send(player, Component.m_237113_("§8Dojo up to §f" + SparringSystem.MAX_APPRENTICES
                     + " §8apprentices · one master · 12h cooldown"));
         }

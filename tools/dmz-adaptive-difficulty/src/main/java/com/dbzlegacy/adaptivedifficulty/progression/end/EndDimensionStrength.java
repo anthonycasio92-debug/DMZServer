@@ -717,7 +717,7 @@ public final class EndDimensionStrength {
     public static int cmdSpawnDragon(ServerPlayer player) {
         if (player != null) {
             msg(player, "§c[The End] Dragon spawn is disabled."
-                    + " §7Admins clear dragons with §f/enddragon clear§7.");
+                    + " §7Ask staff to clear the dragon.");
         }
         return 0;
     }
@@ -737,7 +737,7 @@ public final class EndDimensionStrength {
             return "§cEnd Dimension Strength is disabled.";
         }
         if (!DifficultyConfig.get().enableEndPlayerDragonSummon) {
-            return "§cDragon spawn is disabled. §7Admins clear dragons with §f/enddragon clear§7.";
+            return "§cDragon spawn is disabled. §7Ask staff to clear the dragon.";
         }
         if (!SystemGate.participates(player)) {
             return "§cTurn personal Adaptive Difficulty ON to summon the End Dragon.";
@@ -849,7 +849,7 @@ public final class EndDimensionStrength {
         }
         if (!DifficultyConfig.get().enableEndPlayerDragonSummon) {
             lines.add("§cDragon spawn is disabled.");
-            lines.add("§7Admins clear dragons with §f/enddragon clear§7.");
+            lines.add("§7Ask staff to clear the dragon.");
             return lines;
         }
         if (player == null) {

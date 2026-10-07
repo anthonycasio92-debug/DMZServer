@@ -103,7 +103,7 @@ public final class DifficultyChatMenu {
         boolean personalOn = data.isPersonalEnabled();
         boolean coinChatOn = data.isCoinDropChat();
         if (!personalOn) {
-            send(player, Component.m_237113_("§c§lDIFFICULTY OFF"));
+            send(player, Component.m_237113_("§e§lDIFFICULTY OFF"));
             send(player, Component.m_237113_("§7No scaling, kill coins, AI pressure, or tier buys"));
             send(player, Component.m_237113_("§8Saved tier §f" + snap.activeTierName
                     + "  §8·  §7Unlocked §fT" + snap.highestUnlockedTier));
@@ -112,7 +112,7 @@ public final class DifficultyChatMenu {
                     + "  §8·  §" + snap.stateColorCode() + snap.state()
                     + "  §8·  §7Unlocked §fT" + snap.highestUnlockedTier));
         }
-        send(player, Component.m_237113_("§6Coins §f" + AncientCoinEconomy.inventoryBreakdown(player)));
+        send(player, Component.m_237113_("§6Ancient Coins §f" + AncientCoinEconomy.inventoryBreakdown(player)));
         if (!TitleSystem.activeDisplay(player).equals("None")) {
             send(player, Component.m_237113_("§7Title §e" + TitleSystem.activeDisplay(player)));
         }
@@ -120,25 +120,25 @@ public final class DifficultyChatMenu {
         send(player, Component.m_237113_(""));
         MutableComponent hub = Component.m_237113_("§7")
                 .m_7220_(btn("§e[Tiers]", "/difficulty do page tiers",
-                        "Buy higher · lower unlocked · reset to None"))
+                        "Buy higher · lower unlocked · clear active tier"))
                 .m_7220_(Component.m_237113_("  "))
                 .m_7220_(btn("§d[Titles]", "/difficulty do page titles", "Equip difficulty titles"));
         send(player, hub);
         MutableComponent toggles = Component.m_237113_("§7")
-                .m_7220_(btn(personalOn ? "§a[Difficulty ON]" : "§c[Difficulty OFF]",
+                .m_7220_(btn(personalOn ? "§a[Difficulty ON]" : "§e[Difficulty OFF]",
                         "/difficulty do toggle_personal 0 main",
                         personalOn
-                                ? "Turn OFF — no scaling, kill coins, AI pressure, or tier buys"
+                                ? "Turn OFF — no scaling, kill coins, AI pressure, or tier buys · your summoned dragon despawns"
                                 : "Turn ON — restore scaling. Scaled mobs can attack other players as well"))
                 .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn(coinChatOn ? "§a[Coin Chat ON]" : "§8[Coin Chat OFF]",
+                .m_7220_(btn(coinChatOn ? "§a[Coin messages ON]" : "§8[Coin messages OFF]",
                         "/difficulty do toggle_coin_chat 0 main",
                         coinChatOn
                                 ? "Mute Ancient Coin drop chat messages"
                                 : "Show Ancient Coin drop chat messages"));
         send(player, toggles);
         if (isStaff(player)) {
-            send(player, btn("§8[Details]", "/difficulty do page stats", "Staff breakdown"));
+            send(player, btn("§8[Staff details]", "/difficulty do page stats", "Staff breakdown"));
         }
         send(player, btn("§7« Hub", "/lm", "Main menu"));
         send(player, Component.m_237113_("§8────────────────"));
@@ -152,7 +152,7 @@ public final class DifficultyChatMenu {
         send(player, Component.m_237113_(""));
         send(player, Component.m_237113_("§8──────── §eDifficulty Tiers §8────────"));
         if (!data.isPersonalEnabled()) {
-            send(player, Component.m_237113_("§cPersonal difficulty is OFF — turn it ON on the main menu to change tiers."));
+            send(player, Component.m_237113_("§ePersonal difficulty is OFF — turn it ON on the main menu to change tiers."));
             send(player, btn("§7« Back", "/difficulty do page main", "Return"));
             return;
         }
@@ -160,11 +160,11 @@ public final class DifficultyChatMenu {
         send(player, Component.m_237113_("§7Current §f" + (active <= 0 ? "None" : ("T" + active))
                 + "  §8·  §7DMZ §f" + level
                 + "  §8·  §7Prestige §f" + prestige));
-        send(player, Component.m_237113_("§8Buy higher (coins) · lower unlocked (free) · reset to None."));
+        send(player, Component.m_237113_("§8Buy higher (Ancient Coins) · lower unlocked (free) · clear active tier."));
         send(player, Component.m_237113_("§8Unlock with §fDMZ level §8OR §fPrestige §8(either one). Costs scale with level."));
         send(player, Component.m_237113_("§f" + AncientCoinEconomy.inventoryBreakdown(player)));
         send(player, Component.m_237113_(""));
-        send(player, btn("§c[Reset to None]", "/difficulty do lower_tier 0 tiers", "Clear active tier"));
+        send(player, btn("§c[Clear active tier]", "/difficulty do lower_tier 0 tiers", "Clear active tier"));
         for (UnlockTier tier : UnlockTier.values()) {
             long cost = AncientCoinEconomy.activationCost(tier, player);
             boolean freeCost = PaidFeatureAccess.bypassAncientCoinCost(player);
@@ -183,7 +183,7 @@ public final class DifficultyChatMenu {
             } else if (unlocked) {
                 String costLabel = freeCost ? "§afree (staff)" : ("§6" + AncientCoinEconomy.formatExactCost(cost));
                 line = line.m_7220_(Component.m_237113_(" " + costLabel + " "))
-                        .m_7220_(btn("§a[BUY]", "/difficulty do activate " + tier.id + " tiers",
+                        .m_7220_(btn("§a[SWITCH]", "/difficulty do activate " + tier.id + " tiers",
                                 freeCost
                                         ? "Activate Tier " + tier.id + " (staff — no coin charge)"
                                         : "Pay Ancient Coins for Tier " + tier.id + " (pay-up OK, change returned)"));
@@ -234,9 +234,10 @@ public final class DifficultyChatMenu {
             send(player, Component.m_237113_(line));
         }
         send(player, Component.m_237113_(""));
-        send(player, btn("§7Personal", "/difficulty do team personal team", "Solo ceiling only"));
+        send(player, btn("§7Personal", "/difficulty do team personal team", "Personal ceiling only — no rival bonus."));
         send(player, btn("§aThreshold", "/difficulty do team threshold team", "Extra max + harder spawns"));
-        send(player, btn("§2Full", "/difficulty do team full team", "Threshold + nearby spare + best spawn boost"));
+        send(player, btn("§2Full team", "/difficulty do team full team",
+                "Threshold + nearby spare + stronger spawn boost when rivals are close"));
         send(player, btn("§6Open Rival", "/rival", "Manage mutual rivals"));
         send(player, btn("§7« Back", "/difficulty do page main", "Return"));
     }
@@ -264,8 +265,6 @@ public final class DifficultyChatMenu {
         send(player, Component.m_237113_("§7Unlocked §fT" + snap.highestUnlockedTier
                 + "  §8·  §7Title §e" + TitleSystem.activeDisplay(player)));
         send(player, Component.m_237113_("§6Ancient Coins §f" + AncientCoinEconomy.inventoryBreakdown(player)));
-        send(player, Component.m_237113_(
-                "§8Counters: class · top stat · kits cadence"));
         send(player, btn("§7« Back", "/difficulty do page main", "Return"));
     }
 

@@ -1674,6 +1674,30 @@ def main() -> int:
           and "paintSubjectPreview" in bone_gui
           and "Unlock & equip" in bone_gui)
 
+    print("\n=== GUI humanization (4.6.17) ===")
+    rival_chat = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/RivalChatMenu.java")
+    spar_chat = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/SparChatMenu.java")
+    char_api = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/CharacterServicesGuiApi.java")
+    rival_gui = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmRivalGui.java")
+    prog_gui = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmProgressionGui.java")
+    check("rival chat forfeit is labeled when a challenge is live",
+          "Forfeit your active challenge" in rival_chat
+          and "Cancel your pending challenge request" in rival_chat
+          and "Cancel yours" not in rival_chat)
+    check("spar chat category buttons use the top_ page",
+          'startsWith("top_")' in spar_chat and "top_tp" in spar_chat)
+    check("0% wipe copy keeps head parts and coins",
+          "head-part unlocks and coins kept" in char_api
+          and "nothing carried over" not in char_api)
+    check("android convert names the target and warns about forms",
+          "Convert " in prog_gui
+          and "deletes Super forms and Legendary forms" in read(
+              SRC / "com/dbzlegacy/adaptivedifficulty/gui/ProgressionGuiApi.java"))
+    check("rival confirm does not show the raw action id",
+          "Action §7" not in rival_gui and "Declare rival" in rival_gui)
+    check("tier buy asks before it charges",
+          "diff-tier:" in read(SRC / "com/dbzlegacy/adaptivedifficulty/service/DifficultyActions.java"))
+
     print("\n=== Summary ===")
     for w in warns:
         print(f"WARN: {w}")
