@@ -365,7 +365,7 @@ public final class CnpcLmSparGui {
                 leaderboardTab(player, "§7Time", "top_time"),
         };
         row = CnpcGuiLayout.paintTwoColumnButtonGrid(player, gui, row, CnpcGuiSupport.ID_GRID_BASE, tabs,
-                () -> open(player, "top_" + cat));
+                () -> {});
         footer(player, gui, row, "main");
     }
 
