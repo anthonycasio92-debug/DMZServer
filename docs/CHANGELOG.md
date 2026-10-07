@@ -1,8 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.13**.
+What changed from **4.5.147** through **4.6.14**.
 
-The live mods folder gets `LegacyMechanics-4.6.13.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.6.14.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+
+## Sparring non-combat damage
+
+Splash potions, lingering potions, TNT, thorns, and magic do not start a spar or grant TP. Ki, empty-hand melee, a registered weapon, and weapon projectiles (arrows, tridents, firework rockets) still do.
 
 ## Offline player clear
 

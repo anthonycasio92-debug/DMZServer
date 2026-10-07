@@ -1637,6 +1637,11 @@ def main() -> int:
           "isItemPunch" in spar_punch
           and "WeaponRegistry.getAttributes" in spar_punch
           and "isPlayerMeleeSource" in spar_punch)
+    check("potions explosions and thorns do not grant spar TP",
+          "isNonCombatDamage" in spar_punch
+          and "thorns" in spar_punch
+          and "explosion" in spar_punch
+          and "dragonbreath" in spar_punch)
 
     print("\n=== Summary ===")
     for w in warns:

@@ -147,6 +147,10 @@ public final class SparringSystem {
         if (!ki && isItemPunch(attacker, source)) {
             return;
         }
+        // Potions, TNT, thorns, and other player-attributed junk must not start a spar or pay TP.
+        if (isNonCombatDamage(source, attacker)) {
+            return;
+        }
         String kiKind = ki ? SparCombat.classifyKiType(source) : "";
         recordCombatExchange(attacker, victim, ki, kiKind);
         SparPlayerRuntime vRt = runtime(victim.m_20148_());
@@ -227,6 +231,56 @@ public final class SparringSystem {
             return WeaponRegistry.getAttributes(main) == null;
         } catch (Throwable ignored) {
             return false;
+        }
+    }
+
+    /**
+     * True when a player-attributed damage source is not genuine sparring combat.
+     * Sparring TP comes from DMZ ki, true melee (held items already filtered by
+     * {@link #isItemPunch}), and weapon projectiles — never from splash or lingering
+     * potions, TNT, thorns, or magic.
+     */
+    private static boolean isNonCombatDamage(DamageSource source, ServerPlayer attacker) {
+        try {
+            if (source == null) {
+                return true;
+            }
+            // DMZ ki is always real combat.
+            if (DmzRewards.isKiDamage(source)) {
+                return false;
+            }
+            String type = "";
+            try {
+                type = String.valueOf(source.m_19385_()).toLowerCase(java.util.Locale.ROOT);
+            } catch (Throwable ignored) {
+            }
+            // Thorns pays the defender for the attacker's own hit — never score it.
+            if (type.contains("thorns")) {
+                return true;
+            }
+            // 1.20.1 message id is dragonBreath, not dragon_breath.
+            if (type.contains("magic") || type.contains("explosion") || type.contains("potion")
+                    || type.contains("dragon_breath") || type.contains("dragonbreath")) {
+                return true;
+            }
+            net.minecraft.world.entity.Entity direct = source.m_7640_();
+            // True melee: attacker is the direct entity.
+            if (direct == attacker) {
+                return false;
+            }
+            // Weapon projectiles still count. Delete this block for strict melee and ki only.
+            if (direct instanceof net.minecraft.world.entity.projectile.AbstractArrow) {
+                return false;
+            }
+            if (direct instanceof net.minecraft.world.entity.projectile.ThrownTrident) {
+                return false;
+            }
+            if (direct instanceof net.minecraft.world.entity.projectile.FireworkRocketEntity) {
+                return false;
+            }
+            return true;
+        } catch (Throwable ignored) {
+            return false; // fail open — never break combat on an unexpected source
         }
     }
 
