@@ -1,8 +1,8 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.29**.
+What changed from **4.5.147** through **4.6.30**.
 
-The live mods folder gets `LegacyMechanics-4.6.29.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.6.30.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
 
 ## List selection
 
@@ -78,7 +78,7 @@ Death in space, Namek, Beerus' planet, and the other Noea travel dimensions uses
 
 ## Majin absorption bonus
 
-The stored melee and ki bonus applies while absorption power is above zero, scaled by the same power-release percent as melee and ki. The read happens after Noea adds the raw bonus, then replaces that raw add with the scaled one. At zero power the bonus is left out of the damage read and the stored numbers stay, so absorbing again still adds to them. `/dmzstats reset`, Dende's reset, a 0% race wipe, and a race change clear those stored numbers. Battle power is unchanged.
+The stored melee and ki bonus applies while absorption power is above zero, scaled by the same power-release percent as melee and ki. The read happens after Noea adds the raw bonus, then replaces that raw add with the scaled one. At zero power the bonus is left out of the damage read and the stored numbers stay, so absorbing again still adds to them. `/dmzstats reset` clears those stored numbers from `StatsCommand.resetStats`, the method the command actually runs. The self form added by the melee patch (`/dmzstats reset <percent>`) clears them from that executor. Dende's reset, a 0% race wipe, and a race change still clear them too. The console prints `[LM] wipeAbsorption firing for <name>` when a wipe runs. Battle power is unchanged.
 
 ## Race lock removed
 

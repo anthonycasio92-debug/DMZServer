@@ -8,6 +8,8 @@
   "mixins": [
     "StatsDataMixin",
     "StatsDataResetPrestigeSyncMixin",
+    "DmzStatsResetAbsorptionWipeMixin",
+    "MeleeStatsResetAbsorptionWipeMixin",
     "DmzRevampPrestigeCapMixin",
     "PrestigeServiceIntegrationMixin",
     "UpdateCharacterC2SMixin",

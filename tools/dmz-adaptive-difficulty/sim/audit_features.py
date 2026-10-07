@@ -1874,10 +1874,12 @@ def main() -> int:
           and "require = 0" in corpse_fix
           and "private static void lm$disableDropSuppression" in corpse_fix)
 
-    print("\n=== Majin absorption bonus (4.6.29) ===")
+    print("\n=== Majin absorption bonus (4.6.30) ===")
     absorb_gate = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/noea/NoeaAbsorptionBonusGateMixin.java")
     absorb_store = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/noea/MajinAbsorptionStore.java")
     absorb_reset = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/StatsDataResetPrestigeSyncMixin.java")
+    absorb_cmd = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/DmzStatsResetAbsorptionWipeMixin.java")
+    absorb_melee = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/MeleeStatsResetAbsorptionWipeMixin.java")
     absorb_services = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/character/CharacterServicesSystem.java")
     check("absorption bonus follows power and limit release",
           "absorptionPower" in absorb_gate
@@ -1889,8 +1891,14 @@ def main() -> int:
           and "data.absorptionKi = 0" in absorb_store
           and "data.absorptionPower = 0" in absorb_store
           and "MajinAbsorptionStore.clear(player)" in absorb_reset
+          and "[LM] wipeAbsorption firing for " in absorb_reset
           and "initializeWithRaceAndClass" in absorb_reset
-          and "MajinAbsorptionStore.clear(player)" in absorb_services)
+          and "MajinAbsorptionStore.clear(player)" in absorb_services
+          and 'method = "resetStats"' in absorb_cmd
+          and "via StatsCommand.resetStats" in absorb_cmd
+          and "require = 0" in absorb_cmd
+          and 'method = "resetSelf"' in absorb_melee
+          and "require = 0" in absorb_melee)
 
     print("\n=== Summary ===")
     for w in warns:

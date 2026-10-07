@@ -30,10 +30,29 @@ public final class LegacyMechanicsMixinPlugin implements IMixinConfigPlugin {
         if (mixinClassName != null && mixinClassName.endsWith("NoeaAbsorptionBonusGateMixin")) {
             return absorptionServicePresent();
         }
+        if (mixinClassName != null && mixinClassName.endsWith("DmzStatsResetAbsorptionWipeMixin")) {
+            return absorptionServicePresent();
+        }
+        if (mixinClassName != null && mixinClassName.endsWith("MeleeStatsResetAbsorptionWipeMixin")) {
+            return absorptionServicePresent() && meleeResetCommandsPresent();
+        }
         if (mixinClassName != null && mixinClassName.endsWith("NoeaTravelSafetyCorpseFixMixin")) {
             return travelSafetyPresent();
         }
         return dedicatedServer();
+    }
+
+    /** Melee mod's self-target {@code /dmzstats reset} executor. */
+    private static boolean meleeResetCommandsPresent() {
+        try {
+            Class.forName(
+                    "com.dbzlegacy.mohistmelee.StatsResetCommands",
+                    false,
+                    LegacyMechanicsMixinPlugin.class.getClassLoader());
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
     }
 
     /** Noea absorption service. Absent on a server that does not run Noea. */

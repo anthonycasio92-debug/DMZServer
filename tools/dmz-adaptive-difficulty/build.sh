@@ -92,7 +92,13 @@ if [[ ! -f "$NOEA" ]]; then
   exit 1
 fi
 echo "Using Noea jar for compile: $NOEA"
-CP="$CP:$NOEA"
+MELEE="$(ls -1 "$ROOT"/mods/dmz_mohist_melee_fix-*.jar 2>/dev/null | sort -V | tail -1 || true)"
+if [[ -z "${MELEE:-}" || ! -f "$MELEE" ]]; then
+  echo "Missing dmz_mohist_melee_fix jar for the reset wipe mixin." >&2
+  exit 1
+fi
+echo "Using melee jar for compile: $MELEE"
+CP="$CP:$NOEA:$MELEE"
 
 echo "Cleaning compile output before packaging"
 rm -rf "$OUT"
@@ -329,6 +335,8 @@ merge_onto_base_jar() {
         StatsDataRestoreMultiplierClampMixin StatsDataLoadClampMixin StatsDataMixin \
         StatsSyncC2SGenderMixin \
         StatsDataResetPrestigeSyncMixin \
+        DmzStatsResetAbsorptionWipeMixin \
+        MeleeStatsResetAbsorptionWipeMixin \
         LegacyMechanicsMixinPlugin; do
       if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/mixin/${mixin_cls}.class" ]]; then
         cp "$OUT/com/dbzlegacy/adaptivedifficulty/mixin/${mixin_cls}.class" \

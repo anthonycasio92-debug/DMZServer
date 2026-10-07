@@ -29,6 +29,10 @@ public abstract class StatsDataResetPrestigeSyncMixin {
             return;
         }
         try {
+            System.out.println("[LM] wipeAbsorption firing for " + player.m_7755_().getString());
+        } catch (Throwable ignored) {
+        }
+        try {
             MajinAbsorptionStore.clear(player);
         } catch (Throwable ignored) {
         }
