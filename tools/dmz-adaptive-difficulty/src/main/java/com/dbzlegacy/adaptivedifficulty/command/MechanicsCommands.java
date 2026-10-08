@@ -8,9 +8,11 @@ import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import java.util.Locale;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
@@ -71,6 +73,7 @@ public final class MechanicsCommands {
                                             p.m_213846_(Component.m_237113_(msg));
                                             return open(ctx.getSource(), "logs");
                                         }))))
+                .then(fusionResetLiteral())
                 .then(CommandAccess.staffLiteral("admin")
                         .executes(ctx -> adminHelp(ctx.getSource()))
                         .then(Commands.m_82127_("help").executes(ctx -> adminHelp(ctx.getSource())))
@@ -135,6 +138,19 @@ public final class MechanicsCommands {
                                         ctx.getSource(),
                                         StringArgumentType.getString(ctx, "player"),
                                         StringArgumentType.getString(ctx, "kind")))));
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> fusionResetLiteral() {
+        return CommandAccess.staffLiteral("fusionreset")
+                .executes(ctx -> {
+                    LmCommandFeedback.tell(ctx.getSource(),
+                            LmCommandMessages.tryCommand("/lm fusionreset <player>"));
+                    return 0;
+                })
+                .then(LmCommandSuggestions.playerWord("player")
+                        .executes(ctx -> fusionReset(
+                                ctx.getSource(),
+                                StringArgumentType.getString(ctx, "player"))));
     }
 
     private static LiteralArgumentBuilder<CommandSourceStack> characterCooldownAdmin() {
@@ -333,6 +349,43 @@ public final class MechanicsCommands {
                 source.m_81377_(), player, scope);
         LmCommandFeedback.tellLines(source, msg);
         return msg != null && msg.startsWith("§c") ? 0 : 1;
+    }
+
+    private static int fusionReset(CommandSourceStack source, String player) {
+        if (StaffAccess.denyUnlessStaff(source) == 0) {
+            return 0;
+        }
+        ServerPlayer target = onlinePlayer(source.m_81377_(), player);
+        if (target == null) {
+            LmCommandFeedback.tell(source, LmCommandMessages.playerOffline(player));
+            return 0;
+        }
+        String msg = FusionCooldownReset.reset(target);
+        LmCommandFeedback.tell(source, msg);
+        if (source.m_230896_() != target && msg != null && !msg.startsWith("§c")) {
+            target.m_213846_(Component.m_237113_(
+                    "§eStaff cleared your fusion cooldown."));
+        }
+        return msg != null && msg.startsWith("§c") ? 0 : 1;
+    }
+
+    private static ServerPlayer onlinePlayer(MinecraftServer server, String raw) {
+        if (server == null || raw == null || raw.isBlank()) {
+            return null;
+        }
+        String name = raw.trim();
+        ServerPlayer exact = server.m_6846_().m_11255_(name);
+        if (exact != null) {
+            return exact;
+        }
+        String want = name.toLowerCase(Locale.ROOT);
+        for (ServerPlayer candidate : server.m_6846_().m_11314_()) {
+            String online = candidate.m_6302_();
+            if (online != null && online.toLowerCase(Locale.ROOT).equals(want)) {
+                return candidate;
+            }
+        }
+        return null;
     }
 
     private static int adminCharacterCooldownClear(CommandSourceStack source, String player, String kind) {

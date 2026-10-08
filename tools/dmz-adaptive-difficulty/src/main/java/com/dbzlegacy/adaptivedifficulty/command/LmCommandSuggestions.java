@@ -170,6 +170,9 @@ public final class LmCommandSuggestions {
         String a3 = n > 3 ? lower(args[3]) : "";
 
         if ("lm".equals(cmd)) {
+            if ("fusionreset".equals(a0) && n >= 2) {
+                return true;
+            }
             if ("admin".equals(a0) && "clear".equals(a1) && n >= 3) {
                 return true;
             }
@@ -240,6 +243,13 @@ public final class LmCommandSuggestions {
             return "";
         }
         if ("lm".equals(cmd)) {
+            if (n > 0 && "fusionreset".equals(lower(args[0]))) {
+                if (n < 2) {
+                    return "";
+                }
+                String p = args[1];
+                return p == null ? "" : p;
+            }
             if (n >= 5) {
                 String p = args[4];
                 return p == null ? "" : p;

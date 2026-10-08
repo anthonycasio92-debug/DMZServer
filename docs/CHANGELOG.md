@@ -1,8 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.42**.
+What changed from **4.5.147** through **4.6.43**.
 
-The live mods folder gets `LegacyMechanics-4.6.42.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.6.43.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+
+## Fusion cooldown reset
+
+Staff can run `/lm fusionreset <player>` on someone who is online. It sets Noea's `fusionCooldownEnd` to 0, removes Dragon Mine Z's `FusionCooldown`, clears `fusionValidationError`, and syncs both. The player has to be online. The command does not end an active fusion.
 
 ## Fall damage log
 

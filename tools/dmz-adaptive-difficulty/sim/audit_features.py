@@ -2046,6 +2046,22 @@ def main() -> int:
         check(f"notice body has no second color ({expect})",
               got.startswith("§e") and not re.search(r"§(?!e)", got))
 
+    print("\n=== Fusion cooldown reset (4.6.43) ===")
+    fusion_reset = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/command/FusionCooldownReset.java")
+    check("staff /lm fusionreset",
+          'staffLiteral("fusionreset")' in mech
+          and "FusionCooldownReset.reset" in mech
+          and "/lm fusionreset <player>" in read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/command/LmCommandHelp.java"))
+    check("fusion reset clears both cooldown stores and the validation error",
+          "FusionLifecycleService.resetCooldown" in fusion_reset
+          and "fusionCooldownEnd = 0L" in fusion_reset
+          and 'fusionValidationError = ""' in fusion_reset
+          and "V090Data.save" in fusion_reset
+          and "V090Network.sync" in fusion_reset
+          and "clearPersistentCopies" in fusion_reset)
+    check("fusion reset class is copied into the forge jar",
+          "FusionCooldownReset" in read(ROOT / "tools/dmz-adaptive-difficulty/build.sh"))
+
     print("\n=== Fall damage diagnostic (4.6.42) ===")
     fall_diag = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/event/FallDamageDiag.java")
     mod_src = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.java")
