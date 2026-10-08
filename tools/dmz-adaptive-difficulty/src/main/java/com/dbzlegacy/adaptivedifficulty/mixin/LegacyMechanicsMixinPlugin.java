@@ -31,8 +31,7 @@ public final class LegacyMechanicsMixinPlugin implements IMixinConfigPlugin {
             return absorptionServicePresent();
         }
         if (mixinClassName != null && (
-                mixinClassName.endsWith("DmzStatsResetAbsorptionWipeMixin")
-                        || mixinClassName.endsWith("DendeResetAbsorptionWipeMixin")
+                mixinClassName.endsWith("DendeResetAbsorptionWipeMixin")
                         || mixinClassName.endsWith("CreateCharacterAbsorptionWipeMixin"))) {
             return absorptionServicePresent();
         }

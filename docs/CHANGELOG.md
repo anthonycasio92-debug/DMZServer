@@ -1,6 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.49**.
+What changed from **4.5.147** through **4.6.50**.
+
+## Mixin cleanup
+
+Default-priority StatsData hooks (load guard, owner lookup, secondary-attribute player, restore clamp, reset wipe) are one mixin, `StatsDataGuardsMixin`. The three default-priority Resources clamps are one mixin, `ResourcesEnergyDrainGuardMixin`. `/dmzstats reset` player block and absorption wipe are one mixin. Every absorption wipe calls `AbsorptionWipeHelper`. The Hakai Destroyer methods are cached after the first successful lookup. A failed lookup is not cached.
+
+These stayed separate because a mixin can only target one class, and a different priority still has to win: the personal stat cap (5000), the absorption bonus (1001), stat scaling (6100), and the death TP slots (6200). `DojoWarSenseMixin`, `PotionEffectHelperTpBonusMixin`, and `DmzRevampPrestigeCapMixin` are still live. This build is not uploaded. Restart onto 4.6.49 until this jar is loaded.
 
 ## Hakai mixin applies
 

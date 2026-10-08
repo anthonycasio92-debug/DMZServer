@@ -1911,7 +1911,9 @@ def main() -> int:
           and "meleeResetCommandsPresent()" in mixin_plugin
           and "Class.forName" not in mixin_plugin.split("meleeResetCommandsPresent()", 1)[-1].split("absorptionServicePresent", 1)[0]
           and "t.printStackTrace()" in read(
-              ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/CreateCharacterAbsorptionWipeMixin.java"))
+              ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/noea/AbsorptionWipeHelper.java")
+          and "\"StatsCommand.resetStats\"" in reset_block
+          and "DmzStatsResetAbsorptionWipeMixin" not in mixins_json)
 
     print("\n=== Dragon ball pickup (4.6.36) ===")
     dball = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/event/DragonBallRadarPickup.java")
@@ -1934,13 +1936,14 @@ def main() -> int:
     print("\n=== Majin absorption bonus (4.6.33) ===")
     absorb_gate = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/noea/NoeaAbsorptionBonusGateMixin.java")
     absorb_store = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/noea/MajinAbsorptionStore.java")
-    absorb_reset = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/StatsDataResetPrestigeSyncMixin.java")
-    absorb_cmd = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/DmzStatsResetAbsorptionWipeMixin.java")
+    absorb_reset = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/StatsDataGuardsMixin.java")
+    absorb_cmd = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/DmzStatsResetPlayerBlockMixin.java")
     absorb_melee = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/MeleeStatsResetAbsorptionWipeMixin.java")
     absorb_dende = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/DendeResetAbsorptionWipeMixin.java")
     absorb_create = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/CreateCharacterAbsorptionWipeMixin.java")
     absorb_services = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/character/CharacterServicesSystem.java")
     absorb_log = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/noea/AbsorptionClearLog.java")
+    absorb_helper = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/noea/AbsorptionWipeHelper.java")
     check("absorption bonus follows power and limit release",
           "absorptionPower" in absorb_gate
           and "isActive" not in absorb_gate
@@ -1955,30 +1958,34 @@ def main() -> int:
           and "[LM] wipe FAILED: " in absorb_store
           and "data.absorptionKi = 0" in absorb_store
           and "data.absorptionPower = 0" in absorb_store
-          and "MajinAbsorptionStore.clear(player)" in absorb_reset
-          and "[LM] wipeAbsorption firing for " in absorb_reset
+          and "MajinAbsorptionStore.clear(player)" in absorb_helper
+          and "[LM] wipeAbsorption firing for " in absorb_helper
+          and "AbsorptionWipeHelper.wipe(player, null)" in absorb_reset
           and "initializeWithRaceAndClass" in absorb_reset
-          and "MajinAbsorptionStore.clear(player)" in absorb_services
+          and "wipeIfRaceChanges" in absorb_reset
+          and "AbsorptionWipeHelper.wipe(player, \"CharacterServicesSystem.executeRaceChange\")" in absorb_services
           and 'method = "resetStats"' in absorb_cmd
-          and "via StatsCommand.resetStats" in absorb_cmd
+          and "\"StatsCommand.resetStats\"" in absorb_cmd
+          and "AbsorptionWipeHelper" in absorb_cmd
           and "require = 0" in absorb_cmd
           and 'method = "resetSelf"' in absorb_melee
           and "require = 0" in absorb_melee
+          and "AbsorptionWipeHelper.wipe(player, \"StatsResetCommands.resetSelf\")" in absorb_melee
           and 'method = "handleDende"' in absorb_dende
           and "actionId != 2" in absorb_dende
-          and "via NPCActionC2S.handleDende" in absorb_dende
+          and "AbsorptionWipeHelper.wipe(player, \"NPCActionC2S.handleDende\")" in absorb_dende
           and 'method = "lambda$handle$0"' in absorb_create
           and "isHasCreatedCharacter" in absorb_create
-          and "via CreateCharacterC2S" in absorb_create
-          and "via CharacterServicesSystem.executeRaceChange" in absorb_services
+          and "AbsorptionWipeHelper.wipe(player, \"CreateCharacterC2S\")" in absorb_create
+          and "\"CharacterServicesSystem.executeRaceChange\"" in absorb_services
           and "[LM] clear() threw: " in absorb_log
-          and "AbsorptionClearLog.failure" in absorb_cmd
-          and "AbsorptionClearLog.failure" in absorb_reset
-          and "AbsorptionClearLog.failure" in absorb_melee
-          and "AbsorptionClearLog.failure" in absorb_dende
-          and "AbsorptionClearLog.failure" in absorb_create
-          and "AbsorptionClearLog.failure" in absorb_services
-          and "AbsorptionClearLog.failure" in absorb_store)
+          and "AbsorptionClearLog.failure" in absorb_helper
+          and "t.printStackTrace()" in absorb_helper
+          and "AbsorptionClearLog.failure" in absorb_store
+          and "StatsDataGuardsMixin" in mixins_json
+          and "StatsDataResetPrestigeSyncMixin" not in mixins_json
+          and "ResourcesPoolClampMixin" not in mixins_json
+          and "ResourcesLoadClampMixin" not in mixins_json)
 
     print("\n=== CNPC notice color (4.6.41) ===")
     notice = read(cnpc_dir / "CnpcMenuFeedback.java")

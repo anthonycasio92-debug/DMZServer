@@ -2,7 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.character;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
-import com.dbzlegacy.adaptivedifficulty.noea.MajinAbsorptionStore;
+import com.dbzlegacy.adaptivedifficulty.noea.AbsorptionWipeHelper;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.progression.race.RaceLock;
@@ -343,17 +343,7 @@ public final class CharacterServicesSystem {
                 refund(player, cost);
                 return "§cCharacter data unavailable.";
             }
-            try {
-                System.out.println("[LM] wipeAbsorption firing for " + player.m_7755_().getString()
-                        + " via CharacterServicesSystem.executeRaceChange");
-                MajinAbsorptionStore.clear(player);
-            } catch (Throwable t) {
-                try {
-                    com.dbzlegacy.adaptivedifficulty.noea.AbsorptionClearLog.failure(t);
-                } catch (Throwable ignored) {
-                    t.printStackTrace();
-                }
-            }
+            AbsorptionWipeHelper.wipe(player, "CharacterServicesSystem.executeRaceChange");
             clearForms(ch, player);
             String priorHeadBone = CosmeticHeadBoneService.activeBone(player);
             String priorClassBeforeRaceChange = "";

@@ -347,11 +347,8 @@ merge_onto_base_jar() {
         "$merge/com/dbzlegacy/adaptivedifficulty/progression/bridge/"
     fi
     for mixin_cls in StatsDataHudPoolMaxMixin StatsDataOverhaulCombatScaleMixin \
-        ResourcesPoolClampMixin ResourcesLoadClampMixin \
-        StatsDataRestoreMultiplierClampMixin StatsDataLoadClampMixin StatsDataMixin \
+        ResourcesEnergyDrainGuardMixin StatsDataGuardsMixin StatsDataMixin \
         StatsSyncC2SGenderMixin \
-        StatsDataResetPrestigeSyncMixin \
-        DmzStatsResetAbsorptionWipeMixin \
         DmzStatsResetPlayerBlockMixin \
         MeleeStatsResetAbsorptionWipeMixin \
         MeleeStatsResetPlayerBlockMixin \
@@ -371,7 +368,7 @@ merge_onto_base_jar() {
     # Ordinary classes cannot live in the mixin package. The server classloader
     # does not resolve them, so the Majin wipe never runs.
     mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/noea"
-    for noea_cls in MajinAbsorptionStore AbsorptionClearLog; do
+    for noea_cls in MajinAbsorptionStore AbsorptionClearLog AbsorptionWipeHelper; do
       if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/noea/${noea_cls}.class" ]]; then
         cp "$OUT/com/dbzlegacy/adaptivedifficulty/noea/${noea_cls}.class" \
           "$merge/com/dbzlegacy/adaptivedifficulty/noea/${noea_cls}.class"
@@ -391,7 +388,15 @@ merge_onto_base_jar() {
     "$merge/com/dbzlegacy/adaptivedifficulty/progression/skills/SkillProgression.class" \
     "$merge/com/dbzlegacy/adaptivedifficulty/progression/race/RaceProgression.class" \
     "$merge/com/dbzlegacy/adaptivedifficulty/progression/tp/TpProgression.class" \
-    "$merge/com/dbzlegacy/adaptivedifficulty/progression/bridge/CnpcBridge.class"
+    "$merge/com/dbzlegacy/adaptivedifficulty/progression/bridge/CnpcBridge.class" \
+    "$merge/com/dbzlegacy/adaptivedifficulty/mixin/StatsDataLoadClampMixin.class" \
+    "$merge/com/dbzlegacy/adaptivedifficulty/mixin/StatsDataGetPlayerMixin.class" \
+    "$merge/com/dbzlegacy/adaptivedifficulty/mixin/StatsDataSecondaryPlayerMixin.class" \
+    "$merge/com/dbzlegacy/adaptivedifficulty/mixin/StatsDataRestoreMultiplierClampMixin.class" \
+    "$merge/com/dbzlegacy/adaptivedifficulty/mixin/StatsDataResetPrestigeSyncMixin.class" \
+    "$merge/com/dbzlegacy/adaptivedifficulty/mixin/ResourcesPoolClampMixin.class" \
+    "$merge/com/dbzlegacy/adaptivedifficulty/mixin/ResourcesLoadClampMixin.class" \
+    "$merge/com/dbzlegacy/adaptivedifficulty/mixin/DmzStatsResetAbsorptionWipeMixin.class"
   # Classes copied from this compile must ship their inner classes, and must
   # not keep a stale base-jar inner the new bytecode no longer emits.
   sync_overlaid_inners "$OUT" "$merge"

@@ -6,6 +6,7 @@ import com.dragonminez.common.init.DMZDamageSource;
 import com.dragonminez.common.init.entities.ki.AbstractKiProjectile;
 import com.dragonminez.common.stats.techniques.KiAttackData;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.Locale;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -34,6 +35,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  */
 @Mixin(targets = "com.butterjaffa.noeabosses.DivineImmortalityEvents", remap = false)
 public abstract class HakaiDestroyerGateMixin {
+
+    /** Filled on the first successful lookup. A miss is not cached, so the next attack tries again. */
+    private static volatile Method ASSIGNMENT;
+    private static volatile Method RANK;
+    private static volatile Method HAS_ENERGY;
 
     @Inject(
             method = "onKiAttackFire",
@@ -135,26 +141,43 @@ public abstract class HakaiDestroyerGateMixin {
 
     /**
      * {@code DestroyerRoleService.assignment(player).rank().hasDestructionEnergy()}.
-     * A missing class, a missing method, or any other reflection failure is not a Destroyer.
+     * The three methods are cached after the first successful lookup. A missing
+     * class, a missing method, or any other reflection failure is not a Destroyer,
+     * and that failure is not cached.
      */
     static boolean isDestroyer(Player player) {
         if (!(player instanceof ServerPlayer server)) {
             return false;
         }
         try {
-            Class<?> service = Class.forName(
-                    "com.butterjaffa.noeabosses.DestroyerRoleService",
-                    false,
-                    HakaiDestroyerGateMixin.class.getClassLoader());
-            Object assignment = service.getMethod("assignment", ServerPlayer.class).invoke(null, server);
+            Method assignmentMethod = ASSIGNMENT;
+            if (assignmentMethod == null) {
+                Class<?> service = Class.forName(
+                        "com.butterjaffa.noeabosses.DestroyerRoleService",
+                        false,
+                        HakaiDestroyerGateMixin.class.getClassLoader());
+                assignmentMethod = service.getMethod("assignment", ServerPlayer.class);
+                ASSIGNMENT = assignmentMethod;
+            }
+            Object assignment = assignmentMethod.invoke(null, server);
             if (assignment == null) {
                 return false;
             }
-            Object rank = assignment.getClass().getMethod("rank").invoke(assignment);
+            Method rankMethod = RANK;
+            if (rankMethod == null) {
+                rankMethod = assignment.getClass().getMethod("rank");
+                RANK = rankMethod;
+            }
+            Object rank = rankMethod.invoke(assignment);
             if (rank == null) {
                 return false;
             }
-            Object energy = rank.getClass().getMethod("hasDestructionEnergy").invoke(rank);
+            Method energyMethod = HAS_ENERGY;
+            if (energyMethod == null) {
+                energyMethod = rank.getClass().getMethod("hasDestructionEnergy");
+                HAS_ENERGY = energyMethod;
+            }
+            Object energy = energyMethod.invoke(rank);
             return Boolean.TRUE.equals(energy);
         } catch (Throwable ignored) {
             return false;

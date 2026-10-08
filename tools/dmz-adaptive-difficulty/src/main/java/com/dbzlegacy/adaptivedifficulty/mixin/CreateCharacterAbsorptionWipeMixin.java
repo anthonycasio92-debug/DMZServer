@@ -1,7 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.mixin;
 
-import com.dbzlegacy.adaptivedifficulty.noea.AbsorptionClearLog;
-import com.dbzlegacy.adaptivedifficulty.noea.MajinAbsorptionStore;
+import com.dbzlegacy.adaptivedifficulty.noea.AbsorptionWipeHelper;
 import com.dragonminez.common.network.C2S.CreateCharacterC2S;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.Status;
@@ -39,20 +38,6 @@ public abstract class CreateCharacterAbsorptionWipeMixin {
         } catch (Throwable ignored) {
             return;
         }
-        try {
-            System.out.println("[LM] wipeAbsorption firing for " + player.m_7755_().getString()
-                    + " via CreateCharacterC2S");
-        } catch (Throwable ignored) {
-        }
-        try {
-            MajinAbsorptionStore.clear(player);
-        } catch (Throwable t) {
-            // A failure while logging must not take the server tick down.
-            try {
-                AbsorptionClearLog.failure(t);
-            } catch (Throwable ignored) {
-                t.printStackTrace();
-            }
-        }
+        AbsorptionWipeHelper.wipe(player, "CreateCharacterC2S");
     }
 }

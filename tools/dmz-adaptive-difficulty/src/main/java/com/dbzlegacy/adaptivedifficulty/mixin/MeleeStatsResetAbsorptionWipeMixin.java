@@ -1,7 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.mixin;
 
-import com.dbzlegacy.adaptivedifficulty.noea.AbsorptionClearLog;
-import com.dbzlegacy.adaptivedifficulty.noea.MajinAbsorptionStore;
+import com.dbzlegacy.adaptivedifficulty.noea.AbsorptionWipeHelper;
 import com.dbzlegacy.mohistmelee.StatsResetCommands;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.level.ServerPlayer;
@@ -38,19 +37,6 @@ public abstract class MeleeStatsResetAbsorptionWipeMixin {
         if (player == null) {
             return;
         }
-        try {
-            System.out.println("[LM] wipeAbsorption firing for " + player.m_7755_().getString()
-                    + " via StatsResetCommands.resetSelf");
-        } catch (Throwable ignored) {
-        }
-        try {
-            MajinAbsorptionStore.clear(player);
-        } catch (Throwable t) {
-            try {
-                AbsorptionClearLog.failure(t);
-            } catch (Throwable ignored) {
-                t.printStackTrace();
-            }
-        }
+        AbsorptionWipeHelper.wipe(player, "StatsResetCommands.resetSelf");
     }
 }
