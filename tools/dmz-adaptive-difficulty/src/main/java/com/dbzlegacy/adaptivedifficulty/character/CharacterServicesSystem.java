@@ -282,7 +282,7 @@ public final class CharacterServicesSystem {
             return block;
         }
         if (!CharacterServicesAccess.canRaceChange(player)) {
-            return "§cYou cannot change race.";
+            return "§cRace change is turned off.";
         }
         CharacterServicesConfig cfg = CharacterServicesConfig.get();
         if (!cfg.raceChange.enabled) {

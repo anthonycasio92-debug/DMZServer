@@ -1874,6 +1874,33 @@ def main() -> int:
           and "require = 0" in corpse_fix
           and "private static void lm$disableDropSuppression" in corpse_fix)
 
+    print("\n=== Player stat reset and race change (4.6.37) ===")
+    reset_block = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/DmzStatsResetPlayerBlockMixin.java")
+    melee_block = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/MeleeStatsResetPlayerBlockMixin.java")
+    staff = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/util/StaffAccess.java")
+    race_access = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/character/CharacterServicesAccess.java")
+    race_system = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/character/CharacterServicesSystem.java")
+    mixins_json = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/resources/legacymechanics.mixins.json")
+    mixin_plugin = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/LegacyMechanicsMixinPlugin.java")
+    check("players cannot reset stats or change race",
+          'method = "resetStats"' in reset_block
+          and "cancellable = true" in reset_block
+          and "setReturnValue(0)" in reset_block
+          and "allowDmzStatsReset" in reset_block
+          and "require = 0" in reset_block
+          and 'method = "resetSelf"' in melee_block
+          and "cancellable = true" in melee_block
+          and "setReturnValue(0)" in melee_block
+          and "allowDmzStatsReset" in melee_block
+          and "Stat reset is turned off." in staff
+          and "isStaffSource(source)" in staff
+          and "return StaffAccess.isStaff(player);" in race_access
+          and "Race change is turned off." in race_system
+          and "DmzStatsResetPlayerBlockMixin" in mixins_json
+          and "MeleeStatsResetPlayerBlockMixin" in mixins_json
+          and "MeleeStatsResetPlayerBlockMixin" in mixin_plugin
+          and "meleeResetCommandsPresent()" in mixin_plugin)
+
     print("\n=== Dragon ball pickup (4.6.36) ===")
     dball = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/event/DragonBallRadarPickup.java")
     dball_events = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/event/DifficultyEvents.java")

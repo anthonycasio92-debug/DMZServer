@@ -36,6 +36,9 @@ public final class LegacyMechanicsMixinPlugin implements IMixinConfigPlugin {
                         || mixinClassName.endsWith("CreateCharacterAbsorptionWipeMixin"))) {
             return absorptionServicePresent();
         }
+        if (mixinClassName != null && mixinClassName.endsWith("MeleeStatsResetPlayerBlockMixin")) {
+            return meleeResetCommandsPresent();
+        }
         if (mixinClassName != null && mixinClassName.endsWith("MeleeStatsResetAbsorptionWipeMixin")) {
             return absorptionServicePresent() && meleeResetCommandsPresent();
         }

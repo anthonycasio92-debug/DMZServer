@@ -343,7 +343,9 @@ merge_onto_base_jar() {
         StatsSyncC2SGenderMixin \
         StatsDataResetPrestigeSyncMixin \
         DmzStatsResetAbsorptionWipeMixin \
+        DmzStatsResetPlayerBlockMixin \
         MeleeStatsResetAbsorptionWipeMixin \
+        MeleeStatsResetPlayerBlockMixin \
         DendeResetAbsorptionWipeMixin \
         CreateCharacterAbsorptionWipeMixin \
         AbsorptionClearLog \

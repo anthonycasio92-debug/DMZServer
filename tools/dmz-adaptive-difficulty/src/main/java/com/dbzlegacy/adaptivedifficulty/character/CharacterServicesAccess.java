@@ -11,9 +11,9 @@ public final class CharacterServicesAccess {
         return has(player, CharacterServicesConfig.get().permissions.services, true);
     }
 
+    /** Players cannot change race. Staff still can. */
     public static boolean canRaceChange(ServerPlayer player) {
-        return canUseServices(player)
-                && has(player, CharacterServicesConfig.get().permissions.race, true);
+        return StaffAccess.isStaff(player);
     }
 
     public static boolean canClassChange(ServerPlayer player) {
