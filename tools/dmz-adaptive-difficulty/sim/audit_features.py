@@ -2089,6 +2089,8 @@ def main() -> int:
           and "setCanceled" not in fall_diag
           and "setAmount" not in fall_diag
           and "new FallDamageDiag()" in mod_src)
+    check("fall damage listener class is copied into the forge jar",
+          "event/FallDamageDiag.class" in build_sh)
 
     print("\n=== Summary ===")
     for w in warns:

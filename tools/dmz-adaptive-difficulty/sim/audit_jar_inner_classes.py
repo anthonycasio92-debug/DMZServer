@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Fail the build when a shipped class names an LM inner class that is not in the jar.
+"""Fail the build when a shipped class names an LM class that is not in the jar.
 
-Constant-pool UTF8 entries for com/dbzlegacy/adaptivedifficulty/.../Outer$Inner must
-have a matching .class file. This is the check that would have stopped the 4.6.17
-GuiClickConfirm$Pending crash before deploy.
+Constant-pool UTF8 entries for com/dbzlegacy/adaptivedifficulty/.../Outer and
+Outer$Inner must have a matching .class file. This is the check that would have
+stopped the 4.6.17 GuiClickConfirm$Pending crash and the 4.6.44 FallDamageDiag
+crash before deploy.
 """
 from __future__ import annotations
 
@@ -15,6 +16,10 @@ from pathlib import Path
 PREFIX = b"com/dbzlegacy/adaptivedifficulty/"
 INNER = re.compile(
     rb"com/dbzlegacy/adaptivedifficulty/(?:[A-Za-z0-9_]+/)*[A-Za-z0-9_]+(?:\$[A-Za-z0-9_]+)+"
+)
+# Top-level class names. The trailing check rejects a prefix of a longer token.
+TOP = re.compile(
+    rb"com/dbzlegacy/adaptivedifficulty/(?:[A-Za-z0-9_]+/)*[A-Za-z0-9_]+"
 )
 
 
@@ -40,13 +45,24 @@ def main() -> int:
                 path = ref + ".class"
                 if path not in names:
                     missing.setdefault(path, set()).add(info.filename)
+            for match in TOP.finditer(data):
+                end = match.end()
+                if end < len(data) and data[end:end + 1] not in (b";", b"<", b"\x00", b"\x01"):
+                    # Descriptors end at ';'. A following identifier or '$' is a longer name.
+                    nxt = data[end:end + 1]
+                    if nxt in (b"$", b"/") or nxt.isalnum() or nxt == b"_":
+                        continue
+                ref = match.group(0).decode("ascii")
+                path = ref + ".class"
+                if path not in names:
+                    missing.setdefault(path, set()).add(info.filename)
     if missing:
-        print("ERROR: jar references inner classes that were not packaged:", file=sys.stderr)
+        print("ERROR: jar references LM classes that were not packaged:", file=sys.stderr)
         for path in sorted(missing):
             users = ", ".join(sorted(missing[path])[:8])
             print(f"  missing {path} (referenced by {users})", file=sys.stderr)
         return 1
-    print(f"PASS — inner classes referenced in {jar.name} are packaged")
+    print(f"PASS — LM classes referenced in {jar.name} are packaged")
     return 0
 
 

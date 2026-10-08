@@ -279,6 +279,13 @@ merge_onto_base_jar() {
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/event/DragonBallRadarPickup\$"*.class \
       "$merge/com/dbzlegacy/adaptivedifficulty/event/" 2>/dev/null || true
   fi
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/event/FallDamageDiag.class" ]]; then
+    mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/event"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/event/FallDamageDiag.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/event/FallDamageDiag.class"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/event/FallDamageDiag\$"*.class \
+      "$merge/com/dbzlegacy/adaptivedifficulty/event/" 2>/dev/null || true
+  fi
   if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/util/StaffAccess.class" ]]; then
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/util/StaffAccess.class" \
       "$merge/com/dbzlegacy/adaptivedifficulty/util/StaffAccess.class"

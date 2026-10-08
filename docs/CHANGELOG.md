@@ -1,8 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.44**.
+What changed from **4.5.147** through **4.6.45**.
 
-The live mods folder gets `LegacyMechanics-4.6.44.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.6.45.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+
+## Fall damage log packaging
+
+`FallDamageDiag` is in the Forge jar. 4.6.44 registered the listener and left the class out, which would crash mod init. Do not restart onto 4.6.44.
 
 ## Hakai name gate
 
