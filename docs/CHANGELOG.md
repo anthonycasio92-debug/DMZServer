@@ -1,6 +1,10 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.54**.
+What changed from **4.5.147** through **4.6.55**.
+
+## Fusion unfuse bonus
+
+Unfusing clears the `FusionBonus` split bonus on the player who unfused and on their partner. Dragon Mine Z only removed that bonus from the fusion leader, and only when the leader was online. Permanent Saiyan zenkai bonuses are left in place. A bonus whose name is both a fusion bonus and a zenkai bonus is removed.
 
 ## Menu wording
 

@@ -2098,6 +2098,22 @@ def main() -> int:
     check("fusion reset class is copied into the forge jar",
           "FusionCooldownReset" in read(ROOT / "tools/dmz-adaptive-difficulty/build.sh"))
 
+    print("\n=== Fusion unfuse bonus clear (4.6.55) ===")
+    fusion_clear = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/FusionUnfuseBonusClearMixin.java")
+    fusion_mixins = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/resources/legacymechanics.mixins.json")
+    check("unfuse clears FusionBonus at the tail of endFusion",
+          "Dragon Mine Z bug workaround" in fusion_clear
+          and 'FUSION_BONUS = "FusionBonus"' in fusion_clear
+          and 'method = "endFusion"' in fusion_clear
+          and '@At("TAIL")' in fusion_clear
+          and '@At("HEAD")' in fusion_clear
+          and "removeAllBonuses" in fusion_clear
+          and "fusion" in fusion_clear
+          and "zenkai" in fusion_clear
+          and "Zenkai_" in fusion_clear
+          and '"FusionUnfuseBonusClearMixin"' in fusion_mixins
+          and "FusionUnfuseBonusClearMixin" in build_sh)
+
     print("\n=== Fall damage diagnostic (4.6.42) ===")
     fall_diag = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/event/FallDamageDiag.java")
     mod_src = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.java")

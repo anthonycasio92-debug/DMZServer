@@ -26,7 +26,8 @@
     "DojoWarSenseMixin",
     "noea.NoeaAbsorptionBonusGateMixin",
     "noea.NoeaTravelSafetyCorpseFixMixin",
-    "noea.HakaiDestroyerGateMixin"
+    "noea.HakaiDestroyerGateMixin",
+    "FusionUnfuseBonusClearMixin"
   ],
   "injectors": {
     "defaultRequire": 1
