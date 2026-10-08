@@ -5,7 +5,6 @@ import com.dragonminez.common.network.NetworkHandler;
 import com.dragonminez.common.network.S2C.StatsSyncS2C;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.BonusStats;
-import com.dragonminez.server.util.FusionLogic;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -36,8 +35,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * count in {@code SaiyanPassiveHandler} and is left alone. A bonus whose name
  * contains both "fusion" and "zenkai" is removed, because that would be a
  * fusion-scoped zenkai rather than the permanent racial one.
+ *
+ * <p>The mixin names {@code com.dragonminez.server.util.FusionLogic} as a string.
+ * A class literal loads that class while the mixin config is applied, and a
+ * missing Dragon Mine Z jar then crashes startup. Each inject uses
+ * {@code require = 0}. Mixin 0.8.5's {@code @Mixin} annotation has no
+ * {@code require} parameter.
  */
-@Mixin(value = FusionLogic.class, remap = false)
+@Mixin(targets = "com.dragonminez.server.util.FusionLogic", remap = false)
 public abstract class FusionUnfuseBonusClearMixin {
 
     private static final String FUSION_BONUS = "FusionBonus";
@@ -45,7 +50,7 @@ public abstract class FusionUnfuseBonusClearMixin {
     /** Partner id from the head. Unfuse clears it before the tail runs. */
     private static final ThreadLocal<UUID> PARTNER = new ThreadLocal<>();
 
-    @Inject(method = "endFusion", at = @At("HEAD"), remap = false)
+    @Inject(method = "endFusion", at = @At("HEAD"), remap = false, require = 0)
     private static void lm$rememberFusionPartner(ServerPlayer player, StatsData data, boolean forced, CallbackInfo ci) {
         UUID partner = null;
         try {
@@ -57,7 +62,7 @@ public abstract class FusionUnfuseBonusClearMixin {
         PARTNER.set(partner);
     }
 
-    @Inject(method = "endFusion", at = @At("TAIL"), remap = false)
+    @Inject(method = "endFusion", at = @At("TAIL"), remap = false, require = 0)
     private static void lm$clearFusionSplitBonuses(ServerPlayer player, StatsData data, boolean forced, CallbackInfo ci) {
         UUID partnerId = PARTNER.get();
         PARTNER.remove();

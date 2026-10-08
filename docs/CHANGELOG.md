@@ -1,6 +1,10 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.55**.
+What changed from **4.5.147** through **4.6.56**.
+
+## Fusion mixin target
+
+The unfuse bonus mixin names `FusionLogic` as a string. A class literal loads that class while the mixin config is applied. Both `endFusion` injects use `require = 0`. The mixin plugin does not look the class up at config time.
 
 ## Fusion unfuse bonus
 
