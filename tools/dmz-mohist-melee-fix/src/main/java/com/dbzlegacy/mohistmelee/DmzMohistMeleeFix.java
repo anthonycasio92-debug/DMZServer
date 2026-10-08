@@ -19,7 +19,7 @@ public final class DmzMohistMeleeFix {
 
     public DmzMohistMeleeFix() {
         LOGGER.info(
-                "[{}] v2.12.22: Noea experimental grab hard-disabled + ghost party heal / saga guard",
+                "[{}] v2.12.23: Noea grab mixin waits until GrabService loads + ghost party heal / saga guard",
                 MOD_ID
         );
         ReachRepairEvents.register();

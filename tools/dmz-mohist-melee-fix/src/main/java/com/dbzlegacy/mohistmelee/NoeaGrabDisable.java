@@ -17,24 +17,36 @@ import org.apache.logging.log4j.Logger;
 public final class NoeaGrabDisable {
     private static final Logger LOGGER = LogManager.getLogger(DmzMohistMeleeFix.MOD_ID);
     private static final String GRAB_SERVICE = "com.butterjaffa.noeabosses.GrabService";
+    private static volatile boolean lookedUp;
     private static volatile boolean noeaGrabPresent;
     private static volatile boolean logged;
     private static int tickCounter;
 
-    static {
+    private NoeaGrabDisable() {}
+
+    /**
+     * First lookup is on a server event, after Mixin has already transformed
+     * {@code GrabService}. A static initializer would define that class too early.
+     */
+    private static boolean grabServicePresent() {
+        if (lookedUp) {
+            return noeaGrabPresent;
+        }
+        boolean present = false;
         try {
             Class.forName(GRAB_SERVICE, false, NoeaGrabDisable.class.getClassLoader());
-            noeaGrabPresent = true;
-        } catch (ClassNotFoundException e) {
-            noeaGrabPresent = false;
+            present = true;
+        } catch (ClassNotFoundException ignored) {
+            present = false;
         }
+        noeaGrabPresent = present;
+        lookedUp = true;
+        return present;
     }
-
-    private NoeaGrabDisable() {}
 
     @SubscribeEvent
     public static void onServerStarted(ServerStartedEvent event) {
-        if (!noeaGrabPresent) {
+        if (!grabServicePresent()) {
             return;
         }
         forceGrabOff(event.getServer());
@@ -46,7 +58,7 @@ public final class NoeaGrabDisable {
 
     @SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
-        if (!noeaGrabPresent || event.phase != TickEvent.Phase.END) {
+        if (!grabServicePresent() || event.phase != TickEvent.Phase.END) {
             return;
         }
         MinecraftServer server = event.getServer();

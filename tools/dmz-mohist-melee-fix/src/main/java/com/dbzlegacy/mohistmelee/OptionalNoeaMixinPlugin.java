@@ -6,14 +6,15 @@ import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
-/** Apply Noea grab block mixins only when {@code noeabosses} is on the classpath. */
+/**
+ * Apply a Noea grab mixin only when that target's class file is on the classpath.
+ * {@code Class.forName} here defines {@code GrabService} before Mixin can transform
+ * it, and the grab mixin is then skipped as loaded too early.
+ */
 public final class OptionalNoeaMixinPlugin implements IMixinConfigPlugin {
-    private static volatile boolean noeaPresent;
 
     @Override
-    public void onLoad(String mixinPackage) {
-        noeaPresent = classPresent("com.butterjaffa.noeabosses.GrabService");
-    }
+    public void onLoad(String mixinPackage) {}
 
     @Override
     public String getRefMapperConfig() {
@@ -22,7 +23,7 @@ public final class OptionalNoeaMixinPlugin implements IMixinConfigPlugin {
 
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
-        return noeaPresent;
+        return classFilePresent(targetClassName);
     }
 
     @Override
@@ -39,11 +40,16 @@ public final class OptionalNoeaMixinPlugin implements IMixinConfigPlugin {
     @Override
     public void postApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {}
 
-    private static boolean classPresent(String name) {
+    /** Class-file lookup. Does not define the mixin target. */
+    private static boolean classFilePresent(String binaryName) {
+        if (binaryName == null || binaryName.isEmpty()) {
+            return false;
+        }
         try {
-            Class.forName(name, false, OptionalNoeaMixinPlugin.class.getClassLoader());
-            return true;
-        } catch (ClassNotFoundException e) {
+            ClassLoader loader = OptionalNoeaMixinPlugin.class.getClassLoader();
+            String path = binaryName.replace('.', '/') + ".class";
+            return loader != null && loader.getResource(path) != null;
+        } catch (Throwable ignored) {
             return false;
         }
     }
