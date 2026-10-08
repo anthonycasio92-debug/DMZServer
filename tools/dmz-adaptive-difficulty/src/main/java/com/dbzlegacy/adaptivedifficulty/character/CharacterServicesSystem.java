@@ -348,7 +348,11 @@ public final class CharacterServicesSystem {
                         + " via CharacterServicesSystem.executeRaceChange");
                 MajinAbsorptionStore.clear(player);
             } catch (Throwable t) {
-                com.dbzlegacy.adaptivedifficulty.mixin.AbsorptionClearLog.failure(t);
+                try {
+                    com.dbzlegacy.adaptivedifficulty.mixin.AbsorptionClearLog.failure(t);
+                } catch (Throwable ignored) {
+                    t.printStackTrace();
+                }
             }
             clearForms(ch, player);
             String priorHeadBone = CosmeticHeadBoneService.activeBone(player);

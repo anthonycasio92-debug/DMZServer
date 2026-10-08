@@ -43,7 +43,11 @@ public abstract class DmzStatsResetAbsorptionWipeMixin {
             try {
                 MajinAbsorptionStore.clear(player);
             } catch (Throwable t) {
-                AbsorptionClearLog.failure(t);
+                try {
+                    AbsorptionClearLog.failure(t);
+                } catch (Throwable ignored) {
+                    t.printStackTrace();
+                }
             }
         }
     }

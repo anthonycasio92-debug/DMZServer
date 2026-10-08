@@ -46,7 +46,12 @@ public abstract class CreateCharacterAbsorptionWipeMixin {
         try {
             MajinAbsorptionStore.clear(player);
         } catch (Throwable t) {
-            AbsorptionClearLog.failure(t);
+            // A failure while logging must not take the server tick down.
+            try {
+                AbsorptionClearLog.failure(t);
+            } catch (Throwable ignored) {
+                t.printStackTrace();
+            }
         }
     }
 }

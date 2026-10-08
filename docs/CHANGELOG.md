@@ -1,8 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.38**.
+What changed from **4.5.147** through **4.6.39**.
 
-The live mods folder gets `LegacyMechanics-4.6.38.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.6.39.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+
+## Absorption wipe crash
+
+Creating a character runs the absorption wipe. If that wipe throws, the server tick keeps going and the error is printed. The stat-reset mixin no longer loads the melee reset class before mixin can transform it, which was aborting startup.
 
 ## Stat reset and race change
 

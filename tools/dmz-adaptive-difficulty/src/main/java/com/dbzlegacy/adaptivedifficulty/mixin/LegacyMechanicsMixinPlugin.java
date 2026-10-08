@@ -48,14 +48,16 @@ public final class LegacyMechanicsMixinPlugin implements IMixinConfigPlugin {
         return dedicatedServer();
     }
 
-    /** Melee mod's self-target {@code /dmzstats reset} executor. */
+    /**
+     * Melee mod's self-target {@code /dmzstats reset} executor.
+     * Look the class file up. Defining the mixin target here makes mixin
+     * abort startup with "loaded too early".
+     */
     private static boolean meleeResetCommandsPresent() {
         try {
-            Class.forName(
-                    "com.dbzlegacy.mohistmelee.StatsResetCommands",
-                    false,
-                    LegacyMechanicsMixinPlugin.class.getClassLoader());
-            return true;
+            ClassLoader loader = LegacyMechanicsMixinPlugin.class.getClassLoader();
+            return loader != null
+                    && loader.getResource("com/dbzlegacy/mohistmelee/StatsResetCommands.class") != null;
         } catch (Throwable ignored) {
             return false;
         }

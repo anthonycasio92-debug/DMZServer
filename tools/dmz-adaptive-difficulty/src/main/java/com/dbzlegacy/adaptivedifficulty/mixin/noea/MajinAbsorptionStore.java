@@ -24,12 +24,12 @@ public final class MajinAbsorptionStore {
                 name = "?";
             }
         }
-        System.out.println("[LM] clear() called for " + name);
-        if (player == null) {
-            System.out.println("[LM] ABORT: player is null, cannot wipe");
-            return;
-        }
         try {
+            System.out.println("[LM] clear() called for " + name);
+            if (player == null) {
+                System.out.println("[LM] ABORT: player is null, cannot wipe");
+                return;
+            }
             V090Data data = MajinAbsorptionService.data(player);
             System.out.println("[LM] data object: " + (data == null
                     ? "NULL"
@@ -82,7 +82,11 @@ public final class MajinAbsorptionStore {
         try {
             clear(stats.getPlayer());
         } catch (Throwable t) {
-            com.dbzlegacy.adaptivedifficulty.mixin.AbsorptionClearLog.failure(t);
+            try {
+                com.dbzlegacy.adaptivedifficulty.mixin.AbsorptionClearLog.failure(t);
+            } catch (Throwable ignored) {
+                t.printStackTrace();
+            }
         }
     }
 }

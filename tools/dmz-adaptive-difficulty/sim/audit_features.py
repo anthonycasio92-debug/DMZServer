@@ -1904,7 +1904,10 @@ def main() -> int:
           and "DmzStatsResetPlayerBlockMixin" in mixins_json
           and "MeleeStatsResetPlayerBlockMixin" in mixins_json
           and "MeleeStatsResetPlayerBlockMixin" in mixin_plugin
-          and "meleeResetCommandsPresent()" in mixin_plugin)
+          and "meleeResetCommandsPresent()" in mixin_plugin
+          and "Class.forName" not in mixin_plugin.split("meleeResetCommandsPresent()", 1)[-1].split("absorptionServicePresent", 1)[0]
+          and "t.printStackTrace()" in read(
+              ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/CreateCharacterAbsorptionWipeMixin.java"))
 
     print("\n=== Dragon ball pickup (4.6.36) ===")
     dball = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/event/DragonBallRadarPickup.java")
