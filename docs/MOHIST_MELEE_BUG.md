@@ -1,5 +1,21 @@
 # Mohist M1: animation but no damage
 
+## Fix v2.12.24 — priceless skill mixin unregistered (Oct 2026)
+
+`mods/dmz_mohist_melee_fix-2.12.24.jar`
+
+`UpdateSkillPricelessMixin` injected into Dragon Mine Z `UpdateSkillC2S` and called `com.dbzlegacy.mohistmelee.PricelessPurchaseGuard`. That class lives in this mod, and Dragon Mine Z's classloader cannot see it — the same isolation that broke `MajinAbsorptionStore` when it sat next to a mixin. `SkillsBlockPricelessLevelMixin` and `SkillBlockPricelessAddLevelMixin` call the same class from `Skills` and `Skill`, so those three are not registered. The other melee, stat-reset, and Mohist mixins stay. The priceless menu guard is off until that logic is inlined into the mixin or moved somewhere Dragon Mine Z can load.
+
+Requires a full server restart.
+
+## Fix v2.12.23 — GrabService mixin no longer loads too early (Oct 2026)
+
+`mods/dmz_mohist_melee_fix-2.12.23.jar`
+
+`OptionalNoeaMixinPlugin` was calling `Class.forName("com.butterjaffa.noeabosses.GrabService")` while Mixin was still reading its config. That defines `GrabService` before the transformer is ready, so `NoeaGrabServiceRequestMixin` is skipped and the log says the target was loaded too early. The plugin now checks for the class file and does not define it. The mixin names `GrabService` as a string and its inject method does not reference Noea types. `GrabService.setEnabled` still runs from the server-started event, after mixins have applied.
+
+`NoeaGrabActionPacketMixin` is unchanged. Requires a full server restart.
+
 ## Fix v2.12.22 — hard-disable Noea experimental grab (Oct 2026)
 
 `mods/dmz_mohist_melee_fix-2.12.22.jar`
