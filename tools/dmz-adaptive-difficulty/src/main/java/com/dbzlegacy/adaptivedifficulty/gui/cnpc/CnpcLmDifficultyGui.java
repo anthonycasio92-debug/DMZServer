@@ -207,7 +207,7 @@ public final class CnpcLmDifficultyGui {
             paintFeatureLocked(player, gui, "Tiers locked",
                     "§7Enable personal difficulty before changing tiers",
                     List.of(
-                    "§cTurn personal difficulty ON first.",
+                    "§cTurn on §ePersonal difficulty §con the main Difficulty page first.",
                     "§7Use §ePersonal difficulty §7on the main menu, then return here to pick a tier."));
             return;
         }
@@ -352,9 +352,9 @@ public final class CnpcLmDifficultyGui {
         DifficultyTitle title = DifficultyTitle.byId(titleIdRaw);
         if (title == null) {
             int infoY = CnpcGuiSupport.paintHeader(player, gui,
-                    CnpcGuiStyle.subPage("§d", "Difficulty", "Title"), "§7Unknown entry");
+                    CnpcGuiStyle.subPage("§d", "Difficulty", "Title"), "§7Couldn't find that — try refreshing the list.");
             int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY,
-                    List.of("§7That title could not be found."), CnpcGuiStyle.INFO_INLINE_MAX));
+                    List.of("§7Couldn't find that — try refreshing the list."), CnpcGuiStyle.INFO_INLINE_MAX));
             navFooter(player, gui, row + 8, "titles", subject);
             return;
         }
@@ -440,7 +440,7 @@ public final class CnpcLmDifficultyGui {
             paintFeatureLocked(player, gui, "Teams locked",
                     "§7Enable personal difficulty before changing team modes",
                     List.of(
-                            "§cTurn personal difficulty ON first.",
+                            "§cTurn on §ePersonal difficulty §con the main Difficulty page first.",
                             "§7Use §ePersonal difficulty §7on the main menu, then return here to pick a team mode."));
             return;
         }

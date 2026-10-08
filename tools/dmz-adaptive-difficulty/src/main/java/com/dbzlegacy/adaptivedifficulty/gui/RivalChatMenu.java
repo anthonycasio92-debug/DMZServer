@@ -92,9 +92,9 @@ public final class RivalChatMenu {
                 .m_7220_(Component.m_237113_("  "))
                 .m_7220_(btn("§b[Quests]", "/rival do page quests", "Weekly quests"))
                 .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§d[Achs]", "/rival do page achievements", "Achievements"))
+                .m_7220_(btn("§d[Achievements]", "/rival do page achievements", "Achievements"))
                 .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§6[HOF]", "/rival do page hof", "Hall of Fame"));
+                .m_7220_(btn("§6[Hall of Fame]", "/rival do page hof", "Hall of Fame"));
         send(player, row2);
         MutableComponent row3 = Component.m_237113_("§7")
                 .m_7220_(btn("§f[Journal]", "/rival do page journal", "Battle journal"))
@@ -110,7 +110,7 @@ public final class RivalChatMenu {
                             "/rival do instinct toggle main", "Toggle Rival Instinct"));
         }
         send(player, row3);
-        send(player, btn("§7« Hub", "/lm", "Main menu"));
+        send(player, btn("§7« Hub", "/lm", "Main hub"));
         send(player, Component.m_237113_("§8────────────────"));
     }
 
@@ -119,7 +119,7 @@ public final class RivalChatMenu {
         for (String line : RivalSystem.listLines(player)) {
             send(player, Component.m_237113_(line));
         }
-        send(player, btn("§7« Back", "/rival do page main", "Main"));
+        send(player, btn("§7« Back", "/rival do page main", "Go up one level"));
     }
 
     private static void stats(ServerPlayer player) {
@@ -127,7 +127,7 @@ public final class RivalChatMenu {
         for (String line : RivalSystem.statsLines(player)) {
             send(player, Component.m_237113_(line));
         }
-        send(player, btn("§7« Back", "/rival do page main", "Main"));
+        send(player, btn("§7« Back", "/rival do page main", "Go up one level"));
     }
 
     private static void challenge(ServerPlayer player) {
@@ -155,7 +155,7 @@ public final class RivalChatMenu {
                     "Cancel your pending challenge request"));
         }
         send(player, row);
-        send(player, btn("§7« Back", "/rival do page main", "Main"));
+        send(player, btn("§7« Back", "/rival do page main", "Go up one level"));
     }
 
     private static void top(ServerPlayer player) {
@@ -163,7 +163,7 @@ public final class RivalChatMenu {
         for (String line : RivalSystem.topLines(10)) {
             send(player, Component.m_237113_(line));
         }
-        send(player, btn("§7« Back", "/rival do page main", "Main"));
+        send(player, btn("§7« Back", "/rival do page main", "Go up one level"));
     }
 
     private static void help(ServerPlayer player) {
@@ -174,7 +174,7 @@ public final class RivalChatMenu {
         send(player, Component.m_237113_("§e/rival challenge send <player> [minutes]"));
         send(player, Component.m_237113_("§e/rival spectate [player]|stop"));
         send(player, Component.m_237113_("§e/rival season|quests|achievements|hof|journal|title"));
-        send(player, btn("§7« Back", "/rival do page main", "Main"));
+        send(player, btn("§7« Back", "/rival do page main", "Go up one level"));
     }
 
     private static void lines(ServerPlayer player, java.util.List<String> list, String page) {
@@ -182,7 +182,7 @@ public final class RivalChatMenu {
         for (String line : list) {
             send(player, Component.m_237113_(line));
         }
-        send(player, btn("§7« Back", "/rival do page main", "Main"));
+        send(player, btn("§7« Back", "/rival do page main", "Go up one level"));
     }
 
     private static MutableComponent btn(String label, String command, String hover) {

@@ -592,7 +592,7 @@ public final class CnpcLmRivalGui {
         List<String> cards = args;
         if (cards == null || cards.isEmpty()) {
             gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER,
-                    "§7This list is empty — there is nothing to choose yet.",
+                    "§7Nothing to choose yet — check back later.",
                     CnpcGuiSupport.M, listY + 4, CnpcGuiSupport.textBandWidth(), 14);
             footer(player, gui, listY + 28, returnPage);
             return;

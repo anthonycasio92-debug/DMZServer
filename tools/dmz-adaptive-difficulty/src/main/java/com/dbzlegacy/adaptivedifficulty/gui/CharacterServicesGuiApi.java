@@ -112,7 +112,7 @@ public final class CharacterServicesGuiApi {
         }
         if (p.startsWith("bones:") || "bones".equals(p)) {
             if (!CharacterServicesConfig.get().headBoneShop.enabled) {
-                lines.add("§cHead parts is turned off on this server.");
+                lines.add("§cHead parts are turned off on this server.");
                 return lines;
             }
             if (!CharacterServicesAccess.canHeadBoneShop(player)) {
@@ -135,11 +135,11 @@ public final class CharacterServicesGuiApi {
             }
             lines.add("§7Change hair, colors, and other cosmetics.");
             lines.add("§7Use §fHead parts §7for cross-race ears, horns, and more.");
-            lines.add("§7Fighting class cannot be changed during a reskin.");
+            lines.add("§7Reskin only changes how you look. To change your fighting class, use §fChange class §7instead.");
             lines.add("§7Level, stats, and race are unchanged.");
             lines.add(costLine(player, CharacterServicesSystem.reskinCost(player)));
             lines.add(CharacterServicesSystem.reskinCostExplanation(player));
-            lines.add("§8Ancient Coins are charged when you confirm on the next screen.");
+            lines.add("§8You'll be charged Ancient Coins when you confirm on the next screen.");
             lines.add(CharacterServicesSystem.cooldownLine(player, "reskin"));
             return lines;
         }
@@ -219,7 +219,7 @@ public final class CharacterServicesGuiApi {
 
     public static String handleDo(ServerPlayer player, String action, String arg, String page) {
         if (player == null) {
-            return "§cPlayers only.";
+            return "§cThis only works in-game — console can't use character services.";
         }
         String act = action == null ? "" : action.toLowerCase(Locale.ROOT).trim();
         String a = arg == null ? "" : arg.trim();
@@ -229,13 +229,13 @@ public final class CharacterServicesGuiApi {
         if ("race_confirm".equals(act)) {
             String[] bits = a.split(":", 2);
             if (bits.length < 2) {
-                return "§cInvalid race confirm.";
+                return "§cThat didn't work — try picking your race again.";
             }
             return CharacterServicesSystem.executeRaceChange(player, bits[0], parsePct(bits[1]));
         }
         if ("class_confirm".equals(act)) {
             if (a.isBlank()) {
-                return "§cPick a class.";
+                return "§cChoose a class first, then confirm.";
             }
             return CharacterServicesSystem.executeClassChange(player, a);
         }
@@ -260,7 +260,7 @@ public final class CharacterServicesGuiApi {
         if ("bone_unequip".equals(act)) {
             return CosmeticHeadBoneService.executeUnequipHeadBone(player);
         }
-        return "§cUnknown character action: " + act;
+        return "§cSomething went wrong. Try again, or ask staff if it keeps happening.";
     }
 
     private static void putWalletPlaceholders(ServerPlayer player, Map<String, String> out) {

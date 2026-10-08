@@ -74,7 +74,7 @@ public final class MechanicsGuiApi {
                             + " §8· §7Skills §f" + onOff(ph.get("skills"))
                             + " §8· §7Event log §f" + onOff(ph.get("syslog")));
                 } else if (skillCheck) {
-                    lore.add("§7Skill Check is available for you.");
+                    lore.add("§7Skill Check is unlocked for you — open it from the hub.");
                 } else {
                     lore.add("§8Skill Check is a donator perk — ask staff if interested.");
                 }

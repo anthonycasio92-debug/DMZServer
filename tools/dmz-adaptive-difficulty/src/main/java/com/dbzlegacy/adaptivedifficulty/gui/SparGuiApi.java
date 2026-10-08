@@ -381,10 +381,10 @@ public final class SparGuiApi {
                     lore.add("§aSession ACTIVE §8with §f" + blank(ph.get("partner"), "?")
                             + "  §7TP §f" + ph.getOrDefault("session_tp", "0"));
                     if ("true".equalsIgnoreCase(ph.get("perfect"))) {
-                        lore.add("§6§lPERFECT TRAINING");
+                        lore.add("§6Perfect spar §7— hits are close enough for the training bonus.");
                     }
                 } else {
-                    lore.add("§7No active spar — trade hits within 30 blocks to start.");
+                    lore.add("§7No sparring session right now — hit each other within 30 blocks to start one.");
                 }
                 if ("true".equalsIgnoreCase(ph.get("mentor_bonded"))) {
                     String role = ph.getOrDefault("mentor_role", "?");
@@ -494,8 +494,7 @@ public final class SparGuiApi {
                         && bond.mentorUuid != null && !bond.mentorUuid.isBlank();
                 boolean hasApprentice = bond != null && bond.apprenticeCount() > 0;
                 if (hasMentor && hasApprentice) {
-                    return "§eChoose: §fLeave mentor §8or §fRelease apprentice"
-                            + "\n§8GUI: Training bonds → Leave mentor / Release apprentice…";
+                    return "§eLeave your mentor, or release one of your apprentices?";
                 }
                 return SparringSystem.removeBond(player);
             }
@@ -546,7 +545,7 @@ public final class SparGuiApi {
         }
         if ("mentor_invite".equals(act) || "mentorinvite".equals(act)) {
             if (a.isBlank()) {
-                return "§cPick a player to invite as apprentice.";
+                return "§cSelect a player below, then invite them as your apprentice.";
             }
             ServerPlayer target = resolveOnline(player, a);
             if (target == null) {
@@ -556,7 +555,7 @@ public final class SparGuiApi {
         }
         if ("apprentice_invite".equals(act) || "apprenticeinvite".equals(act)) {
             if (a.isBlank()) {
-                return "§cPick a player to ask as mentor.";
+                return "§cSelect a player below, then ask them to be your mentor.";
             }
             ServerPlayer target = resolveOnline(player, a);
             if (target == null) {
@@ -578,7 +577,7 @@ public final class SparGuiApi {
                     who = who.substring(1).trim();
                 }
                 if (who.isBlank()) {
-                    return "§cPick a rival dojo master.";
+                    return "§cSelect a rival dojo master below.";
                 }
                 ServerPlayer target = resolveOnline(player, who);
                 if (target == null) {
@@ -590,7 +589,7 @@ public final class SparGuiApi {
         }
         if ("dojo_challenge".equals(act) || "dojo_war".equals(act)) {
             if (a.isBlank()) {
-                return "§cPick a rival dojo master.";
+                return "§cSelect a rival dojo master below.";
             }
             String who = a.trim();
             if (who.regionMatches(true, 0, "uuid:", 0, 5)) {
@@ -622,7 +621,7 @@ public final class SparGuiApi {
         }
         if ("dojo_banner".equals(act) || "dojo_set_banner".equals(act)) {
             if (a.isBlank()) {
-                return "§cPick a banner from the Banner menu.";
+                return "§cSelect a banner from the Banner menu.";
             }
             return SparringSystem.dojoSetBanner(player, a);
         }

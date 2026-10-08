@@ -101,11 +101,13 @@ public final class CnpcGuiStyle {
             return "Training points";
         }
         return switch (category.toLowerCase(Locale.ROOT)) {
-            case "tp" -> "Training points";
-            case "wins" -> "Wins";
-            case "streak" -> "Win streak";
-            case "rp" -> "Dojo reputation";
-            case "wars" -> "Dojo wars";
+            case "tp", "wins", "win", "streak" -> "Training points";
+            case "sessions", "session" -> "Sessions";
+            case "perfect", "perfects" -> "Perfect spars";
+            case "combo" -> "Combo";
+            case "time" -> "Time";
+            case "rp" -> "Reputation";
+            case "wars", "war" -> "War wins";
             default -> capitalize(category.replace('_', ' '));
         };
     }

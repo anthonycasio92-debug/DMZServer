@@ -353,7 +353,7 @@ public final class ProgressionGuiApi {
                 + "§e/progression boost start <mult> <minutes> [name] §7— e.g. §f2 30 PlayerName\n"
                 + "§e/progression boost start <encoded> [name] §7— Fabled encoded\n"
                 + "§8Console OK (store): §fprogression boost start 2 30 {username}\n"
-                + "§8CNPC: Staff Admin → Progression panel → TP gains → Global TP boost";
+                + "§8[Staff] CNPC: Staff Admin → Progression panel → TP gains → Global TP boost";
     }
 
     /** {@code null} when the click may proceed. Console ({@code actor == null}) skips the prompt. */
@@ -642,9 +642,8 @@ public final class ProgressionGuiApi {
                 lore.add("");
                 lore.add("§7Staff free costs §f" + (staffFree ? "ON" : "OFF"));
                 lore.add("");
-                lore.add("§8Priced features: Difficulty tiers · Character Services ·");
-                lore.add("§8End dragon summon · head parts");
-                lore.add("§8New paid LM features should use the same gate.");
+                lore.add("§8These features charge Ancient Coins:");
+                lore.add("§8Difficulty tiers · Character Services · End dragon summon · Head parts");
                 lore.add("");
                 lore.add("§8/lm §7→ Staff Admin → Progression panel → Ancient Coins");
                 yield lore;
@@ -968,7 +967,7 @@ public final class ProgressionGuiApi {
     public static List<String> prestigeLines(ServerPlayer player, String page) {
         Map<String, String> ph = prestigePlaceholders(player);
         if (!"true".equalsIgnoreCase(ph.get("bridge_ok"))) {
-            return List.of("§cLegacyMechanics mod unreachable.");
+            return List.of("§cCouldn't reach the server's systems. Try relogging.");
         }
         if (!"true".equalsIgnoreCase(ph.get("system_enabled"))) {
             return List.of("§cPrestige system is disabled.");
@@ -981,8 +980,8 @@ public final class ProgressionGuiApi {
         switch (p) {
             case "turnin", "points" -> {
                 lore.add("§7Points: §e" + ph.getOrDefault("points", "0"));
-                lore.add("§7Turn in §f1§7, §f2§7, §f3§7, §f6§7, or §f9 §7at a time");
-                lore.add("§7Payout: §f3→4 §8· §f6→9 §8· §f9→15 §7points");
+                lore.add("§7Turn in held prestiges: §f1§7, §f2§7, §f3§7, §f6§7, or §f9 §7at a time.");
+                lore.add("§7Bigger turn-ins give bonus points: §f3→4 §8· §f6→9 §8· §f9→15");
                 lore.add("§81–2 give 1 point each (no pack bonus)");
             }
             case "shop", "skills" -> {
@@ -996,7 +995,7 @@ public final class ProgressionGuiApi {
                 lore.add("§7Points: §e" + ph.getOrDefault("points", "0"));
                 lore.add("§aPermanent §7Majin / Mutant: §e"
                         + ph.getOrDefault("form_cost", "5") + " §7points each");
-                lore.add("§7Only one at a time · remove the current form before switching");
+                lore.add("§7You can only have one special form at a time. Remove your current one (Majin or Mutant) before picking the other.");
                 lore.add("§7Majin: " + ("true".equals(ph.get("majin")) ? "§aOwned" : "§cNot owned"));
                 lore.add("§7Mutant: " + ("true".equals(ph.get("mutant")) ? "§aOwned" : "§cNot owned"));
                 if ("true".equals(ph.get("mutant")) && !"true".equals(ph.get("majin"))) {
@@ -1038,11 +1037,12 @@ public final class ProgressionGuiApi {
                 lore.add("§7Requires §e" + ph.getOrDefault("required_fmt", "0")
                         + " §7power to prestige (next: §e"
                         + ph.getOrDefault("next_required_fmt", "0") + "§7)");
-                lore.add("§7The first four completed prestiges require §f20,000§7, then §f40,000§7, then §f60,000§7, then §f80,000§7.");
+                lore.add("§7Each prestige costs more than the last:");
+                lore.add("§71st §f20,000 §8· §72nd §f40,000 §8· §73rd §f60,000 §8· §74th §f80,000");
                 lore.add("§7How many you are holding does not change the first four.");
-                lore.add("§7From the fifth on: §f50,000 §7if you hold none, §f100,000 §7if you hold any.");
+                lore.add("§7From the 5th on: §f50,000 §7(§f100,000 §7if you're holding any)");
                 if ("true".equalsIgnoreCase(ph.get("ready"))) {
-                    lore.add("§aYou can prestige now.");
+                    lore.add("§eYou can prestige now.");
                 } else {
                     lore.add("§cYou need a higher level first.");
                 }

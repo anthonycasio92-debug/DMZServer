@@ -316,7 +316,7 @@ public final class CnpcLmSparGui {
                         SparGuiApi.dojoTopLines(who, cat), CnpcGuiStyle.INFO_INLINE_MAX));
                 CnpcGuiLayout.GridButton[] ranks = new CnpcGuiLayout.GridButton[] {
                         leaderboardTab(player, "rp".equalsIgnoreCase(cat) ? "§bReputation" : "§7Reputation", "dojo_top_rp"),
-                        leaderboardTab(player, "wars".equalsIgnoreCase(cat) ? "§bWars" : "§7Wars", "dojo_top_wars"),
+                        leaderboardTab(player, "wars".equalsIgnoreCase(cat) ? "§bWar wins" : "§7War wins", "dojo_top_wars"),
                 };
                 row = CnpcGuiLayout.paintTwoColumnButtonGrid(player, gui, row, 160, ranks, () -> {});
             }

@@ -61,10 +61,10 @@ public final class SparChatMenu {
                     + partnerName
                     + "  §7TP §f" + (int) rt.sessionTp));
             if (rt.sessionPerfect) {
-                send(player, Component.m_237113_("§6§lPERFECT TRAINING"));
+                send(player, Component.m_237113_("§6Perfect spar §7— hits are close enough for the training bonus."));
             }
         } else {
-            send(player, Component.m_237113_("§7No active spar — trade hits within 30 blocks to start."));
+            send(player, Component.m_237113_("§7No sparring session right now — hit each other within 30 blocks to start one."));
         }
         boolean hasMentor = bond != null && bond.mentorUuid != null && !bond.mentorUuid.isBlank();
         boolean hasApps = bond != null && bond.apprenticeCount() > 0;
@@ -104,7 +104,7 @@ public final class SparChatMenu {
                     .m_7220_(btn("§c[End]", "/spar do end main", "End spar session"));
         }
         send(player, row);
-        send(player, btn("§7« Hub", "/lm", "Main menu"));
+        send(player, btn("§7« Hub", "/lm", "Main hub"));
         send(player, Component.m_237113_("§8────────────────"));
     }
 
@@ -117,7 +117,7 @@ public final class SparChatMenu {
             }
             send(player, Component.m_237113_(line));
         }
-        send(player, btn("§7« Back", "/spar do page main", "Main"));
+        send(player, btn("§7« Back", "/spar do page main", "Go up one level"));
     }
 
     private static void top(ServerPlayer player, String category) {
@@ -132,7 +132,7 @@ public final class SparChatMenu {
                 .m_7220_(Component.m_237113_("  "))
                 .m_7220_(btn("§b[Perfect]", "/spar do page top_perfect", "Perfect spars"));
         send(player, cats);
-        send(player, btn("§7« Back", "/spar do page main", "Main"));
+        send(player, btn("§7« Back", "/spar do page main", "Go up one level"));
     }
 
     private static void mentor(ServerPlayer player) {
@@ -159,7 +159,7 @@ public final class SparChatMenu {
                     + " §8apprentices · one master · 12h cooldown"));
         }
         send(player, btn("§b[Open Training bonds]", "/spar do page mentor", "Training bonds"));
-        send(player, btn("§7« Back", "/spar do page main", "Main"));
+        send(player, btn("§7« Back", "/spar do page main", "Go up one level"));
     }
 
     private static void help(ServerPlayer player) {
@@ -167,7 +167,7 @@ public final class SparChatMenu {
         send(player, Component.m_237113_("§6§l/spar §8— Sparring TP"));
         send(player, Component.m_237113_("§e/spar stats|end|top [category]"));
         send(player, Component.m_237113_("§7Mentor bonds: §bSpar GUI → Training bonds"));
-        send(player, btn("§7« Back", "/spar do page main", "Main"));
+        send(player, btn("§7« Back", "/spar do page main", "Go up one level"));
     }
 
     private static MutableComponent btn(String label, String command, String hover) {

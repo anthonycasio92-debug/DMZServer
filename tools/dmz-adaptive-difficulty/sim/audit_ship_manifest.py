@@ -374,7 +374,8 @@ def main() -> int:
     print("\n--- § difficulty ---")
     cnpc_diff = read(SRC / "gui/cnpc/CnpcLmDifficultyGui.java")
     check("CNPC tiers locked when personal OFF", "paintFeatureLocked" in cnpc_diff
-          and "Turn personal difficulty ON first" in cnpc_diff)
+          and "Personal difficulty" in cnpc_diff
+          and "main Difficulty page" in cnpc_diff)
     check("CNPC team scaling locked like tiers", "Teams locked" in cnpc_diff
           and "before using team scaling" in cnpc_diff)
     check("Difficulty team action gated when personal OFF", "ACT_TEAM.equals(act)" in read(SRC / "service/DifficultyActions.java"))

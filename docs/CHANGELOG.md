@@ -1,6 +1,10 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.53**.
+What changed from **4.5.147** through **4.6.54**.
+
+## Menu wording
+
+Sparring leaderboard names match the numbers they show: training points, sessions, perfect spars, combo, and time. Dojo rankings call war wins "War wins" and reputation "Reputation". The prestige page lists 20,000, 40,000, 60,000, and 80,000 for the first four completed prestiges, then 50,000 or 100,000. Notices that only describe status use yellow. Buttons that ask you to pick someone say to select them in the list.
 
 ## Prestige requirement follows completed count
 

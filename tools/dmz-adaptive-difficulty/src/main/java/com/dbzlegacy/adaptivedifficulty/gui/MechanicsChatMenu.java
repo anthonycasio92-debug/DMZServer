@@ -67,8 +67,8 @@ public final class MechanicsChatMenu {
         row2.m_7220_(btn("§6[Prestige]", "/prestige",
                 "Turn in · skill/forms shop · level-cap"));
         row2.m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§c[Remove Android]", "/lm open android_remove",
-                        "Remove Android upgrade"));
+                .m_7220_(btn("§c[Remove Android Upgrade]", "/lm open android_remove",
+                        "Undo your Android conversion and restore your previous forms."));
         send(player, row2);
         if (staff) {
             MutableComponent row3 = Component.m_237113_("§7")
@@ -95,7 +95,7 @@ public final class MechanicsChatMenu {
                 .m_7220_(Component.m_237113_("  "))
                 .m_7220_(btn("§e[Flush]", "/lm do syslog flush", "Write buffered logs to disk"));
         send(player, toggles);
-        send(player, btn("§7« Back", "/lm", "Main menu"));
+        send(player, btn("§7« Back", "/lm", "Go up one level"));
         send(player, Component.m_237113_("§8────────────────"));
     }
 

@@ -528,7 +528,10 @@ public final class RivalGuiApi {
                     "§6§lRival actions",
                     "§7Declare invites — tap a name to accept, decline, or withdraw",
                     "§7Declare a rivalry, mark a silent rival, or remove someone from your list",
-                    "§8Silent → Declared → accept in Declare invites → Mutual"
+                    "§7How rivalries work:",
+                    "§71. §fDeclare §7someone as your rival (or mark them §fSilent§7)",
+                    "§72. §fThey accept §7your invite",
+                    "§73. §fYou're now Mutual §7— bonuses activate"
             );
             case "stats", "statistics" -> statsLines(player);
             case "challenge", "challenges" -> challengeLines(player);
@@ -643,7 +646,7 @@ public final class RivalGuiApi {
         }
         if ("declare".equals(act)) {
             if (a.isBlank()) {
-                return "§cPick a player to declare.";
+                return "§cSelect a player below to declare as your rival.";
             }
             ServerPlayer target = resolveOnline(player, a);
             if (target == null) {
@@ -653,36 +656,36 @@ public final class RivalGuiApi {
         }
         if ("accept".equals(act)) {
             if (a.isBlank()) {
-                return "§cPick a player to accept.";
+                return "§cSelect a player below, then accept their rivalry.";
             }
             // Pass uuid: args through — name-only lookup misses offline declarers.
             return RivalSystem.accept(player, a);
         }
         if ("accept_replace".equals(act) || "acceptreplace".equals(act) || "replacemutual".equals(act)) {
             if (a.isBlank()) {
-                return "§cPick which Mutual to replace.";
+                return "§cSelect which Mutual rivalry to replace.";
             }
             return RivalSystem.acceptReplace(player, a);
         }
         if ("decline".equals(act) || "deny".equals(act)) {
             if (a.isBlank()) {
-                return "§cPick a player to decline.";
+                return "§cSelect a player below, then decline their rivalry.";
             }
             return RivalSystem.decline(player, a);
         }
         if ("remove".equals(act)) {
             if (a.isBlank()) {
-                return "§cPick a player to remove.";
+                return "§cSelect a player below, then remove that rivalry.";
             }
             String name = resolveNameArg(player, a);
             if (name.isBlank()) {
-                return "§cPick a player to remove.";
+                return "§cSelect a player below, then remove that rivalry.";
             }
             return RivalSystem.remove(player, name);
         }
         if ("silent".equals(act)) {
             if (a.isBlank()) {
-                return "§cPick a player for silent rival.";
+                return "§cSelect a player below to mark as a silent rival.";
             }
             ServerPlayer target = resolveOnline(player, a);
             if (target == null) {
@@ -692,11 +695,11 @@ public final class RivalGuiApi {
         }
         if ("challenge_send".equals(act) || "challengesend".equals(act)) {
             if (a.isBlank()) {
-                return "§cPick a player to challenge.";
+                return "§cSelect a player below, then send the challenge.";
             }
             ChallengeSendArg parsed = parseChallengeSendArg(a);
             if (parsed.targetRaw().isBlank()) {
-                return "§cPick a player to challenge.";
+                return "§cSelect a player below, then send the challenge.";
             }
             ServerPlayer target = resolveOnline(player, parsed.targetRaw());
             if (target == null) {

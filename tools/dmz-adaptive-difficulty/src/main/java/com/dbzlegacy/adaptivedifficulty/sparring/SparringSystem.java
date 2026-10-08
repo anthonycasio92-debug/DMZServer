@@ -1538,8 +1538,7 @@ public final class SparringSystem {
             return removeMentor(player);
         }
         if (hasMentor && hasApprentice) {
-            return "§eChoose: §fLeave mentor §8or §fRelease apprentice"
-                    + "\n§8GUI: Training bonds → Leave mentor / Release apprentice…";
+            return "§eLeave your mentor, or release one of your apprentices?";
         }
         return "§cYou have no mentor bond to remove.";
     }

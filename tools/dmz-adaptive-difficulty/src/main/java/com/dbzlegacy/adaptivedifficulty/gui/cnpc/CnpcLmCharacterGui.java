@@ -83,7 +83,7 @@ public final class CnpcLmCharacterGui {
             if ("true".equals(ph.get("can_head_bones"))) {
                 actions.add(CnpcGuiLayout.GridButton.run("§fHead parts", () -> open(player, "bones:0")));
             }
-            actions.add(CnpcGuiLayout.GridButton.run("§cRemove Android",
+            actions.add(CnpcGuiLayout.GridButton.run("§cRemove Android Upgrade",
                     () -> CnpcLmGui.open(player, "android_remove", "main")));
             if (actions.isEmpty()) {
                 String note = "false".equals(ph.get("can_services"))
@@ -102,7 +102,7 @@ public final class CnpcLmCharacterGui {
             gui.addLabel(CnpcGuiSupport.ID_INLINE_NOTE, "§cCharacter Services unavailable.",
                     CnpcGuiSupport.M, row + 4, CnpcGuiSupport.listWidth(), 14);
             row += CnpcGuiSupport.ROW_STEP;
-            CnpcGuiSupport.button(gui, 40, "§cRemove Android", CnpcGuiSupport.COL_L, row,
+            CnpcGuiSupport.button(gui, 40, "§cRemove Android Upgrade", CnpcGuiSupport.COL_L, row,
                     () -> CnpcLmGui.open(player, "android_remove", "main"));
             row += CnpcGuiSupport.ROW_STEP;
         }
@@ -230,7 +230,7 @@ public final class CnpcLmCharacterGui {
         int scrollBottom = CnpcGuiSupport.pickListScrollBottom(listY, rowsBelow, gui, labels.length);
         IScroll scroll = null;
         if (cards.isEmpty()) {
-            gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER, "§7No head parts on this page.",
+            gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER, "§7No head parts here — try the next page or use search.",
                     CnpcGuiSupport.M, bandY + 4, CnpcGuiSupport.listWidth(), 14);
             scrollBottom = bandY + 20;
         } else {
@@ -324,7 +324,7 @@ public final class CnpcLmCharacterGui {
 
     private static void paintReskinConfirm(ServerPlayer player, ICustomGui gui) {
         ServerPlayer subject = CnpcGuiSupport.target(player);
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§f", "Character", "Confirm reskin"),
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§f", "Character", "Confirm Reskin"),
                 CnpcGuiStyle.HINT_REVIEW_PAY);
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintReadOnlyScroll(gui, infoY,
                 CharacterServicesGuiApi.linesForPage(player, "reskin_confirm")));

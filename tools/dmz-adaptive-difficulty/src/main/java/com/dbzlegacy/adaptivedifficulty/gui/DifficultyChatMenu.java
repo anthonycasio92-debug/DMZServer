@@ -125,7 +125,7 @@ public final class DifficultyChatMenu {
                 .m_7220_(btn("§d[Titles]", "/difficulty do page titles", "Equip difficulty titles"));
         send(player, hub);
         MutableComponent toggles = Component.m_237113_("§7")
-                .m_7220_(btn(personalOn ? "§a[Difficulty ON]" : "§e[Difficulty OFF]",
+                .m_7220_(btn(personalOn ? "§e[Turn Difficulty OFF]" : "§a[Turn Difficulty ON]",
                         "/difficulty do toggle_personal 0 main",
                         personalOn
                                 ? "Turn OFF — no scaling, kill coins, AI pressure, or tier buys · your summoned dragon despawns"
@@ -140,7 +140,7 @@ public final class DifficultyChatMenu {
         if (isStaff(player)) {
             send(player, btn("§8[Staff details]", "/difficulty do page stats", "Staff breakdown"));
         }
-        send(player, btn("§7« Hub", "/lm", "Main menu"));
+        send(player, btn("§7« Hub", "/lm", "Main hub"));
         send(player, Component.m_237113_("§8────────────────"));
     }
 
@@ -286,7 +286,7 @@ public final class DifficultyChatMenu {
                 "§7Staff Ancient Coin pricing §8→ §f/lm §7→ Progression → Ancient Coins"));
         send(player, Component.m_237113_("§7Tier cost anchor §f" + (long) cfg.tierCostLevelAnchor
                 + " §8· T7 target §f" + cfg.tierCostT7TargetCopper
-                + " copper §8(stock 150000 → 100× Netherite)"));
+                + " copper"));
         send(player, Component.m_237113_("§8/difficulty admin set tierCostLevelAnchor|tierCostT7TargetCopper <n>"));
         send(player, Component.m_237113_("§7Coin drops §f" + cfg.enableAncientCoinDrops
                 + "  §7Death reset §f" + cfg.deathResetsActiveDifficulty));
