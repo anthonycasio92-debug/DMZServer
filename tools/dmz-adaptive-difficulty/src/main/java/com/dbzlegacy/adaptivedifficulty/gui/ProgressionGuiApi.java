@@ -1038,7 +1038,8 @@ public final class ProgressionGuiApi {
                 lore.add("§7Requires §e" + ph.getOrDefault("required_fmt", "0")
                         + " §7power to prestige (next: §e"
                         + ph.getOrDefault("next_required_fmt", "0") + "§7)");
-                lore.add("§7The first four scale by 20,000 for each prestige you hold.");
+                lore.add("§7The first four completed prestiges require §f20,000§7, then §f40,000§7, then §f60,000§7, then §f80,000§7.");
+                lore.add("§7How many you are holding does not change the first four.");
                 lore.add("§7From the fifth on: §f50,000 §7if you hold none, §f100,000 §7if you hold any.");
                 if ("true".equalsIgnoreCase(ph.get("ready"))) {
                     lore.add("§aYou can prestige now.");

@@ -21,8 +21,9 @@ import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Port of {@code Prestige NPC.js} purchase logic as {@code /prestige} chat GUI.
- * Level gate: the first four prestiges need 20k times (held + 1): 20k, 40k, 60k, 80k.
- * From the fifth on, 50k if you hold none and 100k if you hold one or more.
+ * Level gate: the first four completed prestiges need 20k, 40k, 60k, then 80k.
+ * How many you hold does not change those four. From the fifth on, 50k with none
+ * held and 100k with one or more held.
  * Capped by the personal level cap.
  *
  * <p><b>Lifetime completed</b> never drops when held prestige is turned in —
@@ -129,7 +130,7 @@ public final class PrestigeSystem {
         int newCompleted = completed + 1;
         setHeld(player, newHeld);
         setCompleted(player, newCompleted);
-        // Record the gate just met. Early-band Need is 20k × (held + 1) and does not read this floor.
+        // Record the gate just met. The first four follow completed count and do not read this floor.
         raiseNeedFloor(player, required);
         resetPrestigeProgress(player);
 
@@ -309,15 +310,15 @@ public final class PrestigeSystem {
         int c = Math.max(0, completed);
         int h = Math.max(0, Math.min(MAX_HELD, heldWallet));
         if (c < HELD_GATE_MIN_COMPLETED) {
-            return earlyHeldNeed(h);
+            return earlyCompletedNeed(c);
         }
         return requiredLevelForHeld(h);
     }
 
-    /** First four prestiges: 20k, 40k, 60k, 80k as held goes 0, 1, 2, 3. */
-    public static int earlyHeldNeed(int held) {
-        int h = Math.max(0, Math.min(MAX_HELD, held));
-        long raw = (long) LEVELS_PER_PRESTIGE * (h + 1L);
+    /** First four completed prestiges: 20k, 40k, 60k, 80k. Held does not change this. */
+    public static int earlyCompletedNeed(int completed) {
+        int c = Math.max(0, Math.min(HELD_GATE_MIN_COMPLETED - 1, completed));
+        long raw = (long) LEVELS_PER_PRESTIGE * (c + 1L);
         return (int) Math.min(MAX_REQUIRED_LEVEL, raw);
     }
 
@@ -328,13 +329,13 @@ public final class PrestigeSystem {
         if (nextCompleted >= HELD_GATE_MIN_COMPLETED) {
             return requiredLevelForHeld(nextHeld);
         }
-        return earlyHeldNeed(nextHeld);
+        return earlyCompletedNeed(nextCompleted);
     }
 
     private static int needForProgress(ServerPlayer player, int completed, int heldWallet) {
         int need = needForProgress(completed, heldWallet);
         if (completed < HELD_GATE_MIN_COMPLETED) {
-            // A stored floor must not replace 20k × (held + 1). Drop only a higher leftover.
+            // A stored floor must not replace 20k × (completed + 1). Drop only a higher leftover.
             shrinkNeedFloor(player, need);
         }
         return need;
@@ -353,7 +354,9 @@ public final class PrestigeSystem {
 
     public static int requiredLevel(int currentCompleted, int personalCap) {
         int cap = personalCap > 0 ? personalCap : MAX_REQUIRED_LEVEL;
-        int required = currentCompleted < HELD_GATE_MIN_COMPLETED ? LEVELS_PER_PRESTIGE : HELD0_NEED;
+        int required = currentCompleted < HELD_GATE_MIN_COMPLETED
+                ? earlyCompletedNeed(currentCompleted)
+                : HELD0_NEED;
         return Math.min(cap, required);
     }
 
@@ -409,7 +412,7 @@ public final class PrestigeSystem {
         }
         int completed = getCompleted(player);
         if (completed < HELD_GATE_MIN_COMPLETED) {
-            shrinkNeedFloor(player, earlyHeldNeed(heldCountForNeed(player)));
+            shrinkNeedFloor(player, earlyCompletedNeed(completed));
             return;
         }
         int need = requiredLevelForHeld(heldCountForNeed(player));

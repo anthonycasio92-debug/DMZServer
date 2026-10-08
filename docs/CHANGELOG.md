@@ -1,10 +1,14 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.52**.
+What changed from **4.5.147** through **4.6.53**.
+
+## Prestige requirement follows completed count
+
+The first four completed prestiges require 20,000, then 40,000, then 60,000, then 80,000 power. How many prestige you are holding does not change those four. From the fifth prestige on, holding none requires 50,000 and holding one or more requires 100,000. This build includes the 4.6.51 Hakai helper visibility fix.
 
 ## Prestige requirement scaling
 
-The first four prestiges need 20,000 power times one more than the prestige you are holding: 20,000, then 40,000, then 60,000, then 80,000. A stored need floor no longer replaces that number with a flat 20,000. From the fifth prestige on, the requirement is still 50,000 with none held and 100,000 with one or more. The status line and the prestige menu say the current requirement and the one after it. This build includes the 4.6.51 Hakai helper visibility fix.
+4.6.52 keyed those first four amounts off held prestige. 4.6.53 keys them off completed prestige instead. A stored need floor still cannot replace the scaled number with a flat 20,000. The status line and the prestige menu say the current requirement and the one after it.
 
 ## Hakai helper visibility
 

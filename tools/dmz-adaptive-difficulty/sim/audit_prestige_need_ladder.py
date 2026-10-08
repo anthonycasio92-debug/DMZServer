@@ -10,14 +10,14 @@ def need_for_progress(completed: int, held: int) -> int:
     c = max(0, completed)
     h = max(0, min(10, held))
     if c < HELD_GATE:
-        return min(100_000, LEVELS_PER_PRESTIGE * (h + 1))
+        return min(100_000, LEVELS_PER_PRESTIGE * (min(c, HELD_GATE - 1) + 1))
     return 50_000 if h <= 0 else 100_000
 
 
 def main() -> None:
     errors = []
-    for held, want in ((0, 20_000), (1, 40_000), (2, 60_000), (3, 80_000)):
-        for c in (0, 1, 2, 3):
+    for c, want in ((0, 20_000), (1, 40_000), (2, 60_000), (3, 80_000)):
+        for held in (0, 1, 2, 3, 9):
             got = need_for_progress(c, held)
             if got != want:
                 errors.append(f"completed {c} held {held}: want {want}, got {got}")
@@ -29,7 +29,7 @@ def main() -> None:
     if need_for_progress(0, 0) != 20_000:
         errors.append("fresh player must need 20k")
     if need_for_progress(3, 3) != 80_000:
-        errors.append("held 3 must need 80k")
+        errors.append("completed 3 must need 80k")
     if need_for_progress(8, 0) != 50_000:
         errors.append("completed 8 held 0 must be 50k")
     if errors:
@@ -37,7 +37,7 @@ def main() -> None:
         for e in errors:
             print(" ", e)
         raise SystemExit(1)
-    print("OK prestige need ladder (first 4 scale 20k by held; 5+ is 50k or 100k by held)")
+    print("OK prestige need ladder (first 4 scale 20k by completed; 5+ is 50k or 100k by held)")
 
 
 if __name__ == "__main__":
