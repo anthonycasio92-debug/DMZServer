@@ -19,7 +19,7 @@ public final class DmzMohistMeleeFix {
 
     public DmzMohistMeleeFix() {
         LOGGER.info(
-                "[{}] v2.12.24: priceless skill mixin disabled (classloader) + Noea grab waits until GrabService loads",
+                "[{}] v2.12.25: priceless skill mixins off, grab waits for GrabService, flow shockwaves do not break blocks",
                 MOD_ID
         );
         ReachRepairEvents.register();

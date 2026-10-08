@@ -1,5 +1,13 @@
 # Mohist M1: animation but no damage
 
+## Fix v2.12.25 — flow shockwaves leave terrain alone (Oct 2026)
+
+`mods/dmz_mohist_melee_fix-2.12.25.jar`
+
+`FlowShockwaveNoDestroyMixin` cancels `FlowShockwaveService.destroyRing`. The shockwave visuals and knockback still play. This jar also keeps the 2.12.24 priceless-mixin removal and the 2.12.23 grab load-order fix.
+
+Requires a full server restart.
+
 ## Fix v2.12.24 — priceless skill mixin unregistered (Oct 2026)
 
 `mods/dmz_mohist_melee_fix-2.12.24.jar`
