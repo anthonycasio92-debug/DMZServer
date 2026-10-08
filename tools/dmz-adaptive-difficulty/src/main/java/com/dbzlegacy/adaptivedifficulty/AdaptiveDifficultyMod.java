@@ -10,6 +10,7 @@ import com.dbzlegacy.adaptivedifficulty.command.TerminalCommands;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.event.DifficultyEvents;
+import com.dbzlegacy.adaptivedifficulty.event.FallDamageDiag;
 import com.dbzlegacy.adaptivedifficulty.scaling.AttributeLimits;
 import com.dbzlegacy.adaptivedifficulty.team.TeamScaling;
 import net.minecraftforge.common.MinecraftForge;
@@ -32,7 +33,7 @@ public final class AdaptiveDifficultyMod {
     /** Forge modId — lowercase; not used for NBT / GUI class lookup. */
     public static final String MOD_ID = "legacymechanics";
     /** Product line version (was DMZ Adaptive Difficulty 3.3.x). */
-    public static final String VERSION = "4.6.41";
+    public static final String VERSION = "4.6.42";
 
     /** True on the dedicated server. A failed side check keeps the server startup path. */
     private static boolean dedicatedServer() {
@@ -69,6 +70,7 @@ public final class AdaptiveDifficultyMod {
         // Vanilla max_health 1024 / armor 30 / attack-damage 2048 would silently hard-cap scaling.
         AttributeLimits.uncapOffenseAttributes();
         MinecraftForge.EVENT_BUS.register(new DifficultyEvents());
+        MinecraftForge.EVENT_BUS.register(new FallDamageDiag());
         com.dbzlegacy.adaptivedifficulty.claim.ClaimOverlapGuard.register();
         DifficultyCommands.register();
         RivalCommands.register();

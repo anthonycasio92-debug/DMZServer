@@ -1,8 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.41**.
+What changed from **4.5.147** through **4.6.42**.
 
-The live mods folder gets `LegacyMechanics-4.6.41.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.6.42.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+
+## Fall damage log
+
+A tall fall prints one console line, `[LM] Fall damage:`. It shows the entity health, the entity max, DMZ's max health, and the health attribute. It does not change the damage. DMZ does not keep a separate current health.
 
 ## Menu notices
 

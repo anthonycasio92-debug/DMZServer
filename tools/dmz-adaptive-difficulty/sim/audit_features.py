@@ -2046,6 +2046,19 @@ def main() -> int:
         check(f"notice body has no second color ({expect})",
               got.startswith("§e") and not re.search(r"§(?!e)", got))
 
+    print("\n=== Fall damage diagnostic (4.6.42) ===")
+    fall_diag = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/event/FallDamageDiag.java")
+    mod_src = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.java")
+    check("fall damage log compares vanilla and DMZ health",
+          "[LM] Fall damage:" in fall_diag
+          and "DamageTypeTags.f_268549_" in fall_diag
+          and "getMaxHealth()" in fall_diag
+          and "m_21223_()" in fall_diag
+          and "m_21233_()" in fall_diag
+          and "setCanceled" not in fall_diag
+          and "setAmount" not in fall_diag
+          and "new FallDamageDiag()" in mod_src)
+
     print("\n=== Summary ===")
     for w in warns:
         print(f"WARN: {w}")
