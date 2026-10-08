@@ -11,7 +11,7 @@ public final class CnpcLmAdminGui {
 
     public static void open(ServerPlayer player, String page) {
         if (!StaffAccess.isStaff(player)) {
-            CnpcGuiSupport.denyToHub(player, "§cStaff only.");
+            CnpcGuiSupport.denyToHub(player, CnpcMenuFeedback.NOTICE_BODY + "Staff only.");
             return;
         }
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_ADMIN, CnpcGuiSupport.W,
@@ -28,8 +28,8 @@ public final class CnpcLmAdminGui {
         CnpcGuiSupport.button(gui, 20, "§aReload Legacy Mechanics config", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> DifficultyConfig.reload()
-                        ? "§aLegacy Mechanics config reloaded."
-                        : "§cConfig reload failed.",
+                        ? CnpcMenuFeedback.NOTICE_BODY + "Legacy Mechanics config reloaded."
+                        : CnpcMenuFeedback.NOTICE_BODY + "Config reload failed.",
                 () -> open(player, "main")));
         CnpcGuiSupport.button(gui, 21, "§9Progression panel", CnpcGuiSupport.COL_R, row,
                 () -> CnpcLmGui.open(player, "progression", "main"));

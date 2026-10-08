@@ -1253,11 +1253,11 @@ public final class SparringSystem {
         }
         if (on == null) {
             boolean cur = SparStore.get().tpMessagesOn(player.m_20148_());
-            return "§7Spar TP chat: §f" + (cur ? "ON" : "OFF");
+            return "§eSpar TP chat: " + (cur ? "ON" : "OFF");
         }
         SparStore.get().setTpMessages(player.m_20148_(), on);
-        return "§aSpar TP chat §f" + (on ? "ON" : "OFF")
-                + (on ? " §7— combat TP gains show in chat" : " §7— muted");
+        return "§eSpar TP chat " + (on ? "ON" : "OFF")
+                + (on ? " — combat TP gains show in chat" : " — muted");
     }
 
     public static String setMentorTpMsg(ServerPlayer player, Boolean on) {
@@ -1266,11 +1266,11 @@ public final class SparringSystem {
         }
         if (on == null) {
             boolean cur = SparStore.get().mentorTpMessagesOn(player.m_20148_());
-            return "§7Mentor TP chat: §f" + (cur ? "ON" : "OFF");
+            return "§eMentor TP chat: " + (cur ? "ON" : "OFF");
         }
         SparStore.get().setMentorTpMessages(player.m_20148_(), on);
-        return "§aMentor TP chat §f" + (on ? "ON" : "OFF")
-                + (on ? " §7— apprentice share TP shows in chat" : " §7— muted");
+        return "§eMentor TP chat " + (on ? "ON" : "OFF")
+                + (on ? " — apprentice share TP shows in chat" : " — muted");
     }
 
     public static String mentorInvite(ServerPlayer player, ServerPlayer target) {

@@ -109,7 +109,7 @@ public final class ProgressionGuiApi {
         if (!ProgressionSystem.setFlag(flag, on)) {
             return "§cUnknown flag: §f" + flag;
         }
-        return "§aProgression §f" + flag + " §7→ §f" + (on ? "ON" : "OFF");
+        return "§eProgression " + flag + " → " + (on ? "ON" : "OFF");
     }
 
     /**
@@ -369,8 +369,8 @@ public final class ProgressionGuiApi {
 
     private static String boostStartPrompt(double mult, int minutes) {
         String shown = mult == Math.rint(mult) ? ((int) mult) + "×" : mult + "×";
-        return "§eStart a §a" + shown + " §eTP boost for §f" + minutes
-                + " minutes§e? This broadcasts server-wide.";
+        return "§eStart a " + shown + " TP boost for " + minutes
+                + " minutes? This broadcasts server-wide.";
     }
 
     private static boolean looksLikeInt(String s) {
@@ -814,7 +814,7 @@ public final class ProgressionGuiApi {
             if (!ProgressionSystem.setFlag(key, next)) {
                 return "§cUnknown flag: " + key;
             }
-            return "§aProgression §f" + key + " §7→ §f" + (next ? "ON" : "OFF");
+            return "§eProgression " + key + " → " + (next ? "ON" : "OFF");
         }
         if ("module_doc".equals(act) || "moduledoc".equals(act) || "module".equals(act)) {
             if (!StaffAccess.isStaff(player)) {

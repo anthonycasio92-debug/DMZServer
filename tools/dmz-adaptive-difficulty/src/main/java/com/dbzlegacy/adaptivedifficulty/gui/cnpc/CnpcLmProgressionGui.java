@@ -22,7 +22,8 @@ public final class CnpcLmProgressionGui {
     public static void open(ServerPlayer player, String page) {
         String p = normalizePage(page);
         if (requiresStaff(p) && !StaffAccess.isStaff(player)) {
-            CnpcGuiSupport.denyToHub(player, "§cStaff only — that progression page needs staff access.");
+            CnpcGuiSupport.denyToHub(player,
+                    CnpcMenuFeedback.NOTICE_BODY + "Staff only — that progression page needs staff access.");
             return;
         }
         int h = switch (p) {

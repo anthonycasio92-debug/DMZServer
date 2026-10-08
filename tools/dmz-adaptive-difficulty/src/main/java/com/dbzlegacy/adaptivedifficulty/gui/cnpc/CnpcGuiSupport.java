@@ -164,7 +164,7 @@ public final class CnpcGuiSupport {
             return y;
         }
         List<String> box = new ArrayList<>();
-        box.add("§6§lNotice");
+        box.add(CnpcMenuFeedback.NOTICE_HEADER);
         int max = CnpcGuiStyle.INFO_INLINE_MAX;
         for (String line : raw) {
             if (box.size() >= max) {
@@ -173,7 +173,8 @@ public final class CnpcGuiSupport {
             box.add(brightenNoticeLine(line));
         }
         if (raw.size() + 1 > max) {
-            box.set(max - 1, "§e+" + (raw.size() + 1 - max) + " more — check chat for details");
+            box.set(max - 1, CnpcMenuFeedback.NOTICE_BODY + "+" + (raw.size() + 1 - max)
+                    + " more — check chat for details");
         }
         // Stay inline. A pick list is the menu's one scroll; a long read-only body may still use the panel.
         return paintInfoBlock(gui, y, box, max, true, ID_FLASH_LABEL_BASE);
@@ -750,7 +751,23 @@ public final class CnpcGuiSupport {
     }
 
     private static String brightenNoticeLine(String line) {
-        return CnpcGuiStyle.readableInfoLine(line);
+        return CnpcMenuFeedback.noticeBody(line);
+    }
+
+    /** Same words as {@code msg}, with every line forced to the notice body color. */
+    private static String noticeChat(String msg) {
+        StringBuilder out = new StringBuilder();
+        for (String line : msg.split("\n")) {
+            String body = CnpcMenuFeedback.noticeBody(line);
+            if (body.isBlank()) {
+                continue;
+            }
+            if (out.length() > 0) {
+                out.append('\n');
+            }
+            out.append(body);
+        }
+        return out.toString();
     }
 
     private static String splitCamel(String s) {
@@ -855,8 +872,9 @@ public final class CnpcGuiSupport {
             pushMenuMessage(player, msg);
             // The flash band fits INFO_INLINE_MAX-1 = 2 message lines; longer messages
             // truncate with "check chat for details", so actually send them to chat.
+            // Chat uses the same yellow body as the notice.
             if (msg.split("\n", -1).length > CnpcGuiStyle.INFO_INLINE_MAX - 1) {
-                feedbackChat(player, msg);
+                feedbackChat(player, noticeChat(msg));
             }
         }
         if (reopen != null) {
@@ -968,7 +986,7 @@ public final class CnpcGuiSupport {
             String arg = selected == null ? null : selected.get();
             if (arg == null || arg.isBlank()) {
                 afterGuiClosed(g, () -> {
-                    pushMenuMessage(player, "§eSelect a row first.");
+                    pushMenuMessage(player, CnpcMenuFeedback.NOTICE_BODY + "Select a row first.");
                     if (reopen != null) {
                         reopen.run();
                     }

@@ -56,8 +56,9 @@ public final class CnpcGuiStyle {
     }
 
     /**
-     * Info blocks, subtitles, and flash notices — same contrast as {@code §6§lNotice} band
-     * (grey/dark-grey body copy becomes white/yellow so CNPC labels stay readable).
+     * Info blocks and subtitles. Grey and dark-grey copy becomes white and yellow
+     * so CNPC labels stay readable. Flash notices do not use this — their body is
+     * always {@link CnpcMenuFeedback#NOTICE_BODY}.
      */
     public static String readableInfoLine(String line) {
         if (line == null || line.isBlank()) {

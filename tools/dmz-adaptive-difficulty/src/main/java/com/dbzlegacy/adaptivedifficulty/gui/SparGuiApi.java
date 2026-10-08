@@ -639,7 +639,7 @@ public final class SparGuiApi {
         if (lower.startsWith("save")) {
             SparStore.get().markDirty();
             SparStore.get().save();
-            return "§aSpar store saved.";
+            return "§eSpar store saved.";
         }
         if (lower.startsWith("status")) {
             boolean on = DifficultyConfig.get().enableSparringSystem;

@@ -15,7 +15,8 @@ public final class CnpcLmSkillCheckGui {
     public static void open(ServerPlayer player, String page) {
         if (!SkillCheckService.canUse(player) && !SkillCheckService.inSession(player)) {
             CnpcGuiSupport.denyToHub(player,
-                    "§cSkill Check isn't available to you.\n§7Ask staff if you think that's wrong.");
+                    CnpcMenuFeedback.NOTICE_BODY + "Skill Check isn't available to you.\n"
+                            + CnpcMenuFeedback.NOTICE_BODY + "Ask staff if you think that's wrong.");
             return;
         }
         show(player, page, false);
@@ -23,7 +24,7 @@ public final class CnpcLmSkillCheckGui {
 
     public static void openSkillsAdmin(ServerPlayer player, String page) {
         if (!StaffAccess.isStaff(player)) {
-            CnpcGuiSupport.denyToHub(player, "§cStaff only.");
+            CnpcGuiSupport.denyToHub(player, CnpcMenuFeedback.NOTICE_BODY + "Staff only.");
             return;
         }
         show(player, page, true);

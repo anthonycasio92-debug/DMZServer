@@ -621,7 +621,7 @@ public final class RivalGuiApi {
                 return "§cRival Instinct is disabled.";
             }
             boolean on = RivalInstinct.toggle(player);
-            return "§aRival Instinct §f" + (on ? "ON" : "OFF");
+            return "§eRival Instinct " + (on ? "ON" : "OFF");
         }
         if ("challenge".equals(act)) {
             String sub = a.toLowerCase(Locale.ROOT);
@@ -731,12 +731,12 @@ public final class RivalGuiApi {
             RivalStore.get().markDirty();
             RivalStore.get().save();
             RivalProgression.get().save();
-            return "§aRival data saved.";
+            return "§eRival data saved.";
         }
         if (sub.startsWith("refresh") || sub.startsWith("reload")) {
             RivalStore.get().load();
             RivalProgression.get().load();
-            return "§aRival data reloaded.";
+            return "§eRival data reloaded.";
         }
         if (sub.startsWith("status")) {
             boolean on = DifficultyConfig.get().enableRivalSystem;

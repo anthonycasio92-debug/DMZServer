@@ -998,11 +998,11 @@ public final class RivalSystem {
     public static String setTpMsg(ServerPlayer player, Boolean on) {
         RivalPlayerRecord me = RivalStore.get().ensurePlayer(player);
         if (on == null) {
-            return "§7Rival TP chat: §f" + (me.tpMessages ? "ON" : "OFF");
+            return "§eRival TP chat: " + (me.tpMessages ? "ON" : "OFF");
         }
         me.tpMessages = on;
         RivalStore.get().markDirty();
-        return "§aRival TP chat §f" + (on ? "ON" : "OFF");
+        return "§eRival TP chat " + (on ? "ON" : "OFF");
     }
 
     public static List<String> topLines(int limit) {

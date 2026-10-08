@@ -474,7 +474,7 @@ public final class CnpcLmDifficultyGui {
 
     private static void paintStaffAdmin(ServerPlayer player, ICustomGui gui) {
         if (!StaffAccess.isStaff(player)) {
-            CnpcGuiSupport.pushMenuMessage(player, "§cStaff only.");
+            CnpcGuiSupport.pushMenuMessage(player, CnpcMenuFeedback.NOTICE_BODY + "Staff only.");
             open(player, "main");
             return;
         }

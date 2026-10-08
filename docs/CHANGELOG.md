@@ -1,8 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.40**.
+What changed from **4.5.147** through **4.6.41**.
 
-The live mods folder gets `LegacyMechanics-4.6.40.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.6.41.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+
+## Menu notices
+
+Every flash notice uses the same colors. The header is gold, `§6§lNotice`. The body is yellow, `§e`. A screen no longer picks green, gray, or red for that text. On and off are written in the words. The difficulty page's own status lines (personal difficulty, Ancient Coins, scaled mobs) are unchanged.
 
 ## Absorption wipe crash
 

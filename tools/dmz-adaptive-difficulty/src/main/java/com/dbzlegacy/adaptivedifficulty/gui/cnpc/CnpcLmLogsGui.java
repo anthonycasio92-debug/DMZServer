@@ -11,7 +11,7 @@ public final class CnpcLmLogsGui {
 
     public static void open(ServerPlayer player, String page) {
         if (!StaffAccess.isStaff(player)) {
-            CnpcGuiSupport.denyToHub(player, "§cStaff only.");
+            CnpcGuiSupport.denyToHub(player, CnpcMenuFeedback.NOTICE_BODY + "Staff only.");
             return;
         }
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_LOGS, CnpcGuiSupport.W,

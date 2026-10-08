@@ -1720,7 +1720,8 @@ def main() -> int:
     print("\n=== Menu notices and jar inners (4.6.19) ===")
     support = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcGuiSupport.java")
     check("long menu notices are also sent to chat",
-          "feedbackChat(player, msg)" in support
+          "feedbackChat(player, noticeChat(msg))" in support
+          and "private static String noticeChat" in support
           and 'split("\\n", -1).length > CnpcGuiStyle.INFO_INLINE_MAX - 1' in support)
     check("packaging cleans compile output before javac",
           'rm -rf "$OUT"' in build_sh
@@ -1978,6 +1979,72 @@ def main() -> int:
           and "AbsorptionClearLog.failure" in absorb_create
           and "AbsorptionClearLog.failure" in absorb_services
           and "AbsorptionClearLog.failure" in absorb_store)
+
+    print("\n=== CNPC notice color (4.6.41) ===")
+    notice = read(cnpc_dir / "CnpcMenuFeedback.java")
+    notice_support = read(cnpc_dir / "CnpcGuiSupport.java")
+    spar_sys = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/sparring/SparringSystem.java")
+    rival_sys = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/rival/RivalSystem.java")
+    rival_api = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/gui/RivalGuiApi.java")
+    prog_api = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/gui/ProgressionGuiApi.java")
+    mech_api = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/gui/MechanicsGuiApi.java")
+    bright_start = notice_support.find("private static String brightenNoticeLine")
+    bright_end = notice_support.find("private static String noticeChat", bright_start)
+    bright = notice_support[bright_start:bright_end] if bright_start >= 0 and bright_end > bright_start else ""
+    diff_main = diff_gui.split("private static void paintMain", 1)[-1].split("private static void paintSettings", 1)[0]
+    check("notice header and body are one pair of constants",
+          'NOTICE_HEADER = "§6§lNotice"' in notice
+          and 'NOTICE_BODY = "§e"' in notice
+          and "public static String noticeBody" in notice
+          and "noticeBody(" in notice.split("public static void set", 1)[-1].split("public static boolean hasPending", 1)[0]
+          and "CnpcMenuFeedback.NOTICE_HEADER" in notice_support
+          and "noticeBody(line)" in bright
+          and "readableInfoLine" not in bright)
+    check("spar and rival chat toggles use the yellow notice body",
+          "§eSpar TP chat " in spar_sys
+          and "§aSpar TP chat" not in spar_sys
+          and "§eMentor TP chat " in spar_sys
+          and "§aMentor TP chat" not in spar_sys
+          and "§eRival TP chat " in rival_sys
+          and "§aRival TP chat" not in rival_sys
+          and "§eRival Instinct " in rival_api
+          and "§aRival Instinct" not in rival_api)
+    check("other screen notices use the yellow body",
+          "NOTICE_BODY + \"Staff only.\"" in read(cnpc_dir / "CnpcLmRivalGui.java")
+          and "NOTICE_BODY + \"Staff only.\"" in diff_gui
+          and "NOTICE_BODY + \"Staff only.\"" in read(cnpc_dir / "CnpcLmAdminGui.java")
+          and "NOTICE_BODY + \"Staff only.\"" in read(cnpc_dir / "CnpcLmLogsGui.java")
+          and "NOTICE_BODY + \"Legacy Mechanics config reloaded.\"" in read(cnpc_dir / "CnpcLmAdminGui.java")
+          and "§eEvent log ON" in mech_api
+          and "§aEvent log ON" not in mech_api
+          and "§eProgression " in prog_api
+          and "§aProgression " not in prog_api
+          and "NOTICE_BODY" in hub_gui)
+    check("difficulty status block stays its own info text",
+          "§eYour personal difficulty is off." in diff_main
+          and "§eThis account cannot use personal difficulty." in diff_main
+          and "§6Ancient Coins" in diff_main
+          and "§8Scaled mobs can hurt other players nearby." in diff_main
+          and "noticeBody" not in diff_main)
+
+    def _notice_body(line):
+        plain = re.sub(r"§[0-9A-FK-ORa-fk-or]", "", line or "").strip()
+        return "" if not plain else "§e" + plain
+
+    notice_samples = {
+        "§aSpar TP chat §fON — combat TP gains show in chat":
+            "§eSpar TP chat ON — combat TP gains show in chat",
+        "§cStaff only.": "§eStaff only.",
+        "§7Skill Check is a donator perk — ask staff if you want access.":
+            "§eSkill Check is a donator perk — ask staff if you want access.",
+        "§eSelect a row first.": "§eSelect a row first.",
+        "§6Rival admin status": "§eRival admin status",
+    }
+    for src, expect in notice_samples.items():
+        got = _notice_body(src)
+        check(f"notice body strips to yellow ({expect})", got == expect, got)
+        check(f"notice body has no second color ({expect})",
+              got.startswith("§e") and not re.search(r"§(?!e)", got))
 
     print("\n=== Summary ===")
     for w in warns:

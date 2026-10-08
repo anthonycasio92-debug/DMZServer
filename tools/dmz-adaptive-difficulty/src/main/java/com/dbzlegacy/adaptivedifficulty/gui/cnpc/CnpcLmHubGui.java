@@ -88,7 +88,8 @@ public final class CnpcLmHubGui {
             CnpcGuiSupport.buttonSmall(gui, 24, "§8Skill Check", CnpcGuiSupport.COL_L, row, CnpcGuiSupport.BTN_W,
                     () -> {
                         CnpcGuiSupport.pushMenuMessage(player,
-                                "§7Skill Check is a donator perk — ask staff if you want access.");
+                                CnpcMenuFeedback.NOTICE_BODY
+                                        + "Skill Check is a donator perk — ask staff if you want access.");
                         paintMain(player);
                     });
         }
@@ -134,7 +135,8 @@ public final class CnpcLmHubGui {
         CnpcGuiSupport.buttonSmall(gui, id, "§8" + pretty, col, row, CnpcGuiSupport.BTN_W,
                 () -> {
                     CnpcGuiSupport.pushMenuMessage(viewer,
-                            "§7" + pretty + " is off on this server. Ask staff if you think that's wrong.");
+                            CnpcMenuFeedback.NOTICE_BODY + pretty
+                                    + " is off on this server. Ask staff if you think that's wrong.");
                     paintMain(viewer);
                 });
     }
