@@ -1,8 +1,5 @@
 package com.dbzlegacy.adaptivedifficulty.mixin.noea;
 
-import com.butterjaffa.noeabosses.DestroyerRank;
-import com.butterjaffa.noeabosses.DestroyerRoleSavedData;
-import com.butterjaffa.noeabosses.DestroyerRoleService;
 import com.dragonminez.common.events.DMZEvent;
 import com.dragonminez.common.stats.techniques.KiAttackData;
 import java.util.Locale;
@@ -25,6 +22,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * This gate leaves those alone and blocks the name match unless the attacker
  * is an apprentice or appointed Destroyer, the same rank check as
  * {@code DestroyerRank.hasDestructionEnergy()}.
+ *
+ * <p>Destroyer types are resolved by reflection when an attack fires. Importing
+ * them here loads those classes while this mixin is transforming
+ * {@code DivineImmortalityEvents}, and Noea then fails to register that listener.
  */
 @Mixin(targets = "com.butterjaffa.noeabosses.DivineImmortalityEvents", remap = false)
 public abstract class HakaiDestroyerGateMixin {
@@ -84,12 +85,20 @@ public abstract class HakaiDestroyerGateMixin {
             return false;
         }
         try {
-            DestroyerRoleSavedData.Assignment assignment = DestroyerRoleService.assignment(server);
+            Class<?> service = Class.forName(
+                    "com.butterjaffa.noeabosses.DestroyerRoleService",
+                    false,
+                    HakaiDestroyerGateMixin.class.getClassLoader());
+            Object assignment = service.getMethod("assignment", ServerPlayer.class).invoke(null, server);
             if (assignment == null) {
                 return false;
             }
-            DestroyerRank rank = assignment.rank();
-            return rank != null && rank.hasDestructionEnergy();
+            Object rank = assignment.getClass().getMethod("rank").invoke(assignment);
+            if (rank == null) {
+                return false;
+            }
+            Object energy = rank.getClass().getMethod("hasDestructionEnergy").invoke(rank);
+            return Boolean.TRUE.equals(energy);
         } catch (Throwable ignored) {
             return false;
         }

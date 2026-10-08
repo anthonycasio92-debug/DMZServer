@@ -1,8 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.45**.
+What changed from **4.5.147** through **4.6.46**.
 
-The live mods folder gets `LegacyMechanics-4.6.45.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder should stay on `LegacyMechanics-4.6.40.jar` until 4.6.46 is deliberately restarted in. 4.6.45 was pulled off the live mods folder because its Hakai mixin broke Noea class loading.
+
+## Hakai mixin load gate
+
+The Hakai mixin is skipped unless `DivineImmortalityEvents` can actually be loaded. Each inject uses `require = 0`. Destroyer rank is read by reflection when an attack fires, so transforming the Noea listener does not load Noea's Destroyer classes. Mixin 0.8.5's `@Mixin` annotation has no `require` parameter.
 
 ## Fall damage log packaging
 

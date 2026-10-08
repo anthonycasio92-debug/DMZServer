@@ -93,15 +93,20 @@ public final class LegacyMechanicsMixinPlugin implements IMixinConfigPlugin {
     }
 
     /**
-     * Noea hakai events. Absent on a server that does not run Noea.
-     * Look the class file up. Loading this mixin target with {@code Class.forName}
-     * aborts startup with "loaded too early".
+     * Noea hakai events. A class-file lookup is true as soon as the jar is on the
+     * classpath, so the mixin was applied while Noea was still constructing and
+     * DivineImmortalityEvents could not be registered. Load the class instead.
+     * If it is missing or not loadable yet, skip the mixin.
      */
     private static boolean divineImmortalityPresent() {
         try {
-            ClassLoader loader = LegacyMechanicsMixinPlugin.class.getClassLoader();
-            return loader != null
-                    && loader.getResource("com/butterjaffa/noeabosses/DivineImmortalityEvents.class") != null;
+            Class.forName(
+                    "com.butterjaffa.noeabosses.DivineImmortalityEvents",
+                    false,
+                    LegacyMechanicsMixinPlugin.class.getClassLoader());
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
         } catch (Throwable ignored) {
             return false;
         }

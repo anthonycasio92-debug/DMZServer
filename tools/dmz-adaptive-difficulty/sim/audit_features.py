@@ -2052,13 +2052,17 @@ def main() -> int:
     hakai_mixins = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/resources/legacymechanics.mixins.json")
     check("hakai name match requires destroyer energy",
           "isHakai(Ljava/lang/String;Ljava/lang/String;)Z" in hakai_gate
-          and "hasDestructionEnergy()" in hakai_gate
+          and "\"hasDestructionEnergy\"" in hakai_gate
           and "sourceSaysHakai" in hakai_gate
           and "ci.cancel()" in hakai_gate
           and "require = 0" in hakai_gate)
     check("hakai mixin applies only when Noea is present",
-          "com/butterjaffa/noeabosses/DivineImmortalityEvents.class" in mixin_plugin
+          'Class.forName(\n                    "com.butterjaffa.noeabosses.DivineImmortalityEvents"' in mixin_plugin
+          and "catch (ClassNotFoundException e)" in mixin_plugin
           and "HakaiDestroyerGateMixin" in mixin_plugin
+          and "require = 0" in hakai_gate
+          and "DestroyerRoleService\"" in hakai_gate
+          and "import com.butterjaffa.noeabosses.DestroyerRoleService" not in hakai_gate
           and '"noea.HakaiDestroyerGateMixin"' in hakai_mixins)
 
     print("\n=== Fusion cooldown reset (4.6.43) ===")
