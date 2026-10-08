@@ -19,7 +19,7 @@ public final class DmzMohistMeleeFix {
 
     public DmzMohistMeleeFix() {
         LOGGER.info(
-                "[{}] v2.12.23: Noea grab mixin waits until GrabService loads + ghost party heal / saga guard",
+                "[{}] v2.12.24: priceless skill mixin disabled (classloader) + Noea grab waits until GrabService loads",
                 MOD_ID
         );
         ReachRepairEvents.register();
