@@ -131,7 +131,7 @@ public abstract class HakaiDestroyerGateMixin {
     }
 
     /** Same match as Noea {@code isHakai}: either string contains {@code hakai}. */
-    static boolean namedHakai(String id, String name) {
+    private static boolean namedHakai(String id, String name) {
         return containsHakai(id) || containsHakai(name);
     }
 
@@ -145,7 +145,7 @@ public abstract class HakaiDestroyerGateMixin {
      * class, a missing method, or any other reflection failure is not a Destroyer,
      * and that failure is not cached.
      */
-    static boolean isDestroyer(Player player) {
+    private static boolean isDestroyer(Player player) {
         if (!(player instanceof ServerPlayer server)) {
             return false;
         }
@@ -185,7 +185,7 @@ public abstract class HakaiDestroyerGateMixin {
     }
 
     /** Projectile technique id, else the DMZ message id, else the damage message id. */
-    static String techniqueId(DamageSource source) {
+    private static String techniqueId(DamageSource source) {
         if (source == null) {
             return null;
         }
@@ -204,7 +204,7 @@ public abstract class HakaiDestroyerGateMixin {
     }
 
     /** Technique name component, else the damage-type path. */
-    static String techniqueName(DamageSource source) {
+    private static String techniqueName(DamageSource source) {
         if (source == null) {
             return null;
         }
@@ -216,7 +216,7 @@ public abstract class HakaiDestroyerGateMixin {
     }
 
     /** The three shipped Noea ids, plus {@code DivineTechniques.isHakaiTechnique}. */
-    static boolean officialHakaiId(String value) {
+    private static boolean officialHakaiId(String value) {
         if (value == null || value.isEmpty()) {
             return false;
         }

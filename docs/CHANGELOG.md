@@ -1,6 +1,10 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.50**.
+What changed from **4.5.147** through **4.6.51**.
+
+## Hakai helper visibility
+
+Helpers in `HakaiDestroyerGateMixin` are private. A package-private static method is merged into the Noea class and mixin application fails. The inject handlers stay private and static, because `onKiAttackFire` and `sourceSaysHakai` are static. The build rejects a non-private mixin method that is not an inject, redirect, overwrite, or shadow.
 
 ## Mixin cleanup
 

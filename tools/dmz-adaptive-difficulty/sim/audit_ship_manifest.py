@@ -65,6 +65,7 @@ def main() -> int:
     skip_gui = os.environ.get("LM_SKIP_GUI", "0") == "1"
     print("\n--- Sub-audits (must PASS) ---")
     sub_audits = (
+        "audit_mixin_visibility.py",
         "audit_prestige_need_ladder.py",
         "audit_prestige_gui_flow.py",
         "audit_lm_admin_commands.py",
