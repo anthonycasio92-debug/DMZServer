@@ -905,6 +905,9 @@ public final class ProgressionGuiApi {
         out.put("held_max", String.valueOf(PrestigeSystem.maxHeld()));
         out.put("required", String.valueOf(required));
         out.put("required_fmt", DmzRewards.formatWhole(required));
+        int nextRequired = PrestigeSystem.followingRequirement(completed, held);
+        out.put("next_required", String.valueOf(nextRequired));
+        out.put("next_required_fmt", DmzRewards.formatWhole(nextRequired));
         out.put("ready", level >= required && held < PrestigeSystem.maxHeld() ? "true" : "false");
         int points = PrestigePointsSystem.getPoints(player);
         int breakthroughs = PrestigePointsSystem.getBreakthroughs(player);
@@ -1031,9 +1034,11 @@ public final class ProgressionGuiApi {
             }
             default -> {
                 lore.add("§7Points: §e" + ph.getOrDefault("points", "0"));
-                lore.add("§7Level §f" + ph.getOrDefault("level_fmt", "0")
-                        + " §7· next one needs §e" + ph.getOrDefault("required_fmt", "0"));
-                lore.add("§7Your first four each need §f20,000§7.");
+                lore.add("§7Prestige: §f" + ph.getOrDefault("completed", "0"));
+                lore.add("§7Requires §e" + ph.getOrDefault("required_fmt", "0")
+                        + " §7power to prestige (next: §e"
+                        + ph.getOrDefault("next_required_fmt", "0") + "§7)");
+                lore.add("§7The first four scale by 20,000 for each prestige you hold.");
                 lore.add("§7From the fifth on: §f50,000 §7if you hold none, §f100,000 §7if you hold any.");
                 if ("true".equalsIgnoreCase(ph.get("ready"))) {
                     lore.add("§aYou can prestige now.");

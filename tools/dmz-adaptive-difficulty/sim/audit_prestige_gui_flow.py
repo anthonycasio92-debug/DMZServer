@@ -55,8 +55,11 @@ def main() -> None:
     pre_switch = lines_block.split("switch (p)", 1)[0]
     ok("main wallet lore has no Cap line before switch", "§7Cap:" not in pre_switch)
     ok("main default shows Need", "required_fmt" in lines_block and "default ->" in lines_block)
-    ok("main lore explains first four and held gates in plain words",
-       "first four" in lines_block and "50,000" in lines_block and "100,000" in lines_block)
+    ok("main lore explains scaled first four and held gates in plain words",
+       "first four" in lines_block
+       and "next_required_fmt" in lines_block
+       and "50,000" in lines_block
+       and "100,000" in lines_block)
 
     ok("PrestigeSystem veteran branch", "completed >= HELD_GATE_MIN_COMPLETED" in prestige_sys)
     ok("PrestigeSystem heldCountForNeed", "heldCountForNeed" in prestige_sys)
