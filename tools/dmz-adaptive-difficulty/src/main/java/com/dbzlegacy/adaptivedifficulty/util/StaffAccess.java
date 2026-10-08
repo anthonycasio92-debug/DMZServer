@@ -34,8 +34,8 @@ public final class StaffAccess {
     }
 
     /**
-     * {@code /dmzstats reset} stays available to staff and to the server command
-     * source prestige uses. A player who is not staff is turned away.
+     * {@code /dmzstats reset} stays available to staff. A player who is not
+     * staff is turned away. Prestige does not use this command.
      */
     public static boolean allowDmzStatsReset(CommandSourceStack source) {
         return isStaffSource(source);

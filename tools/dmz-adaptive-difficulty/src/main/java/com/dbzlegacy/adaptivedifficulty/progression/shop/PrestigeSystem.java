@@ -17,7 +17,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
@@ -133,15 +132,15 @@ public final class PrestigeSystem {
         raiseNeedFloor(player, required);
         resetPrestigeProgress(player);
 
-        String name = player.m_6302_();
-        MinecraftServer server = player.m_20194_();
-        if (server != null) {
-            try {
-                server.m_129892_().m_230957_(server.m_129893_(), "dmzstats reset " + name);
-            } catch (Throwable t) {
-                AdaptiveDifficultyMod.LOGGER.debug(
-                        "[{}] prestige dmzstats reset soft-fail: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
-            }
+        // Players cannot run /dmzstats reset. Prestige wipes the same way that command does.
+        try {
+            data.resetPlayerProgress(player, 0, false, false);
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] prestige stat reset failed for {}: {}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    player.m_7755_().getString(),
+                    t.toString());
         }
         // Prestige-point skill floors + Permanent Majin/Mutant must survive dmzstats reset.
         PrestigePointsSystem.scheduleReapplyAfterPrestige(player);

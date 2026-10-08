@@ -1874,15 +1874,16 @@ def main() -> int:
           and "require = 0" in corpse_fix
           and "private static void lm$disableDropSuppression" in corpse_fix)
 
-    print("\n=== Player stat reset and race change (4.6.37) ===")
+    print("\n=== Player stat reset and race change (4.6.38) ===")
     reset_block = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/DmzStatsResetPlayerBlockMixin.java")
     melee_block = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/MeleeStatsResetPlayerBlockMixin.java")
     staff = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/util/StaffAccess.java")
     race_access = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/character/CharacterServicesAccess.java")
-    race_system = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/character/CharacterServicesSystem.java")
+    prestige = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigeSystem.java")
+    dende = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/DendeResetAbsorptionWipeMixin.java")
     mixins_json = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/resources/legacymechanics.mixins.json")
     mixin_plugin = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/LegacyMechanicsMixinPlugin.java")
-    check("players cannot reset stats or change race",
+    check("players cannot use dmzstats reset; race, dende, and prestige still reset",
           'method = "resetStats"' in reset_block
           and "cancellable = true" in reset_block
           and "setReturnValue(0)" in reset_block
@@ -1894,8 +1895,12 @@ def main() -> int:
           and "allowDmzStatsReset" in melee_block
           and "Stat reset is turned off." in staff
           and "isStaffSource(source)" in staff
-          and "return StaffAccess.isStaff(player);" in race_access
-          and "Race change is turned off." in race_system
+          and "permissions.race" in race_access
+          and "return StaffAccess.isStaff(player);" not in race_access
+          and "data.resetPlayerProgress(player, 0, false, false)" in prestige
+          and '"dmzstats reset "' not in prestige
+          and 'method = "handleDende"' in dende
+          and "actionId != 2" in dende
           and "DmzStatsResetPlayerBlockMixin" in mixins_json
           and "MeleeStatsResetPlayerBlockMixin" in mixins_json
           and "MeleeStatsResetPlayerBlockMixin" in mixin_plugin

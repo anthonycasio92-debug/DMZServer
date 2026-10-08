@@ -198,6 +198,8 @@ merge_onto_base_jar() {
     mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/progression/shop"
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigeSystem.class" \
       "$merge/com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigeSystem.class"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigeSystem\$"*.class \
+      "$merge/com/dbzlegacy/adaptivedifficulty/progression/shop/" 2>/dev/null || true
   fi
   if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigePointsSystem.class" ]]; then
     mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/progression/shop"

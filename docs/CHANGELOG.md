@@ -1,12 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.37**.
+What changed from **4.5.147** through **4.6.38**.
 
-The live mods folder gets `LegacyMechanics-4.6.37.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.6.38.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
 
 ## Stat reset and race change
 
-Players cannot use `/dmzstats reset`, including the percent form. Change race is gone from Character Services. Staff can still run both. Prestige still resets stats from the server command source. Class change, reskin, head parts, and Dende are unchanged.
+Players cannot use `/dmzstats reset`, including the percent form. Staff still can. Change race stays in Character Services. Dende's reset still works. Prestige wipes stats on its own, the same full wipe as a 0% reset, and does not go through that command. Class change, reskin, and head parts are unchanged.
 
 ## List selection
 

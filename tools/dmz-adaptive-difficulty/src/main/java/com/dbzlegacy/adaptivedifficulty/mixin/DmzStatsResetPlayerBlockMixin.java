@@ -11,8 +11,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Players cannot run {@code /dmzstats reset}. Staff and the server command
- * source (prestige calls {@code dmzstats reset} from there) still can.
+ * Players cannot run {@code /dmzstats reset}. Staff still can. Prestige
+ * wipes stats through {@code resetPlayerProgress} and does not use this command.
  * {@code require = 0} skips the hook if the signature changes.
  */
 @Mixin(value = StatsCommand.class, remap = false)

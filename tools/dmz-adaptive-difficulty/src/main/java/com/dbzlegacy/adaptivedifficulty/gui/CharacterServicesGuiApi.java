@@ -78,7 +78,7 @@ public final class CharacterServicesGuiApi {
                 return lines;
             }
             if (!CharacterServicesAccess.canRaceChange(player)) {
-                lines.add("§cRace change is turned off.");
+                lines.add("§cYou do not have permission for race change.");
                 return lines;
             }
             lines.add("§7Choose the race you want to become.");
