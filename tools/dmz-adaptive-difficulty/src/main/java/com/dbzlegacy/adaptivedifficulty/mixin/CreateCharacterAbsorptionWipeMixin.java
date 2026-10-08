@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.mixin;
 
-import com.dbzlegacy.adaptivedifficulty.mixin.noea.MajinAbsorptionStore;
+import com.dbzlegacy.adaptivedifficulty.noea.AbsorptionClearLog;
+import com.dbzlegacy.adaptivedifficulty.noea.MajinAbsorptionStore;
 import com.dragonminez.common.network.C2S.CreateCharacterC2S;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.Status;

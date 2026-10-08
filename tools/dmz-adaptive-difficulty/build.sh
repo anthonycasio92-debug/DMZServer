@@ -350,7 +350,6 @@ merge_onto_base_jar() {
         MeleeStatsResetPlayerBlockMixin \
         DendeResetAbsorptionWipeMixin \
         CreateCharacterAbsorptionWipeMixin \
-        AbsorptionClearLog \
         LegacyMechanicsMixinPlugin; do
       if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/mixin/${mixin_cls}.class" ]]; then
         cp "$OUT/com/dbzlegacy/adaptivedifficulty/mixin/${mixin_cls}.class" \
@@ -362,6 +361,17 @@ merge_onto_base_jar() {
       cp -a "$OUT/com/dbzlegacy/adaptivedifficulty/mixin/noea/." \
         "$merge/com/dbzlegacy/adaptivedifficulty/mixin/noea/"
     fi
+    # Ordinary classes cannot live in the mixin package. The server classloader
+    # does not resolve them, so the Majin wipe never runs.
+    mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/noea"
+    for noea_cls in MajinAbsorptionStore AbsorptionClearLog; do
+      if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/noea/${noea_cls}.class" ]]; then
+        cp "$OUT/com/dbzlegacy/adaptivedifficulty/noea/${noea_cls}.class" \
+          "$merge/com/dbzlegacy/adaptivedifficulty/noea/${noea_cls}.class"
+      fi
+    done
+    rm -f "$merge/com/dbzlegacy/adaptivedifficulty/mixin/AbsorptionClearLog.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/mixin/noea/MajinAbsorptionStore.class"
     cp "$RES/legacymechanics.mixins.json" "$merge/legacymechanics.mixins.json"
     if [[ -f "$RES/legacymechanics.refmap.json" ]]; then
       cp "$RES/legacymechanics.refmap.json" "$merge/legacymechanics.refmap.json"

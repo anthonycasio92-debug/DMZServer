@@ -1,4 +1,4 @@
-package com.dbzlegacy.adaptivedifficulty.mixin.noea;
+package com.dbzlegacy.adaptivedifficulty.noea;
 
 import com.butterjaffa.noeabosses.MajinAbsorptionService;
 import com.butterjaffa.noeabosses.V090Data;
@@ -7,7 +7,10 @@ import com.dragonminez.common.stats.character.Character;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 
-/** Stored Majin absorption bonus on Noea's player data. */
+/**
+ * Stored Majin absorption bonus on Noea's player data.
+ * Lives outside the mixin package so the server classloader can find it.
+ */
 public final class MajinAbsorptionStore {
     private MajinAbsorptionStore() {}
 
@@ -83,7 +86,7 @@ public final class MajinAbsorptionStore {
             clear(stats.getPlayer());
         } catch (Throwable t) {
             try {
-                com.dbzlegacy.adaptivedifficulty.mixin.AbsorptionClearLog.failure(t);
+                AbsorptionClearLog.failure(t);
             } catch (Throwable ignored) {
                 t.printStackTrace();
             }

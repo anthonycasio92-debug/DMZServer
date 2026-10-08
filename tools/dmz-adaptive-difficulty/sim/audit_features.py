@@ -1929,20 +1929,21 @@ def main() -> int:
 
     print("\n=== Majin absorption bonus (4.6.33) ===")
     absorb_gate = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/noea/NoeaAbsorptionBonusGateMixin.java")
-    absorb_store = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/noea/MajinAbsorptionStore.java")
+    absorb_store = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/noea/MajinAbsorptionStore.java")
     absorb_reset = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/StatsDataResetPrestigeSyncMixin.java")
     absorb_cmd = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/DmzStatsResetAbsorptionWipeMixin.java")
     absorb_melee = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/MeleeStatsResetAbsorptionWipeMixin.java")
     absorb_dende = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/DendeResetAbsorptionWipeMixin.java")
     absorb_create = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/CreateCharacterAbsorptionWipeMixin.java")
     absorb_services = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/character/CharacterServicesSystem.java")
-    absorb_log = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/AbsorptionClearLog.java")
+    absorb_log = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/noea/AbsorptionClearLog.java")
     check("absorption bonus follows power and limit release",
           "absorptionPower" in absorb_gate
           and "isActive" not in absorb_gate
           and "getPowerRelease()" in absorb_gate
           and "priority = 1001" in absorb_gate
           and "current - absorbed + scaledBonus" in absorb_gate
+          and "package com.dbzlegacy.adaptivedifficulty.noea;" in absorb_store
           and "data.absorptionMelee = 0" in absorb_store
           and "[LM] clear() called for " in absorb_store
           and "[LM] ABORT: data is null, cannot wipe" in absorb_store

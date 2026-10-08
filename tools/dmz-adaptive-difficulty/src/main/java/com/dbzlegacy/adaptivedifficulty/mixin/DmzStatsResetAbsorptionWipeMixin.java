@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.mixin;
 
-import com.dbzlegacy.adaptivedifficulty.mixin.noea.MajinAbsorptionStore;
+import com.dbzlegacy.adaptivedifficulty.noea.AbsorptionClearLog;
+import com.dbzlegacy.adaptivedifficulty.noea.MajinAbsorptionStore;
 import com.dragonminez.server.commands.StatsCommand;
 import java.util.Collection;
 import net.minecraft.commands.CommandSourceStack;

@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.mixin;
 
-import com.dbzlegacy.adaptivedifficulty.mixin.noea.MajinAbsorptionStore;
+import com.dbzlegacy.adaptivedifficulty.noea.AbsorptionClearLog;
+import com.dbzlegacy.adaptivedifficulty.noea.MajinAbsorptionStore;
 import com.dbzlegacy.mohistmelee.StatsResetCommands;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.level.ServerPlayer;

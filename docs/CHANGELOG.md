@@ -1,12 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.39**.
+What changed from **4.5.147** through **4.6.40**.
 
-The live mods folder gets `LegacyMechanics-4.6.39.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.6.40.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
 
 ## Absorption wipe crash
 
-Creating a character runs the absorption wipe. If that wipe throws, the server tick keeps going and the error is printed. The stat-reset mixin no longer loads the melee reset class before mixin can transform it, which was aborting startup.
+The Majin wipe classes now live outside the mixin package, so the server can load them. Creating a character, changing race, Dende's reset, and prestige can clear the stored absorption bonus. If a wipe throws, the error is printed and the server tick keeps going.
 
 ## Stat reset and race change
 

@@ -2,7 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.character;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
-import com.dbzlegacy.adaptivedifficulty.mixin.noea.MajinAbsorptionStore;
+import com.dbzlegacy.adaptivedifficulty.noea.MajinAbsorptionStore;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.progression.race.RaceLock;
@@ -349,7 +349,7 @@ public final class CharacterServicesSystem {
                 MajinAbsorptionStore.clear(player);
             } catch (Throwable t) {
                 try {
-                    com.dbzlegacy.adaptivedifficulty.mixin.AbsorptionClearLog.failure(t);
+                    com.dbzlegacy.adaptivedifficulty.noea.AbsorptionClearLog.failure(t);
                 } catch (Throwable ignored) {
                     t.printStackTrace();
                 }

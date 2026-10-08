@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.mixin;
 
-import com.dbzlegacy.adaptivedifficulty.mixin.noea.MajinAbsorptionStore;
+import com.dbzlegacy.adaptivedifficulty.noea.AbsorptionClearLog;
+import com.dbzlegacy.adaptivedifficulty.noea.MajinAbsorptionStore;
 import com.dbzlegacy.adaptivedifficulty.progression.PrestigeResourceRecovery;
 import com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampPrestigeBridge;
 import com.dragonminez.common.hair.CustomHair;

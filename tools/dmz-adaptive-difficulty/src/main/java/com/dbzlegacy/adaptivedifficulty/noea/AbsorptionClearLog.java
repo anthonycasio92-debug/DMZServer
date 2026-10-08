@@ -1,8 +1,11 @@
-package com.dbzlegacy.adaptivedifficulty.mixin;
+package com.dbzlegacy.adaptivedifficulty.noea;
 
 /**
  * Prints a wipe failure on stdout. The server log keeps the stack next to the
  * other {@code [LM]} lines. {@code printStackTrace} still goes to stderr.
+ *
+ * <p>This class stays outside the mixin package. The dedicated-server
+ * classloader does not resolve ordinary classes that live next to mixins.
  */
 public final class AbsorptionClearLog {
     private AbsorptionClearLog() {}
