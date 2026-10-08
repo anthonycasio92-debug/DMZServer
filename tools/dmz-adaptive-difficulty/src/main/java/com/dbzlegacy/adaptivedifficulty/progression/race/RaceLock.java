@@ -1,7 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.progression.race;
 
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
-import com.dbzlegacy.adaptivedifficulty.progression.ProgressionConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionData;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import com.dbzlegacy.adaptivedifficulty.util.LmChat;
@@ -18,8 +17,7 @@ import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Clears stuck saga {@code difficultyChosen} while character creation is incomplete.
- * Restricted-race skill gates are gone — a missing unlock skill no longer denies
- * a race or resets the character.
+ * Race selection is never denied and a missing skill never resets the character.
  */
 public final class RaceLock {
     private static final long SAGA_DIFF_COOLDOWN_MS = 8_000L;
@@ -42,7 +40,7 @@ public final class RaceLock {
     }
 
     public static void pulse(ServerPlayer player, long nowMs) {
-        if (!ProgressionConfig.raceLock() || player == null) {
+        if (player == null) {
             return;
         }
         if (nowMs < ProgressionData.tempGetLong(player, "restricted_race_command_tick", 0L)) {

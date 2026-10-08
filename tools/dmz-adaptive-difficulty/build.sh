@@ -73,11 +73,67 @@ $ROOT/libraries/org/slf4j/slf4j-api/2.0.1/slf4j-api-2.0.1.jar:\
 $CNPC:\
 $DMZ"
 
+NOEA="${NOEA_JAR:-}"
+if [[ -z "$NOEA" ]]; then
+  for candidate in \
+    /tmp/noea-1.2.0.jar \
+    /tmp/noea.jar \
+    "$ROOT"/mods/Noea-1.2*.jar \
+    "$ROOT"/mods/Noea*.jar
+  do
+    if [[ -f "$candidate" ]]; then
+      NOEA="$candidate"
+      break
+    fi
+  done
+fi
+if [[ ! -f "$NOEA" ]]; then
+  echo "Missing Noea jar for absorption mixin compile (set NOEA_JAR)." >&2
+  exit 1
+fi
+echo "Using Noea jar for compile: $NOEA"
+MELEE="$(ls -1 "$ROOT"/mods/dmz_mohist_melee_fix-*.jar 2>/dev/null | sort -V | tail -1 || true)"
+if [[ -z "${MELEE:-}" || ! -f "$MELEE" ]]; then
+  echo "Missing dmz_mohist_melee_fix jar for the reset wipe mixin." >&2
+  exit 1
+fi
+echo "Using melee jar for compile: $MELEE"
+CP="$CP:$NOEA:$MELEE"
+
+echo "Cleaning compile output before packaging"
 rm -rf "$OUT"
 mkdir -p "$OUT"
 
 mapfile -t SOURCES < <(find "$SRC" -name '*.java' | sort)
 javac --release 17 -proc:none -cp "$CP" -d "$OUT" "${SOURCES[@]}"
+
+# For every class this compile actually overlaid, drop base-jar inner classes the
+# new bytecode does not emit, and copy the inner classes it does emit.
+sync_overlaid_inners() {
+  local out_dir="$1" merge_dir="$2"
+  local src rel dest base dest_dir src_dir stale name inner
+  while IFS= read -r -d '' src; do
+    rel="${src#"$out_dir"/}"
+    dest="$merge_dir/$rel"
+    [[ -f "$dest" ]] || continue
+    cmp -s "$src" "$dest" || continue
+    base="$(basename "$rel" .class)"
+    [[ "$base" == *\$* ]] && continue
+    dest_dir="$(dirname "$dest")"
+    src_dir="$(dirname "$src")"
+    shopt -s nullglob
+    for stale in "$dest_dir/${base}\$"*.class; do
+      name="$(basename "$stale")"
+      if [[ ! -f "$src_dir/$name" ]]; then
+        rm -f "$stale"
+      fi
+    done
+    for inner in "$src_dir/${base}\$"*.class; do
+      cp "$inner" "$dest_dir/"
+    done
+    shopt -u nullglob
+  done < <(find "$out_dir" -name '*.class' -print0)
+}
 
 merge_onto_base_jar() {
   local base="$1" dest="$2"
@@ -88,6 +144,7 @@ merge_onto_base_jar() {
   # Overlay selected compiled packages (CNPC GUI work) — everything else stays from live base jar.
   local rel
   if [[ -d "$OUT/com/dbzlegacy/adaptivedifficulty/gui/cnpc" ]]; then
+    rm -rf "$merge/com/dbzlegacy/adaptivedifficulty/gui/cnpc"
     mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/gui/cnpc"
     cp -a "$OUT/com/dbzlegacy/adaptivedifficulty/gui/cnpc/." "$merge/com/dbzlegacy/adaptivedifficulty/gui/cnpc/"
   fi
@@ -98,6 +155,11 @@ merge_onto_base_jar() {
   if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/rival/RivalSystem.class" ]]; then
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/rival/RivalSystem.class" \
       "$merge/com/dbzlegacy/adaptivedifficulty/rival/RivalSystem.class"
+  fi
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/rival/RivalFusion.class" ]]; then
+    mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/rival"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/rival/RivalFusion.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/rival/RivalFusion.class"
   fi
   if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/gui/RivalGuiApi.class" ]]; then
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/gui/RivalGuiApi.class" \
@@ -136,12 +198,25 @@ merge_onto_base_jar() {
     mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/progression/shop"
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigeSystem.class" \
       "$merge/com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigeSystem.class"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigeSystem\$"*.class \
+      "$merge/com/dbzlegacy/adaptivedifficulty/progression/shop/" 2>/dev/null || true
+  fi
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigePointsSystem.class" ]]; then
+    mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/progression/shop"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigePointsSystem.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigePointsSystem.class"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigePointsSystem\$"*.class \
+      "$merge/com/dbzlegacy/adaptivedifficulty/progression/shop/" 2>/dev/null || true
   fi
   # Hub/chat fallback + /lm open|page — must ship from src (base jar may still reference /lmdo).
-  for class in MechanicsChatMenu DifficultyChatMenu RivalChatMenu SparChatMenu ProgressionChatMenu; do
+  for class in MechanicsChatMenu DifficultyChatMenu RivalChatMenu SparChatMenu ProgressionChatMenu GuiClickConfirm DifficultyTeamGuiApi; do
     if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/gui/${class}.class" ]]; then
       cp "$OUT/com/dbzlegacy/adaptivedifficulty/gui/${class}.class" \
         "$merge/com/dbzlegacy/adaptivedifficulty/gui/${class}.class"
+      # Inner classes (GuiClickConfirm$Pending) are separate files. Copying only the
+      # outer class throws NoClassDefFoundError the first time a confirm click runs.
+      cp "$OUT/com/dbzlegacy/adaptivedifficulty/gui/${class}\$"*.class \
+        "$merge/com/dbzlegacy/adaptivedifficulty/gui/" 2>/dev/null || true
     fi
   done
   if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/command/MechanicsCommands.class" ]]; then
@@ -151,7 +226,7 @@ merge_onto_base_jar() {
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/command/MechanicsCommands\$"*.class \
       "$merge/com/dbzlegacy/adaptivedifficulty/command/" 2>/dev/null || true
   fi
-  for class in LmCommandSuggestions LmCommandFeedback LmStaffHelp LmCommandHelp LmCommandMessages CommandAccess LmAdminArgCoalesce MohistCommandBridge PrestigeAdminCommandTree DifficultyCommands RivalCommands SparCommands ProgressionCommands CharacterCommands MechanicsCommands; do
+  for class in LmCommandSuggestions LmCommandFeedback LmStaffHelp LmCommandHelp LmCommandMessages CommandAccess LmAdminArgCoalesce MohistCommandBridge PrestigeAdminCommandTree DifficultyCommands RivalCommands SparCommands ProgressionCommands CharacterCommands MechanicsCommands FusionCooldownReset; do
     if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/command/${class}.class" ]]; then
       mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/command"
       cp "$OUT/com/dbzlegacy/adaptivedifficulty/command/${class}.class" \
@@ -178,7 +253,8 @@ merge_onto_base_jar() {
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/character/CharacterServicesSystem.class" \
       "$merge/com/dbzlegacy/adaptivedifficulty/character/CharacterServicesSystem.class"
   fi
-  for class in CharacterServicesAccess CharacterServicesPermissionBootstrap; do
+  for class in CharacterServicesAccess CharacterServicesPermissionBootstrap DmzFightingClassStatsSync \
+      DmzClassCommandApply RaceChangeCreationFlow CosmeticHeadBoneService; do
     if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/character/${class}.class" ]]; then
       mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/character"
       cp "$OUT/com/dbzlegacy/adaptivedifficulty/character/${class}.class" \
@@ -194,6 +270,20 @@ merge_onto_base_jar() {
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/event/DifficultyEvents.class" \
       "$merge/com/dbzlegacy/adaptivedifficulty/event/DifficultyEvents.class"
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/event/DifficultyEvents\$"*.class \
+      "$merge/com/dbzlegacy/adaptivedifficulty/event/" 2>/dev/null || true
+  fi
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/event/DragonBallRadarPickup.class" ]]; then
+    mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/event"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/event/DragonBallRadarPickup.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/event/DragonBallRadarPickup.class"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/event/DragonBallRadarPickup\$"*.class \
+      "$merge/com/dbzlegacy/adaptivedifficulty/event/" 2>/dev/null || true
+  fi
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/event/FallDamageDiag.class" ]]; then
+    mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/event"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/event/FallDamageDiag.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/event/FallDamageDiag.class"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/event/FallDamageDiag\$"*.class \
       "$merge/com/dbzlegacy/adaptivedifficulty/event/" 2>/dev/null || true
   fi
   if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/util/StaffAccess.class" ]]; then
@@ -217,6 +307,21 @@ merge_onto_base_jar() {
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/race/AndroidConversion.class" \
       "$merge/com/dbzlegacy/adaptivedifficulty/progression/race/AndroidConversion.class"
   fi
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/progression/race/RaceLockConfig.class" ]]; then
+    rm -f "$merge/com/dbzlegacy/adaptivedifficulty/progression/race/RaceLockConfig\$"*.class
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/race/RaceLockConfig.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/progression/race/RaceLockConfig.class"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/race/RaceLockConfig\$"*.class \
+      "$merge/com/dbzlegacy/adaptivedifficulty/progression/race/" 2>/dev/null || true
+  fi
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/progression/race/RaceLock.class" ]]; then
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/race/RaceLock.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/progression/race/RaceLock.class"
+  fi
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/progression/ProgressionConfig.class" ]]; then
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/ProgressionConfig.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/progression/ProgressionConfig.class"
+  fi
   if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/progression/ProgressionModuleCatalog.class" ]]; then
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/ProgressionModuleCatalog.class" \
       "$merge/com/dbzlegacy/adaptivedifficulty/progression/ProgressionModuleCatalog.class"
@@ -228,7 +333,8 @@ merge_onto_base_jar() {
     mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/progression/bridge" \
       "$merge/com/dbzlegacy/adaptivedifficulty/mixin"
     for pool_cls in DmzResourcePoolClamp LmOverhaulPrestigeIntegration ProgressionSystem \
-        StaminaRegenGuard StatsDataLoadContext; do
+        StaminaRegenGuard StatsDataLoadContext PersonalLevelCapMirror LmOverhaulCapMath \
+        LmStatsDataAccess PrestigeResourceRecovery DmzInflatedAttributeReset; do
       if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/progression/${pool_cls}.class" ]]; then
         cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/${pool_cls}.class" \
           "$merge/com/dbzlegacy/adaptivedifficulty/progression/${pool_cls}.class"
@@ -241,18 +347,59 @@ merge_onto_base_jar() {
         "$merge/com/dbzlegacy/adaptivedifficulty/progression/bridge/"
     fi
     for mixin_cls in StatsDataHudPoolMaxMixin StatsDataOverhaulCombatScaleMixin \
-        ResourcesPoolClampMixin ResourcesLoadClampMixin \
-        StatsDataRestoreMultiplierClampMixin StatsDataLoadClampMixin; do
+        ResourcesEnergyDrainGuardMixin StatsDataGuardsMixin StatsDataMixin \
+        StatsSyncC2SGenderMixin \
+        DmzStatsResetPlayerBlockMixin \
+        MeleeStatsResetAbsorptionWipeMixin \
+        MeleeStatsResetPlayerBlockMixin \
+        DendeResetAbsorptionWipeMixin \
+        CreateCharacterAbsorptionWipeMixin \
+        LegacyMechanicsMixinPlugin; do
       if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/mixin/${mixin_cls}.class" ]]; then
         cp "$OUT/com/dbzlegacy/adaptivedifficulty/mixin/${mixin_cls}.class" \
           "$merge/com/dbzlegacy/adaptivedifficulty/mixin/${mixin_cls}.class"
       fi
     done
+    if [[ -d "$OUT/com/dbzlegacy/adaptivedifficulty/mixin/noea" ]]; then
+      mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/mixin/noea"
+      cp -a "$OUT/com/dbzlegacy/adaptivedifficulty/mixin/noea/." \
+        "$merge/com/dbzlegacy/adaptivedifficulty/mixin/noea/"
+    fi
+    # Ordinary classes cannot live in the mixin package. The server classloader
+    # does not resolve them, so the Majin wipe never runs.
+    mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/noea"
+    for noea_cls in MajinAbsorptionStore AbsorptionClearLog AbsorptionWipeHelper; do
+      if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/noea/${noea_cls}.class" ]]; then
+        cp "$OUT/com/dbzlegacy/adaptivedifficulty/noea/${noea_cls}.class" \
+          "$merge/com/dbzlegacy/adaptivedifficulty/noea/${noea_cls}.class"
+      fi
+    done
+    rm -f "$merge/com/dbzlegacy/adaptivedifficulty/mixin/AbsorptionClearLog.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/mixin/noea/MajinAbsorptionStore.class"
     cp "$RES/legacymechanics.mixins.json" "$merge/legacymechanics.mixins.json"
     if [[ -f "$RES/legacymechanics.refmap.json" ]]; then
       cp "$RES/legacymechanics.refmap.json" "$merge/legacymechanics.refmap.json"
     fi
   fi
+  # Retired facades. A base jar can still contain these classes after the sources are gone.
+  rm -f \
+    "$merge/com/dbzlegacy/adaptivedifficulty/gui/BukkitGuiBridge.class" \
+    "$merge/com/dbzlegacy/adaptivedifficulty/gui/CmiGuiBridge.class" \
+    "$merge/com/dbzlegacy/adaptivedifficulty/progression/skills/SkillProgression.class" \
+    "$merge/com/dbzlegacy/adaptivedifficulty/progression/race/RaceProgression.class" \
+    "$merge/com/dbzlegacy/adaptivedifficulty/progression/tp/TpProgression.class" \
+    "$merge/com/dbzlegacy/adaptivedifficulty/progression/bridge/CnpcBridge.class" \
+    "$merge/com/dbzlegacy/adaptivedifficulty/mixin/StatsDataLoadClampMixin.class" \
+    "$merge/com/dbzlegacy/adaptivedifficulty/mixin/StatsDataGetPlayerMixin.class" \
+    "$merge/com/dbzlegacy/adaptivedifficulty/mixin/StatsDataSecondaryPlayerMixin.class" \
+    "$merge/com/dbzlegacy/adaptivedifficulty/mixin/StatsDataRestoreMultiplierClampMixin.class" \
+    "$merge/com/dbzlegacy/adaptivedifficulty/mixin/StatsDataResetPrestigeSyncMixin.class" \
+    "$merge/com/dbzlegacy/adaptivedifficulty/mixin/ResourcesPoolClampMixin.class" \
+    "$merge/com/dbzlegacy/adaptivedifficulty/mixin/ResourcesLoadClampMixin.class" \
+    "$merge/com/dbzlegacy/adaptivedifficulty/mixin/DmzStatsResetAbsorptionWipeMixin.class"
+  # Classes copied from this compile must ship their inner classes, and must
+  # not keep a stale base-jar inner the new bytecode no longer emits.
+  sync_overlaid_inners "$OUT" "$merge"
   cp "$RES/META-INF/mods.toml" "$merge/META-INF/mods.toml"
   if [[ ! -f "$merge/legacymechanics.mixins.json" ]]; then
     cp "$RES/legacymechanics.mixins.json" "$merge/legacymechanics.mixins.json"
@@ -285,12 +432,18 @@ fi
 # StatsData#load (mixins → DmzResourcePoolClamp) and clients see "Invalid player data".
 
 echo "Built $JAR (base: $(basename "$BASE_JAR"))"
+if ! jar tf "$JAR" | grep -q 'gui/GuiClickConfirm\$Pending.class'; then
+  echo "ERROR: GuiClickConfirm\$Pending.class missing from $JAR (confirm clicks crash the server)" >&2
+  exit 1
+fi
+python3 "$HERE/sim/audit_jar_inner_classes.py" "$JAR"
 # A second LegacyMechanics jar in mods/ crashes a fresh server on startup.
 find "$ROOT/mods" -maxdepth 1 -type f -name 'LegacyMechanics-*.jar' ! -name "LegacyMechanics-${VERSION}.jar" -delete
 jar tf "$JAR"
 
 # Fail-closed audits: product features, combat scaling sim, GUI ABI.
 HERE_SIM="$(cd "$(dirname "$0")" && pwd)/sim"
+python3 "$HERE_SIM/audit_mixin_visibility.py"
 python3 "$HERE_SIM/audit_overhaul_scale_delegation.py"
 python3 "$HERE_SIM/audit_cnpc_gui_style.py"
 python3 "$HERE_SIM/audit_forge_gui_backend.py"

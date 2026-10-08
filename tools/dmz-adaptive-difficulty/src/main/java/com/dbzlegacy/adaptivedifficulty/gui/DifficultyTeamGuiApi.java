@@ -83,7 +83,7 @@ public final class DifficultyTeamGuiApi {
         if (!DifficultyConfig.get().enableRivalSystem) {
             return List.of(
                     "§7Rival system is disabled.",
-                    "§8Ask staff to enable enableRivalSystem.");
+                    "§8Ask staff to enable the rival system.");
         }
         String p = page == null ? "team" : page.trim().toLowerCase(Locale.ROOT);
         if (!"team".equals(p) && !"teams".equals(p)) {
@@ -196,12 +196,12 @@ public final class DifficultyTeamGuiApi {
             double mutantBonus = TeamScaling.rarityBonusPercent(player, TeamScaling.RarityBonus.MUTATION);
             double bossBonus = TeamScaling.rarityBonusPercent(player, TeamScaling.RarityBonus.BOSS_PROMOTION);
             if (eliteBonus > 0.0 || mutantBonus > 0.0 || bossBonus > 0.0) {
-                lines.add("§7Spawn boost §fElite +" + formatBonus(eliteBonus)
-                        + " §8· Mutant +" + formatBonus(mutantBonus)
+                lines.add("§7Spawn boost §fElite +" + formatBonus(eliteBonus) + "%"
+                        + " §8· Mutant +" + formatBonus(mutantBonus) + "%"
                         + " §8· Boss +" + formatBonus(bossBonus) + "%");
             }
         }
-        lines.add("§8Only mutual rivals who also use a team mode count.");
+        lines.add("§8Only mutual rivals using Threshold or Full count.");
         lines.add("§8/rival — declare, accept, manage slots.");
         return lines;
     }

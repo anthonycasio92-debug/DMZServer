@@ -60,10 +60,10 @@ public final class ProgressionGuiApi {
                 "§e/progression boost start <encoded> [name]",
                 "§e/progression boost end",
                 "§e/progression do <action> [arg] [page] §8— GUI actions",
-                "§8Pages: main · skills · tp · race · combat · end · utility · economy · admin · help",
-                "§8Economy: staff free Ancient Coin costs — §f/lm §7→ Progression → Ancient Coins",
+                "§8Pages: main · skills · tp · race · combat · end · utility · shop · status · economy · admin · help",
+                "§8Economy: staff free Ancient Coin costs — §f/lm §7→ Staff Admin → Progression panel → Ancient Coins",
                 "§8Flags: potential boost bio",
-                "§8       racelock yardrat spiritualist android kiweapons piercing dot apothic",
+                "§8       yardrat spiritualist android kiweapons piercing dot apothic",
                 "§8       end endportal shadow statchecker");
     }
 
@@ -109,7 +109,7 @@ public final class ProgressionGuiApi {
         if (!ProgressionSystem.setFlag(flag, on)) {
             return "§cUnknown flag: §f" + flag;
         }
-        return "§aProgression §f" + flag + " §7→ §f" + (on ? "ON" : "OFF");
+        return "§eProgression " + flag + " → " + (on ? "ON" : "OFF");
     }
 
     /**
@@ -177,7 +177,13 @@ public final class ProgressionGuiApi {
         }
         boolean self = target.m_20148_().equals(actor.m_20148_());
         if (!self && !StaffAccess.isStaff(actor)) {
-            return "§cStaff only — you can convert yourself at Dr. Gero or use Convert yourself in the menu.";
+            return "§cStaff only — you can convert yourself at Dr. Gero or use Android convert in the menu.";
+        }
+        String who = self ? "yourself" : target.m_7755_().getString();
+        if (!GuiClickConfirm.confirmed(actor.m_20148_(), "android-convert:" + target.m_20148_())) {
+            return "§eConvert §f" + who + " §eto Android?\n"
+                    + "§cThis deletes Super forms and Legendary forms.\n"
+                    + "§eClick again within 10 seconds.";
         }
         return ProgressionSystem.androidConvert(target);
     }
@@ -247,12 +253,22 @@ public final class ProgressionGuiApi {
         String defaultPurchaser = actor == null ? "Server" : actor.m_7755_().getString();
         // GUI compact forms: end | 2.0:30 | encoded:1250030
         if ("end".equalsIgnoreCase(raw) || "stop".equalsIgnoreCase(raw)) {
+            String ask = confirmBoost(actor, "boost:end",
+                    "§eEnd the active global TP boost for everyone?");
+            if (ask != null) {
+                return ask;
+            }
             return ProgressionSystem.boostEnd();
         }
         if (raw.toLowerCase(Locale.ROOT).startsWith("encoded:")) {
             String num = raw.substring("encoded:".length()).trim();
             try {
                 int encoded = Integer.parseInt(num);
+                String ask = confirmBoost(actor, "boost:encoded:" + encoded,
+                        "§eStart this global TP boost? This broadcasts server-wide.");
+                if (ask != null) {
+                    return ask;
+                }
                 return ProgressionSystem.boostStartEncoded(actor, encoded, defaultPurchaser);
             } catch (NumberFormatException e) {
                 return "§cInvalid encoded value: §f" + num + "\n" + boostUsage();
@@ -263,6 +279,10 @@ public final class ProgressionGuiApi {
             try {
                 double mult = Double.parseDouble(parts[0].trim());
                 int minutes = Integer.parseInt(parts[1].trim());
+                String ask = confirmBoost(actor, "boost:" + mult + ":" + minutes, boostStartPrompt(mult, minutes));
+                if (ask != null) {
+                    return ask;
+                }
                 return ProgressionSystem.boostStart(actor, mult, minutes, defaultPurchaser);
             } catch (NumberFormatException e) {
                 return "§cInvalid boost preset: §f" + raw + "\n" + boostUsage();
@@ -272,6 +292,11 @@ public final class ProgressionGuiApi {
         String[] parts = raw.split("\\s+");
         String head = parts[0].toLowerCase(Locale.ROOT);
         if ("end".equals(head) || "stop".equals(head)) {
+            String ask = confirmBoost(actor, "boost:end",
+                    "§eEnd the active global TP boost for everyone?");
+            if (ask != null) {
+                return ask;
+            }
             return ProgressionSystem.boostEnd();
         }
         int i = 0;
@@ -294,6 +319,10 @@ public final class ProgressionGuiApi {
                 if (purchaser.isBlank()) {
                     purchaser = defaultPurchaser;
                 }
+                String ask = confirmBoost(actor, "boost:" + mult + ":" + minutes, boostStartPrompt(mult, minutes));
+                if (ask != null) {
+                    return ask;
+                }
                 return ProgressionSystem.boostStart(actor, mult, minutes, purchaser);
             }
         }
@@ -304,6 +333,11 @@ public final class ProgressionGuiApi {
                 String purchaser = joinFrom(parts, i + 1);
                 if (purchaser.isBlank()) {
                     purchaser = defaultPurchaser;
+                }
+                String ask = confirmBoost(actor, "boost:encoded:" + encoded,
+                        "§eStart this global TP boost? This broadcasts server-wide.");
+                if (ask != null) {
+                    return ask;
                 }
                 return ProgressionSystem.boostStartEncoded(actor, encoded, purchaser);
             } catch (NumberFormatException e) {
@@ -319,7 +353,24 @@ public final class ProgressionGuiApi {
                 + "§e/progression boost start <mult> <minutes> [name] §7— e.g. §f2 30 PlayerName\n"
                 + "§e/progression boost start <encoded> [name] §7— Fabled encoded\n"
                 + "§8Console OK (store): §fprogression boost start 2 30 {username}\n"
-                + "§8GUI: Progression → TP Gains → Global TP Boost";
+                + "§8[Staff] CNPC: Staff Admin → Progression panel → TP gains → Global TP boost";
+    }
+
+    /** {@code null} when the click may proceed. Console ({@code actor == null}) skips the prompt. */
+    private static String confirmBoost(ServerPlayer actor, String key, String prompt) {
+        if (actor == null) {
+            return null;
+        }
+        if (GuiClickConfirm.confirmed(actor.m_20148_(), key)) {
+            return null;
+        }
+        return prompt + "\n§eClick again within 10 seconds.";
+    }
+
+    private static String boostStartPrompt(double mult, int minutes) {
+        String shown = mult == Math.rint(mult) ? ((int) mult) + "×" : mult + "×";
+        return "§eStart a " + shown + " TP boost for " + minutes
+                + " minutes? This broadcasts server-wide.";
     }
 
     private static boolean looksLikeInt(String s) {
@@ -497,7 +548,6 @@ public final class ProgressionGuiApi {
         out.put("flag_boost", c.enableGlobalTpBoost ? "true" : "false");
         out.put("flag_bio", c.enableBioAndroid ? "true" : "false");
         // Race & Form
-        out.put("flag_racelock", c.enableRaceLock ? "true" : "false");
         out.put("flag_yardrat", c.enableYardrat ? "true" : "false");
         out.put("flag_spiritualist", c.enableSpiritualistKi ? "true" : "false");
         out.put("flag_android", c.enableAndroidConversion ? "true" : "false");
@@ -544,13 +594,12 @@ public final class ProgressionGuiApi {
                     flagLine("Bio-Android Absorb", "flag_bio"));
             case "race" -> categoryLines(
                     "§b§lRace & Form",
-                    "§7Race lock, Yardrat, Spiritualist Ki,",
-                    "§7and Android conversion ports.",
+                    "§7Yardrat, Spiritualist Ki,",
+                    "§7and Android conversion.",
                     ph,
-                    flagLine("DMZ Race Lock", "flag_racelock"),
                     flagLine("Yardrat", "flag_yardrat"),
                     flagLine("Spiritualist Ki", "flag_spiritualist"),
-                    flagLine("Android Conversion", "flag_android"));
+                    flagLine("Android convert", "flag_android"));
             case "combat" -> categoryLines(
                     "§c§lCombat",
                     "§7Ki weapons, piercing, DoT extra damage,",
@@ -593,11 +642,10 @@ public final class ProgressionGuiApi {
                 lore.add("");
                 lore.add("§7Staff free costs §f" + (staffFree ? "ON" : "OFF"));
                 lore.add("");
-                lore.add("§8Today: AD tiers · Character Services ·");
-                lore.add("§8End dragon summon · head bone shop");
-                lore.add("§8Future paid LM features use the same gate.");
+                lore.add("§8These features charge Ancient Coins:");
+                lore.add("§8Difficulty tiers · Character Services · End dragon summon · Head parts");
                 lore.add("");
-                lore.add("§8/lm §7→ Progression → Ancient Coins");
+                lore.add("§8/lm §7→ Staff Admin → Progression panel → Ancient Coins");
                 yield lore;
             }
             case "admin", "flags", "disable" -> {
@@ -621,7 +669,7 @@ public final class ProgressionGuiApi {
                     help.add("§e/skillcheck §7— Skill Check (donator)");
                     help.add("§8Staff · tap flags in section GUIs · §f/prog do module_doc <section>");
                 } else {
-                    help.add("§7Other actions: §f/lm §7→ Prestige · Remove Android");
+                    help.add("§7Other actions: §f/lm §7→ Prestige · Remove Android · Skill Check");
                 }
                 yield help;
             }
@@ -686,7 +734,6 @@ public final class ProgressionGuiApi {
         lore.add(flag("boost", ph));
         lore.add(flag("bio", ph));
         lore.add("§b§lRace & Form");
-        lore.add(flag("racelock", ph));
         lore.add(flag("yardrat", ph));
         lore.add(flag("spiritualist", ph));
         lore.add(flag("android", ph));
@@ -766,7 +813,7 @@ public final class ProgressionGuiApi {
             if (!ProgressionSystem.setFlag(key, next)) {
                 return "§cUnknown flag: " + key;
             }
-            return "§aProgression §f" + key + " §7→ §f" + (next ? "ON" : "OFF");
+            return "§eProgression " + key + " → " + (next ? "ON" : "OFF");
         }
         if ("module_doc".equals(act) || "moduledoc".equals(act) || "module".equals(act)) {
             if (!StaffAccess.isStaff(player)) {
@@ -857,6 +904,9 @@ public final class ProgressionGuiApi {
         out.put("held_max", String.valueOf(PrestigeSystem.maxHeld()));
         out.put("required", String.valueOf(required));
         out.put("required_fmt", DmzRewards.formatWhole(required));
+        int nextRequired = PrestigeSystem.followingRequirement(completed, held);
+        out.put("next_required", String.valueOf(nextRequired));
+        out.put("next_required_fmt", DmzRewards.formatWhole(nextRequired));
         out.put("ready", level >= required && held < PrestigeSystem.maxHeld() ? "true" : "false");
         int points = PrestigePointsSystem.getPoints(player);
         int breakthroughs = PrestigePointsSystem.getBreakthroughs(player);
@@ -917,7 +967,7 @@ public final class ProgressionGuiApi {
     public static List<String> prestigeLines(ServerPlayer player, String page) {
         Map<String, String> ph = prestigePlaceholders(player);
         if (!"true".equalsIgnoreCase(ph.get("bridge_ok"))) {
-            return List.of("§cLegacyMechanics mod unreachable.");
+            return List.of("§cCouldn't reach the server's systems. Try relogging.");
         }
         if (!"true".equalsIgnoreCase(ph.get("system_enabled"))) {
             return List.of("§cPrestige system is disabled.");
@@ -930,14 +980,14 @@ public final class ProgressionGuiApi {
         switch (p) {
             case "turnin", "points" -> {
                 lore.add("§7Points: §e" + ph.getOrDefault("points", "0"));
-                lore.add("§7Turn in §f1§7, §f2§7, §f3§7, §f6§7, or §f9 §7at a time");
-                lore.add("§7Payout: §f3→4 §8· §f6→9 §8· §f9→15 §7points");
+                lore.add("§7Turn in held prestiges: §f1§7, §f2§7, §f3§7, §f6§7, or §f9 §7at a time.");
+                lore.add("§7Bigger turn-ins give bonus points: §f3→4 §8· §f6→9 §8· §f9→15");
                 lore.add("§81–2 give 1 point each (no pack bonus)");
             }
             case "shop", "skills" -> {
                 lore.add("§7Points: §e" + ph.getOrDefault("points", "0"));
                 lore.add("§71 point → +1 skill level · §dPotential Unlock §7→ +2");
-                lore.add("§aPermanent purchases §7· Skill Check only · survive prestige");
+                lore.add("§aPermanent purchases §7· survive prestige · §8Natural + Saga skills only");
                 lore.add("§7Catalog: §f" + ph.getOrDefault("shop_skill_count", "0")
                         + " §7skills · §f" + ph.getOrDefault("shop_pages", "1") + " §7page(s)");
             }
@@ -945,13 +995,13 @@ public final class ProgressionGuiApi {
                 lore.add("§7Points: §e" + ph.getOrDefault("points", "0"));
                 lore.add("§aPermanent §7Majin / Mutant: §e"
                         + ph.getOrDefault("form_cost", "5") + " §7points each");
-                lore.add("§7Only one at a time · unpurchase current before switching");
+                lore.add("§7You can only have one special form at a time. Remove your current one (Majin or Mutant) before picking the other.");
                 lore.add("§7Majin: " + ("true".equals(ph.get("majin")) ? "§aOwned" : "§cNot owned"));
                 lore.add("§7Mutant: " + ("true".equals(ph.get("mutant")) ? "§aOwned" : "§cNot owned"));
                 if ("true".equals(ph.get("mutant")) && !"true".equals(ph.get("majin"))) {
-                    lore.add("§8Unpurchase Mutant to unlock Majin purchase");
+                    lore.add("§8Remove Mutant to unlock Majin purchase");
                 } else if ("true".equals(ph.get("majin")) && !"true".equals(ph.get("mutant"))) {
-                    lore.add("§8Unpurchase Majin to unlock Mutant purchase");
+                    lore.add("§8Remove Majin to unlock Mutant purchase");
                 }
             }
             case "cap", "breakthrough", "breakthroughs" -> {
@@ -960,7 +1010,7 @@ public final class ProgressionGuiApi {
                         + "§7/§f" + ph.getOrDefault("breakthroughs_max", "5"));
                 lore.add("§7Your personal level cap: §f"
                         + ph.getOrDefault("level_cap_fmt", "100000"));
-                lore.add("§8Server maxValue is §f150000 §8— soft-lock holds others at their cap");
+                lore.add("§8Server cap is §f150,000 §8— soft-lock holds others at their cap");
                 int btCount = 0;
                 try {
                     btCount = Integer.parseInt(ph.getOrDefault("breakthroughs", "0"));
@@ -983,12 +1033,16 @@ public final class ProgressionGuiApi {
             }
             default -> {
                 lore.add("§7Points: §e" + ph.getOrDefault("points", "0"));
-                lore.add("§7Level §f" + ph.getOrDefault("level_fmt", "0")
-                        + " §7· next one needs §e" + ph.getOrDefault("required_fmt", "0"));
-                lore.add("§7Your first four each need §f20,000§7.");
-                lore.add("§7From the fifth on: §f50,000 §7if you hold none, §f100,000 §7if you hold any.");
+                lore.add("§7Prestige: §f" + ph.getOrDefault("completed", "0"));
+                lore.add("§7Requires §e" + ph.getOrDefault("required_fmt", "0")
+                        + " §7power to prestige (next: §e"
+                        + ph.getOrDefault("next_required_fmt", "0") + "§7)");
+                lore.add("§7Each prestige costs more than the last:");
+                lore.add("§71st §f20,000 §8· §72nd §f40,000 §8· §73rd §f60,000 §8· §74th §f80,000");
+                lore.add("§7How many you are holding does not change the first four.");
+                lore.add("§7From the 5th on: §f50,000 §7(§f100,000 §7if you're holding any)");
                 if ("true".equalsIgnoreCase(ph.get("ready"))) {
-                    lore.add("§aYou can prestige now.");
+                    lore.add("§eYou can prestige now.");
                 } else {
                     lore.add("§cYou need a higher level first.");
                 }

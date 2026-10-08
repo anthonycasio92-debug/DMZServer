@@ -161,10 +161,10 @@ else
 fi
 
 # Version in jars must match source pin when LM_DEPLOY_VERSION is set.
-FORGE_VER="$(unzip -p "$FORGE_JAR" META-INF/mods.toml 2>/dev/null | rg '^version\s*=' | head -1 | rg -o '[0-9]+\.[0-9]+\.[0-9]+' || true)"
+FORGE_VER="$(unzip -p "$FORGE_JAR" META-INF/mods.toml 2>/dev/null | rg '^version\s*=' | head -1 | rg -o '[0-9]+\.[0-9]+(\.[0-9]+)?' || true)"
 GUI_VER=""
 if [[ -n "$GUI_JAR" ]]; then
-  GUI_VER="$(unzip -p "$GUI_JAR" plugin.yml 2>/dev/null | rg '^version:' | head -1 | rg -o '[0-9]+\.[0-9]+\.[0-9]+' || true)"
+  GUI_VER="$(unzip -p "$GUI_JAR" plugin.yml 2>/dev/null | rg '^version:' | head -1 | rg -o '[0-9]+\.[0-9]+(\.[0-9]+)?' || true)"
 fi
 if [[ -n "${LM_DEPLOY_VERSION:-}" && -n "$FORGE_VER" && "$FORGE_VER" != "$LM_DEPLOY_VERSION" ]]; then
   echo "DEPLOY ABORTED: Forge jar version $FORGE_VER != LM_DEPLOY_VERSION=$LM_DEPLOY_VERSION" >&2

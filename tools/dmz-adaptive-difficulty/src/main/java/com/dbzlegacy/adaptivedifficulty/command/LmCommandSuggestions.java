@@ -23,6 +23,10 @@ public final class LmCommandSuggestions {
     public static final SuggestionProvider<CommandSourceStack> PLAYERS =
             (ctx, builder) -> SharedSuggestionProvider.m_82970_(onlinePlayerNames(ctx.getSource()), builder);
 
+    /** Online players plus names stored in sparring and rival data. */
+    public static final SuggestionProvider<CommandSourceStack> CLEAR_TARGETS =
+            (ctx, builder) -> SharedSuggestionProvider.m_82970_(clearTargetNames(ctx.getSource()), builder);
+
     public static List<String> onlinePlayerNames(CommandSourceStack source) {
         if (source == null) {
             return List.of();
@@ -45,9 +49,94 @@ public final class LmCommandSuggestions {
     }
 
     public static List<String> filterPlayerNames(CommandSourceStack source, String partial) {
+        return filterNames(onlinePlayerNames(source), partial);
+    }
+
+    /** Tab list for {@code /lm admin clear} and character cooldown clear. Includes offline names. */
+    public static List<String> filterClearTargets(CommandSourceStack source, String partial) {
+        return filterNames(clearTargetNames(source), partial);
+    }
+
+    public static boolean isOfflineClearSlot(String label, String[] args) {
+        if (args == null || label == null || !"lm".equalsIgnoreCase(label)) {
+            return false;
+        }
+        int n = args.length;
+        String a0 = n > 0 ? lower(args[0]) : "";
+        String a1 = n > 1 ? lower(args[1]) : "";
+        String a2 = n > 2 ? lower(args[2]) : "";
+        String a3 = n > 3 ? lower(args[3]) : "";
+        if ("admin".equals(a0) && "clear".equals(a1) && n >= 3) {
+            return true;
+        }
+        return "admin".equals(a0) && isCharacterAdminSub(a1) && isCooldownSub(a2) && "clear".equals(a3)
+                && n >= 5;
+    }
+
+    public static List<String> clearTargetNames(CommandSourceStack source) {
+        java.util.LinkedHashSet<String> names = new java.util.LinkedHashSet<>(onlinePlayerNames(source));
+        try {
+            for (com.dbzlegacy.adaptivedifficulty.rival.RivalPlayerRecord rec
+                    : com.dbzlegacy.adaptivedifficulty.rival.RivalStore.get().players.values()) {
+                if (rec != null && rec.name != null && !rec.name.isBlank()) {
+                    names.add(rec.name);
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        try {
+            com.dbzlegacy.adaptivedifficulty.sparring.SparStore store =
+                    com.dbzlegacy.adaptivedifficulty.sparring.SparStore.get();
+            for (com.dbzlegacy.adaptivedifficulty.sparring.SparStore.LeaderboardEntry ent
+                    : store.leaderboard.values()) {
+                if (ent != null && ent.name != null && !ent.name.isBlank()) {
+                    names.add(ent.name);
+                }
+            }
+            if (store.dojoSeason != null && store.dojoSeason.leaderboard != null) {
+                for (com.dbzlegacy.adaptivedifficulty.sparring.SparStore.DojoEntry ent
+                        : store.dojoSeason.leaderboard.values()) {
+                    if (ent == null) {
+                        continue;
+                    }
+                    if (ent.mentorName != null && !ent.mentorName.isBlank()) {
+                        names.add(ent.mentorName);
+                    }
+                    if (ent.members == null) {
+                        continue;
+                    }
+                    for (com.dbzlegacy.adaptivedifficulty.sparring.SparStore.DojoMemberStats member
+                            : ent.members.values()) {
+                        if (member != null && member.name != null && !member.name.isBlank()) {
+                            names.add(member.name);
+                        }
+                    }
+                }
+            }
+            for (com.dbzlegacy.adaptivedifficulty.sparring.SparStore.MentorBond bond
+                    : store.bondsByPlayer.values()) {
+                if (bond == null) {
+                    continue;
+                }
+                bond.normalizeApprentices();
+                for (com.dbzlegacy.adaptivedifficulty.sparring.SparStore.ApprenticeRef ref : bond.apprentices) {
+                    if (ref != null && ref.name != null && !ref.name.isBlank()) {
+                        names.add(ref.name);
+                    }
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return new ArrayList<>(names);
+    }
+
+    private static List<String> filterNames(List<String> names, String partial) {
         String prefix = partial == null ? "" : partial.toLowerCase(Locale.ROOT);
         List<String> out = new ArrayList<>();
-        for (String name : onlinePlayerNames(source)) {
+        for (String name : names) {
+            if (name == null || name.isBlank()) {
+                continue;
+            }
             if (prefix.isEmpty() || name.toLowerCase(Locale.ROOT).startsWith(prefix)) {
                 out.add(name);
             }
@@ -81,6 +170,9 @@ public final class LmCommandSuggestions {
         String a3 = n > 3 ? lower(args[3]) : "";
 
         if ("lm".equals(cmd)) {
+            if ("fusionreset".equals(a0) && n >= 2) {
+                return true;
+            }
             if ("admin".equals(a0) && "clear".equals(a1) && n >= 3) {
                 return true;
             }
@@ -151,6 +243,13 @@ public final class LmCommandSuggestions {
             return "";
         }
         if ("lm".equals(cmd)) {
+            if (n > 0 && "fusionreset".equals(lower(args[0]))) {
+                if (n < 2) {
+                    return "";
+                }
+                String p = args[1];
+                return p == null ? "" : p;
+            }
             if (n >= 5) {
                 String p = args[4];
                 return p == null ? "" : p;

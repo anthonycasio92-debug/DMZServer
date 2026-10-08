@@ -33,6 +33,24 @@ public final class StaffAccess {
         return player != null && isStaff(player);
     }
 
+    /**
+     * {@code /dmzstats reset} stays available to staff. A player who is not
+     * staff is turned away. Prestige does not use this command.
+     */
+    public static boolean allowDmzStatsReset(CommandSourceStack source) {
+        return isStaffSource(source);
+    }
+
+    public static void denyDmzStatsReset(CommandSourceStack source) {
+        if (source == null) {
+            return;
+        }
+        try {
+            source.m_288197_(() -> Component.m_237113_("§cStat reset is turned off."), false);
+        } catch (Throwable ignored) {
+        }
+    }
+
     /** {@code 1} if staff; else sends denial and returns {@code 0}. */
     public static int denyUnlessStaff(CommandSourceStack source) {
         if (isStaffSource(source)) {

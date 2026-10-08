@@ -8,6 +8,7 @@ import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import com.dbzlegacy.adaptivedifficulty.util.LmChat;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
+import com.dragonminez.common.combat.logic.weapon.WeaponRegistry;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.Status;
 import java.util.ArrayList;
@@ -19,6 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.item.ItemStack;
 
 /** Sparring Tp System 3.2.11 facade. */
 public final class SparringSystem {
@@ -139,6 +141,16 @@ public final class SparringSystem {
             return;
         }
         boolean ki = DmzRewards.isKiDamage(source);
+        // A left-click with a non-DMZ item stays vanilla item damage. CombatEvent
+        // does not rewrite it into melee. That hit must not start a spar, keep one
+        // alive, or pay TP — only damage the attacker actually deals does.
+        if (!ki && isItemPunch(attacker, source)) {
+            return;
+        }
+        // Potions, TNT, thorns, and other player-attributed junk must not start a spar or pay TP.
+        if (isNonCombatDamage(source, attacker)) {
+            return;
+        }
         String kiKind = ki ? SparCombat.classifyKiType(source) : "";
         recordCombatExchange(attacker, victim, ki, kiKind);
         SparPlayerRuntime vRt = runtime(victim.m_20148_());
@@ -200,6 +212,83 @@ public final class SparringSystem {
             rt.sessionBlocks++;
             rt.styleBlock += 1.0; // script: +1 per block, not HP lost
             SparCombat.awardCombatTp(player, attacker, rt, SparCombat.BLOCK_TP_BASE, "melee");
+        }
+    }
+
+    /**
+     * Vanilla player-attack while the main hand is a non-DMZ item.
+     * Empty hand and registered weapons are real melee. Ki is handled earlier.
+     */
+    private static boolean isItemPunch(ServerPlayer attacker, DamageSource source) {
+        if (attacker == null || !isPlayerMeleeSource(source)) {
+            return false;
+        }
+        try {
+            ItemStack main = attacker.m_21205_();
+            if (main == null || main.m_41619_()) {
+                return false;
+            }
+            return WeaponRegistry.getAttributes(main) == null;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    /**
+     * True when a player-attributed damage source is not genuine sparring combat.
+     * Sparring TP comes from DMZ ki, true melee (held items already filtered by
+     * {@link #isItemPunch}), and weapon projectiles — never from splash or lingering
+     * potions, TNT, thorns, or magic.
+     */
+    private static boolean isNonCombatDamage(DamageSource source, ServerPlayer attacker) {
+        try {
+            if (source == null) {
+                return true;
+            }
+            // DMZ ki is always real combat.
+            if (DmzRewards.isKiDamage(source)) {
+                return false;
+            }
+            String type = "";
+            try {
+                type = String.valueOf(source.m_19385_()).toLowerCase(java.util.Locale.ROOT);
+            } catch (Throwable ignored) {
+            }
+            // Thorns pays the defender for the attacker's own hit — never score it.
+            if (type.contains("thorns")) {
+                return true;
+            }
+            // 1.20.1 message id is dragonBreath, not dragon_breath.
+            if (type.contains("magic") || type.contains("explosion") || type.contains("potion")
+                    || type.contains("dragon_breath") || type.contains("dragonbreath")) {
+                return true;
+            }
+            net.minecraft.world.entity.Entity direct = source.m_7640_();
+            // True melee: attacker is the direct entity.
+            if (direct == attacker) {
+                return false;
+            }
+            // Weapon projectiles still count. Delete this block for strict melee and ki only.
+            if (direct instanceof net.minecraft.world.entity.projectile.AbstractArrow) {
+                return false;
+            }
+            if (direct instanceof net.minecraft.world.entity.projectile.ThrownTrident) {
+                return false;
+            }
+            if (direct instanceof net.minecraft.world.entity.projectile.FireworkRocketEntity) {
+                return false;
+            }
+            return true;
+        } catch (Throwable ignored) {
+            return false; // fail open — never break combat on an unexpected source
+        }
+    }
+
+    private static boolean isPlayerMeleeSource(DamageSource source) {
+        try {
+            return source != null && "player".equals(source.m_19385_());
+        } catch (Throwable ignored) {
+            return false;
         }
     }
 
@@ -1027,7 +1116,14 @@ public final class SparringSystem {
     public static List<String> topLines(String category, int limit) {
         List<String> lines = new ArrayList<>();
         String cat = category == null || category.isBlank() ? "tp" : category.trim().toLowerCase();
-        lines.add("§6§lSparring Top §8— §f" + cat);
+        String label = switch (cat) {
+            case "sessions", "session" -> "Sessions";
+            case "perfect", "perfects" -> "Perfect spars";
+            case "combo" -> "Combo";
+            case "time" -> "Time";
+            default -> "Training points";
+        };
+        lines.add("§6§lSparring leaderboard §8— §f" + label);
         List<Map.Entry<String, SparStore.LeaderboardEntry>> entries =
                 new ArrayList<>(SparStore.get().leaderboard.entrySet());
         entries.sort((a, b) -> {
@@ -1157,11 +1253,11 @@ public final class SparringSystem {
         }
         if (on == null) {
             boolean cur = SparStore.get().tpMessagesOn(player.m_20148_());
-            return "§7Spar TP chat: §f" + (cur ? "ON" : "OFF");
+            return "§eSpar TP chat: " + (cur ? "ON" : "OFF");
         }
         SparStore.get().setTpMessages(player.m_20148_(), on);
-        return "§aSpar TP chat §f" + (on ? "ON" : "OFF")
-                + (on ? " §7— combat TP gains show in chat" : " §7— muted");
+        return "§eSpar TP chat " + (on ? "ON" : "OFF")
+                + (on ? " — combat TP gains show in chat" : " — muted");
     }
 
     public static String setMentorTpMsg(ServerPlayer player, Boolean on) {
@@ -1170,11 +1266,11 @@ public final class SparringSystem {
         }
         if (on == null) {
             boolean cur = SparStore.get().mentorTpMessagesOn(player.m_20148_());
-            return "§7Mentor TP chat: §f" + (cur ? "ON" : "OFF");
+            return "§eMentor TP chat: " + (cur ? "ON" : "OFF");
         }
         SparStore.get().setMentorTpMessages(player.m_20148_(), on);
-        return "§aMentor TP chat §f" + (on ? "ON" : "OFF")
-                + (on ? " §7— apprentice share TP shows in chat" : " §7— muted");
+        return "§eMentor TP chat " + (on ? "ON" : "OFF")
+                + (on ? " — apprentice share TP shows in chat" : " — muted");
     }
 
     public static String mentorInvite(ServerPlayer player, ServerPlayer target) {
@@ -1209,7 +1305,7 @@ public final class SparringSystem {
         SparStore.get().markDirty();
         DmzRewards.msg(target, LmChat.note("Mentor", "§f" + invite.fromName
                 + " §ewants you as their Apprentice."));
-        DmzRewards.msg(target, LmChat.tip("/spar", "→ Mentor → Pending to Accept or Decline"));
+        DmzRewards.msg(target, LmChat.tip("/spar", "→ Training bonds → Bond invites to Accept or Decline"));
         return "§aInvite sent to §f" + target.m_7755_().getString() + "§a.";
     }
 
@@ -1242,7 +1338,7 @@ public final class SparringSystem {
         SparStore.get().markDirty();
         DmzRewards.msg(target, LmChat.note("Mentor", "§f" + invite.fromName
                 + " §ewants you as their Mentor."));
-        DmzRewards.msg(target, LmChat.tip("/spar", "→ Mentor → Pending to Accept or Decline"));
+        DmzRewards.msg(target, LmChat.tip("/spar", "→ Training bonds → Bond invites to Accept or Decline"));
         return "§aInvite sent to §f" + target.m_7755_().getString() + "§a.";
     }
 
@@ -1442,8 +1538,7 @@ public final class SparringSystem {
             return removeMentor(player);
         }
         if (hasMentor && hasApprentice) {
-            return "§eChoose: §fLeave mentor §8or §fRelease apprentice"
-                    + "\n§8GUI: Mentor Actions → Leave / Release…";
+            return "§eLeave your mentor, or release one of your apprentices?";
         }
         return "§cYou have no mentor bond to remove.";
     }
@@ -1488,7 +1583,7 @@ public final class SparringSystem {
         } else {
             return "§ePick which apprentice to release (§f"
                     + bond.apprenticeNamesSummary()
-                    + "§e).\n§8GUI: Mentor Actions → Release… / Dojo";
+                    + "§e).\n§8GUI: Training bonds → Release apprentice…";
         }
         clearBond(appUuid, player.m_20148_().toString(), true);
         return "§7Released apprentice §f" + name + "§7. 12-hour cooldown started.";

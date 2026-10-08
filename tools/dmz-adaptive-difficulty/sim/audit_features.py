@@ -519,6 +519,8 @@ def main() -> int:
     check("ForgeBridge.clearPlayerData", "clearPlayerData" in bridge)
     check("RivalProgression.clearPlayer", "clearPlayer(String uuid)" in read(
         SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalProgression.java"))
+    check("offline clear reads player cache and saved file",
+          "m_129927_" in clearer and "ForgeData" in clearer and "LevelResource.f_78176_" in clearer)
 
     print("\n=== Spar recent sessions (2.3.54) ===")
     spar_store = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparStore.java")
@@ -1232,6 +1234,11 @@ def main() -> int:
         "CnpcLmHubGui.open(player, \"main\")" in remove_block,
     )
     check(
+        "CNPC android tools stay staff-only",
+        '!"android_panel".equals(page)' not in cnpc_prog
+        and '!"android_convert".equals(page)' not in cnpc_prog,
+    )
+    check(
         "MechanicsCommands android_remove opens GUI",
         "ProgressionMenu.open(player, \"android_remove\")" in mech_cmds,
     )
@@ -1316,12 +1323,15 @@ def main() -> int:
     check("completed not inflated from held skill",
           "never bump total from it" in prestige_sys
           and "High-watermark" not in prestige_sys)
-    check("prestige Need ladder first 4 at 20k then held 50k/100k",
+    check("prestige Need ladder first 4 scale 20k by completed then 50k/100k by held",
           "HELD_GATE_MIN_COMPLETED = 4" in prestige_sys
           and "requiredLevelForHeld" in prestige_sys
           and "HELD0_NEED = 50_000" in prestige_sys
           and "HELD1_PLUS_NEED = 100_000" in prestige_sys
           and "HELD2_NEED" not in prestige_sys
+          and "earlyCompletedNeed" in prestige_sys
+          and "earlyHeldNeed" not in prestige_sys
+          and "LEVELS_PER_PRESTIGE * (c + 1L)" in prestige_sys
           and "needForProgress" in prestige_sys
           and "heldCountForNeed" in prestige_sys
           and "reconcileNeedFloor" in prestige_sys)
@@ -1489,7 +1499,7 @@ def main() -> int:
     check("Revamp prestige does not refill after afterSetCount",
           "refillPoolsLikeOverhaulPrestige" not in bridge
           and "clampToOverhaulPool" in bridge
-          and "StatsSyncS2C" in bridge)
+          and "DmzResourcePoolClamp.syncToClient" in bridge)
     check("stat screen Fabled mirror removed",
           not (SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/StatScreenSync.java").is_file()
           and "actualMaxStamina" in pool_clamp)
@@ -1628,6 +1638,485 @@ def main() -> int:
           'cfg.enableEndNaturalDragonSpawn = false' in
           read(SRC / "com/dbzlegacy/adaptivedifficulty/config/DifficultyConfig.java"))
     check("3 netherite cost constant", "PLAYER_SUMMON_NETHERITE_COST = 3" in end_str)
+
+    print("\n=== Spar item punch (4.6.12) ===")
+    spar_punch = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparringSystem.java")
+    check("item punch does not grant spar TP",
+          "isItemPunch" in spar_punch
+          and "WeaponRegistry.getAttributes" in spar_punch
+          and "isPlayerMeleeSource" in spar_punch)
+    check("potions explosions and thorns do not grant spar TP",
+          "isNonCombatDamage" in spar_punch
+          and "thorns" in spar_punch
+          and "explosion" in spar_punch
+          and "dragonbreath" in spar_punch)
+
+    print("\n=== Spar menu copy (4.6.15) ===")
+    cnpc_spar_menu = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmSparGui.java")
+    dojo_score = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/DojoRankings.java")
+    check("spar leaderboard does not offer a fake wins tab",
+          "top_wins" not in cnpc_spar_menu and "top_streak" not in cnpc_spar_menu)
+    check("dojo wars category scores war wins",
+          '"wars", "war"' in dojo_score and "war wins" in dojo_score)
+    check("outgoing bond invite can be withdrawn",
+          "Withdraw invite" in cnpc_spar_menu
+          and "pick_confirm:mentor|mentor|leave" in cnpc_spar_menu
+          and "Decline / revoke" not in cnpc_spar_menu)
+    check("view-only hint",
+          "nothing to change here" in read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcGuiStyle.java"))
+
+    print("\n=== Reskin gender and head bone preview (4.6.16) ===")
+    gender_mixin = read(SRC / "com/dbzlegacy/adaptivedifficulty/mixin/StatsSyncC2SGenderMixin.java")
+    mixins_json = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/resources/legacymechanics.mixins.json")
+    bones = read(SRC / "com/dbzlegacy/adaptivedifficulty/character/CosmeticHeadBoneService.java")
+    bone_gui = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmCharacterGui.java")
+    check("reskin gender mixin honors the packet during a session",
+          "getDeclaredField(\"gender\")" in gender_mixin
+          and "canHaveGender" in gender_mixin
+          and "ReskinSessionGuard.lockedClass" in gender_mixin
+          and "StatsSyncC2SGenderMixin" in mixins_json)
+    check("head bone card previews before it charges",
+          "previewBone" in bones
+          and "PREVIEW_STASH" in bones
+          and "bone_preview" in bone_gui
+          and "paintLivePlayerPreview" in bone_gui
+          and "Unlock & equip" in bone_gui)
+    preview_src = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcPlayerPreview.java")
+    live_preview = preview_src.split("void paintLive", 1)[1].split("void paint(", 1)[0]
+    check("head bone menu shows the player's own model",
+          "tryBindLivePlayer" in live_preview
+          and "setEntitySyncedById" in preview_src
+          and "CnpcGeckoPreviewBridge" not in live_preview
+          and "Step back and look" in bone_gui)
+
+    print("\n=== GUI humanization (4.6.17) ===")
+    rival_chat = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/RivalChatMenu.java")
+    spar_chat = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/SparChatMenu.java")
+    char_api = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/CharacterServicesGuiApi.java")
+    rival_gui = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmRivalGui.java")
+    prog_gui = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmProgressionGui.java")
+    check("rival chat forfeit is labeled when a challenge is live",
+          "Forfeit your active challenge" in rival_chat
+          and "Cancel your pending challenge request" in rival_chat
+          and "Cancel yours" not in rival_chat)
+    check("spar chat category buttons use the top_ page",
+          'startsWith("top_")' in spar_chat and "top_tp" in spar_chat)
+    check("0% wipe copy keeps head parts and coins",
+          "head-part unlocks and coins kept" in char_api
+          and "nothing carried over" not in char_api)
+    check("android convert names the target and warns about forms",
+          "Convert " in prog_gui
+          and "deletes Super forms and Legendary forms" in read(
+              SRC / "com/dbzlegacy/adaptivedifficulty/gui/ProgressionGuiApi.java"))
+    check("rival confirm does not show the raw action id",
+          "Action §7" not in rival_gui and "Declare rival" in rival_gui)
+    check("tier buy asks before it charges",
+          "diff-tier:" in read(SRC / "com/dbzlegacy/adaptivedifficulty/service/DifficultyActions.java"))
+    build_sh = read(ROOT / "tools/dmz-adaptive-difficulty/build.sh")
+    confirm_at = build_sh.find("GuiClickConfirm DifficultyTeamGuiApi")
+    confirm_tail = build_sh[confirm_at:confirm_at + 700] if confirm_at >= 0 else ""
+    check("click confirm pending class is copied into the jar",
+          "class Pending" in read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/GuiClickConfirm.java")
+          and '${class}\\$"*.class' in confirm_tail
+          and "GuiClickConfirm\\$Pending.class" in build_sh)
+
+    print("\n=== Menu notices and jar inners (4.6.19) ===")
+    support = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcGuiSupport.java")
+    check("long menu notices are also sent to chat",
+          "feedbackChat(player, noticeChat(msg))" in support
+          and "private static String noticeChat" in support
+          and 'split("\\n", -1).length > CnpcGuiStyle.INFO_INLINE_MAX - 1' in support)
+    check("packaging cleans compile output before javac",
+          'rm -rf "$OUT"' in build_sh
+          and build_sh.find('rm -rf "$OUT"') < build_sh.find("javac --release 17"))
+    check("jar self-check requires referenced inner classes",
+          "audit_jar_inner_classes.py" in build_sh
+          and "Outer$Inner" in read(ROOT / "tools/dmz-adaptive-difficulty/sim/audit_jar_inner_classes.py"))
+    check("boost preset ids do not share the grid base",
+          "ID_BOOST_PRESET_BASE = 210" in support
+          and "ID_BOOST_PRESET_BASE = 120" not in support)
+
+    print("\n=== CNPC screen colors (4.6.21) ===")
+    cnpc_dir = SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc"
+    cnpc_src = "\n".join(p.read_text(encoding="utf-8") for p in sorted(cnpc_dir.glob("*.java")))
+    prog = read(cnpc_dir / "CnpcLmProgressionGui.java")
+    diff = read(cnpc_dir / "CnpcLmDifficultyGui.java")
+    check("CNPC screens do not use purple section codes",
+          "§5" not in cnpc_src)
+    check("progression titles are blue and prestige stays pink",
+          "§9Progression" in prog
+          and "§dProgression" not in prog
+          and "§dOpen Prestige" in prog
+          and 'subPage("§9", "Progression", "End")' in prog
+          and "§e2× · 30m" in prog
+          and "§e2× · 60m" in prog)
+    check("inline on and off match the toggle colors",
+          'return on ? "§2§lON" : "§8§lOFF";' in support)
+    check("difficulty confirm and inactive modes use the shared colors",
+          "§aConfirm summon" in diff
+          and "§aEnd Dragon" in diff
+          and "§7Threshold" in diff
+          and "§7Full team" in diff)
+    check("spar dojo home and prestige forms use their system colors",
+          "§bDojo home" in read(cnpc_dir / "CnpcLmSparGui.java")
+          and "§dForms" in read(cnpc_dir / "CnpcLmPrestigeGui.java")
+          and "§9Progression panel" in read(cnpc_dir / "CnpcLmAdminGui.java"))
+
+    print("\n=== CNPC rival records (4.6.22) ===")
+    rival_records = read(cnpc_dir / "CnpcLmRivalGui.java")
+    check("CNPC rival records are one tabbed page",
+          "records:" in rival_records
+          and "void paintProgress" not in rival_records
+          and "Hall of fame" in rival_records
+          and "§6Records" in rival_records
+          and 'open(player, "history")' not in rival_records
+          and 'open(player, "progress")' not in rival_records
+          and 'open(player, "stats")' not in rival_records
+          and "Duel requests" in rival_records
+          and "Declare invites" in rival_records)
+
+    print("\n=== CNPC layout fit (4.6.25) ===")
+    preview = read(cnpc_dir / "CnpcPlayerPreview.java")
+    feedback = read(cnpc_dir / "CnpcMenuFeedback.java")
+    ui_fit = read(cnpc_dir / "CnpcUiFit.java")
+    layout_support = read(cnpc_dir / "CnpcGuiSupport.java")
+    check("preview scale follows the player's height",
+          "previewScaleFor" in preview
+          and "m_20206_()" in preview
+          and "REF_PLAYER_HEIGHT = 1.8f" in preview
+          and "offsetY" in preview
+          and "scale / PREVIEW_SCALE" in preview)
+    check("pending notice reserves window height",
+          "FLASH_MAX_H = 56" in layout_support
+          and "flashReserve" in layout_support
+          and "height + flashReserve" in layout_support
+          and "boolean hasPending" in feedback
+          and "pendingLineCount" in feedback
+          and "available < 48" in layout_support
+          and "window(" in read(cnpc_dir / "CnpcLmDifficultyGui.java")
+          and "window(" in read(cnpc_dir / "CnpcLmRivalGui.java")
+          and "window(" in read(cnpc_dir / "CnpcLmSparGui.java")
+          and "window(" in read(cnpc_dir / "CnpcLmCharacterGui.java"))
+    check("compressed menus are logged",
+          "compressed to" in ui_fit and "0.9f" in ui_fit)
+
+    print("\n=== CNPC list scroll (4.6.24) ===")
+    support = read(cnpc_dir / "CnpcGuiSupport.java")
+    scroll_start = support.find("public static IScroll scroll(")
+    scroll_end = support.find("public static int paintReadOnlyScroll", scroll_start)
+    scroll_fn = support[scroll_start:scroll_end] if scroll_start >= 0 and scroll_end > scroll_start else ""
+    check("pick lists are one scroll on the GUI",
+          "gui.addScroll(id, x, y, useW, h, copy)" in scroll_fn
+          and "getScrollingPanel" not in scroll_fn
+          and "setHasSearch(true)" in support
+          and "one scroll region" in support
+          and "scrollPickList" in read(cnpc_dir / "CnpcLmCharacterGui.java")
+          and "scrollPickList" in read(cnpc_dir / "CnpcLmRivalGui.java")
+          and "scrollPickList" in read(cnpc_dir / "CnpcLmSparGui.java"))
+
+    print("\n=== CNPC menu flatten (4.6.23) ===")
+    hub_gui = read(cnpc_dir / "CnpcLmHubGui.java")
+    char_gui = read(cnpc_dir / "CnpcLmCharacterGui.java")
+    spar_gui = read(cnpc_dir / "CnpcLmSparGui.java")
+    diff_gui = read(cnpc_dir / "CnpcLmDifficultyGui.java")
+    prog_menu = read(cnpc_dir / "CnpcLmProgressionGui.java")
+    prestige_gui = read(cnpc_dir / "CnpcLmPrestigeGui.java")
+    snapshot = read(cnpc_dir / "CnpcPlayerSnapshot.java")
+    check("hub drops the welcome line and section tags",
+          "Welcome back" not in snapshot
+          and "Combat & progression" not in hub_gui
+          and "Remove Android" not in hub_gui
+          and "§eSkill Check" in hub_gui)
+    check("character hosts remove android and race keep percent",
+          "§cRemove Android" in char_gui
+          and "Keep " in char_gui
+          and "race_confirm:" in char_gui)
+    check("spar dojo tabs keep war and training bonds separate",
+          "Dojo · " in spar_gui
+          and "Chat settings" in spar_gui
+          and "Training bonds" in spar_gui
+          and "void paintDojoWar" in spar_gui
+          and 'toggleOn("TP")' in spar_gui)
+    check("rival actions and prestige forms stay their own pages",
+          "void paintActions" in rival_records
+          and "void paintSettings" in rival_records
+          and "void paintEffects" in prestige_gui
+          and "§dForms" in prestige_gui)
+    check("progression sections are module tabs",
+          "§9Modules" in prog_menu
+          and "moduleIds" in prog_menu
+          and '!"android_remove".equals(page)' in prog_menu)
+    check("difficulty coin messages live on settings",
+          "Coin messages" in diff_gui
+          and "§6Rival system" not in diff_gui
+          and "§aEnd Dragon" in diff_gui)
+
+    print("\n=== CNPC scroll selection (4.6.26) ===")
+    check("scroll lists use a selection button instead of setOnClick",
+          "setOnClick(" not in support
+          and "setOnClick(" not in char_gui
+          and "setOnClick(" not in rival_records
+          and "setOnClick(" not in spar_gui
+          and "setOnClick(" not in diff_gui
+          and "setOnClick(" not in prog_menu
+          and "selectionButton" in support
+          and "§ePreview" in char_gui
+          and "Choose this race" in char_gui
+          and "Choose this class" in char_gui
+          and "wireScrollDoublePick" in diff_gui
+          and "setOnDoubleClick" in prog_menu
+          and '"challenge_pick".equals(action) ? "pick_challenge"' in rival_records)
+
+    print("\n=== Noea corpse drops (4.6.27) ===")
+    corpse_fix = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/noea/NoeaTravelSafetyCorpseFixMixin.java")
+    check("noea drop suppression stops before it clears items",
+          'at = @At("HEAD")' in corpse_fix
+          and "cancellable = true" in corpse_fix
+          and "ci.cancel()" in corpse_fix
+          and "setCanceled" not in corpse_fix
+          and "suppressConfirmedDrops" in corpse_fix
+          and "Death.processDrops" in corpse_fix
+          and "captureInventory" in corpse_fix
+          and "does not snapshot" in corpse_fix
+          and "require = 0" in corpse_fix
+          and "private static void lm$disableDropSuppression" in corpse_fix)
+
+    print("\n=== Player stat reset and race change (4.6.38) ===")
+    reset_block = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/DmzStatsResetPlayerBlockMixin.java")
+    melee_block = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/MeleeStatsResetPlayerBlockMixin.java")
+    staff = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/util/StaffAccess.java")
+    race_access = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/character/CharacterServicesAccess.java")
+    prestige = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigeSystem.java")
+    dende = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/DendeResetAbsorptionWipeMixin.java")
+    mixins_json = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/resources/legacymechanics.mixins.json")
+    mixin_plugin = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/LegacyMechanicsMixinPlugin.java")
+    check("players cannot use dmzstats reset; race, dende, and prestige still reset",
+          'method = "resetStats"' in reset_block
+          and "cancellable = true" in reset_block
+          and "setReturnValue(0)" in reset_block
+          and "allowDmzStatsReset" in reset_block
+          and "require = 0" in reset_block
+          and 'method = "resetSelf"' in melee_block
+          and "cancellable = true" in melee_block
+          and "setReturnValue(0)" in melee_block
+          and "allowDmzStatsReset" in melee_block
+          and "Stat reset is turned off." in staff
+          and "isStaffSource(source)" in staff
+          and "permissions.race" in race_access
+          and "return StaffAccess.isStaff(player);" not in race_access
+          and "data.resetPlayerProgress(player, 0, false, false)" in prestige
+          and '"dmzstats reset "' not in prestige
+          and 'method = "handleDende"' in dende
+          and "actionId != 2" in dende
+          and "DmzStatsResetPlayerBlockMixin" in mixins_json
+          and "MeleeStatsResetPlayerBlockMixin" in mixins_json
+          and "MeleeStatsResetPlayerBlockMixin" in mixin_plugin
+          and "meleeResetCommandsPresent()" in mixin_plugin
+          and "Class.forName" not in mixin_plugin.split("meleeResetCommandsPresent()", 1)[-1].split("absorptionServicePresent", 1)[0]
+          and "t.printStackTrace()" in read(
+              ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/noea/AbsorptionWipeHelper.java")
+          and "\"StatsCommand.resetStats\"" in reset_block
+          and "DmzStatsResetAbsorptionWipeMixin" not in mixins_json)
+
+    print("\n=== Dragon ball pickup (4.6.36) ===")
+    dball = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/event/DragonBallRadarPickup.java")
+    dball_events = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/event/DifficultyEvents.java")
+    dball_mixins = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/resources/legacymechanics.mixins.json")
+    check("left click with the matching radar deposits one dragon ball",
+          "LeftClickBlock" in dball
+          and "Action.START" in dball
+          and "DragonRadarItem" in dball
+          and "supportsBallSet" in dball
+          and "m_150109_().m_36054_(stack)" in dball
+          and "unregisterConsumedDragonBalls" in dball
+          and "DragonBallRadarPickup.onLeftClickBlock" in dball_events
+          and "receiveCanceled = true" in dball_events
+          and "BreakEvent" in dball
+          and "BlockBreakEvent" in dball
+          and "setCancelled" in dball
+          and "DragonBallPickupMixin" not in dball_mixins)
+
+    print("\n=== Majin absorption bonus (4.6.33) ===")
+    absorb_gate = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/noea/NoeaAbsorptionBonusGateMixin.java")
+    absorb_store = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/noea/MajinAbsorptionStore.java")
+    absorb_reset = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/StatsDataGuardsMixin.java")
+    absorb_cmd = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/DmzStatsResetPlayerBlockMixin.java")
+    absorb_melee = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/MeleeStatsResetAbsorptionWipeMixin.java")
+    absorb_dende = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/DendeResetAbsorptionWipeMixin.java")
+    absorb_create = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/CreateCharacterAbsorptionWipeMixin.java")
+    absorb_services = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/character/CharacterServicesSystem.java")
+    absorb_log = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/noea/AbsorptionClearLog.java")
+    absorb_helper = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/noea/AbsorptionWipeHelper.java")
+    check("absorption bonus follows power and limit release",
+          "absorptionPower" in absorb_gate
+          and "isActive" not in absorb_gate
+          and "getPowerRelease()" in absorb_gate
+          and "priority = 1001" in absorb_gate
+          and "current - absorbed + scaledBonus" in absorb_gate
+          and "package com.dbzlegacy.adaptivedifficulty.noea;" in absorb_store
+          and "data.absorptionMelee = 0" in absorb_store
+          and "[LM] clear() called for " in absorb_store
+          and "[LM] ABORT: data is null, cannot wipe" in absorb_store
+          and "[LM] readback melee=" in absorb_store
+          and "[LM] wipe FAILED: " in absorb_store
+          and "data.absorptionKi = 0" in absorb_store
+          and "data.absorptionPower = 0" in absorb_store
+          and "MajinAbsorptionStore.clear(player)" in absorb_helper
+          and "[LM] wipeAbsorption firing for " in absorb_helper
+          and "AbsorptionWipeHelper.wipe(player, null)" in absorb_reset
+          and "initializeWithRaceAndClass" in absorb_reset
+          and "wipeIfRaceChanges" in absorb_reset
+          and "AbsorptionWipeHelper.wipe(player, \"CharacterServicesSystem.executeRaceChange\")" in absorb_services
+          and 'method = "resetStats"' in absorb_cmd
+          and "\"StatsCommand.resetStats\"" in absorb_cmd
+          and "AbsorptionWipeHelper" in absorb_cmd
+          and "require = 0" in absorb_cmd
+          and 'method = "resetSelf"' in absorb_melee
+          and "require = 0" in absorb_melee
+          and "AbsorptionWipeHelper.wipe(player, \"StatsResetCommands.resetSelf\")" in absorb_melee
+          and 'method = "handleDende"' in absorb_dende
+          and "actionId != 2" in absorb_dende
+          and "AbsorptionWipeHelper.wipe(player, \"NPCActionC2S.handleDende\")" in absorb_dende
+          and 'method = "lambda$handle$0"' in absorb_create
+          and "isHasCreatedCharacter" in absorb_create
+          and "AbsorptionWipeHelper.wipe(player, \"CreateCharacterC2S\")" in absorb_create
+          and "\"CharacterServicesSystem.executeRaceChange\"" in absorb_services
+          and "[LM] clear() threw: " in absorb_log
+          and "AbsorptionClearLog.failure" in absorb_helper
+          and "t.printStackTrace()" in absorb_helper
+          and "AbsorptionClearLog.failure" in absorb_store
+          and "StatsDataGuardsMixin" in mixins_json
+          and "StatsDataResetPrestigeSyncMixin" not in mixins_json
+          and "ResourcesPoolClampMixin" not in mixins_json
+          and "ResourcesLoadClampMixin" not in mixins_json)
+
+    print("\n=== CNPC notice color (4.6.41) ===")
+    notice = read(cnpc_dir / "CnpcMenuFeedback.java")
+    notice_support = read(cnpc_dir / "CnpcGuiSupport.java")
+    spar_sys = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/sparring/SparringSystem.java")
+    rival_sys = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/rival/RivalSystem.java")
+    rival_api = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/gui/RivalGuiApi.java")
+    prog_api = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/gui/ProgressionGuiApi.java")
+    mech_api = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/gui/MechanicsGuiApi.java")
+    bright_start = notice_support.find("private static String brightenNoticeLine")
+    bright_end = notice_support.find("private static String noticeChat", bright_start)
+    bright = notice_support[bright_start:bright_end] if bright_start >= 0 and bright_end > bright_start else ""
+    diff_main = diff_gui.split("private static void paintMain", 1)[-1].split("private static void paintSettings", 1)[0]
+    check("notice header and body are one pair of constants",
+          'NOTICE_HEADER = "§6§lNotice"' in notice
+          and 'NOTICE_BODY = "§e"' in notice
+          and "public static String noticeBody" in notice
+          and "noticeBody(" in notice.split("public static void set", 1)[-1].split("public static boolean hasPending", 1)[0]
+          and "CnpcMenuFeedback.NOTICE_HEADER" in notice_support
+          and "noticeBody(line)" in bright
+          and "readableInfoLine" not in bright)
+    check("spar and rival chat toggles use the yellow notice body",
+          "§eSpar TP chat " in spar_sys
+          and "§aSpar TP chat" not in spar_sys
+          and "§eMentor TP chat " in spar_sys
+          and "§aMentor TP chat" not in spar_sys
+          and "§eRival TP chat " in rival_sys
+          and "§aRival TP chat" not in rival_sys
+          and "§eRival Instinct " in rival_api
+          and "§aRival Instinct" not in rival_api)
+    check("other screen notices use the yellow body",
+          "NOTICE_BODY + \"Staff only.\"" in read(cnpc_dir / "CnpcLmRivalGui.java")
+          and "NOTICE_BODY + \"Staff only.\"" in diff_gui
+          and "NOTICE_BODY + \"Staff only.\"" in read(cnpc_dir / "CnpcLmAdminGui.java")
+          and "NOTICE_BODY + \"Staff only.\"" in read(cnpc_dir / "CnpcLmLogsGui.java")
+          and "NOTICE_BODY + \"Legacy Mechanics config reloaded.\"" in read(cnpc_dir / "CnpcLmAdminGui.java")
+          and "§eEvent log ON" in mech_api
+          and "§aEvent log ON" not in mech_api
+          and "§eProgression " in prog_api
+          and "§aProgression " not in prog_api
+          and "NOTICE_BODY" in hub_gui)
+    check("difficulty status block stays its own info text",
+          "§eYour personal difficulty is off." in diff_main
+          and "§eThis account cannot use personal difficulty." in diff_main
+          and "§6Ancient Coins" in diff_main
+          and "§8Scaled mobs can hurt other players nearby." in diff_main
+          and "noticeBody" not in diff_main)
+
+    def _notice_body(line):
+        plain = re.sub(r"§[0-9A-FK-ORa-fk-or]", "", line or "").strip()
+        return "" if not plain else "§e" + plain
+
+    notice_samples = {
+        "§aSpar TP chat §fON — combat TP gains show in chat":
+            "§eSpar TP chat ON — combat TP gains show in chat",
+        "§cStaff only.": "§eStaff only.",
+        "§7Skill Check is a donator perk — ask staff if you want access.":
+            "§eSkill Check is a donator perk — ask staff if you want access.",
+        "§eSelect a row first.": "§eSelect a row first.",
+        "§6Rival admin status": "§eRival admin status",
+    }
+    for src, expect in notice_samples.items():
+        got = _notice_body(src)
+        check(f"notice body strips to yellow ({expect})", got == expect, got)
+        check(f"notice body has no second color ({expect})",
+              got.startswith("§e") and not re.search(r"§(?!e)", got))
+
+    print("\n=== Hakai destroyer gate (4.6.44) ===")
+    hakai_gate = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/noea/HakaiDestroyerGateMixin.java")
+    mixin_plugin = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/LegacyMechanicsMixinPlugin.java")
+    hakai_mixins = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/resources/legacymechanics.mixins.json")
+    check("hakai name match requires destroyer energy",
+          hakai_gate.count("isHakai(Ljava/lang/String;Ljava/lang/String;)Z") >= 2
+          and "\"hasDestructionEnergy\"" in hakai_gate
+          and "lm$gateSourceSaysHakai" in hakai_gate
+          and "sourceSaysHakai" in hakai_gate
+          and "techniqueId" in hakai_gate
+          and "noea_hakai_sphere" in hakai_gate
+          and "isHakaiTechnique" in hakai_gate
+          and "messageId" in hakai_gate
+          and "ci.cancel()" in hakai_gate
+          and "cir.setReturnValue(false)" in hakai_gate
+          and "require = 0" in hakai_gate
+          and "remap = false" in hakai_gate)
+    check("hakai mixin is not skipped at mixin config time",
+          "DivineImmortalityEvents" not in mixin_plugin
+          and "HakaiDestroyerGateMixin" not in mixin_plugin
+          and '@Mixin(targets = "com.butterjaffa.noeabosses.DivineImmortalityEvents", remap = false)' in hakai_gate
+          and "require = 0" in hakai_gate
+          and "DestroyerRoleService\"" in hakai_gate
+          and "import com.butterjaffa.noeabosses.DestroyerRoleService" not in hakai_gate
+          and '"noea.HakaiDestroyerGateMixin"' in hakai_mixins)
+
+    print("\n=== Fusion cooldown reset (4.6.43) ===")
+    fusion_reset = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/command/FusionCooldownReset.java")
+    check("staff /lm fusionreset",
+          'staffLiteral("fusionreset")' in mech
+          and "FusionCooldownReset.reset" in mech
+          and "/lm fusionreset <player>" in read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/command/LmCommandHelp.java"))
+    check("fusion reset clears both cooldown stores and the validation error",
+          "FusionLifecycleService.resetCooldown" in fusion_reset
+          and "fusionCooldownEnd = 0L" in fusion_reset
+          and 'fusionValidationError = ""' in fusion_reset
+          and "V090Data.save" in fusion_reset
+          and "V090Network.sync" in fusion_reset
+          and "clearPersistentCopies" in fusion_reset)
+    check("fusion reset class is copied into the forge jar",
+          "FusionCooldownReset" in read(ROOT / "tools/dmz-adaptive-difficulty/build.sh"))
+
+    print("\n=== Fall damage diagnostic (4.6.42) ===")
+    fall_diag = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/event/FallDamageDiag.java")
+    mod_src = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.java")
+    check("fall damage log compares vanilla and DMZ health",
+          "[LM] Fall damage:" in fall_diag
+          and "DamageTypeTags.f_268549_" in fall_diag
+          and "getMaxHealth()" in fall_diag
+          and "m_21223_()" in fall_diag
+          and "m_21233_()" in fall_diag
+          and "EventPriority.HIGHEST" in fall_diag
+          and "applyHealthBonus" in fall_diag
+          and "kiNegated=" in fall_diag
+          and "dmzCurrent=not-stored" in fall_diag
+          and "vanillaPoolDesynced" in fall_diag
+          and "setCanceled" not in fall_diag
+          and "setAmount" not in fall_diag
+          and "new FallDamageDiag()" in mod_src)
+    check("fall damage listener class is copied into the forge jar",
+          "event/FallDamageDiag.class" in build_sh)
 
     print("\n=== Summary ===")
     for w in warns:

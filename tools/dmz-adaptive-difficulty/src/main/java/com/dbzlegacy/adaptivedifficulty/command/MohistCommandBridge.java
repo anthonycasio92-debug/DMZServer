@@ -202,7 +202,9 @@ public final class MohistCommandBridge {
             List<String> out = new ArrayList<>();
             String partial = LmCommandSuggestions.playerNamePartial(label, coalesced, source);
             if (LmCommandSuggestions.expectsPlayerName(label, coalesced, source)) {
-                List<String> players = LmCommandSuggestions.filterPlayerNames(source, partial);
+                List<String> players = LmCommandSuggestions.isOfflineClearSlot(label, coalesced)
+                        ? LmCommandSuggestions.filterClearTargets(source, partial)
+                        : LmCommandSuggestions.filterPlayerNames(source, partial);
                 if (!players.isEmpty()) {
                     return players;
                 }

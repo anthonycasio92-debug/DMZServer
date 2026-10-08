@@ -164,7 +164,7 @@ public final class RivalGuiApi {
     public static List<String> challengeLines(ServerPlayer player) {
         List<String> lines = new ArrayList<>();
         lines.add("§8── §cChallenge §8──");
-        lines.add("§7Send a duel · respond on §eDuel requests");
+        lines.add("§7Send a challenge · respond on §eChallenge requests");
         if (player != null && RivalChallengeManager.get().isInChallenge(player.m_20148_())) {
             lines.add("§eChallenge active");
         } else {
@@ -526,9 +526,12 @@ public final class RivalGuiApi {
             case "pending", "invites", "pendinginvites" -> RivalSystem.pendingInviteLines(player);
             case "actions" -> List.of(
                     "§6§lRival actions",
-                    "§7Pending board — tap a name to accept or decline an invite",
-                    "§7Declare a rivalry, send a silent rival, or remove someone from your list",
-                    "§8Flow: Silent → Declared → Pending invite → Mutual rival"
+                    "§7Declare invites — tap a name to accept, decline, or withdraw",
+                    "§7Declare a rivalry, mark a silent rival, or remove someone from your list",
+                    "§7How rivalries work:",
+                    "§71. §fDeclare §7someone as your rival (or mark them §fSilent§7)",
+                    "§72. §fThey accept §7your invite",
+                    "§73. §fYou're now Mutual §7— bonuses activate"
             );
             case "stats", "statistics" -> statsLines(player);
             case "challenge", "challenges" -> challengeLines(player);
@@ -621,7 +624,7 @@ public final class RivalGuiApi {
                 return "§cRival Instinct is disabled.";
             }
             boolean on = RivalInstinct.toggle(player);
-            return "§aRival Instinct §f" + (on ? "ON" : "OFF");
+            return "§eRival Instinct " + (on ? "ON" : "OFF");
         }
         if ("challenge".equals(act)) {
             String sub = a.toLowerCase(Locale.ROOT);
@@ -643,7 +646,7 @@ public final class RivalGuiApi {
         }
         if ("declare".equals(act)) {
             if (a.isBlank()) {
-                return "§cPick a player to declare.";
+                return "§cSelect a player below to declare as your rival.";
             }
             ServerPlayer target = resolveOnline(player, a);
             if (target == null) {
@@ -653,36 +656,36 @@ public final class RivalGuiApi {
         }
         if ("accept".equals(act)) {
             if (a.isBlank()) {
-                return "§cPick a player to accept.";
+                return "§cSelect a player below, then accept their rivalry.";
             }
             // Pass uuid: args through — name-only lookup misses offline declarers.
             return RivalSystem.accept(player, a);
         }
         if ("accept_replace".equals(act) || "acceptreplace".equals(act) || "replacemutual".equals(act)) {
             if (a.isBlank()) {
-                return "§cPick which Mutual to replace.";
+                return "§cSelect which Mutual rivalry to replace.";
             }
             return RivalSystem.acceptReplace(player, a);
         }
         if ("decline".equals(act) || "deny".equals(act)) {
             if (a.isBlank()) {
-                return "§cPick a player to decline.";
+                return "§cSelect a player below, then decline their rivalry.";
             }
             return RivalSystem.decline(player, a);
         }
         if ("remove".equals(act)) {
             if (a.isBlank()) {
-                return "§cPick a player to remove.";
+                return "§cSelect a player below, then remove that rivalry.";
             }
             String name = resolveNameArg(player, a);
             if (name.isBlank()) {
-                return "§cPick a player to remove.";
+                return "§cSelect a player below, then remove that rivalry.";
             }
             return RivalSystem.remove(player, name);
         }
         if ("silent".equals(act)) {
             if (a.isBlank()) {
-                return "§cPick a player for silent rival.";
+                return "§cSelect a player below to mark as a silent rival.";
             }
             ServerPlayer target = resolveOnline(player, a);
             if (target == null) {
@@ -692,11 +695,11 @@ public final class RivalGuiApi {
         }
         if ("challenge_send".equals(act) || "challengesend".equals(act)) {
             if (a.isBlank()) {
-                return "§cPick a player to challenge.";
+                return "§cSelect a player below, then send the challenge.";
             }
             ChallengeSendArg parsed = parseChallengeSendArg(a);
             if (parsed.targetRaw().isBlank()) {
-                return "§cPick a player to challenge.";
+                return "§cSelect a player below, then send the challenge.";
             }
             ServerPlayer target = resolveOnline(player, parsed.targetRaw());
             if (target == null) {
@@ -731,12 +734,12 @@ public final class RivalGuiApi {
             RivalStore.get().markDirty();
             RivalStore.get().save();
             RivalProgression.get().save();
-            return "§aRival store + progression saved.";
+            return "§eRival data saved.";
         }
         if (sub.startsWith("refresh") || sub.startsWith("reload")) {
             RivalStore.get().load();
             RivalProgression.get().load();
-            return "§aRival store + progression reloaded.";
+            return "§eRival data reloaded.";
         }
         if (sub.startsWith("status")) {
             boolean on = DifficultyConfig.get().enableRivalSystem;
@@ -752,7 +755,7 @@ public final class RivalGuiApi {
                 + "§e/rival admin refresh|reload §7— reload stores from disk\n"
                 + "§e/rival admin status §7— enabled + path summary\n"
                 + "§e/rival admin open [page] §7— open rival GUI\n"
-                + "§8GUI buttons call these directly (no Forge perm-level gate).";
+                + "§8GUI buttons run these directly.";
     }
 
     /** Detail lore for a tab-encoded {@link com.dbzlegacy.adaptivedifficulty.rival.RivalSystem#currentRivalCards} row. */
@@ -774,7 +777,7 @@ public final class RivalGuiApi {
         lines.add("§7Status §f" + status + "  §8·  §7Tier §6" + tier);
         lines.add("§7RP §f" + rp + "  §8·  §7W/L/D §f" + wins + "/" + losses + "/" + draws);
         if (p.length > 8) {
-            lines.add("§7Deaths lost/won §f" + p[8] + "/" + (p.length > 9 ? p[9] : "0"));
+            lines.add("§7Challenge deaths §fyou " + p[8] + " §8/ them " + (p.length > 9 ? p[9] : "0"));
         }
         lines.add("§8Tap Remove to end this rivalry.");
         return lines;
@@ -795,7 +798,7 @@ public final class RivalGuiApi {
         if ("IN".equalsIgnoreCase(dir)) {
             if (mutual) {
                 lines.add("§eIncoming mutual confirm");
-                lines.add("§7Both players Silent'd — Accept to confirm.");
+                lines.add("§7You both picked Silent — Accept to go Mutual.");
             } else {
                 lines.add("§aIncoming declare");
                 lines.add("§7Accept to become Mutual · Decline to ignore.");

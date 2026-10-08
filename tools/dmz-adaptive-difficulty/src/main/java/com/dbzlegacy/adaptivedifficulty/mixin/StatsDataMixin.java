@@ -92,12 +92,22 @@ public abstract class StatsDataMixin {
         cir.setReturnValue(Math.min(previous, Math.min(requested, room)));
     }
 
+    /** Mods do not load or unload while the server is up. */
+    private static volatile Boolean CAPS_ACTIVE;
+
     /** Always enforce on production (dmzrevamp present); config toggles must not re-enable stock 50k ladder. */
     private static boolean lmCapsActive() {
-        try {
-            return ModList.get().isLoaded("dmzrevamp");
-        } catch (Throwable t) {
-            return true;
+        Boolean known = CAPS_ACTIVE;
+        if (known != null) {
+            return known;
         }
+        boolean loaded = true;
+        try {
+            loaded = ModList.get().isLoaded("dmzrevamp");
+        } catch (Throwable ignored) {
+            loaded = true;
+        }
+        CAPS_ACTIVE = loaded;
+        return loaded;
     }
 }

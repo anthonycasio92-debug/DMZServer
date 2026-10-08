@@ -65,6 +65,7 @@ def main() -> int:
     skip_gui = os.environ.get("LM_SKIP_GUI", "0") == "1"
     print("\n--- Sub-audits (must PASS) ---")
     sub_audits = (
+        "audit_mixin_visibility.py",
         "audit_prestige_need_ladder.py",
         "audit_prestige_gui_flow.py",
         "audit_lm_admin_commands.py",
@@ -148,7 +149,6 @@ def main() -> int:
     print("\n--- § natural skills ---")
     prog_cfg = read(SRC / "progression/ProgressionConfig.java")
     prog_sys = read(SRC / "progression/ProgressionSystem.java")
-    skill_pulse = read(SRC / "progression/skills/SkillProgression.java")
     diff_cfg = read(SRC / "config/DifficultyConfig.java")
     skill_dir = SRC / "progression/skills"
     check("flight sprint and meditation are removed",
@@ -162,9 +162,7 @@ def main() -> int:
           and "FlightProgression" not in prog_sys
           and "SprintJumpProgression" not in prog_sys
           and "MeditationProgression" not in prog_sys
-          and "FlightProgression" not in skill_pulse
-          and "SprintJumpProgression" not in skill_pulse
-          and "MeditationProgression" not in skill_pulse
+          and not (skill_dir / "SkillProgression.java").is_file()
           and "PotentialProgression.onPlayerHurt" in prog_sys
           and "enableFlightProgression" not in diff_cfg
           and "enableSprintJump" not in diff_cfg
@@ -376,7 +374,8 @@ def main() -> int:
     print("\n--- § difficulty ---")
     cnpc_diff = read(SRC / "gui/cnpc/CnpcLmDifficultyGui.java")
     check("CNPC tiers locked when personal OFF", "paintFeatureLocked" in cnpc_diff
-          and "Turn personal difficulty ON first" in cnpc_diff)
+          and "Personal difficulty" in cnpc_diff
+          and "main Difficulty page" in cnpc_diff)
     check("CNPC team scaling locked like tiers", "Teams locked" in cnpc_diff
           and "before using team scaling" in cnpc_diff)
     check("Difficulty team action gated when personal OFF", "ACT_TEAM.equals(act)" in read(SRC / "service/DifficultyActions.java"))
@@ -386,7 +385,13 @@ def main() -> int:
     cnpc_support = read(SRC / "gui/cnpc/CnpcGuiSupport.java")
     check("CNPC afterGuiClosed defer reopen", "afterGuiClosed" in cnpc_support)
     check("CNPC flash notice separate widget ids", "ID_FLASH_LABEL_BASE" in cnpc_support)
-    check("CNPC flash notice readable", "§6§lNotice" in cnpc_support and "brightenNoticeLine" in cnpc_support)
+    cnpc_feedback = read(SRC / "gui/cnpc/CnpcMenuFeedback.java")
+    check("CNPC flash notice readable",
+          'NOTICE_HEADER = "§6§lNotice"' in cnpc_feedback
+          and 'NOTICE_BODY = "§e"' in cnpc_feedback
+          and "CnpcMenuFeedback.NOTICE_HEADER" in cnpc_support
+          and "brightenNoticeLine" in cnpc_support
+          and "noticeBody" in cnpc_support)
     check("CNPC info blocks readable (readableInfoLine)", "readableInfoLine" in cnpc_support
           and "readableInfoLine" in read(SRC / "gui/cnpc/CnpcGuiStyle.java"))
     check("CNPC difficulty clear tier avoids flash ids", "ID_GRID_BASE" in cnpc_diff

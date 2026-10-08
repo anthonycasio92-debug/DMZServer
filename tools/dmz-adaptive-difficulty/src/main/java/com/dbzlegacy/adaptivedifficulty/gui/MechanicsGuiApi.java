@@ -74,7 +74,7 @@ public final class MechanicsGuiApi {
                             + " §8· §7Skills §f" + onOff(ph.get("skills"))
                             + " §8· §7Event log §f" + onOff(ph.get("syslog")));
                 } else if (skillCheck) {
-                    lore.add("§7Skill Check is available for you.");
+                    lore.add("§7Skill Check is unlocked for you — open it from the hub.");
                 } else {
                     lore.add("§8Skill Check is a donator perk — ask staff if interested.");
                 }
@@ -108,7 +108,7 @@ public final class MechanicsGuiApi {
             return switch (sub) {
                 case "on", "true", "enable" -> {
                     SystemTelemetry.setEnabled(true);
-                    yield "§aEvent log ON";
+                    yield "§eEvent log ON";
                 }
                 case "off", "false", "disable" -> {
                     SystemTelemetry.setEnabled(false);
@@ -116,9 +116,9 @@ public final class MechanicsGuiApi {
                 }
                 case "flush" -> {
                     SystemTelemetry.flushAndClose();
-                    yield "§aLogs flushed.";
+                    yield "§eLogs flushed.";
                 }
-                case "status", "0", "" -> "§7" + SystemTelemetry.statusLine();
+                case "status", "0", "" -> "§e" + SystemTelemetry.statusLine();
                 default -> "§cUnknown option."
                         + "\n§8/lm do syslog on|off|status|flush";
             };
@@ -128,8 +128,8 @@ public final class MechanicsGuiApi {
                 return "§cStaff only.";
             }
             return DifficultyConfig.reload()
-                    ? "§aLegacy Mechanics config reloaded."
-                    : "§cConfig reload failed.";
+                    ? "§eLegacy Mechanics config reloaded."
+                    : "§eConfig reload failed.";
         }
         if ("migrate-cnpc".equals(act) || "migratecnpc".equals(act) || "cnpcmigrate".equals(act)) {
             if (!StaffAccess.isStaff(player)) {

@@ -51,6 +51,8 @@ public final class CnpcGuiSupport {
     private static final int SCROLL_ROW_H = 14;
     /** Space reserved at bottom for nav / close row (pixels). */
     public static final int FOOTER_RESERVE = 48;
+    /** Notice band: three lines plus padding. Added only when a notice is waiting. */
+    public static final int FLASH_MAX_H = 56;
 
     /** Reserved widget ids — one role per screen; never reuse on the same gui instance. */
     public static final int ID_TITLE = 1;
@@ -81,8 +83,8 @@ public final class CnpcGuiSupport {
     public static final int ID_GRID_BASE = 120;
     /** Prestige permanent tier shop (7 buttons — must not overlap flash band 50–59). */
     public static final int ID_PRESTIGE_TIER_GRID = 200;
-    /** Progression TP boost presets (must not overlap {@link #ID_FLASH_LABEL_BASE}). */
-    public static final int ID_BOOST_PRESET_BASE = 120;
+    /** Progression TP boost presets. Not {@link #ID_GRID_BASE} — those ids share one screen only by accident. */
+    public static final int ID_BOOST_PRESET_BASE = 210;
 
     /** Shorter divider so labels do not wrap oddly in CNPC. */
     private static String dividerText() {
@@ -121,7 +123,7 @@ public final class CnpcGuiSupport {
     }
 
     public static void show(ServerPlayer player, int guiId, Painter painter) {
-        showSized(player, guiId, W, H, painter);
+        showSized(player, guiId, W, window(H), painter);
     }
 
     public static void showSized(ServerPlayer player, int guiId, int width, int height, Painter painter) {
@@ -131,7 +133,8 @@ public final class CnpcGuiSupport {
             return;
         }
         try {
-            int[] fitted = CnpcUiFit.fit(ip, width, height);
+            int designed = height + flashReserve(player);
+            int[] fitted = CnpcUiFit.fit(ip, width, designed);
             ICustomGui gui = NpcAPI.Instance().createCustomGui(guiId, fitted[0], fitted[1], false, ip);
             gui.setClosesOnEsc(true);
             painter.paint(player, gui);
@@ -161,7 +164,7 @@ public final class CnpcGuiSupport {
             return y;
         }
         List<String> box = new ArrayList<>();
-        box.add("§6§lNotice");
+        box.add(CnpcMenuFeedback.NOTICE_HEADER);
         int max = CnpcGuiStyle.INFO_INLINE_MAX;
         for (String line : raw) {
             if (box.size() >= max) {
@@ -170,9 +173,10 @@ public final class CnpcGuiSupport {
             box.add(brightenNoticeLine(line));
         }
         if (raw.size() + 1 > max) {
-            box.set(max - 1, "§e+" + (raw.size() + 1 - max) + " more — check chat for details");
+            box.set(max - 1, CnpcMenuFeedback.NOTICE_BODY + "+" + (raw.size() + 1 - max)
+                    + " more — check chat for details");
         }
-        // Never use the scrolling panel here — the main page may need it for scrollPickList.
+        // Stay inline. A pick list is the menu's one scroll; a long read-only body may still use the panel.
         return paintInfoBlock(gui, y, box, max, true, ID_FLASH_LABEL_BASE);
     }
 
@@ -186,6 +190,19 @@ public final class CnpcGuiSupport {
         CnpcLmHubGui.open(player, "main");
     }
 
+    /** Pixels to add to a window when a notice is waiting. Does not consume the notice. */
+    public static int flashReserve(ServerPlayer player) {
+        return CnpcMenuFeedback.hasPending(player) ? FLASH_MAX_H : 0;
+    }
+
+    /**
+     * Clamp a designed window the same way {@link #suggestHeight} does.
+     * A pending notice is added later in {@link #showSized}.
+     */
+    public static int window(int designedHeight) {
+        return suggestHeight(designedHeight - FOOTER_RESERVE - 8);
+    }
+
     /**
      * Max list scroll height that fits above footer rows. {@code rowsBelowList} = button rows under
      * the list (actions + nav, or nav only).
@@ -196,7 +213,13 @@ public final class CnpcGuiSupport {
         }
         int rows = Math.max(1, rowsBelowList);
         int maxBottom = gui.getHeight() - FOOTER_RESERVE - rows * ROW_STEP - 4;
-        return Math.max(48, Math.min(SCROLL_LIST_H, maxBottom - listY));
+        int available = maxBottom - listY;
+        if (available < 48) {
+            // Not enough room — the window should have reserved the notice band.
+            // Keep a minimum and let compressToWindow handle the rest.
+            return 48;
+        }
+        return Math.min(SCROLL_LIST_H, available);
     }
 
     /** Nav row Y after a scroll list. {@code extraActionRows} = full button rows above nav. */
@@ -375,6 +398,16 @@ public final class CnpcGuiSupport {
         CnpcPlayerPreview.paint(player, gui, anchorY);
     }
 
+    /**
+     * Head-part preview uses the viewer's own entity, not a CNPC clone.
+     * Layout Y still follows the viewer so the slot clears the notice band.
+     */
+    public static void paintLivePlayerPreview(ServerPlayer viewer, ICustomGui gui) {
+        if (viewer != null) {
+            CnpcPlayerPreview.paintLive(viewer, gui, previewAnchorY(viewer));
+        }
+    }
+
     /** Paint preview last at {@link #previewAnchorY(ServerPlayer)} (ProfTools-style). */
     public static void paintSubjectPreview(ServerPlayer subject, ICustomGui gui, ServerPlayer layoutViewer) {
         if (subject != null && layoutViewer != null) {
@@ -408,8 +441,9 @@ public final class CnpcGuiSupport {
     }
 
     /**
-     * Interactive pick list inside the scrolling panel (clicks work). Mouse wheel on the list uses
-     * the on-screen scroll bar; {@link #paintInfoBlock} status bands use wheel via label stacks.
+     * One pick list on the menu. CustomNPCs only supports one scroll region, so this calls
+     * {@link ICustomGui#addScroll} directly. Nesting the list in {@link ICustomGui#getScrollingPanel()}
+     * makes the panel take the mouse wheel.
      */
     public static IScroll scroll(ICustomGui gui, int id, int x, int y, int w, int h, String[] items) {
         String[] safe = items == null ? new String[0] : items;
@@ -419,9 +453,7 @@ public final class CnpcGuiSupport {
         }
         int bandW = textBandWidth();
         int useW = Math.min(w, bandW);
-        IComponentsScrollableWrapper panel = gui.getScrollingPanel();
-        panel.init(x, y, useW, h);
-        return panel.addScroll(id, 0, 0, useW, h, copy);
+        return gui.addScroll(id, x, y, useW, h, copy);
     }
 
     /** Long read-only copy — inline when short, scroll band only when needed. */
@@ -719,7 +751,23 @@ public final class CnpcGuiSupport {
     }
 
     private static String brightenNoticeLine(String line) {
-        return CnpcGuiStyle.readableInfoLine(line);
+        return CnpcMenuFeedback.noticeBody(line);
+    }
+
+    /** Same words as {@code msg}, with every line forced to the notice body color. */
+    private static String noticeChat(String msg) {
+        StringBuilder out = new StringBuilder();
+        for (String line : msg.split("\n")) {
+            String body = CnpcMenuFeedback.noticeBody(line);
+            if (body.isBlank()) {
+                continue;
+            }
+            if (out.length() > 0) {
+                out.append('\n');
+            }
+            out.append(body);
+        }
+        return out.toString();
     }
 
     private static String splitCamel(String s) {
@@ -822,6 +870,12 @@ public final class CnpcGuiSupport {
         String msg = action.get();
         if (msg != null && !msg.isBlank()) {
             pushMenuMessage(player, msg);
+            // The flash band fits INFO_INLINE_MAX-1 = 2 message lines; longer messages
+            // truncate with "check chat for details", so actually send them to chat.
+            // Chat uses the same yellow body as the notice.
+            if (msg.split("\n", -1).length > CnpcGuiStyle.INFO_INLINE_MAX - 1) {
+                feedbackChat(player, noticeChat(msg));
+            }
         }
         if (reopen != null) {
             runDeferred(player, reopen);
@@ -898,21 +952,53 @@ public final class CnpcGuiSupport {
         });
     }
 
-    /** Single-click opens a detail / confirm screen (does not close GUI). */
-    public static void wireScrollOpenDetail(
-            IScroll scroll,
-            List<String> cards,
-            int argField,
-            Consumer<String> onOpen
-    ) {
-        if (scroll == null || onOpen == null) {
-            return;
+    /** Highlighted row in a plain string list. Null when nothing is selected. */
+    public static String selectedLine(IScroll scroll, String[] items) {
+        if (scroll == null || items == null) {
+            return null;
         }
-        scroll.setOnClick((g, sc) -> {
-            String arg = cardField(cards, sc, argField);
-            if (arg != null) {
-                afterGuiClosed(g, () -> onOpen.accept(arg));
+        int[] sel = scroll.getSelection();
+        if (sel == null || sel.length == 0 || sel[0] < 0 || sel[0] >= items.length) {
+            return null;
+        }
+        String value = items[sel[0]];
+        return value == null || value.isBlank() ? null : value;
+    }
+
+    /**
+     * Button for the highlighted row. Does not call {@link IScroll#setOnClick} — that handler
+     * takes the mouse wheel away from the list. The selection is read on press, before the menu closes.
+     */
+    public static void selectionButton(
+            ServerPlayer player,
+            ICustomGui gui,
+            int id,
+            String label,
+            int x,
+            int y,
+            int width,
+            Supplier<String> selected,
+            Consumer<String> onSelected,
+            Runnable reopen) {
+        int w = width > 0 ? width : BTN_W;
+        IButton b = gui.addButton(id, safeChat(compactButton(label)), x, y, w, BTN_H);
+        b.setOnPress((g, btn) -> {
+            String arg = selected == null ? null : selected.get();
+            if (arg == null || arg.isBlank()) {
+                afterGuiClosed(g, () -> {
+                    pushMenuMessage(player, CnpcMenuFeedback.NOTICE_BODY + "Select a row first.");
+                    if (reopen != null) {
+                        reopen.run();
+                    }
+                });
+                return;
             }
+            String chosen = arg;
+            afterGuiClosed(g, () -> {
+                if (onSelected != null) {
+                    onSelected.accept(chosen);
+                }
+            });
         });
     }
 
@@ -992,7 +1078,7 @@ public final class CnpcGuiSupport {
 
     public static String flagOnOff(java.util.Map<String, String> ph, String key) {
         boolean on = "true".equalsIgnoreCase(ph.getOrDefault("flag_" + key, "false"));
-        return on ? "§aOn" : "§cOff";
+        return on ? "§2§lON" : "§8§lOFF";
     }
 
     @FunctionalInterface

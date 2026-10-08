@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.gui.cnpc;
 
+import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import java.util.List;
 import noppes.npcs.api.IScreenSize;
 import noppes.npcs.api.entity.IPlayer;
@@ -118,6 +119,13 @@ public final class CnpcUiFit {
             return;
         }
         scale = Math.min(1f, Math.max(0.05f, scale));
+        if (scale < 0.9f) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] GUI {} compressed to {}x — content overflows window",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    gui.getID(),
+                    String.format(java.util.Locale.ROOT, "%.2f", scale));
+        }
         if (components != null) {
             for (ICustomGuiComponent component : components) {
                 scaleComponent(component, scale, scale);

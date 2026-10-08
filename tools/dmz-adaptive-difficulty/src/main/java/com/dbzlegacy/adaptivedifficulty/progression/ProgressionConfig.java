@@ -29,8 +29,9 @@ public final class ProgressionConfig {
         return masterEnabled() && DifficultyConfig.get().enableBioAndroid;
     }
 
+    /** Race lock is retired. Selection is never blocked. */
     public static boolean raceLock() {
-        return masterEnabled() && DifficultyConfig.get().enableRaceLock;
+        return false;
     }
 
     public static boolean yardrat() {
@@ -97,8 +98,7 @@ public final class ProgressionConfig {
                 + " med=" + onOff(c.enableLivingWorldMeditation)
                 + "\n§6TP§7: boost=" + onOff(c.enableGlobalTpBoost)
                 + " bio=" + onOff(c.enableBioAndroid)
-                + "\n§bRace§7: lock=" + onOff(c.enableRaceLock)
-                + " yard=" + onOff(c.enableYardrat)
+                + "\n§bRace§7: yard=" + onOff(c.enableYardrat)
                 + " spirit=" + onOff(c.enableSpiritualistKi)
                 + " android=" + onOff(c.enableAndroidConversion)
                 + "\n§cCombat§7: ki=" + onOff(c.enableKiWeapons)

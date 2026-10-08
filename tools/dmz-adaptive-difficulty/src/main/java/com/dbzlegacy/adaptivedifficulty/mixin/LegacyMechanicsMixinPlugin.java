@@ -27,7 +27,65 @@ public final class LegacyMechanicsMixinPlugin implements IMixinConfigPlugin {
         if (mixinClassName != null && mixinClassName.endsWith("DojoWarSenseMixin")) {
             return senseNetworkPresent();
         }
+        if (mixinClassName != null && mixinClassName.endsWith("NoeaAbsorptionBonusGateMixin")) {
+            return absorptionServicePresent();
+        }
+        if (mixinClassName != null && (
+                mixinClassName.endsWith("DendeResetAbsorptionWipeMixin")
+                        || mixinClassName.endsWith("CreateCharacterAbsorptionWipeMixin"))) {
+            return absorptionServicePresent();
+        }
+        if (mixinClassName != null && mixinClassName.endsWith("MeleeStatsResetPlayerBlockMixin")) {
+            return meleeResetCommandsPresent();
+        }
+        if (mixinClassName != null && mixinClassName.endsWith("MeleeStatsResetAbsorptionWipeMixin")) {
+            return absorptionServicePresent() && meleeResetCommandsPresent();
+        }
+        if (mixinClassName != null && mixinClassName.endsWith("NoeaTravelSafetyCorpseFixMixin")) {
+            return travelSafetyPresent();
+        }
         return dedicatedServer();
+    }
+
+    /**
+     * Melee mod's self-target {@code /dmzstats reset} executor.
+     * Look the class file up. Defining the mixin target here makes mixin
+     * abort startup with "loaded too early".
+     */
+    private static boolean meleeResetCommandsPresent() {
+        try {
+            ClassLoader loader = LegacyMechanicsMixinPlugin.class.getClassLoader();
+            return loader != null
+                    && loader.getResource("com/dbzlegacy/mohistmelee/StatsResetCommands.class") != null;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    /** Noea absorption service. Absent on a server that does not run Noea. */
+    private static boolean absorptionServicePresent() {
+        try {
+            Class.forName(
+                    "com.butterjaffa.noeabosses.MajinAbsorptionService",
+                    false,
+                    LegacyMechanicsMixinPlugin.class.getClassLoader());
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    /** Noea off-world inventory. Absent on a server that does not run Noea. */
+    private static boolean travelSafetyPresent() {
+        try {
+            Class.forName(
+                    "com.butterjaffa.noeabosses.TravelSafetyService",
+                    false,
+                    LegacyMechanicsMixinPlugin.class.getClassLoader());
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
     }
 
     /** Noea's tracking channel. Absent on a server that does not run Noea. */

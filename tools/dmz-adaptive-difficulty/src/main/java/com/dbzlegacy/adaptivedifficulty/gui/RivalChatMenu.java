@@ -66,7 +66,8 @@ public final class RivalChatMenu {
                 + " §8(§" + tier.color() + tier.name() + "§8)"
                 + "  §7Mutual §f" + me.countMutual() + "§8/§f" + RivalConstants.MAX_MUTUAL_RIVALS));
         send(player, Component.m_237113_("§7Record §a" + me.officialWins + "§7/§c" + me.officialLosses
-                + "§7/§e" + me.officialDraws + "  §7TP §f" + (me.tpMessages ? "ON" : "OFF")));
+                + "§7/§e" + me.officialDraws + " §8(wins/losses/draws)"
+                + "  §7TP §f" + (me.tpMessages ? "ON" : "OFF")));
         boolean inCh = RivalChallengeManager.get().isInChallenge(player.m_20148_());
         if (inCh) {
             send(player, Component.m_237113_("§eChallenge active"));
@@ -75,11 +76,11 @@ public final class RivalChatMenu {
         MutableComponent row1 = Component.m_237113_("§7")
                 .m_7220_(btn("§6[List]", "/rival do page list", "Current rivals"))
                 .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§a[Actions]", "/rival do page actions", "Declare · accept · remove"))
+                .m_7220_(btn("§a[Actions]", "/rival do page actions", "Declare · silent · invites · remove"))
                 .m_7220_(Component.m_237113_("  "))
                 .m_7220_(btn("§c[Challenge]", "/rival do page challenge", "Challenge controls"))
                 .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§f[Top]", "/rival do page top", "RP leaderboard"));
+                .m_7220_(btn("§f[Leaderboard]", "/rival do page top", "RP leaderboard"));
         send(player, row1);
         MutableComponent rowHist = Component.m_237113_("§7")
                 .m_7220_(btn("§8[History]", "/rival do page history", "Previous rivals"))
@@ -91,9 +92,9 @@ public final class RivalChatMenu {
                 .m_7220_(Component.m_237113_("  "))
                 .m_7220_(btn("§b[Quests]", "/rival do page quests", "Weekly quests"))
                 .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§d[Achs]", "/rival do page achievements", "Achievements"))
+                .m_7220_(btn("§d[Achievements]", "/rival do page achievements", "Achievements"))
                 .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§6[HOF]", "/rival do page hof", "Hall of Fame"));
+                .m_7220_(btn("§6[Hall of Fame]", "/rival do page hof", "Hall of Fame"));
         send(player, row2);
         MutableComponent row3 = Component.m_237113_("§7")
                 .m_7220_(btn("§f[Journal]", "/rival do page journal", "Battle journal"))
@@ -109,7 +110,7 @@ public final class RivalChatMenu {
                             "/rival do instinct toggle main", "Toggle Rival Instinct"));
         }
         send(player, row3);
-        send(player, btn("§7« Hub", "/lm", "Main menu"));
+        send(player, btn("§7« Hub", "/lm", "Main hub"));
         send(player, Component.m_237113_("§8────────────────"));
     }
 
@@ -118,7 +119,7 @@ public final class RivalChatMenu {
         for (String line : RivalSystem.listLines(player)) {
             send(player, Component.m_237113_(line));
         }
-        send(player, btn("§7« Back", "/rival do page main", "Main"));
+        send(player, btn("§7« Back", "/rival do page main", "Go up one level"));
     }
 
     private static void stats(ServerPlayer player) {
@@ -126,21 +127,35 @@ public final class RivalChatMenu {
         for (String line : RivalSystem.statsLines(player)) {
             send(player, Component.m_237113_(line));
         }
-        send(player, btn("§7« Back", "/rival do page main", "Main"));
+        send(player, btn("§7« Back", "/rival do page main", "Go up one level"));
     }
 
     private static void challenge(ServerPlayer player) {
         send(player, Component.m_237113_(""));
         send(player, Component.m_237113_("§8── §cChallenge §8──"));
         send(player, Component.m_237113_("§7Send: §e/rival challenge send <player> [min]"));
+        boolean inChallenge = RivalChallengeManager.get().isInChallenge(player.m_20148_());
+        boolean outgoing = false;
+        for (String card : RivalChallengeManager.get().pendingRequestCards(player)) {
+            String[] parts = card.split("\t", -1);
+            if (parts.length > 2 && "OUT".equals(parts[2])) {
+                outgoing = true;
+                break;
+            }
+        }
         MutableComponent row = Component.m_237113_("§7")
-                .m_7220_(btn("§a[Accept]", "/rival do challenge accept main", "Accept pending"))
+                .m_7220_(btn("§a[Accept]", "/rival do challenge accept main", "Accept oldest pending"))
                 .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§c[Decline]", "/rival do challenge decline main", "Decline pending"))
-                .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§8[Cancel]", "/rival do challenge cancel main", "Cancel yours"));
+                .m_7220_(btn("§c[Decline]", "/rival do challenge decline main", "Decline oldest pending"))
+                .m_7220_(Component.m_237113_("  "));
+        if (inChallenge && !outgoing) {
+            row.m_7220_(btn("§c[Forfeit]", "/rival do challenge cancel main", "Forfeit your active challenge"));
+        } else {
+            row.m_7220_(btn("§8[Cancel request]", "/rival do challenge cancel main",
+                    "Cancel your pending challenge request"));
+        }
         send(player, row);
-        send(player, btn("§7« Back", "/rival do page main", "Main"));
+        send(player, btn("§7« Back", "/rival do page main", "Go up one level"));
     }
 
     private static void top(ServerPlayer player) {
@@ -148,18 +163,18 @@ public final class RivalChatMenu {
         for (String line : RivalSystem.topLines(10)) {
             send(player, Component.m_237113_(line));
         }
-        send(player, btn("§7« Back", "/rival do page main", "Main"));
+        send(player, btn("§7« Back", "/rival do page main", "Go up one level"));
     }
 
     private static void help(ServerPlayer player) {
         send(player, Component.m_237113_(""));
-        send(player, Component.m_237113_("§6§l/rival §8— Rival System"));
+        send(player, Component.m_237113_("§6§l/rival §8— Rivals"));
         send(player, Component.m_237113_("§e/rival <player> §7silent rival"));
         send(player, Component.m_237113_("§e/rival declare|accept|decline|remove <player>"));
         send(player, Component.m_237113_("§e/rival challenge send <player> [minutes]"));
         send(player, Component.m_237113_("§e/rival spectate [player]|stop"));
         send(player, Component.m_237113_("§e/rival season|quests|achievements|hof|journal|title"));
-        send(player, btn("§7« Back", "/rival do page main", "Main"));
+        send(player, btn("§7« Back", "/rival do page main", "Go up one level"));
     }
 
     private static void lines(ServerPlayer player, java.util.List<String> list, String page) {
@@ -167,7 +182,7 @@ public final class RivalChatMenu {
         for (String line : list) {
             send(player, Component.m_237113_(line));
         }
-        send(player, btn("§7« Back", "/rival do page main", "Main"));
+        send(player, btn("§7« Back", "/rival do page main", "Go up one level"));
     }
 
     private static MutableComponent btn(String label, String command, String hover) {

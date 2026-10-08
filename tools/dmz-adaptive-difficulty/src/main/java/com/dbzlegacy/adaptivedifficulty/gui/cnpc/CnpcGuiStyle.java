@@ -23,9 +23,9 @@ public final class CnpcGuiStyle {
     public static final String HINT_DOUBLE_CLICK_PLAYER = "§7Double-click a player to choose them";
     public static final String HINT_REVIEW_PAY = "§7Read the summary before you confirm";
     public static final String HINT_TOGGLE_STAFF = "§7Staff: tap a row to turn a flag on or off";
-    public static final String HINT_READ_ONLY = "§7View-only — changes are made elsewhere";
+    public static final String HINT_READ_ONLY = "§7View-only — nothing to change here";
     public static final String HINT_TITLE_EQUIP =
-            "§7Click a row for details · double-click to equip";
+            "§7Select a row, then Details · double-click to equip";
     public static final String HINT_REVIEW_DOJO = "§7Select a rival dojo below";
 
     public static final String MSG_RIVALS_OFF = "§cRivals are turned off on this server.";
@@ -56,8 +56,9 @@ public final class CnpcGuiStyle {
     }
 
     /**
-     * Info blocks, subtitles, and flash notices — same contrast as {@code §6§lNotice} band
-     * (grey/dark-grey body copy becomes white/yellow so CNPC labels stay readable).
+     * Info blocks and subtitles. Grey and dark-grey copy becomes white and yellow
+     * so CNPC labels stay readable. Flash notices do not use this — their body is
+     * always {@link CnpcMenuFeedback#NOTICE_BODY}.
      */
     public static String readableInfoLine(String line) {
         if (line == null || line.isBlank()) {
@@ -100,11 +101,13 @@ public final class CnpcGuiStyle {
             return "Training points";
         }
         return switch (category.toLowerCase(Locale.ROOT)) {
-            case "tp" -> "Training points";
-            case "wins" -> "Wins";
-            case "streak" -> "Win streak";
-            case "rp" -> "Dojo reputation";
-            case "wars" -> "Dojo wars";
+            case "tp", "wins", "win", "streak" -> "Training points";
+            case "sessions", "session" -> "Sessions";
+            case "perfect", "perfects" -> "Perfect spars";
+            case "combo" -> "Combo";
+            case "time" -> "Time";
+            case "rp" -> "Reputation";
+            case "wars", "war" -> "War wins";
             default -> capitalize(category.replace('_', ' '));
         };
     }

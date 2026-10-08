@@ -2,6 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.character;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
+import com.dbzlegacy.adaptivedifficulty.noea.AbsorptionWipeHelper;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.progression.race.RaceLock;
@@ -240,7 +241,7 @@ public final class CharacterServicesSystem {
 
     public static String cooldownLine(ServerPlayer player, String kind) {
         if (CharacterServicesAccess.bypassCooldown(player)) {
-            return "§aReady whenever you are §8(staff bypass)";
+            return "§aReady whenever you are §8(staff waived)";
         }
         CharacterServicesStore.PlayerRecord rec =
                 CharacterServicesStore.get().record(player.m_20148_().toString());
@@ -342,6 +343,7 @@ public final class CharacterServicesSystem {
                 refund(player, cost);
                 return "§cCharacter data unavailable.";
             }
+            AbsorptionWipeHelper.wipe(player, "CharacterServicesSystem.executeRaceChange");
             clearForms(ch, player);
             String priorHeadBone = CosmeticHeadBoneService.activeBone(player);
             String priorClassBeforeRaceChange = "";

@@ -10,6 +10,7 @@ import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.evolution.CombatGravity;
 import com.dbzlegacy.adaptivedifficulty.evolution.EnemyEvolution;
+import com.dbzlegacy.adaptivedifficulty.progression.DmzInflatedAttributeReset;
 import com.dbzlegacy.adaptivedifficulty.progression.PlayerStatChecker;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionSystem;
 import com.dbzlegacy.adaptivedifficulty.progression.end.EndProgression;
@@ -66,6 +67,7 @@ import net.minecraftforge.event.entity.living.LivingChangeTargetEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingDamageEvent;
 import net.minecraftforge.event.entity.living.LivingDropsEvent;
+import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.living.MobSpawnEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
@@ -132,6 +134,7 @@ public final class DifficultyEvents {
     @SubscribeEvent
     public void onServerStarted(ServerStartedEvent event) {
         com.dbzlegacy.adaptivedifficulty.command.MohistCommandBridge.tryRegister(event.getServer());
+        DragonBallRadarPickup.registerGriefPrevention();
         VanillaDifficultyGuard.restoreIfPeaceful(event.getServer());
         try {
             com.dbzlegacy.adaptivedifficulty.data.CnpcDataMigrator.migrateWorldIfNeeded(event.getServer());
@@ -177,6 +180,7 @@ public final class DifficultyEvents {
                         .syncFromLegacy(player);
                 com.dbzlegacy.adaptivedifficulty.progression.PersonalLevelCapMirror.publish(player);
                 com.dbzlegacy.adaptivedifficulty.progression.PrestigeResourceRecovery.pulse(player);
+                com.dbzlegacy.adaptivedifficulty.character.CosmeticHeadBoneService.settleAfterLogin(player);
             } catch (Throwable ignored) {
             }
         };
@@ -190,6 +194,7 @@ public final class DifficultyEvents {
     @SubscribeEvent
     public void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
+            DmzInflatedAttributeReset.onLogin(player);
             var data = DifficultyCache.data(player);
             // Every server boot: personal difficulty starts OFF for everyone.
             // First login that boot forces it; reconnects later in the same uptime keep the toggle.
@@ -399,6 +404,7 @@ public final class DifficultyEvents {
             LAST_FORM_KEY.remove(player.m_20148_());
             AncientCoinEconomy.clearMigrateFlag(player.m_20148_());
             com.dbzlegacy.adaptivedifficulty.character.ReskinSessionGuard.clear(player);
+            com.dbzlegacy.adaptivedifficulty.character.CosmeticHeadBoneService.restorePreview(player);
             AreaDifficulty.clearCache();
             RivalSystem.onLogout(player);
             SparringSystem.onLogout(player);
@@ -907,6 +913,21 @@ public final class DifficultyEvents {
     @SubscribeEvent
     public void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
         EndProgression.onRightClickBlock(event);
+    }
+
+    /**
+     * One left-click with the matching dragon radar takes that ball.
+     * Runs even after a claim plugin cancels the click. Only that ball is taken.
+     */
+    @SubscribeEvent(priority = EventPriority.HIGHEST, receiveCanceled = true)
+    public void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
+        DragonBallRadarPickup.onLeftClickBlock(event);
+    }
+
+    /** A claim plugin may still cancel the break. Allow it only for this radar click. */
+    @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
+    public void onDragonBallBreak(BlockEvent.BreakEvent event) {
+        DragonBallRadarPickup.onBreak(event);
     }
 
     /** Sneak + right-click another player → DMZ stat dump (PlayerStatChecker.js).

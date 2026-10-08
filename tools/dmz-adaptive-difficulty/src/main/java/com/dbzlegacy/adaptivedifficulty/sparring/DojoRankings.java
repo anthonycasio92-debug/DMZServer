@@ -1125,7 +1125,7 @@ public final class DojoRankings {
             return 0;
         }
         return switch (cat) {
-            case "wins", "win" -> d.wins;
+            case "wins", "win", "wars", "war" -> d.wins;
             case "tp" -> d.totalTp;
             case "sessions", "session" -> d.sessions;
             default -> d.seasonRp;
@@ -1134,7 +1134,7 @@ public final class DojoRankings {
 
     private static String formatValue(SparStore.DojoEntry d, String cat) {
         return switch (cat) {
-            case "wins", "win" -> d.wins + " wins";
+            case "wins", "win", "wars", "war" -> d.wins + " war wins";
             case "tp" -> DmzRewards.formatWhole(d.totalTp) + " TP";
             case "sessions", "session" -> d.sessions + " spars";
             default -> (int) d.seasonRp + " RP";

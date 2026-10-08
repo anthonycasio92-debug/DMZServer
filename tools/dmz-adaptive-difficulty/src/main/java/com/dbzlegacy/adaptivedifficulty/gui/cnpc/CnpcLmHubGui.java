@@ -11,9 +11,6 @@ import noppes.npcs.api.gui.ICustomGui;
 
 /** Legacy Mechanics main menu (CustomNPCs primary UI). */
 public final class CnpcLmHubGui {
-    private static final int ID_SECTION_COMBAT = 8;
-    private static final int ID_SECTION_CHARACTER = 9;
-
     private CnpcLmHubGui() {}
 
     public static void open(ServerPlayer player, String page) {
@@ -53,22 +50,22 @@ public final class CnpcLmHubGui {
         boolean skillCheck = SkillCheckService.canUse(player);
 
         int infoY = CnpcGuiSupport.paintHeader(player, gui, "§f§lLegacy Mechanics",
-                "§7Scaling, rivals, sparring, prestige, and character tools");
+                "§7Scaling, rivals, sparring, prestige, character tools, and more");
 
         List<String> lines = CnpcPlayerSnapshot.hubLines(who, ph, staff, skillCheck);
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(
-                gui, infoY, lines, CnpcPlayerSnapshot.HUB_INFO_LINES));
+                gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX));
         int gap = CnpcGuiSupport.ROW_STEP;
 
         if (!"true".equals(ph.get("bridge_ok"))) {
-            gui.addLabel(CnpcGuiSupport.ID_STATUS_TAG, "§cLegacy Mechanics is not available on this server.",
+            gui.addLabel(CnpcGuiSupport.ID_STATUS_TAG, "§eLegacy Mechanics could not load your menu data. Try relogging.",
                     CnpcGuiSupport.M, row, CnpcGuiSupport.textBandWidth(), 14);
             row += gap;
             CnpcGuiSupport.footerCloseRefresh(player, gui, row, () -> paintMain(player));
+            CnpcGuiSupport.paintSystemMainPreview(who, gui, player);
             return;
         }
 
-        row = CnpcGuiSupport.paintSectionTag(gui, ID_SECTION_COMBAT, row + 4, "§8Combat & world scaling");
         systemBtn(gui, player, ph, "difficulty", row, CnpcGuiSupport.COL_L, "§aDifficulty",
                 () -> CnpcLmGui.open(player, "difficulty", "main"));
         systemBtn(gui, player, ph, "rival", row, CnpcGuiSupport.COL_R, "§6Rival",
@@ -79,9 +76,8 @@ public final class CnpcLmHubGui {
                 () -> CnpcLmGui.open(player, "spar", "main"));
         systemBtn(gui, player, ph, "prestige", row, CnpcGuiSupport.COL_R, "§dPrestige",
                 () -> CnpcLmGui.open(player, "prestige", "main"));
-        row += gap + 4;
+        row += gap;
 
-        row = CnpcGuiSupport.paintSectionTag(gui, ID_SECTION_CHARACTER, row, "§8Character & account");
         if (skillCheck) {
             CnpcGuiSupport.button(gui, 24, "§eSkill Check", CnpcGuiSupport.COL_L, row,
                     () -> CnpcLmGui.open(player, "skillcheck", "main"));
@@ -92,7 +88,8 @@ public final class CnpcLmHubGui {
             CnpcGuiSupport.buttonSmall(gui, 24, "§8Skill Check", CnpcGuiSupport.COL_L, row, CnpcGuiSupport.BTN_W,
                     () -> {
                         CnpcGuiSupport.pushMenuMessage(player,
-                                "§7Skill Check is a donator perk — ask staff if you want access.");
+                                CnpcMenuFeedback.NOTICE_BODY
+                                        + "Skill Check is a donator perk — ask staff if you want access.");
                         paintMain(player);
                     });
         }
@@ -100,13 +97,11 @@ public final class CnpcLmHubGui {
                 () -> CnpcLmGui.open(player, "character", "main"));
         row += gap;
 
-        CnpcGuiSupport.button(gui, 26, "§cRemove Android", CnpcGuiSupport.COL_L, row,
-                () -> CnpcLmGui.open(player, "android_remove", "main"));
         if (staff) {
-            CnpcGuiSupport.button(gui, 27, "§cStaff Admin", CnpcGuiSupport.COL_R, row,
+            CnpcGuiSupport.button(gui, 27, "§6Staff Admin", CnpcGuiSupport.COL_L, row,
                     () -> CnpcLmAdminGui.open(player, "main"));
+            row += gap;
         }
-        row += gap;
         CnpcGuiSupport.footerCloseRefresh(player, gui, row, () -> paintMain(player));
         CnpcGuiSupport.paintSystemMainPreview(who, gui, player);
     }
@@ -140,7 +135,8 @@ public final class CnpcLmHubGui {
         CnpcGuiSupport.buttonSmall(gui, id, "§8" + pretty, col, row, CnpcGuiSupport.BTN_W,
                 () -> {
                     CnpcGuiSupport.pushMenuMessage(viewer,
-                            "§7" + pretty + " is off on this server. Ask staff if you think that's wrong.");
+                            CnpcMenuFeedback.NOTICE_BODY + pretty
+                                    + " is off on this server. Ask staff if you think that's wrong.");
                     paintMain(viewer);
                 });
     }

@@ -29,19 +29,33 @@ public final class LmOverhaulCapMath {
         if (player == null) {
             return PrestigePointsSystem.BASE_LEVEL_CAP;
         }
+        int cached = PersonalLevelCapMirror.cachedCap(player);
+        if (cached > 0) {
+            return cached;
+        }
         int cap = PrestigePointsSystem.effectiveMaxLevel(player);
-        PersonalLevelCapMirror.publish(player);
+        PersonalLevelCapMirror.remember(player, cap);
         return cap;
     }
 
-    /** Server-authoritative cap from {@link StatsData} (Mohist-safe player lookup). */
+    /**
+     * Server-authoritative cap from {@link StatsData} (Mohist-safe player lookup).
+     * Getters hit the UUID cache. NBT reads and client sync stay on login,
+     * logout, and breakthrough changes.
+     */
     public static int personalLevelCap(com.dragonminez.common.stats.StatsData data) {
         if (data == null) {
             return PrestigePointsSystem.BASE_LEVEL_CAP;
         }
+        int cached = PersonalLevelCapMirror.cachedCap(data);
+        if (cached > 0) {
+            return cached;
+        }
         net.minecraft.server.level.ServerPlayer sp = LmStatsDataAccess.serverPlayer(data);
         if (sp != null) {
-            return personalLevelCap(sp);
+            int cap = personalLevelCap(sp);
+            PersonalLevelCapMirror.attach(data, sp, cap);
+            return cap;
         }
         return PersonalLevelCapMirror.resolveCap(data);
     }
