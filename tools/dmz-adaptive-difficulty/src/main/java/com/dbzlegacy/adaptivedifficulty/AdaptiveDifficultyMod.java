@@ -33,7 +33,7 @@ public final class AdaptiveDifficultyMod {
     /** Forge modId — lowercase; not used for NBT / GUI class lookup. */
     public static final String MOD_ID = "legacymechanics";
     /** Product line version (was DMZ Adaptive Difficulty 3.3.x). */
-    public static final String VERSION = "4.6.43";
+    public static final String VERSION = "4.6.44";
 
     /** True on the dedicated server. A failed side check keeps the server startup path. */
     private static boolean dedicatedServer() {

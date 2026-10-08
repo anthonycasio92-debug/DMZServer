@@ -32,7 +32,8 @@
     "ResourcesLoadClampMixin",
     "DojoWarSenseMixin",
     "noea.NoeaAbsorptionBonusGateMixin",
-    "noea.NoeaTravelSafetyCorpseFixMixin"
+    "noea.NoeaTravelSafetyCorpseFixMixin",
+    "noea.HakaiDestroyerGateMixin"
   ],
   "injectors": {
     "defaultRequire": 1

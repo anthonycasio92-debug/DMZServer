@@ -1,8 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.43**.
+What changed from **4.5.147** through **4.6.44**.
 
-The live mods folder gets `LegacyMechanics-4.6.43.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+The live mods folder gets `LegacyMechanics-4.6.44.jar` on deploy. The running server keeps the older jar until a Kinetic panel restart.
+
+## Hakai name gate
+
+A ki technique whose id or name contains "hakai" no longer takes Noea's insta-kill path unless the attacker is an apprentice or appointed Destroyer. Official Hakai technique ids are unchanged. They already require that role.
 
 ## Fusion cooldown reset
 

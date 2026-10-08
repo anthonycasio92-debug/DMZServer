@@ -45,6 +45,9 @@ public final class LegacyMechanicsMixinPlugin implements IMixinConfigPlugin {
         if (mixinClassName != null && mixinClassName.endsWith("NoeaTravelSafetyCorpseFixMixin")) {
             return travelSafetyPresent();
         }
+        if (mixinClassName != null && mixinClassName.endsWith("HakaiDestroyerGateMixin")) {
+            return divineImmortalityPresent();
+        }
         return dedicatedServer();
     }
 
@@ -84,6 +87,21 @@ public final class LegacyMechanicsMixinPlugin implements IMixinConfigPlugin {
                     false,
                     LegacyMechanicsMixinPlugin.class.getClassLoader());
             return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    /**
+     * Noea hakai events. Absent on a server that does not run Noea.
+     * Look the class file up. Loading this mixin target with {@code Class.forName}
+     * aborts startup with "loaded too early".
+     */
+    private static boolean divineImmortalityPresent() {
+        try {
+            ClassLoader loader = LegacyMechanicsMixinPlugin.class.getClassLoader();
+            return loader != null
+                    && loader.getResource("com/butterjaffa/noeabosses/DivineImmortalityEvents.class") != null;
         } catch (Throwable ignored) {
             return false;
         }

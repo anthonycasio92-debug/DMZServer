@@ -2046,6 +2046,21 @@ def main() -> int:
         check(f"notice body has no second color ({expect})",
               got.startswith("§e") and not re.search(r"§(?!e)", got))
 
+    print("\n=== Hakai destroyer gate (4.6.44) ===")
+    hakai_gate = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/noea/HakaiDestroyerGateMixin.java")
+    mixin_plugin = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/LegacyMechanicsMixinPlugin.java")
+    hakai_mixins = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/resources/legacymechanics.mixins.json")
+    check("hakai name match requires destroyer energy",
+          "isHakai(Ljava/lang/String;Ljava/lang/String;)Z" in hakai_gate
+          and "hasDestructionEnergy()" in hakai_gate
+          and "sourceSaysHakai" in hakai_gate
+          and "ci.cancel()" in hakai_gate
+          and "require = 0" in hakai_gate)
+    check("hakai mixin applies only when Noea is present",
+          "com/butterjaffa/noeabosses/DivineImmortalityEvents.class" in mixin_plugin
+          and "HakaiDestroyerGateMixin" in mixin_plugin
+          and '"noea.HakaiDestroyerGateMixin"' in hakai_mixins)
+
     print("\n=== Fusion cooldown reset (4.6.43) ===")
     fusion_reset = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/command/FusionCooldownReset.java")
     check("staff /lm fusionreset",
