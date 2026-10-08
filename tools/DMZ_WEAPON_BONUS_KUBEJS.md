@@ -11,7 +11,7 @@ Port of `dmzweaponbonusscale.js` (CNPC Global Player) to:
 
 ## Behavior
 - Multiplicative (`*`) DMZ weapon bonuses only (main / off / hotbar slot 9)
-- Recalc on login + every 10 ticks
+- Recalc on login + once per second (player age divisible by 20)
 - Same Simply Swords / Irons / DMZ / Tinkers tables as V9
 
 ## Why KubeJS (not mixin)

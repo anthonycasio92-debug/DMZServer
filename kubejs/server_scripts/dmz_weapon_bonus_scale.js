@@ -76,8 +76,9 @@ var ShieldItem =
 
 var DEBUG_WEAPON_STATS = false;
 
-// Recalculate equipment twice per second.
-var UPDATE_INTERVAL = 10;
+// Recalculate equipment once per second. The tick handler also returns
+// before that unless the player age is a multiple of 20.
+var UPDATE_INTERVAL = 20;
 
 // Hotbar position 9 = inventory index 8.
 var SLOT_9_INDEX = 8;
@@ -1857,17 +1858,25 @@ function getWeaponAttackDamage(stack) {
     }
 
 
-    try {
+    var modifierMap =
+        mcStack.getAttributeModifiers(
+            EquipmentSlot.MAINHAND
+        );
 
-        var modifiers =
-            mcStack
-                .getAttributeModifiers(
-                    EquipmentSlot.MAINHAND
-                )
-                .get(
-                    Attributes.ATTACK_DAMAGE
-                );
 
+    var modifiers =
+        modifierMap == null
+            ? null
+            : modifierMap.get(
+                Attributes.ATTACK_DAMAGE
+            );
+
+
+    if (
+        modifiers != null
+        &&
+        modifiers.iterator != null
+    ) {
 
         var iterator =
             modifiers.iterator();
@@ -1971,11 +1980,14 @@ function getWeaponAttackDamage(stack) {
 
             return result;
         }
+    }
 
-    } catch (attributeErr) {}
 
-
-    try {
+    if (
+        stack != null
+        &&
+        stack.getAttackDamage != null
+    ) {
 
         var fallback =
             Number(
@@ -1996,8 +2008,7 @@ function getWeaponAttackDamage(stack) {
                 1.0
             );
         }
-
-    } catch (fallbackErr) {}
+    }
 
 
     return 1.0;
@@ -2693,74 +2704,38 @@ function removeBonusName(
     name
 ) {
 
-    try {
+    if (
+        bonus == null
+        ||
+        bonus.removeBonus == null
+    ) {
+
+        return;
+    }
+
+
+    var stats = [
+        "STR",
+        "SKP",
+        "DEF",
+        "STM",
+        "VIT",
+        "PWR",
+        "ENE"
+    ];
+
+
+    for (
+        var i = 0;
+        i < stats.length;
+        i++
+    ) {
 
         bonus.removeBonus(
-            "STR",
+            stats[i],
             name
         );
-
-    } catch (err1) {}
-
-
-    try {
-
-        bonus.removeBonus(
-            "SKP",
-            name
-        );
-
-    } catch (err2) {}
-
-
-    try {
-
-        bonus.removeBonus(
-            "DEF",
-            name
-        );
-
-    } catch (err3) {}
-
-
-    try {
-
-        bonus.removeBonus(
-            "STM",
-            name
-        );
-
-    } catch (err4) {}
-
-
-    try {
-
-        bonus.removeBonus(
-            "VIT",
-            name
-        );
-
-    } catch (err5) {}
-
-
-    try {
-
-        bonus.removeBonus(
-            "PWR",
-            name
-        );
-
-    } catch (err6) {}
-
-
-    try {
-
-        bonus.removeBonus(
-            "ENE",
-            name
-        );
-
-    } catch (err7) {}
+    }
 }
 
 
@@ -4145,47 +4120,68 @@ var TempByPlayer = {};
 
 function playerUuid(player) {
 
-    try {
+    if (
+        player == null
+    ) {
 
-        if (
-            player.uuid
-        ) {
-
-            return String(
-                player.uuid
-            ).toLowerCase();
-        }
-
-    } catch (e0) {}
+        return null;
+    }
 
 
-    try {
-
-        var mc =
-            unwrapMcPlayer(
-                player
-            );
-
-
-        if (
-            mc != null
-        ) {
-
-            return String(
-                mc.getUUID()
-            ).toLowerCase();
-        }
-
-    } catch (e1) {}
-
-
-    try {
+    if (
+        player.uuid != null
+    ) {
 
         return String(
-            player.getStringUUID()
+            player.uuid
         ).toLowerCase();
+    }
 
-    } catch (e2) {}
+
+    var mc =
+        unwrapMcPlayer(
+            player
+        );
+
+
+    if (
+        mc != null
+        &&
+        mc.getUUID != null
+    ) {
+
+        var id =
+            mc.getUUID();
+
+
+        if (
+            id != null
+        ) {
+
+            return String(
+                id
+            ).toLowerCase();
+        }
+    }
+
+
+    if (
+        player.getStringUUID != null
+    ) {
+
+        var raw =
+            player.getStringUUID();
+
+
+        if (
+            raw != null
+        ) {
+
+            return String(
+                raw
+            ).toLowerCase();
+        }
+    }
 
 
     return null;
@@ -4206,69 +4202,93 @@ function unwrapMcPlayer(player) {
         player;
 
 
-    try {
+    if (
+        p.minecraftPlayer != null
+    ) {
+
+        p =
+            p.minecraftPlayer;
+    }
+
+
+    if (
+        p != null
+        &&
+        p.getMinecraftPlayer != null
+    ) {
+
+        var fromKube =
+            p.getMinecraftPlayer();
+
 
         if (
-            p.minecraftPlayer
+            fromKube != null
         ) {
 
             p =
-                p.minecraftPlayer;
+                fromKube;
         }
+    }
 
-    } catch (e0) {}
 
+    if (
+        p != null
+        &&
+        p.getPlayer != null
+    ) {
 
-    try {
+        var fromGetPlayer =
+            p.getPlayer();
+
 
         if (
-            p.getMinecraftPlayer
+            fromGetPlayer != null
         ) {
 
             p =
-                p.getMinecraftPlayer();
+                fromGetPlayer;
         }
+    }
 
-    } catch (e1) {}
 
+    if (
+        p != null
+        &&
+        p.getMCEntity != null
+    ) {
 
-    try {
+        var fromEntity =
+            p.getMCEntity();
+
 
         if (
-            p.getPlayer
+            fromEntity != null
         ) {
 
             p =
-                p.getPlayer();
+                fromEntity;
         }
+    }
 
-    } catch (e2) {}
 
+    if (
+        p != null
+        &&
+        p.getHandle != null
+    ) {
 
-    try {
+        var fromHandle =
+            p.getHandle();
+
 
         if (
-            p.getMCEntity
+            fromHandle != null
         ) {
 
             p =
-                p.getMCEntity();
+                fromHandle;
         }
-
-    } catch (e3) {}
-
-
-    try {
-
-        if (
-            p.getHandle
-        ) {
-
-            p =
-                p.getHandle();
-        }
-
-    } catch (e4) {}
+    }
 
 
     return p;
@@ -4378,31 +4398,49 @@ function wrapPlayer(kjsPlayer) {
         getMainhandItem:
             function () {
 
-                try {
+                if (
+                    kjsPlayer != null
+                    &&
+                    kjsPlayer.mainHandItem != null
+                ) {
 
                     return kjsPlayer.mainHandItem;
-
-                } catch (e0) {}
-
-
-                try {
-
-                    return kjsPlayer.getMainHandItem();
-
-                } catch (e1) {}
+                }
 
 
-                try {
+                if (
+                    kjsPlayer != null
+                    &&
+                    kjsPlayer.getMainHandItem != null
+                ) {
 
-                    var mc =
-                        unwrapMcPlayer(
-                            kjsPlayer
-                        );
+                    var held =
+                        kjsPlayer.getMainHandItem();
 
+
+                    if (
+                        held != null
+                    ) {
+
+                        return held;
+                    }
+                }
+
+
+                var mc =
+                    unwrapMcPlayer(
+                        kjsPlayer
+                    );
+
+
+                if (
+                    mc != null
+                    &&
+                    mc.getMainHandItem != null
+                ) {
 
                     return mc.getMainHandItem();
-
-                } catch (e2) {}
+                }
 
 
                 return null;
@@ -4412,31 +4450,49 @@ function wrapPlayer(kjsPlayer) {
         getOffhandItem:
             function () {
 
-                try {
+                if (
+                    kjsPlayer != null
+                    &&
+                    kjsPlayer.offHandItem != null
+                ) {
 
                     return kjsPlayer.offHandItem;
-
-                } catch (e0) {}
-
-
-                try {
-
-                    return kjsPlayer.getOffHandItem();
-
-                } catch (e1) {}
+                }
 
 
-                try {
+                if (
+                    kjsPlayer != null
+                    &&
+                    kjsPlayer.getOffHandItem != null
+                ) {
 
-                    var mc =
-                        unwrapMcPlayer(
-                            kjsPlayer
-                        );
+                    var held =
+                        kjsPlayer.getOffHandItem();
 
+
+                    if (
+                        held != null
+                    ) {
+
+                        return held;
+                    }
+                }
+
+
+                var mc =
+                    unwrapMcPlayer(
+                        kjsPlayer
+                    );
+
+
+                if (
+                    mc != null
+                    &&
+                    mc.getOffhandItem != null
+                ) {
 
                     return mc.getOffhandItem();
-
-                } catch (e2) {}
+                }
 
 
                 return null;
@@ -4451,43 +4507,82 @@ function wrapPlayer(kjsPlayer) {
                     getSlot:
                         function (index) {
 
-                            try {
+                            if (
+                                kjsPlayer != null
+                                &&
+                                kjsPlayer.inventory != null
+                            ) {
 
-                                return kjsPlayer
-                                    .inventory
-                                    .get(
+                                var inv =
+                                    kjsPlayer.inventory;
+
+
+                                if (
+                                    inv.get != null
+                                ) {
+
+                                    var byGet =
+                                        inv.get(
+                                            index
+                                        );
+
+
+                                    if (
+                                        byGet != null
+                                    ) {
+
+                                        return byGet;
+                                    }
+                                }
+
+
+                                if (
+                                    inv.getStackInSlot != null
+                                ) {
+
+                                    var bySlot =
+                                        inv.getStackInSlot(
+                                            index
+                                        );
+
+
+                                    if (
+                                        bySlot != null
+                                    ) {
+
+                                        return bySlot;
+                                    }
+                                }
+                            }
+
+
+                            var mc =
+                                unwrapMcPlayer(
+                                    kjsPlayer
+                                );
+
+
+                            if (
+                                mc != null
+                                &&
+                                mc.getInventory != null
+                            ) {
+
+                                var mcInv =
+                                    mc.getInventory();
+
+
+                                if (
+                                    mcInv != null
+                                    &&
+                                    mcInv.getItem != null
+                                ) {
+
+                                    return mcInv.getItem(
                                         index
                                     );
-
-                            } catch (e0) {}
-
-
-                            try {
-
-                                return kjsPlayer
-                                    .inventory
-                                    .getStackInSlot(
-                                        index
-                                    );
-
-                            } catch (e1) {}
-
-
-                            try {
-
-                                var mc =
-                                    unwrapMcPlayer(
-                                        kjsPlayer
-                                    );
-
-
-                                return mc
-                                    .getInventory()
-                                    .getItem(
-                                        index
-                                    );
-
-                            } catch (e2) {}
+                                }
+                            }
 
 
                             return null;
@@ -4506,33 +4601,53 @@ function wrapPlayer(kjsPlayer) {
         getName:
             function () {
 
-                try {
+                if (
+                    kjsPlayer != null
+                    &&
+                    kjsPlayer.name != null
+                    &&
+                    kjsPlayer.name.string != null
+                ) {
 
                     return String(
                         kjsPlayer.name.string
                     );
-
-                } catch (e0) {}
-
-
-                try {
-
-                    return String(
-                        kjsPlayer
-                            .getName()
-                            .getString()
-                    );
-
-                } catch (e1) {}
+                }
 
 
-                try {
+                if (
+                    kjsPlayer != null
+                    &&
+                    kjsPlayer.getName != null
+                ) {
+
+                    var component =
+                        kjsPlayer.getName();
+
+
+                    if (
+                        component != null
+                        &&
+                        component.getString != null
+                    ) {
+
+                        return String(
+                            component.getString()
+                        );
+                    }
+                }
+
+
+                if (
+                    kjsPlayer != null
+                    &&
+                    kjsPlayer.username != null
+                ) {
 
                     return String(
                         kjsPlayer.username
                     );
-
-                } catch (e2) {}
+                }
 
 
                 return "?";
@@ -4542,28 +4657,34 @@ function wrapPlayer(kjsPlayer) {
         getAge:
             function () {
 
-                try {
+                if (
+                    kjsPlayer != null
+                    &&
+                    kjsPlayer.age != null
+                ) {
 
                     return Number(
                         kjsPlayer.age
                     );
+                }
 
-                } catch (e0) {}
+
+                var mc =
+                    unwrapMcPlayer(
+                        kjsPlayer
+                    );
 
 
-                try {
-
-                    var mc =
-                        unwrapMcPlayer(
-                            kjsPlayer
-                        );
-
+                if (
+                    mc != null
+                    &&
+                    mc.tickCount != null
+                ) {
 
                     return Number(
                         mc.tickCount
                     );
-
-                } catch (e1) {}
+                }
 
 
                 return 0;
@@ -4615,11 +4736,31 @@ PlayerEvents.loggedIn(
 PlayerEvents.tick(
     function (event) {
 
+        var raw =
+            event.player;
+
+
+        // Once per second. wrapPlayer and the Apothic cleanup do not
+        // need to run on every tick. A missing age still runs the update.
+        if (
+            raw == null
+            ||
+            (
+                raw.age != null
+                &&
+                raw.age % 20 !== 0
+            )
+        ) {
+
+            return;
+        }
+
+
         try {
 
             var player =
                 wrapPlayer(
-                    event.player
+                    raw
                 );
 
 
