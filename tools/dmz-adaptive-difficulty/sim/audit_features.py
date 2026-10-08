@@ -2063,10 +2063,10 @@ def main() -> int:
           and "cir.setReturnValue(false)" in hakai_gate
           and "require = 0" in hakai_gate
           and "remap = false" in hakai_gate)
-    check("hakai mixin applies only when Noea is present",
-          'Class.forName(\n                    "com.butterjaffa.noeabosses.DivineImmortalityEvents"' in mixin_plugin
-          and "catch (ClassNotFoundException e)" in mixin_plugin
-          and "HakaiDestroyerGateMixin" in mixin_plugin
+    check("hakai mixin is not skipped at mixin config time",
+          "DivineImmortalityEvents" not in mixin_plugin
+          and "HakaiDestroyerGateMixin" not in mixin_plugin
+          and '@Mixin(targets = "com.butterjaffa.noeabosses.DivineImmortalityEvents", remap = false)' in hakai_gate
           and "require = 0" in hakai_gate
           and "DestroyerRoleService\"" in hakai_gate
           and "import com.butterjaffa.noeabosses.DestroyerRoleService" not in hakai_gate

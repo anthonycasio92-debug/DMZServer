@@ -45,9 +45,6 @@ public final class LegacyMechanicsMixinPlugin implements IMixinConfigPlugin {
         if (mixinClassName != null && mixinClassName.endsWith("NoeaTravelSafetyCorpseFixMixin")) {
             return travelSafetyPresent();
         }
-        if (mixinClassName != null && mixinClassName.endsWith("HakaiDestroyerGateMixin")) {
-            return divineImmortalityPresent();
-        }
         return dedicatedServer();
     }
 
@@ -87,26 +84,6 @@ public final class LegacyMechanicsMixinPlugin implements IMixinConfigPlugin {
                     false,
                     LegacyMechanicsMixinPlugin.class.getClassLoader());
             return true;
-        } catch (Throwable ignored) {
-            return false;
-        }
-    }
-
-    /**
-     * Noea hakai events. A class-file lookup is true as soon as the jar is on the
-     * classpath, so the mixin was applied while Noea was still constructing and
-     * DivineImmortalityEvents could not be registered. Load the class instead.
-     * If it is missing or not loadable yet, skip the mixin.
-     */
-    private static boolean divineImmortalityPresent() {
-        try {
-            Class.forName(
-                    "com.butterjaffa.noeabosses.DivineImmortalityEvents",
-                    false,
-                    LegacyMechanicsMixinPlugin.class.getClassLoader());
-            return true;
-        } catch (ClassNotFoundException e) {
-            return false;
         } catch (Throwable ignored) {
             return false;
         }

@@ -1,6 +1,10 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.48**.
+What changed from **4.5.147** through **4.6.49**.
+
+## Hakai mixin applies
+
+The Hakai mixin is no longer skipped during mixin config. Loading `DivineImmortalityEvents` there always failed because Noea is not loaded yet, so the gate returned false and the mixin never applied. The mixin names that class as a string. Each inject uses `require = 0`. Mixin 0.8.5's `@Mixin` annotation has no `require` parameter. Restart onto 4.6.49 to load it.
 
 ## Fall health pool
 
@@ -12,7 +16,7 @@ A tall fall logs the player, vanilla current and max health, DMZ max health, fal
 
 ## Hakai mixin load gate
 
-The Hakai mixin is skipped unless `DivineImmortalityEvents` can actually be loaded. Each inject uses `require = 0`. Destroyer rank is read by reflection when an attack fires, so transforming the Noea listener does not load Noea's Destroyer classes. Mixin 0.8.5's `@Mixin` annotation has no `require` parameter.
+Destroyer rank is read by reflection when an attack fires, so transforming the Noea listener does not load Noea's Destroyer classes.
 
 ## Fall damage log packaging
 
