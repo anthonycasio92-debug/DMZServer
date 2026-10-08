@@ -82,7 +82,7 @@ Sparring pays TP when a player deals damage to another player. A left-click with
 
 ## Corpses in protected dimensions
 
-Death in space, Namek, Beerus' planet, and the other Noea travel dimensions uses the same corpse as everywhere else. The items go into the corpse. They are not returned on respawn. A corpse in the void stays in the void.
+Death in space, Namek, Beerus' planet, and the other Noea travel dimensions uses the same corpse as everywhere else. Noea was clearing the drop list, and corelib then deleted every inventory item that was not on that list, so the corpse spawned empty and the items came back only on respawn. Stopping that clear leaves the drops in place, and the corpse gets them. They are not returned on respawn. A corpse in the void stays in the void.
 
 ## Dragon balls
 

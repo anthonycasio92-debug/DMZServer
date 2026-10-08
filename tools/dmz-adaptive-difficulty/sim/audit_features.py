@@ -1871,6 +1871,9 @@ def main() -> int:
           and "ci.cancel()" in corpse_fix
           and "setCanceled" not in corpse_fix
           and "suppressConfirmedDrops" in corpse_fix
+          and "Death.processDrops" in corpse_fix
+          and "captureInventory" in corpse_fix
+          and "does not snapshot" in corpse_fix
           and "require = 0" in corpse_fix
           and "private static void lm$disableDropSuppression" in corpse_fix)
 
