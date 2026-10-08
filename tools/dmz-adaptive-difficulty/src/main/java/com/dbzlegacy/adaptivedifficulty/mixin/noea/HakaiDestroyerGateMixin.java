@@ -1,8 +1,13 @@
 package com.dbzlegacy.adaptivedifficulty.mixin.noea;
 
+import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import com.dragonminez.common.events.DMZEvent;
+import com.dragonminez.common.init.DMZDamageSource;
+import com.dragonminez.common.init.entities.ki.AbstractKiProjectile;
 import com.dragonminez.common.stats.techniques.KiAttackData;
+import java.lang.reflect.Field;
 import java.util.Locale;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
@@ -57,10 +62,11 @@ public abstract class HakaiDestroyerGateMixin {
 
     /**
      * {@code sourceSaysHakai} calls {@code isHakai} on the damage message,
-     * the damage-type id, and the technique name. A true result authorizes
-     * the kill. Official projectiles return earlier, inside
-     * {@code authorizedHakaiSource}, and never reach this method.
-     * The handler is static because the target method is static.
+     * the damage-type id, {@code DMZDamageSource.messageId}, and
+     * {@code techniqueName}. The handler is static because the target is static.
+     * A copied official id in that message is still this name path. A real
+     * Hakai projectile is authorized earlier and is left alone when the owner
+     * is a Destroyer.
      */
     @Inject(
             method = "sourceSaysHakai",
@@ -73,10 +79,27 @@ public abstract class HakaiDestroyerGateMixin {
             remap = false)
     private static void lm$gateSourceSaysHakai(DamageSource source, CallbackInfoReturnable<Boolean> cir) {
         try {
-            if (!isDestroyer(attacker(source))) {
+            if (source == null || cir == null) {
+                return;
+            }
+            String id = techniqueId(source);
+            String name = techniqueName(source);
+            if (!namedHakai(id, name)) {
+                return;
+            }
+            ServerPlayer player = attacker(source);
+            if (officialHakaiId(id) || officialHakaiId(name)) {
+                if (authorizedOfficialProjectile(source) && isDestroyer(player)) {
+                    return;
+                }
+            }
+            if (!isDestroyer(player)) {
                 cir.setReturnValue(false);
             }
         } catch (Throwable ignored) {
+            if (cir != null) {
+                cir.setReturnValue(false);
+            }
         }
     }
 
@@ -95,6 +118,9 @@ public abstract class HakaiDestroyerGateMixin {
                 cir.setReturnValue(false);
             }
         } catch (Throwable ignored) {
+            if (cir != null) {
+                cir.setReturnValue(false);
+            }
         }
     }
 
@@ -107,6 +133,10 @@ public abstract class HakaiDestroyerGateMixin {
         return value != null && value.toLowerCase(Locale.ROOT).contains("hakai");
     }
 
+    /**
+     * {@code DestroyerRoleService.assignment(player).rank().hasDestructionEnergy()}.
+     * A missing class, a missing method, or any other reflection failure is not a Destroyer.
+     */
     static boolean isDestroyer(Player player) {
         if (!(player instanceof ServerPlayer server)) {
             return false;
@@ -128,6 +158,119 @@ public abstract class HakaiDestroyerGateMixin {
             return Boolean.TRUE.equals(energy);
         } catch (Throwable ignored) {
             return false;
+        }
+    }
+
+    /** Projectile technique id, else the DMZ message id, else the damage message id. */
+    static String techniqueId(DamageSource source) {
+        if (source == null) {
+            return null;
+        }
+        Entity direct = source.m_7640_();
+        if (direct instanceof AbstractKiProjectile ki) {
+            String id = ki.getTechniqueId();
+            if (id != null && !id.isEmpty()) {
+                return id;
+            }
+        }
+        String messageId = dmzStringField(source, "messageId");
+        if (messageId != null && !messageId.isEmpty()) {
+            return messageId;
+        }
+        return source.m_19385_();
+    }
+
+    /** Technique name component, else the damage-type path. */
+    static String techniqueName(DamageSource source) {
+        if (source == null) {
+            return null;
+        }
+        String technique = dmzTechniqueName(source);
+        if (technique != null && !technique.isEmpty()) {
+            return technique;
+        }
+        return damageTypePath(source);
+    }
+
+    /** The three shipped Noea ids, plus {@code DivineTechniques.isHakaiTechnique}. */
+    static boolean officialHakaiId(String value) {
+        if (value == null || value.isEmpty()) {
+            return false;
+        }
+        if ("noea_hakai_sphere".equals(value)
+                || "noea_hakai_beam".equals(value)
+                || "noea_hakai_erasure_grab".equals(value)) {
+            return true;
+        }
+        try {
+            Class<?> techniques = Class.forName(
+                    "com.butterjaffa.noeabosses.DivineTechniques",
+                    false,
+                    HakaiDestroyerGateMixin.class.getClassLoader());
+            Object result = techniques.getMethod("isHakaiTechnique", String.class).invoke(null, value);
+            return Boolean.TRUE.equals(result);
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    private static boolean authorizedOfficialProjectile(DamageSource source) {
+        Entity direct = source == null ? null : source.m_7640_();
+        if (!(direct instanceof AbstractKiProjectile ki)) {
+            return false;
+        }
+        if (PersistentDataAccess.flag(ki, "NoeaAuthorizedHakaiProjectile")) {
+            return true;
+        }
+        return officialHakaiId(ki.getTechniqueId());
+    }
+
+    private static String dmzStringField(DamageSource source, String fieldName) {
+        if (!(source instanceof DMZDamageSource)) {
+            return null;
+        }
+        try {
+            Field field = DMZDamageSource.class.getDeclaredField(fieldName);
+            field.setAccessible(true);
+            Object value = field.get(source);
+            return value instanceof String text ? text : null;
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    private static String dmzTechniqueName(DamageSource source) {
+        if (!(source instanceof DMZDamageSource)) {
+            return null;
+        }
+        try {
+            Field field = DMZDamageSource.class.getDeclaredField("techniqueName");
+            field.setAccessible(true);
+            Object value = field.get(source);
+            if (value instanceof Component component) {
+                return component.getString();
+            }
+            return null;
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    private static String damageTypePath(DamageSource source) {
+        try {
+            Object holder = source.m_269150_();
+            if (holder == null) {
+                return null;
+            }
+            Object optional = holder.getClass().getMethod("m_203543_").invoke(holder);
+            if (!(optional instanceof java.util.Optional<?> key) || key.isEmpty()) {
+                return null;
+            }
+            Object location = key.get().getClass().getMethod("m_135782_").invoke(key.get());
+            Object path = location.getClass().getMethod("m_135815_").invoke(location);
+            return path instanceof String text ? text : null;
+        } catch (Throwable ignored) {
+            return null;
         }
     }
 

@@ -2055,6 +2055,10 @@ def main() -> int:
           and "\"hasDestructionEnergy\"" in hakai_gate
           and "lm$gateSourceSaysHakai" in hakai_gate
           and "sourceSaysHakai" in hakai_gate
+          and "techniqueId" in hakai_gate
+          and "noea_hakai_sphere" in hakai_gate
+          and "isHakaiTechnique" in hakai_gate
+          and "messageId" in hakai_gate
           and "ci.cancel()" in hakai_gate
           and "cir.setReturnValue(false)" in hakai_gate
           and "require = 0" in hakai_gate
@@ -2093,6 +2097,11 @@ def main() -> int:
           and "getMaxHealth()" in fall_diag
           and "m_21223_()" in fall_diag
           and "m_21233_()" in fall_diag
+          and "EventPriority.HIGHEST" in fall_diag
+          and "applyHealthBonus" in fall_diag
+          and "kiNegated=" in fall_diag
+          and "dmzCurrent=not-stored" in fall_diag
+          and "vanillaPoolDesynced" in fall_diag
           and "setCanceled" not in fall_diag
           and "setAmount" not in fall_diag
           and "new FallDamageDiag()" in mod_src)

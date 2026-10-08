@@ -1,10 +1,14 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.47**.
+What changed from **4.5.147** through **4.6.48**.
+
+## Fall health pool
+
+A tall fall logs the player, vanilla current and max health, DMZ max health, fall distance, damage, and whether ki negation consumed the hit. DMZ does not store a current health. When vanilla max health is far below that DMZ max, the vanilla pool is raised to the DMZ max before fall damage is applied. The damage amount is unchanged.
 
 ## Hakai damage-message gate
 
-`sourceSaysHakai` calls `isHakai` on the damage message, the damage-type id, and the technique name. A non-Destroyer now gets false from that method before those calls can authorize a kill. Official Hakai projectiles still go through Noea's own projectile check and never enter this method. Restart onto 4.6.47 to load it.
+`sourceSaysHakai` reads the projectile technique id, the damage message, and the technique name. A name that contains "hakai" returns false unless the attacker is an apprentice or appointed Destroyer. A missing Destroyer lookup is not a Destroyer. Official Hakai projectiles still go through Noea's own check. Restart onto 4.6.48 to load it.
 
 ## Hakai mixin load gate
 
