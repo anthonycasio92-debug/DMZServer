@@ -2051,11 +2051,14 @@ def main() -> int:
     mixin_plugin = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/LegacyMechanicsMixinPlugin.java")
     hakai_mixins = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/resources/legacymechanics.mixins.json")
     check("hakai name match requires destroyer energy",
-          "isHakai(Ljava/lang/String;Ljava/lang/String;)Z" in hakai_gate
+          hakai_gate.count("isHakai(Ljava/lang/String;Ljava/lang/String;)Z") >= 2
           and "\"hasDestructionEnergy\"" in hakai_gate
+          and "lm$gateSourceSaysHakai" in hakai_gate
           and "sourceSaysHakai" in hakai_gate
           and "ci.cancel()" in hakai_gate
-          and "require = 0" in hakai_gate)
+          and "cir.setReturnValue(false)" in hakai_gate
+          and "require = 0" in hakai_gate
+          and "remap = false" in hakai_gate)
     check("hakai mixin applies only when Noea is present",
           'Class.forName(\n                    "com.butterjaffa.noeabosses.DivineImmortalityEvents"' in mixin_plugin
           and "catch (ClassNotFoundException e)" in mixin_plugin

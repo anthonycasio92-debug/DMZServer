@@ -1,8 +1,10 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.46**.
+What changed from **4.5.147** through **4.6.47**.
 
-The live mods folder should stay on `LegacyMechanics-4.6.40.jar` until 4.6.46 is deliberately restarted in. 4.6.45 was pulled off the live mods folder because its Hakai mixin broke Noea class loading.
+## Hakai damage-message gate
+
+`sourceSaysHakai` calls `isHakai` on the damage message, the damage-type id, and the technique name. A non-Destroyer now gets false from that method before those calls can authorize a kill. Official Hakai projectiles still go through Noea's own projectile check and never enter this method. Restart onto 4.6.47 to load it.
 
 ## Hakai mixin load gate
 

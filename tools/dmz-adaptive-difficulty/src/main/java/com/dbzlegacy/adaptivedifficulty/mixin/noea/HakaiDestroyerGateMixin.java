@@ -37,7 +37,8 @@ public abstract class HakaiDestroyerGateMixin {
                     target = "Lcom/butterjaffa/noeabosses/DivineImmortalityEvents;isHakai(Ljava/lang/String;Ljava/lang/String;)Z"
             ),
             cancellable = true,
-            require = 0)
+            require = 0,
+            remap = false)
     private static void lm$gateHakaiByDestroyer(DMZEvent.KiAttackFireEvent event, CallbackInfo ci) {
         try {
             if (event == null) {
@@ -55,10 +56,36 @@ public abstract class HakaiDestroyerGateMixin {
     }
 
     /**
-     * Damage whose message or technique name merely contains {@code hakai}
-     * also force-kills. Official projectiles never reach this method.
+     * {@code sourceSaysHakai} calls {@code isHakai} on the damage message,
+     * the damage-type id, and the technique name. A true result authorizes
+     * the kill. Official projectiles return earlier, inside
+     * {@code authorizedHakaiSource}, and never reach this method.
+     * The handler is static because the target method is static.
      */
-    @Inject(method = "sourceSaysHakai", at = @At("RETURN"), cancellable = true, require = 0)
+    @Inject(
+            method = "sourceSaysHakai",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lcom/butterjaffa/noeabosses/DivineImmortalityEvents;isHakai(Ljava/lang/String;Ljava/lang/String;)Z"
+            ),
+            cancellable = true,
+            require = 0,
+            remap = false)
+    private static void lm$gateSourceSaysHakai(DamageSource source, CallbackInfoReturnable<Boolean> cir) {
+        try {
+            if (!isDestroyer(attacker(source))) {
+                cir.setReturnValue(false);
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    /**
+     * The damage-type id is checked in {@code lambda$sourceSaysHakai$0},
+     * which has no {@code DamageSource}. This return gate covers that call
+     * and any other true result from the name path.
+     */
+    @Inject(method = "sourceSaysHakai", at = @At("RETURN"), cancellable = true, require = 0, remap = false)
     private static void lm$gateNamedHakaiSource(DamageSource source, CallbackInfoReturnable<Boolean> cir) {
         try {
             if (cir == null || !Boolean.TRUE.equals(cir.getReturnValue())) {
