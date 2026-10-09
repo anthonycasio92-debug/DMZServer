@@ -1,0 +1,23 @@
+modLoader="lowcodefml"
+loaderVersion="[47,)"
+license="All Rights Reserved"
+
+[[mods]]
+modId="noeaexplosionnotick"
+version="1.0.0"
+displayName="Noea Planet Explosion - No Tick"
+description='''Server-side coremod. Planet explosion entities do not tick, and celestial destruction never starts, so a planet explosion breaks no blocks and spawns no particles.'''
+
+[[dependencies.noeaexplosionnotick]]
+modId="minecraft"
+mandatory=true
+versionRange="[1.20.1,1.20.2)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.noeaexplosionnotick]]
+modId="forge"
+mandatory=true
+versionRange="[47,)"
+ordering="NONE"
+side="BOTH"
