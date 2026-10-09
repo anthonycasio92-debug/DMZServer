@@ -43,22 +43,23 @@ if missing or classes:
 for token in (
     "m_8119_",
     "DeepSpaceExplosionEntity",
-    "CelestialDestructionService",
+    "handlePlanetDetonationTick",
     "noea_explosion_no_tick.js",
     'modId="noeaexplosionnotick"',
+    'version="1.0.1"',
 ):
     blob = js + toml + core
     if token not in blob:
         print("ERROR: jar missing " + token, file=sys.stderr)
         sys.exit(1)
-if "m_8097_" in js:
-    print("ERROR: m_8097_ is defineSynchedData on live Noea, not tick", file=sys.stderr)
+if "m_8097_" in js or "CelestialDestructionService" in js:
+    print("ERROR: destruction start must keep running so the planet can disappear", file=sys.stderr)
     sys.exit(1)
 if noea and noea.is_file():
     import subprocess
     targets = {
         "com.butterjaffa.noeabosses.entity.DeepSpaceExplosionEntity": "m_8119_()",
-        "com.butterjaffa.noeabosses.CelestialDestructionService": "begin(",
+        "com.butterjaffa.noeabosses.DeepSpaceEvents": "handlePlanetDetonationTick(",
     }
     with zipfile.ZipFile(noea) as zf:
         for cls, sig in targets.items():

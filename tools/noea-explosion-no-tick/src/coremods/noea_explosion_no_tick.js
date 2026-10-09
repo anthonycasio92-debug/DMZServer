@@ -12,7 +12,7 @@ function initializeCoreMod() {
 
     return {
         // Live Noea 1.2.0 stores Entity.tick() under the SRG name below.
-        // The other void no-arg method on this class only registers synched data.
+        // That tick only sends particles and sounds.
         'DisablePlanetExplosionTick': {
             'target': {
                 'type': 'METHOD',
@@ -22,12 +22,14 @@ function initializeCoreMod() {
             },
             'transformer': voidNoOp
         },
-        // Block breaks and the particle bursts live in CelestialDestructionService, not the explosion entity.
-        'DisableCelestialDestructionBegin': {
+        // Per-tick block breaks, vanilla explosions, and particle bursts.
+        // The destruction start and collapse timer still run, so the planet
+        // is still marked destroyed and the entity is still discarded.
+        'DisablePlanetDetonationLag': {
             'target': {
                 'type': 'METHOD',
-                'class': 'com.butterjaffa.noeabosses.CelestialDestructionService',
-                'methodName': 'begin',
+                'class': 'com.butterjaffa.noeabosses.DeepSpaceEvents',
+                'methodName': 'handlePlanetDetonationTick',
                 'methodDesc': '(Lnet/minecraft/server/level/ServerLevel;Lcom/butterjaffa/noeabosses/entity/DeepSpacePlanetEntity;I)V'
             },
             'transformer': voidNoOp
