@@ -46,8 +46,12 @@ for token in (
     "handlePlanetDetonationTick",
     "noea_explosion_no_tick.js",
     'modId="noeaexplosionnotick"',
-    'version="1.0.2"',
+    'version="1.0.3"',
     "insertBefore",
+    "m_146870_",
+    "DiscardExplosionOnSpawn",
+    "<init>",
+    "INVOKESPECIAL",
 ):
     blob = js + toml + core
     if token not in blob:
@@ -61,21 +65,24 @@ if "m_8097_" in js or "CelestialDestructionService" in js:
     sys.exit(1)
 if noea and noea.is_file():
     import subprocess
-    targets = {
-        "com.butterjaffa.noeabosses.entity.DeepSpaceExplosionEntity": "m_8119_()",
-        "com.butterjaffa.noeabosses.DeepSpaceEvents": "handlePlanetDetonationTick(",
-    }
+    targets = [
+        ("com.butterjaffa.noeabosses.entity.DeepSpaceExplosionEntity", "m_8119_()"),
+        ("com.butterjaffa.noeabosses.entity.DeepSpaceExplosionEntity", "DeepSpaceExplosionEntity(net.minecraft.world.entity.EntityType"),
+        ("com.butterjaffa.noeabosses.DeepSpaceEvents", "handlePlanetDetonationTick("),
+    ]
+    seen = {}
     with zipfile.ZipFile(noea) as zf:
-        for cls, sig in targets.items():
+        for cls, sig in targets:
             path = cls.replace(".", "/") + ".class"
             if path not in zf.namelist():
                 print("ERROR: Noea jar missing " + path, file=sys.stderr)
                 sys.exit(1)
-            data = zf.read(path)
-            tmp = Path("/tmp") / path.replace("/", "_")
-            tmp.write_bytes(data)
-            text = subprocess.check_output(["javap", "-p", str(tmp)], text=True)
-            if sig not in text:
+            if path not in seen:
+                data = zf.read(path)
+                tmp = Path("/tmp") / path.replace("/", "_")
+                tmp.write_bytes(data)
+                seen[path] = subprocess.check_output(["javap", "-p", str(tmp)], text=True)
+            if sig not in seen[path]:
                 print("ERROR: " + cls + " has no " + sig, file=sys.stderr)
                 sys.exit(1)
     print("Noea method targets present")
