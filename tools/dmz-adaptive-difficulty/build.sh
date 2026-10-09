@@ -254,7 +254,8 @@ merge_onto_base_jar() {
       "$merge/com/dbzlegacy/adaptivedifficulty/character/CharacterServicesSystem.class"
   fi
   for class in CharacterServicesAccess CharacterServicesPermissionBootstrap DmzFightingClassStatsSync \
-      DmzClassCommandApply RaceChangeCreationFlow CosmeticHeadBoneService; do
+      DmzClassCommandApply RaceChangeCreationFlow CosmeticHeadBoneService CosmeticHeadBoneCatalog \
+      RaceHeadBoneSync HeadPartPieces; do
     if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/character/${class}.class" ]]; then
       mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/character"
       cp "$OUT/com/dbzlegacy/adaptivedifficulty/character/${class}.class" \
@@ -412,6 +413,9 @@ merge_onto_base_jar() {
   # not keep a stale base-jar inner the new bytecode no longer emits.
   sync_overlaid_inners "$OUT" "$merge"
   cp "$RES/META-INF/mods.toml" "$merge/META-INF/mods.toml"
+  if [[ -f "$RES/character-services.default.json" ]]; then
+    cp "$RES/character-services.default.json" "$merge/character-services.default.json"
+  fi
   if [[ ! -f "$merge/legacymechanics.mixins.json" ]]; then
     cp "$RES/legacymechanics.mixins.json" "$merge/legacymechanics.mixins.json"
   fi

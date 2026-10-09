@@ -1675,19 +1675,25 @@ def main() -> int:
           and "canHaveGender" in gender_mixin
           and "ReskinSessionGuard.lockedClass" in gender_mixin
           and "StatsSyncC2SGenderMixin" in mixins_json)
-    check("head bone card previews before it charges",
-          "previewBone" in bones
+    check("head bone rows toggle without clearing the others",
+          "executeToggle" in bones
+          and "HeadPartPieces.join" in bones
+          and "previewBone" in bones
           and "PREVIEW_STASH" in bones
-          and "bone_preview" in bone_gui
+          and "bone_toggle" in bone_gui
           and "paintLivePlayerPreview" in bone_gui
-          and "Unlock & equip" in bone_gui)
+          and "horns1+antennas2" not in bone_gui)
     preview_src = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcPlayerPreview.java")
     live_preview = preview_src.split("void paintLive", 1)[1].split("void paint(", 1)[0]
     check("head bone menu shows the player's own model",
           "tryBindLivePlayer" in live_preview
           and "setEntitySyncedById" in preview_src
           and "CnpcGeckoPreviewBridge" not in live_preview
-          and "Step back and look" in bone_gui)
+          and "paintLivePlayerPreview" in bone_gui)
+    char_api = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/CharacterServicesGuiApi.java")
+    check("body accessories are listed and not sold",
+          "PAGE_BODY" in bone_gui
+          and "cannot turn them on or off" in char_api)
 
     print("\n=== GUI humanization (4.6.17) ===")
     rival_chat = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/RivalChatMenu.java")
@@ -1860,7 +1866,7 @@ def main() -> int:
           and "setOnClick(" not in diff_gui
           and "setOnClick(" not in prog_menu
           and "selectionButton" in support
-          and "§ePreview" in char_gui
+          and "bone_toggle" in char_gui
           and "Choose this race" in char_gui
           and "Choose this class" in char_gui
           and "wireScrollDoublePick" in diff_gui
