@@ -71,7 +71,9 @@ $ROOT/libraries/com/mojang/brigadier/1.1.8/brigadier-1.1.8.jar:\
 $ROOT/libraries/com/google/guava/guava/31.1-jre/guava-31.1-jre.jar:\
 $ROOT/libraries/org/slf4j/slf4j-api/2.0.1/slf4j-api-2.0.1.jar:\
 $CNPC:\
-$DMZ"
+$DMZ:\
+$ROOT/libraries/io/netty/netty-buffer/4.1.82.Final/netty-buffer-4.1.82.Final.jar:\
+$ROOT/libraries/io/netty/netty-common/4.1.82.Final/netty-common-4.1.82.Final.jar"
 
 NOEA="${NOEA_JAR:-}"
 if [[ -z "$NOEA" ]]; then
@@ -106,6 +108,24 @@ mkdir -p "$OUT"
 
 mapfile -t SOURCES < <(find "$SRC" -name '*.java' | sort)
 javac --release 17 -proc:none -cp "$CP" -d "$OUT" "${SOURCES[@]}"
+
+# Client screens compile against stubs, then ship in the jar. The dedicated server
+# never loads them. Stubs are not packaged.
+CLIENT_SRC="$HERE/src/client/java"
+STUB_SRC="$HERE/src/client-stubs/java"
+STUB_OUT="$HERE/build/client-stubs"
+CLIENT_OUT="$HERE/build/client-classes"
+ONLYIN_JAR="$ROOT/libraries/net/minecraftforge/mergetool/1.1.5/mergetool-1.1.5-api.jar"
+if [[ -d "$CLIENT_SRC" && -d "$STUB_SRC" ]]; then
+  rm -rf "$STUB_OUT" "$CLIENT_OUT"
+  mkdir -p "$STUB_OUT" "$CLIENT_OUT"
+  mapfile -t STUBS < <(find "$STUB_SRC" -name '*.java' | sort)
+  javac --release 17 -proc:none -cp "$CP" -d "$STUB_OUT" "${STUBS[@]}"
+  mapfile -t CLIENTS < <(find "$CLIENT_SRC" -name '*.java' | sort)
+  # Stubs precede the Forge server jar, which contains a Screen class whose
+  # parent types are not on this classpath.
+  javac --release 17 -proc:none -cp "$STUB_OUT:$CP:$OUT:$ONLYIN_JAR" -d "$CLIENT_OUT" "${CLIENTS[@]}"
+fi
 
 # For every class this compile actually overlaid, drop base-jar inner classes the
 # new bytecode does not emit, and copy the inner classes it does emit.
@@ -398,6 +418,23 @@ merge_onto_base_jar() {
     "$merge/com/dbzlegacy/adaptivedifficulty/mixin/ResourcesPoolClampMixin.class" \
     "$merge/com/dbzlegacy/adaptivedifficulty/mixin/ResourcesLoadClampMixin.class" \
     "$merge/com/dbzlegacy/adaptivedifficulty/mixin/DmzStatsResetAbsorptionWipeMixin.class"
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/config/DifficultyConfig.class" ]]; then
+    mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/config"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/config/DifficultyConfig.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/config/DifficultyConfig.class"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/config/DifficultyConfig\$"*.class \
+      "$merge/com/dbzlegacy/adaptivedifficulty/config/" 2>/dev/null || true
+  fi
+  if [[ -d "$OUT/com/dbzlegacy/adaptivedifficulty/net/gui" ]]; then
+    mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/net/gui"
+    cp -a "$OUT/com/dbzlegacy/adaptivedifficulty/net/gui/." \
+      "$merge/com/dbzlegacy/adaptivedifficulty/net/gui/"
+  fi
+  if [[ -n "${CLIENT_OUT:-}" && -d "$CLIENT_OUT/com/dbzlegacy/adaptivedifficulty/client" ]]; then
+    mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/client"
+    cp -a "$CLIENT_OUT/com/dbzlegacy/adaptivedifficulty/client/." \
+      "$merge/com/dbzlegacy/adaptivedifficulty/client/"
+  fi
   # Classes copied from this compile must ship their inner classes, and must
   # not keep a stale base-jar inner the new bytecode no longer emits.
   sync_overlaid_inners "$OUT" "$merge"
@@ -438,6 +475,42 @@ if ! jar tf "$JAR" | grep -q 'gui/GuiClickConfirm\$Pending.class'; then
   exit 1
 fi
 python3 "$HERE/sim/audit_jar_inner_classes.py" "$JAR"
+python3 - "$JAR" << 'PY'
+import sys, zipfile
+jar = sys.argv[1]
+bad = []
+need = [
+    "com/dbzlegacy/adaptivedifficulty/net/gui/LmGuiNetwork.class",
+    "com/dbzlegacy/adaptivedifficulty/net/gui/GuiOpenPacket.class",
+    "com/dbzlegacy/adaptivedifficulty/net/gui/GuiActionPacket.class",
+    "com/dbzlegacy/adaptivedifficulty/client/LmClientBootstrap.class",
+    "com/dbzlegacy/adaptivedifficulty/client/gui/LmHubScreen.class",
+    "com/dbzlegacy/adaptivedifficulty/client/gui/LmScreen.class",
+    "com/dbzlegacy/adaptivedifficulty/client/gui/UltraWidgetAdapter.class",
+]
+with zipfile.ZipFile(jar) as zf:
+    names = set(zf.namelist())
+    for name in names:
+        if not name.endswith(".class"):
+            continue
+        if "/client/" in name.replace("\\", "/"):
+            continue
+        data = zf.read(name)
+        if b"com/dmzultra/client" in data or b"com.dmzultra.client" in data:
+            bad.append(name)
+    missing = [n for n in need if n not in names]
+if bad:
+    print("ERROR: server-loaded classes reference DMZUltra client UI:", file=sys.stderr)
+    for name in bad:
+        print("  " + name, file=sys.stderr)
+    sys.exit(1)
+if missing:
+    print("ERROR: native GUI classes missing from jar:", file=sys.stderr)
+    for name in missing:
+        print("  " + name, file=sys.stderr)
+    sys.exit(1)
+print("Native GUI jar boundary ok")
+PY
 # A second LegacyMechanics jar in mods/ crashes a fresh server on startup.
 find "$ROOT/mods" -maxdepth 1 -type f -name 'LegacyMechanics-*.jar' ! -name "LegacyMechanics-${VERSION}.jar" -delete
 jar tf "$JAR"

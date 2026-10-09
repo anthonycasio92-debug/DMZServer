@@ -1,6 +1,10 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.56**.
+What changed from **4.5.147** through **4.6.57**.
+
+## Native staff test GUI
+
+`/lm admin testgui` still opens the CNPC hub. `useNativeTestGui` defaults to false. When it is true, and the staff client has this mod, the command opens the native hub (`Character`, `Difficulty`, `Progression`, `Prestige`, `Spar`, `Rival`) instead. A click sends an action packet; the server logs it and opens the same CNPC page that button already used. A client without this mod, or without DMZUltra, is not kicked: missing channel falls back to CNPC, and a missing DMZUltra UI shows plain buttons.
 
 ## Fusion mixin target
 

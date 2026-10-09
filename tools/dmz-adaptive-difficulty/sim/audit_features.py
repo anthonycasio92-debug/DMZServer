@@ -2141,6 +2141,40 @@ def main() -> int:
     check("fall damage listener class is copied into the forge jar",
           "event/FallDamageDiag.class" in build_sh)
 
+    print("\n=== Native staff test GUI (4.6.57) ===")
+    native_cmd = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/command/MechanicsCommands.java")
+    native_cfg = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/config/DifficultyConfig.java")
+    native_mod = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.java")
+    native_net = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/net/gui/LmGuiNetwork.java")
+    native_hub = read(ROOT / "tools/dmz-adaptive-difficulty/src/client/java/com/dbzlegacy/adaptivedifficulty/client/gui/LmHubScreen.java")
+    native_adapter = read(ROOT / "tools/dmz-adaptive-difficulty/src/client/java/com/dbzlegacy/adaptivedifficulty/client/gui/UltraWidgetAdapter.java")
+    check("native test gui stays off until useNativeTestGui",
+          "public boolean useNativeTestGui = false" in native_cfg
+          and "useNativeTestGui" in native_cmd
+          and "LmGuiNetwork.sendOpen" in native_cmd
+          and "CnpcStaffTestGui.open" in native_cmd)
+    check("native gui channel does not name DMZUltra",
+          "GuiOpenPacket" in native_net
+          and "GuiActionPacket" in native_net
+          and "com.dmzultra" not in native_net
+          and "LmClientBootstrap" in native_mod
+          and "LmGuiNetwork.register" in native_mod)
+    check("hub screen uses the adapter and the six hub actions",
+          "addThemedButton" in native_hub
+          and '"Character"' in native_hub
+          and '"Difficulty"' in native_hub
+          and '"Progression"' in native_hub
+          and '"Prestige"' in native_hub
+          and '"Spar"' in native_hub
+          and '"Rival"' in native_hub
+          and "com.dmzultra" not in native_hub
+          and "UltraButton" in native_adapter
+          and "UltraList" in native_adapter)
+    check("native gui classes are copied into the forge jar",
+          "net/gui" in build_sh
+          and "DifficultyConfig.class" in build_sh
+          and "client-classes" in build_sh)
+
     print("\n=== Summary ===")
     for w in warns:
         print(f"WARN: {w}")

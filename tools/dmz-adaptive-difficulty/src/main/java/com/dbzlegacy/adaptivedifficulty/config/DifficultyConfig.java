@@ -363,6 +363,11 @@ public final class DifficultyConfig {
     /** Staff {@code /lm admin testgui} — CustomNPCs panel listing all LM systems (experimental). */
     public boolean enableStaffCnpcTestGui = true;
     /**
+     * Staff {@code /lm admin testgui} opens the native DMZUltra hub instead of the CNPC hub.
+     * Off by default so players and staff keep the CNPC menu until this is flipped.
+     */
+    public boolean useNativeTestGui = false;
+    /**
      * If the Minecraft world is on Peaceful (no hostile spawns), restore it on server start.
      * Peaceful prevents adaptive mob scaling from doing anything.
      * Null in JSON means enabled (default true).
