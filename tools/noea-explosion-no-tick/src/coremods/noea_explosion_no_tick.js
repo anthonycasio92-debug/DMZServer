@@ -2,11 +2,11 @@ function initializeCoreMod() {
     var Opcodes = Java.type('org.objectweb.asm.Opcodes');
     var InsnNode = Java.type('org.objectweb.asm.tree.InsnNode');
 
+    // RETURN first. Clearing the body drops StackMapTable frames and entity
+    // registration fails with NoClassDefFoundError.
     function voidNoOp(method) {
-        method.instructions.clear();
-        method.tryCatchBlocks.clear();
-        method.instructions.add(new InsnNode(Opcodes.RETURN));
-        method.maxStack = 0;
+        var first = method.instructions.getFirst();
+        method.instructions.insertBefore(first, new InsnNode(Opcodes.RETURN));
         return method;
     }
 

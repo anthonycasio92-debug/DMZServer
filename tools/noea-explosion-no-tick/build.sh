@@ -46,12 +46,16 @@ for token in (
     "handlePlanetDetonationTick",
     "noea_explosion_no_tick.js",
     'modId="noeaexplosionnotick"',
-    'version="1.0.1"',
+    'version="1.0.2"',
+    "insertBefore",
 ):
     blob = js + toml + core
     if token not in blob:
         print("ERROR: jar missing " + token, file=sys.stderr)
         sys.exit(1)
+if "instructions.clear" in js or "tryCatchBlocks.clear" in js:
+    print("ERROR: clearing a method corrupts its stack map and the server will not start", file=sys.stderr)
+    sys.exit(1)
 if "m_8097_" in js or "CelestialDestructionService" in js:
     print("ERROR: destruction start must keep running so the planet can disappear", file=sys.stderr)
     sys.exit(1)

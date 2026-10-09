@@ -4,7 +4,7 @@ license="All Rights Reserved"
 
 [[mods]]
 modId="noeaexplosionnotick"
-version="1.0.1"
+version="1.0.2"
 displayName="Noea Planet Explosion - No Tick"
 description='''Server-side coremod. A destroyed planet still disappears. The explosion entity does not tick, and the detonation tick does not break blocks or spawn particles.'''
 
