@@ -37,15 +37,17 @@ public final class CnpcLmCharacterGui {
         }
         if (p.startsWith("bones:") || "bones".equals(p)) {
             int bonePage = parseBonePage(p);
+            int boneExtra = CnpcUltraPreview.active(player) ? CnpcGuiSupport.TAB_BAR_H : 0;
             CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CHARACTER, CnpcGuiSupport.W,
-                    CnpcGuiSupport.heightForScrollPage(420),
+                    CnpcGuiSupport.heightForScrollPage(420 + boneExtra),
                     (pl, gui) -> paintBones(pl, gui, bonePage));
             return;
         }
+        int tab = CnpcUltraPreview.active(player) ? CnpcGuiSupport.TAB_BAR_H : 0;
         int height = switch (p) {
             case "race", "class" -> CnpcGuiSupport.suggestHeight(280);
-            case "reskin" -> CnpcGuiSupport.window(320);
-            default -> CnpcGuiSupport.window(H_MAIN);
+            case "reskin" -> CnpcGuiSupport.window(320 + tab);
+            default -> CnpcGuiSupport.window(H_MAIN + ("main".equals(p) ? tab : 0));
         };
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CHARACTER, CnpcGuiSupport.W, height, (pl, gui) -> {
             switch (p) {
@@ -63,6 +65,7 @@ public final class CnpcLmCharacterGui {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, "§fCharacter Services",
                 "§7Race §f" + ph.getOrDefault("current_race", "?") + CnpcGuiStyle.SEP + "§7Class §f"
                         + ph.getOrDefault("current_class", "?"));
+        infoY = characterTabs(player, gui, infoY, "services");
 
         List<String> lines = new ArrayList<>(CharacterServicesGuiApi.linesForPage(player, "main"));
         lines.add(0, "§6Ancient Coins §f" + ph.getOrDefault("ancient_coins", "0"));
@@ -219,13 +222,16 @@ public final class CnpcLmCharacterGui {
                 : "§ePreviewing §f" + previewName;
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§f", "Character", "Head parts"),
                 subtitle);
+        infoY = characterTabs(player, gui, infoY, "bones");
         int listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBeforePickList(gui, infoY,
                 CharacterServicesGuiApi.linesForPage(player, "bones:" + pg), 2));
 
         List<String> cards = CharacterServicesGuiApi.headBoneCards(player, pg);
         boolean previewing = !previewId.isBlank();
         int rowsBelow = previewing ? 6 : 4;
-        String[] labels = CnpcGuiSupport.cardLabels(cards, 1);
+        String[] labels = CnpcUltraPreview.active(player)
+                ? CnpcRowList.headBoneRows(cards)
+                : CnpcGuiSupport.cardLabels(cards, 1);
         int bandY = CnpcGuiSupport.pickListBandY(listY, rowsBelow, gui, labels.length);
         int scrollBottom = CnpcGuiSupport.pickListScrollBottom(listY, rowsBelow, gui, labels.length);
         IScroll scroll = null;
@@ -314,6 +320,7 @@ public final class CnpcLmCharacterGui {
         ServerPlayer subject = CnpcGuiSupport.target(player);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§f", "Character", "Reskin"),
                 "§7Opens the appearance editor");
+        infoY = characterTabs(player, gui, infoY, "reskin");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, CharacterServicesGuiApi.linesForPage(player, "reskin"),
                         CnpcGuiStyle.INFO_INLINE_MAX));
         CnpcGuiSupport.button(gui, 20, "§eReview cost & continue", CnpcGuiSupport.COL_L, row,
@@ -344,6 +351,22 @@ public final class CnpcLmCharacterGui {
                 });
         row += CnpcGuiSupport.ROW_STEP + 8;
         CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "reskin"), "§7« Back");
+    }
+
+    private static int characterTabs(ServerPlayer player, ICustomGui gui, int y, String active) {
+        if (!CnpcUltraPreview.active(player)) {
+            return y;
+        }
+        return CnpcGuiSupport.paintTabBar(gui, y, new String[] {
+                "services|Services", "reskin|Reskin", "bones|Headbones"
+        }, active, action -> {
+            String id = action.startsWith("tab:") ? action.substring(4) : action;
+            switch (id) {
+                case "reskin" -> open(player, "reskin");
+                case "bones" -> open(player, "bones:0");
+                default -> open(player, "main");
+            }
+        });
     }
 
     private static void footer(

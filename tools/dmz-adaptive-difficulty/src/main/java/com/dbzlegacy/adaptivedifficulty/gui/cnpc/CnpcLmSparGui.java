@@ -30,10 +30,11 @@ public final class CnpcLmSparGui {
             openPickConfirm(player, raw.substring("pick_confirm:".length()).trim());
             return;
         }
+        int tab = CnpcUltraPreview.active(player) && sparTabs(lower) ? CnpcGuiSupport.TAB_BAR_H : 0;
         int height = CnpcGuiSupport.window(switch (lower) {
             case "stats" -> 420;
             default -> (lower.startsWith("pick_") || dojoTab(lower) != null) ? 440 : H;
-        });
+        } + tab);
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_SPAR, CnpcGuiSupport.W, height, (pl, gui) -> {
             if (lower.startsWith("top_")) {
                 paintTop(pl, gui, lower.substring(4).trim());
@@ -68,6 +69,32 @@ public final class CnpcLmSparGui {
         });
     }
 
+    private static boolean sparTabs(String page) {
+        if (page == null || page.isBlank() || "main".equals(page)) {
+            return true;
+        }
+        if (page.startsWith("top") || "leaderboard".equals(page) || dojoTab(page) != null) {
+            return true;
+        }
+        return "dojo_war".equals(page);
+    }
+
+    private static int sparTabBar(ServerPlayer player, ICustomGui gui, int y, String active) {
+        if (!CnpcUltraPreview.active(player)) {
+            return y;
+        }
+        return CnpcGuiSupport.paintTabBar(gui, y, new String[] {
+                "dojo|Dojo", "rankings|Rankings", "wars|Wars"
+        }, active, action -> {
+            String id = action.startsWith("tab:") ? action.substring(4) : action;
+            switch (id) {
+                case "rankings" -> open(player, "top");
+                case "wars" -> open(player, "dojo_war");
+                default -> open(player, "dojo");
+            }
+        });
+    }
+
     private static ServerPlayer subject(ServerPlayer viewer) {
         return CnpcGuiSupport.target(viewer);
     }
@@ -84,6 +111,7 @@ public final class CnpcLmSparGui {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, "§bSparring",
                 "§7Session §f" + ("true".equals(ph.get("session_active")) ? "§ain progress" : "§7none active")
                         + (partner == null || partner.isBlank() ? "" : " §8· §7vs §f" + partner));
+        infoY = sparTabBar(player, gui, infoY, "");
 
         if (!"true".equalsIgnoreCase(ph.get("system_enabled"))) {
             int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of(CnpcGuiStyle.MSG_SPAR_OFF),
@@ -292,6 +320,7 @@ public final class CnpcLmSparGui {
         int infoY = CnpcGuiSupport.paintHeader(player, gui,
                 CnpcGuiStyle.subPage("§b", "Sparring", "Dojo · " + label),
                 "§7Home, members, hall of fame, and rankings");
+        infoY = sparTabBar(player, gui, infoY, "rankings".equals(key) ? "rankings" : "dojo");
         int row = CnpcGuiSupport.bodyBelowHeader(infoY);
         String[] ids = {"home", "members", "hof", "rankings"};
         String[] names = {"Home", "Members", "Hall of fame", "Rankings"};
@@ -353,6 +382,7 @@ public final class CnpcLmSparGui {
         ServerPlayer who = subject(player);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§b", "Sparring", "Dojo war"),
                 "§7Challenge rival dojos");
+        infoY = sparTabBar(player, gui, infoY, "wars");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, SparGuiApi.dojoWarLines(who), CnpcGuiStyle.INFO_INLINE_MAX));
         CnpcGuiSupport.button(gui, 20, "§eChallenge rival dojo…", CnpcGuiSupport.COL_L, row, () -> open(player, "pick_dojo_challenge"));
         int warPending = SparGuiApi.pendingDojoWarCards(who).size();
@@ -415,6 +445,7 @@ public final class CnpcLmSparGui {
         int infoY = CnpcGuiSupport.paintHeader(player, gui,
                 CnpcGuiStyle.subPage("§b", "Sparring", "Leaderboard · " + CnpcGuiStyle.sparLeaderboardTab(cat)),
                 "§7Top sparring players");
+        infoY = sparTabBar(player, gui, infoY, "rankings");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, SparGuiApi.topLines(subject(player), cat),
                 CnpcGuiStyle.INFO_INLINE_MAX));
         CnpcGuiLayout.GridButton[] tabs = new CnpcGuiLayout.GridButton[] {

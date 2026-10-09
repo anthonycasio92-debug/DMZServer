@@ -1,6 +1,10 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.58**.
+What changed from **4.5.147** through **4.6.60**.
+
+## Test GUI shows the new CNPC colors
+
+`/lm admin testgui` opens the new look: gold headers, gray subtitles, tab strips, and head-part rows that say equipped, unlocked, or locked. `/lm` and the other menus stay on the current look until that audit is done. Nothing on the client changed.
 
 ## Staff test GUI stays on the server
 

@@ -31,7 +31,8 @@ public final class CnpcLmProgressionGui {
             case "skills", "tp", "race", "combat", "end", "utility", "status", "shop" ->
                     sectionHeight(player, p);
             case "flags" -> flagsPageHeight();
-            default -> CnpcGuiSupport.window(H_MAIN);
+            default -> CnpcGuiSupport.window(H_MAIN
+                    + ("main".equals(p) && CnpcUltraPreview.active(player) ? CnpcGuiSupport.TAB_BAR_H : 0));
         };
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_PROGRESSION, CnpcGuiSupport.W, h,
                 (pl, gui) -> paint(pl, gui, p));
@@ -78,6 +79,7 @@ public final class CnpcLmProgressionGui {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, "§9Progression",
                 staff ? "§7Staff: Global TP boost · Android tools · Ancient Coins"
                         : "§7Module status and progression tools");
+        infoY = progressionTabs(player, gui, infoY, "modules");
         List<String> info = new ArrayList<>(ProgressionGuiApi.linesForPage(player, "main"));
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, info, CnpcGuiStyle.INFO_INLINE_MAX));
 
@@ -97,6 +99,22 @@ public final class CnpcLmProgressionGui {
         }
         CnpcGuiSupport.navSystemRoot(player, gui, row);
         CnpcGuiSupport.paintSystemMainPreview(CnpcGuiSupport.target(player), gui, player);
+    }
+
+    private static int progressionTabs(ServerPlayer player, ICustomGui gui, int y, String active) {
+        if (!CnpcUltraPreview.active(player)) {
+            return y;
+        }
+        return CnpcGuiSupport.paintTabBar(gui, y, new String[] {
+                "modules|Modules", "prestige|Prestige"
+        }, active, action -> {
+            String id = action.startsWith("tab:") ? action.substring(4) : action;
+            if ("prestige".equals(id)) {
+                CnpcLmGui.open(player, "prestige", "main");
+            } else {
+                open(player, "main");
+            }
+        });
     }
 
     private static int placeRow(

@@ -47,13 +47,17 @@ public final class CnpcLmDifficultyGui {
             p = "main";
         }
         String pageFinal = p;
-        int height = CnpcGuiSupport.window(switch (pageFinal) {
+        int designed = switch (pageFinal) {
             case "stats", "statistics", "details" -> 340;
             case "titles", "title" -> 360;
             case "end_dragon", "dragon", "summon_dragon" -> 340;
             case "admin" -> 300;
             default -> H;
-        });
+        };
+        if ("main".equals(pageFinal) && CnpcUltraPreview.active(player)) {
+            designed += 16;
+        }
+        int height = CnpcGuiSupport.window(designed);
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_DIFFICULTY, CnpcGuiSupport.W, height, (pl, gui) -> {
             switch (pageFinal) {
                 case "tiers", "buy", "tier", "purchase", "unlock", "adjust", "change", "set", "lower" ->
@@ -101,6 +105,9 @@ public final class CnpcLmDifficultyGui {
             lines.add("§8Scaled mobs can hurt other players nearby.");
         }
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX));
+        if (CnpcUltraPreview.active(player)) {
+            row = CnpcGuiSupport.paintSectionTag(gui, CnpcGuiSupport.ID_INLINE_NOTE, row, "Options");
+        }
         CnpcGuiSupport.button(gui, 20, "§eTiers", CnpcGuiSupport.COL_L, row, () -> open(player, "tiers"));
         CnpcGuiSupport.button(gui, 21, "§dTitles", CnpcGuiSupport.COL_R, row, () -> open(player, "titles"));
         row += CnpcGuiSupport.ROW_STEP;
