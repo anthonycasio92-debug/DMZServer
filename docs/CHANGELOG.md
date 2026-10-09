@@ -1,10 +1,10 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.57**.
+What changed from **4.5.147** through **4.6.58**.
 
-## Native staff test GUI
+## Staff test GUI stays on the server
 
-`/lm admin testgui` still opens the CNPC hub. `useNativeTestGui` defaults to false. When it is true, and the staff client has this mod, the command opens the native hub (`Character`, `Difficulty`, `Progression`, `Prestige`, `Spar`, `Rival`) instead. A click sends an action packet; the server logs it and opens the same CNPC page that button already used. A client without this mod, or without DMZUltra, is not kicked: missing channel falls back to CNPC, and a missing DMZUltra UI shows plain buttons.
+`/lm admin testgui` opens the CustomNPCs hub. The server sends that menu through CustomNPCs, which clients already have. LegacyMechanics does not ship a client screen, a client packet, or a DMZUltra widget, so a staff member does not install this jar to use the menu.
 
 ## Fusion mixin target
 

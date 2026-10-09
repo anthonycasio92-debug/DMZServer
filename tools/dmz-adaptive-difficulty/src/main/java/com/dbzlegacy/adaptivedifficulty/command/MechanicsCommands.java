@@ -280,17 +280,6 @@ public final class MechanicsCommands {
                     + " §8Then: §f/lm admin testgui"));
             return 0;
         }
-        if (!com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig.get().enableStaffCnpcTestGui) {
-            player.m_213846_(Component.m_237113_("§eStaff CNPC test GUI is disabled in config."));
-            return 0;
-        }
-        if (com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig.get().useNativeTestGui) {
-            if (com.dbzlegacy.adaptivedifficulty.net.gui.LmGuiNetwork.sendOpen(player, "hub")) {
-                return 1;
-            }
-            player.m_213846_(Component.m_237113_(
-                    "§eNative test GUI isn't on this client. Opening the CNPC hub."));
-        }
         return com.dbzlegacy.adaptivedifficulty.gui.CnpcStaffTestGui.open(player) ? 1 : 0;
     }
 

@@ -33,12 +33,7 @@ public final class AdaptiveDifficultyMod {
     /** Forge modId — lowercase; not used for NBT / GUI class lookup. */
     public static final String MOD_ID = "legacymechanics";
     /** Product line version (was DMZ Adaptive Difficulty 3.3.x). */
-    public static final String VERSION = "4.6.57";
-
-    /** True on the dedicated server. A failed side check keeps the server startup path. */
-    public static boolean dedicatedServerForGui() {
-        return dedicatedServer();
-    }
+    public static final String VERSION = "4.6.58";
 
     private static boolean dedicatedServer() {
         try {
@@ -63,17 +58,9 @@ public final class AdaptiveDifficultyMod {
         );
 
         if (!dedicatedServer()) {
-            try {
-                Class.forName("com.dbzlegacy.adaptivedifficulty.client.LmClientBootstrap")
-                        .getMethod("init")
-                        .invoke(null);
-            } catch (Throwable t) {
-                LOGGER.warn("[{}] native GUI client init failed: {}", MOD_ID, t.toString());
-            }
             return;
         }
 
-        com.dbzlegacy.adaptivedifficulty.net.gui.LmGuiNetwork.register();
         DifficultyConfig.load();
         com.dbzlegacy.adaptivedifficulty.progression.race.RaceLockConfig.load();
         com.dbzlegacy.adaptivedifficulty.character.CharacterServicesConfig.load();
