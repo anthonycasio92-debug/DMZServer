@@ -90,10 +90,11 @@ public final class CnpcGuiSupport {
     /** Button height plus the gap under a tab strip. */
     public static final int TAB_BAR_H = BTN_H + 6;
 
-    /** Gold divider, same length rule as before so it stays inside the text band. */
+    /** Gold divider on the staff test GUI. The live menus keep the gray line. */
     private static String dividerText() {
         int chars = Math.max(14, textBandWidth() / 7);
-        return CnpcUltraStyle.DIVIDER + "─".repeat(chars);
+        String color = CnpcUltraPreview.paintingUltra() ? CnpcUltraStyle.DIVIDER : "§8";
+        return color + "─".repeat(chars);
     }
 
     private static final Pattern PACKAGE_LIKE = Pattern.compile("(?:\\b[a-z]{2,}\\.){2,}[A-Za-z0-9_$]+");
@@ -141,7 +142,12 @@ public final class CnpcGuiSupport {
             int[] fitted = CnpcUiFit.fit(ip, width, designed);
             ICustomGui gui = NpcAPI.Instance().createCustomGui(guiId, fitted[0], fitted[1], false, ip);
             gui.setClosesOnEsc(true);
-            painter.paint(player, gui);
+            CnpcUltraPreview.bindPaint(player);
+            try {
+                painter.paint(player, gui);
+            } finally {
+                CnpcUltraPreview.clearPaint();
+            }
             CnpcUiFit.compressToWindow(gui);
             ip.showCustomGui(gui);
         } catch (Throwable t) {
@@ -152,8 +158,13 @@ public final class CnpcGuiSupport {
 
     /** Title + subtitle + optional inspect line + divider. Returns Y for the info block. */
     public static int paintHeader(ServerPlayer viewer, ICustomGui gui, String title, String subtitle) {
-        title(gui, ID_TITLE, CnpcUltraStyle.header(title));
-        subtitle(gui, ID_SUBTITLE, CnpcUltraStyle.subtitle(subtitle));
+        if (CnpcUltraPreview.active(viewer)) {
+            title(gui, ID_TITLE, CnpcUltraStyle.header(title));
+            subtitle(gui, ID_SUBTITLE, CnpcUltraStyle.subtitle(subtitle));
+        } else {
+            title(gui, ID_TITLE, title);
+            subtitle(gui, ID_SUBTITLE, subtitle == null ? "" : CnpcGuiStyle.readableInfoLine(subtitle));
+        }
         inspectBanner(viewer, gui);
         boolean inspecting = AdminInspectSessions.isInspecting(viewer.m_20148_());
         int dividerY = inspecting ? 52 : 38;
@@ -257,7 +268,9 @@ public final class CnpcGuiSupport {
         if (id == ID_TITLE || id == ID_SUBTITLE || id == ID_DIVIDER || id == ID_STATUS_TAG) {
             id = ID_INLINE_NOTE;
         }
-        gui.addLabel(id, safeChat(CnpcUltraStyle.section(caption)), M, y, textBandWidth(), 12);
+        boolean ultra = CnpcUltraPreview.paintingUltra();
+        String shown = ultra ? CnpcUltraStyle.section(caption) : caption;
+        gui.addLabel(id, safeChat(shown), M, y, textBandWidth(), ultra ? 12 : 10);
         return y + 16;
     }
 
@@ -268,7 +281,7 @@ public final class CnpcGuiSupport {
      * Returns the Y under the strip.
      */
     public static int paintTabBar(ICustomGui gui, int y, String[] tabs, String activeTab, Consumer<String> onTab) {
-        if (gui == null || tabs == null || tabs.length == 0) {
+        if (!CnpcUltraPreview.paintingUltra() || gui == null || tabs == null || tabs.length == 0) {
             return y;
         }
         int n = Math.min(tabs.length, 4);

@@ -37,15 +37,17 @@ public final class CnpcLmCharacterGui {
         }
         if (p.startsWith("bones:") || "bones".equals(p)) {
             int bonePage = parseBonePage(p);
+            int boneExtra = CnpcUltraPreview.active(player) ? CnpcGuiSupport.TAB_BAR_H : 0;
             CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CHARACTER, CnpcGuiSupport.W,
-                    CnpcGuiSupport.heightForScrollPage(420 + CnpcGuiSupport.TAB_BAR_H),
+                    CnpcGuiSupport.heightForScrollPage(420 + boneExtra),
                     (pl, gui) -> paintBones(pl, gui, bonePage));
             return;
         }
+        int tab = CnpcUltraPreview.active(player) ? CnpcGuiSupport.TAB_BAR_H : 0;
         int height = switch (p) {
             case "race", "class" -> CnpcGuiSupport.suggestHeight(280);
-            case "reskin" -> CnpcGuiSupport.window(320 + CnpcGuiSupport.TAB_BAR_H);
-            default -> CnpcGuiSupport.window(H_MAIN + ("main".equals(p) ? CnpcGuiSupport.TAB_BAR_H : 0));
+            case "reskin" -> CnpcGuiSupport.window(320 + tab);
+            default -> CnpcGuiSupport.window(H_MAIN + ("main".equals(p) ? tab : 0));
         };
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CHARACTER, CnpcGuiSupport.W, height, (pl, gui) -> {
             switch (p) {
@@ -227,7 +229,9 @@ public final class CnpcLmCharacterGui {
         List<String> cards = CharacterServicesGuiApi.headBoneCards(player, pg);
         boolean previewing = !previewId.isBlank();
         int rowsBelow = previewing ? 6 : 4;
-        String[] labels = CnpcRowList.headBoneRows(cards);
+        String[] labels = CnpcUltraPreview.active(player)
+                ? CnpcRowList.headBoneRows(cards)
+                : CnpcGuiSupport.cardLabels(cards, 1);
         int bandY = CnpcGuiSupport.pickListBandY(listY, rowsBelow, gui, labels.length);
         int scrollBottom = CnpcGuiSupport.pickListScrollBottom(listY, rowsBelow, gui, labels.length);
         IScroll scroll = null;
@@ -350,6 +354,9 @@ public final class CnpcLmCharacterGui {
     }
 
     private static int characterTabs(ServerPlayer player, ICustomGui gui, int y, String active) {
+        if (!CnpcUltraPreview.active(player)) {
+            return y;
+        }
         return CnpcGuiSupport.paintTabBar(gui, y, new String[] {
                 "services|Services", "reskin|Reskin", "bones|Headbones"
         }, active, action -> {

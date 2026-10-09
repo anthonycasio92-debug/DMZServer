@@ -14,8 +14,9 @@ public final class CnpcLmAdminGui {
             CnpcGuiSupport.denyToHub(player, CnpcMenuFeedback.NOTICE_BODY + "Staff only.");
             return;
         }
+        int designed = CnpcUltraPreview.active(player) ? 296 : 280;
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_ADMIN, CnpcGuiSupport.W,
-                CnpcGuiSupport.window(296), (pl, gui) -> paintMain(pl, gui));
+                CnpcGuiSupport.window(designed), (pl, gui) -> paintMain(pl, gui));
     }
 
     private static void paintMain(ServerPlayer player, ICustomGui gui) {
@@ -25,7 +26,9 @@ public final class CnpcLmAdminGui {
                 "§7Full commands: §8/lm admin help",
                 "§8/lm admin inspect … §7· §8/difficulty admin …"
         ), CnpcGuiStyle.INFO_INLINE_MAX));
-        row = CnpcGuiSupport.paintSectionTag(gui, CnpcGuiSupport.ID_INLINE_NOTE, row, "Tools");
+        if (CnpcUltraPreview.active(player)) {
+            row = CnpcGuiSupport.paintSectionTag(gui, CnpcGuiSupport.ID_INLINE_NOTE, row, "Tools");
+        }
         CnpcGuiSupport.button(gui, 20, "§aReload Legacy Mechanics config", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> DifficultyConfig.reload()

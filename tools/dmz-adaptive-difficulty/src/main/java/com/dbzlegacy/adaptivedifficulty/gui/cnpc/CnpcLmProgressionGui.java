@@ -31,7 +31,8 @@ public final class CnpcLmProgressionGui {
             case "skills", "tp", "race", "combat", "end", "utility", "status", "shop" ->
                     sectionHeight(player, p);
             case "flags" -> flagsPageHeight();
-            default -> CnpcGuiSupport.window(H_MAIN + ("main".equals(p) ? CnpcGuiSupport.TAB_BAR_H : 0));
+            default -> CnpcGuiSupport.window(H_MAIN
+                    + ("main".equals(p) && CnpcUltraPreview.active(player) ? CnpcGuiSupport.TAB_BAR_H : 0));
         };
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_PROGRESSION, CnpcGuiSupport.W, h,
                 (pl, gui) -> paint(pl, gui, p));
@@ -101,6 +102,9 @@ public final class CnpcLmProgressionGui {
     }
 
     private static int progressionTabs(ServerPlayer player, ICustomGui gui, int y, String active) {
+        if (!CnpcUltraPreview.active(player)) {
+            return y;
+        }
         return CnpcGuiSupport.paintTabBar(gui, y, new String[] {
                 "modules|Modules", "prestige|Prestige"
         }, active, action -> {
