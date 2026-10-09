@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.gui.cnpc;
 
 import com.dbzlegacy.adaptivedifficulty.character.CosmeticHeadBoneService;
+import com.dbzlegacy.adaptivedifficulty.character.HeadPartPieces;
 import com.dbzlegacy.adaptivedifficulty.gui.CharacterServicesGuiApi;
 import java.util.ArrayList;
 import java.util.List;
@@ -211,91 +212,77 @@ public final class CnpcLmCharacterGui {
     }
 
     private static void paintBones(ServerPlayer player, ICustomGui gui, int page) {
-        var ph = CharacterServicesGuiApi.placeholders(player);
         int pages = Math.max(1, CosmeticHeadBoneService.pageCount());
         int pg = Math.min(pages - 1, Math.max(0, page));
-        String previewId = CosmeticHeadBoneService.previewBoneId(player);
-        String previewName = CosmeticHeadBoneService.previewLabel(player);
-        String subtitle = previewName.isBlank()
-                ? "§7Page §f" + (pg + 1) + "/" + pages + CnpcGuiStyle.SEP + "§7Active §f"
-                        + ph.getOrDefault("active_head_bone", "none")
-                : "§ePreviewing §f" + previewName;
+        String worn = CosmeticHeadBoneService.wornLabel(CosmeticHeadBoneService.activeBone(player));
+        int wornCount = HeadPartPieces.fragments(CosmeticHeadBoneService.activeBone(player)).size();
+        if (wornCount > 2) {
+            worn = wornCount + " parts on";
+        }
+        String subtitle = "§7" + HeadPartPieces.pageTitle(pg) + CnpcGuiStyle.SEP + "§7On §f" + worn;
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§f", "Character", "Head parts"),
                 subtitle);
         infoY = characterTabs(player, gui, infoY, "bones");
-        int listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBeforePickList(gui, infoY,
+        int y = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBeforePickList(gui, infoY,
                 CharacterServicesGuiApi.linesForPage(player, "bones:" + pg), 2));
 
-        List<String> cards = CharacterServicesGuiApi.headBoneCards(player, pg);
-        boolean previewing = !previewId.isBlank();
-        int rowsBelow = previewing ? 6 : 4;
-        String[] labels = CnpcUltraPreview.active(player)
-                ? CnpcRowList.headBoneRows(cards)
-                : CnpcGuiSupport.cardLabels(cards, 1);
-        int bandY = CnpcGuiSupport.pickListBandY(listY, rowsBelow, gui, labels.length);
-        int scrollBottom = CnpcGuiSupport.pickListScrollBottom(listY, rowsBelow, gui, labels.length);
-        IScroll scroll = null;
-        if (cards.isEmpty()) {
-            gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER, "§7No head parts here — try the next page or use search.",
-                    CnpcGuiSupport.M, bandY + 4, CnpcGuiSupport.listWidth(), 14);
-            scrollBottom = bandY + 20;
+        if (pg == HeadPartPieces.PAGE_BODY) {
+            List<String> names = HeadPartPieces.ultraScrollLines();
+            int scrollH = CnpcGuiSupport.listScrollHeight(gui, y, 3);
+            CnpcGuiSupport.scroll(gui, CnpcGuiSupport.ID_LIST_SCROLL, CnpcGuiSupport.M, y,
+                    CnpcGuiSupport.textBandWidth(), scrollH, names.toArray(String[]::new));
+            y = y + scrollH + 8;
         } else {
-            scroll = CnpcGuiSupport.scrollPickList(gui, listY, rowsBelow, labels);
+            List<String> cards = CharacterServicesGuiApi.headBoneCards(player, pg);
+            int rowStep = CnpcGuiSupport.BTN_H + CnpcRowList.ROW_GAP;
+            if (cards.isEmpty()) {
+                gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER, "§7No head parts in this group.",
+                        CnpcGuiSupport.M, y, CnpcGuiSupport.listWidth(), 14);
+                y += rowStep;
+            }
+            for (int i = 0; i < cards.size(); i++) {
+                String[] parts = cards.get(i).split("\t", -1);
+                String id = parts.length > 0 ? parts[0] : "";
+                String name = parts.length > 1 ? parts[1] : id;
+                String state = parts.length > 2 ? parts[2] : "";
+                String cost = parts.length > 3 ? parts[3] : "";
+                String caption = "E".equals(state)
+                        ? CnpcGuiStyle.toggleOn(name)
+                        : "L".equals(state)
+                                ? CnpcGuiStyle.toggleOff(name + "  " + cost)
+                                : CnpcGuiStyle.toggleOff(name);
+                CnpcGuiSupport.buttonSmallFull(gui, CnpcGuiSupport.ID_GRID_BASE + i, caption,
+                        CnpcGuiSupport.M, y, CnpcGuiSupport.textBandWidth(),
+                        () -> CnpcGuiSupport.act(player,
+                                () -> CharacterServicesGuiApi.handleDo(player, "bone_toggle", id, "bones"),
+                                () -> open(player, "bones:" + pg)));
+                y += rowStep;
+            }
         }
-        int row = scrollBottom + 8;
-        if (scroll != null) {
-            IScroll picked = scroll;
-            CnpcGuiSupport.selectionButton(player, gui, 67, "§ePreview", CnpcGuiSupport.M, row,
-                    CnpcGuiSupport.textBandWidth(), () -> CnpcGuiSupport.cardField(cards, picked, 0),
-                    id -> CnpcGuiSupport.act(player,
-                            () -> CharacterServicesGuiApi.handleDo(player, "bone_preview", id, "bones"),
-                            () -> open(player, "bones:" + pg)),
-                    () -> open(player, "bones:" + pg));
-            row += CnpcGuiSupport.ROW_STEP;
-        }
-        if (previewing) {
-            boolean locked = !CosmeticHeadBoneService.hasUnlock(player, previewId);
-            String buy = locked
-                    ? "§aUnlock & equip §f" + com.dbzlegacy.adaptivedifficulty.character.CharacterServicesSystem
-                            .formatCost(CosmeticHeadBoneService.unlockCost(player, previewId))
-                    : "§aEquip";
-            String buyAction = locked ? "bone_unlock" : "bone_equip";
-            CnpcGuiSupport.buttonSmall(gui, 64, buy, CnpcGuiSupport.COL_L, row, CnpcGuiSupport.BTN_W,
-                    () -> CnpcGuiSupport.act(
-                            player,
-                            () -> CharacterServicesGuiApi.handleDo(player, buyAction, previewId, "bones"),
-                            () -> open(player, "bones:" + pg)));
-            CnpcGuiSupport.buttonSmall(gui, 65, "§7Restore", CnpcGuiSupport.COL_R, row, CnpcGuiSupport.BTN_W,
-                    () -> CnpcGuiSupport.act(
-                            player,
-                            () -> CharacterServicesGuiApi.handleDo(player, "bone_restore", "", "bones"),
-                            () -> open(player, "bones:" + pg)));
-            row += CnpcGuiSupport.ROW_STEP;
-            CnpcGuiSupport.buttonSmallFull(gui, 66, "§eStep back and look", CnpcGuiSupport.M, row,
-                    CnpcGuiSupport.textBandWidth(), () -> { });
-            row += CnpcGuiSupport.ROW_STEP;
-        }
-        CnpcGuiSupport.buttonSmall(gui, 60, "§aEquip race default", CnpcGuiSupport.COL_L, row, CnpcGuiSupport.BTN_W,
+
+        CnpcGuiSupport.buttonSmall(gui, 60, "§aEquip race default", CnpcGuiSupport.COL_L, y, CnpcGuiSupport.BTN_W,
                 () -> CnpcGuiSupport.act(
                         player,
                         () -> CharacterServicesGuiApi.handleDo(player, "bone_race_default", "", "bones"),
                         () -> open(player, "bones:" + pg)));
-        CnpcGuiSupport.buttonSmall(gui, 61, "§7Reset to natural look", CnpcGuiSupport.COL_R, row, CnpcGuiSupport.BTN_W,
+        CnpcGuiSupport.buttonSmall(gui, 61, "§7Reset to natural look", CnpcGuiSupport.COL_R, y, CnpcGuiSupport.BTN_W,
                 () -> CnpcGuiSupport.act(
                         player,
                         () -> CharacterServicesGuiApi.handleDo(player, "bone_unequip", "", "bones"),
                         () -> open(player, "bones:" + pg)));
-        row += CnpcGuiSupport.ROW_STEP;
+        y += CnpcGuiSupport.ROW_STEP;
         if (pg > 0) {
-            CnpcGuiSupport.buttonSmall(gui, 62, "§7« Prev page", CnpcGuiSupport.COL_L, row, 95,
+            String prev = pg == HeadPartPieces.PAGE_BODY ? "§7« Horns" : "§7« Head";
+            CnpcGuiSupport.buttonSmall(gui, 62, prev, CnpcGuiSupport.COL_L, y, 95,
                     () -> open(player, "bones:" + (pg - 1)));
         }
         if (pg + 1 < pages) {
-            CnpcGuiSupport.buttonSmall(gui, 63, "§7Next page »", CnpcGuiSupport.COL_R, row, 95,
+            String next = pg == HeadPartPieces.PAGE_HEAD ? "§7Horns »" : "§7Body »";
+            CnpcGuiSupport.buttonSmall(gui, 63, next, CnpcGuiSupport.COL_R, y, 95,
                     () -> open(player, "bones:" + (pg + 1)));
         }
-        row += CnpcGuiSupport.ROW_STEP;
-        CnpcGuiSupport.navSubmenu(player, gui, row, () -> {
+        y += CnpcGuiSupport.ROW_STEP;
+        CnpcGuiSupport.navSubmenu(player, gui, y, () -> {
             CosmeticHeadBoneService.restorePreview(player);
             open(player, "main");
         }, "§7« Back");

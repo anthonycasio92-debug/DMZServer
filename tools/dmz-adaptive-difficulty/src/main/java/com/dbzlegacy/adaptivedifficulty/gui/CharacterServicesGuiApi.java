@@ -120,8 +120,13 @@ public final class CharacterServicesGuiApi {
                 return lines;
             }
             int bonePage = parseBonePage(p);
-            lines.add("§7Unlock parts from any race · yours are free, others cost coins.");
-            lines.add("§7Click a row to preview. Unlock & equip charges Ancient Coins. Search filters the list.");
+            if (bonePage == com.dbzlegacy.adaptivedifficulty.character.HeadPartPieces.PAGE_BODY) {
+                lines.add("§7These follow the form you are wearing.");
+                lines.add("§7The server cannot turn them on or off, or pre-select them in the form editor.");
+                return lines;
+            }
+            lines.add("§7Turn parts on or off. Horns, ears, and antennae can be worn together.");
+            lines.add("§7A locked part charges Ancient Coins when you turn it on.");
             return lines;
         }
         if ("reskin".equals(p)) {
@@ -254,6 +259,9 @@ public final class CharacterServicesGuiApi {
         if ("bone_equip".equals(act)) {
             return CosmeticHeadBoneService.executeEquip(player, a);
         }
+        if ("bone_toggle".equals(act)) {
+            return CosmeticHeadBoneService.executeToggle(player, a);
+        }
         if ("bone_race_default".equals(act)) {
             return CosmeticHeadBoneService.executeRaceDefaultHeadBone(player);
         }
@@ -305,8 +313,7 @@ public final class CharacterServicesGuiApi {
         if (id == null || id.isBlank()) {
             return "none";
         }
-        var entry = com.dbzlegacy.adaptivedifficulty.character.CosmeticHeadBoneCatalog.get(id);
-        return entry == null ? id : entry.displayName();
+        return com.dbzlegacy.adaptivedifficulty.character.CosmeticHeadBoneService.wornLabel(id);
     }
 
     private static int parsePct(String raw) {

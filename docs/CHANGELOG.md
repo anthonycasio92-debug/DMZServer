@@ -1,6 +1,14 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.60**.
+What changed from **4.5.147** through **4.6.61**.
+
+## Head parts turn on one at a time
+
+The head-parts shop no longer sells precombined looks such as Horns 1 + Antennas 2 + Ears 1. Each DMZ bone is its own on/off row: hair, three ears, two antennae, five horns, and three Majin heads. Several can be worn together. Dragon Mine Z stores them as one `activeHeadBone` string joined with `+`, and the client draws each piece.
+
+A combo that was already unlocked is split into those pieces. A truncated piece such as `ma` is dropped.
+
+DMZUltra's 68 body accessories (antennae, capes, wings, tails, and the rest) are not sold here. They are client form parts (`part.<name>`), chosen by the form you are wearing. `DmzLookS2CPacket` menu and restyle actions do not set them, and `SceneFormS2CPacket` only swaps a cutscene form. The server cannot turn a piece on or pre-select it in the form editor. The Body page lists them so you can see the names.
 
 ## Test GUI shows the new CNPC colors
 

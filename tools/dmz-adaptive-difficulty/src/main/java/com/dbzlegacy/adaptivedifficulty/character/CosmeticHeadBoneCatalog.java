@@ -3,7 +3,6 @@ package com.dbzlegacy.adaptivedifficulty.character;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -107,8 +106,19 @@ public final class CosmeticHeadBoneCatalog {
                     continue;
                 }
                 String id = bone.trim().toLowerCase(Locale.ROOT);
+                if (id.contains("+")) {
+                    for (String piece : HeadPartPieces.fragments(id)) {
+                        if (HeadPartPieces.isAtomic(piece)) {
+                            byBone.computeIfAbsent(piece, k -> new TreeSet<>()).add(race);
+                        }
+                    }
+                    continue;
+                }
                 byBone.computeIfAbsent(id, k -> new TreeSet<>()).add(race);
             }
+        }
+        for (String atomic : HeadPartPieces.ATOMIC) {
+            byBone.computeIfAbsent(atomic, k -> new TreeSet<>());
         }
         if (byBone.isEmpty()) {
             byBone.put("hair", new TreeSet<>(List.of("human")));
@@ -121,8 +131,30 @@ public final class CosmeticHeadBoneCatalog {
             }
             out.add(new Entry(e.getKey(), labelFor(e.getKey(), shop), List.copyOf(e.getValue())));
         }
-        out.sort(Comparator.comparing(Entry::id));
+        out.sort((a, b) -> {
+            int ia = indexOf(a.id());
+            int ib = indexOf(b.id());
+            if (ia >= 0 && ib >= 0) {
+                return Integer.compare(ia, ib);
+            }
+            if (ia >= 0) {
+                return -1;
+            }
+            if (ib >= 0) {
+                return 1;
+            }
+            return a.id().compareTo(b.id());
+        });
         return out;
+    }
+
+    private static int indexOf(String id) {
+        for (int i = 0; i < HeadPartPieces.ATOMIC.size(); i++) {
+            if (HeadPartPieces.ATOMIC.get(i).equals(id)) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     private static String labelFor(String boneId, CharacterServicesConfig.HeadBoneShop shop) {
