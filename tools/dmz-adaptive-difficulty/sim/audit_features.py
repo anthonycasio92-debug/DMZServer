@@ -2098,21 +2098,28 @@ def main() -> int:
     check("fusion reset class is copied into the forge jar",
           "FusionCooldownReset" in read(ROOT / "tools/dmz-adaptive-difficulty/build.sh"))
 
-    print("\n=== Fusion unfuse bonus clear (4.6.55) ===")
+    print("\n=== Fusion unfuse bonus clear (4.6.56) ===")
     fusion_clear = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/FusionUnfuseBonusClearMixin.java")
     fusion_mixins = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/resources/legacymechanics.mixins.json")
+    mixin_plugin = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/LegacyMechanicsMixinPlugin.java")
     check("unfuse clears FusionBonus at the tail of endFusion",
           "Dragon Mine Z bug workaround" in fusion_clear
           and 'FUSION_BONUS = "FusionBonus"' in fusion_clear
           and 'method = "endFusion"' in fusion_clear
           and '@At("TAIL")' in fusion_clear
           and '@At("HEAD")' in fusion_clear
+          and "require = 0" in fusion_clear
           and "removeAllBonuses" in fusion_clear
-          and "fusion" in fusion_clear
-          and "zenkai" in fusion_clear
+          and "fusionZenkaiNames" in fusion_clear
           and "Zenkai_" in fusion_clear
           and '"FusionUnfuseBonusClearMixin"' in fusion_mixins
           and "FusionUnfuseBonusClearMixin" in build_sh)
+    check("unfuse mixin names FusionLogic and is not gated at config time",
+          '@Mixin(targets = "com.dragonminez.server.util.FusionLogic", remap = false)' in fusion_clear
+          and "FusionLogic.class" not in fusion_clear
+          and "import com.dragonminez.server.util.FusionLogic" not in fusion_clear
+          and "FusionUnfuseBonusClearMixin" not in mixin_plugin
+          and "FusionLogic" not in mixin_plugin)
 
     print("\n=== Fall damage diagnostic (4.6.42) ===")
     fall_diag = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/event/FallDamageDiag.java")
