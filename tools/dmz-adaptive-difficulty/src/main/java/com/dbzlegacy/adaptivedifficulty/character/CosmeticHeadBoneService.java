@@ -7,6 +7,7 @@ import com.dragonminez.common.config.RaceCharacterConfig;
 import com.dragonminez.common.stats.character.Character;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -62,10 +63,16 @@ public final class CosmeticHeadBoneService {
         if (ch == null) {
             return "§cCharacter data unavailable.";
         }
-        PREVIEW_STASH.putIfAbsent(player.m_20148_(), activeBone(player));
+        String base = PREVIEW_STASH.putIfAbsent(player.m_20148_(), activeBone(player));
+        if (base == null) {
+            base = PREVIEW_STASH.get(player.m_20148_());
+        }
         try {
-            if (!bone.equalsIgnoreCase(activeBone(player))) {
-                ch.setActiveHeadBone(bone);
+            List<String> shown = new ArrayList<>(HeadPartPieces.fragments(base));
+            shown.add(bone);
+            String token = HeadPartPieces.join(shown);
+            if (!token.equalsIgnoreCase(activeBone(player))) {
+                ch.setActiveHeadBone(token);
                 RaceHeadBoneSync.syncClient(player);
             }
             return "";
@@ -102,16 +109,26 @@ public final class CosmeticHeadBoneService {
             return;
         }
         PREVIEW_STASH.remove(player.m_20148_());
-        String equipped = equippedBone(player).toLowerCase(Locale.ROOT);
+        expandLegacyUnlocks(player);
+        String equipped = equippedBone(player);
+        String keptEquipped = ownedPiecesToken(player, equipped);
+        if (!equipped.isEmpty() && !keptEquipped.equalsIgnoreCase(equipped)) {
+            persistEquippedBone(player, keptEquipped);
+            equipped = keptEquipped;
+        }
+        equipped = equipped.toLowerCase(Locale.ROOT);
         String active = activeBone(player).toLowerCase(Locale.ROOT);
         if (!equipped.isEmpty() && isBoneAllowed(player, equipped) && !equipped.equals(active)) {
             applyActiveOnly(player, equipped);
             return;
         }
         if (!active.isEmpty() && !isBoneAllowed(player, active)) {
-            String fallback = unequipHeadBoneId(player);
-            if (!fallback.isEmpty() && !isBoneAllowed(player, fallback)) {
-                fallback = "";
+            String fallback = ownedPiecesToken(player, active);
+            if (fallback.isEmpty()) {
+                fallback = unequipHeadBoneId(player);
+                if (!fallback.isEmpty() && !isBoneAllowed(player, fallback)) {
+                    fallback = "";
+                }
             }
             applyActiveOnly(player, fallback);
         }
@@ -147,8 +164,19 @@ public final class CosmeticHeadBoneService {
                 return false;
             }
             for (String b : bones) {
-                if (b != null && bone.equals(b.trim().toLowerCase(Locale.ROOT))) {
+                if (b == null || b.isBlank()) {
+                    continue;
+                }
+                String id = b.trim().toLowerCase(Locale.ROOT);
+                if (bone.equals(id)) {
                     return true;
+                }
+                if (id.contains("+")) {
+                    for (String piece : HeadPartPieces.fragments(id)) {
+                        if (bone.equals(piece)) {
+                            return true;
+                        }
+                    }
                 }
             }
         } catch (Throwable ignored) {
@@ -163,6 +191,7 @@ public final class CosmeticHeadBoneService {
         if (CharacterServicesAccess.bypassCost(player)) {
             return true;
         }
+        expandLegacyUnlocks(player);
         String bone = boneId.trim().toLowerCase(Locale.ROOT);
         String race = DmzProgression.race(player);
         if (isNativeForRace(race, bone)) {
@@ -186,10 +215,55 @@ public final class CosmeticHeadBoneService {
         if (player == null || boneId == null || boneId.isBlank()) {
             return false;
         }
-        if (!CosmeticHeadBoneCatalog.isKnown(boneId)) {
+        String raw = boneId.trim().toLowerCase(Locale.ROOT);
+        if (HeadPartPieces.isPureAtomic(raw)) {
+            for (String piece : HeadPartPieces.fragments(raw)) {
+                if (!CosmeticHeadBoneCatalog.isKnown(piece) || !hasUnlock(player, piece)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        if (raw.contains("+")) {
             return false;
         }
-        return hasUnlock(player, boneId);
+        return CosmeticHeadBoneCatalog.isKnown(raw) && hasUnlock(player, raw);
+    }
+
+    /**
+     * Pieces of {@code token} this player may wear, in canonical order.
+     * Unknown fragments (including a truncated combo piece) are dropped.
+     */
+    public static String ownedPiecesToken(ServerPlayer player, String token) {
+        if (player == null || token == null || token.isBlank()) {
+            return "";
+        }
+        List<String> kept = new ArrayList<>();
+        for (String piece : HeadPartPieces.fragments(token)) {
+            if (piece.contains("+")) {
+                continue;
+            }
+            if (CosmeticHeadBoneCatalog.isKnown(piece) && hasUnlock(player, piece)) {
+                kept.add(piece);
+            }
+        }
+        return HeadPartPieces.join(kept);
+    }
+
+    public static String wornLabel(String token) {
+        List<String> parts = HeadPartPieces.fragments(HeadPartPieces.join(HeadPartPieces.fragments(token)));
+        if (parts.isEmpty()) {
+            return token == null || token.isBlank() ? "none" : CosmeticHeadBoneCatalog.prettyId(token);
+        }
+        StringBuilder sb = new StringBuilder();
+        for (String piece : parts) {
+            if (sb.length() > 0) {
+                sb.append(", ");
+            }
+            CosmeticHeadBoneCatalog.Entry entry = CosmeticHeadBoneCatalog.get(piece);
+            sb.append(entry == null ? CosmeticHeadBoneCatalog.prettyId(piece) : entry.displayName());
+        }
+        return sb.toString();
     }
 
     public static Set<String> allowedBoneIds(ServerPlayer player) {
@@ -289,20 +363,26 @@ public final class CosmeticHeadBoneService {
     private static String resolveEquippedBone(ServerPlayer player) {
         if (isPreviewing(player)) {
             String stored = equippedBone(player);
-            return stored.isEmpty() ? "" : stored.toLowerCase(Locale.ROOT);
+            return stored.isEmpty() ? "" : ownedPiecesToken(player, stored);
         }
         String stored = equippedBone(player);
         if (!stored.isEmpty()) {
-            return stored.toLowerCase(Locale.ROOT);
+            String kept = ownedPiecesToken(player, stored);
+            if (!kept.equalsIgnoreCase(stored)) {
+                persistEquippedBone(player, kept);
+            }
+            return kept;
         }
-        // Legacy players: remember current allowed part once.
         String active = activeBone(player);
-        if (active.isEmpty() || !isBoneAllowed(player, active)) {
+        if (active.isEmpty()) {
             return "";
         }
-        String bone = active.toLowerCase(Locale.ROOT);
-        persistEquippedBone(player, bone);
-        return bone;
+        String kept = ownedPiecesToken(player, active);
+        if (kept.isEmpty()) {
+            return "";
+        }
+        persistEquippedBone(player, kept);
+        return kept;
     }
 
     public static long unlockCost(ServerPlayer player, String boneId) {
@@ -324,41 +404,37 @@ public final class CosmeticHeadBoneService {
     }
 
     public static int pageCount() {
-        int n = CosmeticHeadBoneCatalog.all().size();
-        if (n <= 0) {
-            return 1;
-        }
-        return (n + CARDS_PER_PAGE - 1) / CARDS_PER_PAGE;
+        return HeadPartPieces.PAGES;
     }
 
     /**
-     * GUI card rows: {@code boneId\\tdisplay\\tstate\\tcostText} where state is
-     * {@code E} equipped, {@code U} unlocked, {@code N} native, {@code L} locked.
+     * GUI rows for one group: {@code boneId\\tdisplay\\tstate\\tcostText}.
+     * State is {@code E} on, {@code U} unlocked, {@code N} included with the race, {@code L} locked.
+     * The body-accessories page is not a shop, so it returns no rows.
      */
     public static List<String> cards(ServerPlayer player, int page) {
         List<String> out = new ArrayList<>();
-        if (player == null) {
+        if (player == null || page == HeadPartPieces.PAGE_BODY) {
             return out;
         }
-        List<CosmeticHeadBoneCatalog.Entry> all = CosmeticHeadBoneCatalog.all();
-        int pages = pageCount();
-        int p = Math.max(0, Math.min(page, pages - 1));
-        int from = p * CARDS_PER_PAGE;
-        int to = Math.min(all.size(), from + CARDS_PER_PAGE);
-        String equipped = activeBone(player).toLowerCase(Locale.ROOT);
+        int p = Math.max(0, Math.min(page, HeadPartPieces.PAGES - 1));
+        Set<String> worn = new HashSet<>(HeadPartPieces.fragments(activeBone(player)));
         String race = DmzProgression.race(player);
-        for (int i = from; i < to; i++) {
-            CosmeticHeadBoneCatalog.Entry e = all.get(i);
+        for (String id : HeadPartPieces.pageIds(p)) {
+            CosmeticHeadBoneCatalog.Entry e = CosmeticHeadBoneCatalog.get(id);
+            if (e == null) {
+                continue;
+            }
             String state;
-            if (e.id().equalsIgnoreCase(equipped)) {
+            if (worn.contains(id)) {
                 state = "E";
-            } else if (hasUnlock(player, e.id())) {
-                state = isNativeForRace(race, e.id()) ? "N" : "U";
+            } else if (hasUnlock(player, id)) {
+                state = isNativeForRace(race, id) ? "N" : "U";
             } else {
                 state = "L";
             }
-            String cost = state.equals("L")
-                    ? CharacterServicesSystem.formatCost(unlockCost(player, e.id()))
+            String cost = "L".equals(state)
+                    ? CharacterServicesSystem.formatCost(unlockCost(player, id))
                     : "";
             out.add(e.id() + "\t" + e.displayName() + "\t" + state + "\t" + cost);
         }
@@ -387,16 +463,21 @@ public final class CosmeticHeadBoneService {
         if (cost > 0L && !AncientCoinEconomy.charge(player, cost)) {
             return "§c" + AncientCoinEconomy.missingText(player, cost);
         }
-        discardPreview(player);
         CharacterServicesStore.PlayerRecord rec =
                 CharacterServicesStore.get().record(player.m_20148_().toString());
         if (rec.unlockedHeadBones == null) {
-            rec.unlockedHeadBones = new java.util.LinkedHashSet<>();
+            rec.unlockedHeadBones = new LinkedHashSet<>();
         }
         rec.unlockedHeadBones.add(bone);
         CharacterServicesStore.get().markDirty();
         CharacterServicesStore.get().save();
-        return executeEquip(player, bone);
+        String equipped = executeEquip(player, bone);
+        if (equipped.startsWith("§c")) {
+            return equipped;
+        }
+        CosmeticHeadBoneCatalog.Entry entry = CosmeticHeadBoneCatalog.get(bone);
+        String label = entry == null ? CosmeticHeadBoneCatalog.prettyId(bone) : entry.displayName();
+        return "§aUnlocked and turned on §f" + label + "§a.";
     }
 
     /** Shop unlocks live in {@link CharacterServicesStore} and are never removed by race change. */
@@ -404,7 +485,23 @@ public final class CosmeticHeadBoneService {
         if (player == null || boneId == null || boneId.isBlank()) {
             return false;
         }
+        expandLegacyUnlocks(player);
         String bone = boneId.trim().toLowerCase(Locale.ROOT);
+        if (storedUnlock(player, bone)) {
+            return true;
+        }
+        if (!HeadPartPieces.isPureAtomic(bone)) {
+            return false;
+        }
+        for (String piece : HeadPartPieces.fragments(bone)) {
+            if (!storedUnlock(player, piece)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean storedUnlock(ServerPlayer player, String bone) {
         CharacterServicesStore.PlayerRecord rec =
                 CharacterServicesStore.get().record(player.m_20148_().toString());
         if (rec.unlockedHeadBones == null) {
@@ -428,11 +525,11 @@ public final class CosmeticHeadBoneService {
         }
         discardPreview(player);
         String prior = priorActiveBone == null ? "" : priorActiveBone.trim();
-        if (!prior.isEmpty() && isBoneAllowed(player, prior)) {
+        String bone = ownedPiecesToken(player, prior);
+        if (!bone.isEmpty() && isBoneAllowed(player, bone)) {
             Character ch = DmzProgression.character(player);
             if (ch != null) {
                 try {
-                    String bone = prior.toLowerCase(Locale.ROOT);
                     ch.setActiveHeadBone(bone);
                     persistEquippedBone(player, bone);
                     RaceHeadBoneSync.syncClient(player);
@@ -450,10 +547,21 @@ public final class CosmeticHeadBoneService {
     public static String raceDefaultHeadBoneId(ServerPlayer player) {
         String race = DmzProgression.race(player);
         List<String> bones = DmzContentDiscovery.headBonesForRaceOrdered(race);
-        if (bones.isEmpty()) {
-            return "hair";
+        for (String bone : bones) {
+            if (bone == null || bone.isBlank()) {
+                continue;
+            }
+            String id = bone.trim().toLowerCase(Locale.ROOT);
+            if (id.contains("+")) {
+                String joined = HeadPartPieces.join(HeadPartPieces.fragments(id));
+                if (!joined.isEmpty()) {
+                    return joined;
+                }
+                continue;
+            }
+            return id;
         }
-        return bones.get(0);
+        return "hair";
     }
 
     /**
@@ -504,10 +612,9 @@ public final class CosmeticHeadBoneService {
             if (prefix.contains("Unequipped extra")) {
                 return prefix;
             }
-            CosmeticHeadBoneCatalog.Entry entry = CosmeticHeadBoneCatalog.get(bone);
-            String label = entry == null ? CosmeticHeadBoneCatalog.prettyId(bone) : entry.displayName();
+            String label = wornLabel(normalized);
             if (label.isBlank()) {
-                label = bone.isBlank() ? "none" : bone;
+                label = normalized.isBlank() ? "none" : normalized;
             }
             return prefix + label + "§a.";
         } catch (Throwable t) {
@@ -528,20 +635,94 @@ public final class CosmeticHeadBoneService {
             return "§cUnlock §f" + CosmeticHeadBoneCatalog.prettyId(bone)
                     + " §cfirst (§f" + CharacterServicesSystem.formatCost(cost) + "§c).";
         }
+        restorePreview(player);
+        List<String> next = new ArrayList<>(HeadPartPieces.fragments(activeBone(player)));
+        if (!next.contains(bone)) {
+            next.add(bone);
+        }
+        CosmeticHeadBoneCatalog.Entry entry = CosmeticHeadBoneCatalog.get(bone);
+        String label = entry == null ? CosmeticHeadBoneCatalog.prettyId(bone) : entry.displayName();
+        return applyJoined(player, HeadPartPieces.join(next), "§aTurned on §f" + label + "§a.");
+    }
+
+    /** Turn one atomic part on (paying if it is locked) or off. Other worn parts stay. */
+    public static String executeToggle(ServerPlayer player, String boneId) {
+        if (!canUse(player)) {
+            return "§cHead bone shop is unavailable.";
+        }
+        if (boneId == null || boneId.isBlank()) {
+            return "§cPick a head part.";
+        }
+        String bone = boneId.trim().toLowerCase(Locale.ROOT);
+        if (!HeadPartPieces.isAtomic(bone) || CosmeticHeadBoneCatalog.get(bone) == null) {
+            return "§cUnknown head part.";
+        }
+        restorePreview(player);
+        boolean on = HeadPartPieces.fragments(activeBone(player)).contains(bone);
+        if (on) {
+            List<String> next = new ArrayList<>(HeadPartPieces.fragments(activeBone(player)));
+            next.remove(bone);
+            CosmeticHeadBoneCatalog.Entry entry = CosmeticHeadBoneCatalog.get(bone);
+            String label = entry == null ? CosmeticHeadBoneCatalog.prettyId(bone) : entry.displayName();
+            return applyJoined(player, HeadPartPieces.join(next), "§aTurned off §f" + label + "§a.");
+        }
+        if (!hasUnlock(player, bone)) {
+            return executeUnlock(player, bone);
+        }
+        return executeEquip(player, bone);
+    }
+
+    /**
+     * A purchased combo such as {@code horns1+antennas2+ma} becomes the atomic pieces inside it.
+     * The truncated fragment is dropped so the purchase is not lost.
+     */
+    private static void expandLegacyUnlocks(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        CharacterServicesStore.PlayerRecord rec =
+                CharacterServicesStore.get().record(player.m_20148_().toString());
+        if (rec.unlockedHeadBones == null || rec.unlockedHeadBones.isEmpty()) {
+            return;
+        }
+        LinkedHashSet<String> next = new LinkedHashSet<>();
+        for (String stored : rec.unlockedHeadBones) {
+            if (stored == null || stored.isBlank()) {
+                continue;
+            }
+            String id = stored.trim().toLowerCase(Locale.ROOT);
+            if (id.contains("+")) {
+                for (String piece : HeadPartPieces.fragments(id)) {
+                    if (HeadPartPieces.isAtomic(piece)) {
+                        next.add(piece);
+                    }
+                }
+            } else {
+                next.add(id);
+            }
+        }
+        if (next.equals(rec.unlockedHeadBones)) {
+            return;
+        }
+        rec.unlockedHeadBones = next;
+        CharacterServicesStore.get().markDirty();
+        CharacterServicesStore.get().save();
+    }
+
+    private static String applyJoined(ServerPlayer player, String token, String message) {
         Character ch = DmzProgression.character(player);
         if (ch == null) {
             return "§cCharacter data unavailable.";
         }
         discardPreview(player);
         try {
-            ch.setActiveHeadBone(bone);
-            persistEquippedBone(player, bone);
+            String normalized = token == null ? "" : token.trim().toLowerCase(Locale.ROOT);
+            ch.setActiveHeadBone(normalized);
+            persistEquippedBone(player, normalized);
             RaceHeadBoneSync.syncClient(player);
-            CosmeticHeadBoneCatalog.Entry entry = CosmeticHeadBoneCatalog.get(bone);
-            String label = entry == null ? CosmeticHeadBoneCatalog.prettyId(bone) : entry.displayName();
-            return "§aEquipped head part §f" + label + "§a.";
+            return message;
         } catch (Throwable t) {
-            return "§cCould not equip that head part.";
+            return "§cCould not update head parts.";
         }
     }
 

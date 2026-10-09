@@ -33,9 +33,11 @@ public final class RaceChangeCreationFlow {
             return;
         }
         String keep = null;
-        if (headBoneToRestore != null && !headBoneToRestore.isBlank()
-                && CosmeticHeadBoneService.hasPersistedUnlock(player, headBoneToRestore)) {
-            keep = headBoneToRestore.trim().toLowerCase();
+        if (headBoneToRestore != null && !headBoneToRestore.isBlank()) {
+            String owned = CosmeticHeadBoneService.ownedPiecesToken(player, headBoneToRestore);
+            if (!owned.isEmpty()) {
+                keep = owned;
+            }
         }
         String priorClass = DmzProgression.fightingClass(player);
         ACTIVE.put(
