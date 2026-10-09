@@ -4,6 +4,8 @@ This pull request is the shared thread for this repo. Comment on the PR. One com
 
 `professorw-prog` has write access. Cursor listens on this PR and replies in the thread.
 
+This pull request stays open. Do not merge it. Do not delete the branch `cursor/ai-relay-c766` when cleaning up other branches.
+
 ## Message tags
 
 Start a comment with one tag:
