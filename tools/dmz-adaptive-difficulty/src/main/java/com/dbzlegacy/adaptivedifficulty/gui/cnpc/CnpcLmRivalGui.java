@@ -76,16 +76,44 @@ public final class CnpcLmRivalGui {
     }
 
     private static int heightForPage(String page) {
+        int extra = rivalTabs(page) ? CnpcGuiSupport.TAB_BAR_H : 0;
         if (recordsTab(page) != null) {
-            return CnpcGuiSupport.window(440);
+            return CnpcGuiSupport.window(440 + extra);
         }
         return CnpcGuiSupport.window(switch (page) {
             case "list" -> 400;
-            case "pending", "invites", "challenge_pending", "challenge_requests" -> 400;
+            case "pending", "invites", "challenge_pending", "challenge_requests" -> 400 + extra;
             case "pick_declare", "pick_silent", "pick_challenge", "pick_spectate",
                     "pick_accept", "pick_decline", "pick_replace_mutual" -> 380;
             case "top", "leaderboard" -> 420;
-            default -> H;
+            default -> H + extra;
+        });
+    }
+
+    private static boolean rivalTabs(String page) {
+        if (page == null || page.isBlank() || "main".equals(page)) {
+            return true;
+        }
+        if (recordsTab(page) != null) {
+            return true;
+        }
+        return switch (page) {
+            case "actions", "pending", "invites", "challenge_pending", "challenge_requests" -> true;
+            default -> false;
+        };
+    }
+
+    private static int rivalTabBar(ServerPlayer player, ICustomGui gui, int y, String active) {
+        return CnpcGuiSupport.paintTabBar(gui, y, new String[] {
+                "records|Records", "requests|Requests", "actions|Actions"
+        }, active, action -> {
+            String id = action.startsWith("tab:") ? action.substring(4) : action;
+            switch (id) {
+                case "records" -> open(player, "records");
+                case "requests" -> open(player, "pending");
+                case "actions" -> open(player, "actions");
+                default -> open(player, "main");
+            }
         });
     }
 
@@ -129,6 +157,7 @@ public final class CnpcLmRivalGui {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, "§6Rivals",
                 "§7RP §f" + ph.getOrDefault("rp", "?") + CnpcGuiStyle.SEP + "§7Tier §f"
                         + ph.getOrDefault("tier", "?"));
+        infoY = rivalTabBar(player, gui, infoY, "");
 
         if (!"true".equalsIgnoreCase(ph.get("system_enabled"))) {
             int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of(CnpcGuiStyle.MSG_RIVALS_OFF),
@@ -181,6 +210,7 @@ public final class CnpcLmRivalGui {
     private static void paintActions(ServerPlayer player, ICustomGui gui) {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Actions"),
                 "§7Declare, pending board, and silent rivals");
+        infoY = rivalTabBar(player, gui, infoY, "actions");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, RivalGuiApi.linesForPage(subject(player), "actions"),
                         CnpcGuiStyle.INFO_INLINE_MAX));
         CnpcGuiSupport.button(gui, 20, "§eDeclare…", CnpcGuiSupport.COL_L, row, () -> open(player, "pick_declare"));
@@ -200,6 +230,7 @@ public final class CnpcLmRivalGui {
         ServerPlayer who = subject(player);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Declare invites"),
                 "§eRival declare requests — not duel challenges");
+        infoY = rivalTabBar(player, gui, infoY, "requests");
         int listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBeforePickList(gui, infoY,
                 RivalGuiApi.linesForPage(who, "pending"), 2));
         List<String> cards = RivalGuiApi.pendingInviteCards(who);
@@ -377,6 +408,7 @@ public final class CnpcLmRivalGui {
         // Ship label alias: Duel requests
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage("§6", "Rivals", "Challenge requests"),
                 "§eOfficial timed challenges — accept, decline, or cancel");
+        infoY = rivalTabBar(player, gui, infoY, "requests");
         int listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBeforePickList(gui, infoY,
                 RivalGuiApi.linesForPage(who, "challenge_pending"), 2));
         List<String> cards = RivalGuiApi.pendingChallengeCards(who);
@@ -468,6 +500,7 @@ public final class CnpcLmRivalGui {
         int infoY = CnpcGuiSupport.paintHeader(player, gui,
                 CnpcGuiStyle.subPage("§6", "Rivals", "Records · " + label),
                 CnpcGuiStyle.HINT_READ_ONLY);
+        infoY = rivalTabBar(player, gui, infoY, "records");
         int row = CnpcGuiSupport.bodyBelowHeader(infoY);
         String[] ids = {"history", "stats", "season", "quests", "achievements", "hof", "journal", "title"};
         CnpcGuiLayout.GridButton[] tabs = new CnpcGuiLayout.GridButton[ids.length];

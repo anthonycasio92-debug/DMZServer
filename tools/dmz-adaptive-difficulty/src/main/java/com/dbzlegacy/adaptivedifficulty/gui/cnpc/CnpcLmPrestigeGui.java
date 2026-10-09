@@ -38,7 +38,7 @@ public final class CnpcLmPrestigeGui {
             case "shop", "skills" -> 360;
             case "tiers", "tier" -> 380;
             case "forms", "effects", "effect" -> 380;
-            default -> 320;
+            default -> 320 + CnpcGuiSupport.TAB_BAR_H;
         });
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_PRESTIGE, CnpcGuiSupport.W, height, (pl, gui) -> {
             switch (pageKey) {
@@ -55,6 +55,18 @@ public final class CnpcLmPrestigeGui {
     private static void paintMain(ServerPlayer player, ICustomGui gui) {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, "§dPrestige",
                 "§7Spend held prestiges, or prestige when your level is high enough");
+        if (CnpcGuiSupport.staff(player)) {
+            infoY = CnpcGuiSupport.paintTabBar(gui, infoY, new String[] {
+                    "modules|Modules", "prestige|Prestige"
+            }, "prestige", action -> {
+                String id = action.startsWith("tab:") ? action.substring(4) : action;
+                if ("modules".equals(id)) {
+                    CnpcLmGui.open(player, "progression", "main");
+                } else {
+                    open(player, "main");
+                }
+            });
+        }
         List<String> lines = ProgressionGuiApi.prestigeLines(player, "main");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX));
         CnpcGuiSupport.button(gui, 20, "§aPrestige now", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(

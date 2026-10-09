@@ -85,11 +85,15 @@ public final class CnpcGuiSupport {
     public static final int ID_PRESTIGE_TIER_GRID = 200;
     /** Progression TP boost presets. Not {@link #ID_GRID_BASE} — those ids share one screen only by accident. */
     public static final int ID_BOOST_PRESET_BASE = 210;
+    /** Tab strip under the header. Not {@link #ID_GRID_BASE} or the prestige tier grid. */
+    public static final int ID_TAB_BASE = 170;
+    /** Button height plus the gap under a tab strip. */
+    public static final int TAB_BAR_H = BTN_H + 6;
 
-    /** Shorter divider so labels do not wrap oddly in CNPC. */
+    /** Gold divider, same length rule as before so it stays inside the text band. */
     private static String dividerText() {
         int chars = Math.max(14, textBandWidth() / 7);
-        return "§8" + "─".repeat(chars);
+        return CnpcUltraStyle.DIVIDER + "─".repeat(chars);
     }
 
     private static final Pattern PACKAGE_LIKE = Pattern.compile("(?:\\b[a-z]{2,}\\.){2,}[A-Za-z0-9_$]+");
@@ -148,8 +152,8 @@ public final class CnpcGuiSupport {
 
     /** Title + subtitle + optional inspect line + divider. Returns Y for the info block. */
     public static int paintHeader(ServerPlayer viewer, ICustomGui gui, String title, String subtitle) {
-        title(gui, ID_TITLE, title);
-        subtitle(gui, ID_SUBTITLE, subtitle == null ? "" : CnpcGuiStyle.readableInfoLine(subtitle));
+        title(gui, ID_TITLE, CnpcUltraStyle.header(title));
+        subtitle(gui, ID_SUBTITLE, CnpcUltraStyle.subtitle(subtitle));
         inspectBanner(viewer, gui);
         boolean inspecting = AdminInspectSessions.isInspecting(viewer.m_20148_());
         int dividerY = inspecting ? 52 : 38;
@@ -253,8 +257,39 @@ public final class CnpcGuiSupport {
         if (id == ID_TITLE || id == ID_SUBTITLE || id == ID_DIVIDER || id == ID_STATUS_TAG) {
             id = ID_INLINE_NOTE;
         }
-        gui.addLabel(id, safeChat(caption), M, y, textBandWidth(), 10);
+        gui.addLabel(id, safeChat(CnpcUltraStyle.section(caption)), M, y, textBandWidth(), 12);
         return y + 16;
+    }
+
+    /**
+     * One row of tabs. Active is gold bold, the rest are gray.
+     * {@code tabs} entries are {@code id|Label}. A click passes {@code tab:<id>} to {@code onTab},
+     * and the screen opens the same page that button already opened.
+     * Returns the Y under the strip.
+     */
+    public static int paintTabBar(ICustomGui gui, int y, String[] tabs, String activeTab, Consumer<String> onTab) {
+        if (gui == null || tabs == null || tabs.length == 0) {
+            return y;
+        }
+        int n = Math.min(tabs.length, 4);
+        int gap = 4;
+        int width = Math.max(72, (textBandWidth() - gap * (n - 1)) / n);
+        int x = M;
+        for (int i = 0; i < n; i++) {
+            String[] parts = tabs[i].split("\\|", 2);
+            String id = parts[0];
+            String label = parts.length > 1 ? parts[1] : id;
+            boolean active = id.equals(activeTab);
+            String text = active ? CnpcUltraStyle.tabActive(label) : CnpcUltraStyle.tabInactive(label);
+            String action = "tab:" + id;
+            buttonSmallFull(gui, ID_TAB_BASE + i, text, x, y, width, () -> {
+                if (onTab != null) {
+                    onTab.accept(action);
+                }
+            });
+            x += width + gap;
+        }
+        return y + TAB_BAR_H;
     }
 
     public static int paintInfoBlock(ICustomGui gui, int startY, List<String> lines, int inlineMax) {

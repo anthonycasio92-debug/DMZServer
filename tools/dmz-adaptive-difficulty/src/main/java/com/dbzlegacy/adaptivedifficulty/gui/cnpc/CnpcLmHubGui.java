@@ -38,7 +38,7 @@ public final class CnpcLmHubGui {
     }
 
     private static void paintMain(ServerPlayer player) {
-        int height = CnpcGuiSupport.suggestHeight(StaffAccess.isStaff(player) ? 400 : 380);
+        int height = CnpcGuiSupport.suggestHeight((StaffAccess.isStaff(player) ? 400 : 380) + 16);
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_HUB, CnpcGuiSupport.W, height,
                 (p, gui) -> paintMain(p, gui));
     }
@@ -55,6 +55,7 @@ public final class CnpcLmHubGui {
         List<String> lines = CnpcPlayerSnapshot.hubLines(who, ph, staff, skillCheck);
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(
                 gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX));
+        row = CnpcGuiSupport.paintSectionTag(gui, CnpcGuiSupport.ID_INLINE_NOTE, row, "Systems");
         int gap = CnpcGuiSupport.ROW_STEP;
 
         if (!"true".equals(ph.get("bridge_ok"))) {

@@ -29,7 +29,7 @@ import noppes.npcs.api.gui.ICustomGui;
 import noppes.npcs.api.gui.IScroll;
 
 public final class CnpcLmDifficultyGui {
-    private static final int H = 320;
+    private static final int H = 336;
 
     private CnpcLmDifficultyGui() {}
 
@@ -101,6 +101,7 @@ public final class CnpcLmDifficultyGui {
             lines.add("§8Scaled mobs can hurt other players nearby.");
         }
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX));
+        row = CnpcGuiSupport.paintSectionTag(gui, CnpcGuiSupport.ID_INLINE_NOTE, row, "Options");
         CnpcGuiSupport.button(gui, 20, "§eTiers", CnpcGuiSupport.COL_L, row, () -> open(player, "tiers"));
         CnpcGuiSupport.button(gui, 21, "§dTitles", CnpcGuiSupport.COL_R, row, () -> open(player, "titles"));
         row += CnpcGuiSupport.ROW_STEP;

@@ -1,6 +1,10 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.58**.
+What changed from **4.5.147** through **4.6.59**.
+
+## CNPC menus use the DMZUltra colors
+
+Headers are gold and bold, subtitles are gray, and section labels use a gold arrow. Rival, Spar, Character, and Progression show a tab strip that opens the same pages as before. Head-part rows show the part name and whether it is equipped, unlocked, or locked. Nothing on the client changed.
 
 ## Staff test GUI stays on the server
 
