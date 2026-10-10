@@ -38,11 +38,11 @@ public final class CnpcLmPrestigeGui {
         final int shopPageFinal = Math.max(0, shopPage);
         final String pageKey = p;
         int height = CnpcGuiSupport.window(CnpcGuiSupport.TAB_BAR_H + switch (p) {
-            case "turnin", "points" -> 360;
+            case "turnin", "points" -> 420;
             case "shop", "skills" -> 360;
             case "tiers", "tier" -> 380;
             case "forms", "effects", "effect" -> 380;
-            default -> 400;
+            default -> 440;
         });
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_PRESTIGE, CnpcGuiSupport.W, height, (pl, gui) -> {
             switch (pageKey) {
@@ -73,12 +73,14 @@ public final class CnpcLmPrestigeGui {
 
     /** Overview and the pages that are not the turn-in flow or the shop. */
     private static void paintHome(ServerPlayer player, ICustomGui gui) {
+        Map<String, String> ph = ProgressionGuiApi.prestigePlaceholders(player);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcUltraStyle.header("Prestige"),
                 CnpcUltraStyle.SUBTITLE + "What prestige does, then where to spend it");
         infoY = prestigeTabs(player, gui, infoY, "home");
-        List<String> lines = new ArrayList<>(ProgressionGuiApi.prestigeLines(player, "main"));
+        int row = paintWallet(gui, infoY, ph);
+        List<String> lines = withoutWalletLines(ProgressionGuiApi.prestigeLines(player, "main"));
         lines.add(CnpcUltraStyle.SUBTITLE + "Prestige raises your lifetime count and resets stats. Exchange current prestige for favor on the Prestige tab.");
-        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 8));
+        row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, row, lines, 8));
         CnpcGuiSupport.button(gui, 24, CnpcUltraStyle.ACCENT + "Permanent tiers", CnpcGuiSupport.COL_L, row,
                 () -> open(player, "tiers"));
         CnpcGuiSupport.button(gui, 25, CnpcUltraStyle.INFO + "Forms", CnpcGuiSupport.COL_R, row,
@@ -100,9 +102,10 @@ public final class CnpcLmPrestigeGui {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage(CnpcUltraStyle.ACCENT, "Prestige", "Prestige"),
                 CnpcUltraStyle.SUBTITLE + "Each button shows the favor you'll get");
         infoY = prestigeTabs(player, gui, infoY, "prestige");
-        List<String> info = new ArrayList<>(ProgressionGuiApi.prestigeLines(player, "turnin"));
+        int row = paintWallet(gui, infoY, ph);
+        List<String> info = withoutWalletLines(ProgressionGuiApi.prestigeLines(player, "turnin"));
         info.add(CnpcUltraStyle.SUBTITLE + "Bulk bonus: " + CnpcUltraStyle.BODY + "3→4 " + CnpcUltraStyle.DIM + "· " + CnpcUltraStyle.BODY + "6→9 " + CnpcUltraStyle.DIM + "· " + CnpcUltraStyle.BODY + "9→15 " + CnpcUltraStyle.SUBTITLE + "favor");
-        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, info, CnpcGuiStyle.INFO_INLINE_MAX));
+        row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, row, info, CnpcGuiStyle.INFO_INLINE_MAX));
         gui.addLabel(116, CnpcGuiSupport.safeChat(
                 CnpcUltraStyle.DANGER + "Turning in prestiges removes your stat bonus. This cannot be undone."),
                 CnpcGuiSupport.M, row, CnpcGuiSupport.textBandWidth(), 14);
@@ -153,7 +156,7 @@ public final class CnpcLmPrestigeGui {
         int page = Math.min(pages - 1, Math.max(0, pageIndex));
         int pageSize = Math.max(1, parseInt(ph.get("shop_page_size"), 6));
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage(CnpcUltraStyle.ACCENT, "Prestige", "Skill shop"),
-                CnpcUltraStyle.SUBTITLE + "Page " + CnpcUltraStyle.BODY + (page + 1) + "/" + pages + CnpcGuiStyle.SEP + CnpcUltraStyle.SUBTITLE + "Favor " + CnpcUltraStyle.BODY
+                CnpcUltraStyle.SUBTITLE + "Page " + CnpcUltraStyle.BODY + (page + 1) + "/" + pages + CnpcGuiStyle.SEP + CnpcUltraStyle.SUBTITLE + "Prestige favor " + CnpcUltraStyle.BODY
                         + ph.getOrDefault("points", "0"));
         infoY = prestigeTabs(player, gui, infoY, "shop");
 
@@ -210,6 +213,50 @@ public final class CnpcLmPrestigeGui {
             if (part != null && !part.isBlank()) {
                 out.add(part.trim().toLowerCase(Locale.ROOT));
             }
+        }
+        return out;
+    }
+
+    /**
+     * Lifetime prestiges, current prestige amount, and prestige favor stay on the page.
+     * They are labels, not lines inside the status scroll.
+     */
+    private static int paintWallet(ICustomGui gui, int y, Map<String, String> ph) {
+        String completed = ph.getOrDefault("completed", "0");
+        String held = ph.getOrDefault("held", "0");
+        String heldMax = ph.getOrDefault("held_max", "10");
+        String points = ph.getOrDefault("points", "0");
+        gui.addLabel(111, CnpcGuiSupport.safeChat(
+                CnpcUltraStyle.SUBTITLE + "Lifetime prestiges " + CnpcUltraStyle.BODY + completed),
+                CnpcGuiSupport.M, y, CnpcGuiSupport.textBandWidth(), 14);
+        y += CnpcGuiSupport.LINE_H;
+        gui.addLabel(112, CnpcGuiSupport.safeChat(
+                CnpcUltraStyle.SUBTITLE + "Current prestige amount " + CnpcUltraStyle.BODY + held
+                        + CnpcUltraStyle.SUBTITLE + "/" + CnpcUltraStyle.BODY + heldMax),
+                CnpcGuiSupport.M, y, CnpcGuiSupport.textBandWidth(), 14);
+        y += CnpcGuiSupport.LINE_H;
+        gui.addLabel(113, CnpcGuiSupport.safeChat(
+                CnpcUltraStyle.SUBTITLE + "Prestige favor " + CnpcUltraStyle.BODY + points),
+                CnpcGuiSupport.M, y, CnpcGuiSupport.textBandWidth(), 14);
+        return y + CnpcGuiSupport.LINE_H + 4;
+    }
+
+    /** Drop the wallet sentences so Home and Prestige do not show them twice. */
+    private static List<String> withoutWalletLines(List<String> lines) {
+        List<String> out = new ArrayList<>();
+        if (lines == null) {
+            return out;
+        }
+        for (String line : lines) {
+            if (line == null) {
+                continue;
+            }
+            if (line.contains("Lifetime prestiges")
+                    || line.contains("Current prestige amount")
+                    || line.contains("Prestige favor")) {
+                continue;
+            }
+            out.add(line);
         }
         return out;
     }
@@ -326,15 +373,17 @@ public final class CnpcLmPrestigeGui {
         }
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcUltraStyle.ACCENT + "Prestige", CnpcUltraStyle.DANGER + "Unavailable");
         infoY = prestigeTabs(player, gui, infoY, "prestige".equals(backPage) || "main".equals(backPage) ? "prestige" : "home");
-        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY,
-                ProgressionGuiApi.prestigeLines(player, "main"), CnpcGuiStyle.INFO_INLINE_MAX));
+        int walletY = paintWallet(gui, infoY, ph);
+        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, walletY,
+                withoutWalletLines(ProgressionGuiApi.prestigeLines(player, "main")), CnpcGuiStyle.INFO_INLINE_MAX));
         footer(player, gui, row + 8, "forms".equals(backPage) ? null : backPage);
         return false;
     }
 
     private static void footer(ServerPlayer player, ICustomGui gui, int row, String parentPage) {
         if (parentPage == null || parentPage.isBlank()) {
-            CnpcGuiSupport.navBackToMainMenu(player, gui, row);
+            CnpcGuiSupport.navBackToMainMenu(player, gui, row,
+                    CnpcUltraStyle.SUBTITLE + "« Back to main menu");
         } else {
             CnpcGuiSupport.navBackToParent(player, gui, row, () -> open(player, "main"));
         }

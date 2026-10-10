@@ -613,7 +613,8 @@ public final class CnpcLmDifficultyGui {
             String parentPage,
             ServerPlayer previewSubject) {
         if (parentPage == null) {
-            CnpcGuiSupport.navBackToMainMenu(player, gui, row);
+            CnpcGuiSupport.navBackToMainMenu(player, gui, row,
+                    CnpcUltraStyle.SUBTITLE + "« Back to main menu");
         } else {
             CnpcGuiSupport.navBackToParent(player, gui, row, () -> open(player, "main"));
         }

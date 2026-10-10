@@ -308,26 +308,52 @@ public final class CnpcGuiSupport {
         int gap = 6;
         int band = textBandWidth();
         int rowSize = Math.min(buttonsPerRow(band, gap), tabs.length);
-        int width = equalButtonWidth(rowSize, band, gap);
-        int yCursor = y;
+        int equal = equalButtonWidth(rowSize, band, gap);
+        int[] width = new int[tabs.length];
+        boolean packToLabel = false;
         for (int i = 0; i < tabs.length; i++) {
-            if (i > 0 && i % rowSize == 0) {
-                yCursor += TAB_BAR_H;
+            width[i] = equal;
+            if (tabLabelWidth(tabs[i]) > equal) {
+                packToLabel = true;
             }
-            int x = M + (i % rowSize) * (width + gap);
+        }
+        if (packToLabel) {
+            for (int i = 0; i < tabs.length; i++) {
+                width[i] = Math.max(MIN_BUTTON_WIDTH, Math.min(band, tabLabelWidth(tabs[i])));
+            }
+        }
+        int yCursor = y;
+        int x = M;
+        int used = 0;
+        for (int i = 0; i < tabs.length; i++) {
+            boolean wrap = packToLabel ? i > 0 && used + width[i] > band : i > 0 && i % rowSize == 0;
+            if (wrap) {
+                yCursor += TAB_BAR_H;
+                x = M;
+                used = 0;
+            }
             String[] parts = tabs[i].split("\\|", 2);
             String id = parts[0];
             String label = parts.length > 1 ? parts[1] : id;
             boolean active = id.equals(activeTab);
             String text = active ? CnpcUltraStyle.tabActive(label) : CnpcUltraStyle.tabInactive(label);
             String action = "tab:" + id;
-            buttonSmallFull(gui, ID_TAB_BASE + i, text, x, yCursor, width, () -> {
+            buttonSmallFull(gui, ID_TAB_BASE + i, text, x, yCursor, width[i], () -> {
                 if (onTab != null) {
                     onTab.accept(action);
                 }
             });
+            x += width[i] + gap;
+            used += width[i] + gap;
         }
         return yCursor + TAB_BAR_H;
+    }
+
+    /** Padded width of a {@code id|Label} tab, ignoring color codes. */
+    private static int tabLabelWidth(String tab) {
+        String[] parts = tab == null ? new String[0] : tab.split("\\|", 2);
+        String label = parts.length > 1 ? parts[1] : (parts.length == 1 ? parts[0] : "");
+        return visibleWidth(CnpcUltraStyle.tabActive(label)) + BUTTON_PAD_X * 2;
     }
 
     public static int paintInfoBlock(ICustomGui gui, int startY, List<String> lines, int inlineMax) {
@@ -1210,7 +1236,16 @@ public final class CnpcGuiSupport {
 
     /** A system's Home tab. Wide enough for the full label, never squeezed. */
     public static void navBackToMainMenu(ServerPlayer player, ICustomGui gui, int row) {
-        buttonSmall(gui, ID_NAV_BACK, CnpcUltraStyle.BACK_TO_MAIN, COL_L, row, 200, () -> openMenuHub(player));
+        navBackToMainMenu(player, gui, row, CnpcUltraStyle.BACK_TO_MAIN);
+    }
+
+    /**
+     * Home tab back button. {@code label} is the full caption, including its color code.
+     * Width stays 200 so "Back to main menu" is not truncated. Always opens the hub.
+     */
+    public static void navBackToMainMenu(ServerPlayer player, ICustomGui gui, int row, String label) {
+        String shown = label == null || label.isBlank() ? CnpcUltraStyle.BACK_TO_MAIN : label;
+        buttonSmall(gui, ID_NAV_BACK, shown, COL_L, row, 200, () -> openMenuHub(player));
     }
 
     /**

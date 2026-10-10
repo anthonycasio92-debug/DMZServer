@@ -795,7 +795,8 @@ public final class CnpcLmRivalGui {
     /** {@code parentPage} null on Home (back to the hub). Any other page returns to Home. */
     private static void footer(ServerPlayer player, ICustomGui gui, int row, String parentPage) {
         if (parentPage == null) {
-            CnpcGuiSupport.navBackToMainMenu(player, gui, row);
+            CnpcGuiSupport.navBackToMainMenu(player, gui, row,
+                    CnpcUltraStyle.SUBTITLE + "« Back to main menu");
         } else {
             CnpcGuiSupport.navBackToParent(player, gui, row, () -> open(player, "home"));
         }
