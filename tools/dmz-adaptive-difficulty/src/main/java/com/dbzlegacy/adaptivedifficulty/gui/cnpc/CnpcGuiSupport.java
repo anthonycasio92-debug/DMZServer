@@ -90,11 +90,10 @@ public final class CnpcGuiSupport {
     /** Button height plus the gap under a tab strip. */
     public static final int TAB_BAR_H = BTN_H + 6;
 
-    /** Gold divider on the staff test GUI. The live menus keep the gray line. */
+    /** Gold divider under the header. */
     private static String dividerText() {
         int chars = Math.max(14, textBandWidth() / 7);
-        String color = CnpcUltraPreview.paintingUltra() ? CnpcUltraStyle.DIVIDER : "§8";
-        return color + "─".repeat(chars);
+        return CnpcUltraStyle.DIVIDER + "─".repeat(chars);
     }
 
     private static final Pattern PACKAGE_LIKE = Pattern.compile("(?:\\b[a-z]{2,}\\.){2,}[A-Za-z0-9_$]+");
@@ -158,13 +157,8 @@ public final class CnpcGuiSupport {
 
     /** Title + subtitle + optional inspect line + divider. Returns Y for the info block. */
     public static int paintHeader(ServerPlayer viewer, ICustomGui gui, String title, String subtitle) {
-        if (CnpcUltraPreview.active(viewer)) {
-            title(gui, ID_TITLE, CnpcUltraStyle.header(title));
-            subtitle(gui, ID_SUBTITLE, CnpcUltraStyle.subtitle(subtitle));
-        } else {
-            title(gui, ID_TITLE, title);
-            subtitle(gui, ID_SUBTITLE, subtitle == null ? "" : CnpcGuiStyle.readableInfoLine(subtitle));
-        }
+        title(gui, ID_TITLE, CnpcUltraStyle.header(title));
+        subtitle(gui, ID_SUBTITLE, subtitle == null ? "" : CnpcUltraStyle.subtitle(subtitle));
         inspectBanner(viewer, gui);
         boolean inspecting = AdminInspectSessions.isInspecting(viewer.m_20148_());
         int dividerY = inspecting ? 52 : 38;
@@ -268,9 +262,8 @@ public final class CnpcGuiSupport {
         if (id == ID_TITLE || id == ID_SUBTITLE || id == ID_DIVIDER || id == ID_STATUS_TAG) {
             id = ID_INLINE_NOTE;
         }
-        boolean ultra = CnpcUltraPreview.paintingUltra();
-        String shown = ultra ? CnpcUltraStyle.section(caption) : caption;
-        gui.addLabel(id, safeChat(shown), M, y, textBandWidth(), ultra ? 12 : 10);
+        String shown = CnpcUltraStyle.section(caption);
+        gui.addLabel(id, safeChat(shown), M, y, textBandWidth(), 12);
         return y + 16;
     }
 
@@ -281,7 +274,7 @@ public final class CnpcGuiSupport {
      * Returns the Y under the strip.
      */
     public static int paintTabBar(ICustomGui gui, int y, String[] tabs, String activeTab, Consumer<String> onTab) {
-        if (!CnpcUltraPreview.paintingUltra() || gui == null || tabs == null || tabs.length == 0) {
+        if (gui == null || tabs == null || tabs.length == 0) {
             return y;
         }
         int n = Math.min(tabs.length, 4);

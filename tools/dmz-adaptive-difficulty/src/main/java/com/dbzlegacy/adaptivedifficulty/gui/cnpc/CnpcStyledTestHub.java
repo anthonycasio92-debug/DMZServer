@@ -5,8 +5,8 @@ import net.minecraft.server.level.ServerPlayer;
 import noppes.npcs.api.gui.ICustomGui;
 
 /**
- * Staff test menu for {@code /lm admin testgui}.
- * Head parts uses the new colors. Every other button opens the current menu.
+ * Staff shortcut menu for {@code /lm admin testgui}.
+ * The screens it opens use the same gold CNPC look as {@code /lm}.
  */
 public final class CnpcStyledTestHub {
     private static final int LABEL_HEAD = 180;
@@ -26,7 +26,7 @@ public final class CnpcStyledTestHub {
     private static void paint(ServerPlayer player, ICustomGui gui) {
         CnpcGuiSupport.title(gui, CnpcGuiSupport.ID_TITLE, CnpcUltraStyle.header("Test menu"));
         CnpcGuiSupport.subtitle(gui, CnpcGuiSupport.ID_SUBTITLE,
-                CnpcUltraStyle.subtitle("/lm still opens the current menus."));
+                CnpcUltraStyle.subtitle("Same look as /lm."));
         int chars = Math.max(14, CnpcGuiSupport.textBandWidth() / 7);
         gui.addLabel(CnpcGuiSupport.ID_DIVIDER, CnpcUltraStyle.DIVIDER + "─".repeat(chars),
                 CnpcGuiSupport.M, 38, CnpcGuiSupport.textBandWidth(), 10);
@@ -43,8 +43,8 @@ public final class CnpcStyledTestHub {
                 });
         y += CnpcGuiSupport.BTN_H + CnpcRowList.ROW_GAP;
 
-        y = CnpcRowList.paintRow(gui, LABEL_CURRENT, y, "Current menus",
-                "These still open the menus /lm uses.", null);
+        y = CnpcRowList.paintRow(gui, LABEL_CURRENT, y, "Menus",
+                "These open the same screens as /lm.", null);
         y = currentButton(gui, player, y, CnpcGuiSupport.ID_GRID_BASE + 1, "Difficulty", "difficulty", "main");
         y = currentButton(gui, player, y, CnpcGuiSupport.ID_GRID_BASE + 2, "Rival", "rival", "main");
         y = currentButton(gui, player, y, CnpcGuiSupport.ID_GRID_BASE + 3, "Sparring", "spar", "main");
@@ -62,7 +62,7 @@ public final class CnpcStyledTestHub {
         CnpcGuiSupport.paintSystemMainPreview(CnpcGuiSupport.target(player), gui, player);
     }
 
-    /** Leave the test colors, then open the menu {@code /lm} already uses. */
+    /** Leave the test-menu session, then open that screen. Hub returns to the main hub. */
     private static int currentButton(ICustomGui gui, ServerPlayer player, int y, int id, String label,
             String system, String page) {
         CnpcGuiSupport.buttonSmallFull(gui, id, CnpcUltraStyle.BODY + label,

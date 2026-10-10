@@ -2173,6 +2173,14 @@ def main() -> int:
     check("head parts use the test menu colors",
           "CnpcUltraStyle.CONFIRM" in bone_gui
           and "ultraPartCaption" in bone_gui)
+    style_support = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcGuiSupport.java")
+    check("production menus use the gold CNPC style",
+          "CnpcUltraStyle.header(title)" in style_support
+          and "CnpcUltraStyle.subtitle(subtitle)" in style_support
+          and "CnpcUltraStyle.DIVIDER" in style_support
+          and "CnpcUltraStyle.section(caption)" in style_support
+          and "paintingUltra()" not in style_support
+          and "CnpcUltraPreview.active" not in bone_gui)
 
     print("\n=== Saga reset uses loaded sagas (4.6.63) ===")
     saga_service = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/quest/SagaResetService.java")

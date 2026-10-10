@@ -1,6 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.63**.
+What changed from **4.5.147** through **4.6.64**.
+
+## Production menus use the new look
+
+`/lm` and the other menus use gold headers, gray subtitles, a gold divider, section tags, and tab strips. Head parts uses the same on/off colors. The wording from the 4.6.53 humanization audit is unchanged.
+
+`/lm admin testgui` still opens the staff shortcut. Hub from that session still returns to it.
 
 ## Saga reset follows loaded sagas
 

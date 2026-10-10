@@ -30,7 +30,7 @@ public final class CnpcLmSparGui {
             openPickConfirm(player, raw.substring("pick_confirm:".length()).trim());
             return;
         }
-        int tab = CnpcUltraPreview.active(player) && sparTabs(lower) ? CnpcGuiSupport.TAB_BAR_H : 0;
+        int tab = sparTabs(lower) ? CnpcGuiSupport.TAB_BAR_H : 0;
         int height = CnpcGuiSupport.window(switch (lower) {
             case "stats" -> 420;
             default -> (lower.startsWith("pick_") || dojoTab(lower) != null) ? 440 : H;
@@ -80,9 +80,6 @@ public final class CnpcLmSparGui {
     }
 
     private static int sparTabBar(ServerPlayer player, ICustomGui gui, int y, String active) {
-        if (!CnpcUltraPreview.active(player)) {
-            return y;
-        }
         return CnpcGuiSupport.paintTabBar(gui, y, new String[] {
                 "dojo|Dojo", "rankings|Rankings", "wars|Wars"
         }, active, action -> {

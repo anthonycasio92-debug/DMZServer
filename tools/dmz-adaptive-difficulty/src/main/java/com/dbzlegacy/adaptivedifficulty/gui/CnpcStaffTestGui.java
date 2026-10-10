@@ -7,7 +7,7 @@ import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
-/** Staff audit menu for {@code /lm admin testgui}. {@code /lm} stays on the current menus. */
+/** Staff shortcut for {@code /lm admin testgui}. {@code /lm} uses the same look. */
 public final class CnpcStaffTestGui {
     private CnpcStaffTestGui() {}
 
@@ -25,7 +25,7 @@ public final class CnpcStaffTestGui {
         }
         CnpcUltraPreview.enter(player);
         player.m_213846_(Component.m_237113_(
-                "§6Test menu. §7This is the new look. §f/lm §7still opens the current menus."));
+                "§6Test menu. §7/lm uses this look too."));
         CnpcStyledTestHub.open(player);
         return true;
     }
