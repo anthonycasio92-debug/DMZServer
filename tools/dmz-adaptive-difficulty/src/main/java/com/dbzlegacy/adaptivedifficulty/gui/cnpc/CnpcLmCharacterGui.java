@@ -257,7 +257,7 @@ public final class CnpcLmCharacterGui {
             String name = parts.length > 1 ? parts[1] : id;
             String state = parts.length > 2 ? parts[2] : "";
             String cost = parts.length > 3 ? parts[3] : "";
-            String caption = ultraPartCaption(state, name, cost);
+            String caption = headPartCaption(state, name, cost);
             CnpcGuiSupport.buttonSmallFull(gui, CnpcGuiSupport.ID_GRID_BASE + i, caption,
                     CnpcGuiSupport.M, y, CnpcGuiSupport.textBandWidth(),
                     () -> CnpcGuiSupport.act(player,
@@ -295,16 +295,15 @@ public final class CnpcLmCharacterGui {
         CnpcGuiSupport.paintLivePlayerPreview(player, gui);
     }
 
-    /** On/off caption. Keeps {@code color lON } / {@code color lOFF } so the label is not cut. */
-    private static String ultraPartCaption(String state, String name, String cost) {
+    /** On or off, plus the unlock cost when the part is still locked. */
+    private static String headPartCaption(String state, String name, String cost) {
         if ("E".equals(state)) {
-            return CnpcUltraStyle.CONFIRM + CnpcUltraStyle.BOLD + "ON " + CnpcUltraStyle.RESET + CnpcUltraStyle.BODY + name;
+            return CnpcGuiStyle.toggleOn(name);
         }
         if ("L".equals(state)) {
-            return CnpcUltraStyle.DIM + CnpcUltraStyle.BOLD + "OFF " + CnpcUltraStyle.RESET + CnpcUltraStyle.SUBTITLE + name
-                    + " " + CnpcUltraStyle.ACCENT + cost;
+            return CnpcGuiStyle.toggleOff(name) + " " + CnpcUltraStyle.ACCENT + cost;
         }
-        return CnpcUltraStyle.DIM + CnpcUltraStyle.BOLD + "OFF " + CnpcUltraStyle.RESET + CnpcUltraStyle.SUBTITLE + name;
+        return CnpcGuiStyle.toggleOff(name);
     }
 
     private static int parseBonePage(String page) {

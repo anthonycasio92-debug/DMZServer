@@ -2194,8 +2194,10 @@ def main() -> int:
           and "CnpcUltraPreview" not in test_hub
           and "CnpcStaffTestGui" in build_sh)
     check("head parts use the test menu colors",
-          "CnpcUltraStyle.CONFIRM" in bone_gui
-          and "ultraPartCaption" in bone_gui)
+          "CnpcGuiStyle.toggleOn" in bone_gui
+          and "CnpcGuiStyle.toggleOff" in bone_gui
+          and "ultraPartCaption" not in bone_gui
+          and "\" Body \"" not in bone_gui)
     style_support = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcGuiSupport.java")
     check("hub from a menu opens the main hub",
           "CnpcStyledTestHub" not in style_support
@@ -2212,6 +2214,8 @@ def main() -> int:
     print("\n=== In-game config editor (4.6.65) ===")
     config_editor = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/config/editor/ConfigEditor.java")
     config_gui = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmConfigGui.java")
+    config_registry = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/config/ConfigRegistry.java")
+    config_screen = read(cnpc_dir / "CnpcConfigEditor.java")
     check("config editor lists fields by reflection",
           "getFields()" in config_editor
           and "adminPermission" in config_editor
@@ -2219,7 +2223,20 @@ def main() -> int:
           and "combatCurveExponent" not in config_gui
           and "enableProgression" not in config_gui
           and "CnpcLmConfigGui.open" in read(cnpc_dir / "CnpcLmGui.java")
+          and "CnpcConfigEditor.open" in config_gui
+          and "config-audit.log" in config_editor
+          and ".bak" in config_editor
+          and "displayName" in config_editor
+          and "\"difficulty\"" in config_registry
+          and "\"progression\"" in config_registry
+          and "\"character-services\"" in config_registry
+          and "rivalry-v4.json" in config_registry
+          and "sparring.json" in config_registry
+          and "editable" in config_registry
+          and "Confirm" in config_screen
+          and "stepNumber" in config_screen
           and "ConfigEditor" in build_sh
+          and "ConfigRegistry" in build_sh
           and "CharacterServicesConfig" in build_sh
           and "public static boolean save()" in read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/character/CharacterServicesConfig.java")
           and "public static boolean save()" in read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/quest/SagaResetConfig.java"))
