@@ -29,8 +29,6 @@ import noppes.npcs.api.gui.ICustomGui;
 import noppes.npcs.api.gui.IScroll;
 
 public final class CnpcLmDifficultyGui {
-    private static final int H = 320;
-
     private CnpcLmDifficultyGui() {}
 
     public static void open(ServerPlayer player, String page) {
@@ -54,25 +52,22 @@ public final class CnpcLmDifficultyGui {
         int designed = switch (pageFinal) {
             case "stats", "statistics", "details" -> 340;
             case "titles", "title" -> 360;
-            case "end_dragon", "dragon", "summon_dragon" -> 340;
-            case "admin" -> 300;
-            default -> H;
+            case "end_dragon", "dragon", "summon_dragon", "summons", "summon" -> 480;
+            case "admin" -> 320;
+            default -> 520;
         };
-        if ("main".equals(pageFinal)) {
-            designed += 16;
-        }
         int height = CnpcGuiSupport.window(designed);
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_DIFFICULTY, CnpcGuiSupport.W, height, (pl, gui) -> {
             switch (pageFinal) {
-                case "tiers", "buy", "tier", "purchase", "unlock", "adjust", "change", "set", "lower" ->
-                        paintTiers(pl, gui);
                 case "titles", "title" -> paintTitles(pl, gui);
                 case "team", "teams" -> paintTeam(pl, gui);
-                case "end_dragon", "dragon", "summon_dragon" -> paintEndDragon(pl, gui);
+                case "end_dragon", "dragon", "summon_dragon", "summons", "summon" -> paintSummons(pl, gui);
                 case "admin" -> paintStaffAdmin(pl, gui);
                 case "stats", "statistics", "details" -> paintStats(pl, gui);
-                case "settings" -> paintSettings(pl, gui);
-                default -> paintMain(pl, gui);
+                case "settings", "coins" -> paintSettings(pl, gui);
+                case "tiers", "buy", "tier", "purchase", "unlock", "adjust", "change", "set", "lower" ->
+                        paintTiers(pl, gui);
+                default -> paintHome(pl, gui);
             }
         });
     }
@@ -81,51 +76,46 @@ public final class CnpcLmDifficultyGui {
         return CnpcGuiSupport.target(viewer);
     }
 
-    private static void paintMain(ServerPlayer player, ICustomGui gui) {
+    private static int difficultyTabs(ServerPlayer player, ICustomGui gui, int y, String active) {
+        return CnpcGuiSupport.paintTabBar(gui, y, new String[] {
+                "home|Home", "tiers|Tiers", "summons|Summons"
+        }, active, action -> {
+            String id = action.startsWith("tab:") ? action.substring(4) : action;
+            switch (id) {
+                case "tiers" -> open(player, "tiers");
+                case "summons" -> open(player, "summons");
+                default -> open(player, "main");
+            }
+        });
+    }
+
+    /** Overview: status, plus links to titles, rival teams, and coin settings. */
+    private static void paintHome(ServerPlayer player, ICustomGui gui) {
         ServerPlayer subject = who(player);
         DifficultyActions.prepareGui(subject);
         DifficultySnapshot snap = DifficultyCache.refresh(subject);
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcUltraStyle.CONFIRM + "Difficulty",
-                CnpcUltraStyle.SUBTITLE + "Tougher mobs, tiers, and optional titles");
-
+        PlayerDifficultyData data = DifficultyCache.data(subject);
+        boolean personal = data != null && data.isPersonalEnabled();
         List<String> lines = new ArrayList<>();
-        if (!DifficultyConfig.isEnabled()) {
-            lines.add(CnpcUltraStyle.DANGER + "Difficulty is turned off on this server.");
-        } else if (!SystemGate.allows(subject)) {
-            lines.add(CnpcUltraStyle.INFO + "This account cannot use personal difficulty.");
-        } else {
-            PlayerDifficultyData data = DifficultyCache.data(subject);
-            if (!data.isPersonalEnabled()) {
-                lines.add(CnpcUltraStyle.INFO + "Your personal difficulty is off.");
-            } else {
-                lines.add(CnpcUltraStyle.SUBTITLE + "Active tier " + CnpcUltraStyle.BODY + snap.activeTierName + " " + CnpcUltraStyle.DIM + "· " + CnpcUltraStyle.SUBTITLE + "Unlocked up to " + CnpcUltraStyle.BODY + "T"
-                        + snap.highestUnlockedTier);
-            }
-            lines.add(CnpcUltraStyle.ACCENT + "Ancient Coins " + CnpcUltraStyle.BODY + AncientCoinEconomy.inventoryBreakdown(subject));
-            String title = TitleSystem.activeDisplay(subject);
-            if (title != null && !"None".equals(title)) {
-                lines.add(CnpcUltraStyle.SUBTITLE + "Equipped title " + CnpcUltraStyle.INFO + title);
-            }
-            lines.add(CnpcUltraStyle.DIM + "Scaled mobs can hurt other players nearby.");
-        }
-        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX));
-        row = CnpcGuiSupport.paintSectionTag(gui, CnpcGuiSupport.ID_INLINE_NOTE, row, "Options");
-        CnpcGuiSupport.button(gui, 20, CnpcUltraStyle.INFO + "Tiers", CnpcGuiSupport.COL_L, row, () -> open(player, "tiers"));
-        CnpcGuiSupport.button(gui, 21, CnpcUltraStyle.ACCENT + "Titles", CnpcGuiSupport.COL_R, row, () -> open(player, "titles"));
+        lines.add(CnpcUltraStyle.SUBTITLE + "Personal difficulty " + (personal
+                ? CnpcUltraStyle.CONFIRM + "On"
+                : CnpcUltraStyle.DANGER + "Off"));
+        String tierName = snap.activeTier <= 0 ? "None" : snap.activeTierName;
+        lines.add(CnpcUltraStyle.SUBTITLE + "Active tier " + CnpcUltraStyle.BODY + tierName);
+        lines.add(CnpcUltraStyle.SUBTITLE + "Title " + CnpcUltraStyle.BODY + blankNone(TitleSystem.activeDisplay(subject)));
+        lines.add(CnpcUltraStyle.SUBTITLE + "Ancient Coins " + CnpcUltraStyle.BODY
+                + AncientCoinEconomy.inventoryBreakdown(subject));
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcUltraStyle.header("Difficulty"),
+                CnpcUltraStyle.SUBTITLE + "Where you stand, your titles, and rival teams");
+        infoY = difficultyTabs(player, gui, infoY, "home");
+        int row = CnpcGuiSupport.bodyBelowInfo(
+                CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX));
+        CnpcGuiSupport.button(gui, 21, CnpcUltraStyle.ACCENT + "Titles", CnpcGuiSupport.COL_L, row,
+                () -> open(player, "titles"));
+        CnpcGuiSupport.button(gui, 22, CnpcUltraStyle.INFO + "Rival teams", CnpcGuiSupport.COL_R, row,
+                () -> open(player, "team"));
         row += CnpcGuiSupport.ROW_STEP;
-        CnpcGuiSupport.button(gui, 22, CnpcUltraStyle.ACCENT + "Rival Teams", CnpcGuiSupport.COL_L, row, () -> open(player, "team"));
-        PlayerDifficultyData personalData = DifficultyCache.data(subject);
-        boolean personalOn = personalData != null && personalData.isPersonalEnabled();
-        CnpcGuiSupport.button(gui, 23,
-                personalOn ? CnpcGuiStyle.toggleOn("Personal difficulty") : CnpcGuiStyle.toggleOff("Personal difficulty"),
-                CnpcGuiSupport.COL_R, row, () -> CnpcGuiSupport.act(
-                player,
-                () -> DifficultyActions.handleArgNoReopen(subject, "toggle_personal", "0", "main").message(),
-                () -> open(player, "main")));
-        row += CnpcGuiSupport.ROW_STEP;
-        CnpcGuiSupport.button(gui, 24, CnpcUltraStyle.CONFIRM + "End Dragon", CnpcGuiSupport.COL_L, row,
-                () -> open(player, "end_dragon"));
-        CnpcGuiSupport.button(gui, 25, CnpcUltraStyle.SUBTITLE + "Settings", CnpcGuiSupport.COL_R, row,
+        CnpcGuiSupport.button(gui, 23, CnpcUltraStyle.ACCENT + "Coin settings", CnpcGuiSupport.COL_L, row,
                 () -> open(player, "settings"));
         row += CnpcGuiSupport.ROW_STEP;
         navFooter(player, gui, row, null, subject);
@@ -135,9 +125,15 @@ public final class CnpcLmDifficultyGui {
         ServerPlayer subject = who(player);
         PlayerDifficultyData d = DifficultyCache.data(subject);
         boolean coinChat = d != null && d.isCoinDropChat();
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage(CnpcUltraStyle.CONFIRM, "Difficulty", "Settings"),
-                CnpcUltraStyle.SUBTITLE + "Messages and staff readouts");
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage(CnpcUltraStyle.CONFIRM, "Difficulty", "Coins"),
+                CnpcUltraStyle.SUBTITLE + "Ancient Coin settings");
+        infoY = difficultyTabs(player, gui, infoY, "home");
         int row = CnpcGuiSupport.bodyBelowHeader(infoY);
+        gui.addLabel(CnpcGuiSupport.ID_INLINE_NOTE,
+                CnpcGuiSupport.safeChat(CnpcUltraStyle.ACCENT + "Ancient Coins " + CnpcUltraStyle.BODY
+                        + AncientCoinEconomy.inventoryBreakdown(subject)),
+                CnpcGuiSupport.M, row, CnpcGuiSupport.textBandWidth(), 14);
+        row += CnpcGuiSupport.ROW_STEP;
         CnpcGuiSupport.button(gui, 20, coinChat ? CnpcGuiStyle.toggleOn("Coin messages")
                 : CnpcGuiStyle.toggleOff("Coin messages"), CnpcGuiSupport.COL_L, row,
                 () -> CnpcGuiSupport.act(
@@ -180,9 +176,10 @@ public final class CnpcLmDifficultyGui {
 
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcUltraStyle.DIM + "Staff details",
                 CnpcUltraStyle.SUBTITLE + "Combat rating and scaled stats (read-only)");
+        infoY = difficultyTabs(player, gui, infoY, "home");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX));
         row += 8;
-        navFooter(player, gui, row, "settings", subject);
+        navFooter(player, gui, row, "main", subject);
     }
 
     private static String blankNone(String s) {
@@ -196,7 +193,7 @@ public final class CnpcLmDifficultyGui {
         ServerPlayer subject = who(player);
         DifficultyActions.prepareGui(subject);
         if (!DifficultyConfig.isEnabled()) {
-            paintFeatureLocked(player, gui, "Tiers locked",
+            paintFeatureLocked(player, gui, "tiers", "Tiers locked",
                     CnpcUltraStyle.SUBTITLE + "Enable personal difficulty before changing tiers",
                     List.of(
                     CnpcUltraStyle.DANGER + "Adaptive Difficulty is off on this server.",
@@ -204,25 +201,26 @@ public final class CnpcLmDifficultyGui {
             return;
         }
         if (!SystemGate.allows(subject)) {
-            paintFeatureLocked(player, gui, "Tiers locked",
+            paintFeatureLocked(player, gui, "tiers", "Tiers locked",
                     CnpcUltraStyle.SUBTITLE + "Enable personal difficulty before changing tiers",
                     List.of(
-                    CnpcUltraStyle.INFO + "You cannot use personal difficulty yet.",
+                    CnpcUltraStyle.INFO + "This account cannot use personal difficulty.",
                     CnpcUltraStyle.SUBTITLE + "Ask staff to add you to the whitelist."));
             return;
         }
         PlayerDifficultyData gateData = DifficultyCache.data(subject);
         if (gateData == null || !gateData.isPersonalEnabled()) {
-            paintFeatureLocked(player, gui, "Tiers locked",
+            paintFeatureLocked(player, gui, "tiers", "Tiers locked",
                     CnpcUltraStyle.SUBTITLE + "Enable personal difficulty before changing tiers",
                     List.of(
-                    CnpcUltraStyle.DANGER + "Turn on " + CnpcUltraStyle.INFO + "Personal difficulty " + CnpcUltraStyle.DANGER + "on the main Difficulty page first.",
-                    CnpcUltraStyle.SUBTITLE + "Use " + CnpcUltraStyle.INFO + "Personal difficulty " + CnpcUltraStyle.SUBTITLE + "on the main menu, then return here to pick a tier."));
+                    CnpcUltraStyle.INFO + "Your personal difficulty is off.",
+                    CnpcUltraStyle.SUBTITLE + "Use " + CnpcUltraStyle.INFO + "Personal difficulty " + CnpcUltraStyle.SUBTITLE + "on this page, then pick a tier."));
             return;
         }
         UnlockSystem.syncUnlocks(subject, DifficultyCache.data(subject));
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage(CnpcUltraStyle.CONFIRM, "Difficulty", "Tiers"),
                 CnpcUltraStyle.SUBTITLE + "Costs show on each button · click again within 10 seconds to buy");
+        infoY = difficultyTabs(player, gui, infoY, "tiers");
 
         DifficultySnapshot snap = DifficultyCache.refresh(subject);
         PlayerDifficultyData data = DifficultyCache.data(subject);
@@ -236,6 +234,7 @@ public final class CnpcLmDifficultyGui {
         }
         lines.add(CnpcUltraStyle.SUBTITLE + "Unlocked up to " + CnpcUltraStyle.BODY + "T" + max);
         lines.add(CnpcUltraStyle.ACCENT + "Ancient Coins " + CnpcUltraStyle.BODY + AncientCoinEconomy.inventoryBreakdown(subject));
+        lines.add(CnpcUltraStyle.DIM + "Scaled mobs can hurt other players nearby.");
         if (!PaidFeatureAccess.bypassAncientCoinCost(subject)) {
             lines.add(CnpcUltraStyle.DIM + "Activation cost scales with your level");
         }
@@ -280,6 +279,14 @@ public final class CnpcLmDifficultyGui {
                 player, gui, row, CnpcGuiSupport.ID_GRID_BASE,
                 grid.toArray(CnpcGuiLayout.GridButton[]::new),
                 () -> open(player, "tiers"));
+        boolean personalOn = data.isPersonalEnabled();
+        CnpcGuiSupport.button(gui, 23,
+                personalOn ? CnpcGuiStyle.toggleOn("Personal difficulty") : CnpcGuiStyle.toggleOff("Personal difficulty"),
+                CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
+                player,
+                () -> DifficultyActions.handleArgNoReopen(subject, "toggle_personal", "0", "tiers").message(),
+                () -> open(player, "tiers")));
+        row += CnpcGuiSupport.ROW_STEP;
         navFooter(player, gui, row, "main", subject);
     }
 
@@ -288,16 +295,17 @@ public final class CnpcLmDifficultyGui {
      * no mode buttons (avoids CNPC errors).
      */
     private static void paintFeatureLocked(
-            ServerPlayer player, ICustomGui gui, String lockedTitle, String headerHint, List<String> body) {
+            ServerPlayer player, ICustomGui gui, String tab, String lockedTitle, String headerHint, List<String> body) {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage(CnpcUltraStyle.DANGER, "Difficulty", lockedTitle),
                 headerHint);
+        infoY = difficultyTabs(player, gui, infoY, tab);
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, body, CnpcGuiStyle.INFO_INLINE_MAX));
         ServerPlayer subject = who(player);
         if (DifficultyConfig.isEnabled() && SystemGate.allows(subject)) {
             CnpcGuiSupport.button(gui, 40, CnpcUltraStyle.CONFIRM + "Turn personal ON", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                     player,
-                    () -> DifficultyActions.handleArgNoReopen(subject, "toggle_personal", "0", "main").message(),
-                    () -> open(player, "main")));
+                    () -> DifficultyActions.handleArgNoReopen(subject, "toggle_personal", "0", "tiers").message(),
+                    () -> open(player, "tiers")));
             row += CnpcGuiSupport.ROW_STEP;
         }
         navFooter(player, gui, row, "main", subject);
@@ -308,6 +316,7 @@ public final class CnpcLmDifficultyGui {
         DifficultyActions.prepareGui(subject);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage(CnpcUltraStyle.CONFIRM, "Difficulty", "Titles"),
                 CnpcGuiStyle.HINT_TITLE_EQUIP);
+        infoY = difficultyTabs(player, gui, infoY, "home");
         List<String> header = new ArrayList<>();
         header.add(CnpcUltraStyle.SUBTITLE + "Equipped " + CnpcUltraStyle.INFO + blankNone(TitleSystem.activeDisplay(subject)));
         header.add(CnpcUltraStyle.SUBTITLE + "Title score " + CnpcUltraStyle.ACCENT + TitleSystem.computeTitleScore(subject));
@@ -342,12 +351,12 @@ public final class CnpcLmDifficultyGui {
         PlayerDifficultyData data = DifficultyCache.data(subject);
         boolean sense = data.titleProgress().titleSenseChat();
         CnpcGuiSupport.buttonSmall(gui, 20, sense ? CnpcGuiStyle.toggleOn("Title Sense")
-                : CnpcGuiStyle.toggleOff("Title Sense"), CnpcGuiSupport.COL_L, row, 95,
+                : CnpcGuiStyle.toggleOff("Title Sense"), CnpcGuiSupport.COL_L, row, CnpcGuiSupport.BTN_W,
                 () -> CnpcGuiSupport.act(
                         player,
                         () -> DifficultyActions.handleArgNoReopen(subject, "toggle_title_sense", "0", "titles").message(),
                         () -> open(player, "titles")));
-        CnpcGuiSupport.buttonSmall(gui, 21, CnpcUltraStyle.DANGER + "Unequip title", CnpcGuiSupport.COL_R, row, 95, () -> CnpcGuiSupport.act(
+        CnpcGuiSupport.buttonSmall(gui, 21, CnpcUltraStyle.DANGER + "Unequip title", CnpcGuiSupport.COL_R, row, CnpcGuiSupport.BTN_W, () -> CnpcGuiSupport.act(
                 player,
                 () -> DifficultyActions.handleArgNoReopen(subject, "clear_title", "0", "titles").message(),
                 () -> open(player, "titles")));
@@ -362,9 +371,10 @@ public final class CnpcLmDifficultyGui {
         if (title == null) {
             int infoY = CnpcGuiSupport.paintHeader(player, gui,
                     CnpcGuiStyle.subPage(CnpcUltraStyle.ACCENT, "Difficulty", "Title"), CnpcUltraStyle.SUBTITLE + "Couldn't find that — try refreshing the list.");
+            infoY = difficultyTabs(player, gui, infoY, "home");
             int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY,
                     List.of(CnpcUltraStyle.SUBTITLE + "Couldn't find that — try refreshing the list."), CnpcGuiStyle.INFO_INLINE_MAX));
-            navFooter(player, gui, row + 8, "titles", subject);
+            navFooter(player, gui, row + 8, "main", subject);
             return;
         }
         boolean earned = TitleSystem.has(subject, title);
@@ -374,6 +384,7 @@ public final class CnpcLmDifficultyGui {
         int infoY = CnpcGuiSupport.paintHeader(player, gui,
                 CnpcGuiStyle.subPage(CnpcUltraStyle.ACCENT, "Difficulty", title.masteryDisplay(mastery)),
                 earned ? CnpcUltraStyle.SUBTITLE + "Unlocked · tap Equip to wear" : CnpcUltraStyle.SUBTITLE + "Locked · see how to earn it");
+        infoY = difficultyTabs(player, gui, infoY, "home");
 
         List<String> lines = new ArrayList<>();
         lines.add(title.rarity.coloredLabel() + " " + CnpcUltraStyle.DIM + "· " + CnpcUltraStyle.SUBTITLE + kindLabel(title.kind));
@@ -407,7 +418,7 @@ public final class CnpcLmDifficultyGui {
                     CnpcGuiSupport.COL_L, row + 4, CnpcGuiSupport.BTN_W, 14);
         }
         row += CnpcGuiSupport.ROW_STEP;
-        navFooter(player, gui, row, "titles", subject);
+        navFooter(player, gui, row, "main", subject);
     }
 
     private static String kindLabel(DifficultyTitle.Kind kind) {
@@ -429,7 +440,7 @@ public final class CnpcLmDifficultyGui {
         ServerPlayer subject = who(player);
         DifficultyActions.prepareGui(subject);
         if (!DifficultyConfig.isEnabled()) {
-            paintFeatureLocked(player, gui, "Teams locked",
+            paintFeatureLocked(player, gui, "home", "Teams locked",
                     CnpcUltraStyle.SUBTITLE + "Enable personal difficulty before changing team modes",
                     List.of(
                             CnpcUltraStyle.DANGER + "Adaptive Difficulty is off on this server.",
@@ -437,7 +448,7 @@ public final class CnpcLmDifficultyGui {
             return;
         }
         if (!SystemGate.allows(subject)) {
-            paintFeatureLocked(player, gui, "Teams locked",
+            paintFeatureLocked(player, gui, "home", "Teams locked",
                     CnpcUltraStyle.SUBTITLE + "Enable personal difficulty before changing team modes",
                     List.of(
                             CnpcUltraStyle.INFO + "You cannot use personal difficulty yet.",
@@ -446,7 +457,7 @@ public final class CnpcLmDifficultyGui {
         }
         PlayerDifficultyData teamGate = DifficultyCache.data(subject);
         if (teamGate == null || !teamGate.isPersonalEnabled()) {
-            paintFeatureLocked(player, gui, "Teams locked",
+            paintFeatureLocked(player, gui, "home", "Teams locked",
                     CnpcUltraStyle.SUBTITLE + "Enable personal difficulty before changing team modes",
                     List.of(
                             CnpcUltraStyle.DANGER + "Turn on " + CnpcUltraStyle.INFO + "Personal difficulty " + CnpcUltraStyle.DANGER + "on the main Difficulty page first.",
@@ -456,6 +467,7 @@ public final class CnpcLmDifficultyGui {
         TeamMode mode = teamGate.getTeamMode();
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage(CnpcUltraStyle.CONFIRM, "Difficulty", "Teams"),
                 CnpcUltraStyle.SUBTITLE + "How rival teams affect scaling");
+        infoY = difficultyTabs(player, gui, infoY, "home");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, DifficultyTeamGuiApi.linesForPage(subject, "team"),
                         CnpcGuiStyle.INFO_INLINE_MAX));
         CnpcGuiSupport.button(gui, 40,
@@ -478,6 +490,14 @@ public final class CnpcLmDifficultyGui {
                 () -> DifficultyTeamGuiApi.handleDo(subject, "mode", "full", "team"),
                 () -> open(player, "team")));
         row += CnpcGuiSupport.ROW_STEP;
+        boolean personalOn = teamGate.isPersonalEnabled();
+        CnpcGuiSupport.button(gui, 23,
+                personalOn ? CnpcGuiStyle.toggleOn("Personal difficulty") : CnpcGuiStyle.toggleOff("Personal difficulty"),
+                CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
+                player,
+                () -> DifficultyActions.handleArgNoReopen(subject, "toggle_personal", "0", "team").message(),
+                () -> open(player, "team")));
+        row += CnpcGuiSupport.ROW_STEP;
         navFooter(player, gui, row, "main", subject);
     }
 
@@ -490,6 +510,7 @@ public final class CnpcLmDifficultyGui {
         DifficultyActions.prepareGui(who(player));
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage(CnpcUltraStyle.DANGER, "Difficulty", "Staff Admin"),
                 CnpcUltraStyle.SUBTITLE + "Server tools · typed admin: " + CnpcUltraStyle.BODY + "/difficulty admin");
+        infoY = difficultyTabs(player, gui, infoY, "home");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of(
                 CnpcUltraStyle.SUBTITLE + "Reload config, event log, and LM Staff Admin hub",
                 CnpcUltraStyle.DIM + "Whitelist · tier costs · coin rates: " + CnpcUltraStyle.BODY + "/difficulty admin …"
@@ -509,34 +530,82 @@ public final class CnpcLmDifficultyGui {
         navFooter(player, gui, row, "main", who(player));
     }
 
-    private static void paintEndDragon(ServerPlayer player, ICustomGui gui) {
+    /**
+     * Scrollable boss list. Each row is a name and a cost. The summon button acts on the
+     * selected row. Add another label and handler when a new vanilla boss is ready.
+     */
+    private static void paintSummons(ServerPlayer player, ICustomGui gui) {
         ServerPlayer subject = who(player);
         DifficultyActions.prepareGui(subject);
         boolean canSummon = EndDimensionStrength.canOpenSummonMenu(subject);
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage(CnpcUltraStyle.CONFIRM, "Difficulty", "End Dragon"),
-                CnpcUltraStyle.SUBTITLE + "Paid summon · AD boss profile · summoner-only damage");
-        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY,
-                EndDimensionStrength.summonMenuLines(subject), CnpcGuiStyle.INFO_INLINE_MAX));
-        row += 8;
+        boolean free = PaidFeatureAccess.bypassAncientCoinCost(subject);
+        String cost = free ? "free for staff" : AncientCoinEconomy.formatExactCost(EndDimensionStrength.summonCopperCost());
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcUltraStyle.header("Summons"),
+                CnpcUltraStyle.SUBTITLE + "Select a boss, then confirm. More bosses can be added to this list.");
+        infoY = difficultyTabs(player, gui, infoY, "summons");
+        List<String> status = summonStatusLines(subject, canSummon);
+        int listY = CnpcGuiSupport.bodyBelowInfo(
+                CnpcGuiSupport.paintInfoBeforePickList(gui, infoY, status, CnpcGuiStyle.INFO_INLINE_MAX));
+        String endDragonRow = CnpcUltraStyle.CONFIRM + "End Dragon" + " " + CnpcUltraStyle.SUBTITLE + "Cost "
+                + CnpcUltraStyle.BODY + cost;
+        String[] rows = new String[] {endDragonRow};
+        int rowsBelow = 2;
+        int bandY = CnpcGuiSupport.pickListBandY(listY, rowsBelow, gui, rows.length);
+        int scrollH = CnpcGuiSupport.listScrollHeight(gui, bandY, rowsBelow);
+        IScroll scroll = CnpcGuiSupport.scrollPickList(gui, listY, rowsBelow, rows);
+        int row = CnpcGuiSupport.navRowAfterScroll(bandY, scrollH);
         if (canSummon) {
-            CnpcGuiSupport.button(gui, 20, CnpcUltraStyle.CONFIRM + "Confirm summon", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
-                    player,
-                    () -> DifficultyActions.handleArgNoReopen(subject, "summon_end_dragon", "0", "end_dragon").message(),
-                    () -> open(player, "end_dragon")));
+            CnpcGuiSupport.button(gui, 20, CnpcUltraStyle.CONFIRM + "Confirm summon", CnpcGuiSupport.COL_L, row, () -> {
+                int[] sel = scroll == null ? null : scroll.getSelection();
+                if (sel == null || sel.length == 0 || sel[0] != 0) {
+                    CnpcGuiSupport.feedback(player, CnpcUltraStyle.SUBTITLE + "Select End Dragon first.");
+                    open(player, "summons");
+                    return;
+                }
+                CnpcGuiSupport.act(
+                        player,
+                        () -> DifficultyActions.handleArgNoReopen(subject, "summon_end_dragon", "0", "end_dragon").message(),
+                        () -> open(player, "summons"));
+            });
         } else {
-            gui.addLabel(CnpcGuiSupport.ID_INLINE_NOTE,
-                    CnpcGuiSupport.safeChat(CnpcGuiStyle.readableInfoLine(
-                            DifficultyConfig.get().enableEndPlayerDragonSummon
-                                    ? CnpcUltraStyle.INFO + "Fix requirements above to summon."
-                                    : CnpcUltraStyle.SUBTITLE + "Ask staff to clear the dragon.")),
-                    CnpcGuiSupport.COL_L, row + 4, CnpcGuiSupport.BTN_W, 14);
-            row += 8;
+            gui.addLabel(116,
+                    CnpcGuiSupport.safeChat(CnpcUltraStyle.DIM + "Summon stays locked until the notes above are cleared."),
+                    CnpcGuiSupport.COL_L, row + 4, CnpcGuiSupport.textBandWidth(), 14);
         }
         row += CnpcGuiSupport.ROW_STEP;
         navFooter(player, gui, row, "main", subject);
     }
 
-    /** {@code parentPage} null on difficulty main; otherwise Back reopens that page. */
+    /** Short guide above the boss list. Chest and CMI still use {@code summonMenuLines}. */
+    private static List<String> summonStatusLines(ServerPlayer subject, boolean canSummon) {
+        List<String> lines = new ArrayList<>();
+        if (!DifficultyConfig.get().enableEndDimensionStrength) {
+            lines.add(CnpcUltraStyle.SUBTITLE + "End strength is turned off. Ask staff to enable it.");
+            return lines;
+        }
+        if (!DifficultyConfig.get().enableEndPlayerDragonSummon) {
+            lines.add(CnpcUltraStyle.SUBTITLE + "Boss summoning is turned off. Ask staff to turn it on.");
+            return lines;
+        }
+        lines.add(CnpcUltraStyle.SUBTITLE + "The dragon matches your difficulty. Only you can damage it.");
+        lines.add(CnpcUltraStyle.SUBTITLE + "You need a tier from "
+                + CnpcUltraStyle.BODY + "T" + EndDimensionStrength.PLAYER_SUMMON_MIN_TIER
+                + CnpcUltraStyle.SUBTITLE + " through "
+                + CnpcUltraStyle.BODY + "T" + EndDimensionStrength.PLAYER_SUMMON_MAX_TIER
+                + CnpcUltraStyle.SUBTITLE + ", and you must be in The End.");
+        if (!canSummon) {
+            if (!SystemGate.participates(subject)) {
+                lines.add(CnpcUltraStyle.INFO + "Turn on personal difficulty on the Tiers tab first.");
+            } else {
+                lines.add(CnpcUltraStyle.INFO + "Activate a tier in that range on the Tiers tab first.");
+            }
+        } else if (subject != null && !EndDimensionStrength.isTheEnd(subject.m_9236_())) {
+            lines.add(CnpcUltraStyle.INFO + "Travel to The End, then confirm the summon.");
+        }
+        return lines;
+    }
+
+    /** {@code parentPage} null on Home (back to the hub). Any other page returns to Home. */
     private static void navFooter(
             ServerPlayer player,
             ICustomGui gui,
@@ -544,14 +613,14 @@ public final class CnpcLmDifficultyGui {
             String parentPage,
             ServerPlayer previewSubject) {
         if (parentPage == null) {
-            CnpcGuiSupport.navSystemRoot(player, gui, row);
+            CnpcGuiSupport.navBackToMainMenu(player, gui, row);
         } else {
-            CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, parentPage), CnpcUltraStyle.BACK);
+            CnpcGuiSupport.navBackToParent(player, gui, row, () -> open(player, "main"));
         }
         if (StaffAccess.isStaff(player) && parentPage == null) {
             row += CnpcGuiSupport.ROW_STEP;
             CnpcGuiSupport.buttonSmall(gui, CnpcGuiSupport.ID_STAFF_EXTRA, CnpcUltraStyle.DANGER + "Staff Admin…",
-                    CnpcGuiSupport.COL_L, row, 95, () -> open(player, "admin"));
+                    CnpcGuiSupport.COL_L, row, CnpcGuiSupport.BTN_W, () -> open(player, "admin"));
         }
         if (previewSubject != null && parentPage == null) {
             CnpcGuiSupport.paintSystemMainPreview(previewSubject, gui, player);

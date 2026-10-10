@@ -32,10 +32,10 @@ public final class PrestigeAdmin {
         int highestTier = PrestigePointsSystem.highestPurchasedTier(target);
         StringBuilder sb = new StringBuilder();
         sb.append("§6Prestige §f").append(target.m_6302_()).append('\n');
-        sb.append("§7Completed: §f").append(completed)
-                .append(" §8| §7Held: §6").append(held).append("§7/§f")
+        sb.append("§7Lifetime prestiges: §f").append(completed)
+                .append(" §8| §7Current prestige amount: §6").append(held).append("§7/§f")
                 .append(PrestigeSystem.maxHeld()).append('\n');
-        sb.append("§7Points: §e").append(points)
+        sb.append("§7Prestige favor: §e").append(points)
                 .append(" §8| §7Breakthroughs: §b").append(bt).append("§7/§f")
                 .append(PrestigePointsSystem.MAX_BREAKTHROUGHS).append('\n');
         sb.append("§7Personal cap: §f").append(DmzRewards.formatWhole(cap))
@@ -99,7 +99,7 @@ public final class PrestigeAdmin {
         }
         PrestigeSystem.setCompletedStaff(target, next);
         log(target, "admin_completed", mode, before, next);
-        return "§aCompleted prestige §f" + before + " §7→ §f" + PrestigeSystem.getCompleted(target)
+        return "§aLifetime prestiges §f" + before + " §7→ §f" + PrestigeSystem.getCompleted(target)
                 + " §8| next need §e" + DmzRewards.formatWhole(PrestigeSystem.requiredLevel(target))
                 + " §8(" + target.m_6302_() + ")";
     }
@@ -117,7 +117,7 @@ public final class PrestigeAdmin {
         }
         PrestigePointsSystem.setPoints(target, next);
         log(target, "admin_points", mode, before, next);
-        return "§aPrestige points §e" + before + " §7→ §e" + PrestigePointsSystem.getPoints(target)
+        return "§aPrestige favor §e" + before + " §7→ §e" + PrestigePointsSystem.getPoints(target)
                 + " §8(" + target.m_6302_() + ")"
                 + "\n§8Wallet for Skills · Effects · Breakthroughs · Difficulty Tiers.";
     }

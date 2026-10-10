@@ -343,7 +343,7 @@ def main() -> int:
     check("rival duel not cleared on logout", "getRequestInvolving" not in cleanup)
     cnpc_rival = read(SRC / "gui/cnpc/CnpcLmRivalGui.java")
     check("rival CNPC reopen duel pending after send", '"challenge_send"' in cnpc_rival and '"challenge_pending"' in cnpc_rival)
-    check("rival declare vs duel labels", "Declare invites" in cnpc_rival and "Duel requests" in cnpc_rival)
+    check("rival declare vs challenge labels", "Declare invite" in cnpc_rival and "Challenge request" in cnpc_rival)
     check("rival CNPC TP toggle label", 'toggleOn("TP")' in cnpc_rival and "Teleport msgs" not in cnpc_rival)
     check("rival chest TP toggle label", '"&aTP ON"' in rival_chest and "TP Msg ON" not in rival_chest)
     spar_chest = read(BUKKIT / "SparChestGui.java")

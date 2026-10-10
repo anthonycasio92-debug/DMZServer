@@ -32,29 +32,43 @@ public final class CnpcLmSkillCheckGui {
 
     private static void show(ServerPlayer player, String page, boolean staffAdminBrowser) {
         String p = page == null || page.isBlank() ? "core" : page.toLowerCase();
-        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_SKILLCHECK, CnpcGuiSupport.W, CnpcGuiSupport.window(H),
-                (pl, gui) -> paint(pl, gui, p, staffAdminBrowser));
+        CnpcUltraStyle.withAccent(CnpcUltraStyle.ACCENT_ADMIN, () ->
+                CnpcGuiSupport.showSized(player, CnpcLmGui.ID_SKILLCHECK, CnpcGuiSupport.W, CnpcGuiSupport.window(H),
+                        (pl, gui) -> paint(pl, gui, p, staffAdminBrowser)));
     }
 
     private static void paint(ServerPlayer player, ICustomGui gui, String page, boolean staffAdminBrowser) {
         boolean staffAdmin = staffAdminBrowser;
         int infoY = CnpcGuiSupport.paintHeader(player, gui,
-                staffAdmin ? CnpcGuiStyle.subPage(CnpcUltraStyle.INFO, "Skills", "Staff") : CnpcUltraStyle.INFO + "Skill Check",
+                staffAdmin ? CnpcGuiStyle.subPage(CnpcUltraStyle.BODY, "Skills", "Staff") : "Skill Check",
                 CnpcUltraStyle.SUBTITLE + "Level, locked, unlocked, or max.");
 
-        List<String> lines = ProgressionGuiApi.skillsLines(CnpcGuiSupport.target(player), "core");
-        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX));
         // Natural skills and saga skills share this one Skills tab.
-        CnpcGuiSupport.button(gui, 20, CnpcUltraStyle.INFO + "Skills", CnpcGuiSupport.COL_L, row, () -> {
-            if (staffAdmin) {
-                com.dbzlegacy.adaptivedifficulty.gui.SkillsMenu.open(player, "core");
-            } else {
-                SkillCheckService.open(player, "core");
-                show(player, "core", false);
-            }
-        });
-        row += CnpcGuiSupport.ROW_STEP;
-        CnpcGuiSupport.navSystemRoot(player, gui, row);
+        List<String> lines = ProgressionGuiApi.skillsLines(CnpcGuiSupport.target(player), page);
+        int row;
+        if (skillListMissing(lines)) {
+            row = CnpcGuiSupport.bodyBelowInfo(infoY);
+            gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER,
+                    CnpcUltraStyle.subtitle("No skills are listed. Ask staff to turn skill unlock on, then open this page again."),
+                    CnpcGuiSupport.M, row, CnpcGuiSupport.textBandWidth(), 14);
+            row += CnpcGuiSupport.ROW_STEP;
+        } else {
+            row = CnpcGuiSupport.bodyBelowInfo(
+                    CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX));
+        }
+        CnpcGuiSupport.navBackToMainMenu(player, gui, row);
         CnpcGuiSupport.paintSystemMainPreview(CnpcGuiSupport.target(player), gui, player);
+    }
+
+    /** A one-line service error is not a skill list. */
+    private static boolean skillListMissing(List<String> lines) {
+        if (lines == null || lines.isEmpty()) {
+            return true;
+        }
+        if (lines.size() != 1) {
+            return false;
+        }
+        String plain = CnpcUltraStyle.plain(lines.get(0)).toLowerCase(java.util.Locale.ROOT);
+        return plain.contains("error") || plain.contains("disabled");
     }
 }

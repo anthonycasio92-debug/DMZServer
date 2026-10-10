@@ -649,8 +649,9 @@ def main() -> int:
           and "challenge_pending" in rival_chest and "challengeDecide" in rival_chest
           and "challenge_pending" in cmi_rival and "openChallengeDecide" in cmi_rival)
     check("challenge hub Send + Pending (not inline accept)",
-          "pick_challenge" in rival_cnpc and "Pending requests" in rival_cnpc
-          and 'act("challenge", "accept"' not in rival_cnpc.split("paintChallenge")[1].split("paintChallengePending")[0]
+          "pick_challenge" in rival_cnpc and "void paintRequests" in rival_cnpc
+          and "Send challenge" in rival_cnpc
+          and "Pending requests" not in rival_cnpc
           and 'SlotAction.act("challenge", "accept"' not in rival_chest.split("private Inventory challenge(")[1].split("private Inventory challengePending")[0])
     check("acceptedMutualOffer flag", "acceptedMutualOffer" in rival_link)
     check("needsMutualConfirm helper", "needsMutualConfirm" in rival_link)
@@ -1229,9 +1230,16 @@ def main() -> int:
     remove_block = cnpc_prog.split("private static void paintAndroidRemove", 1)[1].split(
         "private static int paintNameScroll", 1
     )[0]
+    char_android = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmCharacterGui.java")
+    android_remove_ui = char_android.split("private static void paintAndroidRemove", 1)[1].split(
+        "private static void footer", 1
+    )[0]
     check(
-        "CNPC android remove back goes to LM hub for players",
-        "CnpcLmHubGui.open(player, \"main\")" in remove_block,
+        "CNPC android remove back returns to Character Home",
+        "navBackToParent" in android_remove_ui
+        and 'open(player, "main")' in android_remove_ui
+        and "CnpcLmHubGui.open" not in android_remove_ui
+        and "CnpcLmCharacterGui.open(player, p)" in cnpc_prog,
     )
     check(
         "CNPC android tools stay staff-only",
@@ -1610,11 +1618,11 @@ def main() -> int:
     check("End Dragon submenu page",
           "end_dragon" in chest and "endDragon" in chest
           and "openEndDragon" in cmi_diff
-          and "paintEndDragon" in read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmDifficultyGui.java"))
+          and "paintSummons" in read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmDifficultyGui.java"))
     cnpc_diff = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmDifficultyGui.java")
     check("CNPC teams page refreshes snapshot",
           "private static void paintTeam" in cnpc_diff
-          and "DifficultyActions.prepareGui(subject)" in cnpc_diff.split("private static void paintTeam", 1)[1].split("private static void paintEndDragon", 1)[0])
+          and "DifficultyActions.prepareGui(subject)" in cnpc_diff.split("private static void paintTeam", 1)[1].split("private static void paintSummons", 1)[0])
     check("End Dragon summonMenuLines API", "summonMenuLines" in end_str and "canOpenSummonMenu" in end_str)
     staff_access = read(SRC / "com/dbzlegacy/adaptivedifficulty/util/StaffAccess.java")
     check("StaffAccess uses Bukkit entity for permissions", "getBukkitEntity" in staff_access)
@@ -1755,7 +1763,9 @@ def main() -> int:
     check("progression titles are blue and prestige stays pink",
           'CnpcUltraStyle.ACCENT + "Progression"' in prog
           and "§dProgression" not in prog
-          and 'CnpcUltraStyle.ACCENT + "Open Prestige"' in prog
+          and '"home|Home"' in prog
+          and '"boosts|Boosts"' in prog
+          and '"coins|Coins"' in prog
           and 'subPage(CnpcUltraStyle.ACCENT, "Progression", "End")' in prog
           and 'CnpcUltraStyle.INFO + "2× · 30m"' in prog
           and 'CnpcUltraStyle.INFO + "2× · 60m"' in prog)
@@ -1769,7 +1779,7 @@ def main() -> int:
     check("spar dojo home and prestige forms use their system colors",
           'CnpcUltraStyle.ACCENT + "Dojo home"' in read(cnpc_dir / "CnpcLmSparGui.java")
           and 'CnpcUltraStyle.ACCENT + "Forms"' in read(cnpc_dir / "CnpcLmPrestigeGui.java")
-          and 'CnpcUltraStyle.ACCENT + "Progression panel"' in read(cnpc_dir / "CnpcLmAdminGui.java"))
+          and 'CnpcUltraStyle.ACCENT_PROGRESSION + "Progression panel"' in read(cnpc_dir / "CnpcLmAdminGui.java"))
 
     print("\n=== CNPC rival records (4.6.22) ===")
     rival_records = read(cnpc_dir / "CnpcLmRivalGui.java")
@@ -1777,14 +1787,14 @@ def main() -> int:
           "records:" in rival_records
           and "void paintProgress" not in rival_records
           and "Hall of fame" in rival_records
+          and '"home|Home"' in rival_records
           and '"actions|Actions"' in rival_records
-          and '"records|Records"' in rival_records
-          and '"requests|Requests"' in rival_records
+          and '"challenge|Challenge"' in rival_records
           and 'open(player, "history")' not in rival_records
           and 'open(player, "progress")' not in rival_records
           and 'open(player, "stats")' not in rival_records
-          and "Duel requests" in rival_records
-          and "Declare invites" in rival_records)
+          and "Challenge request" in rival_records
+          and "Declare invite" in rival_records)
 
     print("\n=== CNPC layout fit (4.6.25) ===")
     preview = read(cnpc_dir / "CnpcPlayerPreview.java")
@@ -1837,7 +1847,7 @@ def main() -> int:
           "Welcome back" not in snapshot
           and "Combat & progression" not in hub_gui
           and "Remove Android" not in hub_gui
-          and 'CnpcUltraStyle.INFO + "Skill Check"' in hub_gui)
+          and 'CnpcUltraStyle.ACCENT_ADMIN + "Skill Check"' in hub_gui)
     check("character hosts remove android and race keep percent",
           'CnpcUltraStyle.DANGER + "Remove Android' in char_gui
           and "Keep " in char_gui
@@ -1848,8 +1858,8 @@ def main() -> int:
           and "Training bonds" in spar_gui
           and "void paintDojoWar" in spar_gui
           and 'toggleOn("TP")' in spar_gui)
-    check("rival actions and prestige forms stay their own pages",
-          "void paintActions" in rival_records
+    check("rival challenges and prestige forms stay their own pages",
+          "void paintChallenges" in rival_records
           and "void paintSettings" in rival_records
           and "void paintEffects" in prestige_gui
           and 'CnpcUltraStyle.ACCENT + "Forms"' in prestige_gui)
@@ -2031,7 +2041,7 @@ def main() -> int:
     bright_start = notice_support.find("private static String brightenNoticeLine")
     bright_end = notice_support.find("private static String noticeChat", bright_start)
     bright = notice_support[bright_start:bright_end] if bright_start >= 0 and bright_end > bright_start else ""
-    diff_main = diff_gui.split("private static void paintMain", 1)[-1].split("private static void paintSettings", 1)[0]
+    diff_main = diff_gui.split("private static void paintTiers", 1)[-1].split("private static void paintTitles", 1)[0]
     check("notice header and body are one pair of constants",
           'NOTICE_HEADER = CnpcUltraStyle.HEADER + "Notice"' in notice
           and "NOTICE_BODY = CnpcUltraStyle.INFO" in notice
@@ -2276,6 +2286,9 @@ def main() -> int:
 
     style = read(cnpc_dir / "CnpcUltraStyle.java")
     prestige_gui = read(cnpc_dir / "CnpcLmPrestigeGui.java")
+    hub_gui = read(cnpc_dir / "CnpcLmHubGui.java")
+    admin_gui = read(cnpc_dir / "CnpcLmAdminGui.java")
+    test_hub = read(cnpc_dir / "CnpcStyledTestHub.java")
     check("menus keep a per-system accent and prestige has no module list",
           "ACCENT_RIVAL" in style
           and "ACCENT_SPARRING" in style
@@ -2288,7 +2301,28 @@ def main() -> int:
           and "withAccent" in style
           and "modules|Modules" not in prestige_gui
           and "ConfigEditor" not in prestige_gui
-          and "setOnChange" in config_screen)
+          and "setOnChange" in config_screen
+          and "ACCENT_RIVAL + \"Rival\"" in hub_gui
+          and "ACCENT_SPARRING + \"Sparring\"" in hub_gui
+          and "ACCENT_DIFFICULTY + \"Difficulty\"" in hub_gui
+          and "ACCENT_PRESTIGE + \"Prestige\"" in hub_gui
+          and "ACCENT_SAGA + \"Saga\"" not in hub_gui
+          and "ACCENT_CONFIG + CnpcUltraStyle.BOLD + \"Systems\"" in hub_gui
+          and "ACCENT_ADMIN + \"Skill Check\"" in hub_gui
+          and "ACCENT_CHARACTER + \"Character Services\"" in hub_gui
+          and "ACCENT_ADMIN + \"Staff Admin\"" in hub_gui
+          and "ACCENT_PROGRESSION + \"Progression panel\"" in admin_gui
+          and "ACCENT_CONFIG + \"Config editor\"" in admin_gui
+          and "ACCENT_RIVAL" in test_hub
+          and "ACCENT_SAGA" in test_hub)
+
+    skill_gui = read(cnpc_dir / "CnpcLmSkillCheckGui.java")
+    check("hub header stays gold and each menu uses its accent",
+          "withAccent(CnpcUltraStyle.ACCENT_CHARACTER" in hub_gui
+          and "withAccent(CnpcUltraStyle.ACCENT_ADMIN" in admin_gui
+          and "withAccent(CnpcUltraStyle.ACCENT_CHARACTER" not in admin_gui
+          and "withAccent(CnpcUltraStyle.ACCENT_CONFIG" in test_hub
+          and "withAccent(CnpcUltraStyle.ACCENT_ADMIN" in skill_gui)
 
     print("\n=== Saga reset uses loaded sagas (4.6.69) ===")
     saga_service = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/quest/SagaResetService.java")
@@ -2309,9 +2343,15 @@ def main() -> int:
           and "Not enough Ancient Coins" in saga_service
           and "CnpcRowList" in saga_gui
           and "CnpcUltraStyle" in saga_gui
-          and "saga|Saga" in character_gui
-          and "bones|Head parts" in character_gui
+          and "ID_SAGA" in saga_gui
+          and "servicesTabs" in saga_gui
+          and "characterTabs" not in saga_gui
+          and "Reset saga progress" in saga_gui
+          and "Reset saga progress" not in character_gui
+          and "home|Home" in character_gui
           and "saga|Saga Reset" in character_gui
+          and "android|Android Removal" in character_gui
+          and "Model customization" in character_gui
           and "services|Services" not in character_gui
           and "CnpcLmSagaGui.open" in read(cnpc_dir / "CnpcLmGui.java")
           and "SagaResetConfig" in build_sh

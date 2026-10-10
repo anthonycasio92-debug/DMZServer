@@ -643,7 +643,7 @@ public final class ProgressionGuiApi {
                 lore.add("§7Staff free costs §f" + (staffFree ? "ON" : "OFF"));
                 lore.add("");
                 lore.add("§8These features charge Ancient Coins:");
-                lore.add("§8Difficulty tiers · Character Services · End dragon summon · Head parts");
+                lore.add("§8Difficulty tiers · Character Services · End dragon summon · Model customization");
                 lore.add("");
                 lore.add("§8/lm §7→ Staff Admin → Progression panel → Ancient Coins");
                 yield lore;
@@ -974,27 +974,27 @@ public final class ProgressionGuiApi {
         }
         String p = page == null || page.isBlank() ? "main" : page.toLowerCase(Locale.ROOT);
         List<String> lore = new ArrayList<>();
-        lore.add("§7Prestiged §f" + ph.getOrDefault("completed", "0")
-                + " §7times · holding §6" + ph.getOrDefault("held", "0")
+        lore.add("§7Lifetime prestiges §f" + ph.getOrDefault("completed", "0")
+                + " §7· Current prestige amount §f" + ph.getOrDefault("held", "0")
                 + "§7/§f" + ph.getOrDefault("held_max", "10"));
         switch (p) {
             case "turnin", "points" -> {
-                lore.add("§7Points: §e" + ph.getOrDefault("points", "0"));
-                lore.add("§7Turn in held prestiges: §f1§7, §f2§7, §f3§7, §f6§7, or §f9 §7at a time.");
-                lore.add("§7Bigger turn-ins give bonus points: §f3→4 §8· §f6→9 §8· §f9→15");
-                lore.add("§81–2 give 1 point each (no pack bonus)");
+                lore.add("§7Prestige favor: §e" + ph.getOrDefault("points", "0"));
+                lore.add("§7Exchange current prestige for favor: §f1§7, §f2§7, §f3§7, §f6§7, or §f9 §7at a time.");
+                lore.add("§7Bigger turn-ins give bonus favor: §f3→4 §8· §f6→9 §8· §f9→15");
+                lore.add("§81–2 give 1 favor each (no pack bonus)");
             }
             case "shop", "skills" -> {
-                lore.add("§7Points: §e" + ph.getOrDefault("points", "0"));
-                lore.add("§71 point → +1 skill level · §dPotential Unlock §7→ +2");
+                lore.add("§7Prestige favor: §e" + ph.getOrDefault("points", "0"));
+                lore.add("§71 favor → +1 skill level · §dPotential Unlock §7→ +2");
                 lore.add("§aPermanent purchases §7· survive prestige · §8Natural + Saga skills only");
                 lore.add("§7Catalog: §f" + ph.getOrDefault("shop_skill_count", "0")
                         + " §7skills · §f" + ph.getOrDefault("shop_pages", "1") + " §7page(s)");
             }
             case "forms", "form", "effects", "effect" -> {
-                lore.add("§7Points: §e" + ph.getOrDefault("points", "0"));
+                lore.add("§7Prestige favor: §e" + ph.getOrDefault("points", "0"));
                 lore.add("§aPermanent §7Majin / Mutant: §e"
-                        + ph.getOrDefault("form_cost", "5") + " §7points each");
+                        + ph.getOrDefault("form_cost", "5") + " §7favor each");
                 lore.add("§7You can only have one special form at a time. Remove your current one (Majin or Mutant) before picking the other.");
                 lore.add("§7Majin: " + ("true".equals(ph.get("majin")) ? "§aOwned" : "§cNot owned"));
                 lore.add("§7Mutant: " + ("true".equals(ph.get("mutant")) ? "§aOwned" : "§cNot owned"));
@@ -1005,7 +1005,7 @@ public final class ProgressionGuiApi {
                 }
             }
             case "cap", "breakthrough", "breakthroughs" -> {
-                lore.add("§7Points: §e" + ph.getOrDefault("points", "0"));
+                lore.add("§7Prestige favor: §e" + ph.getOrDefault("points", "0"));
                 lore.add("§7Breakthroughs: §f" + ph.getOrDefault("breakthroughs", "0")
                         + "§7/§f" + ph.getOrDefault("breakthroughs_max", "5"));
                 lore.add("§7Your personal level cap: §f"
@@ -1018,29 +1018,29 @@ public final class ProgressionGuiApi {
                 }
                 if (btCount < PrestigePointsSystem.MAX_BREAKTHROUGHS) {
                     lore.add("§7Next cost: §e" + ph.getOrDefault("next_breakthrough_cost", "15")
-                            + " §7points (+10k cap)");
+                            + " §7favor (+10k cap)");
                     lore.add("§8Raising cap also raises future prestige Need");
                 } else {
                     lore.add("§aMax personal cap reached");
                 }
             }
             case "tiers", "tier", "difficulty" -> {
-                lore.add("§7Points: §e" + ph.getOrDefault("points", "0"));
-                lore.add("§7Buy permanent difficulty tier unlocks with prestige points");
+                lore.add("§7Prestige favor: §e" + ph.getOrDefault("points", "0"));
+                lore.add("§7Buy permanent difficulty tier unlocks with prestige favor");
                 lore.add("§7T1–2 §e1pt §8· §7T3–4 §e2pt §8· §7T5–6 §e3pt §8· §7T7 §e4pt");
                 lore.add("§aPermanent §7· survives prestige · unlock T(n-1) first");
                 lore.add("§7Highest purchased: §fT" + ph.getOrDefault("tier_highest_purchased", "0"));
             }
             default -> {
-                lore.add("§7Points: §e" + ph.getOrDefault("points", "0"));
-                lore.add("§7Prestige: §f" + ph.getOrDefault("completed", "0"));
+                lore.add("§7Prestige favor: §e" + ph.getOrDefault("points", "0"));
+                lore.add("§7Lifetime prestiges: §f" + ph.getOrDefault("completed", "0"));
                 lore.add("§7Requires §e" + ph.getOrDefault("required_fmt", "0")
                         + " §7power to prestige (next: §e"
                         + ph.getOrDefault("next_required_fmt", "0") + "§7)");
                 lore.add("§7Each prestige costs more than the last:");
                 lore.add("§71st §f20,000 §8· §72nd §f40,000 §8· §73rd §f60,000 §8· §74th §f80,000");
-                lore.add("§7How many you are holding does not change the first four.");
-                lore.add("§7From the 5th on: §f50,000 §7(§f100,000 §7if you're holding any)");
+                lore.add("§7Your current prestige amount does not change the first four.");
+                lore.add("§7From the 5th on: §f50,000 §7(§f100,000 §7if your current prestige amount is above zero)");
                 if ("true".equalsIgnoreCase(ph.get("ready"))) {
                     lore.add("§eYou can prestige now.");
                 } else {
@@ -1185,8 +1185,8 @@ public final class ProgressionGuiApi {
             };
         }
         if ("balance".equals(act) || "points".equals(act)) {
-            return "§7Prestige points: §e" + PrestigePointsSystem.getPoints(player)
-                    + " §8| §7Held: §6" + PrestigeSystem.getHeld(player)
+            return "§7Prestige favor: §e" + PrestigePointsSystem.getPoints(player)
+                    + " §8| §7Current prestige amount: §6" + PrestigeSystem.getHeld(player)
                     + " §8| §7Cap: §f" + PrestigePointsSystem.effectiveMaxLevel(player)
                     + " §8| §7Need: §e" + PrestigeSystem.requiredLevel(player);
         }

@@ -108,7 +108,7 @@ public final class PrestigeChestGui implements Listener {
                         "&aPermanent purchase &8· unpurchase = no refund")),
                 SlotAction.page("effects"));
         put(holder, inv, 31, tipBtn(viewer, "prestige.main.tiers", Material.BEACON, "&6Difficulty Tiers",
-                List.of("&7Permanent unlocks with prestige points",
+                List.of("&7Permanent unlocks with prestige favor",
                         "&7T1–2 &e1pt &8· &7T3–4 &e2pt &8· &7T5–6 &e3pt &8· &7T7 &e4pt",
                         "&aPermanent &8· survives prestige")),
                 SlotAction.page("tiers"));
@@ -460,7 +460,7 @@ public final class PrestigeChestGui implements Listener {
         Map<String, String> ph = ForgeBridge.prestigePlaceholders(subject);
         Map<String, String> vars = Map.of("points", ph.getOrDefault("points", "0"));
         List<String> walletLine = GuiTooltips.lore("prestige.main.wallet",
-                List.of("&6Wallet: &e{points} &7prestige points"), vars);
+                List.of("&6Wallet: &e{points} &7prestige favor"), vars);
         lore.add(1, walletLine.isEmpty() ? "" : walletLine.get(0));
         put(holder, inv, 4, item(Material.GOLD_INGOT,
                 GuiTooltips.name("prestige.main.wallet", title, vars), lore));

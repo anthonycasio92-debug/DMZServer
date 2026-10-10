@@ -10,7 +10,7 @@ import java.util.Locale;
 import net.minecraft.server.level.ServerPlayer;
 import noppes.npcs.api.gui.ICustomGui;
 
-/** Character Services page for replaying one loaded saga. */
+/** Saga menu. Reset is its own page, not a Character Services tab. */
 public final class CnpcLmSagaGui {
     private static final int ROWS = 6;
 
@@ -20,59 +20,125 @@ public final class CnpcLmSagaGui {
         if (player == null) {
             return;
         }
-        String target = page == null || page.isBlank() ? "saga" : page;
-        if (target.regionMatches(true, 0, "confirm:", 0, "confirm:".length())) {
-            CnpcLmCharacterGui.open(player, "saga_confirm:" + target.substring("confirm:".length()));
+        String target = page == null || page.isBlank() ? "main" : page.trim();
+        String lower = target.toLowerCase(Locale.ROOT);
+        if (lower.startsWith("confirm:")) {
+            openConfirm(player, target.substring("confirm:".length()));
             return;
         }
-        if (target.regionMatches(true, 0, "saga_confirm:", 0, "saga_confirm:".length())) {
+        if (lower.startsWith("saga_confirm:")) {
             openConfirm(player, target.substring("saga_confirm:".length()));
             return;
         }
-        if ("saga".equalsIgnoreCase(target) || target.regionMatches(true, 0, "saga:", 0, "saga:".length())) {
-            openList(player, target);
+        if (isResetPage(lower)) {
+            openReset(player, lower);
             return;
         }
-        CnpcLmCharacterGui.open(player, "saga");
+        if ("progress".equals(lower) || lower.startsWith("progress:")) {
+            openProgress(player);
+            return;
+        }
+        openHome(player, lower);
     }
 
     static void openList(ServerPlayer player, String page) {
-        CnpcUltraStyle.withAccent(CnpcUltraStyle.ACCENT_SAGA, () -> openListAccent(player, page));
+        open(player, page == null || page.isBlank() ? "reset" : page);
     }
 
-    private static void openListAccent(ServerPlayer player, String page) {
-        List<Offer> offers = SagaResetService.offers(player);
-        int pages = Math.max(1, (offers.size() + ROWS - 1) / ROWS);
-        int pg = Math.min(pages - 1, Math.max(0, parsePage(page)));
-        int shown = offers.isEmpty() ? 1 : Math.min(ROWS, offers.size() - pg * ROWS);
-        int pager = pages > 1 ? 1 : 0;
-        int designed = 188 + shown * (CnpcGuiSupport.BTN_H + CnpcRowList.ROW_GAP)
-                + pager * CnpcGuiSupport.ROW_STEP + CnpcGuiSupport.ROW_STEP;
-        int pageIndex = pg;
-        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CHARACTER, CnpcGuiSupport.W,
-                CnpcGuiSupport.window(designed), (pl, gui) -> paintList(pl, gui, pageIndex));
+    private static boolean isResetPage(String page) {
+        return "reset".equals(page)
+                || page.startsWith("reset:")
+                || "saga".equals(page)
+                || page.startsWith("saga:");
+    }
+
+    private static void openHome(ServerPlayer player, String page) {
+        CnpcUltraStyle.withAccent(CnpcUltraStyle.ACCENT_SAGA, () -> {
+            List<Offer> offers = SagaResetService.offers(player);
+            int pages = Math.max(1, (offers.size() + ROWS - 1) / ROWS);
+            int pg = Math.min(pages - 1, Math.max(0, parsePage(page, "sagas:")));
+            int shown = offers.isEmpty() ? 1 : Math.min(ROWS, offers.size() - pg * ROWS);
+            int pager = pages > 1 ? 1 : 0;
+            int designed = 168 + CnpcGuiSupport.TAB_BAR_H
+                    + shown * (CnpcGuiSupport.BTN_H + CnpcRowList.ROW_GAP)
+                    + pager * CnpcGuiSupport.ROW_STEP + CnpcGuiSupport.ROW_STEP * 2;
+            int pageIndex = pg;
+            CnpcGuiSupport.showSized(player, CnpcLmGui.ID_SAGA, CnpcGuiSupport.W,
+                    CnpcGuiSupport.window(designed), (pl, gui) -> paintHome(pl, gui, pageIndex));
+        });
+    }
+
+    private static void openReset(ServerPlayer player, String page) {
+        CnpcUltraStyle.withAccent(CnpcUltraStyle.ACCENT_SAGA, () -> {
+            List<Offer> offers = SagaResetService.offers(player);
+            int pages = Math.max(1, (offers.size() + ROWS - 1) / ROWS);
+            int pg = Math.min(pages - 1, Math.max(0, resetPage(page)));
+            int shown = offers.isEmpty() ? 1 : Math.min(ROWS, offers.size() - pg * ROWS);
+            int pager = pages > 1 ? 1 : 0;
+            int designed = 188 + CnpcGuiSupport.TAB_BAR_H
+                    + shown * (CnpcGuiSupport.BTN_H + CnpcRowList.ROW_GAP)
+                    + pager * CnpcGuiSupport.ROW_STEP + CnpcGuiSupport.ROW_STEP;
+            int pageIndex = pg;
+            CnpcGuiSupport.showSized(player, CnpcLmGui.ID_SAGA, CnpcGuiSupport.W,
+                    CnpcGuiSupport.window(designed), (pl, gui) -> paintReset(pl, gui, pageIndex));
+        });
     }
 
     static void openConfirm(ServerPlayer player, String sagaId) {
-        CnpcUltraStyle.withAccent(CnpcUltraStyle.ACCENT_SAGA, () -> openConfirmAccent(player, sagaId));
+        CnpcUltraStyle.withAccent(CnpcUltraStyle.ACCENT_SAGA, () -> CnpcGuiSupport.showSized(
+                player, CnpcLmGui.ID_SAGA, CnpcGuiSupport.W,
+                CnpcGuiSupport.window(280), (pl, gui) -> paintConfirm(pl, gui, sagaId)));
     }
 
-    private static void openConfirmAccent(ServerPlayer player, String sagaId) {
-        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CHARACTER, CnpcGuiSupport.W,
-                CnpcGuiSupport.window(280), (pl, gui) -> paintConfirm(pl, gui, sagaId));
+    /** Saga pages sit on the Character Services tab bar. Saga Reset stays selected. */
+    private static int sagaTabs(ServerPlayer player, ICustomGui gui, int y, String active) {
+        return CnpcLmCharacterGui.servicesTabs(player, gui, y, "saga");
     }
 
-    private static void paintList(ServerPlayer player, ICustomGui gui, int page) {
+    private static void paintHome(ServerPlayer player, ICustomGui gui, int page) {
         List<Offer> offers = SagaResetService.offers(player);
         int pages = Math.max(1, (offers.size() + ROWS - 1) / ROWS);
         int pg = Math.min(pages - 1, Math.max(0, page));
         int infoY = CnpcGuiSupport.paintHeader(player, gui,
-                CnpcUltraStyle.header("Saga reset"),
+                CnpcUltraStyle.header("Saga"),
+                CnpcUltraStyle.subtitle("Loaded story progress"));
+        infoY = sagaTabs(player, gui, infoY, "sagas");
+        List<String> info = new ArrayList<>();
+        info.add(offers.isEmpty()
+                ? "No sagas are loaded. Ask staff to load one, then open this page again."
+                : offers.size() + " loaded. Reset saga progress replays one.");
+        int y = CnpcGuiSupport.bodyBelowInfo(
+                CnpcGuiSupport.paintInfoBeforePickList(gui, infoY, info, 1));
+        y = CnpcRowList.paintRow(gui, 184, y, "Sagas",
+                offers.isEmpty() ? "None loaded" : offers.size() + " loaded", null);
+        y = paintOfferRows(gui, y, offers, pg);
+        if (pages > 1) {
+            if (pg > 0) {
+                int previous = pg - 1;
+                CnpcGuiSupport.buttonSmall(gui, 62, CnpcUltraStyle.SUBTITLE + "« Previous",
+                        CnpcGuiSupport.COL_L, y, 95, () -> open(player, "sagas:" + previous));
+            }
+            if (pg + 1 < pages) {
+                int next = pg + 1;
+                CnpcGuiSupport.buttonSmall(gui, 63, CnpcUltraStyle.SUBTITLE + "Next »",
+                        CnpcGuiSupport.COL_R, y, 95, () -> open(player, "sagas:" + next));
+            }
+            y += CnpcGuiSupport.ROW_STEP;
+        }
+        CnpcGuiSupport.navBackToParent(player, gui, y, () -> CnpcLmCharacterGui.open(player, "main"));
+    }
+
+    private static void paintReset(ServerPlayer player, ICustomGui gui, int page) {
+        List<Offer> offers = SagaResetService.offers(player);
+        int pages = Math.max(1, (offers.size() + ROWS - 1) / ROWS);
+        int pg = Math.min(pages - 1, Math.max(0, page));
+        int infoY = CnpcGuiSupport.paintHeader(player, gui,
+                CnpcUltraStyle.header("Reset"),
                 CnpcUltraStyle.subtitle("Pay Ancient Coins to replay one saga"));
-        infoY = CnpcLmCharacterGui.characterTabs(player, gui, infoY, "saga");
+        infoY = sagaTabs(player, gui, infoY, "reset");
         List<String> info = new ArrayList<>();
         if (!SagaResetConfig.get().enabled) {
-            info.add("Saga reset is turned off. Ask staff to turn it on if you need to replay a saga.");
+            info.add(SagaResetService.RESET_OFF);
         } else {
             info.add("You have " + AncientCoinEconomy.inventoryBreakdown(player));
             info.add("Cost is the saga base plus your level. A saga that is not listed uses the default base.");
@@ -84,9 +150,6 @@ public final class CnpcLmSagaGui {
 
         int rowStep = CnpcGuiSupport.BTN_H + CnpcRowList.ROW_GAP;
         if (!SagaResetConfig.get().enabled) {
-            gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER,
-                    CnpcUltraStyle.subtitle("Saga reset is turned off. Ask staff to turn it on if you need to replay a saga."),
-                    CnpcGuiSupport.M, y, CnpcGuiSupport.textBandWidth(), 14);
             y += rowStep;
         } else if (offers.isEmpty()) {
             gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER,
@@ -109,16 +172,97 @@ public final class CnpcLmSagaGui {
             if (pg > 0) {
                 int previous = pg - 1;
                 CnpcGuiSupport.buttonSmall(gui, 62, CnpcUltraStyle.SUBTITLE + "« Previous",
-                        CnpcGuiSupport.COL_L, y, 95, () -> openList(player, "saga:" + previous));
+                        CnpcGuiSupport.COL_L, y, 95, () -> open(player, "reset:" + previous));
             }
             if (pg + 1 < pages) {
                 int next = pg + 1;
                 CnpcGuiSupport.buttonSmall(gui, 63, CnpcUltraStyle.SUBTITLE + "Next »",
-                        CnpcGuiSupport.COL_R, y, 95, () -> openList(player, "saga:" + next));
+                        CnpcGuiSupport.COL_R, y, 95, () -> open(player, "reset:" + next));
             }
             y += CnpcGuiSupport.ROW_STEP;
         }
-        CnpcGuiSupport.navSubmenu(player, gui, y, () -> CnpcLmCharacterGui.open(player, "bones:0"), CnpcUltraStyle.BACK);
+        CnpcGuiSupport.navBackToParent(player, gui, y, () -> CnpcLmCharacterGui.open(player, "main"));
+    }
+
+    private static void openProgress(ServerPlayer player) {
+        CnpcUltraStyle.withAccent(CnpcUltraStyle.ACCENT_SAGA, () -> {
+            List<Offer> offers = SagaResetService.offers(player);
+            int shown = Math.max(1, offers.size());
+            int designed = 180 + CnpcGuiSupport.TAB_BAR_H
+                    + shown * (CnpcGuiSupport.BTN_H + CnpcRowList.ROW_GAP)
+                    + CnpcGuiSupport.ROW_STEP;
+            CnpcGuiSupport.showSized(player, CnpcLmGui.ID_SAGA, CnpcGuiSupport.W,
+                    CnpcGuiSupport.window(designed), (pl, gui) -> paintProgress(pl, gui));
+        });
+    }
+
+    private static void paintProgress(ServerPlayer player, ICustomGui gui) {
+        List<Offer> offers = SagaResetService.offers(player);
+        int done = 0;
+        int active = 0;
+        for (Offer offer : offers) {
+            if (offer.status() == SagaResetService.Status.COMPLETED) {
+                done++;
+            } else if (offer.status() == SagaResetService.Status.IN_PROGRESS) {
+                active++;
+            }
+        }
+        int infoY = CnpcGuiSupport.paintHeader(player, gui,
+                CnpcUltraStyle.header("Progress"),
+                CnpcUltraStyle.subtitle("What you have finished and what is still open"));
+        infoY = sagaTabs(player, gui, infoY, "progress");
+        List<String> info = new ArrayList<>();
+        if (offers.isEmpty()) {
+            info.add("No sagas are loaded. Ask staff to load one, then open this page again.");
+        } else {
+            info.add(done + " completed · " + active + " in progress · " + offers.size() + " loaded.");
+        }
+        int y = CnpcGuiSupport.bodyBelowInfo(
+                CnpcGuiSupport.paintInfoBeforePickList(gui, infoY, info, 2));
+        if (offers.isEmpty()) {
+            gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER,
+                    CnpcUltraStyle.subtitle("No sagas are loaded. Ask staff to load one, then open this page again."),
+                    CnpcGuiSupport.M, y, CnpcGuiSupport.textBandWidth(), 14);
+            y += CnpcGuiSupport.BTN_H + CnpcRowList.ROW_GAP;
+        } else {
+            int rowStep = CnpcGuiSupport.BTN_H + CnpcRowList.ROW_GAP;
+            for (int i = 0; i < offers.size(); i++) {
+                Offer offer = offers.get(i);
+                gui.addLabel(CnpcGuiSupport.ID_GRID_BASE + i,
+                        CnpcUltraStyle.BODY + offer.name() + "  " + CnpcUltraStyle.SUBTITLE + offer.rowDetail(),
+                        CnpcGuiSupport.M, y, CnpcGuiSupport.textBandWidth(), 14);
+                y += rowStep;
+            }
+        }
+        CnpcGuiSupport.navBackToParent(player, gui, y, () -> CnpcLmCharacterGui.open(player, "main"));
+    }
+
+    private static int paintOfferRows(ICustomGui gui, int y, List<Offer> offers, int page) {
+        int rowStep = CnpcGuiSupport.BTN_H + CnpcRowList.ROW_GAP;
+        if (offers.isEmpty()) {
+            gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER,
+                    CnpcUltraStyle.subtitle("No sagas are loaded. Ask staff to load one, then open this page again."),
+                    CnpcGuiSupport.M, y, CnpcGuiSupport.textBandWidth(), 14);
+            return y + rowStep;
+        }
+        int from = page * ROWS;
+        int to = Math.min(offers.size(), from + ROWS);
+        for (int i = from; i < to; i++) {
+            Offer offer = offers.get(i);
+            gui.addLabel(CnpcGuiSupport.ID_GRID_BASE + (i - from), statusLine(offer),
+                    CnpcGuiSupport.M, y, CnpcGuiSupport.textBandWidth(), 14);
+            y += rowStep;
+        }
+        return y;
+    }
+
+    private static String statusLine(Offer offer) {
+        String status = switch (offer.status()) {
+            case COMPLETED -> CnpcUltraStyle.CONFIRM + offer.statusLabel();
+            case IN_PROGRESS -> CnpcUltraStyle.INFO + offer.statusLabel();
+            default -> CnpcUltraStyle.DIM + offer.statusLabel();
+        };
+        return CnpcUltraStyle.BODY + offer.name() + "  " + status;
     }
 
     private static void paintConfirm(ServerPlayer player, ICustomGui gui, String sagaId) {
@@ -126,6 +270,7 @@ public final class CnpcLmSagaGui {
         int infoY = CnpcGuiSupport.paintHeader(player, gui,
                 CnpcUltraStyle.header("Confirm reset"),
                 CnpcUltraStyle.subtitle("Your saga progress will be lost"));
+        infoY = sagaTabs(player, gui, infoY, "reset");
         List<String> lines = SagaResetService.confirmLines(player, sagaId);
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 4));
         boolean ready = offer != null && offer.resettable() && SagaResetConfig.get().enabled;
@@ -133,37 +278,37 @@ public final class CnpcLmSagaGui {
                 CnpcGuiSupport.COL_L, row,
                 () -> {
                     if (!ready) {
-                        String notice = offer == null ? "That saga is not loaded."
-                                : offer.status() == SagaResetService.Status.LOCKED ? "That saga is locked."
-                                : offer.status() == SagaResetService.Status.NOT_STARTED ? "Nothing to reset"
-                                : "Saga reset is turned off.";
+                        String notice = offer == null ? SagaResetService.NOT_LOADED
+                                : offer.status() == SagaResetService.Status.LOCKED ? SagaResetService.SAGA_LOCKED
+                                : offer.status() == SagaResetService.Status.NOT_STARTED ? SagaResetService.NOTHING_TO_RESET
+                                : SagaResetService.RESET_OFF;
                         CnpcGuiSupport.feedback(player, notice);
-                        openList(player, "saga");
+                        open(player, "reset");
                         return;
                     }
                     CnpcGuiSupport.act(
                             player,
                             () -> SagaResetService.reset(player, offer.id()),
-                            () -> openList(player, "saga"));
+                            () -> open(player, "reset"));
                 });
         row += CnpcGuiSupport.ROW_STEP + 8;
-        CnpcGuiSupport.navSubmenu(player, gui, row, () -> openList(player, "saga"), CnpcUltraStyle.BACK);
+        CnpcGuiSupport.navBackToParent(player, gui, row, () -> CnpcLmCharacterGui.open(player, "main"));
     }
 
     private static void click(ServerPlayer player, Offer offer, int page) {
         if (offer == null) {
-            openList(player, "saga:" + page);
+            open(player, "reset:" + page);
             return;
         }
         if (!offer.resettable()) {
             String notice = offer.status() == SagaResetService.Status.LOCKED
-                    ? "That saga is locked."
-                    : "Nothing to reset";
+                    ? SagaResetService.SAGA_LOCKED
+                    : SagaResetService.NOTHING_TO_RESET;
             CnpcGuiSupport.feedback(player, notice);
-            openList(player, "saga:" + page);
+            open(player, "reset:" + page);
             return;
         }
-        CnpcLmCharacterGui.open(player, "saga_confirm:" + offer.id());
+        openConfirm(player, offer.id());
     }
 
     private static String caption(Offer offer) {
@@ -175,16 +320,22 @@ public final class CnpcLmSagaGui {
         return CnpcUltraStyle.DIM + "▸ " + CnpcUltraStyle.plain(name) + "  " + CnpcUltraStyle.subtitle(detail);
     }
 
-    private static int parsePage(String page) {
-        if (page == null) {
-            return 0;
+    private static int resetPage(String page) {
+        if (page.startsWith("reset:")) {
+            return parsePage(page, "reset:");
         }
-        String p = page.toLowerCase(Locale.ROOT);
-        if (!p.startsWith("saga:")) {
+        if (page.startsWith("saga:")) {
+            return parsePage(page, "saga:");
+        }
+        return 0;
+    }
+
+    private static int parsePage(String page, String prefix) {
+        if (page == null || !page.startsWith(prefix)) {
             return 0;
         }
         try {
-            return Integer.parseInt(p.substring("saga:".length()).trim());
+            return Integer.parseInt(page.substring(prefix.length()).trim());
         } catch (NumberFormatException ignored) {
             return 0;
         }

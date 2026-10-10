@@ -188,7 +188,7 @@ public final class RivalChallengeManager {
         RivalStore.get().saveIfNeeded(now);
         DmzRewards.msg(to, LmChat.note("Challenge", "§e" + req.fromName
                 + " §7challenged you for §f" + mins + "§7 min!"));
-        DmzRewards.msg(to, LmChat.tip("/rival", "→ Challenge → Pending requests"));
+        DmzRewards.msg(to, LmChat.tip("/rival", "→ Actions → Review requests"));
         return "§aChallenge sent to §f" + req.toName + "§a (" + mins + " min).";
     }
 

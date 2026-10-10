@@ -73,7 +73,7 @@ public final class HeadPartPieces {
         return switch (page) {
             case PAGE_HEAD -> "Head";
             case PAGE_HORNS -> "Horns";
-            default -> "Head parts";
+            default -> "Model customization";
         };
     }
 

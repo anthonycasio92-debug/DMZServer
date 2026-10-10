@@ -37,6 +37,8 @@ public final class CnpcUltraStyle {
     public static final String MARK = "§";
     public static final String CONFIRM_BOLD = "§2§l";
     public static final String BACK = SUBTITLE + "« Back";
+    /** Home tab only. Returns to the Legacy Mechanics hub. */
+    public static final String BACK_TO_MAIN = SUBTITLE + "« Back to main menu";
     public static final String HUB = SUBTITLE + "« Hub";
     public static final String ON = CONFIRM_BOLD + "ON ";
     public static final String OFF = DIM + BOLD + "OFF ";

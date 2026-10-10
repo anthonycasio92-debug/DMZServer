@@ -112,11 +112,11 @@ public final class CharacterServicesGuiApi {
         }
         if (p.startsWith("bones:") || "bones".equals(p)) {
             if (!CharacterServicesConfig.get().headBoneShop.enabled) {
-                lines.add("§cHead parts are turned off on this server.");
+                lines.add("§cModel customization is turned off on this server.");
                 return lines;
             }
             if (!CharacterServicesAccess.canHeadBoneShop(player)) {
-                lines.add("§cYou do not have permission for head parts.");
+                lines.add("§cYou do not have permission for model customization.");
                 return lines;
             }
             lines.add("§7Turn parts on or off. Horns, ears, and antennae can be worn together.");
@@ -133,7 +133,7 @@ public final class CharacterServicesGuiApi {
                 return lines;
             }
             lines.add("§7Change hair, colors, and other cosmetics.");
-            lines.add("§7Use §fHead parts §7for cross-race ears, horns, and more.");
+            lines.add("§7Use §fModel customization §7for cross-race ears, horns, and more.");
             lines.add("§7Reskin only changes how you look. To change your fighting class, use §fChange class §7instead.");
             lines.add("§7Level, stats, and race are unchanged.");
             lines.add(costLine(player, CharacterServicesSystem.reskinCost(player)));
@@ -200,7 +200,7 @@ public final class CharacterServicesGuiApi {
             return lines;
         }
         lines.add("§7Rebuild your character without starting from zero.");
-        lines.add("§7Race · class · reskin · head parts.");
+        lines.add("§7Race · class · reskin · model customization.");
         return lines;
     }
 

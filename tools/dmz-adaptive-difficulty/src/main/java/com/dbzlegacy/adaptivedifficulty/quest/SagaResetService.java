@@ -28,7 +28,15 @@ import net.minecraft.world.entity.Entity;
  * Progress clear is {@link PlayerQuestData#resetSaga}, which also drops a tracked quest in that saga.
  */
 public final class SagaResetService {
-    public static final String NOT_ENOUGH = "Not enough Ancient Coins";
+    public static final String NOT_ENOUGH = "Not enough Ancient Coins. Earn more, then try this reset again.";
+    public static final String RESET_OFF =
+            "Saga reset is turned off. Ask staff to turn it on if you need to replay a saga.";
+    public static final String SAGA_LOCKED =
+            "That saga is locked. Finish the earlier story quests that unlock it, then you can reset it.";
+    public static final String NOTHING_TO_RESET =
+            "Nothing to reset. Start this saga first, then come back when you have progress to clear.";
+    public static final String NOT_LOADED =
+            "That saga is not loaded. Ask staff to load it, then open this page again.";
 
     private SagaResetService() {}
 
@@ -48,7 +56,7 @@ public final class SagaResetService {
             return switch (status) {
                 case COMPLETED -> "Completed";
                 case IN_PROGRESS -> "In progress";
-                case LOCKED -> "Locked";
+                case LOCKED -> "Locked until earlier quests";
                 case NOT_STARTED -> "Not started";
             };
         }
@@ -57,7 +65,10 @@ public final class SagaResetService {
         public String rowDetail() {
             String price = SagaResetService.costText(cost);
             if (status == Status.NOT_STARTED) {
-                return price + " · Not started · Nothing to reset";
+                return price + " · Not started · Nothing to reset until you play it";
+            }
+            if (status == Status.LOCKED) {
+                return price + " · Locked until earlier story quests unlock it";
             }
             return price + " · " + statusLabel();
         }
@@ -92,7 +103,7 @@ public final class SagaResetService {
         Offer offer = findOffer(player, sagaId);
         List<String> lines = new ArrayList<>();
         if (offer == null) {
-            lines.add("That saga is not loaded.");
+            lines.add(NOT_LOADED);
             return lines;
         }
         lines.add(confirmSentence(offer));
@@ -104,13 +115,15 @@ public final class SagaResetService {
         return lines;
     }
 
-    /** "Reset Dragon Balls Saga? Cost: 850 Ancient Coins. Your saga progress will be lost." */
+    /** "Reset Dragon Balls Saga progress? This costs 850 Ancient Coins and cannot be undone." */
     public static String confirmSentence(Offer offer) {
         if (offer == null) {
-            return "That saga is not loaded.";
+            return NOT_LOADED;
         }
-        return "Reset " + sagaTitle(offer.name()) + "? Cost: " + costText(offer.cost())
-                + ". Your saga progress will be lost.";
+        String price = offer.cost() <= 0L
+                ? "This is free"
+                : "This costs " + costText(offer.cost());
+        return "Reset " + sagaTitle(offer.name()) + " progress? " + price + " and cannot be undone.";
     }
 
     /**
@@ -118,14 +131,14 @@ public final class SagaResetService {
      */
     public static String reset(ServerPlayer player, String sagaId) {
         if (player == null) {
-            return "Could not reset that saga.";
+            return "Could not reset that saga. Go back and choose a loaded saga.";
         }
         if (!SagaResetConfig.get().enabled) {
-            return "Saga reset is turned off.";
+            return RESET_OFF;
         }
         Saga saga = find(sagaId);
         if (saga == null || saga.getId() == null) {
-            return "That saga is not loaded.";
+            return NOT_LOADED;
         }
         StatsData stats = DmzProgression.stats(player);
         if (stats == null || stats.getPlayerQuestData() == null) {
@@ -134,10 +147,10 @@ public final class SagaResetService {
         PlayerQuestData data = stats.getPlayerQuestData();
         String id = saga.getId();
         if (data.isSagaLocked(id)) {
-            return "That saga is locked.";
+            return SAGA_LOCKED;
         }
         if (status(data, saga) == Status.NOT_STARTED) {
-            return "Nothing to reset";
+            return NOTHING_TO_RESET;
         }
         if (data.isInParty()) {
             return "Leave your quest party before resetting a saga.";

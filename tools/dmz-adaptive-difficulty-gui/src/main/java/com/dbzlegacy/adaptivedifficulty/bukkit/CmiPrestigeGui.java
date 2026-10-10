@@ -94,7 +94,7 @@ public final class CmiPrestigeGui {
                 List.of("&7Permanent Majin / Mutant (&e5 &7pts)",
                         "&aPermanent purchase &8· unpurchase = no refund"), null, "effects"));
         gui.addButton(navBtn(31, "prestige.main.tiers", Material.BEACON, "&6Difficulty Tiers",
-                List.of("&7Permanent unlocks with prestige points",
+                List.of("&7Permanent unlocks with prestige favor",
                         "&7T1–2 &e1pt &8· &7T3–4 &e2pt &8· &7T5–6 &e3pt &8· &7T7 &e4pt",
                         "&aPermanent &8· survives prestige"), null, "tiers"));
         gui.addButton(hubBtn(40));
@@ -458,14 +458,14 @@ public final class CmiPrestigeGui {
             btn.lockField();
             List<String> lore = new ArrayList<>();
             lore.add("");
-            lore.add("&6Wallet: &e" + ph.getOrDefault("points", "0") + " &7prestige points");
+            lore.add("&6Wallet: &e" + ph.getOrDefault("points", "0") + " &7prestige favor");
             lore.addAll(overrideLore);
             btn.addLore(lore);
             return btn;
         }
         Map<String, String> vars = Map.of("points", ph.getOrDefault("points", "0"));
         List<String> walletLine = GuiTooltips.lore("prestige.main.wallet",
-                List.of("&6Wallet: &e{points} &7prestige points"), vars);
+                List.of("&6Wallet: &e{points} &7prestige favor"), vars);
         CMIGuiButton btn = new CMIGuiButton(4, Material.GOLD_INGOT,
                 GuiTooltips.name("prestige.main.wallet", title, vars));
         btn.lockField();
