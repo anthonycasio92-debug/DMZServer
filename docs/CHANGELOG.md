@@ -1,6 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.61**.
+What changed from **4.5.147** through **4.6.62**.
+
+## Test menu is its own screen
+
+`/lm admin testgui` opens its own menu. The title is gold, the rows have a gap, and Head parts on that menu uses the new colors. Difficulty, rival, sparring, prestige, character, and staff admin still open the current menus. `/lm` is unchanged.
+
+The previous build was still running the old test class from the base jar, so the command opened the normal hub. This build copies `CnpcStaffTestGui` from source.
 
 ## Head parts turn on one at a time
 

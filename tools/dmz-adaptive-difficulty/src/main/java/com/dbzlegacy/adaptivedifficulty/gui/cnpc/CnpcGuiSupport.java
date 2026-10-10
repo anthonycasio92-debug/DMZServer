@@ -1093,7 +1093,7 @@ public final class CnpcGuiSupport {
 
     /** System top-level screen (e.g. Prestige main): Main → Legacy Mechanics hub. */
     public static void navSystemRoot(ServerPlayer player, ICustomGui gui, int row) {
-        buttonSmall(gui, ID_NAV_HUB, "§7Hub", COL_L, row, 95, () -> CnpcLmHubGui.open(player, "main"));
+        buttonSmall(gui, ID_NAV_HUB, "§7Hub", COL_L, row, 95, () -> openMenuHub(player));
     }
 
     /** Submenu: Back → parent page in this system; Main → Legacy Mechanics hub. */
@@ -1101,7 +1101,16 @@ public final class CnpcGuiSupport {
         if (back != null) {
             buttonSmall(gui, ID_NAV_BACK, backLabel == null ? "§7« Back" : backLabel, COL_L, row, 95, back);
         }
-        buttonSmall(gui, ID_NAV_HUB, "§7Hub", COL_R, row, 95, () -> CnpcLmHubGui.open(player, "main"));
+        buttonSmall(gui, ID_NAV_HUB, "§7Hub", COL_R, row, 95, () -> openMenuHub(player));
+    }
+
+    /** Test-menu session returns to that menu. {@code /lm} still opens the current hub. */
+    private static void openMenuHub(ServerPlayer player) {
+        if (CnpcUltraPreview.active(player)) {
+            CnpcStyledTestHub.open(player);
+            return;
+        }
+        CnpcLmHubGui.open(player, "main");
     }
 
     /** @deprecated use {@link #navSystemRoot} or {@link #navSubmenu} */
