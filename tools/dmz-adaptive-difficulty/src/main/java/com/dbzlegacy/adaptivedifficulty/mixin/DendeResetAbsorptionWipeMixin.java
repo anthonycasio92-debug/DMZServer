@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.mixin;
 
 import com.dbzlegacy.adaptivedifficulty.noea.AbsorptionWipeHelper;
+import com.dbzlegacy.adaptivedifficulty.noea.GodKiWipeHelper;
 import com.dragonminez.common.network.C2S.NPCActionC2S;
 import com.dragonminez.common.stats.StatsData;
 import net.minecraft.server.level.ServerPlayer;
@@ -28,5 +29,6 @@ public abstract class DendeResetAbsorptionWipeMixin {
             return;
         }
         AbsorptionWipeHelper.wipe(player, "NPCActionC2S.handleDende");
+        GodKiWipeHelper.wipe(player, "NPCActionC2S.handleDende");
     }
 }

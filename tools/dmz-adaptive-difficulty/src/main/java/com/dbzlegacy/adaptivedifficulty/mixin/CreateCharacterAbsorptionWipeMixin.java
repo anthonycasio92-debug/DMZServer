@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.mixin;
 
 import com.dbzlegacy.adaptivedifficulty.noea.AbsorptionWipeHelper;
+import com.dbzlegacy.adaptivedifficulty.noea.GodKiWipeHelper;
 import com.dragonminez.common.network.C2S.CreateCharacterC2S;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.Status;
@@ -39,5 +40,6 @@ public abstract class CreateCharacterAbsorptionWipeMixin {
             return;
         }
         AbsorptionWipeHelper.wipe(player, "CreateCharacterC2S");
+        GodKiWipeHelper.wipe(player, "CreateCharacterC2S");
     }
 }

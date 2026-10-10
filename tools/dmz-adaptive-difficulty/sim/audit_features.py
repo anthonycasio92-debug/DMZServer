@@ -1997,7 +1997,26 @@ def main() -> int:
           and "StatsDataGuardsMixin" in mixins_json
           and "StatsDataResetPrestigeSyncMixin" not in mixins_json
           and "ResourcesPoolClampMixin" not in mixins_json
-          and "ResourcesLoadClampMixin" not in mixins_json)
+          and "ResourcesLoadClampMixin" not in mixins_json
+          and "GodKiWipeHelper.wipe(player, null)" in absorb_reset
+          and "GodKiWipeHelper.wipeIfRaceChanges" in absorb_reset)
+    god_ki = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/noea/GodKiWipeHelper.java")
+    check("god ki progress resets with majin absorption",
+          "NoeaGodKiLedgerIdentity" in god_ki
+          and "skills.removeSkill(SKILL)" in god_ki
+          and "GROUP + \":\"" in god_ki
+          and "getStackFormsUsedBefore" in god_ki
+          and "clearPreviousStackFormRecord" in god_ki
+          and "m_128473_(key)" in god_ki
+          and "computed from the worn demon form" in god_ki
+          and "godforms" in god_ki
+          and "LivingDeathEvent" not in god_ki
+          and "GodKiWipeHelper.wipe(player, \"StatsCommand.resetStats\")" in absorb_cmd
+          and "GodKiWipeHelper.wipe(player, \"StatsResetCommands.resetSelf\")" in absorb_melee
+          and "GodKiWipeHelper.wipe(player, \"NPCActionC2S.handleDende\")" in absorb_dende
+          and "GodKiWipeHelper.wipe(player, \"CreateCharacterC2S\")" in absorb_create
+          and "GodKiWipeHelper.wipe(player, \"CharacterServicesSystem.executeRaceChange\")" in absorb_services
+          and "GodKiWipeHelper" in build_sh)
 
     print("\n=== CNPC notice color (4.6.41) ===")
     notice = read(cnpc_dir / "CnpcMenuFeedback.java")

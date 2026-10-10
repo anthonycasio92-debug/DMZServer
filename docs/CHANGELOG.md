@@ -1,6 +1,14 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.66**.
+What changed from **4.5.147** through **4.6.68**.
+
+## God Ki history is removed, not zeroed
+
+The 4.6.67 wipe left a mastery entry at 0, the used-form list, and the previous stack form. Those are removed now. The skill, the live form, and the ledger string still clear on the same resets. Death still leaves God Ki in place.
+
+## God Ki resets with the other wipes
+
+`/dmzstats reset`, the melee reset, Dende's reset, a race change, and a new character clear God Ki the same way they clear Majin absorption. That removes the `NoeaGodKiLedgerIdentity` string, the `godkienhancement` skill, the Enhance with God Ki stack form, and its mastery. Death does not clear it. God forms and demon god tier are left alone: those are not stored God Ki progress.
 
 ## Test hub links go straight there
 

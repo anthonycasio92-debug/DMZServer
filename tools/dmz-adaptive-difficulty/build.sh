@@ -379,7 +379,7 @@ merge_onto_base_jar() {
     # Ordinary classes cannot live in the mixin package. The server classloader
     # does not resolve them, so the Majin wipe never runs.
     mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/noea"
-    for noea_cls in MajinAbsorptionStore AbsorptionClearLog AbsorptionWipeHelper; do
+    for noea_cls in MajinAbsorptionStore AbsorptionClearLog AbsorptionWipeHelper GodKiWipeHelper; do
       if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/noea/${noea_cls}.class" ]]; then
         cp "$OUT/com/dbzlegacy/adaptivedifficulty/noea/${noea_cls}.class" \
           "$merge/com/dbzlegacy/adaptivedifficulty/noea/${noea_cls}.class"
