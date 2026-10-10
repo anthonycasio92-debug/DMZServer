@@ -3,6 +3,7 @@ package com.dbzlegacy.adaptivedifficulty.character;
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.noea.AbsorptionWipeHelper;
+import com.dbzlegacy.adaptivedifficulty.noea.GodKiWipeHelper;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.progression.race.RaceLock;
@@ -344,6 +345,7 @@ public final class CharacterServicesSystem {
                 return "§cCharacter data unavailable.";
             }
             AbsorptionWipeHelper.wipe(player, "CharacterServicesSystem.executeRaceChange");
+            GodKiWipeHelper.wipe(player, "CharacterServicesSystem.executeRaceChange");
             clearForms(ch, player);
             String priorHeadBone = CosmeticHeadBoneService.activeBone(player);
             String priorClassBeforeRaceChange = "";
