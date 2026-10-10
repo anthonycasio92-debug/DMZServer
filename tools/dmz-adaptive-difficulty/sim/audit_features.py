@@ -1690,10 +1690,13 @@ def main() -> int:
           and "setEntitySyncedById" in preview_src
           and "CnpcGeckoPreviewBridge" not in live_preview
           and "paintLivePlayerPreview" in bone_gui)
-    char_api = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/CharacterServicesGuiApi.java")
-    check("body accessories are listed and not sold",
-          "PAGE_BODY" in bone_gui
-          and "cannot turn them on or off" in char_api)
+    pieces = read(SRC / "com/dbzlegacy/adaptivedifficulty/character/HeadPartPieces.java")
+    check("body accessories are not a shop page",
+          "PAGE_BODY" not in bone_gui
+          and "PAGE_BODY" not in pieces
+          and "Body »" not in bone_gui
+          and "ultraScrollLines" not in pieces
+          and "PAGES = 2" in pieces)
 
     print("\n=== GUI humanization (4.6.17) ===")
     rival_chat = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/RivalChatMenu.java")
@@ -2166,14 +2169,19 @@ def main() -> int:
     check("testgui opens the styled hub",
           "CnpcStyledTestHub.open" in test_gui
           and "CnpcLmHubGui" not in test_gui
+          and "CnpcUltraPreview" not in test_gui
           and "CnpcUltraStyle.header" in test_hub
-          and "CnpcRowList.paintRow" in test_hub
-          and "CnpcUltraPreview.leave" in test_hub
+          and "CnpcLmGui.open" in test_hub
+          and "CnpcUltraPreview" not in test_hub
           and "CnpcStaffTestGui" in build_sh)
     check("head parts use the test menu colors",
           "CnpcUltraStyle.CONFIRM" in bone_gui
           and "ultraPartCaption" in bone_gui)
     style_support = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcGuiSupport.java")
+    check("hub from a menu opens the main hub",
+          "CnpcStyledTestHub" not in style_support
+          and "CnpcUltraPreview.active" not in style_support
+          and "CnpcLmHubGui.open(player, \"main\")" in style_support)
     check("production menus use the gold CNPC style",
           "CnpcUltraStyle.header(title)" in style_support
           and "CnpcUltraStyle.subtitle(subtitle)" in style_support

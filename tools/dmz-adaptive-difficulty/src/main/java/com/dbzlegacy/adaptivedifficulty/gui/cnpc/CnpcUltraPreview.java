@@ -7,7 +7,7 @@ import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Staff test-menu session. Colors are always the gold CNPC style.
- * While this is on, Hub returns to {@link CnpcStyledTestHub}. {@code /lm} turns it off.
+ * Old test-menu session flag. Hub no longer reads it. {@code /lm} still clears it.
  */
 public final class CnpcUltraPreview {
     private static final Set<UUID> ACTIVE = ConcurrentHashMap.newKeySet();

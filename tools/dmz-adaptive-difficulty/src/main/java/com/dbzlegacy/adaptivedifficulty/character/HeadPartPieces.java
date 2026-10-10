@@ -12,16 +12,13 @@ import java.util.Set;
  * Atomic DMZ head bones, joined with {@code +} into the single {@code activeHeadBone} token.
  * DMZ's client splits that token on {@code +} and draws each geo bone.
  *
- * <p>DMZUltra's 68 {@code part.<name>} accessories are not in this token. {@code FormParts}
- * is client-only and keyed by the worn form. {@code DmzLookS2CPacket} MENU/RESTYLE and
- * {@code SceneFormS2CPacket} do not select those pieces, and the form editor has no
- * pre-highlight argument. {@link #ultraScrollLines()} is a read-only list.
+ * <p>DMZUltra form accessories are not in this token and are not listed here.
+ * {@code FormParts} is client-only and keyed by the worn form.
  */
 public final class HeadPartPieces {
     public static final int PAGE_HEAD = 0;
     public static final int PAGE_HORNS = 1;
-    public static final int PAGE_BODY = 2;
-    public static final int PAGES = 3;
+    public static final int PAGES = 2;
 
     /** Stable join order. DMZ skips a piece named {@code hair} inside a multi-bone token. */
     public static final List<String> ATOMIC = List.of(
@@ -44,25 +41,6 @@ public final class HeadPartPieces {
             "hair", "ears1", "ears2", "ears3", "antennas1", "antennas2");
     private static final List<String> HORNS_PAGE = List.of(
             "horns1", "horns2", "horns3", "horns4", "horns5", "majin1", "majin2", "majin3");
-
-    /** DMZUltra form-part ids (geo bone {@code part.<name>}). Not a shop catalog. */
-    public static final List<String> ULTRA_HEAD = List.of(
-            "antennae", "antlers", "brow_gem", "brow_spikes", "cat_ears", "crest_fin",
-            "diadem", "ear_fins", "flame_crown", "hair_spikes", "halo_clock", "halo_disc",
-            "halo_ring", "halo_shards", "headband", "horns_great", "horns_nub", "horns_ram",
-            "horns_swept", "star_crown", "third_eye", "whiskers");
-    public static final List<String> ULTRA_TORSO = List.of(
-            "back_crystals", "back_spines", "cape", "cape_ragged", "chest_orb", "collar_high",
-            "dorsal_fin", "mandala", "orbit_rings", "sash", "scarf", "tabard", "usekh",
-            "wing_cases", "wings_bat", "wings_bat_small", "wings_feather", "wings_insect",
-            "wings_light");
-    public static final List<String> ULTRA_ARMS = List.of(
-            "arm_blade", "arm_fins", "arm_wraps", "bracer", "claws", "cuffs", "gauntlet",
-            "pauldron", "shoulder_crystal", "shoulder_gear", "shoulder_guard", "shoulder_spikes",
-            "spirit_orbs", "wrist_flame", "wrist_ring");
-    public static final List<String> ULTRA_LEGS = List.of(
-            "ankle_fins", "ankle_flame", "ankle_ring", "gear_wheel", "greave", "knee_spike",
-            "tail_dragon", "tail_fur", "tail_lion", "tail_spade", "tail_stinger");
 
     private static final Map<String, Integer> INDEX;
 
@@ -95,7 +73,6 @@ public final class HeadPartPieces {
         return switch (page) {
             case PAGE_HEAD -> "Head";
             case PAGE_HORNS -> "Horns";
-            case PAGE_BODY -> "Body accessories";
             default -> "Head parts";
         };
     }
@@ -162,23 +139,6 @@ public final class HeadPartPieces {
             }
         }
         return sb.toString();
-    }
-
-    /** Read-only DMZUltra names, grouped. These are not toggles. */
-    public static List<String> ultraScrollLines() {
-        List<String> lines = new ArrayList<>();
-        addGroup(lines, "Head", ULTRA_HEAD);
-        addGroup(lines, "Torso / Back", ULTRA_TORSO);
-        addGroup(lines, "Arms", ULTRA_ARMS);
-        addGroup(lines, "Legs / Tail", ULTRA_LEGS);
-        return List.copyOf(lines);
-    }
-
-    private static void addGroup(List<String> lines, String title, List<String> ids) {
-        lines.add("§6" + title);
-        for (String id : ids) {
-            lines.add("§7" + CosmeticHeadBoneCatalog.prettyId(id));
-        }
     }
 
     private static void append(StringBuilder sb, String id) {

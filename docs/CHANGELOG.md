@@ -1,6 +1,10 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.65**.
+What changed from **4.5.147** through **4.6.66**.
+
+## Test hub links go straight there
+
+`/lm admin testgui` lists each screen once. A button opens that screen. Hub on any screen opens the main hub. Head parts is Head and Horns only. The Body page is gone.
 
 ## Staff config editor
 
@@ -10,7 +14,7 @@ What changed from **4.5.147** through **4.6.65**.
 
 `/lm` and the other menus use gold headers, gray subtitles, a gold divider, section tags, and tab strips. Head parts uses the same on/off colors. The wording from the 4.6.53 humanization audit is unchanged.
 
-`/lm admin testgui` still opens the staff shortcut. Hub from that session still returns to it.
+`/lm admin testgui` still opens the staff shortcut. Hub opens the main hub.
 
 ## Saga reset follows loaded sagas
 

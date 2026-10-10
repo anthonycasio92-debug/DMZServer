@@ -119,12 +119,6 @@ public final class CharacterServicesGuiApi {
                 lines.add("§cYou do not have permission for head parts.");
                 return lines;
             }
-            int bonePage = parseBonePage(p);
-            if (bonePage == com.dbzlegacy.adaptivedifficulty.character.HeadPartPieces.PAGE_BODY) {
-                lines.add("§7These follow the form you are wearing.");
-                lines.add("§7The server cannot turn them on or off, or pre-select them in the form editor.");
-                return lines;
-            }
             lines.add("§7Turn parts on or off. Horns, ears, and antennae can be worn together.");
             lines.add("§7A locked part charges Ancient Coins when you turn it on.");
             return lines;
@@ -293,20 +287,6 @@ public final class CharacterServicesGuiApi {
             return "§7Cost §afree §8(cost waived)";
         }
         return "§7Cost §f" + CharacterServicesSystem.formatCost(copperCost) + " §7Ancient Coins";
-    }
-
-    private static int parseBonePage(String page) {
-        if (page == null || page.isBlank() || "bones".equals(page)) {
-            return 0;
-        }
-        if (page.startsWith("bones:")) {
-            try {
-                return Integer.parseInt(page.substring("bones:".length()).trim());
-            } catch (NumberFormatException ignored) {
-                return 0;
-            }
-        }
-        return 0;
     }
 
     private static String titleBone(String id) {

@@ -410,11 +410,10 @@ public final class CosmeticHeadBoneService {
     /**
      * GUI rows for one group: {@code boneId\\tdisplay\\tstate\\tcostText}.
      * State is {@code E} on, {@code U} unlocked, {@code N} included with the race, {@code L} locked.
-     * The body-accessories page is not a shop, so it returns no rows.
      */
     public static List<String> cards(ServerPlayer player, int page) {
         List<String> out = new ArrayList<>();
-        if (player == null || page == HeadPartPieces.PAGE_BODY) {
+        if (player == null) {
             return out;
         }
         int p = Math.max(0, Math.min(page, HeadPartPieces.PAGES - 1));
