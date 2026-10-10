@@ -370,12 +370,30 @@ public final class CnpcGuiSupport {
     }
 
     public static ILabel title(ICustomGui gui, int id, String text) {
-        ILabel l = gui.addLabel(id, safeChat(text), M, 8, textBandWidth(), 18);
+        ILabel l = gui.addLabel(id, safeChat(centerHeader(text)), M, 8, textBandWidth(), 18);
         try {
             l.setScale(1.15f);
         } catch (Throwable ignored) {
         }
         return l;
+    }
+
+    /** Pad the page title so it sits in the middle of the text band. */
+    private static String centerHeader(String text) {
+        if (text == null || text.isEmpty()) {
+            return "";
+        }
+        String plain = CnpcUltraStyle.plain(text);
+        int band = Math.max(plain.length(), textBandWidth() / 6);
+        int pad = Math.max(0, (band - plain.length()) / 2);
+        if (pad == 0) {
+            return text;
+        }
+        int i = 0;
+        while (i + 1 < text.length() && text.charAt(i) == '§') {
+            i += 2;
+        }
+        return text.substring(0, i) + " ".repeat(pad) + text.substring(i);
     }
 
     public static void subtitle(ICustomGui gui, int id, String text) {
@@ -1085,9 +1103,9 @@ public final class CnpcGuiSupport {
         return null;
     }
 
-    /** System top-level screen (e.g. Prestige main): Main → Legacy Mechanics hub. */
+    /** System top-level screen: « Back on the left, same label as every other page, opens the hub. */
     public static void navSystemRoot(ServerPlayer player, ICustomGui gui, int row) {
-        buttonSmall(gui, ID_NAV_HUB, CnpcUltraStyle.HUB, COL_L, row, 95, () -> openMenuHub(player));
+        buttonSmall(gui, ID_NAV_BACK, CnpcUltraStyle.BACK, COL_L, row, 95, () -> openMenuHub(player));
     }
 
     /** Submenu: Back → parent page in this system; Main → Legacy Mechanics hub. */

@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.gui.cnpc;
 
+import com.dbzlegacy.adaptivedifficulty.config.editor.ConfigEditor;
 import com.dbzlegacy.adaptivedifficulty.gui.ProgressionGuiApi;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem;
 import java.util.ArrayList;
@@ -38,6 +39,7 @@ public final class CnpcLmPrestigeGui {
             case "shop", "skills" -> 360;
             case "tiers", "tier" -> 380;
             case "forms", "effects", "effect" -> 380;
+            case "modules" -> 460;
             default -> 440 + (CnpcGuiSupport.staff(player) ? CnpcGuiSupport.TAB_BAR_H : 0);
         });
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_PRESTIGE, CnpcGuiSupport.W, height, (pl, gui) -> {
@@ -47,6 +49,13 @@ public final class CnpcLmPrestigeGui {
                 case "forms", "effects", "effect" -> paintEffects(pl, gui);
                 case "cap", "breakthrough" -> paintMain(pl, gui);
                 case "tiers", "tier" -> paintTiers(pl, gui);
+                case "modules" -> {
+                    if (CnpcGuiSupport.staff(pl)) {
+                        paintModules(pl, gui);
+                    } else {
+                        paintMain(pl, gui);
+                    }
+                }
                 default -> paintMain(pl, gui);
             }
         });
@@ -61,7 +70,7 @@ public final class CnpcLmPrestigeGui {
             }, "prestige", action -> {
                 String id = action.startsWith("tab:") ? action.substring(4) : action;
                 if ("modules".equals(id)) {
-                    CnpcLmGui.open(player, "progression", "main");
+                    open(player, "modules");
                 } else {
                     open(player, "main");
                 }
@@ -81,6 +90,42 @@ public final class CnpcLmPrestigeGui {
         CnpcGuiSupport.button(gui, 24, CnpcUltraStyle.ACCENT + "Difficulty tiers", CnpcGuiSupport.COL_L, row, () -> open(player, "tiers"));
         row += CnpcGuiSupport.ROW_STEP;
         footer(player, gui, row, null);
+    }
+
+    /** Staff links. Each open row goes straight to that config tab. Closed rows stay visible. */
+    private static void paintModules(ServerPlayer player, ICustomGui gui) {
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "Modules",
+                "Each row opens that config tab");
+        infoY = CnpcGuiSupport.paintTabBar(gui, infoY, new String[] {
+                "modules|Modules", "prestige|Prestige"
+        }, "modules", action -> {
+            String id = action.startsWith("tab:") ? action.substring(4) : action;
+            if ("prestige".equals(id)) {
+                open(player, "main");
+            } else {
+                open(player, "modules");
+            }
+        });
+        int y = CnpcGuiSupport.bodyBelowInfo(infoY);
+        List<ConfigEditor.ModuleLink> links = ConfigEditor.moduleLinks();
+        int index = 0;
+        for (ConfigEditor.ModuleLink link : links) {
+            if (link.open()) {
+                String label = CnpcUltraStyle.BODY + link.label() + " " + CnpcUltraStyle.DIM + "· "
+                        + CnpcUltraStyle.SUBTITLE + link.fields() + " fields";
+                String module = link.id();
+                CnpcGuiSupport.buttonSmallFull(gui, CnpcGuiSupport.ID_GRID_BASE + index, label,
+                        CnpcGuiSupport.M, y, CnpcGuiSupport.textBandWidth(),
+                        () -> CnpcLmGui.open(player, "config", "list:" + module + ":0:"));
+            } else {
+                gui.addLabel(300 + index, CnpcUltraStyle.DIM + link.label() + " " + CnpcUltraStyle.DIM + "· "
+                                + CnpcUltraStyle.DIM + "Closed",
+                        CnpcGuiSupport.M, y + 4, CnpcGuiSupport.textBandWidth(), 12);
+            }
+            y += CnpcGuiSupport.BTN_H + CnpcRowList.ROW_GAP;
+            index++;
+        }
+        CnpcGuiSupport.navSystemRoot(player, gui, y);
     }
 
     private static void paintTurnIn(ServerPlayer player, ICustomGui gui) {

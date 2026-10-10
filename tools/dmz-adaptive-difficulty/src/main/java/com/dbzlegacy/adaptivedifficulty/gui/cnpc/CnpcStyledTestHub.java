@@ -45,7 +45,7 @@ public final class CnpcStyledTestHub {
         }
         y = link(gui, y, id++, "Skills", () -> CnpcLmSkillCheckGui.openSkillsAdmin(player, "core"));
         y = link(gui, y, id, "Saga Reset", () -> CnpcLmSagaGui.open(player, "saga"));
-        CnpcGuiSupport.footerCloseRefresh(player, gui, y, () -> open(player));
+        CnpcGuiSupport.navSystemRoot(player, gui, y);
         CnpcGuiSupport.paintSystemMainPreview(CnpcGuiSupport.target(player), gui, player);
     }
 

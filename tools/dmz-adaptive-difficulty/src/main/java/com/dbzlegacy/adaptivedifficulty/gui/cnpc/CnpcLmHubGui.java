@@ -62,7 +62,7 @@ public final class CnpcLmHubGui {
             gui.addLabel(CnpcGuiSupport.ID_STATUS_TAG, CnpcUltraStyle.INFO + "Legacy Mechanics could not load your menu data. Try relogging.",
                     CnpcGuiSupport.M, row, CnpcGuiSupport.textBandWidth(), 14);
             row += gap;
-            CnpcGuiSupport.footerCloseRefresh(player, gui, row, () -> paintMain(player));
+            hubFooter(player, gui, row);
             CnpcGuiSupport.paintSystemMainPreview(who, gui, player);
             return;
         }
@@ -109,8 +109,16 @@ public final class CnpcLmHubGui {
                     () -> CnpcLmGui.open(player, "saga", "main"));
             row += gap;
         }
-        CnpcGuiSupport.footerCloseRefresh(player, gui, row, () -> paintMain(player));
+        hubFooter(player, gui, row);
         CnpcGuiSupport.paintSystemMainPreview(who, gui, player);
+    }
+
+    /** Same « Back label as every other page. On the hub it closes the menu. */
+    private static void hubFooter(ServerPlayer player, ICustomGui gui, int row) {
+        CnpcGuiSupport.buttonSmall(gui, CnpcGuiSupport.ID_NAV_BACK, CnpcUltraStyle.BACK,
+                CnpcGuiSupport.COL_L, row, 95, () -> {});
+        CnpcGuiSupport.buttonSmall(gui, CnpcGuiSupport.ID_REFRESH, CnpcUltraStyle.SUBTITLE + "Refresh",
+                CnpcGuiSupport.COL_R, row, 95, () -> paintMain(player));
     }
 
     private static void systemBtn(

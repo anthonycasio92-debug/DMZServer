@@ -86,6 +86,15 @@ public final class ConfigEditor {
     /** One module tab. Rival and sparring stay visible and closed. */
     public record EditorTab(String id, String label, boolean editable, String fileName) {}
 
+    /** One row on the prestige Modules page. Closed modules stay visible. */
+    public record ModuleLink(String id, String label, boolean open, int fields) {}
+
+    /** Fields that share a prefix inside one tab. */
+    public record FieldGroup(String name, List<Entry> fields) {}
+
+    /** One unsaved edit, newest first when listed. */
+    public record PendingChange(String name, String before, String after) {}
+
     public enum DraftOp { SET, ADD, REMOVE }
 
     /** A change held in memory until Save all. */
@@ -496,6 +505,92 @@ public final class ConfigEditor {
         return tabs;
     }
 
+    /** Editor tabs first, then later slices that stay closed. */
+    public static List<ModuleLink> moduleLinks() {
+        List<ModuleLink> links = new ArrayList<>();
+        Set<String> seen = new HashSet<>();
+        for (EditorTab tab : editorTabs()) {
+            seen.add(tab.id());
+            boolean open = tab.editable();
+            int fields = open ? children(tab.id(), "").size() : 0;
+            links.add(new ModuleLink(tab.id(), tab.label(), open, fields));
+        }
+        for (ConfigRegistry.Module module : ConfigRegistry.all()) {
+            if (!seen.add(module.id())) {
+                continue;
+            }
+            String label = "tier".equals(module.id()) ? "Difficulty tiers" : module.title();
+            boolean open = module.editable() && module.phase() == ConfigRegistry.PHASE_MENU;
+            int fields = open ? children(module.id(), "").size() : 0;
+            links.add(new ModuleLink(module.id(), label, open, fields));
+        }
+        return links;
+    }
+
+    /** Leaf settings in a module, used to decide when the search prompt appears. */
+    public static int fieldCount(String moduleId) {
+        List<Entry> all = new ArrayList<>();
+        walkFields(moduleId, "", all, 0);
+        int count = 0;
+        for (Entry entry : all) {
+            if (entry.kind() != Kind.GROUP) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    /**
+     * Groups the fields on this page by a shared prefix.
+     * A nested path stays flat. A group of one field joins Other.
+     */
+    public static List<FieldGroup> groups(String moduleId, String path) {
+        List<Entry> fields = children(moduleId, path == null ? "" : path);
+        if (path != null && !path.isEmpty()) {
+            return List.of(new FieldGroup("", fields));
+        }
+        Map<String, List<Entry>> buckets = new LinkedHashMap<>();
+        for (Entry entry : fields) {
+            buckets.computeIfAbsent(groupName(entry.path()), key -> new ArrayList<>()).add(entry);
+        }
+        List<Entry> other = new ArrayList<>();
+        List<String> singles = new ArrayList<>();
+        for (Map.Entry<String, List<Entry>> entry : buckets.entrySet()) {
+            if (entry.getValue().size() < 2 && !"Other".equals(entry.getKey())) {
+                other.addAll(entry.getValue());
+                singles.add(entry.getKey());
+            }
+        }
+        for (String key : singles) {
+            buckets.remove(key);
+        }
+        if (!other.isEmpty()) {
+            buckets.computeIfAbsent("Other", key -> new ArrayList<>()).addAll(other);
+        }
+        List<String> order = new ArrayList<>();
+        for (String fixed : List.of("Spawning", "Scaling", "Drops")) {
+            if (buckets.containsKey(fixed)) {
+                order.add(fixed);
+            }
+        }
+        List<String> rest = new ArrayList<>();
+        for (String key : buckets.keySet()) {
+            if (!order.contains(key) && !"Other".equals(key)) {
+                rest.add(key);
+            }
+        }
+        rest.sort(String.CASE_INSENSITIVE_ORDER);
+        order.addAll(rest);
+        if (buckets.containsKey("Other")) {
+            order.add("Other");
+        }
+        List<FieldGroup> out = new ArrayList<>();
+        for (String name : order) {
+            out.add(new FieldGroup(name, buckets.get(name)));
+        }
+        return out;
+    }
+
     public static EditorTab tab(String id) {
         for (EditorTab tab : editorTabs()) {
             if (tab.id().equals(id)) {
@@ -628,9 +723,15 @@ public final class ConfigEditor {
     public static String stageSet(UUID player, String moduleId, String path, String raw) {
         clearBanner(player);
         ChangePreview preview = describeSet(moduleId, path, raw);
-        if (preview.error() != null) {
-            return preview.error();
+        String error = preview.error();
+        if (error == null) {
+            error = chanceError(moduleId, path, raw);
         }
+        if (error != null) {
+            markInvalid(player, moduleId, path, error);
+            return error;
+        }
+        clearInvalid(player, moduleId, path);
         Session session = session(player);
         session.drafts.removeIf(draft -> draft.op() == DraftOp.SET
                 && moduleId.equals(draft.moduleId())
@@ -640,6 +741,7 @@ public final class ConfigEditor {
                 return "Save or discard before changing more settings.";
             }
             session.drafts.add(new Draft(moduleId, path, DraftOp.SET, raw == null ? "" : raw.trim(), ""));
+            touchRecent(player, moduleId, path);
         }
         return null;
     }
@@ -673,6 +775,7 @@ public final class ConfigEditor {
             return "Save or discard before changing more settings.";
         }
         session.drafts.add(new Draft(moduleId, path, DraftOp.ADD, raw == null ? "" : raw.trim(), trimmedKey));
+        touchRecent(player, moduleId, path);
         return null;
     }
 
@@ -698,6 +801,7 @@ public final class ConfigEditor {
             return;
         }
         session.drafts.add(new Draft(moduleId, path, DraftOp.REMOVE, "", key));
+        touchRecent(player, moduleId, path);
     }
 
     public static void undo(UUID player, String moduleId, String path, DraftOp op, String addKey) {
@@ -744,6 +848,9 @@ public final class ConfigEditor {
 
     public static SaveResult saveAll(UUID player, String actor) {
         Session session = session(player);
+        if (!session.invalid.isEmpty()) {
+            return new SaveResult(session.invalid.size() + " fields need fixing", 0, null);
+        }
         if (session.drafts.isEmpty()) {
             return new SaveResult(null, 0, "Nothing to save.");
         }
@@ -818,6 +925,8 @@ public final class ConfigEditor {
             }
         }
         session.drafts.clear();
+        session.invalid.clear();
+        session.recent.clear();
         int count = changes.size();
         String message = count == 1 ? "Saved 1 change." : "Saved " + count + " changes.";
         return new SaveResult(null, count, message);
@@ -837,13 +946,9 @@ public final class ConfigEditor {
             return "The file could not be reloaded.";
         }
         Path file = module.file() == null ? null : module.file().toAbsolutePath().normalize();
-        session(player).drafts.removeIf(draft -> {
-            ConfigRegistry.Module other = ConfigRegistry.find(draft.moduleId());
-            if (other == null || other.file() == null || file == null) {
-                return false;
-            }
-            return file.equals(other.file().toAbsolutePath().normalize());
-        });
+        session(player).drafts.removeIf(draft -> sharesFile(draft.moduleId(), file));
+        session(player).invalid.keySet().removeIf(key -> sharesFile(moduleOfKey(key), file));
+        session(player).recent.removeIf(key -> sharesFile(moduleOfKey(key), file));
         return null;
     }
 
@@ -851,7 +956,63 @@ public final class ConfigEditor {
         Session session = session(player);
         int count = session.drafts.size();
         session.drafts.clear();
+        session.invalid.clear();
+        session.recent.clear();
         return count;
+    }
+
+    public static void toggleGroup(UUID player, String moduleId, String group) {
+        String key = moduleId + "\t" + (group == null ? "" : group);
+        Set<String> collapsed = session(player).collapsed;
+        if (!collapsed.remove(key)) {
+            collapsed.add(key);
+        }
+    }
+
+    public static boolean groupCollapsed(UUID player, String moduleId, String group) {
+        return session(player).collapsed.contains(moduleId + "\t" + (group == null ? "" : group));
+    }
+
+    public static String invalidMessage(UUID player, String moduleId, String path) {
+        return session(player).invalid.get(moduleId + "\t" + path);
+    }
+
+    public static int invalidCount(UUID player) {
+        return session(player).invalid.size();
+    }
+
+    /** Drops one staged value and its error. Other fields stay. */
+    public static void undoField(UUID player, String moduleId, String path) {
+        clearBanner(player);
+        session(player).drafts.removeIf(draft -> draft.op() == DraftOp.SET
+                && moduleId.equals(draft.moduleId())
+                && path.equals(draft.path()));
+        session(player).invalid.remove(moduleId + "\t" + path);
+    }
+
+    /** Paths changed this session for one module, newest first. */
+    public static List<String> recentPaths(UUID player, String moduleId) {
+        List<String> out = new ArrayList<>();
+        for (String key : session(player).recent) {
+            int tab = key.indexOf('\t');
+            if (tab <= 0 || !moduleId.equals(key.substring(0, tab))) {
+                continue;
+            }
+            out.add(key.substring(tab + 1));
+        }
+        return out;
+    }
+
+    /** Unsaved edits, newest first. Nothing is written until saveAll. */
+    public static List<PendingChange> pendingChanges(UUID player) {
+        List<Draft> drafts = session(player).drafts;
+        List<PendingChange> out = new ArrayList<>();
+        for (int i = drafts.size() - 1; i >= 0; i--) {
+            Draft draft = drafts.get(i);
+            out.add(new PendingChange(
+                    displayName(leafName(draft.path())), beforeText(draft), afterText(draft)));
+        }
+        return out;
     }
 
     public static String typeName(String moduleId, String path) {
@@ -867,18 +1028,33 @@ public final class ConfigEditor {
         };
     }
 
-    /** Short line for the detail page. There is no {@code @ConfigDesc} on these fields. */
+    /** One plain-English line from the field name, its type, and the current value. */
     public static String description(String moduleId, String path) {
+        return friendlyDescription(moduleId, path, currentText(moduleId, path));
+    }
+
+    public static String friendlyDescription(String moduleId, String path, String current) {
         String name = displayName(leafName(path));
-        return switch (kindOf(moduleId, path)) {
-            case BOOLEAN -> "Turns " + name + " on or off.";
-            case NUMBER -> "Number used for " + name + ".";
-            case TEXT -> "Text for " + name + ".";
-            case ENUM -> "Which " + name + " is selected.";
-            case LIST -> "The list of " + name + ".";
-            case MAP -> "Named values for " + name + ".";
-            case GROUP -> "Settings grouped under " + name + ".";
-            default -> "Setting for " + name + ".";
+        Kind kind = kindOf(moduleId, path);
+        String shown = current == null || current.isBlank() ? "empty" : current.trim();
+        if (shown.length() > 32) {
+            shown = shown.substring(0, 31) + "…";
+        }
+        String leaf = leafName(path).toLowerCase(Locale.ROOT);
+        if (leaf.contains("chance") && kind == Kind.NUMBER) {
+            String odds = oddsPhrase(current);
+            String line = "Chance (0-1) that a mob drops " + dropSubject(name) + ". Currently " + shown;
+            return odds.isEmpty() ? line + "." : line + " — " + odds + ".";
+        }
+        return switch (kind) {
+            case BOOLEAN -> "Turns " + name + " on or off. Currently " + (truth(shown) ? "on" : "off") + ".";
+            case NUMBER -> "Number used for " + name + ". Currently " + shown + ".";
+            case TEXT -> "Text for " + name + ". Currently " + shown + ".";
+            case ENUM -> "Which " + name + " is selected. Currently " + shown + ".";
+            case LIST -> "The list of " + name + ". Currently " + shown + ".";
+            case MAP -> "Named values for " + name + ". Currently " + shown + ".";
+            case GROUP -> "Settings grouped under " + name + ". Currently " + shown + ".";
+            default -> "Setting for " + name + ". Currently " + shown + ".";
         };
     }
 
@@ -1034,7 +1210,13 @@ public final class ConfigEditor {
         return switch (draft.op()) {
             case ADD -> validateAdd(draft.moduleId(), draft.path(), draft.addKey(), draft.raw());
             case REMOVE -> mutateWouldRemove(draft.moduleId(), draft.path());
-            default -> describeSet(draft.moduleId(), draft.path(), draft.raw()).error();
+            default -> {
+                String error = describeSet(draft.moduleId(), draft.path(), draft.raw()).error();
+                if (error != null) {
+                    yield error;
+                }
+                yield chanceError(draft.moduleId(), draft.path(), draft.raw());
+            }
         };
     }
 
@@ -1077,6 +1259,130 @@ public final class ConfigEditor {
             return findListValue(list, located.key) != null ? null : "That entry is already gone.";
         }
         return "That entry can't be removed here.";
+    }
+
+    private static String groupName(String path) {
+        String leaf = leafName(path);
+        String lower = leaf.toLowerCase(Locale.ROOT);
+        String body = lower.startsWith("enable") ? lower.substring("enable".length()) : lower;
+        if (body.contains("spawn")) {
+            return "Spawning";
+        }
+        if (lower.contains("scaling") || lower.contains("multiplier") || lower.contains("curve")) {
+            return "Scaling";
+        }
+        if (lower.contains("drop") || lower.contains("coin") || lower.contains("reward")) {
+            return "Drops";
+        }
+        String token = firstCamelToken(leaf);
+        if (token.isEmpty()) {
+            return "Other";
+        }
+        return Character.toUpperCase(token.charAt(0)) + token.substring(1).toLowerCase(Locale.ROOT);
+    }
+
+    private static String firstCamelToken(String leaf) {
+        String name = leaf == null ? "" : leaf;
+        if (name.startsWith("enable") && name.length() > 6 && Character.isUpperCase(name.charAt(6))) {
+            name = name.substring(6);
+        }
+        StringBuilder token = new StringBuilder();
+        for (int i = 0; i < name.length(); i++) {
+            char c = name.charAt(i);
+            if (i > 0 && Character.isUpperCase(c)) {
+                break;
+            }
+            if (c == '_' || c == ' ') {
+                break;
+            }
+            token.append(c);
+        }
+        return token.toString();
+    }
+
+    private static String chanceError(String moduleId, String path, String raw) {
+        String leaf = leafName(path).toLowerCase(Locale.ROOT);
+        if (!leaf.contains("chance") || kindOf(moduleId, path) != Kind.NUMBER) {
+            return null;
+        }
+        try {
+            double value = Double.parseDouble(raw == null ? "" : raw.trim());
+            if (value < 0 || value > 1) {
+                return "Must be between 0 and 1";
+            }
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
+        return null;
+    }
+
+    private static void markInvalid(UUID player, String moduleId, String path, String message) {
+        String text = message == null || message.isBlank() ? "That value didn't work." : message;
+        session(player).invalid.put(moduleId + "\t" + path, text);
+    }
+
+    private static void clearInvalid(UUID player, String moduleId, String path) {
+        session(player).invalid.remove(moduleId + "\t" + path);
+    }
+
+    private static void touchRecent(UUID player, String moduleId, String path) {
+        String key = moduleId + "\t" + path;
+        List<String> recent = session(player).recent;
+        recent.remove(key);
+        recent.add(0, key);
+        while (recent.size() > 12) {
+            recent.remove(recent.size() - 1);
+        }
+    }
+
+    private static boolean sharesFile(String moduleId, Path file) {
+        if (moduleId == null || file == null) {
+            return false;
+        }
+        ConfigRegistry.Module other = ConfigRegistry.find(moduleId);
+        if (other == null || other.file() == null) {
+            return false;
+        }
+        return file.equals(other.file().toAbsolutePath().normalize());
+    }
+
+    private static String moduleOfKey(String key) {
+        if (key == null) {
+            return "";
+        }
+        int tab = key.indexOf('\t');
+        return tab < 0 ? key : key.substring(0, tab);
+    }
+
+    private static String dropSubject(String display) {
+        String lower = display == null ? "" : display.toLowerCase(Locale.ROOT);
+        if (lower.contains("ancient") && lower.contains("coin")) {
+            return "Ancient Coins";
+        }
+        if (lower.contains("coin")) {
+            return "coins";
+        }
+        String trimmed = display == null ? "" : display.replace(" Chance", "").replace(" Drop", "").trim();
+        return trimmed.isEmpty() ? "a reward" : trimmed;
+    }
+
+    private static String oddsPhrase(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return "";
+        }
+        try {
+            double value = Double.parseDouble(raw.trim());
+            if (value <= 0 || value > 1) {
+                return "";
+            }
+            int kills = (int) Math.round(1.0 / value);
+            if (kills <= 1) {
+                return "about every kill";
+            }
+            return "about 1 in " + kills + " kills";
+        } catch (NumberFormatException ignored) {
+            return "";
+        }
     }
 
     private static String beforeText(Draft draft) {
@@ -1340,6 +1646,9 @@ public final class ConfigEditor {
         private String banner = "";
         private BannerTone tone = BannerTone.NONE;
         private final List<Draft> drafts = new ArrayList<>();
+        private final Set<String> collapsed = new HashSet<>();
+        private final Map<String, String> invalid = new LinkedHashMap<>();
+        private final List<String> recent = new ArrayList<>();
     }
 
     private record Change(Draft draft, String before, String after, Path file) {}

@@ -2252,6 +2252,12 @@ def main() -> int:
           and "Nothing to save." in config_screen
           and "Saved " in config_screen
           and "● " in config_screen
+          and "Review changes" in config_screen
+          and "fields need fixing" in config_screen
+          and "[undo]" in config_screen
+          and "30+ fields" in config_screen
+          and "Must be between 0 and 1" in config_editor
+          and "moduleLinks" in config_editor
           and "Staff only." in config_screen
           and "CnpcRowList" in config_screen
           and "stepNumber" in config_editor
@@ -2281,6 +2287,9 @@ def main() -> int:
           and "CnpcRowList" in saga_gui
           and "CnpcUltraStyle" in saga_gui
           and "saga|Saga" in character_gui
+          and "bones|Head parts" in character_gui
+          and "saga|Saga Reset" in character_gui
+          and "services|Services" not in character_gui
           and "CnpcLmSagaGui.open" in read(cnpc_dir / "CnpcLmGui.java")
           and "SagaResetConfig" in build_sh
           and "SagaResetService" in build_sh)

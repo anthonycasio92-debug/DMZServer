@@ -1,6 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.73**.
+What changed from **4.5.147** through **4.6.74**.
+
+## Menus share one header, and the config editor explains itself
+
+Page titles are gold, bold, and centered. Section titles are the same gold, left aligned. Card titles are white and bold. Every page uses « Back on the left. Character Services opens on Head parts, with tabs Head parts, Reskin, and Saga Reset. Prestige Modules lists each config module and opens that tab. A closed module stays on the list in gray.
+
+The config editor puts a plain-English line under each field. Fields with the same prefix sit in a section you can collapse. A bad chance shows "Must be between 0 and 1" on the row. Save all opens a review of old and new values, and Confirm writes them. A dirty row has undo for that field only. Recent changes sit at the top of the tab. A tab with more than 30 fields asks you to type a filter. Drafts still stay in memory until Confirm.
 
 ## Config editor uses tabs
 
