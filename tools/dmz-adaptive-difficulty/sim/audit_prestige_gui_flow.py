@@ -97,9 +97,16 @@ def main() -> None:
     ok("ForgeBridge prestigeHandleDo", "prestigeHandleDo" in bridge or "handlePrestigeDo" in bridge)
 
     print("\n=== Cross-backend parity ===")
-    ok("All backends: Turn-in + Shop + Effects + Tiers on main",
-       all(x in cnpc for x in ("Turn in held", "Skill shop", "Effects", "Difficulty tiers"))
-       and "Turn In Prestiges" in chest and "Skill Shop" in chest)
+    ok("CNPC prestige is three tabs; chest still has turn-in and shop on main",
+       "Turn in held" in cnpc
+       and "Permanent tiers" in cnpc
+       and "shop|Shop" in cnpc
+       and "forms|Forms" in cnpc
+       and "Skill shop" in cnpc
+       and "Turn In Prestiges" in chest
+       and "Skill Shop" in chest
+       and "Effects" in chest
+       and "Difficulty Tiers" in chest)
 
     out = ROOT / "sim/out/prestige-gui-audit.md"
     out.parent.mkdir(parents=True, exist_ok=True)

@@ -34,6 +34,10 @@ public final class CnpcLmSagaGui {
             openReset(player, lower);
             return;
         }
+        if ("progress".equals(lower) || lower.startsWith("progress:")) {
+            openProgress(player);
+            return;
+        }
         openHome(player, lower);
     }
 
@@ -88,11 +92,13 @@ public final class CnpcLmSagaGui {
 
     private static int sagaTabs(ServerPlayer player, ICustomGui gui, int y, String active) {
         return CnpcGuiSupport.paintTabBar(gui, y, new String[] {
-                "sagas|Sagas", "reset|Reset"
+                "sagas|Sagas", "reset|Reset", "progress|Progress"
         }, active, action -> {
             String id = action.startsWith("tab:") ? action.substring(4) : action;
             if ("reset".equals(id)) {
                 open(player, "reset");
+            } else if ("progress".equals(id)) {
+                open(player, "progress");
             } else {
                 open(player, "main");
             }
@@ -129,10 +135,6 @@ public final class CnpcLmSagaGui {
             }
             y += CnpcGuiSupport.ROW_STEP;
         }
-        CnpcGuiSupport.buttonSmallFull(gui, 66, CnpcUltraStyle.ACCENT_SAGA + "Reset saga progress",
-                CnpcGuiSupport.M, y, CnpcGuiSupport.textBandWidth(),
-                () -> open(player, "reset"));
-        y += CnpcGuiSupport.ROW_STEP;
         CnpcGuiSupport.navSystemRoot(player, gui, y);
     }
 
@@ -189,7 +191,60 @@ public final class CnpcLmSagaGui {
             }
             y += CnpcGuiSupport.ROW_STEP;
         }
-        CnpcGuiSupport.navSubmenu(player, gui, y, () -> open(player, "main"), CnpcUltraStyle.BACK);
+        CnpcGuiSupport.navSystemRoot(player, gui, y);
+    }
+
+    private static void openProgress(ServerPlayer player) {
+        CnpcUltraStyle.withAccent(CnpcUltraStyle.ACCENT_SAGA, () -> {
+            List<Offer> offers = SagaResetService.offers(player);
+            int shown = Math.max(1, offers.size());
+            int designed = 180 + CnpcGuiSupport.TAB_BAR_H
+                    + shown * (CnpcGuiSupport.BTN_H + CnpcRowList.ROW_GAP)
+                    + CnpcGuiSupport.ROW_STEP;
+            CnpcGuiSupport.showSized(player, CnpcLmGui.ID_SAGA, CnpcGuiSupport.W,
+                    CnpcGuiSupport.window(designed), (pl, gui) -> paintProgress(pl, gui));
+        });
+    }
+
+    private static void paintProgress(ServerPlayer player, ICustomGui gui) {
+        List<Offer> offers = SagaResetService.offers(player);
+        int done = 0;
+        int active = 0;
+        for (Offer offer : offers) {
+            if (offer.status() == SagaResetService.Status.COMPLETED) {
+                done++;
+            } else if (offer.status() == SagaResetService.Status.IN_PROGRESS) {
+                active++;
+            }
+        }
+        int infoY = CnpcGuiSupport.paintHeader(player, gui,
+                CnpcUltraStyle.header("Progress"),
+                CnpcUltraStyle.subtitle("What you have finished and what is still open"));
+        infoY = sagaTabs(player, gui, infoY, "progress");
+        List<String> info = new ArrayList<>();
+        if (offers.isEmpty()) {
+            info.add("No sagas are loaded. Ask staff to load one, then open this page again.");
+        } else {
+            info.add(done + " completed · " + active + " in progress · " + offers.size() + " loaded.");
+        }
+        int y = CnpcGuiSupport.bodyBelowInfo(
+                CnpcGuiSupport.paintInfoBeforePickList(gui, infoY, info, 2));
+        if (offers.isEmpty()) {
+            gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER,
+                    CnpcUltraStyle.subtitle("No sagas are loaded. Ask staff to load one, then open this page again."),
+                    CnpcGuiSupport.M, y, CnpcGuiSupport.textBandWidth(), 14);
+            y += CnpcGuiSupport.BTN_H + CnpcRowList.ROW_GAP;
+        } else {
+            int rowStep = CnpcGuiSupport.BTN_H + CnpcRowList.ROW_GAP;
+            for (int i = 0; i < offers.size(); i++) {
+                Offer offer = offers.get(i);
+                gui.addLabel(CnpcGuiSupport.ID_GRID_BASE + i,
+                        CnpcUltraStyle.BODY + offer.name() + "  " + CnpcUltraStyle.SUBTITLE + offer.rowDetail(),
+                        CnpcGuiSupport.M, y, CnpcGuiSupport.textBandWidth(), 14);
+                y += rowStep;
+            }
+        }
+        CnpcGuiSupport.navSystemRoot(player, gui, y);
     }
 
     private static int paintOfferRows(ICustomGui gui, int y, List<Offer> offers, int page) {
@@ -225,6 +280,7 @@ public final class CnpcLmSagaGui {
         int infoY = CnpcGuiSupport.paintHeader(player, gui,
                 CnpcUltraStyle.header("Confirm reset"),
                 CnpcUltraStyle.subtitle("Your saga progress will be lost"));
+        infoY = sagaTabs(player, gui, infoY, "reset");
         List<String> lines = SagaResetService.confirmLines(player, sagaId);
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 4));
         boolean ready = offer != null && offer.resettable() && SagaResetConfig.get().enabled;
@@ -246,7 +302,7 @@ public final class CnpcLmSagaGui {
                             () -> open(player, "reset"));
                 });
         row += CnpcGuiSupport.ROW_STEP + 8;
-        CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "reset"), CnpcUltraStyle.BACK);
+        CnpcGuiSupport.navBackToParent(player, gui, row, () -> open(player, "reset"));
     }
 
     private static void click(ServerPlayer player, Offer offer, int page) {

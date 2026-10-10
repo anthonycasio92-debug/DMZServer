@@ -649,8 +649,9 @@ def main() -> int:
           and "challenge_pending" in rival_chest and "challengeDecide" in rival_chest
           and "challenge_pending" in cmi_rival and "openChallengeDecide" in cmi_rival)
     check("challenge hub Send + Pending (not inline accept)",
-          "pick_challenge" in rival_cnpc and "Pending requests" in rival_cnpc
-          and 'act("challenge", "accept"' not in rival_cnpc.split("paintChallenge")[1].split("paintChallengePending")[0]
+          "pick_challenge" in rival_cnpc and "void paintRequests" in rival_cnpc
+          and "Send challenge" in rival_cnpc
+          and "Pending requests" not in rival_cnpc
           and 'SlotAction.act("challenge", "accept"' not in rival_chest.split("private Inventory challenge(")[1].split("private Inventory challengePending")[0])
     check("acceptedMutualOffer flag", "acceptedMutualOffer" in rival_link)
     check("needsMutualConfirm helper", "needsMutualConfirm" in rival_link)
@@ -1229,9 +1230,16 @@ def main() -> int:
     remove_block = cnpc_prog.split("private static void paintAndroidRemove", 1)[1].split(
         "private static int paintNameScroll", 1
     )[0]
+    char_android = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmCharacterGui.java")
+    android_remove_ui = char_android.split("private static void paintAndroidRemove", 1)[1].split(
+        "private static void footer", 1
+    )[0]
     check(
-        "CNPC android remove back goes to LM hub for players",
-        "CnpcLmHubGui.open(player, \"main\")" in remove_block,
+        "CNPC android remove back returns to Race and Class",
+        "navBackToParent" in android_remove_ui
+        and "raceclass" in android_remove_ui
+        and "CnpcLmHubGui.open" not in android_remove_ui
+        and "CnpcLmCharacterGui.open(player, p)" in cnpc_prog,
     )
     check(
         "CNPC android tools stay staff-only",
@@ -1755,7 +1763,9 @@ def main() -> int:
     check("progression titles are blue and prestige stays pink",
           'CnpcUltraStyle.ACCENT + "Progression"' in prog
           and "§dProgression" not in prog
-          and 'CnpcUltraStyle.ACCENT + "Open Prestige"' in prog
+          and '"boosts|Boosts"' in prog
+          and '"coins|Coins"' in prog
+          and '"tools|Tools"' in prog
           and 'subPage(CnpcUltraStyle.ACCENT, "Progression", "End")' in prog
           and 'CnpcUltraStyle.INFO + "2× · 30m"' in prog
           and 'CnpcUltraStyle.INFO + "2× · 60m"' in prog)
@@ -1777,14 +1787,14 @@ def main() -> int:
           "records:" in rival_records
           and "void paintProgress" not in rival_records
           and "Hall of fame" in rival_records
-          and '"actions|Actions"' in rival_records
+          and '"challenges|Challenges"' in rival_records
           and '"records|Records"' in rival_records
           and '"requests|Requests"' in rival_records
           and 'open(player, "history")' not in rival_records
           and 'open(player, "progress")' not in rival_records
           and 'open(player, "stats")' not in rival_records
-          and "Duel requests" in rival_records
-          and "Declare invites" in rival_records)
+          and "Challenge request" in rival_records
+          and "Declare invite" in rival_records)
 
     print("\n=== CNPC layout fit (4.6.25) ===")
     preview = read(cnpc_dir / "CnpcPlayerPreview.java")
@@ -1848,8 +1858,8 @@ def main() -> int:
           and "Training bonds" in spar_gui
           and "void paintDojoWar" in spar_gui
           and 'toggleOn("TP")' in spar_gui)
-    check("rival actions and prestige forms stay their own pages",
-          "void paintActions" in rival_records
+    check("rival challenges and prestige forms stay their own pages",
+          "void paintChallenges" in rival_records
           and "void paintSettings" in rival_records
           and "void paintEffects" in prestige_gui
           and 'CnpcUltraStyle.ACCENT + "Forms"' in prestige_gui)
@@ -2031,7 +2041,7 @@ def main() -> int:
     bright_start = notice_support.find("private static String brightenNoticeLine")
     bright_end = notice_support.find("private static String noticeChat", bright_start)
     bright = notice_support[bright_start:bright_end] if bright_start >= 0 and bright_end > bright_start else ""
-    diff_main = diff_gui.split("private static void paintMain", 1)[-1].split("private static void paintSettings", 1)[0]
+    diff_main = diff_gui.split("private static void paintTiers", 1)[-1].split("private static void paintTitles", 1)[0]
     check("notice header and body are one pair of constants",
           'NOTICE_HEADER = CnpcUltraStyle.HEADER + "Notice"' in notice
           and "NOTICE_BODY = CnpcUltraStyle.INFO" in notice

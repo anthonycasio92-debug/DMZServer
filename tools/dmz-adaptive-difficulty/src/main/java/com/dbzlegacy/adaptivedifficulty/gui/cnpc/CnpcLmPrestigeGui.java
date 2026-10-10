@@ -37,12 +37,12 @@ public final class CnpcLmPrestigeGui {
         }
         final int shopPageFinal = Math.max(0, shopPage);
         final String pageKey = p;
-        int height = CnpcGuiSupport.window(switch (p) {
+        int height = CnpcGuiSupport.window(CnpcGuiSupport.TAB_BAR_H + switch (p) {
             case "turnin", "points" -> 360;
             case "shop", "skills" -> 360;
             case "tiers", "tier" -> 380;
             case "forms", "effects", "effect" -> 380;
-            default -> 440;
+            default -> 400;
         });
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_PRESTIGE, CnpcGuiSupport.W, height, (pl, gui) -> {
             switch (pageKey) {
@@ -57,9 +57,23 @@ public final class CnpcLmPrestigeGui {
         });
     }
 
+    private static int prestigeTabs(ServerPlayer player, ICustomGui gui, int y, String active) {
+        return CnpcGuiSupport.paintTabBar(gui, y, new String[] {
+                "prestige|Prestige", "shop|Shop", "forms|Forms"
+        }, active, action -> {
+            String id = action.startsWith("tab:") ? action.substring(4) : action;
+            switch (id) {
+                case "shop" -> open(player, "shop");
+                case "forms" -> open(player, "forms");
+                default -> open(player, "main");
+            }
+        });
+    }
+
     private static void paintMain(ServerPlayer player, ICustomGui gui) {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcUltraStyle.ACCENT + "Prestige",
                 CnpcUltraStyle.SUBTITLE + "Spend held prestiges, or prestige when your level is high enough");
+        infoY = prestigeTabs(player, gui, infoY, "prestige");
         List<String> lines = ProgressionGuiApi.prestigeLines(player, "main");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 8));
         CnpcGuiSupport.button(gui, 20, CnpcUltraStyle.CONFIRM + "Prestige now", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
@@ -68,10 +82,8 @@ public final class CnpcLmPrestigeGui {
                 () -> open(player, "main")));
         CnpcGuiSupport.button(gui, 21, CnpcUltraStyle.INFO + "Turn in held", CnpcGuiSupport.COL_R, row, () -> open(player, "turnin"));
         row += CnpcGuiSupport.ROW_STEP;
-        CnpcGuiSupport.button(gui, 22, CnpcUltraStyle.ACCENT + "Skill shop", CnpcGuiSupport.COL_L, row, () -> open(player, "shop"));
-        CnpcGuiSupport.button(gui, 23, CnpcUltraStyle.ACCENT + "Forms", CnpcGuiSupport.COL_R, row, () -> open(player, "forms"));
-        row += CnpcGuiSupport.ROW_STEP;
-        CnpcGuiSupport.button(gui, 24, CnpcUltraStyle.ACCENT + "Difficulty tiers", CnpcGuiSupport.COL_L, row, () -> open(player, "tiers"));
+        CnpcGuiSupport.button(gui, 24, CnpcUltraStyle.ACCENT + "Permanent tiers", CnpcGuiSupport.COL_L, row,
+                () -> open(player, "tiers"));
         row += CnpcGuiSupport.ROW_STEP;
         footer(player, gui, row, null);
     }
@@ -84,6 +96,7 @@ public final class CnpcLmPrestigeGui {
         int held = parseInt(ph.get("held"), 0);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage(CnpcUltraStyle.ACCENT, "Prestige", "Turn-in"),
                 CnpcUltraStyle.SUBTITLE + "Each button shows the points you'll get");
+        infoY = prestigeTabs(player, gui, infoY, "prestige");
         List<String> info = new ArrayList<>(ProgressionGuiApi.prestigeLines(player, "turnin"));
         info.add(CnpcUltraStyle.SUBTITLE + "Bulk bonus: " + CnpcUltraStyle.BODY + "3→4 " + CnpcUltraStyle.DIM + "· " + CnpcUltraStyle.BODY + "6→9 " + CnpcUltraStyle.DIM + "· " + CnpcUltraStyle.BODY + "9→15 " + CnpcUltraStyle.SUBTITLE + "points");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, info, CnpcGuiStyle.INFO_INLINE_MAX));
@@ -126,6 +139,7 @@ public final class CnpcLmPrestigeGui {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage(CnpcUltraStyle.ACCENT, "Prestige", "Skill shop"),
                 CnpcUltraStyle.SUBTITLE + "Page " + CnpcUltraStyle.BODY + (page + 1) + "/" + pages + CnpcGuiStyle.SEP + CnpcUltraStyle.SUBTITLE + "Points " + CnpcUltraStyle.BODY
                         + ph.getOrDefault("points", "0"));
+        infoY = prestigeTabs(player, gui, infoY, "shop");
 
         List<String> ids = shopSkillIds(ph);
         int from = page * pageSize;
@@ -167,7 +181,7 @@ public final class CnpcLmPrestigeGui {
                     () -> open(player, "shop:" + (page + 1)));
         }
         row += CnpcGuiSupport.ROW_STEP;
-        footer(player, gui, row, "main");
+        footer(player, gui, row, null);
     }
 
     private static List<String> shopSkillIds(Map<String, String> ph) {
@@ -196,7 +210,7 @@ public final class CnpcLmPrestigeGui {
     }
 
     private static void paintEffects(ServerPlayer player, ICustomGui gui) {
-        if (!prestigeReady(player, gui, "main")) {
+        if (!prestigeReady(player, gui, "forms")) {
             return;
         }
         Map<String, String> ph = ProgressionGuiApi.prestigePlaceholders(player);
@@ -208,8 +222,10 @@ public final class CnpcLmPrestigeGui {
 
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage(CnpcUltraStyle.ACCENT, "Prestige", "Forms"),
                 CnpcUltraStyle.SUBTITLE + "Majin and Mutant · " + CnpcUltraStyle.INFO + cost + " " + CnpcUltraStyle.SUBTITLE + "prestige points · one form at a time");
+        infoY = prestigeTabs(player, gui, infoY, "forms");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY,
                 ProgressionGuiApi.prestigeLines(player, "effects"), CnpcGuiStyle.INFO_INLINE_MAX));
+        row = CnpcGuiSupport.paintSectionTag(gui, CnpcGuiSupport.ID_INLINE_NOTE, row, CnpcUltraStyle.ACCENT + "Forms");
         List<CnpcGuiLayout.GridButton> grid = new ArrayList<>();
         if (hasMajin) {
             grid.add(CnpcGuiLayout.GridButton.disabled(CnpcUltraStyle.CONFIRM + "Majin · owned"));
@@ -248,7 +264,7 @@ public final class CnpcLmPrestigeGui {
                 player, gui, row, CnpcGuiSupport.ID_GRID_BASE,
                 grid.toArray(CnpcGuiLayout.GridButton[]::new),
                 () -> open(player, "effects"));
-        footer(player, gui, row, "main");
+        footer(player, gui, row, null);
     }
 
     private static void paintTiers(ServerPlayer player, ICustomGui gui) {
@@ -258,6 +274,7 @@ public final class CnpcLmPrestigeGui {
         Map<String, String> ph = ProgressionGuiApi.prestigePlaceholders(player);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage(CnpcUltraStyle.ACCENT, "Prestige", "Tiers"),
                 CnpcUltraStyle.SUBTITLE + "Permanent unlocks · tiers T1 through T7");
+        infoY = prestigeTabs(player, gui, infoY, "prestige");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, ProgressionGuiApi.prestigeLines(player, "tiers"),
                         CnpcGuiStyle.INFO_INLINE_MAX));
         row = CnpcGuiSupport.paintSectionTag(gui, CnpcGuiSupport.ID_INLINE_NOTE, row + 4, CnpcUltraStyle.INFO + "Buy permanent tiers");
@@ -292,9 +309,10 @@ public final class CnpcLmPrestigeGui {
             return true;
         }
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcUltraStyle.ACCENT + "Prestige", CnpcUltraStyle.DANGER + "Unavailable");
+        infoY = prestigeTabs(player, gui, infoY, "forms".equals(backPage) ? "forms" : "prestige");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY,
                 ProgressionGuiApi.prestigeLines(player, "main"), CnpcGuiStyle.INFO_INLINE_MAX));
-        footer(player, gui, row + 8, backPage);
+        footer(player, gui, row + 8, "forms".equals(backPage) ? null : backPage);
         return false;
     }
 
@@ -302,7 +320,7 @@ public final class CnpcLmPrestigeGui {
         if (parentPage == null || parentPage.isBlank()) {
             CnpcGuiSupport.navSystemRoot(player, gui, row);
         } else {
-            CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, parentPage), CnpcUltraStyle.BACK);
+            CnpcGuiSupport.navBackToParent(player, gui, row, () -> open(player, parentPage));
         }
         if (parentPage == null || parentPage.isBlank()) {
             CnpcGuiSupport.paintSystemMainPreview(CnpcGuiSupport.target(player), gui, player);

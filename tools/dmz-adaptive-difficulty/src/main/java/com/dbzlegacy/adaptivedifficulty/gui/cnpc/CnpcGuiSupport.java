@@ -305,7 +305,7 @@ public final class CnpcGuiSupport {
         if (gui == null || tabs == null || tabs.length == 0) {
             return y;
         }
-        int gap = 4;
+        int gap = 6;
         int band = textBandWidth();
         int rowSize = Math.min(buttonsPerRow(band, gap), tabs.length);
         int width = equalButtonWidth(rowSize, band, gap);
@@ -1206,6 +1206,16 @@ public final class CnpcGuiSupport {
     /** System top-level screen: « Back on the left, same label as every other page, opens the hub. */
     public static void navSystemRoot(ServerPlayer player, ICustomGui gui, int row) {
         buttonSmall(gui, ID_NAV_BACK, CnpcUltraStyle.BACK, COL_L, row, 95, () -> openMenuHub(player));
+    }
+
+    /**
+     * Sub-page opened from inside a tab: « Back returns to that parent.
+     * The hub button stays off this row so Back never leaves the system.
+     */
+    public static void navBackToParent(ServerPlayer player, ICustomGui gui, int row, Runnable back) {
+        if (back != null) {
+            buttonSmall(gui, ID_NAV_BACK, CnpcUltraStyle.BACK, COL_L, row, 95, back);
+        }
     }
 
     /** Submenu: Back → parent page in this system; Main → Legacy Mechanics hub. */

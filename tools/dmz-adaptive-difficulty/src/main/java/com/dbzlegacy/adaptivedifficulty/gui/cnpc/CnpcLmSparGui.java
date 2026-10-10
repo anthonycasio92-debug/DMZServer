@@ -81,17 +81,24 @@ public final class CnpcLmSparGui {
         });
     }
 
+    /** Every sparring page keeps Dojo, Rankings, and Wars, including sub-pages. */
     private static boolean sparTabs(String page) {
-        if (page == null || page.isBlank()) {
-            return false;
+        return page != null && !page.isBlank();
+    }
+
+    private static String sparTabId(String page) {
+        if (page == null) {
+            return "dojo";
         }
-        if (page.startsWith("top") || "leaderboard".equals(page) || dojoTab(page) != null) {
-            return true;
+        String p = page.toLowerCase(Locale.ROOT);
+        if (p.startsWith("top") || "leaderboard".equals(p) || p.startsWith("dojo_top")
+                || "dojo_rank".equals(p) || "dojo_rankings".equals(p)) {
+            return "rankings";
         }
-        if (page.startsWith("dojo_top") || "dojo_rank".equals(page) || "dojo_rankings".equals(page)) {
-            return true;
+        if (p.startsWith("dojo_war") || "pick_dojo_challenge".equals(p) || p.contains("dojo_challenge")) {
+            return "wars";
         }
-        return "dojo_war".equals(page);
+        return "dojo";
     }
 
     private static int sparTabBar(ServerPlayer player, ICustomGui gui, int y, String active) {
@@ -125,6 +132,7 @@ public final class CnpcLmSparGui {
         ServerPlayer who = subject(player);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage(CnpcUltraStyle.ACCENT, "Sparring", "Training bonds"),
                 CnpcUltraStyle.SUBTITLE + "Masters recruit · students request a master");
+        infoY = sparTabBar(player, gui, infoY, "dojo");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, SparGuiApi.mentorLines(who), CnpcGuiStyle.INFO_INLINE_MAX));
         CnpcGuiSupport.button(gui, 20, CnpcUltraStyle.CONFIRM + "Recruit apprentice…", CnpcGuiSupport.COL_L, row, () -> open(player, "pick_apprentice"));
         CnpcGuiSupport.button(gui, 21, CnpcUltraStyle.ACCENT + "Request a master…", CnpcGuiSupport.COL_R, row, () -> open(player, "pick_mentor"));
@@ -134,7 +142,6 @@ public final class CnpcLmSparGui {
         row += CnpcGuiSupport.ROW_STEP;
         CnpcGuiSupport.button(gui, 24, CnpcUltraStyle.DANGER + "Leave mentor", CnpcGuiSupport.COL_L, row,
                 () -> open(player, "pick_confirm:mentor|mentor|leave"));
-        CnpcGuiSupport.button(gui, 25, CnpcUltraStyle.ACCENT + "Dojo home", CnpcGuiSupport.COL_R, row, () -> open(player, "dojo"));
         row += CnpcGuiSupport.ROW_STEP;
         footer(player, gui, row, "dojo");
     }
@@ -143,6 +150,7 @@ public final class CnpcLmSparGui {
         ServerPlayer who = subject(player);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage(CnpcUltraStyle.ACCENT, "Sparring", "Bond invites"),
                 CnpcUltraStyle.INFO + "Mentor ↔ apprentice requests only");
+        infoY = sparTabBar(player, gui, infoY, "dojo");
         int listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBeforePickList(gui, infoY,
                 SparGuiApi.pendingMentorLines(who), CnpcGuiStyle.INFO_LIST_HEADER_MAX));
         List<String> cards = SparGuiApi.pendingMentorInviteCards(who);
@@ -189,6 +197,7 @@ public final class CnpcLmSparGui {
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_SPAR, CnpcGuiSupport.W, CnpcGuiSupport.window(300), (pl, gui) -> {
             int infoY = CnpcGuiSupport.paintHeader(pl, gui,
                     CnpcGuiStyle.subPage(CnpcUltraStyle.ACCENT, "Sparring", "Training bond invite"), CnpcUltraStyle.BODY + who);
+            infoY = sparTabBar(pl, gui, infoY, "dojo");
             List<String> body = outgoing
                     ? List.of(CnpcUltraStyle.SUBTITLE + "You invited " + CnpcUltraStyle.BODY + who + CnpcUltraStyle.SUBTITLE + ".")
                     : List.of(
@@ -206,7 +215,7 @@ public final class CnpcLmSparGui {
                         () -> act(pl, "mentor_decline", pickerFinal, "pending"));
             }
             row += CnpcGuiSupport.ROW_STEP;
-            CnpcGuiSupport.navSubmenu(pl, gui, row, () -> open(pl, "pending"), CnpcUltraStyle.BACK);
+            CnpcGuiSupport.navBackToParent(pl, gui, row, () -> open(pl, "pending"));
         });
     }
 
@@ -226,13 +235,14 @@ public final class CnpcLmSparGui {
                 : CnpcGuiSupport.humanizePickerArg(targetArg);
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_SPAR, CnpcGuiSupport.W, CnpcGuiSupport.window(280), (pl, gui) -> {
             int infoY = CnpcGuiSupport.paintHeader(pl, gui, copy[0], CnpcUltraStyle.BODY + who);
+            infoY = sparTabBar(pl, gui, infoY, sparTabId(returnPage));
             int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of(copy[1]), 3));
             row += 8;
             CnpcGuiSupport.button(gui, 20, CnpcUltraStyle.CONFIRM + "Confirm", CnpcGuiSupport.COL_L, row,
                     () -> act(pl, action, targetArg, returnPage));
             CnpcGuiSupport.button(gui, 21, CnpcUltraStyle.SUBTITLE + "Cancel", CnpcGuiSupport.COL_R, row, () -> open(pl, returnPage));
             row += CnpcGuiSupport.ROW_STEP;
-            CnpcGuiSupport.navSubmenu(pl, gui, row, () -> open(pl, returnPage), CnpcUltraStyle.BACK);
+            CnpcGuiSupport.navBackToParent(pl, gui, row, () -> open(pl, returnPage));
         });
     }
 
@@ -332,6 +342,8 @@ public final class CnpcLmSparGui {
             default -> {
                 row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, row,
                         SparGuiApi.linesForPage(who, "dojo"), CnpcGuiStyle.INFO_INLINE_MAX));
+                row = CnpcGuiSupport.paintSectionTag(gui, CnpcGuiSupport.ID_INLINE_NOTE, row,
+                        CnpcUltraStyle.ACCENT + "Dojo home");
                 CnpcGuiSupport.button(gui, 20, CnpcUltraStyle.INFO + "Stats", CnpcGuiSupport.COL_L, row,
                         () -> open(player, "stats"));
                 CnpcGuiSupport.button(gui, 21, CnpcUltraStyle.ACCENT + "Training bonds", CnpcGuiSupport.COL_R, row,
@@ -354,6 +366,7 @@ public final class CnpcLmSparGui {
         Map<String, String> ph = SparGuiApi.placeholders(who);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage(CnpcUltraStyle.ACCENT, "Sparring", "Chat settings"),
                 CnpcUltraStyle.SUBTITLE + "Training point messages");
+        infoY = sparTabBar(player, gui, infoY, "dojo");
         int row = CnpcGuiSupport.bodyBelowHeader(infoY);
         boolean tpOn = "true".equalsIgnoreCase(ph.get("tpMsg"));
         CnpcGuiSupport.button(gui, 24, tpOn ? CnpcGuiStyle.toggleOn("TP")
@@ -378,13 +391,14 @@ public final class CnpcLmSparGui {
         String warPendingLabel = warPending > 0 ? CnpcUltraStyle.INFO + "War pending " + CnpcUltraStyle.BODY + "(" + warPending + ")" : CnpcUltraStyle.ACCENT + "War pending";
         CnpcGuiSupport.button(gui, 21, warPendingLabel, CnpcGuiSupport.COL_R, row, () -> open(player, "dojo_war_pending"));
         row += CnpcGuiSupport.ROW_STEP;
-        footer(player, gui, row, "dojo");
+        footer(player, gui, row, null);
     }
 
     private static void paintDojoWarPending(ServerPlayer player, ICustomGui gui) {
         ServerPlayer who = subject(player);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage(CnpcUltraStyle.ACCENT, "Sparring", "Dojo war pending"),
                 CnpcGuiStyle.HINT_CLICK_ENTRY);
+        infoY = sparTabBar(player, gui, infoY, "wars");
         List<String> cards = SparGuiApi.pendingDojoWarCards(who);
         int listY = CnpcGuiSupport.bodyBelowHeader(infoY);
         if (cards.isEmpty()) {
@@ -411,6 +425,7 @@ public final class CnpcLmSparGui {
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_SPAR, CnpcGuiSupport.W, CnpcGuiSupport.window(300), (pl, gui) -> {
             int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcGuiStyle.subPage(CnpcUltraStyle.ACCENT, "Sparring", "Dojo war request"),
                     CnpcUltraStyle.BODY + CnpcGuiSupport.humanizePickerArg(pickerArg));
+            infoY = sparTabBar(pl, gui, infoY, "wars");
             int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of(
                     CnpcUltraStyle.BODY + "Accept " + CnpcUltraStyle.SUBTITLE + "to start the war (2× RP vs that dojo).",
                     CnpcUltraStyle.BODY + "Cancel " + CnpcUltraStyle.SUBTITLE + "to drop this war challenge."), 3));
@@ -420,7 +435,7 @@ public final class CnpcLmSparGui {
             CnpcGuiSupport.button(gui, 21, CnpcUltraStyle.DANGER + "Cancel challenge", CnpcGuiSupport.COL_R, row,
                     () -> act(pl, "dojo_war_cancel", pickerArg, "dojo_war_pending"));
             row += CnpcGuiSupport.ROW_STEP;
-            CnpcGuiSupport.navSubmenu(pl, gui, row, () -> open(pl, "dojo_war_pending"), CnpcUltraStyle.BACK);
+            CnpcGuiSupport.navBackToParent(pl, gui, row, () -> open(pl, "dojo_war_pending"));
         });
     }
 
@@ -459,11 +474,12 @@ public final class CnpcLmSparGui {
         };
         row = CnpcGuiLayout.paintTwoColumnButtonGrid(player, gui, row, CnpcGuiSupport.ID_GRID_BASE, tabs,
                 () -> {});
-        footer(player, gui, row, "dojo");
+        footer(player, gui, row, null);
     }
 
     private static void paintScroll(ServerPlayer player, ICustomGui gui, String title, List<String> body, String back) {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, title, CnpcGuiStyle.HINT_READ_ONLY);
+        infoY = sparTabBar(player, gui, infoY, sparTabId(back));
         int row = CnpcGuiSupport.paintLongReadOnlyBody(gui, infoY, body);
         footer(player, gui, row + 8, back);
     }
@@ -471,6 +487,7 @@ public final class CnpcLmSparGui {
     private static void paintOnlinePick(
             ServerPlayer player, ICustomGui gui, String title, String action, String page, String back) {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, title, CnpcGuiStyle.HINT_CLICK_PLAYER);
+        infoY = sparTabBar(player, gui, infoY, sparTabId(back));
         List<String> names = RivalGuiApi.onlinePlayerNames(subject(player));
         int listY = CnpcGuiSupport.bodyBelowHeader(infoY);
         if (names.isEmpty()) {
@@ -494,6 +511,7 @@ public final class CnpcLmSparGui {
     private static void paintMentorArgPick(
             ServerPlayer player, ICustomGui gui, String title, String action, String page, String back) {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, title, CnpcGuiStyle.HINT_CLICK_ENTRY);
+        infoY = sparTabBar(player, gui, infoY, sparTabId(back));
         List<String> args = SparGuiApi.pendingIncomingMentorArgs(subject(player));
         int listY = CnpcGuiSupport.bodyBelowHeader(infoY);
         if (args == null || args.isEmpty()) {
@@ -511,6 +529,7 @@ public final class CnpcLmSparGui {
     private static void paintReleasePick(ServerPlayer player, ICustomGui gui) {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage(CnpcUltraStyle.ACCENT, "Sparring", "Release apprentice"),
                 CnpcGuiStyle.HINT_CLICK_ENTRY);
+        infoY = sparTabBar(player, gui, infoY, "dojo");
         List<String> cards = SparGuiApi.apprenticeCards(subject(player));
         int listY = CnpcGuiSupport.bodyBelowHeader(infoY);
         if (cards.isEmpty()) {
@@ -536,6 +555,7 @@ public final class CnpcLmSparGui {
     private static void paintDojoChallengePick(ServerPlayer player, ICustomGui gui) {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage(CnpcUltraStyle.ACCENT, "Sparring", "Challenge rival dojo"),
                 CnpcGuiStyle.HINT_REVIEW_DOJO);
+        infoY = sparTabBar(player, gui, infoY, "wars");
         List<String> cards = SparGuiApi.rivalDojoCards(subject(player));
         int listY = CnpcGuiSupport.bodyBelowHeader(infoY);
         if (cards.isEmpty()) {
@@ -596,6 +616,7 @@ public final class CnpcLmSparGui {
         }
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage(CnpcUltraStyle.ACCENT, "Sparring", "Staff Admin"),
                 CnpcUltraStyle.SUBTITLE + "Save spar data and print status");
+        infoY = sparTabBar(player, gui, infoY, "dojo");
         int row = CnpcGuiSupport.bodyBelowHeader(infoY);
         CnpcGuiSupport.button(gui, 20, CnpcUltraStyle.CONFIRM + "Save", CnpcGuiSupport.COL_L, row, () -> act(player, "admin", "save", "admin"));
         CnpcGuiSupport.button(gui, 21, CnpcUltraStyle.SUBTITLE + "Status", CnpcGuiSupport.COL_R, row, () -> act(player, "admin", "status", "admin"));
@@ -620,7 +641,7 @@ public final class CnpcLmSparGui {
         if (parentPage == null) {
             CnpcGuiSupport.navSystemRoot(player, gui, row);
         } else {
-            CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, parentPage), CnpcUltraStyle.BACK);
+            CnpcGuiSupport.navBackToParent(player, gui, row, () -> open(player, parentPage));
         }
         if (parentPage == null) {
             CnpcGuiSupport.paintSystemMainPreview(subject(player), gui, player);
