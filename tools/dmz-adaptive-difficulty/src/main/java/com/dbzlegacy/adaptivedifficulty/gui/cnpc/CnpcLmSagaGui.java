@@ -10,9 +10,13 @@ import java.util.Locale;
 import net.minecraft.server.level.ServerPlayer;
 import noppes.npcs.api.gui.ICustomGui;
 
-/** Saga menu. Reset is its own page, not a Character Services tab. */
+/** Saga pages on the Character Services tab bar: Home, Saga Reset, Android Removal. */
 public final class CnpcLmSagaGui {
     private static final int ROWS = 6;
+    /** Same three tabs Character paints. Saga Reset stays selected on every saga page. */
+    private static final String[] SERVICE_TABS = {
+            "home|Home", "saga|Saga Reset", "android|Android Removal"
+    };
 
     private CnpcLmSagaGui() {}
 
@@ -90,9 +94,12 @@ public final class CnpcLmSagaGui {
                 CnpcGuiSupport.window(280), (pl, gui) -> paintConfirm(pl, gui, sagaId)));
     }
 
-    /** Saga pages sit on the Character Services tab bar. Saga Reset stays selected. */
+    /**
+     * One Character Services tab bar. {@code active} is ignored: browse, progress, and reset
+     * all keep Saga Reset selected. Home and Android Removal are the other two tabs.
+     */
     private static int sagaTabs(ServerPlayer player, ICustomGui gui, int y, String active) {
-        return CnpcLmCharacterGui.servicesTabs(player, gui, y, "saga");
+        return CnpcLmCharacterGui.servicesTabs(player, gui, y, "saga", SERVICE_TABS);
     }
 
     private static void paintHome(ServerPlayer player, ICustomGui gui, int page) {

@@ -110,7 +110,8 @@ public final class CnpcLmProgressionGui {
         CnpcGuiSupport.button(gui, 22, CnpcUltraStyle.SUBTITLE + "Tools", CnpcGuiSupport.COL_L, row,
                 () -> open(player, "tools"));
         row += CnpcGuiSupport.ROW_STEP;
-        CnpcGuiSupport.navBackToMainMenu(player, gui, row);
+        CnpcGuiSupport.navBackToMainMenu(player, gui, row,
+                CnpcUltraStyle.SUBTITLE + "« Back to main menu");
     }
 
     /** Modules, Android tools, and all flags live on Tools. Boosts and coins are the other tabs. */

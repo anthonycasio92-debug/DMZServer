@@ -321,9 +321,17 @@ public final class CnpcLmCharacterGui {
     }
 
     static int servicesTabs(ServerPlayer player, ICustomGui gui, int y, String active) {
-        return CnpcGuiSupport.paintTabBar(gui, y, new String[] {
+        return servicesTabs(player, gui, y, active, new String[] {
                 "home|Home", "saga|Saga Reset", "android|Android Removal"
-        }, active, action -> {
+        });
+    }
+
+    /** One tab bar. {@code tabs} entries are {@code id|Label}. Saga passes the same three. */
+    static int servicesTabs(ServerPlayer player, ICustomGui gui, int y, String active, String[] tabs) {
+        String[] bar = tabs == null || tabs.length == 0
+                ? new String[] {"home|Home", "saga|Saga Reset", "android|Android Removal"}
+                : tabs;
+        return CnpcGuiSupport.paintTabBar(gui, y, bar, active, action -> {
             String id = action.startsWith("tab:") ? action.substring(4) : action;
             switch (id) {
                 case "saga" -> CnpcLmSagaGui.open(player, "reset");
@@ -369,7 +377,8 @@ public final class CnpcLmCharacterGui {
                     CnpcGuiSupport.COL_L, y, CnpcGuiSupport.BTN_W, () -> open(player, "android_convert"));
             y += CnpcGuiSupport.ROW_STEP;
         }
-        CnpcGuiSupport.navBackToMainMenu(player, gui, y);
+        CnpcGuiSupport.navBackToMainMenu(player, gui, y,
+                CnpcUltraStyle.SUBTITLE + "« Back to main menu");
         CnpcGuiSupport.paintLivePlayerPreview(player, gui);
     }
 
@@ -455,7 +464,8 @@ public final class CnpcLmCharacterGui {
             String parentPage,
             ServerPlayer previewSubject) {
         if (parentPage == null) {
-            CnpcGuiSupport.navBackToMainMenu(player, gui, row);
+            CnpcGuiSupport.navBackToMainMenu(player, gui, row,
+                    CnpcUltraStyle.SUBTITLE + "« Back to main menu");
         } else {
             CnpcGuiSupport.navBackToParent(player, gui, row, () -> open(player, "main"));
         }

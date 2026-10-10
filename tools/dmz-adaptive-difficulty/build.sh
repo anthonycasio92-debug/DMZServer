@@ -344,7 +344,7 @@ merge_onto_base_jar() {
       "$merge/com/dbzlegacy/adaptivedifficulty/mixin"
     for pool_cls in DmzResourcePoolClamp LmOverhaulPrestigeIntegration ProgressionSystem \
         StaminaRegenGuard StatsDataLoadContext PersonalLevelCapMirror LmOverhaulCapMath \
-        LmStatsDataAccess PrestigeResourceRecovery DmzInflatedAttributeReset; do
+        LmStatsDataAccess PrestigeResourceRecovery DmzInflatedAttributeReset FusionBonusOwner; do
       if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/progression/${pool_cls}.class" ]]; then
         cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/${pool_cls}.class" \
           "$merge/com/dbzlegacy/adaptivedifficulty/progression/${pool_cls}.class"
@@ -365,6 +365,7 @@ merge_onto_base_jar() {
         DendeResetAbsorptionWipeMixin \
         CreateCharacterAbsorptionWipeMixin \
         FusionUnfuseBonusClearMixin \
+        FusionBonusReadGateMixin \
         LegacyMechanicsMixinPlugin; do
       if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/mixin/${mixin_cls}.class" ]]; then
         cp "$OUT/com/dbzlegacy/adaptivedifficulty/mixin/${mixin_cls}.class" \
