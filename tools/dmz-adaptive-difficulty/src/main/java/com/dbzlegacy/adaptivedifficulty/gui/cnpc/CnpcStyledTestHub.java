@@ -1,14 +1,13 @@
 package com.dbzlegacy.adaptivedifficulty.gui.cnpc;
 
-import com.dbzlegacy.adaptivedifficulty.character.CharacterServicesAccess;
-import com.dbzlegacy.adaptivedifficulty.character.CharacterServicesConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.SkillCheckService;
 import net.minecraft.server.level.ServerPlayer;
 import noppes.npcs.api.gui.ICustomGui;
 
 /**
  * Staff shortcut menu for {@code /lm admin testgui}.
- * Each button opens that screen. Hub on the screen opens the main hub.
+ * Head parts and Reskin sit at the top. Every other button opens that
+ * system's own main page. Hub on the screen opens the main hub.
  */
 public final class CnpcStyledTestHub {
     private CnpcStyledTestHub() {}
@@ -17,15 +16,12 @@ public final class CnpcStyledTestHub {
         if (player == null) {
             return;
         }
-        int buttons = 8;
-        if (headParts(player)) {
-            buttons++;
-        }
+        int links = 10;
         if (SkillCheckService.canUse(player)) {
-            buttons++;
+            links++;
         }
         int height = CnpcGuiSupport.suggestHeight(
-                88 + buttons * (CnpcGuiSupport.BTN_H + CnpcRowList.ROW_GAP) + 28);
+                88 + 16 + links * (CnpcGuiSupport.BTN_H + CnpcRowList.ROW_GAP) + 28);
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_HUB, CnpcGuiSupport.W, height,
                 CnpcStyledTestHub::paint);
     }
@@ -35,35 +31,29 @@ public final class CnpcStyledTestHub {
                 CnpcUltraStyle.subtitle("Each button opens that screen."));
         y = CnpcGuiSupport.bodyBelowInfo(y);
         int id = CnpcGuiSupport.ID_GRID_BASE;
-        y = link(gui, player, y, id++, "Difficulty", "difficulty", "main");
-        y = link(gui, player, y, id++, "Rival", "rival", "main");
-        y = link(gui, player, y, id++, "Sparring", "spar", "main");
-        y = link(gui, player, y, id++, "Prestige", "prestige", "main");
-        y = link(gui, player, y, id++, "Character", "character", "main");
-        if (headParts(player)) {
-            y = link(gui, player, y, id++, "Head parts", "character", "bones:0");
-        }
+        y = link(gui, y, id++, "Head parts", () -> CnpcLmCharacterGui.open(player, "bones:0"));
+        y = link(gui, y, id++, "Reskin", () -> CnpcLmCharacterGui.open(player, "reskin"));
+        y = CnpcGuiSupport.paintSectionTag(gui, CnpcGuiSupport.ID_STATUS_TAG, y, "Current menus");
+        y = link(gui, y, id++, "Difficulty", () -> CnpcLmDifficultyGui.open(player, "main"));
+        y = link(gui, y, id++, "Rival", () -> CnpcLmRivalGui.open(player, "main"));
+        y = link(gui, y, id++, "Sparring", () -> CnpcLmSparGui.open(player, "main"));
+        y = link(gui, y, id++, "Progression", () -> CnpcLmProgressionGui.open(player, "main"));
+        y = link(gui, y, id++, "Prestige", () -> CnpcLmPrestigeGui.open(player, "main"));
+        y = link(gui, y, id++, "Staff Admin", () -> CnpcLmAdminGui.open(player, "main"));
         if (SkillCheckService.canUse(player)) {
-            y = link(gui, player, y, id++, "Skill Check", "skillcheck", "main");
+            y = link(gui, y, id++, "Skill Check", () -> CnpcLmSkillCheckGui.open(player, "main"));
         }
-        y = link(gui, player, y, id++, "Skills", "skills", "core");
-        y = link(gui, player, y, id++, "Staff Admin", "admin", "main");
-        y = link(gui, player, y, id, "Saga Reset", "saga", "main");
+        y = link(gui, y, id++, "Skills", () -> CnpcLmSkillCheckGui.openSkillsAdmin(player, "core"));
+        y = link(gui, y, id, "Saga Reset", () -> CnpcLmSagaGui.open(player, "saga"));
         CnpcGuiSupport.footerCloseRefresh(player, gui, y, () -> open(player));
         CnpcGuiSupport.paintSystemMainPreview(CnpcGuiSupport.target(player), gui, player);
     }
 
     /** Opens that screen. Does not send Hub back here. */
-    private static int link(ICustomGui gui, ServerPlayer player, int y, int id, String label,
-            String system, String page) {
+    private static int link(ICustomGui gui, int y, int id, String label, Runnable open) {
         CnpcGuiSupport.buttonSmallFull(gui, id, CnpcUltraStyle.BODY + label,
                 CnpcGuiSupport.M, y, CnpcGuiSupport.textBandWidth(),
-                () -> CnpcLmGui.open(player, system, page));
+                open);
         return y + CnpcGuiSupport.BTN_H + CnpcRowList.ROW_GAP;
-    }
-
-    private static boolean headParts(ServerPlayer player) {
-        return CharacterServicesConfig.get().headBoneShop.enabled
-                && CharacterServicesAccess.canHeadBoneShop(player);
     }
 }
