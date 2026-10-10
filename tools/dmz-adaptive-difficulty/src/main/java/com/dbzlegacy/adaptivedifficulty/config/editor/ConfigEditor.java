@@ -660,10 +660,11 @@ public final class ConfigEditor {
             }
         }
         Session session = session(player);
-        String trimmedKey = key == null ? "" : key.trim();
-        if (trimmedKey.isEmpty() && raw != null) {
-            trimmedKey = raw.trim();
+        String typedKey = key == null ? "" : key.trim();
+        if (typedKey.isEmpty() && raw != null) {
+            typedKey = raw.trim();
         }
+        String trimmedKey = typedKey;
         session.drafts.removeIf(draft -> draft.op() == DraftOp.ADD
                 && moduleId.equals(draft.moduleId())
                 && path.equals(draft.path())
