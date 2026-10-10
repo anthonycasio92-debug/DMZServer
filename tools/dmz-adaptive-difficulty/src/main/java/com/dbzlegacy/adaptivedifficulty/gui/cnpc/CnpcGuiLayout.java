@@ -40,25 +40,35 @@ public final class CnpcGuiLayout {
         if (buttons == null || buttons.length == 0) {
             return startY + 4;
         }
+        int gap = 8;
+        int band = CnpcGuiSupport.textBandWidth();
+        int columns = 2;
+        if (columns * CnpcGuiSupport.MIN_BUTTON_WIDTH + (columns - 1) * gap > band) {
+            columns = 1;
+        }
+        int width = CnpcGuiSupport.equalButtonWidth(columns, band, gap);
         for (int i = 0; i < buttons.length; i++) {
             GridButton b = buttons[i];
             if (b == null) {
                 continue;
             }
-            int x = columnX(i);
-            int y = rowY(startY, i);
+            int col = i % columns;
+            int row = i / columns;
+            int x = CnpcGuiSupport.M + col * (width + gap);
+            int y = startY + row * CnpcGuiSupport.ROW_STEP;
             int id = idBase + i;
             if (b.clickable() && b.messageAction() != null) {
                 Runnable after = b.reopenAction() != null ? b.reopenAction() : reopen;
-                CnpcGuiSupport.buttonSmallFull(gui, id, b.label(), x, y, CnpcGuiSupport.BTN_W, () ->
+                CnpcGuiSupport.buttonSmallFull(gui, id, b.label(), x, y, width, () ->
                         CnpcGuiSupport.act(player, b.messageAction(), after));
             } else if (b.clickable() && b.directAction() != null) {
-                CnpcGuiSupport.buttonSmallFull(gui, id, b.label(), x, y, CnpcGuiSupport.BTN_W, b.directAction());
+                CnpcGuiSupport.buttonSmallFull(gui, id, b.label(), x, y, width, b.directAction());
             } else {
-                gui.addLabel(id, CnpcGuiSupport.safeChat(b.label()), x, y + 4, CnpcGuiSupport.BTN_W, 14);
+                gui.addLabel(id, CnpcGuiSupport.safeChat(b.label()), x, y + 4, width, 14);
             }
         }
-        return belowGrid(startY, buttons.length);
+        int rows = (buttons.length + columns - 1) / columns;
+        return startY + rows * CnpcGuiSupport.ROW_STEP + 8;
     }
 
     public record GridButton(

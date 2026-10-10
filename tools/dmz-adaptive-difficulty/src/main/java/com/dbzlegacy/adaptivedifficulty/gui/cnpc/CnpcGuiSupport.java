@@ -32,6 +32,12 @@ public final class CnpcGuiSupport {
     public static final int H = 280;
     public static final int M = 14;
     public static final int BTN_H = 20;
+    /** No button renders narrower than this, including after window compression. */
+    public static final int MIN_BUTTON_WIDTH = 80;
+    /** Horizontal padding on each side of a button label. */
+    public static final int BUTTON_PAD_X = 8;
+    /** Approximate Minecraft glyph width used to keep labels off the button edges. */
+    private static final int BUTTON_CHAR_PX = 6;
     public static final int COL_L = M;
     /** Two-column button width — keeps {@link CnpcPlayerPreview#contentRightEdge()} clear of overlap. */
     public static final int BTN_W;
@@ -274,29 +280,54 @@ public final class CnpcGuiSupport {
      * and the screen opens the same page that button already opened.
      * Returns the Y under the strip.
      */
+    /**
+     * How many buttons of {@link #MIN_BUTTON_WIDTH} fit in {@code bandWidth} with {@code gap} between them.
+     * Extra buttons wrap to the next row instead of shrinking.
+     */
+    public static int buttonsPerRow(int bandWidth, int gap) {
+        int gapPx = Math.max(0, gap);
+        int slot = MIN_BUTTON_WIDTH + gapPx;
+        if (bandWidth <= 0 || slot <= 0) {
+            return 1;
+        }
+        return Math.max(1, (bandWidth + gapPx) / slot);
+    }
+
+    /** Equal share of the row, never under {@link #MIN_BUTTON_WIDTH}. */
+    public static int equalButtonWidth(int count, int bandWidth, int gap) {
+        int n = Math.max(1, count);
+        int gapPx = Math.max(0, gap);
+        int share = (bandWidth - gapPx * (n - 1)) / n;
+        return Math.max(MIN_BUTTON_WIDTH, share);
+    }
+
     public static int paintTabBar(ICustomGui gui, int y, String[] tabs, String activeTab, Consumer<String> onTab) {
         if (gui == null || tabs == null || tabs.length == 0) {
             return y;
         }
-        int n = Math.min(tabs.length, 4);
         int gap = 4;
-        int width = Math.max(72, (textBandWidth() - gap * (n - 1)) / n);
-        int x = M;
-        for (int i = 0; i < n; i++) {
+        int band = textBandWidth();
+        int rowSize = Math.min(buttonsPerRow(band, gap), tabs.length);
+        int width = equalButtonWidth(rowSize, band, gap);
+        int yCursor = y;
+        for (int i = 0; i < tabs.length; i++) {
+            if (i > 0 && i % rowSize == 0) {
+                yCursor += TAB_BAR_H;
+            }
+            int x = M + (i % rowSize) * (width + gap);
             String[] parts = tabs[i].split("\\|", 2);
             String id = parts[0];
             String label = parts.length > 1 ? parts[1] : id;
             boolean active = id.equals(activeTab);
             String text = active ? CnpcUltraStyle.tabActive(label) : CnpcUltraStyle.tabInactive(label);
             String action = "tab:" + id;
-            buttonSmallFull(gui, ID_TAB_BASE + i, text, x, y, width, () -> {
+            buttonSmallFull(gui, ID_TAB_BASE + i, text, x, yCursor, width, () -> {
                 if (onTab != null) {
                     onTab.accept(action);
                 }
             });
-            x += width + gap;
         }
-        return y + TAB_BAR_H;
+        return yCursor + TAB_BAR_H;
     }
 
     public static int paintInfoBlock(ICustomGui gui, int startY, List<String> lines, int inlineMax) {
@@ -584,23 +615,42 @@ public final class CnpcGuiSupport {
     }
 
     public static IButton button(ICustomGui gui, int id, String label, int x, int y, Runnable onPress) {
-        IButton b = gui.addButton(id, safeChat(compactButton(label)), x, y, BTN_W, BTN_H);
-        b.setOnPress((g, btn) -> afterGuiClosed(g, onPress));
-        return b;
+        return placeButton(gui, id, label, x, y, BTN_W, true, onPress);
     }
 
     public static IButton buttonSmall(ICustomGui gui, int id, String label, int x, int y, int w, Runnable onPress) {
-        IButton b = gui.addButton(id, safeChat(compactButton(label)), x, y, w, BTN_H);
+        return placeButton(gui, id, label, x, y, w, true, onPress);
+    }
+
+    /** Button that keeps the full caption, still padded and never narrower than {@link #MIN_BUTTON_WIDTH}. */
+    public static IButton buttonSmallFull(ICustomGui gui, int id, String label, int x, int y, int w,
+            Runnable onPress) {
+        return placeButton(gui, id, label, x, y, w, false, onPress);
+    }
+
+    private static IButton placeButton(
+            ICustomGui gui, int id, String label, int x, int y, int requestedWidth, boolean compact, Runnable onPress) {
+        String prepared = compact ? compactButton(label) : (label == null ? "" : label);
+        int width = buttonWidth(prepared, requestedWidth);
+        IButton b = gui.addButton(id, safeChat(fitButtonLabel(prepared, width)), x, y, width, BTN_H);
         b.setOnPress((g, btn) -> afterGuiClosed(g, onPress));
         return b;
     }
 
-    /** Small button without truncating the label (tier costs, etc.). */
-    public static IButton buttonSmallFull(ICustomGui gui, int id, String label, int x, int y, int w,
-            Runnable onPress) {
-        IButton b = gui.addButton(id, safeChat(label), x, y, w, BTN_H);
-        b.setOnPress((g, btn) -> afterGuiClosed(g, onPress));
-        return b;
+    /**
+     * Rendered width: the caller's slot, the label plus {@link #BUTTON_PAD_X} on each side,
+     * or {@link #MIN_BUTTON_WIDTH}, whichever is larger. A column slot that is already at
+     * least the minimum is not grown into the neighboring column — the label is truncated
+     * instead. Callers with a long label use a full-width row.
+     */
+    public static int buttonWidth(String label, int requested) {
+        int floor = Math.max(MIN_BUTTON_WIDTH, Math.max(0, requested));
+        int padded = visibleWidth(label) + BUTTON_PAD_X * 2;
+        int band = textBandWidth();
+        if (requested > 0 && requested < band && padded > requested) {
+            return floor;
+        }
+        return Math.min(Math.max(band, floor), Math.max(floor, padded));
     }
 
     /**
@@ -657,7 +707,7 @@ public final class CnpcGuiSupport {
         if (label == null) {
             return "";
         }
-        // Toggle captions include color  codes — truncating breaks CNPC button text.
+        // Toggle captions include color codes. Pixel fitting below keeps those codes intact.
         if (label.contains(CnpcUltraStyle.BOLD + "ON ") || label.contains(CnpcUltraStyle.BOLD + "OFF ")) {
             return label;
         }
@@ -670,10 +720,59 @@ public final class CnpcGuiSupport {
         if (hint > 0) {
             s = s.substring(0, hint);
         }
-        if (s.length() > 26) {
-            s = s.substring(0, 23) + "…";
-        }
         return s;
+    }
+
+    /**
+     * Fit a label inside a button, leaving {@link #BUTTON_PAD_X} on each side.
+     * The button is never narrowed to make the text fit — the text is truncated with "…".
+     */
+    public static String fitButtonLabel(String label, int buttonWidth) {
+        if (label == null || label.isEmpty()) {
+            return "";
+        }
+        int room = Math.max(BUTTON_CHAR_PX, buttonWidth - BUTTON_PAD_X * 2);
+        if (visibleWidth(label) <= room) {
+            return label;
+        }
+        return truncateToPixels(label, room);
+    }
+
+    static int visibleWidth(String text) {
+        if (text == null || text.isEmpty()) {
+            return 0;
+        }
+        int px = 0;
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (c == '§' && i + 1 < text.length()) {
+                i++;
+                continue;
+            }
+            px += BUTTON_CHAR_PX;
+        }
+        return px;
+    }
+
+    private static String truncateToPixels(String text, int maxPx) {
+        int budget = Math.max(BUTTON_CHAR_PX, maxPx - BUTTON_CHAR_PX);
+        StringBuilder out = new StringBuilder();
+        int px = 0;
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (c == '§' && i + 1 < text.length()) {
+                out.append(c).append(text.charAt(i + 1));
+                i++;
+                continue;
+            }
+            if (px + BUTTON_CHAR_PX > budget) {
+                break;
+            }
+            out.append(c);
+            px += BUTTON_CHAR_PX;
+        }
+        out.append('…');
+        return out.toString();
     }
 
     /** Short shop row: skill name + progress + cost (fits CNPC button width). */
@@ -1040,8 +1139,9 @@ public final class CnpcGuiSupport {
             Supplier<String> selected,
             Consumer<String> onSelected,
             Runnable reopen) {
-        int w = width > 0 ? width : BTN_W;
-        IButton b = gui.addButton(id, safeChat(compactButton(label)), x, y, w, BTN_H);
+        String caption = compactButton(label);
+        int w = buttonWidth(caption, width > 0 ? width : BTN_W);
+        IButton b = gui.addButton(id, safeChat(fitButtonLabel(caption, w)), x, y, w, BTN_H);
         b.setOnPress((g, btn) -> {
             String arg = selected == null ? null : selected.get();
             if (arg == null || arg.isBlank()) {

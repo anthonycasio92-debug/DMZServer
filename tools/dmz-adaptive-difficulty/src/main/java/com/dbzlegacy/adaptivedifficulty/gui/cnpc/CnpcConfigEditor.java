@@ -92,7 +92,7 @@ public final class CnpcConfigEditor {
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CONFIG, CnpcGuiSupport.W, 460, (pl, gui) -> {
             int y = paintChrome(pl, gui, tab.label(), editable ? tab.fileName() : "Player records", module);
             y = paintSearch(pl, gui, y, listPage(module, 0, groupPath));
-            if (editable && gui.getComponent(ID_SEARCH) instanceof ITextField field) {
+            if (editable && component(gui, ID_SEARCH) instanceof ITextField field) {
                 field.setOnChange((g, tf) -> applyFilter(pl, g, module, groupPath, tf));
             }
             paintListBody(pl, gui, y, module, groupPath, pageNumber, editable, tab.fileName());
@@ -332,14 +332,17 @@ public final class CnpcConfigEditor {
         boolean dirty = ConfigEditor.dirty(player.m_20148_(), module, entry.path());
         String value = ConfigEditor.shownValue(player.m_20148_(), module, entry.path());
         String prefix = dirty ? CnpcUltraStyle.INFO + "● " : "";
-        int nameWidth = dirty ? CnpcGuiSupport.textBandWidth() - 78 : CnpcGuiSupport.textBandWidth();
+        int undoWidth = CnpcGuiSupport.MIN_BUTTON_WIDTH;
+        int nameWidth = dirty
+                ? CnpcGuiSupport.textBandWidth() - undoWidth - 4
+                : CnpcGuiSupport.textBandWidth();
         press(gui, ID_NAME + index, prefix + CnpcUltraStyle.BODY + trim(ConfigEditor.displayName(leaf(entry.path())), 18)
                         + " " + CnpcUltraStyle.DIM + "· " + CnpcUltraStyle.SUBTITLE + trim(value, 12),
                 CnpcGuiSupport.M, y, nameWidth, CnpcGuiSupport.BTN_H, player,
                 () -> open(player, detailPage(module, number(part(listReturn, 2)), entry.path())));
         if (dirty) {
             press(gui, ID_UNDO + index, CnpcUltraStyle.DIM + "[undo]",
-                    CnpcGuiSupport.M + CnpcGuiSupport.textBandWidth() - 70, y, 70, CnpcGuiSupport.BTN_H, player,
+                    rightButtonX(), y, undoWidth, CnpcGuiSupport.BTN_H, player,
                     () -> {
                         ConfigEditor.undoField(player.m_20148_(), module, entry.path());
                         open(player, listReturn);
@@ -368,39 +371,46 @@ public final class CnpcConfigEditor {
                 });
             }
             case NUMBER -> {
+                int plusX = rightButtonX();
+                int minusX = plusX - 4 - CnpcGuiSupport.MIN_BUTTON_WIDTH;
                 gui.addLabel(ID_VALUE + index, CnpcGuiSupport.safeChat(CnpcUltraStyle.SUBTITLE + "Value: "
                         + CnpcUltraStyle.BODY + trim(ConfigEditor.effectiveRaw(player.m_20148_(), module, entry.path()), 12)),
-                        x, y + 4, 140, 12);
-                press(gui, ID_CTRL + index * 3, CnpcUltraStyle.DIM + "[−]", x + 148, y, 44, CnpcGuiSupport.BTN_H, player,
+                        x, y + 4, Math.max(40, minusX - x - 4), 12);
+                press(gui, ID_CTRL + index * 3, CnpcUltraStyle.DIM + "[−]", minusX, y,
+                        CnpcGuiSupport.MIN_BUTTON_WIDTH, CnpcGuiSupport.BTN_H, player,
                         () -> step(player, module, entry.path(), -1, listReturn));
-                press(gui, ID_CTRL + index * 3 + 1, CnpcUltraStyle.DIM + "[+]", x + 196, y, 44, CnpcGuiSupport.BTN_H, player,
+                press(gui, ID_CTRL + index * 3 + 1, CnpcUltraStyle.DIM + "[+]", plusX, y,
+                        CnpcGuiSupport.MIN_BUTTON_WIDTH, CnpcGuiSupport.BTN_H, player,
                         () -> step(player, module, entry.path(), 1, listReturn));
             }
             case ENUM -> {
                 gui.addLabel(ID_VALUE + index, CnpcGuiSupport.safeChat(CnpcUltraStyle.SUBTITLE + "Value: "
-                        + CnpcUltraStyle.BODY + trim(value, 12)), x, y + 4, 150, 12);
-                press(gui, ID_CTRL + index * 3, CnpcUltraStyle.DIM + "[next]", x + 156, y, 70, CnpcGuiSupport.BTN_H, player,
+                        + CnpcUltraStyle.BODY + trim(value, 12)), x, y + 4,
+                        Math.max(40, rightButtonX() - x - 4), 12);
+                press(gui, ID_CTRL + index * 3, CnpcUltraStyle.DIM + "[next]", rightButtonX(), y,
+                        CnpcGuiSupport.MIN_BUTTON_WIDTH, CnpcGuiSupport.BTN_H, player,
                         () -> cycle(player, module, entry.path(), listReturn));
             }
             case TEXT -> {
                 gui.addLabel(ID_VALUE + index, CnpcGuiSupport.safeChat(CnpcUltraStyle.SUBTITLE + "Value: "
-                        + CnpcUltraStyle.BODY + trim(value, 14)), x, y + 4, 170, 12);
-                press(gui, ID_CTRL + index * 3, CnpcUltraStyle.DIM + "[edit]", x + width - 70, y, 64,
-                        CnpcGuiSupport.BTN_H, player,
+                        + CnpcUltraStyle.BODY + trim(value, 14)), x, y + 4,
+                        Math.max(40, rightButtonX() - x - 4), 12);
+                press(gui, ID_CTRL + index * 3, CnpcUltraStyle.DIM + "[edit]", rightButtonX(), y,
+                        CnpcGuiSupport.MIN_BUTTON_WIDTH, CnpcGuiSupport.BTN_H, player,
                         () -> open(player, detailPage(module, number(part(listReturn, 2)), entry.path())));
             }
             case LIST, MAP -> {
                 gui.addLabel(ID_VALUE + index, CnpcGuiSupport.safeChat(CnpcUltraStyle.SUBTITLE + value),
-                        x, y + 4, 150, 12);
-                press(gui, ID_CTRL + index * 3, CnpcUltraStyle.DIM + "[manage]", x + width - 84, y, 78,
-                        CnpcGuiSupport.BTN_H, player,
+                        x, y + 4, Math.max(40, rightButtonX() - x - 4), 12);
+                press(gui, ID_CTRL + index * 3, CnpcUltraStyle.DIM + "[manage]", rightButtonX(), y,
+                        CnpcGuiSupport.MIN_BUTTON_WIDTH, CnpcGuiSupport.BTN_H, player,
                         () -> open(player, view("manage", module, 0, entry.path())));
             }
             case GROUP -> {
                 gui.addLabel(ID_VALUE + index, CnpcGuiSupport.safeChat(CnpcUltraStyle.SUBTITLE + value),
-                        x, y + 4, 150, 12);
-                press(gui, ID_CTRL + index * 3, CnpcUltraStyle.DIM + "[open]", x + width - 70, y, 64,
-                        CnpcGuiSupport.BTN_H, player, () -> {
+                        x, y + 4, Math.max(40, rightButtonX() - x - 4), 12);
+                press(gui, ID_CTRL + index * 3, CnpcUltraStyle.DIM + "[open]", rightButtonX(), y,
+                        CnpcGuiSupport.MIN_BUTTON_WIDTH, CnpcGuiSupport.BTN_H, player, () -> {
                             ConfigEditor.rememberSearch(player.m_20148_(), "");
                             open(player, listPage(module, 0, entry.path()));
                         });
@@ -429,9 +439,12 @@ public final class CnpcConfigEditor {
                 field.setText(ConfigEditor.effectiveRaw(player.m_20148_(), module, path));
                 y += 24 + CnpcRowList.ROW_GAP;
                 if (kind == ConfigEditor.Kind.NUMBER) {
-                    press(gui, 40, CnpcUltraStyle.DIM + "[−]", CnpcGuiSupport.M, y, 70, 24, player,
+                    press(gui, 40, CnpcUltraStyle.DIM + "[−]", CnpcGuiSupport.M, y,
+                            CnpcGuiSupport.MIN_BUTTON_WIDTH, 24, player,
                             () -> step(player, module, path, -1, detailPage(module, listPage, path)));
-                    press(gui, 41, CnpcUltraStyle.DIM + "[+]", CnpcGuiSupport.M + 78, y, 70, 24, player,
+                    press(gui, 41, CnpcUltraStyle.DIM + "[+]",
+                            CnpcGuiSupport.M + CnpcGuiSupport.MIN_BUTTON_WIDTH + 4, y,
+                            CnpcGuiSupport.MIN_BUTTON_WIDTH, 24, player,
                             () -> step(player, module, path, 1, detailPage(module, listPage, path)));
                     y += 24 + CnpcRowList.ROW_GAP;
                 } else if (kind == ConfigEditor.Kind.ENUM) {
@@ -479,9 +492,9 @@ public final class CnpcConfigEditor {
         String prefix = row.added() || row.removing() ? CnpcUltraStyle.INFO + "● " : "";
         gui.addLabel(ID_NAME + index, CnpcGuiSupport.safeChat(prefix + CnpcUltraStyle.BODY + trim(row.title(), 22)
                         + " " + CnpcUltraStyle.DIM + "· " + CnpcUltraStyle.SUBTITLE + trim(row.value(), 16)),
-                CnpcGuiSupport.M, y + 4, CnpcGuiSupport.textBandWidth() - 80, 12);
+                CnpcGuiSupport.M, y + 4, CnpcGuiSupport.textBandWidth() - CnpcGuiSupport.MIN_BUTTON_WIDTH - 8, 12);
         String label = row.added() || row.removing() ? CnpcUltraStyle.SUBTITLE + "[undo]" : CnpcUltraStyle.DANGER + "[remove]";
-        press(gui, ID_CTRL + index, label, CnpcGuiSupport.M + CnpcGuiSupport.textBandWidth() - 74, y, 74,
+        press(gui, ID_CTRL + index, label, rightButtonX(), y, CnpcGuiSupport.MIN_BUTTON_WIDTH,
                 CnpcGuiSupport.BTN_H, player, () -> {
                     if (row.added()) {
                         ConfigEditor.undo(player.m_20148_(), module, collection, ConfigEditor.DraftOp.ADD, row.key());
@@ -502,45 +515,39 @@ public final class CnpcConfigEditor {
 
     private static int paintTabs(ServerPlayer player, ICustomGui gui, int y, String active) {
         List<ConfigEditor.EditorTab> tabs = ConfigEditor.editorTabs();
-        int index = 0;
-        int rowCount = 0;
-        while (index < tabs.size()) {
-            int count = Math.min(4, tabs.size() - index);
-            int gap = 4;
-            int width = Math.max(60, (CnpcGuiSupport.textBandWidth() - gap * (count - 1)) / count);
-            int x = CnpcGuiSupport.M;
-            for (int i = 0; i < count; i++) {
-                ConfigEditor.EditorTab tab = tabs.get(index);
-                String text = tab.id().equals(active)
-                        ? CnpcUltraStyle.tabActive(tab.label())
-                        : CnpcUltraStyle.tabInactive(tab.label());
-                String module = tab.id();
-                press(gui, CnpcGuiSupport.ID_TAB_BASE + index, text, x, y, width, CnpcGuiSupport.BTN_H, player, () -> {
-                    ConfigEditor.clearBanner(player.m_20148_());
-                    open(player, listPage(module, 0, ""));
-                });
-                x += width + gap;
-                index++;
+        int gap = 4;
+        int band = CnpcGuiSupport.textBandWidth();
+        int rowSize = Math.min(CnpcGuiSupport.buttonsPerRow(band, gap), Math.max(1, tabs.size()));
+        int width = CnpcGuiSupport.equalButtonWidth(rowSize, band, gap);
+        for (int index = 0; index < tabs.size(); index++) {
+            if (index > 0 && index % rowSize == 0) {
+                y += CnpcGuiSupport.TAB_BAR_H;
             }
-            y += CnpcGuiSupport.TAB_BAR_H;
-            rowCount++;
-            if (rowCount > 3) {
-                break;
-            }
+            ConfigEditor.EditorTab tab = tabs.get(index);
+            String text = tab.id().equals(active)
+                    ? CnpcUltraStyle.tabActive(tab.label())
+                    : CnpcUltraStyle.tabInactive(tab.label());
+            String module = tab.id();
+            int x = CnpcGuiSupport.M + (index % rowSize) * (width + gap);
+            press(gui, CnpcGuiSupport.ID_TAB_BASE + index, text, x, y, width, CnpcGuiSupport.BTN_H, player, () -> {
+                ConfigEditor.clearBanner(player.m_20148_());
+                open(player, listPage(module, 0, ""));
+            });
         }
-        return y;
+        return tabs.isEmpty() ? y : y + CnpcGuiSupport.TAB_BAR_H;
     }
 
     private static int paintSearch(ServerPlayer player, ICustomGui gui, int y, String reopen) {
         gui.addLabel(ID_SEARCH_LABEL, CnpcGuiSupport.safeChat(CnpcUltraStyle.SUBTITLE + "Search:"),
                 CnpcGuiSupport.M, y + 4, 52, 12);
+        int filterX = rightButtonX();
         ITextField field = gui.addTextField(ID_SEARCH, CnpcGuiSupport.M + 54, y,
-                CnpcGuiSupport.textBandWidth() - 54 - 68, CnpcGuiSupport.BTN_H);
+                Math.max(40, filterX - (CnpcGuiSupport.M + 54) - 8), CnpcGuiSupport.BTN_H);
         field.setText(ConfigEditor.search(player.m_20148_()));
         press(gui, ID_FILTER, CnpcUltraStyle.SUBTITLE + "[Filter]",
-                CnpcGuiSupport.M + CnpcGuiSupport.textBandWidth() - 64, y, 64, CnpcGuiSupport.BTN_H, player,
+                filterX, y, CnpcGuiSupport.MIN_BUTTON_WIDTH, CnpcGuiSupport.BTN_H, player,
                 () -> {
-                    if (gui.getComponent(ID_SEARCH) instanceof ITextField current) {
+                    if (component(gui, ID_SEARCH) instanceof ITextField current) {
                         ConfigEditor.rememberSearch(player.m_20148_(), current.getText());
                     }
                     open(player, firstPage(reopen));
@@ -587,13 +594,15 @@ public final class CnpcConfigEditor {
         String reopenKind = manage ? "manage" : "list";
         gui.addLabel(ID_PAGE, CnpcGuiSupport.safeChat(CnpcUltraStyle.SUBTITLE + "Page " + (page + 1) + " of " + pages),
                 CnpcGuiSupport.M, y + 4, 110, 12);
+        int prevX = CnpcGuiSupport.M + 116;
+        int nextX = prevX + CnpcGuiSupport.MIN_BUTTON_WIDTH + 4;
         if (page > 0) {
-            press(gui, ID_PREV, CnpcUltraStyle.SUBTITLE + "[Prev]", CnpcGuiSupport.M + 116, y, 64,
+            press(gui, ID_PREV, CnpcUltraStyle.SUBTITLE + "[Prev]", prevX, y, CnpcGuiSupport.MIN_BUTTON_WIDTH,
                     CnpcGuiSupport.BTN_H, player,
                     () -> open(player, view(reopenKind, module, page - 1, path)));
         }
         if (page + 1 < pages) {
-            press(gui, ID_NEXT, CnpcUltraStyle.SUBTITLE + "[Next]", CnpcGuiSupport.M + 186, y, 64,
+            press(gui, ID_NEXT, CnpcUltraStyle.SUBTITLE + "[Next]", nextX, y, CnpcGuiSupport.MIN_BUTTON_WIDTH,
                     CnpcGuiSupport.BTN_H, player,
                     () -> open(player, view(reopenKind, module, page + 1, path)));
         }
@@ -602,16 +611,16 @@ public final class CnpcConfigEditor {
 
     private static int paintActions(ServerPlayer player, ICustomGui gui, int y, String reopen) {
         int gap = 4;
-        int width = (CnpcGuiSupport.textBandWidth() - gap * 2) / 3;
-        int x = CnpcGuiSupport.M;
-        press(gui, ID_SAVE, CnpcUltraStyle.CONFIRM + "[Save all]", x, y, width, CnpcGuiSupport.BTN_H, player,
-                () -> save(player, reopen));
-        x += width + gap;
-        press(gui, ID_RELOAD, CnpcUltraStyle.SUBTITLE + "[Reload from disk]", x, y, width, CnpcGuiSupport.BTN_H, player,
-                () -> reload(player, reopen));
-        x += width + gap;
-        press(gui, ID_DISCARD, CnpcUltraStyle.DANGER + "[Discard changes]", x, y, width, CnpcGuiSupport.BTN_H, player,
+        int half = (CnpcGuiSupport.textBandWidth() - gap) / 2;
+        press(gui, ID_SAVE, CnpcUltraStyle.CONFIRM + "[Save all]", CnpcGuiSupport.M, y, half,
+                CnpcGuiSupport.BTN_H, player, () -> save(player, reopen));
+        press(gui, ID_DISCARD, CnpcUltraStyle.DANGER + "[Discard changes]",
+                CnpcGuiSupport.M + half + gap, y, half, CnpcGuiSupport.BTN_H, player,
                 () -> discard(player, reopen));
+        y += CnpcGuiSupport.BTN_H + CnpcRowList.ROW_GAP;
+        press(gui, ID_RELOAD, CnpcUltraStyle.SUBTITLE + "[Reload from disk]", CnpcGuiSupport.M, y,
+                CnpcGuiSupport.textBandWidth(), CnpcGuiSupport.BTN_H, player,
+                () -> reload(player, reopen));
         return y + CnpcGuiSupport.BTN_H + CnpcRowList.ROW_GAP;
     }
 
@@ -894,23 +903,48 @@ public final class CnpcConfigEditor {
         return y + CnpcGuiSupport.LINE_H + 2;
     }
 
+    private static int rightButtonX() {
+        return CnpcGuiSupport.M + CnpcGuiSupport.textBandWidth() - CnpcGuiSupport.MIN_BUTTON_WIDTH;
+    }
+
     private static void press(
             ICustomGui gui, int id, String label, int x, int y, int w, int h,
             ServerPlayer player, Runnable action) {
-        gui.addButton(id, CnpcGuiSupport.safeChat(label), x, y, w, h).setOnPress((g, btn) -> {
-            capture(player, g);
-            CnpcGuiSupport.afterGuiClosed(g, action);
-        });
+        int width = CnpcGuiSupport.buttonWidth(label, w);
+        gui.addButton(id, CnpcGuiSupport.safeChat(CnpcGuiSupport.fitButtonLabel(label, width)), x, y, width, h)
+                .setOnPress((g, btn) -> {
+                    capture(player, g);
+                    CnpcGuiSupport.afterGuiClosed(g, action);
+                });
     }
 
     private static void capture(ServerPlayer player, ICustomGui gui) {
-        if (gui != null && gui.getComponent(ID_SEARCH) instanceof ITextField field) {
+        if (component(gui, ID_SEARCH) instanceof ITextField field) {
             ConfigEditor.rememberSearch(player.m_20148_(), field.getText());
         }
     }
 
+    /** Root lookup, then the scroll panel. Overflow pages move fields into that panel. */
+    private static noppes.npcs.api.gui.ICustomGuiComponent component(ICustomGui gui, int id) {
+        if (gui == null) {
+            return null;
+        }
+        noppes.npcs.api.gui.ICustomGuiComponent found = gui.getComponent(id);
+        if (found != null) {
+            return found;
+        }
+        try {
+            noppes.npcs.api.gui.IComponentsScrollableWrapper panel = gui.getScrollingPanel();
+            if (panel != null) {
+                return panel.getComponent(id);
+            }
+        } catch (Throwable ignored) {
+        }
+        return null;
+    }
+
     private static String text(ICustomGui gui, int id) {
-        if (gui == null || !(gui.getComponent(id) instanceof ITextField field) || field.getText() == null) {
+        if (!(component(gui, id) instanceof ITextField field) || field.getText() == null) {
             return "";
         }
         return field.getText();

@@ -342,12 +342,12 @@ public final class CnpcLmDifficultyGui {
         PlayerDifficultyData data = DifficultyCache.data(subject);
         boolean sense = data.titleProgress().titleSenseChat();
         CnpcGuiSupport.buttonSmall(gui, 20, sense ? CnpcGuiStyle.toggleOn("Title Sense")
-                : CnpcGuiStyle.toggleOff("Title Sense"), CnpcGuiSupport.COL_L, row, 95,
+                : CnpcGuiStyle.toggleOff("Title Sense"), CnpcGuiSupport.COL_L, row, CnpcGuiSupport.BTN_W,
                 () -> CnpcGuiSupport.act(
                         player,
                         () -> DifficultyActions.handleArgNoReopen(subject, "toggle_title_sense", "0", "titles").message(),
                         () -> open(player, "titles")));
-        CnpcGuiSupport.buttonSmall(gui, 21, CnpcUltraStyle.DANGER + "Unequip title", CnpcGuiSupport.COL_R, row, 95, () -> CnpcGuiSupport.act(
+        CnpcGuiSupport.buttonSmall(gui, 21, CnpcUltraStyle.DANGER + "Unequip title", CnpcGuiSupport.COL_R, row, CnpcGuiSupport.BTN_W, () -> CnpcGuiSupport.act(
                 player,
                 () -> DifficultyActions.handleArgNoReopen(subject, "clear_title", "0", "titles").message(),
                 () -> open(player, "titles")));
@@ -551,7 +551,7 @@ public final class CnpcLmDifficultyGui {
         if (StaffAccess.isStaff(player) && parentPage == null) {
             row += CnpcGuiSupport.ROW_STEP;
             CnpcGuiSupport.buttonSmall(gui, CnpcGuiSupport.ID_STAFF_EXTRA, CnpcUltraStyle.DANGER + "Staff Admin…",
-                    CnpcGuiSupport.COL_L, row, 95, () -> open(player, "admin"));
+                    CnpcGuiSupport.COL_L, row, CnpcGuiSupport.BTN_W, () -> open(player, "admin"));
         }
         if (previewSubject != null && parentPage == null) {
             CnpcGuiSupport.paintSystemMainPreview(previewSubject, gui, player);

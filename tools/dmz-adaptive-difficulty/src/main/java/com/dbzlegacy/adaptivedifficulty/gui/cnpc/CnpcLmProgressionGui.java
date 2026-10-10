@@ -304,7 +304,7 @@ public final class CnpcLmProgressionGui {
         String convertLabel = self
                 ? CnpcUltraStyle.CONFIRM + "Convert yourself"
                 : CnpcUltraStyle.CONFIRM + "Convert " + who;
-        CnpcGuiSupport.button(gui, 62, convertLabel, CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
+        CnpcGuiSupport.buttonSmallFull(gui, 62, convertLabel, CnpcGuiSupport.M, row, CnpcGuiSupport.textBandWidth(), () -> CnpcGuiSupport.act(
                 player,
                 () -> ProgressionGuiApi.handleDo(player, "android", subject.m_7755_().getString(), "android_convert"),
                 () -> open(player, "android_convert")));
