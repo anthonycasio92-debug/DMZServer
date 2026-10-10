@@ -79,7 +79,6 @@ public final class MechanicsChatMenu {
                     .m_7220_(btn("§8[Logs]", "/lm page logs", "Server event logs"));
             send(player, row3);
         }
-        send(player, Component.m_237113_("§8────────────────"));
     }
 
     private static void logs(ServerPlayer player) {
@@ -96,7 +95,6 @@ public final class MechanicsChatMenu {
                 .m_7220_(btn("§e[Flush]", "/lm do syslog flush", "Write buffered logs to disk"));
         send(player, toggles);
         send(player, btn("§7« Back", "/lm", "Go up one level"));
-        send(player, Component.m_237113_("§8────────────────"));
     }
 
     private static MutableComponent btn(String label, String command, String hover) {

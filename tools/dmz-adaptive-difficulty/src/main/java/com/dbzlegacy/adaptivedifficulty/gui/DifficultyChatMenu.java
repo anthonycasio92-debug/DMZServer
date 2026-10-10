@@ -86,7 +86,6 @@ public final class DifficultyChatMenu {
             } else {
                 send(player, Component.m_237113_("§7Please try again later."));
             }
-            send(player, Component.m_237113_("§8────────────────"));
             return;
         }
         if (!SystemGate.allows(player)) {
@@ -96,7 +95,6 @@ public final class DifficultyChatMenu {
             } else {
                 send(player, Component.m_237113_("§7Ask an admin if you need access."));
             }
-            send(player, Component.m_237113_("§8────────────────"));
             return;
         }
         PlayerDifficultyData data = DifficultyCache.data(player);
@@ -141,7 +139,6 @@ public final class DifficultyChatMenu {
             send(player, btn("§8[Staff details]", "/difficulty do page stats", "Staff breakdown"));
         }
         send(player, btn("§7« Hub", "/lm", "Main hub"));
-        send(player, Component.m_237113_("§8────────────────"));
     }
 
     private static void tiers(ServerPlayer player) {

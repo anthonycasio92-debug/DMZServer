@@ -20,8 +20,8 @@ public final class CnpcLmLogsGui {
 
     private static void paintMain(ServerPlayer player, ICustomGui gui) {
         int infoY = CnpcGuiSupport.paintHeader(player, gui,
-                CnpcGuiStyle.subPage("§c", "Staff Admin", "Event log"),
-                "§7Staff event log — toggle or write logs to disk");
+                CnpcGuiStyle.subPage(CnpcUltraStyle.DANGER, "Staff Admin", "Event log"),
+                CnpcUltraStyle.SUBTITLE + "Staff event log — toggle or write logs to disk");
         List<String> lines = MechanicsGuiApi.linesForPage(player, "logs");
         var ph = MechanicsGuiApi.placeholders(player);
         boolean syslogOn = "true".equalsIgnoreCase(ph.getOrDefault("syslog", "false"));
@@ -32,12 +32,12 @@ public final class CnpcLmLogsGui {
                 player,
                 () -> MechanicsGuiApi.handleDo(player, "syslog", syslogOn ? "off" : "on", "logs"),
                 () -> open(player, "main")));
-        CnpcGuiSupport.button(gui, 22, "§7Write logs to disk", CnpcGuiSupport.COL_R, row, () -> CnpcGuiSupport.act(
+        CnpcGuiSupport.button(gui, 22, CnpcUltraStyle.SUBTITLE + "Write logs to disk", CnpcGuiSupport.COL_R, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> MechanicsGuiApi.handleDo(player, "syslog", "flush", "logs"),
                 () -> open(player, "main")));
         row += CnpcGuiSupport.ROW_STEP;
-        CnpcGuiSupport.navSubmenu(player, gui, row, () -> CnpcLmAdminGui.open(player, "main"), "§7« Back");
+        CnpcGuiSupport.navSubmenu(player, gui, row, () -> CnpcLmAdminGui.open(player, "main"), CnpcUltraStyle.BACK);
         CnpcGuiSupport.paintSystemMainPreview(CnpcGuiSupport.target(player), gui, player);
     }
 }

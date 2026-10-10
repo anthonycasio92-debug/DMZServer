@@ -155,7 +155,7 @@ public final class CharacterServicesGuiApi {
             lines.add("§7Level, stats, race, and class stay locked during the session.");
             lines.add(costLine(player, CharacterServicesSystem.reskinCost(player)));
             lines.add(CharacterServicesSystem.reskinCostExplanation(player));
-            lines.add("§8Ancient Coins charged when you confirm · editor cancel does not refund");
+            lines.add("§8You'll be charged Ancient Coins when you confirm on the next screen. Cancelling the editor does not refund them.");
             lines.add(CharacterServicesSystem.cooldownLine(player, "reskin"));
             String block = CharacterServicesSystem.reskinPrecheck(player);
             if (block != null && !block.isBlank()) {

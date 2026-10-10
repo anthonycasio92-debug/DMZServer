@@ -108,7 +108,7 @@ public final class CnpcLmSagaGui {
             }
             y += CnpcGuiSupport.ROW_STEP;
         }
-        CnpcGuiSupport.navSubmenu(player, gui, y, () -> CnpcLmCharacterGui.open(player, "main"), "§7« Back");
+        CnpcGuiSupport.navSubmenu(player, gui, y, () -> CnpcLmCharacterGui.open(player, "main"), CnpcUltraStyle.BACK);
     }
 
     private static void paintConfirm(ServerPlayer player, ICustomGui gui, String sagaId) {

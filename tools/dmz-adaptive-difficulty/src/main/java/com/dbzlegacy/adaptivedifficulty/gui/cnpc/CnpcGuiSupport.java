@@ -43,7 +43,8 @@ public final class CnpcGuiSupport {
         BTN_W = Math.max(130, (right - COL_L - gap) / 2);
         COL_R = COL_L + BTN_W + gap;
     }
-    public static final int ROW_STEP = 24;
+    /** Button height plus the 6px gap used by every production row. */
+    public static final int ROW_STEP = BTN_H + CnpcRowList.ROW_GAP;
     public static final int LINE_H = 13;
     /** Default height for rival/spar/character player lists. */
     public static final int SCROLL_LIST_H = 160;
@@ -108,7 +109,7 @@ public final class CnpcGuiSupport {
             return false;
         }
         if (!NpcAPI.IsAvailable()) {
-            feedbackChat(player, "§cThis menu needs CustomNPCs on your client and the server.");
+            feedbackChat(player, CnpcUltraStyle.DANGER + "This menu needs CustomNPCs on your client and the server.");
             return false;
         }
         return true;
@@ -133,7 +134,7 @@ public final class CnpcGuiSupport {
     public static void showSized(ServerPlayer player, int guiId, int width, int height, Painter painter) {
         IPlayer<?> ip = wrap(player);
         if (ip == null) {
-            feedbackChat(player, "§cCould not open the menu. Try relogging, then open it again.");
+            feedbackChat(player, CnpcUltraStyle.DANGER + "Could not open the menu. Try relogging, then open it again.");
             return;
         }
         try {
@@ -151,7 +152,7 @@ public final class CnpcGuiSupport {
             ip.showCustomGui(gui);
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.warn("[{}] CNPC GUI {} failed: {}", AdaptiveDifficultyMod.MOD_ID, guiId, t.toString(), t);
-            feedbackChat(player, "§cSomething went wrong opening the menu. Ask staff if this keeps happening.");
+            feedbackChat(player, CnpcUltraStyle.DANGER + "Something went wrong opening the menu. Ask staff if this keeps happening.");
         }
     }
 
@@ -326,7 +327,7 @@ public final class CnpcGuiSupport {
         if (reservePickListScroll && maxInline > 0) {
             if (clean.size() > maxInline) {
                 List<String> trimmed = new ArrayList<>(clean.subList(0, maxInline));
-                trimmed.add(CnpcGuiStyle.readableInfoLine("§eMore summary text is hidden above the list."));
+                trimmed.add(CnpcGuiStyle.readableInfoLine(CnpcUltraStyle.INFO + "More summary text is hidden above the list."));
                 clean = trimmed;
             }
             bodyLines(gui, labelBase, startY, clean, clean.size(), textW);
@@ -364,8 +365,8 @@ public final class CnpcGuiSupport {
     }
 
     public static void footerCloseRefresh(ServerPlayer player, ICustomGui gui, int row, Runnable refresh) {
-        buttonSmall(gui, ID_CLOSE, "§cClose", COL_L, row, 95, () -> {});
-        buttonSmall(gui, ID_REFRESH, "§7Refresh", COL_R, row, 95, refresh);
+        buttonSmall(gui, ID_CLOSE, CnpcUltraStyle.DANGER + "Close", COL_L, row, 95, () -> {});
+        buttonSmall(gui, ID_REFRESH, CnpcUltraStyle.SUBTITLE + "Refresh", COL_R, row, 95, refresh);
     }
 
     public static ILabel title(ICustomGui gui, int id, String text) {
@@ -638,16 +639,16 @@ public final class CnpcGuiSupport {
         if (label == null) {
             return "";
         }
-        // Toggle captions include § codes — truncating breaks CNPC button text.
-        if (label.contains("§lON ") || label.contains("§lOFF ")) {
+        // Toggle captions include color  codes — truncating breaks CNPC button text.
+        if (label.contains(CnpcUltraStyle.BOLD + "ON ") || label.contains(CnpcUltraStyle.BOLD + "OFF ")) {
             return label;
         }
         String s = label;
-        int hint = s.indexOf(" §8· ");
+        int hint = s.indexOf(" " + CnpcUltraStyle.DIM + "· ");
         if (hint > 0) {
             s = s.substring(0, hint);
         }
-        hint = s.indexOf(" §7· ");
+        hint = s.indexOf(" " + CnpcUltraStyle.SUBTITLE + "· ");
         if (hint > 0) {
             s = s.substring(0, hint);
         }
@@ -659,17 +660,17 @@ public final class CnpcGuiSupport {
 
     /** Short shop row: skill name + progress + cost (fits CNPC button width). */
     public static String compactShopLabel(String name, int bought, int max, String cost) {
-        String n = name == null ? "" : name.replaceAll("§.", "");
+        String n = name == null ? "" : name.replaceAll(CnpcUltraStyle.MARK + ".", "");
         if (n.length() > 14) {
             n = n.substring(0, 12) + "…";
         }
-        String c = cost == null || cost.isBlank() ? "?" : cost.replaceAll("§.", "");
-        return "§f" + n + " §7" + bought + "/" + max + " · §6" + c;
+        String c = cost == null || cost.isBlank() ? "?" : cost.replaceAll(CnpcUltraStyle.MARK + ".", "");
+        return CnpcUltraStyle.BODY + n + " " + CnpcUltraStyle.SUBTITLE + bought + "/" + max + " · " + CnpcUltraStyle.ACCENT + c;
     }
 
     public static String humanizePickerArg(String arg) {
         if (arg == null || arg.isBlank()) {
-            return "§7(entry)";
+            return CnpcUltraStyle.SUBTITLE + "(entry)";
         }
         String s = arg.trim();
         if (s.startsWith("uuid:")) {
@@ -700,7 +701,7 @@ public final class CnpcGuiSupport {
 
     public static String humanizeToken(String raw) {
         if (raw == null || raw.isBlank()) {
-            return "§7?";
+            return CnpcUltraStyle.SUBTITLE + "?";
         }
         String s = raw.trim();
         if (s.startsWith("uuid:")) {
@@ -719,14 +720,14 @@ public final class CnpcGuiSupport {
             s = splitCamel(s);
         }
         if (s.isBlank()) {
-            return "§7?";
+            return CnpcUltraStyle.SUBTITLE + "?";
         }
-        return "§f" + capitalizeWords(s.toLowerCase(Locale.ROOT));
+        return CnpcUltraStyle.BODY + capitalizeWords(s.toLowerCase(Locale.ROOT));
     }
 
     private static String humanizeUuid(String uuid) {
         if (uuid == null || uuid.isBlank()) {
-            return "§f(player)";
+            return CnpcUltraStyle.BODY + "(player)";
         }
         String u = uuid.trim();
         if (u.regionMatches(true, 0, "uuid:", 0, 5)) {
@@ -734,12 +735,12 @@ public final class CnpcGuiSupport {
         }
         String resolved = resolveStoredPlayerName(u);
         if (resolved != null && !resolved.isBlank()) {
-            return "§f" + safeChat(resolved);
+            return CnpcUltraStyle.BODY + safeChat(resolved);
         }
         if (u.length() > 8) {
-            return "§fPlayer §7" + u.substring(0, 8) + "…";
+            return CnpcUltraStyle.BODY + "Player " + CnpcUltraStyle.SUBTITLE + u.substring(0, 8) + "…";
         }
-        return "§fPlayer §7" + u;
+        return CnpcUltraStyle.BODY + "Player " + CnpcUltraStyle.SUBTITLE + u;
     }
 
     private static String resolveStoredPlayerName(String uuidRaw) {
@@ -883,7 +884,7 @@ public final class CnpcGuiSupport {
 
     private static String safeScrollLine(String line) {
         String s = safeChat(line);
-        s = s.replace(" §8| ", " · ").replace(" | ", " · ");
+        s = s.replace(" " + CnpcUltraStyle.DIM + "| ", " · ").replace(" | ", " · ");
         if (s.length() > 64) {
             return s.substring(0, 61) + "…";
         }
@@ -925,14 +926,14 @@ public final class CnpcGuiSupport {
 
     /**
      * Paid external UI (DMZ editor, etc.): do not reopen CNPC on success.
-     * Reopen only when the action returns an error (message starts with {@code §c}).
+     * Reopen only when the action returns an error (message starts with {@code color c}).
      */
     public static void actExternalUi(ServerPlayer player, Supplier<String> action, Runnable reopenOnFailure) {
         String msg = action.get();
         if (msg != null && !msg.isBlank()) {
             pushMenuMessage(player, msg);
         }
-        if (msg != null && msg.startsWith("§c") && reopenOnFailure != null) {
+        if (msg != null && msg.startsWith(CnpcUltraStyle.DANGER) && reopenOnFailure != null) {
             runDeferred(player, reopenOnFailure);
         }
     }
@@ -1086,15 +1087,15 @@ public final class CnpcGuiSupport {
 
     /** System top-level screen (e.g. Prestige main): Main → Legacy Mechanics hub. */
     public static void navSystemRoot(ServerPlayer player, ICustomGui gui, int row) {
-        buttonSmall(gui, ID_NAV_HUB, "§7Hub", COL_L, row, 95, () -> openMenuHub(player));
+        buttonSmall(gui, ID_NAV_HUB, CnpcUltraStyle.HUB, COL_L, row, 95, () -> openMenuHub(player));
     }
 
     /** Submenu: Back → parent page in this system; Main → Legacy Mechanics hub. */
     public static void navSubmenu(ServerPlayer player, ICustomGui gui, int row, Runnable back, String backLabel) {
         if (back != null) {
-            buttonSmall(gui, ID_NAV_BACK, backLabel == null ? "§7« Back" : backLabel, COL_L, row, 95, back);
+            buttonSmall(gui, ID_NAV_BACK, backLabel == null ? CnpcUltraStyle.BACK : backLabel, COL_L, row, 95, back);
         }
-        buttonSmall(gui, ID_NAV_HUB, "§7Hub", COL_R, row, 95, () -> openMenuHub(player));
+        buttonSmall(gui, ID_NAV_HUB, CnpcUltraStyle.HUB, COL_R, row, 95, () -> openMenuHub(player));
     }
 
     /** Hub always opens the main hub. The test menu does not sit in that path. */
@@ -1108,7 +1109,7 @@ public final class CnpcGuiSupport {
         if (openMain == null) {
             navSystemRoot(player, gui, row);
         } else {
-            navSubmenu(player, gui, row, openMain, "§7« Back");
+            navSubmenu(player, gui, row, openMain, CnpcUltraStyle.BACK);
         }
     }
 
@@ -1124,7 +1125,7 @@ public final class CnpcGuiSupport {
 
     public static String flagOnOff(java.util.Map<String, String> ph, String key) {
         boolean on = "true".equalsIgnoreCase(ph.getOrDefault("flag_" + key, "false"));
-        return on ? "§2§lON" : "§8§lOFF";
+        return on ? CnpcUltraStyle.CONFIRM_BOLD + "ON" : CnpcUltraStyle.DIM + CnpcUltraStyle.BOLD + "OFF";
     }
 
     @FunctionalInterface

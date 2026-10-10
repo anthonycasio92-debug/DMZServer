@@ -39,13 +39,13 @@ public final class CnpcLmSkillCheckGui {
     private static void paint(ServerPlayer player, ICustomGui gui, String page, boolean staffAdminBrowser) {
         boolean staffAdmin = staffAdminBrowser;
         int infoY = CnpcGuiSupport.paintHeader(player, gui,
-                staffAdmin ? CnpcGuiStyle.subPage("§e", "Skills", "Staff") : "§eSkill Check",
-                "§7Level, locked, unlocked, or max.");
+                staffAdmin ? CnpcGuiStyle.subPage(CnpcUltraStyle.INFO, "Skills", "Staff") : CnpcUltraStyle.INFO + "Skill Check",
+                CnpcUltraStyle.SUBTITLE + "Level, locked, unlocked, or max.");
 
         List<String> lines = ProgressionGuiApi.skillsLines(CnpcGuiSupport.target(player), "core");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX));
         // Natural skills and saga skills share this one Skills tab.
-        CnpcGuiSupport.button(gui, 20, "§eSkills", CnpcGuiSupport.COL_L, row, () -> {
+        CnpcGuiSupport.button(gui, 20, CnpcUltraStyle.INFO + "Skills", CnpcGuiSupport.COL_L, row, () -> {
             if (staffAdmin) {
                 com.dbzlegacy.adaptivedifficulty.gui.SkillsMenu.open(player, "core");
             } else {

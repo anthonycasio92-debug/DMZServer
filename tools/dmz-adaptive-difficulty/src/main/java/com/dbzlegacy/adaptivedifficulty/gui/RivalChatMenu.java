@@ -111,7 +111,6 @@ public final class RivalChatMenu {
         }
         send(player, row3);
         send(player, btn("§7« Hub", "/lm", "Main hub"));
-        send(player, Component.m_237113_("§8────────────────"));
     }
 
     private static void list(ServerPlayer player) {

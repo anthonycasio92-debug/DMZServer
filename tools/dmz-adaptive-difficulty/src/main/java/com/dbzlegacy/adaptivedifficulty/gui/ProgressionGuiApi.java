@@ -90,7 +90,7 @@ public final class ProgressionGuiApi {
     /** Staff: {@code /progression admin <flag> <on|off>}. */
     public static String adminFlag(ServerPlayer actor, String flag, String value) {
         if (actor == null) {
-            return "§cPlayers only.";
+            return "§cThis only works in-game — console can't open this menu.";
         }
         if (!StaffAccess.isStaff(actor)) {
             return "§cStaff only.";
@@ -107,7 +107,7 @@ public final class ProgressionGuiApi {
             return "§cUse on|off (got: §f" + value + "§c).";
         }
         if (!ProgressionSystem.setFlag(flag, on)) {
-            return "§cUnknown flag: §f" + flag;
+            return "§cSomething went wrong. Try again, or ask staff if it keeps happening.";
         }
         return "§eProgression " + flag + " → " + (on ? "ON" : "OFF");
     }
@@ -119,7 +119,7 @@ public final class ProgressionGuiApi {
      */
     public static String endDragon(ServerPlayer actor, String action) {
         if (actor == null) {
-            return "§cPlayers only.";
+            return "§cThis only works in-game — console can't open this menu.";
         }
         if (!StaffAccess.isStaff(actor)) {
             return "§cStaff only. §7Use §f/enddragon clear§7 (op) or staff.";
@@ -201,7 +201,7 @@ public final class ProgressionGuiApi {
      */
     public static String androidRemove(ServerPlayer actor, String targetName) {
         if (actor == null) {
-            return "§cPlayers only.";
+            return "§cThis only works in-game — console can't open this menu.";
         }
         if (!DifficultyConfig.get().enableProgression) {
             return "§cProgression system is disabled.";
@@ -344,7 +344,7 @@ public final class ProgressionGuiApi {
                 return "§cInvalid encoded boost: §f" + parts[i] + "\n" + boostUsage();
             }
         }
-        return "§cUnknown boost args: §f" + raw + "\n" + boostUsage();
+        return "§cThat boost amount did not work. Try again, or ask staff if it keeps happening.";
     }
 
     private static String boostUsage() {
@@ -767,7 +767,7 @@ public final class ProgressionGuiApi {
      */
     public static String handleDo(ServerPlayer player, String action, String arg, String page) {
         if (player == null) {
-            return "§cPlayers only.";
+            return "§cThis only works in-game — console can't open this menu.";
         }
         String act = action == null ? "" : action.toLowerCase(Locale.ROOT).trim();
         String a = arg == null ? "" : arg.trim();
@@ -811,7 +811,7 @@ public final class ProgressionGuiApi {
                 next = !"true".equalsIgnoreCase(cur);
             }
             if (!ProgressionSystem.setFlag(key, next)) {
-                return "§cUnknown flag: " + key;
+                return "§cSomething went wrong. Try again, or ask staff if it keeps happening.";
             }
             return "§eProgression " + key + " → " + (next ? "ON" : "OFF");
         }
@@ -842,7 +842,7 @@ public final class ProgressionGuiApi {
                 || "stafffree".equals(act) || "staff_free".equals(act)) {
             return toggleStaffFreeAncientCoinCosts(player, a);
         }
-        return "§cUnknown progression action: " + act;
+        return "§cSomething went wrong. Try again, or ask staff if it keeps happening.";
     }
 
     /**
@@ -1056,7 +1056,7 @@ public final class ProgressionGuiApi {
      */
     public static String handlePrestigeDo(ServerPlayer player, String action, String arg, String page) {
         if (player == null) {
-            return "§cPlayers only.";
+            return "§cThis only works in-game — console can't open this menu.";
         }
         if (!DifficultyConfig.get().enablePrestigeSystem) {
             return "§cPrestige system is disabled.";
@@ -1181,7 +1181,7 @@ public final class ProgressionGuiApi {
                 case "admin_completed" -> PrestigeAdmin.adjustCompleted(player, mode, amount);
                 case "admin_points" -> PrestigeAdmin.adjustPoints(player, mode, amount);
                 case "admin_breakthroughs" -> PrestigeAdmin.adjustBreakthroughs(player, mode, amount);
-                default -> "§cUnknown admin action.";
+                default -> "§cSomething went wrong. Try again, or ask staff if it keeps happening.";
             };
         }
         if ("balance".equals(act) || "points".equals(act)) {
@@ -1190,7 +1190,7 @@ public final class ProgressionGuiApi {
                     + " §8| §7Cap: §f" + PrestigePointsSystem.effectiveMaxLevel(player)
                     + " §8| §7Need: §e" + PrestigeSystem.requiredLevel(player);
         }
-        return "§cUnknown prestige action: " + act;
+        return "§cSomething went wrong. Try again, or ask staff if it keeps happening.";
     }
 
     /**
@@ -1334,7 +1334,7 @@ public final class ProgressionGuiApi {
                 case "completed" -> PrestigeAdmin.adjustCompleted(adj.target, adj.mode, adj.amount);
                 case "points" -> PrestigeAdmin.adjustPoints(adj.target, adj.mode, adj.amount);
                 case "breakthroughs" -> PrestigeAdmin.adjustBreakthroughs(adj.target, adj.mode, adj.amount);
-                default -> "§cUnknown admin field.";
+                default -> "§cSomething went wrong. Try again, or ask staff if it keeps happening.";
             };
         }
         return "§cUnknown: /padmin " + sub + "\n" + PrestigeAdmin.help();
@@ -1510,7 +1510,7 @@ public final class ProgressionGuiApi {
      */
     public static String handleSkillsDo(ServerPlayer player, String action, String arg, String page) {
         if (player == null) {
-            return "§cPlayers only.";
+            return "§cThis only works in-game — console can't open this menu.";
         }
         if (!DifficultyConfig.get().enableSkillUnlockService) {
             return "§cSkill unlock service is disabled.";
@@ -1519,6 +1519,6 @@ public final class ProgressionGuiApi {
         if ("page".equals(act) || "refresh".equals(act)) {
             return "";
         }
-        return "§cUnknown skills action: " + act;
+        return "§cSomething went wrong. Try again, or ask staff if it keeps happening.";
     }
 }

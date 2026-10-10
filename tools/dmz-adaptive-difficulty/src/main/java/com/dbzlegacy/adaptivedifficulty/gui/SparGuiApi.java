@@ -416,7 +416,7 @@ public final class SparGuiApi {
      */
     public static String handleDo(ServerPlayer player, String action, String arg, String page) {
         if (player == null) {
-            return "§cPlayers only.";
+            return "§cThis only works in-game — console can't open this menu.";
         }
         String act = action == null ? "" : action.toLowerCase(Locale.ROOT).trim();
         String a = arg == null ? "" : arg.trim();
@@ -625,7 +625,7 @@ public final class SparGuiApi {
             }
             return SparringSystem.dojoSetBanner(player, a);
         }
-        return "§cUnknown spar action: " + act;
+        return "§cSomething went wrong. Try again, or ask staff if it keeps happening.";
     }
 
     /** Staff: save / status / mentor resetcd — used by GUI + {@code /spar admin …}. */

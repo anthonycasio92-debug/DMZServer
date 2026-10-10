@@ -1753,23 +1753,23 @@ def main() -> int:
     check("CNPC screens do not use purple section codes",
           "§5" not in cnpc_src)
     check("progression titles are blue and prestige stays pink",
-          "§9Progression" in prog
+          'CnpcUltraStyle.ACCENT + "Progression"' in prog
           and "§dProgression" not in prog
-          and "§dOpen Prestige" in prog
-          and 'subPage("§9", "Progression", "End")' in prog
-          and "§e2× · 30m" in prog
-          and "§e2× · 60m" in prog)
+          and 'CnpcUltraStyle.ACCENT + "Open Prestige"' in prog
+          and 'subPage(CnpcUltraStyle.ACCENT, "Progression", "End")' in prog
+          and 'CnpcUltraStyle.INFO + "2× · 30m"' in prog
+          and 'CnpcUltraStyle.INFO + "2× · 60m"' in prog)
     check("inline on and off match the toggle colors",
-          'return on ? "§2§lON" : "§8§lOFF";' in support)
+          'return on ? CnpcUltraStyle.CONFIRM_BOLD + "ON" : CnpcUltraStyle.DIM + CnpcUltraStyle.BOLD + "OFF";' in support)
     check("difficulty confirm and inactive modes use the shared colors",
-          "§aConfirm summon" in diff
-          and "§aEnd Dragon" in diff
-          and "§7Threshold" in diff
-          and "§7Full team" in diff)
+          'CnpcUltraStyle.CONFIRM + "Confirm summon"' in diff
+          and 'CnpcUltraStyle.CONFIRM + "End Dragon"' in diff
+          and 'CnpcUltraStyle.SUBTITLE + "Threshold"' in diff
+          and 'CnpcUltraStyle.SUBTITLE + "Full team"' in diff)
     check("spar dojo home and prestige forms use their system colors",
-          "§bDojo home" in read(cnpc_dir / "CnpcLmSparGui.java")
-          and "§dForms" in read(cnpc_dir / "CnpcLmPrestigeGui.java")
-          and "§9Progression panel" in read(cnpc_dir / "CnpcLmAdminGui.java"))
+          'CnpcUltraStyle.ACCENT + "Dojo home"' in read(cnpc_dir / "CnpcLmSparGui.java")
+          and 'CnpcUltraStyle.ACCENT + "Forms"' in read(cnpc_dir / "CnpcLmPrestigeGui.java")
+          and 'CnpcUltraStyle.ACCENT + "Progression panel"' in read(cnpc_dir / "CnpcLmAdminGui.java"))
 
     print("\n=== CNPC rival records (4.6.22) ===")
     rival_records = read(cnpc_dir / "CnpcLmRivalGui.java")
@@ -1777,7 +1777,7 @@ def main() -> int:
           "records:" in rival_records
           and "void paintProgress" not in rival_records
           and "Hall of fame" in rival_records
-          and "§6Records" in rival_records
+          and 'CnpcUltraStyle.ACCENT + "Records"' in rival_records
           and 'open(player, "history")' not in rival_records
           and 'open(player, "progress")' not in rival_records
           and 'open(player, "stats")' not in rival_records
@@ -1835,9 +1835,9 @@ def main() -> int:
           "Welcome back" not in snapshot
           and "Combat & progression" not in hub_gui
           and "Remove Android" not in hub_gui
-          and "§eSkill Check" in hub_gui)
+          and 'CnpcUltraStyle.INFO + "Skill Check"' in hub_gui)
     check("character hosts remove android and race keep percent",
-          "§cRemove Android" in char_gui
+          'CnpcUltraStyle.DANGER + "Remove Android' in char_gui
           and "Keep " in char_gui
           and "race_confirm:" in char_gui)
     check("spar dojo tabs keep war and training bonds separate",
@@ -1850,15 +1850,15 @@ def main() -> int:
           "void paintActions" in rival_records
           and "void paintSettings" in rival_records
           and "void paintEffects" in prestige_gui
-          and "§dForms" in prestige_gui)
+          and 'CnpcUltraStyle.ACCENT + "Forms"' in prestige_gui)
     check("progression sections are module tabs",
-          "§9Modules" in prog_menu
+          'CnpcUltraStyle.ACCENT + "Modules"' in prog_menu
           and "moduleIds" in prog_menu
           and '!"android_remove".equals(page)' in prog_menu)
     check("difficulty coin messages live on settings",
           "Coin messages" in diff_gui
           and "§6Rival system" not in diff_gui
-          and "§aEnd Dragon" in diff_gui)
+          and 'CnpcUltraStyle.CONFIRM + "End Dragon"' in diff_gui)
 
     print("\n=== CNPC scroll selection (4.6.26) ===")
     check("scroll lists use a selection button instead of setOnClick",
@@ -2031,8 +2031,8 @@ def main() -> int:
     bright = notice_support[bright_start:bright_end] if bright_start >= 0 and bright_end > bright_start else ""
     diff_main = diff_gui.split("private static void paintMain", 1)[-1].split("private static void paintSettings", 1)[0]
     check("notice header and body are one pair of constants",
-          'NOTICE_HEADER = "§6§lNotice"' in notice
-          and 'NOTICE_BODY = "§e"' in notice
+          'NOTICE_HEADER = CnpcUltraStyle.HEADER + "Notice"' in notice
+          and "NOTICE_BODY = CnpcUltraStyle.INFO" in notice
           and "public static String noticeBody" in notice
           and "noticeBody(" in notice.split("public static void set", 1)[-1].split("public static boolean hasPending", 1)[0]
           and "CnpcMenuFeedback.NOTICE_HEADER" in notice_support
@@ -2059,10 +2059,10 @@ def main() -> int:
           and "§aProgression " not in prog_api
           and "NOTICE_BODY" in hub_gui)
     check("difficulty status block stays its own info text",
-          "§eYour personal difficulty is off." in diff_main
-          and "§eThis account cannot use personal difficulty." in diff_main
-          and "§6Ancient Coins" in diff_main
-          and "§8Scaled mobs can hurt other players nearby." in diff_main
+          'CnpcUltraStyle.INFO + "Your personal difficulty is off."' in diff_main
+          and 'CnpcUltraStyle.INFO + "This account cannot use personal difficulty."' in diff_main
+          and 'CnpcUltraStyle.ACCENT + "Ancient Coins "' in diff_main
+          and 'CnpcUltraStyle.DIM + "Scaled mobs can hurt other players nearby."' in diff_main
           and "noticeBody" not in diff_main)
 
     def _notice_body(line):

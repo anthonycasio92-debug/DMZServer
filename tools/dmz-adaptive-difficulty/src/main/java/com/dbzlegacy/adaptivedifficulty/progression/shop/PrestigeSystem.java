@@ -199,7 +199,6 @@ public final class PrestigeSystem {
                 .m_7220_(Component.m_237113_("  "))
                 .m_7220_(btn("§7[Refresh]", "/prestige", "Refresh status"));
         send(player, row);
-        send(player, "§8────────────────");
     }
 
     private static String replyConfirm(
