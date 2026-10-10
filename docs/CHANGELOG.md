@@ -1,6 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.69**.
+What changed from **4.5.147** through **4.6.70**.
+
+## Production menus share one look
+
+Hub, rivals, sparring, progression, prestige, difficulty, character services, staff admin, logs, and skill check use the same gold headers, gray detail, and 6-pixel row gap. Color codes live in one style class. Prestige shows the 20k / 40k / 60k / 80k ladder, then 50k / 100k, on the main page. Menu errors no longer print internal action names. Back is « Back on every submenu.
+
+
 
 ## Saga reset scales with your level
 

@@ -105,7 +105,6 @@ public final class SparChatMenu {
         }
         send(player, row);
         send(player, btn("§7« Hub", "/lm", "Main hub"));
-        send(player, Component.m_237113_("§8────────────────"));
     }
 
     private static void stats(ServerPlayer player) {

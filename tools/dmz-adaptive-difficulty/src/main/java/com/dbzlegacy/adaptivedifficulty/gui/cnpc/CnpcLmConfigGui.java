@@ -49,17 +49,17 @@ public final class CnpcLmConfigGui {
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CONFIG, CnpcGuiSupport.W,
                 CnpcGuiSupport.window(260 + rows * CnpcGuiSupport.ROW_STEP),
                 (pl, gui) -> {
-                    int infoY = CnpcGuiSupport.paintHeader(pl, gui, "§6Config",
-                            "§7Settings from the live config files");
+                    int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcUltraStyle.ACCENT + "Config",
+                            CnpcUltraStyle.SUBTITLE + "Settings from the live config files");
                     int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of(
-                            "§7A new field shows up here on its own.",
-                            "§7Player records in rivalry, sparring, and rival progression stay in their files."
+                            CnpcUltraStyle.SUBTITLE + "A new field shows up here on its own.",
+                            CnpcUltraStyle.SUBTITLE + "Player records in rivalry, sparring, and rival progression stay in their files."
                     ), CnpcGuiStyle.INFO_INLINE_MAX));
                     row = CnpcGuiSupport.paintSectionTag(gui, CnpcGuiSupport.ID_INLINE_NOTE, row, "Files");
                     for (int i = 0; i < roots.size(); i++) {
                         ConfigEditor.Root root = roots.get(i);
                         int col = i % 2 == 0 ? CnpcGuiSupport.COL_L : CnpcGuiSupport.COL_R;
-                        CnpcGuiSupport.button(gui, CnpcGuiSupport.ID_GRID_BASE + i, "§6" + root.title(), col, row,
+                        CnpcGuiSupport.button(gui, CnpcGuiSupport.ID_GRID_BASE + i, CnpcUltraStyle.ACCENT + root.title(), col, row,
                                 () -> open(player, browsePage(root.id(), "")));
                         if (i % 2 == 1) {
                             row += CnpcGuiSupport.ROW_STEP;
@@ -69,7 +69,7 @@ public final class CnpcLmConfigGui {
                         row += CnpcGuiSupport.ROW_STEP;
                     }
                     CnpcGuiSupport.navSubmenu(player, gui, row,
-                            () -> CnpcLmAdminGui.open(player, "main"), "§7« Back");
+                            () -> CnpcLmAdminGui.open(player, "main"), CnpcUltraStyle.BACK);
                 });
     }
 
@@ -89,14 +89,14 @@ public final class CnpcLmConfigGui {
                     String subtitle = path == null || path.isEmpty()
                             ? root.fileName()
                             : path;
-                    int infoY = CnpcGuiSupport.paintHeader(pl, gui, "§6" + root.title(), "§7" + subtitle);
+                    int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcUltraStyle.ACCENT + root.title(), CnpcUltraStyle.SUBTITLE + subtitle);
                     List<String> notes = new ArrayList<>();
                     int hidden = ConfigEditor.hiddenCount(rootId, path);
                     if (hidden > 0) {
-                        notes.add("§7Showing the first 200. Add an entry to reach a name that is not listed.");
+                        notes.add(CnpcUltraStyle.SUBTITLE + "Showing the first 200. Add an entry to reach a name that is not listed.");
                     }
                     if (entries.isEmpty()) {
-                        notes.add("§7Nothing is listed here yet.");
+                        notes.add(CnpcUltraStyle.SUBTITLE + "Nothing is listed here yet.");
                     }
                     int listY = notes.isEmpty()
                             ? infoY
@@ -115,18 +115,18 @@ public final class CnpcLmConfigGui {
                                             CnpcGuiSupport.pickListBandY(listY, actionRows + 1, gui, lines.length),
                                             actionRows + 1));
                     if (scroll != null) {
-                        CnpcGuiSupport.selectionButton(player, gui, 30, "§eChange this",
+                        CnpcGuiSupport.selectionButton(player, gui, 30, CnpcUltraStyle.INFO + "Change this",
                                 CnpcGuiSupport.COL_L, row, CnpcGuiSupport.BTN_W,
                                 () -> selectedLine(scroll),
                                 line -> change(player, rootId, path, line),
                                 () -> open(player, page));
                     }
                     if (addMode != ConfigEditor.AddMode.NONE) {
-                        CnpcGuiSupport.button(gui, 31, "§aAdd entry", CnpcGuiSupport.COL_R, row,
+                        CnpcGuiSupport.button(gui, 31, CnpcUltraStyle.CONFIRM + "Add entry", CnpcGuiSupport.COL_R, row,
                                 () -> open(player, "add:" + rootId + ":" + path));
                         row += CnpcGuiSupport.ROW_STEP;
                         if (scroll != null) {
-                            CnpcGuiSupport.selectionButton(player, gui, 32, "§cRemove this",
+                            CnpcGuiSupport.selectionButton(player, gui, 32, CnpcUltraStyle.DANGER + "Remove this",
                                     CnpcGuiSupport.COL_L, row, CnpcGuiSupport.BTN_W,
                                     () -> selectedLine(scroll),
                                     line -> remove(player, rootId, path, line, page),
@@ -135,7 +135,7 @@ public final class CnpcLmConfigGui {
                     }
                     row += CnpcGuiSupport.ROW_STEP;
                     CnpcGuiSupport.navSubmenu(player, gui, row,
-                            () -> open(player, backPage(rootId, path)), "§7« Back");
+                            () -> open(player, backPage(rootId, path)), CnpcUltraStyle.BACK);
                 });
     }
 
@@ -150,14 +150,14 @@ public final class CnpcLmConfigGui {
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CONFIG, CnpcGuiSupport.W,
                 CnpcGuiSupport.window(300), (pl, gui) -> {
                     String name = leaf(path);
-                    int infoY = CnpcGuiSupport.paintHeader(pl, gui, "§6" + name, "§7" + root.fileName());
+                    int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcUltraStyle.ACCENT + name, CnpcUltraStyle.SUBTITLE + root.fileName());
                     int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(
                             gui, infoY, ConfigEditor.editLines(rootId, path), CnpcGuiStyle.INFO_INLINE_MAX));
                     ITextField field = gui.addTextField(ID_TEXT, CnpcGuiSupport.M, row,
                             CnpcGuiSupport.textBandWidth(), CnpcGuiSupport.BTN_H);
                     field.setText(ConfigEditor.currentText(rootId, path));
                     row += CnpcGuiSupport.ROW_STEP + 4;
-                    gui.addButton(20, "§aSave", CnpcGuiSupport.COL_L, row, CnpcGuiSupport.BTN_W, CnpcGuiSupport.BTN_H)
+                    gui.addButton(20, CnpcUltraStyle.CONFIRM + "Save", CnpcGuiSupport.COL_L, row, CnpcGuiSupport.BTN_W, CnpcGuiSupport.BTN_H)
                             .setOnPress((g, btn) -> {
                                 String typed = text(g, ID_TEXT);
                                 CnpcGuiSupport.afterGuiClosed(g, () -> finish(
@@ -167,7 +167,7 @@ public final class CnpcLmConfigGui {
                             });
                     row += CnpcGuiSupport.ROW_STEP;
                     CnpcGuiSupport.navSubmenu(player, gui, row,
-                            () -> open(player, backPage(rootId, path)), "§7« Back");
+                            () -> open(player, backPage(rootId, path)), CnpcUltraStyle.BACK);
                 });
     }
 
@@ -183,27 +183,27 @@ public final class CnpcLmConfigGui {
         boolean keyed = mode == ConfigEditor.AddMode.KEY_AND_VALUE;
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CONFIG, CnpcGuiSupport.W,
                 CnpcGuiSupport.window(keyed ? 340 : 280), (pl, gui) -> {
-                    int infoY = CnpcGuiSupport.paintHeader(pl, gui, "§6Add entry", "§7" + root.fileName());
+                    int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcUltraStyle.ACCENT + "Add entry", CnpcUltraStyle.SUBTITLE + root.fileName());
                     int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of(
                             keyed
-                                    ? "§7Type the name, then the value. Saving writes the file."
-                                    : "§7Type the new entry. Saving writes the file."
+                                    ? CnpcUltraStyle.SUBTITLE + "Type the name, then the value. Saving writes the file."
+                                    : CnpcUltraStyle.SUBTITLE + "Type the new entry. Saving writes the file."
                     ), CnpcGuiStyle.INFO_INLINE_MAX));
                     if (keyed) {
-                        gui.addLabel(ID_KEY_LABEL, "§7Name", CnpcGuiSupport.M, row,
+                        gui.addLabel(ID_KEY_LABEL, CnpcUltraStyle.SUBTITLE + "Name", CnpcGuiSupport.M, row,
                                 CnpcGuiSupport.textBandWidth(), 12);
                         row += 14;
                         gui.addTextField(ID_TEXT, CnpcGuiSupport.M, row,
                                 CnpcGuiSupport.textBandWidth(), CnpcGuiSupport.BTN_H);
                         row += CnpcGuiSupport.ROW_STEP;
-                        gui.addLabel(ID_VALUE_LABEL, "§7Value", CnpcGuiSupport.M, row,
+                        gui.addLabel(ID_VALUE_LABEL, CnpcUltraStyle.SUBTITLE + "Value", CnpcGuiSupport.M, row,
                                 CnpcGuiSupport.textBandWidth(), 12);
                         row += 14;
                     }
                     gui.addTextField(keyed ? ID_TEXT_VALUE : ID_TEXT, CnpcGuiSupport.M, row,
                             CnpcGuiSupport.textBandWidth(), CnpcGuiSupport.BTN_H);
                     row += CnpcGuiSupport.ROW_STEP + 4;
-                    gui.addButton(20, "§aSave", CnpcGuiSupport.COL_L, row, CnpcGuiSupport.BTN_W, CnpcGuiSupport.BTN_H)
+                    gui.addButton(20, CnpcUltraStyle.CONFIRM + "Save", CnpcGuiSupport.COL_L, row, CnpcGuiSupport.BTN_W, CnpcGuiSupport.BTN_H)
                             .setOnPress((g, btn) -> {
                                 String key = keyed ? text(g, ID_TEXT) : "";
                                 String value = text(g, keyed ? ID_TEXT_VALUE : ID_TEXT);
@@ -214,7 +214,7 @@ public final class CnpcLmConfigGui {
                             });
                     row += CnpcGuiSupport.ROW_STEP;
                     CnpcGuiSupport.navSubmenu(player, gui, row,
-                            () -> open(player, browsePage(rootId, path)), "§7« Back");
+                            () -> open(player, browsePage(rootId, path)), CnpcUltraStyle.BACK);
                 });
     }
 
@@ -256,9 +256,9 @@ public final class CnpcLmConfigGui {
         if (line == null || line.isBlank()) {
             return null;
         }
-        String plain = line.replaceAll("§.", "");
+        String plain = line.replaceAll(CnpcUltraStyle.MARK + ".", "");
         for (ConfigEditor.Entry entry : ConfigEditor.children(rootId, path)) {
-            if (line.equals(entry.line()) || plain.equals(entry.line().replaceAll("§.", ""))) {
+            if (line.equals(entry.line()) || plain.equals(entry.line().replaceAll(CnpcUltraStyle.MARK + ".", ""))) {
                 return entry;
             }
         }

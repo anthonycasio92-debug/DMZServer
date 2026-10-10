@@ -13,14 +13,14 @@ public final class CnpcRowList {
     private CnpcRowList() {}
 
     /**
-     * Paints {@code §e▸ title} and {@code §7 subtitle}, then leaves {@link #ROW_GAP} pixels.
+     * Paints {@code color e▸ title} and {@code color 7 subtitle}, then leaves {@link #ROW_GAP} pixels.
      * Returns the Y of the next row. {@code action} is the existing click id, recorded on the title.
      */
     public static int paintRow(ICustomGui gui, int labelId, int y, String title, String subtitle, String action) {
         int width = CnpcGuiSupport.textBandWidth();
         String shown = CnpcUltraStyle.cardTitle(title);
         if (action != null && !action.isBlank()) {
-            shown = shown + " §8· §7" + CnpcUltraStyle.plain(action);
+            shown = shown + " " + CnpcUltraStyle.DIM + "· " + CnpcUltraStyle.SUBTITLE + CnpcUltraStyle.plain(action);
         }
         gui.addLabel(labelId, shown, CnpcGuiSupport.M, y, width, 12);
         int next = y + CnpcGuiSupport.LINE_H;

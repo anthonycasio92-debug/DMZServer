@@ -16,6 +16,17 @@ public final class CnpcUltraStyle {
     public static final String DIM = "§8";
     public static final String CARD_TITLE = "§e▸ ";
     public static final String CARD_BODY = "§7 ";
+    /** Yellow notice body. Screens do not pick another notice color. */
+    public static final String INFO = "§e";
+    public static final String BOLD = "§l";
+    public static final String RESET = "§r";
+    /** Section-sign prefix for a color that is chosen at runtime. */
+    public static final String MARK = "§";
+    public static final String CONFIRM_BOLD = "§2§l";
+    public static final String BACK = SUBTITLE + "« Back";
+    public static final String HUB = SUBTITLE + "« Hub";
+    public static final String ON = CONFIRM_BOLD + "ON ";
+    public static final String OFF = DIM + BOLD + "OFF ";
 
     private CnpcUltraStyle() {}
 
@@ -24,7 +35,7 @@ public final class CnpcUltraStyle {
         if (text == null || text.isBlank()) {
             return "";
         }
-        return text.replaceAll("§.", "").trim();
+        return text.replaceAll(MARK + ".", "").trim();
     }
 
     public static String header(String title) {
@@ -45,11 +56,11 @@ public final class CnpcUltraStyle {
     }
 
     public static String tabActive(String label) {
-        return "§6§l" + plain(label);
+        return HEADER + plain(label);
     }
 
     public static String tabInactive(String label) {
-        return "§7" + plain(label);
+        return SUBTITLE + plain(label);
     }
 
     public static String cardTitle(String title) {

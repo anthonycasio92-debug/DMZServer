@@ -10,16 +10,16 @@ import net.minecraft.server.level.ServerPlayer;
 /** One-shot messages shown inside CNPC menus (instead of chat). */
 public final class CnpcMenuFeedback {
     /** Gold bold header on every flash notice. Screens do not pick their own. */
-    public static final String NOTICE_HEADER = "§6§lNotice";
+    public static final String NOTICE_HEADER = CnpcUltraStyle.HEADER + "Notice";
 
     /**
      * Yellow body on every flash notice. Matches the gold header.
      * Positive or negative status belongs in the words, not a second color.
      */
-    public static final String NOTICE_BODY = "§e";
+    public static final String NOTICE_BODY = CnpcUltraStyle.INFO;
 
     /** Color and format codes a caller may have put on a notice line. */
-    private static final Pattern SECTION_CODE = Pattern.compile("§[0-9A-FK-ORa-fk-or]");
+    private static final Pattern SECTION_CODE = Pattern.compile(CnpcUltraStyle.MARK + "[0-9A-FK-ORa-fk-or]");
 
     private static final ConcurrentHashMap<UUID, List<String>> PENDING = new ConcurrentHashMap<>();
 

@@ -12,13 +12,13 @@ public final class CnpcDifficultyTierUi {
 
     public static String formatActivationCost(ServerPlayer player, UnlockTier tier) {
         if (tier == null || PaidFeatureAccess.bypassAncientCoinCost(player)) {
-            return "§ffree";
+            return CnpcUltraStyle.BODY + "free";
         }
         long cost = AncientCoinEconomy.activationCost(tier, player);
         if (cost <= 0L) {
-            return "§e—";
+            return CnpcUltraStyle.INFO + "—";
         }
-        return "§6" + AncientCoinEconomy.formatExactCost(cost);
+        return CnpcUltraStyle.ACCENT + AncientCoinEconomy.formatExactCost(cost);
     }
 
     public static String humanRequirement(UnlockTier tier) {
@@ -37,21 +37,21 @@ public final class CnpcDifficultyTierUi {
     public static String tierActionLabel(
             ServerPlayer player, int t, int activeTier, boolean unlocked, boolean eligible) {
         if (t <= 0) {
-            return "§e—";
+            return CnpcUltraStyle.INFO + "—";
         }
         if (activeTier == t) {
-            return "§aTier " + t + " · active";
+            return CnpcUltraStyle.CONFIRM + "Tier " + t + " · active";
         }
         if (!unlocked) {
             if (eligible) {
-                return "§aUnlock T" + t + " · " + formatActivationCost(player, UnlockTier.byId(t));
+                return CnpcUltraStyle.CONFIRM + "Unlock T" + t + " · " + formatActivationCost(player, UnlockTier.byId(t));
             }
-            return "§eTier " + t + " · locked";
+            return CnpcUltraStyle.INFO + "Tier " + t + " · locked";
         }
         if (t < activeTier) {
-            return "§fUse T" + t + " §e(free)";
+            return CnpcUltraStyle.BODY + "Use T" + t + " " + CnpcUltraStyle.INFO + "(free)";
         }
-        return "§eSwitch T" + t + " · " + formatActivationCost(player, UnlockTier.byId(t));
+        return CnpcUltraStyle.INFO + "Switch T" + t + " · " + formatActivationCost(player, UnlockTier.byId(t));
     }
 
     public static boolean tierButtonEnabled(int t, int activeTier, boolean unlocked, boolean eligible) {

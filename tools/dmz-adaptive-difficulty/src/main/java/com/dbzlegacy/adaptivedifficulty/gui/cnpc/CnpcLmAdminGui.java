@@ -20,25 +20,25 @@ public final class CnpcLmAdminGui {
     }
 
     private static void paintMain(ServerPlayer player, ICustomGui gui) {
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§cStaff Admin",
-                "§7Reload, edit config, progression tools, and the event log");
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcUltraStyle.DANGER + "Staff Admin",
+                CnpcUltraStyle.SUBTITLE + "Reload, edit config, progression tools, and the event log");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, java.util.List.of(
-                "§7Full commands: §8/lm admin help",
-                "§8/lm admin inspect … §7· §8/difficulty admin …"
+                CnpcUltraStyle.SUBTITLE + "Full commands: " + CnpcUltraStyle.DIM + "/lm admin help",
+                CnpcUltraStyle.DIM + "/lm admin inspect … " + CnpcUltraStyle.SUBTITLE + "· " + CnpcUltraStyle.DIM + "/difficulty admin …"
         ), CnpcGuiStyle.INFO_INLINE_MAX));
         row = CnpcGuiSupport.paintSectionTag(gui, CnpcGuiSupport.ID_INLINE_NOTE, row, "Tools");
-        CnpcGuiSupport.button(gui, 20, "§aReload Legacy Mechanics config", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
+        CnpcGuiSupport.button(gui, 20, CnpcUltraStyle.CONFIRM + "Reload Legacy Mechanics config", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> DifficultyConfig.reload()
                         ? CnpcMenuFeedback.NOTICE_BODY + "Legacy Mechanics config reloaded."
                         : CnpcMenuFeedback.NOTICE_BODY + "Config reload failed.",
                 () -> open(player, "main")));
-        CnpcGuiSupport.button(gui, 21, "§9Progression panel", CnpcGuiSupport.COL_R, row,
+        CnpcGuiSupport.button(gui, 21, CnpcUltraStyle.ACCENT + "Progression panel", CnpcGuiSupport.COL_R, row,
                 () -> CnpcLmGui.open(player, "progression", "main"));
         row += CnpcGuiSupport.ROW_STEP;
-        CnpcGuiSupport.button(gui, 23, "§6Config editor", CnpcGuiSupport.COL_L, row,
+        CnpcGuiSupport.button(gui, 23, CnpcUltraStyle.ACCENT + "Config editor", CnpcGuiSupport.COL_L, row,
                 () -> CnpcLmGui.open(player, "config", "main"));
-        CnpcGuiSupport.button(gui, 22, "§8Event log", CnpcGuiSupport.COL_R, row,
+        CnpcGuiSupport.button(gui, 22, CnpcUltraStyle.DIM + "Event log", CnpcGuiSupport.COL_R, row,
                 () -> CnpcLmLogsGui.open(player, "main"));
         row += CnpcGuiSupport.ROW_STEP;
         CnpcGuiSupport.navSystemRoot(player, gui, row);

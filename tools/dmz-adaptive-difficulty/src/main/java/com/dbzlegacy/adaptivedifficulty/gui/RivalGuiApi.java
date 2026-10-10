@@ -591,7 +591,7 @@ public final class RivalGuiApi {
      */
     public static String handleDo(ServerPlayer player, String action, String arg, String page) {
         if (player == null) {
-            return "§cPlayers only.";
+            return "§cThis only works in-game — console can't open this menu.";
         }
         String act = action == null ? "" : action.toLowerCase(Locale.ROOT).trim();
         String a = arg == null ? "" : arg.trim();
@@ -720,7 +720,7 @@ public final class RivalGuiApi {
         if ("spectate_stop".equals(act) || "spectatestop".equals(act)) {
             return RivalSpectator.stop(player);
         }
-        return "§cUnknown rival action: " + act;
+        return "§cSomething went wrong. Try again, or ask staff if it keeps happening.";
     }
 
     /** Staff: save / refresh / status / help — used by GUI + {@code /rival admin …}. */

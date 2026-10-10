@@ -387,8 +387,8 @@ def main() -> int:
     check("CNPC flash notice separate widget ids", "ID_FLASH_LABEL_BASE" in cnpc_support)
     cnpc_feedback = read(SRC / "gui/cnpc/CnpcMenuFeedback.java")
     check("CNPC flash notice readable",
-          'NOTICE_HEADER = "§6§lNotice"' in cnpc_feedback
-          and 'NOTICE_BODY = "§e"' in cnpc_feedback
+          'NOTICE_HEADER = CnpcUltraStyle.HEADER + "Notice"' in cnpc_feedback
+          and "NOTICE_BODY = CnpcUltraStyle.INFO" in cnpc_feedback
           and "CnpcMenuFeedback.NOTICE_HEADER" in cnpc_support
           and "brightenNoticeLine" in cnpc_support
           and "noticeBody" in cnpc_support)
