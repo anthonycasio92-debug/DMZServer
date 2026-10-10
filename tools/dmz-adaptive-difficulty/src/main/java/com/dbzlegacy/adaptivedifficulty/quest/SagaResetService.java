@@ -49,8 +49,17 @@ public final class SagaResetService {
                 case COMPLETED -> "Completed";
                 case IN_PROGRESS -> "In progress";
                 case LOCKED -> "Locked";
-                case NOT_STARTED -> "Nothing to reset";
+                case NOT_STARTED -> "Not started";
             };
+        }
+
+        /** Row detail: this player's cost, then the status. Unstarted rows say there is nothing to reset. */
+        public String rowDetail() {
+            String price = SagaResetService.costText(cost);
+            if (status == Status.NOT_STARTED) {
+                return price + " · Not started · Nothing to reset";
+            }
+            return price + " · " + statusLabel();
         }
     }
 

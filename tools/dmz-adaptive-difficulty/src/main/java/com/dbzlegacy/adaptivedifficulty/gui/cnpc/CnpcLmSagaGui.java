@@ -159,9 +159,7 @@ public final class CnpcLmSagaGui {
 
     private static String caption(Offer offer) {
         String name = offer.name();
-        String detail = offer.resettable()
-                ? SagaResetService.costText(offer.cost()) + " · " + offer.statusLabel()
-                : offer.statusLabel();
+        String detail = offer.rowDetail();
         if (offer.resettable()) {
             return CnpcUltraStyle.cardTitle(name) + "  " + CnpcUltraStyle.cardBody(detail).trim();
         }
