@@ -34,6 +34,11 @@ public final class CharacterServicesConfig {
         return INSTANCE;
     }
 
+    /** Field defaults for the editor. Does not replace the live config. */
+    public static CharacterServicesConfig freshDefaults() {
+        return defaults();
+    }
+
     public static Path path() {
         return ConfigPaths.dataDir().resolve("character-services.json");
     }

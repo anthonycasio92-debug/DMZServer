@@ -2243,8 +2243,20 @@ def main() -> int:
           and "rivalry-v4.json" in config_registry
           and "sparring.json" in config_registry
           and "editable" in config_registry
-          and "Confirm" in config_screen
-          and "stepNumber" in config_screen
+          and "PHASE_MENU" in config_registry
+          and "Save all" in config_screen
+          and "Reload from disk" in config_screen
+          and "Discard changes" in config_screen
+          and "fields match" in config_screen
+          and "No fields match" in config_screen
+          and "Nothing to save." in config_screen
+          and "Saved " in config_screen
+          and "● " in config_screen
+          and "Staff only." in config_screen
+          and "CnpcRowList" in config_screen
+          and "stepNumber" in config_editor
+          and "saveAll" in config_editor
+          and "backupOnce" in config_editor
           and "ConfigEditor" in build_sh
           and "ConfigRegistry" in build_sh
           and "CharacterServicesConfig" in build_sh

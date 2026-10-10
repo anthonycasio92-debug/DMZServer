@@ -1,6 +1,10 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.72**.
+What changed from **4.5.147** through **4.6.73**.
+
+## Config editor uses tabs
+
+`/lm admin config` opens one screen. Difficulty, Progression, Character, Saga, Rival, Sparring, and Currency are tabs across the top. The active tab is gold. A search line filters the current module by field name. Each field shows its value, then the control under it: on/off, minus and plus, edit, or manage. A gold dot marks a change that is not saved yet. Save all writes those changes, copies the json once per session, appends `config-audit.log`, and reloads the file. Reload from disk and Discard changes leave the file or the dots. Rival and sparring stay on the bar and stay closed, because those files are player records. Tapping a field shows its type, default, a short description, and the last person who changed it when the audit log has that line.
 
 ## Test menu opens each screen directly
 

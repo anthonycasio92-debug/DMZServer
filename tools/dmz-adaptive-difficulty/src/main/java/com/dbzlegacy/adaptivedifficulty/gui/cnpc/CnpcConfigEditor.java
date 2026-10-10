@@ -2,21 +2,35 @@ package com.dbzlegacy.adaptivedifficulty.gui.cnpc;
 
 import com.dbzlegacy.adaptivedifficulty.config.editor.ConfigEditor;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
-import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.server.level.ServerPlayer;
 import noppes.npcs.api.gui.ICustomGui;
-import noppes.npcs.api.gui.IScroll;
 import noppes.npcs.api.gui.ITextField;
 
 /**
- * Staff field editor. A change is shown as old → new, then the file is saved and reloaded.
+ * Staff config editor. Tabs switch modules, edits stay in memory until Save all,
+ * and rival or sparring record files are never written from here.
  */
 public final class CnpcConfigEditor {
+    private static final int PAGE_SIZE = 3;
+    private static final int ID_SEARCH_LABEL = 180;
+    private static final int ID_SEARCH = 181;
+    private static final int ID_MATCH = 182;
+    private static final int ID_BANNER = 183;
+    private static final int ID_PAGE = 184;
+    private static final int ID_FILTER = 35;
+    private static final int ID_PREV = 30;
+    private static final int ID_NEXT = 31;
+    private static final int ID_SAVE = 32;
+    private static final int ID_RELOAD = 33;
+    private static final int ID_DISCARD = 34;
+    private static final int ID_NAME = 400;
+    private static final int ID_CTRL = 430;
+    private static final int ID_VALUE = 470;
     private static final int ID_TEXT = 190;
-    private static final int ID_TEXT_VALUE = 191;
-    private static final int ID_KEY_LABEL = 186;
-    private static final int ID_VALUE_LABEL = 187;
+    private static final int ID_TEXT_2 = 191;
+    private static final int ID_INFO = 210;
+    private static final int INDENT = 12;
 
     private CnpcConfigEditor() {}
 
@@ -29,372 +43,624 @@ public final class CnpcConfigEditor {
             CnpcGuiSupport.denyToHub(player, CnpcMenuFeedback.NOTICE_BODY + "Staff only.");
             return;
         }
-        String raw = page == null || page.isBlank() ? "main" : page.trim();
-        if (raw.startsWith("confirm:")) {
-            paintConfirm(player, raw);
+        String raw = page == null || page.isBlank() ? "list:difficulty:0:" : page.trim();
+        if (raw.startsWith("detail:")) {
+            paintDetail(player, raw);
             return;
         }
-        if (raw.startsWith("edit:")) {
-            paintEdit(player, raw);
+        if (raw.startsWith("manage:")) {
+            paintManage(player, raw);
             return;
         }
         if (raw.startsWith("add:")) {
             paintAdd(player, raw);
             return;
         }
-        if (raw.startsWith("browse:")) {
-            paintBrowse(player, raw);
-            return;
+        if (!raw.startsWith("list:")) {
+            raw = "list:difficulty:0:";
         }
-        paintHome(player);
+        paintList(player, raw);
     }
 
-    private static void paintHome(ServerPlayer player) {
-        List<ConfigEditor.Root> roots = ConfigEditor.roots();
-        int rows = (roots.size() + 1) / 2;
-        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CONFIG, CnpcGuiSupport.W,
-                CnpcGuiSupport.window(260 + rows * CnpcGuiSupport.ROW_STEP),
-                (pl, gui) -> {
-                    int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcUltraStyle.ACCENT + "Config",
-                            CnpcUltraStyle.SUBTITLE + "Settings from the live config files");
-                    int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of(
-                            CnpcUltraStyle.SUBTITLE + "A new field shows up here on its own.",
-                            CnpcUltraStyle.SUBTITLE + "Saving asks you to confirm, writes the file, and reloads it.",
-                            CnpcUltraStyle.SUBTITLE + "Rival and sparring records stay in their own files."
-                    ), CnpcGuiStyle.INFO_INLINE_MAX));
-                    row = CnpcGuiSupport.paintSectionTag(gui, CnpcGuiSupport.ID_INLINE_NOTE, row, "Files");
-                    for (int i = 0; i < roots.size(); i++) {
-                        ConfigEditor.Root root = roots.get(i);
-                        int col = i % 2 == 0 ? CnpcGuiSupport.COL_L : CnpcGuiSupport.COL_R;
-                        CnpcGuiSupport.button(gui, CnpcGuiSupport.ID_GRID_BASE + i, CnpcUltraStyle.ACCENT + root.title(), col, row,
-                                () -> open(player, browsePage(root.id(), "")));
-                        if (i % 2 == 1) {
-                            row += CnpcGuiSupport.ROW_STEP;
-                        }
-                    }
-                    if (roots.size() % 2 == 1) {
-                        row += CnpcGuiSupport.ROW_STEP;
-                    }
-                    CnpcGuiSupport.navSubmenu(player, gui, row,
-                            () -> CnpcLmAdminGui.open(player, "main"), CnpcUltraStyle.BACK);
-                });
-    }
-
-    private static void paintBrowse(ServerPlayer player, String page) {
-        String rootId = part(page, 1);
-        String path = part(page, 2);
-        ConfigEditor.Root root = ConfigEditor.root(rootId);
-        if (root == null) {
-            open(player, "main");
+    private static void paintList(ServerPlayer player, String page) {
+        String module = moduleOrDefault(part(page, 1));
+        int requested = number(part(page, 2));
+        String path = part(page, 3);
+        ConfigEditor.EditorTab tab = ConfigEditor.tab(module);
+        if (tab == null) {
+            open(player, "list:difficulty:0:");
             return;
         }
-        List<ConfigEditor.Entry> entries = ConfigEditor.children(rootId, path);
-        ConfigEditor.AddMode addMode = ConfigEditor.addMode(rootId, path);
-        int actionRows = addMode == ConfigEditor.AddMode.NONE ? 1 : 2;
-        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CONFIG, CnpcGuiSupport.W,
-                CnpcGuiSupport.window(420), (pl, gui) -> {
-                    String subtitle = path == null || path.isEmpty()
-                            ? root.fileName()
-                            : ConfigEditor.displayName(leaf(path));
-                    int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcUltraStyle.ACCENT + root.title(),
-                            CnpcUltraStyle.SUBTITLE + subtitle);
-                    List<String> notes = new ArrayList<>();
-                    int hidden = ConfigEditor.hiddenCount(rootId, path);
-                    if (hidden > 0) {
-                        notes.add(CnpcUltraStyle.SUBTITLE + "Showing the first 200. Add an entry to reach a name that is not listed.");
+        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CONFIG, CnpcGuiSupport.W, 460, (pl, gui) -> {
+            int y = paintChrome(pl, gui, tab.label(), tab.editable() ? tab.fileName() : "Player records", module);
+            y = paintSearch(pl, gui, y, listPage(module, 0, path));
+            if (!tab.editable()) {
+                y = note(gui, y, CnpcUltraStyle.SUBTITLE + "These are player records, not settings.");
+                y = note(gui, y, CnpcUltraStyle.SUBTITLE + tab.fileName());
+                y = note(gui, y, CnpcUltraStyle.BODY + "Change a player from the Rival or Sparring menu.");
+                y += CnpcRowList.ROW_GAP;
+            } else {
+                String query = ConfigEditor.search(player.m_20148_());
+                List<ConfigEditor.Entry> fields = ConfigEditor.visibleFields(module, path, query);
+                y = paintMatch(gui, y, query, fields.size());
+                y = paintBanner(player, gui, y);
+                if (!query.isBlank() && fields.isEmpty()) {
+                    y += CnpcRowList.ROW_GAP;
+                } else if (fields.isEmpty()) {
+                    y = note(gui, y, CnpcUltraStyle.SUBTITLE + "Nothing is listed here yet.");
+                } else {
+                    int pages = pages(fields.size());
+                    int current = Math.min(requested, pages - 1);
+                    int from = current * PAGE_SIZE;
+                    int to = Math.min(fields.size(), from + PAGE_SIZE);
+                    String reopen = listPage(module, current, path);
+                    for (int i = from; i < to; i++) {
+                        y = paintField(player, gui, y, i - from, module, fields.get(i), reopen);
                     }
-                    if (entries.isEmpty()) {
-                        notes.add(CnpcUltraStyle.SUBTITLE + "Nothing is listed here yet.");
-                    }
-                    int listY = notes.isEmpty()
-                            ? infoY
-                            : CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(
-                                    gui, infoY, notes, CnpcGuiStyle.INFO_INLINE_MAX));
-                    String[] lines = entries.stream().map(ConfigEditor.Entry::line).toArray(String[]::new);
-                    IScroll scroll = lines.length == 0
-                            ? null
-                            : CnpcGuiSupport.scrollPickList(gui, listY, actionRows + 1, lines);
-                    int row = scroll == null
-                            ? listY + 8
-                            : CnpcGuiSupport.navRowAfterScroll(
-                                    CnpcGuiSupport.pickListBandY(listY, actionRows + 1, gui, lines.length),
-                                    CnpcGuiSupport.listScrollHeight(
-                                            gui,
-                                            CnpcGuiSupport.pickListBandY(listY, actionRows + 1, gui, lines.length),
-                                            actionRows + 1));
-                    if (scroll != null) {
-                        CnpcGuiSupport.selectionButton(player, gui, 30, CnpcUltraStyle.INFO + "Change this",
-                                CnpcGuiSupport.COL_L, row, CnpcGuiSupport.BTN_W,
-                                () -> selectedLine(scroll),
-                                line -> change(player, rootId, path, line),
-                                () -> open(player, page));
-                    }
-                    if (addMode != ConfigEditor.AddMode.NONE) {
-                        CnpcGuiSupport.button(gui, 31, CnpcUltraStyle.CONFIRM + "Add entry", CnpcGuiSupport.COL_R, row,
-                                () -> open(player, "add:" + rootId + ":" + path));
-                        row += CnpcGuiSupport.ROW_STEP;
-                        if (scroll != null) {
-                            CnpcGuiSupport.selectionButton(player, gui, 32, CnpcUltraStyle.DANGER + "Remove this",
-                                    CnpcGuiSupport.COL_L, row, CnpcGuiSupport.BTN_W,
-                                    () -> selectedLine(scroll),
-                                    line -> remove(player, rootId, path, line, page),
-                                    () -> open(player, page));
-                        }
-                    }
-                    row += CnpcGuiSupport.ROW_STEP;
-                    CnpcGuiSupport.navSubmenu(player, gui, row,
-                            () -> open(player, backPage(rootId, path)), CnpcUltraStyle.BACK);
-                });
+                    y = paintPager(player, gui, y, module, path, current, pages);
+                }
+            }
+            y = paintActions(player, gui, y, listPage(module, requested, path));
+            paintNav(player, gui, y, path.isEmpty() ? null : listPage(module, 0, ConfigEditor.parentPath(path)));
+        });
     }
 
-    private static void paintEdit(ServerPlayer player, String page) {
-        String rootId = part(page, 1);
-        String path = part(page, 2);
-        ConfigEditor.Root root = ConfigEditor.root(rootId);
-        if (root == null || path.isEmpty()) {
-            open(player, "main");
+    private static void paintDetail(ServerPlayer player, String page) {
+        String module = moduleOrDefault(part(page, 1));
+        int listPage = number(part(page, 2));
+        String path = part(page, 3);
+        ConfigEditor.EditorTab tab = ConfigEditor.tab(module);
+        if (tab == null || !tab.editable() || path.isEmpty()) {
+            open(player, listPage(module, 0, ""));
             return;
         }
-        ConfigEditor.Kind kind = ConfigEditor.kindOf(rootId, path);
-        boolean number = kind == ConfigEditor.Kind.NUMBER;
-        boolean enumeration = kind == ConfigEditor.Kind.ENUM;
-        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CONFIG, CnpcGuiSupport.W,
-                CnpcGuiSupport.window(number || enumeration ? 360 : 300), (pl, gui) -> {
-                    String name = ConfigEditor.displayName(leaf(path));
-                    int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcUltraStyle.ACCENT + name,
-                            CnpcUltraStyle.SUBTITLE + root.fileName());
-                    int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(
-                            gui, infoY, colored(ConfigEditor.editLines(rootId, path)), CnpcGuiStyle.INFO_INLINE_MAX));
-                    ITextField field = gui.addTextField(ID_TEXT, CnpcGuiSupport.M, row,
-                            CnpcGuiSupport.textBandWidth(), CnpcGuiSupport.BTN_H);
-                    field.setText(ConfigEditor.currentText(rootId, path));
-                    row += CnpcGuiSupport.ROW_STEP + 4;
-                    if (number) {
-                        CnpcGuiSupport.button(gui, 21, CnpcUltraStyle.SUBTITLE + "−", CnpcGuiSupport.COL_L, row,
-                                () -> stageNumber(player, rootId, path, -1));
-                        CnpcGuiSupport.button(gui, 22, CnpcUltraStyle.SUBTITLE + "+", CnpcGuiSupport.COL_R, row,
-                                () -> stageNumber(player, rootId, path, 1));
-                        row += CnpcGuiSupport.ROW_STEP;
-                    } else if (enumeration) {
-                        CnpcGuiSupport.button(gui, 21, CnpcUltraStyle.INFO + "Next value", CnpcGuiSupport.COL_L, row,
-                                () -> stageEnum(player, rootId, path));
-                        row += CnpcGuiSupport.ROW_STEP;
-                    }
-                    gui.addButton(20, CnpcUltraStyle.CONFIRM + "Review change", CnpcGuiSupport.COL_L, row,
-                                    CnpcGuiSupport.BTN_W, CnpcGuiSupport.BTN_H)
-                            .setOnPress((g, btn) -> {
-                                String typed = text(g, ID_TEXT);
-                                CnpcGuiSupport.afterGuiClosed(g, () -> stageSet(player, rootId, path, typed));
-                            });
-                    row += CnpcGuiSupport.ROW_STEP;
-                    CnpcGuiSupport.navSubmenu(player, gui, row,
-                            () -> open(player, backPage(rootId, path)), CnpcUltraStyle.BACK);
-                });
+        ConfigEditor.Kind kind = ConfigEditor.kindOf(module, path);
+        String name = ConfigEditor.displayName(leaf(path));
+        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CONFIG, CnpcGuiSupport.W, 460, (pl, gui) -> {
+            int y = paintChrome(pl, gui, name, tab.fileName(), module);
+            y = note(gui, ID_INFO, y, CnpcUltraStyle.SUBTITLE + "Type: " + CnpcUltraStyle.BODY
+                    + ConfigEditor.typeName(module, path) + " " + CnpcUltraStyle.DIM + "· "
+                    + CnpcUltraStyle.SUBTITLE + "Default: " + CnpcUltraStyle.BODY
+                    + ConfigEditor.defaultText(module, path));
+            y = note(gui, ID_INFO + 1, y, CnpcUltraStyle.SUBTITLE + "Description: " + CnpcUltraStyle.BODY
+                    + trim(ConfigEditor.description(module, path), 80));
+            ConfigEditor.LastChange change = ConfigEditor.lastChange(module, path);
+            if (change != null) {
+                y = note(gui, ID_INFO + 2, y, CnpcUltraStyle.DIM + "Last changed by " + change.actor()
+                        + " at " + change.when());
+            }
+            if (kind == ConfigEditor.Kind.ENUM) {
+                y = note(gui, ID_INFO + 3, y, CnpcUltraStyle.SUBTITLE + "Use one of " + CnpcUltraStyle.BODY
+                        + String.join(", ", ConfigEditor.enumNames(module, path)));
+            }
+            y = paintBanner(player, gui, y);
+            y = paintDetailControl(player, gui, y, module, path, kind, listPage);
+            y = paintActions(player, gui, y, page);
+            paintNav(player, gui, y, listPage(module, listPage, ConfigEditor.parentPath(path)));
+        });
+    }
+
+    private static void paintManage(ServerPlayer player, String page) {
+        String module = moduleOrDefault(part(page, 1));
+        int requested = number(part(page, 2));
+        String path = part(page, 3);
+        ConfigEditor.EditorTab tab = ConfigEditor.tab(module);
+        ConfigEditor.Kind kind = ConfigEditor.kindOf(module, path);
+        if (tab == null || !tab.editable() || (kind != ConfigEditor.Kind.LIST && kind != ConfigEditor.Kind.MAP)) {
+            open(player, listPage(module, 0, ""));
+            return;
+        }
+        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CONFIG, CnpcGuiSupport.W, 460, (pl, gui) -> {
+            int y = paintChrome(pl, gui, ConfigEditor.displayName(leaf(path)), tab.fileName(), module);
+            List<ConfigEditor.ManageRow> rows = ConfigEditor.manageRows(player.m_20148_(), module, path);
+            int hidden = ConfigEditor.hiddenCount(module, path);
+            if (hidden > 0) {
+                y = note(gui, y, CnpcUltraStyle.SUBTITLE + "Showing the first 200.");
+            }
+            y = note(gui, y, CnpcUltraStyle.SUBTITLE + rows.size() + " entries");
+            y = paintBanner(player, gui, y);
+            int pages = pages(rows.size());
+            int current = rows.isEmpty() ? 0 : Math.min(requested, pages - 1);
+            if (rows.isEmpty()) {
+                y = note(gui, y, CnpcUltraStyle.SUBTITLE + "Nothing is listed here yet.");
+            } else {
+                int from = current * PAGE_SIZE;
+                int to = Math.min(rows.size(), from + PAGE_SIZE);
+                for (int i = from; i < to; i++) {
+                    y = paintManageRow(player, gui, y, i - from, module, path, rows.get(i), page);
+                }
+                y = paintPager(player, gui, y, module, path, current, pages, true);
+            }
+            press(gui, 36, CnpcUltraStyle.CONFIRM + "[Add entry]", CnpcGuiSupport.M, y,
+                    CnpcGuiSupport.textBandWidth(), CnpcGuiSupport.BTN_H, player,
+                    () -> open(player, view("add", module, 0, path)));
+            y += CnpcGuiSupport.BTN_H + CnpcRowList.ROW_GAP;
+            y = paintActions(player, gui, y, page);
+            paintNav(player, gui, y, listPage(module, 0, ConfigEditor.parentPath(path)));
+        });
     }
 
     private static void paintAdd(ServerPlayer player, String page) {
-        String rootId = part(page, 1);
-        String path = part(page, 2);
-        ConfigEditor.Root root = ConfigEditor.root(rootId);
-        ConfigEditor.AddMode mode = ConfigEditor.addMode(rootId, path);
-        if (root == null || mode == ConfigEditor.AddMode.NONE) {
-            open(player, browsePage(rootId, path));
+        String module = moduleOrDefault(part(page, 1));
+        String path = part(page, 3);
+        ConfigEditor.EditorTab tab = ConfigEditor.tab(module);
+        ConfigEditor.AddMode mode = ConfigEditor.addMode(module, path);
+        if (tab == null || !tab.editable() || mode == ConfigEditor.AddMode.NONE) {
+            open(player, view("manage", module, 0, path));
             return;
         }
         boolean keyed = mode == ConfigEditor.AddMode.KEY_AND_VALUE;
-        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CONFIG, CnpcGuiSupport.W,
-                CnpcGuiSupport.window(keyed ? 340 : 280), (pl, gui) -> {
-                    int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcUltraStyle.ACCENT + "Add entry",
-                            CnpcUltraStyle.SUBTITLE + root.fileName());
-                    int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of(
-                            keyed
-                                    ? CnpcUltraStyle.SUBTITLE + "Type the name, then the value. You'll confirm before it is saved."
-                                    : CnpcUltraStyle.SUBTITLE + "Type the new entry. You'll confirm before it is saved."
-                    ), CnpcGuiStyle.INFO_INLINE_MAX));
-                    if (keyed) {
-                        gui.addLabel(ID_KEY_LABEL, CnpcUltraStyle.SUBTITLE + "Name", CnpcGuiSupport.M, row,
-                                CnpcGuiSupport.textBandWidth(), 12);
-                        row += 14;
-                        gui.addTextField(ID_TEXT, CnpcGuiSupport.M, row,
-                                CnpcGuiSupport.textBandWidth(), CnpcGuiSupport.BTN_H);
-                        row += CnpcGuiSupport.ROW_STEP;
-                        gui.addLabel(ID_VALUE_LABEL, CnpcUltraStyle.SUBTITLE + "Value", CnpcGuiSupport.M, row,
-                                CnpcGuiSupport.textBandWidth(), 12);
-                        row += 14;
-                    }
-                    gui.addTextField(keyed ? ID_TEXT_VALUE : ID_TEXT, CnpcGuiSupport.M, row,
-                            CnpcGuiSupport.textBandWidth(), CnpcGuiSupport.BTN_H);
-                    row += CnpcGuiSupport.ROW_STEP + 4;
-                    gui.addButton(20, CnpcUltraStyle.CONFIRM + "Review change", CnpcGuiSupport.COL_L, row,
-                                    CnpcGuiSupport.BTN_W, CnpcGuiSupport.BTN_H)
-                            .setOnPress((g, btn) -> {
-                                String key = keyed ? text(g, ID_TEXT) : "";
-                                String value = text(g, keyed ? ID_TEXT_VALUE : ID_TEXT);
-                                CnpcGuiSupport.afterGuiClosed(g, () -> {
-                                    ConfigEditor.stage(player.m_20148_(), new ConfigEditor.Proposal(
-                                            rootId, path, value, "add", key));
-                                    open(player, confirmPage(rootId, browsePage(rootId, path)));
-                                });
-                            });
-                    row += CnpcGuiSupport.ROW_STEP;
-                    CnpcGuiSupport.navSubmenu(player, gui, row,
-                            () -> open(player, browsePage(rootId, path)), CnpcUltraStyle.BACK);
-                });
+        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CONFIG, CnpcGuiSupport.W, 460, (pl, gui) -> {
+            int y = paintChrome(pl, gui, "Add entry", tab.fileName(), module);
+            y = paintBanner(player, gui, y);
+            if (keyed) {
+                y = note(gui, ID_INFO, y, CnpcUltraStyle.SUBTITLE + "Name");
+                gui.addTextField(ID_TEXT, CnpcGuiSupport.M, y, CnpcGuiSupport.textBandWidth(), CnpcGuiSupport.BTN_H);
+                y += CnpcGuiSupport.BTN_H + CnpcRowList.ROW_GAP;
+                y = note(gui, ID_INFO + 1, y, CnpcUltraStyle.SUBTITLE + "Value");
+            } else {
+                y = note(gui, ID_INFO, y, CnpcUltraStyle.SUBTITLE + "Value");
+            }
+            gui.addTextField(keyed ? ID_TEXT_2 : ID_TEXT, CnpcGuiSupport.M, y,
+                    CnpcGuiSupport.textBandWidth(), CnpcGuiSupport.BTN_H);
+            y += CnpcGuiSupport.BTN_H + CnpcRowList.ROW_GAP;
+            boolean keyedPress = keyed;
+            gui.addButton(20, CnpcGuiSupport.safeChat(CnpcUltraStyle.CONFIRM + "[Stage entry]"),
+                            CnpcGuiSupport.M, y, CnpcGuiSupport.textBandWidth(), 24)
+                    .setOnPress((g, btn) -> {
+                        String key = keyedPress ? text(g, ID_TEXT) : "";
+                        String value = text(g, keyedPress ? ID_TEXT_2 : ID_TEXT);
+                        CnpcGuiSupport.afterGuiClosed(g, () -> {
+                            String error = ConfigEditor.stageAdd(player.m_20148_(), module, path, key, value);
+                            if (error != null) {
+                                fail(player, error);
+                                open(player, page);
+                            } else {
+                                open(player, view("manage", module, 0, path));
+                            }
+                        });
+                    });
+            y += 24 + CnpcRowList.ROW_GAP;
+            y = paintActions(player, gui, y, page);
+            paintNav(player, gui, y, view("manage", module, 0, path));
+        });
     }
 
-    private static void paintConfirm(ServerPlayer player, String page) {
-        String rootId = part(page, 1);
-        String returnPage = part(page, 2);
-        ConfigEditor.ChangePreview preview = ConfigEditor.preview(player.m_20148_());
-        if (preview.error() != null) {
-            finish(player, preview.error(), null, returnPage.isEmpty() ? "main" : returnPage);
-            return;
-        }
-        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CONFIG, CnpcGuiSupport.W,
-                CnpcGuiSupport.window(280), (pl, gui) -> {
-                    int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcUltraStyle.HEADER + "Confirm",
-                            CnpcUltraStyle.SUBTITLE + "This writes the file and reloads it");
-                    int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of(
-                            CnpcUltraStyle.INFO + preview.sentence()
-                    ), CnpcGuiStyle.INFO_INLINE_MAX));
-                    CnpcGuiSupport.button(gui, 20, CnpcUltraStyle.CONFIRM + "Confirm", CnpcGuiSupport.COL_L, row,
-                            () -> finish(player, ConfigEditor.commit(player.m_20148_(), actor(player)),
-                                    "Saved.", returnPage.isEmpty() ? "main" : returnPage));
-                    row += CnpcGuiSupport.ROW_STEP;
-                    CnpcGuiSupport.navSubmenu(player, gui, row,
-                            () -> open(player, returnPage.isEmpty() ? "main" : returnPage), CnpcUltraStyle.BACK);
-                });
-    }
-
-    private static void change(ServerPlayer player, String rootId, String path, String line) {
-        ConfigEditor.Entry entry = match(rootId, path, line);
-        if (entry == null) {
-            CnpcGuiSupport.pushMenuMessage(player, CnpcMenuFeedback.NOTICE_BODY + "Select a row first.");
-            open(player, browsePage(rootId, path));
-            return;
-        }
+    private static int paintField(
+            ServerPlayer player, ICustomGui gui, int y, int index, String module,
+            ConfigEditor.Entry entry, String listReturn) {
+        boolean dirty = ConfigEditor.dirty(player.m_20148_(), module, entry.path());
+        String value = ConfigEditor.shownValue(player.m_20148_(), module, entry.path());
+        String prefix = dirty ? CnpcUltraStyle.INFO + "● " : "";
+        press(gui, ID_NAME + index, prefix + CnpcUltraStyle.BODY + trim(ConfigEditor.displayName(leaf(entry.path())), 22)
+                        + " " + CnpcUltraStyle.DIM + "· " + CnpcUltraStyle.SUBTITLE + trim(value, 16),
+                CnpcGuiSupport.M, y, CnpcGuiSupport.textBandWidth(), CnpcGuiSupport.BTN_H, player,
+                () -> open(player, detailPage(module, number(part(listReturn, 2)), entry.path())));
+        y += CnpcGuiSupport.BTN_H + 2;
+        int x = CnpcGuiSupport.M + INDENT;
+        int width = CnpcGuiSupport.textBandWidth() - INDENT;
         switch (entry.kind()) {
             case BOOLEAN -> {
-                boolean on = "true".equalsIgnoreCase(ConfigEditor.currentText(rootId, entry.path()));
-                stageSet(player, rootId, entry.path(), Boolean.toString(!on));
+                boolean on = "ON".equals(value);
+                press(gui, ID_CTRL + index * 3, boolControl(), x, y, width, CnpcGuiSupport.BTN_H, player, () -> {
+                    String error = ConfigEditor.stageSet(player.m_20148_(), module, entry.path(), on ? "false" : "true");
+                    if (error != null) {
+                        fail(player, error);
+                    }
+                    open(player, listReturn);
+                });
             }
-            case NUMBER, TEXT, ENUM -> open(player, "edit:" + rootId + ":" + entry.path());
-            case GROUP, LIST, MAP -> open(player, browsePage(rootId, entry.path()));
-            default -> finish(player, "That setting can't be edited here.", null, browsePage(rootId, path));
+            case NUMBER -> {
+                gui.addLabel(ID_VALUE + index, CnpcGuiSupport.safeChat(CnpcUltraStyle.SUBTITLE + "Value: "
+                        + CnpcUltraStyle.BODY + trim(ConfigEditor.effectiveRaw(player.m_20148_(), module, entry.path()), 12)),
+                        x, y + 4, 140, 12);
+                press(gui, ID_CTRL + index * 3, CnpcUltraStyle.DIM + "[−]", x + 148, y, 44, CnpcGuiSupport.BTN_H, player,
+                        () -> step(player, module, entry.path(), -1, listReturn));
+                press(gui, ID_CTRL + index * 3 + 1, CnpcUltraStyle.DIM + "[+]", x + 196, y, 44, CnpcGuiSupport.BTN_H, player,
+                        () -> step(player, module, entry.path(), 1, listReturn));
+            }
+            case ENUM -> {
+                gui.addLabel(ID_VALUE + index, CnpcGuiSupport.safeChat(CnpcUltraStyle.SUBTITLE + "Value: "
+                        + CnpcUltraStyle.BODY + trim(value, 12)), x, y + 4, 150, 12);
+                press(gui, ID_CTRL + index * 3, CnpcUltraStyle.DIM + "[next]", x + 156, y, 70, CnpcGuiSupport.BTN_H, player,
+                        () -> cycle(player, module, entry.path(), listReturn));
+            }
+            case TEXT -> {
+                gui.addLabel(ID_VALUE + index, CnpcGuiSupport.safeChat(CnpcUltraStyle.SUBTITLE + "Value: "
+                        + CnpcUltraStyle.BODY + trim(value, 14)), x, y + 4, 170, 12);
+                press(gui, ID_CTRL + index * 3, CnpcUltraStyle.DIM + "[edit]", x + width - 70, y, 64,
+                        CnpcGuiSupport.BTN_H, player,
+                        () -> open(player, detailPage(module, number(part(listReturn, 2)), entry.path())));
+            }
+            case LIST, MAP -> {
+                gui.addLabel(ID_VALUE + index, CnpcGuiSupport.safeChat(CnpcUltraStyle.SUBTITLE + value),
+                        x, y + 4, 150, 12);
+                press(gui, ID_CTRL + index * 3, CnpcUltraStyle.DIM + "[manage]", x + width - 84, y, 78,
+                        CnpcGuiSupport.BTN_H, player,
+                        () -> open(player, view("manage", module, 0, entry.path())));
+            }
+            case GROUP -> {
+                gui.addLabel(ID_VALUE + index, CnpcGuiSupport.safeChat(CnpcUltraStyle.SUBTITLE + value),
+                        x, y + 4, 150, 12);
+                press(gui, ID_CTRL + index * 3, CnpcUltraStyle.DIM + "[open]", x + width - 70, y, 64,
+                        CnpcGuiSupport.BTN_H, player, () -> {
+                            ConfigEditor.rememberSearch(player.m_20148_(), "");
+                            open(player, listPage(module, 0, entry.path()));
+                        });
+            }
+            default -> gui.addLabel(ID_VALUE + index, CnpcGuiSupport.safeChat(CnpcUltraStyle.SUBTITLE
+                    + "This setting can't be edited here."), x, y + 4, width, 12);
+        }
+        return y + CnpcGuiSupport.BTN_H + CnpcRowList.ROW_GAP;
+    }
+
+    private static int paintDetailControl(
+            ServerPlayer player, ICustomGui gui, int y, String module, String path,
+            ConfigEditor.Kind kind, int listPage) {
+        int width = CnpcGuiSupport.textBandWidth();
+        String back = listPage(module, listPage, ConfigEditor.parentPath(path));
+        switch (kind) {
+            case BOOLEAN -> {
+                press(gui, 40, CnpcUltraStyle.CONFIRM + "[ON]", CnpcGuiSupport.M, y, width / 2 - 4, 24, player,
+                        () -> stageAndReturn(player, module, path, "true", back));
+                press(gui, 41, CnpcUltraStyle.SUBTITLE + "[OFF]", CnpcGuiSupport.M + width / 2 + 4, y,
+                        width / 2 - 4, 24, player, () -> stageAndReturn(player, module, path, "false", back));
+                return y + 24 + CnpcRowList.ROW_GAP;
+            }
+            case NUMBER, TEXT, ENUM -> {
+                ITextField field = gui.addTextField(ID_TEXT, CnpcGuiSupport.M, y, width, 24);
+                field.setText(ConfigEditor.effectiveRaw(player.m_20148_(), module, path));
+                y += 24 + CnpcRowList.ROW_GAP;
+                if (kind == ConfigEditor.Kind.NUMBER) {
+                    press(gui, 40, CnpcUltraStyle.DIM + "[−]", CnpcGuiSupport.M, y, 70, 24, player,
+                            () -> step(player, module, path, -1, detailPage(module, listPage, path)));
+                    press(gui, 41, CnpcUltraStyle.DIM + "[+]", CnpcGuiSupport.M + 78, y, 70, 24, player,
+                            () -> step(player, module, path, 1, detailPage(module, listPage, path)));
+                    y += 24 + CnpcRowList.ROW_GAP;
+                } else if (kind == ConfigEditor.Kind.ENUM) {
+                    press(gui, 40, CnpcUltraStyle.DIM + "[next]", CnpcGuiSupport.M, y, 90, 24, player,
+                            () -> cycle(player, module, path, detailPage(module, listPage, path)));
+                    y += 24 + CnpcRowList.ROW_GAP;
+                }
+                gui.addButton(42, CnpcGuiSupport.safeChat(CnpcUltraStyle.CONFIRM + "[Set]"),
+                                CnpcGuiSupport.M, y, width, 24)
+                        .setOnPress((g, btn) -> {
+                            String typed = text(g, ID_TEXT);
+                            CnpcGuiSupport.afterGuiClosed(g, () -> {
+                                String error = ConfigEditor.stageSet(player.m_20148_(), module, path, typed);
+                                if (error != null) {
+                                    fail(player, error);
+                                    open(player, detailPage(module, listPage, path));
+                                } else {
+                                    open(player, back);
+                                }
+                            });
+                        });
+                return y + 24 + CnpcRowList.ROW_GAP;
+            }
+            case LIST, MAP -> {
+                press(gui, 40, CnpcUltraStyle.DIM + "[manage]", CnpcGuiSupport.M, y, width, 24, player,
+                        () -> open(player, view("manage", module, 0, path)));
+                return y + 24 + CnpcRowList.ROW_GAP;
+            }
+            case GROUP -> {
+                press(gui, 40, CnpcUltraStyle.DIM + "[open]", CnpcGuiSupport.M, y, width, 24, player, () -> {
+                    ConfigEditor.rememberSearch(player.m_20148_(), "");
+                    open(player, listPage(module, 0, path));
+                });
+                return y + 24 + CnpcRowList.ROW_GAP;
+            }
+            default -> {
+                return note(gui, y, CnpcUltraStyle.SUBTITLE + "This setting can't be edited here.");
+            }
         }
     }
 
-    private static void remove(ServerPlayer player, String rootId, String path, String line, String page) {
-        ConfigEditor.Entry entry = match(rootId, path, line);
-        if (entry == null) {
-            finish(player, "Select a row first.", null, page);
-            return;
+    private static int paintManageRow(
+            ServerPlayer player, ICustomGui gui, int y, int index, String module, String collection,
+            ConfigEditor.ManageRow row, String reopen) {
+        String prefix = row.added() || row.removing() ? CnpcUltraStyle.INFO + "● " : "";
+        gui.addLabel(ID_NAME + index, CnpcGuiSupport.safeChat(prefix + CnpcUltraStyle.BODY + trim(row.title(), 22)
+                        + " " + CnpcUltraStyle.DIM + "· " + CnpcUltraStyle.SUBTITLE + trim(row.value(), 16)),
+                CnpcGuiSupport.M, y + 4, CnpcGuiSupport.textBandWidth() - 80, 12);
+        String label = row.added() || row.removing() ? CnpcUltraStyle.SUBTITLE + "[undo]" : CnpcUltraStyle.DANGER + "[remove]";
+        press(gui, ID_CTRL + index, label, CnpcGuiSupport.M + CnpcGuiSupport.textBandWidth() - 74, y, 74,
+                CnpcGuiSupport.BTN_H, player, () -> {
+                    if (row.added()) {
+                        ConfigEditor.undo(player.m_20148_(), module, collection, ConfigEditor.DraftOp.ADD, row.key());
+                    } else if (row.removing()) {
+                        ConfigEditor.undo(player.m_20148_(), module, row.path(), ConfigEditor.DraftOp.REMOVE, row.key());
+                    } else {
+                        ConfigEditor.stageRemove(player.m_20148_(), module, row.path());
+                    }
+                    open(player, reopen);
+                });
+        return y + CnpcGuiSupport.BTN_H + CnpcRowList.ROW_GAP;
+    }
+
+    private static int paintChrome(ServerPlayer player, ICustomGui gui, String title, String subtitle, String module) {
+        int y = CnpcGuiSupport.paintHeader(player, gui, title, subtitle);
+        return paintTabs(player, gui, y, module);
+    }
+
+    private static int paintTabs(ServerPlayer player, ICustomGui gui, int y, String active) {
+        List<ConfigEditor.EditorTab> tabs = ConfigEditor.editorTabs();
+        int index = 0;
+        int rowCount = 0;
+        while (index < tabs.size()) {
+            int count = Math.min(4, tabs.size() - index);
+            int gap = 4;
+            int width = Math.max(60, (CnpcGuiSupport.textBandWidth() - gap * (count - 1)) / count);
+            int x = CnpcGuiSupport.M;
+            for (int i = 0; i < count; i++) {
+                ConfigEditor.EditorTab tab = tabs.get(index);
+                String text = tab.id().equals(active)
+                        ? CnpcUltraStyle.tabActive(tab.label())
+                        : CnpcUltraStyle.tabInactive(tab.label());
+                String module = tab.id();
+                press(gui, CnpcGuiSupport.ID_TAB_BASE + index, text, x, y, width, CnpcGuiSupport.BTN_H, player, () -> {
+                    ConfigEditor.clearBanner(player.m_20148_());
+                    open(player, listPage(module, 0, ""));
+                });
+                x += width + gap;
+                index++;
+            }
+            y += CnpcGuiSupport.TAB_BAR_H;
+            rowCount++;
+            if (rowCount > 3) {
+                break;
+            }
         }
-        ConfigEditor.stage(player.m_20148_(), new ConfigEditor.Proposal(
-                rootId, entry.path(), "", "remove", ""));
-        open(player, confirmPage(rootId, page));
+        return y;
     }
 
-    private static void stageSet(ServerPlayer player, String rootId, String path, String raw) {
-        ConfigEditor.stage(player.m_20148_(), new ConfigEditor.Proposal(rootId, path, raw, "set", ""));
-        open(player, confirmPage(rootId, backPage(rootId, path)));
+    private static int paintSearch(ServerPlayer player, ICustomGui gui, int y, String reopen) {
+        gui.addLabel(ID_SEARCH_LABEL, CnpcGuiSupport.safeChat(CnpcUltraStyle.SUBTITLE + "Search:"),
+                CnpcGuiSupport.M, y + 4, 52, 12);
+        ITextField field = gui.addTextField(ID_SEARCH, CnpcGuiSupport.M + 54, y,
+                CnpcGuiSupport.textBandWidth() - 54 - 68, CnpcGuiSupport.BTN_H);
+        field.setText(ConfigEditor.search(player.m_20148_()));
+        press(gui, ID_FILTER, CnpcUltraStyle.SUBTITLE + "[Filter]",
+                CnpcGuiSupport.M + CnpcGuiSupport.textBandWidth() - 64, y, 64, CnpcGuiSupport.BTN_H, player,
+                () -> open(player, firstPage(reopen)));
+        return y + CnpcGuiSupport.BTN_H + CnpcRowList.ROW_GAP;
     }
 
-    private static void stageNumber(ServerPlayer player, String rootId, String path, int direction) {
-        String next = ConfigEditor.stepNumber(rootId, path, direction);
-        if (next == null) {
-            finish(player, "That setting is not a number.", null, "edit:" + rootId + ":" + path);
-            return;
+    private static int paintMatch(ICustomGui gui, int y, String query, int count) {
+        String line;
+        if (query != null && !query.isBlank() && count == 0) {
+            line = "No fields match '" + trim(query, 24) + "'.";
+        } else if (query != null && !query.isBlank()) {
+            line = count + " fields match";
+        } else {
+            line = count + " fields";
         }
-        stageSet(player, rootId, path, next);
+        return note(gui, ID_MATCH, y, CnpcUltraStyle.SUBTITLE + line);
     }
 
-    private static void stageEnum(ServerPlayer player, String rootId, String path) {
-        String next = ConfigEditor.nextEnumValue(rootId, path);
-        if (next == null) {
-            finish(player, "That setting is not a list of names.", null, "edit:" + rootId + ":" + path);
-            return;
+    private static int paintBanner(ServerPlayer player, ICustomGui gui, int y) {
+        String banner = ConfigEditor.banner(player.m_20148_());
+        if (banner == null || banner.isBlank()) {
+            return y;
         }
-        stageSet(player, rootId, path, next);
+        String color = switch (ConfigEditor.bannerTone(player.m_20148_())) {
+            case OK -> CnpcUltraStyle.CONFIRM;
+            case ERROR -> CnpcUltraStyle.DANGER;
+            default -> CnpcUltraStyle.SUBTITLE;
+        };
+        return note(gui, ID_BANNER, y, color + banner);
     }
 
-    private static void finish(ServerPlayer player, String error, String ok, String page) {
+    private static int paintPager(
+            ServerPlayer player, ICustomGui gui, int y, String module, String path, int page, int pages) {
+        return paintPager(player, gui, y, module, path, page, pages, false);
+    }
+
+    private static int paintPager(
+            ServerPlayer player, ICustomGui gui, int y, String module, String path,
+            int page, int pages, boolean manage) {
+        if (pages <= 1) {
+            return y;
+        }
+        String reopenKind = manage ? "manage" : "list";
+        gui.addLabel(ID_PAGE, CnpcGuiSupport.safeChat(CnpcUltraStyle.SUBTITLE + "Page " + (page + 1) + " of " + pages),
+                CnpcGuiSupport.M, y + 4, 110, 12);
+        if (page > 0) {
+            press(gui, ID_PREV, CnpcUltraStyle.SUBTITLE + "[Prev]", CnpcGuiSupport.M + 116, y, 64,
+                    CnpcGuiSupport.BTN_H, player,
+                    () -> open(player, view(reopenKind, module, page - 1, path)));
+        }
+        if (page + 1 < pages) {
+            press(gui, ID_NEXT, CnpcUltraStyle.SUBTITLE + "[Next]", CnpcGuiSupport.M + 186, y, 64,
+                    CnpcGuiSupport.BTN_H, player,
+                    () -> open(player, view(reopenKind, module, page + 1, path)));
+        }
+        return y + CnpcGuiSupport.BTN_H + CnpcRowList.ROW_GAP;
+    }
+
+    private static int paintActions(ServerPlayer player, ICustomGui gui, int y, String reopen) {
+        int gap = 4;
+        int width = (CnpcGuiSupport.textBandWidth() - gap * 2) / 3;
+        int x = CnpcGuiSupport.M;
+        press(gui, ID_SAVE, CnpcUltraStyle.CONFIRM + "[Save all]", x, y, width, CnpcGuiSupport.BTN_H, player,
+                () -> save(player, reopen));
+        x += width + gap;
+        press(gui, ID_RELOAD, CnpcUltraStyle.SUBTITLE + "[Reload from disk]", x, y, width, CnpcGuiSupport.BTN_H, player,
+                () -> reload(player, reopen));
+        x += width + gap;
+        press(gui, ID_DISCARD, CnpcUltraStyle.DANGER + "[Discard changes]", x, y, width, CnpcGuiSupport.BTN_H, player,
+                () -> discard(player, reopen));
+        return y + CnpcGuiSupport.BTN_H + CnpcRowList.ROW_GAP;
+    }
+
+    private static void paintNav(ServerPlayer player, ICustomGui gui, int y, String backPage) {
+        Runnable back;
+        if (backPage == null) {
+            back = () -> CnpcLmAdminGui.open(player, "main");
+        } else {
+            back = () -> open(player, backPage);
+        }
+        press(gui, CnpcGuiSupport.ID_NAV_BACK, CnpcUltraStyle.BACK, CnpcGuiSupport.COL_L, y, 95,
+                CnpcGuiSupport.BTN_H, player, back);
+        press(gui, CnpcGuiSupport.ID_NAV_HUB, CnpcUltraStyle.HUB, CnpcGuiSupport.COL_R, y, 95,
+                CnpcGuiSupport.BTN_H, player, () -> CnpcLmHubGui.open(player, "main"));
+    }
+
+    private static void save(ServerPlayer player, String reopen) {
+        ConfigEditor.SaveResult result = ConfigEditor.saveAll(player.m_20148_(), actor(player));
+        if (result.error() != null) {
+            fail(player, result.error());
+        } else if (result.count() == 0) {
+            info(player, "Nothing to save.");
+        } else {
+            ok(player, "Saved " + result.count() + " changes.");
+        }
+        open(player, reopen);
+    }
+
+    private static void reload(ServerPlayer player, String reopen) {
+        String error = ConfigEditor.reloadModule(player.m_20148_(), moduleOrDefault(part(reopen, 1)));
         if (error != null) {
-            CnpcGuiSupport.pushMenuMessage(player, CnpcMenuFeedback.NOTICE_BODY + error);
-        } else if (ok != null) {
-            CnpcGuiSupport.pushMenuMessage(player, CnpcMenuFeedback.NOTICE_BODY + ok);
+            fail(player, error);
+        } else {
+            info(player, "Reloaded from disk.");
         }
-        open(player, page);
+        open(player, reopen);
     }
 
-    private static List<String> colored(List<String> lines) {
-        List<String> out = new ArrayList<>();
-        if (lines == null) {
-            return out;
+    private static void discard(ServerPlayer player, String reopen) {
+        int count = ConfigEditor.discardAll(player.m_20148_());
+        if (count == 0) {
+            info(player, "Nothing to discard.");
+        } else {
+            info(player, "Discarded " + count + (count == 1 ? " change." : " changes."));
         }
-        for (String line : lines) {
-            if (line == null || line.isBlank()) {
-                continue;
-            }
-            out.add(line.startsWith(CnpcUltraStyle.MARK) ? line : CnpcUltraStyle.SUBTITLE + line);
-        }
-        return out;
+        open(player, reopen);
     }
 
-    private static ConfigEditor.Entry match(String rootId, String path, String line) {
-        if (line == null || line.isBlank()) {
-            return null;
+    private static void step(ServerPlayer player, String module, String path, int direction, String reopen) {
+        String next = ConfigEditor.stepNumber(module, path,
+                ConfigEditor.effectiveRaw(player.m_20148_(), module, path), direction);
+        if (next == null) {
+            fail(player, "That setting is not a number.");
+            open(player, reopen);
+            return;
         }
-        String plain = line.replaceAll(CnpcUltraStyle.MARK + ".", "");
-        for (ConfigEditor.Entry entry : ConfigEditor.children(rootId, path)) {
-            if (line.equals(entry.line()) || plain.equals(entry.line().replaceAll(CnpcUltraStyle.MARK + ".", ""))) {
-                return entry;
-            }
-        }
-        return null;
+        stageAndReturn(player, module, path, next, reopen);
     }
 
-    private static String selectedLine(IScroll scroll) {
-        if (scroll == null) {
-            return null;
+    private static void cycle(ServerPlayer player, String module, String path, String reopen) {
+        String next = ConfigEditor.nextEnumValue(module, path,
+                ConfigEditor.effectiveRaw(player.m_20148_(), module, path));
+        if (next == null) {
+            fail(player, "That setting is not a list of names.");
+            open(player, reopen);
+            return;
         }
-        String[] list = scroll.getList();
-        int[] selected = scroll.getSelection();
-        if (list == null || selected == null || selected.length == 0) {
-            return null;
+        stageAndReturn(player, module, path, next, reopen);
+    }
+
+    private static void stageAndReturn(ServerPlayer player, String module, String path, String raw, String reopen) {
+        String error = ConfigEditor.stageSet(player.m_20148_(), module, path, raw);
+        if (error != null) {
+            fail(player, error);
         }
-        int index = selected[0];
-        if (index < 0 || index >= list.length) {
-            return null;
+        open(player, reopen);
+    }
+
+    private static void ok(ServerPlayer player, String message) {
+        ConfigEditor.setBanner(player.m_20148_(), message, ConfigEditor.BannerTone.OK);
+        CnpcGuiSupport.pushMenuMessage(player, CnpcMenuFeedback.NOTICE_BODY + message);
+    }
+
+    private static void info(ServerPlayer player, String message) {
+        ConfigEditor.setBanner(player.m_20148_(), message, ConfigEditor.BannerTone.INFO);
+        CnpcGuiSupport.pushMenuMessage(player, CnpcMenuFeedback.NOTICE_BODY + message);
+    }
+
+    private static void fail(ServerPlayer player, String message) {
+        ConfigEditor.setBanner(player.m_20148_(), message, ConfigEditor.BannerTone.ERROR);
+        CnpcGuiSupport.pushMenuMessage(player, CnpcMenuFeedback.NOTICE_BODY + message);
+    }
+
+    private static String boolControl() {
+        return CnpcUltraStyle.CONFIRM + "[ON] " + CnpcUltraStyle.DIM + "/ " + CnpcUltraStyle.SUBTITLE + "[OFF]";
+    }
+
+    private static int note(ICustomGui gui, int y, String text) {
+        return note(gui, ID_INFO + (y % 7), y, text);
+    }
+
+    private static int note(ICustomGui gui, int id, int y, String text) {
+        gui.addLabel(id, CnpcGuiSupport.safeChat(text), CnpcGuiSupport.M, y, CnpcGuiSupport.textBandWidth(), 12);
+        return y + CnpcGuiSupport.LINE_H + 2;
+    }
+
+    private static void press(
+            ICustomGui gui, int id, String label, int x, int y, int w, int h,
+            ServerPlayer player, Runnable action) {
+        gui.addButton(id, CnpcGuiSupport.safeChat(label), x, y, w, h).setOnPress((g, btn) -> {
+            capture(player, g);
+            CnpcGuiSupport.afterGuiClosed(g, action);
+        });
+    }
+
+    private static void capture(ServerPlayer player, ICustomGui gui) {
+        if (gui != null && gui.getComponent(ID_SEARCH) instanceof ITextField field) {
+            ConfigEditor.rememberSearch(player.m_20148_(), field.getText());
         }
-        return list[index];
     }
 
     private static String text(ICustomGui gui, int id) {
-        if (gui == null || !(gui.getComponent(id) instanceof ITextField field)) {
+        if (gui == null || !(gui.getComponent(id) instanceof ITextField field) || field.getText() == null) {
             return "";
         }
-        String value = field.getText();
-        return value == null ? "" : value;
+        return field.getText();
     }
 
     private static String actor(ServerPlayer player) {
         return player.m_7755_().getString();
     }
 
-    private static String browsePage(String rootId, String path) {
-        return "browse:" + rootId + ":" + (path == null ? "" : path);
+    private static String listPage(String module, int page, String path) {
+        return view("list", module, page, path);
     }
 
-    private static String confirmPage(String rootId, String returnPage) {
-        return "confirm:" + rootId + ":" + returnPage;
+    private static String detailPage(String module, int page, String path) {
+        return view("detail", module, page, path);
     }
 
-    private static String backPage(String rootId, String path) {
-        if (path == null || path.isEmpty()) {
-            return "main";
+    private static String view(String kind, String module, int page, String path) {
+        return kind + ":" + module + ":" + Math.max(0, page) + ":" + (path == null ? "" : path);
+    }
+
+    private static String firstPage(String page) {
+        return view(part(page, 0).isEmpty() ? "list" : part(page, 0), moduleOrDefault(part(page, 1)), 0, part(page, 3));
+    }
+
+    /** {@code kind:module:page:path}. The path keeps its dots. */
+    private static String part(String page, int index) {
+        String[] bits = (page == null ? "" : page).split(":", 4);
+        if (index < 0 || index >= bits.length) {
+            return "";
         }
-        return browsePage(rootId, ConfigEditor.parentPath(path));
+        return bits[index];
+    }
+
+    private static String moduleOrDefault(String module) {
+        return ConfigEditor.tab(module) == null ? "difficulty" : module;
+    }
+
+    private static int number(String raw) {
+        try {
+            return Math.max(0, Integer.parseInt(raw));
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    private static int pages(int count) {
+        return Math.max(1, (count + PAGE_SIZE - 1) / PAGE_SIZE);
     }
 
     private static String leaf(String path) {
@@ -409,12 +675,14 @@ public final class CnpcConfigEditor {
         return dot < 0 ? path : path.substring(dot + 1);
     }
 
-    /** {@code kind:root:rest}. The rest keeps its colons. */
-    private static String part(String page, int index) {
-        String[] bits = page.split(":", 3);
-        if (index < 0 || index >= bits.length) {
+    private static String trim(String text, int max) {
+        if (text == null) {
             return "";
         }
-        return bits[index];
+        String plain = text.replace('\n', ' ').trim();
+        if (plain.length() <= max) {
+            return plain;
+        }
+        return plain.substring(0, Math.max(1, max - 1)) + "…";
     }
 }

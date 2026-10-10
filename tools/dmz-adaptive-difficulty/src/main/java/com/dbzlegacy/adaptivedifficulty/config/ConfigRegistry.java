@@ -15,7 +15,7 @@ import java.util.function.Supplier;
  * Player record files stay registered so they are obvious, and they stay closed.
  */
 public final class ConfigRegistry {
-    /** Shown in {@code /lm admin config}. Later slices stay registered and closed. */
+    /** Shown as a tab in {@code /lm admin config}. Later slices stay registered and closed. */
     public static final int PHASE_MENU = 1;
 
     private ConfigRegistry() {}
@@ -85,7 +85,7 @@ public final class ConfigRegistry {
                 PHASE_MENU,
                 null));
         modules.add(settings("currency", "Currency", DifficultyConfig.class, DifficultyConfig.path(),
-                DifficultyConfig::get, ConfigRegistry::currencyField, 2));
+                DifficultyConfig::get, ConfigRegistry::currencyField, PHASE_MENU));
         modules.add(settings("ai", "AI", DifficultyConfig.class, DifficultyConfig.path(),
                 DifficultyConfig::get, ConfigRegistry::aiField, 2));
         modules.add(settings("boss", "Boss", DifficultyConfig.class, DifficultyConfig.path(),

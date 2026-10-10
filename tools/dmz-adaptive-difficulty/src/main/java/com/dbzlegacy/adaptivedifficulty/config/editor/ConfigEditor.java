@@ -1,8 +1,11 @@
 package com.dbzlegacy.adaptivedifficulty.config.editor;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
+import com.dbzlegacy.adaptivedifficulty.character.CharacterServicesConfig;
 import com.dbzlegacy.adaptivedifficulty.config.ConfigPaths;
 import com.dbzlegacy.adaptivedifficulty.config.ConfigRegistry;
+import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
+import com.dbzlegacy.adaptivedifficulty.quest.SagaResetConfig;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -13,6 +16,9 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -22,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -38,6 +45,9 @@ public final class ConfigEditor {
     private static final int LIST_CAP = 200;
     private static final Set<Path> BACKED_THIS_SESSION = new HashSet<>();
     private static final Map<UUID, Proposal> PENDING = new HashMap<>();
+    private static final Map<UUID, Session> SESSIONS = new HashMap<>();
+    private static final DateTimeFormatter AUDIT_WHEN =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(ZoneId.systemDefault());
 
     private ConfigEditor() {}
 
@@ -72,6 +82,25 @@ public final class ConfigEditor {
     public enum AddMode {
         NONE, VALUE, KEY_AND_VALUE
     }
+
+    /** One module tab. Rival and sparring stay visible and closed. */
+    public record EditorTab(String id, String label, boolean editable, String fileName) {}
+
+    public enum DraftOp { SET, ADD, REMOVE }
+
+    /** A change held in memory until Save all. */
+    public record Draft(String moduleId, String path, DraftOp op, String raw, String addKey) {}
+
+    public enum BannerTone { NONE, OK, INFO, ERROR }
+
+    /** {@code error} is set when a save was refused. {@code message} is the status line. */
+    public record SaveResult(String error, int count, String message) {}
+
+    public record LastChange(String actor, String when) {}
+
+    /** One list or map row, including entries that are only staged. */
+    public record ManageRow(
+            String title, String path, String key, boolean added, boolean removing, String value) {}
 
     public static List<Root> roots() {
         List<Root> roots = new ArrayList<>();
@@ -207,46 +236,10 @@ public final class ConfigEditor {
             return "That config is not editable.";
         }
         Located located = locate(rootId, path);
-        if (located == null || located.owner == null) {
-            return "That setting is not on this config.";
-        }
-        if (isBlocked(located.field)) {
-            return "The admin permission stays in the config file.";
-        }
-        String before = located.value == null ? "empty" : String.valueOf(located.value);
-        try {
-            if (located.key != null) {
-                int typeIndex = located.container instanceof List<?> ? 0 : 1;
-                Object coerced = coerce(valueType(located.field, typeIndex), raw);
-                if (located.container instanceof Map<?, ?>) {
-                    mutableMap(located.field, located.owner).put(located.key, coerced);
-                } else if (located.container instanceof List<?>) {
-                    List<Object> list = mutableList(located.field, located.owner);
-                    if (!replaceListValue(list, located.field, located.key, coerced)) {
-                        return "That entry is no longer in the list.";
-                    }
-                } else {
-                    return "That entry can't be edited here.";
-                }
-            } else if (located.field != null) {
-                if ("*".equals(raw == null ? "" : raw.trim())
-                        && located.field.getName().toLowerCase(Locale.ROOT).contains("permission")) {
-                    return "A permission node can't be *.";
-                }
-                located.field.set(located.owner, coerce(located.field.getGenericType(), raw));
-            } else {
-                return "That setting can't be edited here.";
-            }
-        } catch (NumberFormatException e) {
-            return "That needs to be a number.";
-        } catch (IllegalArgumentException e) {
-            String message = e.getMessage();
-            return message == null || message.isBlank() ? "That value didn't work." : message;
-        } catch (ReflectiveOperationException e) {
-            AdaptiveDifficultyMod.LOGGER.warn(
-                    "[{}] config edit failed {}.{}: {}",
-                    AdaptiveDifficultyMod.MOD_ID, rootId, path, e.toString());
-            return "That setting couldn't be changed.";
+        String before = located == null || located.value == null ? "empty" : String.valueOf(located.value);
+        String error = mutateSet(rootId, path, raw);
+        if (error != null) {
+            return error;
         }
         String after = raw == null ? "" : raw.trim();
         return persist(root, actor, path, before, after);
@@ -281,27 +274,10 @@ public final class ConfigEditor {
             return "That config is not editable.";
         }
         Located located = locate(rootId, path);
-        if (located == null || located.key == null || located.field == null || located.owner == null) {
-            return "Select an entry to remove.";
-        }
-        String before = located.value == null ? "empty" : String.valueOf(located.value);
-        try {
-            if (located.container instanceof Map<?, ?>) {
-                Map<String, Object> map = mutableMap(located.field, located.owner);
-                if (!map.containsKey(located.key)) {
-                    return "That entry is already gone.";
-                }
-                map.remove(located.key);
-            } else if (located.container instanceof List<?>) {
-                List<Object> list = mutableList(located.field, located.owner);
-                if (!removeListValue(list, located.field, located.key)) {
-                    return "That entry is already gone.";
-                }
-            } else {
-                return "That entry can't be removed here.";
-            }
-        } catch (ReflectiveOperationException e) {
-            return "That entry couldn't be removed.";
+        String before = located == null || located.value == null ? "empty" : String.valueOf(located.value);
+        String error = mutateRemove(rootId, path);
+        if (error != null) {
+            return error;
         }
         return persist(root, actor, path, before, "(removed)");
     }
@@ -317,31 +293,9 @@ public final class ConfigEditor {
         if (root == null) {
             return "That config is not editable.";
         }
-        Located located = locate(rootId, path);
-        if (located == null || located.field == null || located.owner == null) {
-            return "That list is not on this config.";
-        }
-        try {
-            if (located.value instanceof Map<?, ?> || kindForType(rawClass(located.field.getGenericType())) == Kind.MAP) {
-                if (key == null || key.isBlank()) {
-                    return "Type a name for the new entry.";
-                }
-                Map<String, Object> map = mutableMap(located.field, located.owner);
-                map.put(key.trim(), coerce(valueType(located.field, 1), raw));
-            } else if (located.value instanceof List<?>
-                    || kindForType(rawClass(located.field.getGenericType())) == Kind.LIST) {
-                List<Object> list = mutableList(located.field, located.owner);
-                list.add(coerce(valueType(located.field, 0), raw));
-            } else {
-                return "Entries can't be added here.";
-            }
-        } catch (NumberFormatException e) {
-            return "That needs to be a number.";
-        } catch (IllegalArgumentException e) {
-            String message = e.getMessage();
-            return message == null || message.isBlank() ? "That value didn't work." : message;
-        } catch (ReflectiveOperationException e) {
-            return "That entry couldn't be added.";
+        String error = mutateAdd(rootId, path, key, raw);
+        if (error != null) {
+            return error;
         }
         String label = key == null || key.isBlank() ? raw : key.trim() + "=" + raw;
         return persist(root, actor, path, "(added)", label);
@@ -386,15 +340,36 @@ public final class ConfigEditor {
 
     /** Next number in the same direction as {@code direction} ({@code -1} or {@code 1}), not saved yet. */
     public static String stepNumber(String rootId, String path, int direction) {
+        return stepNumber(rootId, path, null, direction);
+    }
+
+    /**
+     * Steps from {@code currentRaw} when that text is a number, otherwise from the live value.
+     * Nothing is written.
+     */
+    public static String stepNumber(String rootId, String path, String currentRaw, int direction) {
         Located located = locate(rootId, path);
-        if (located == null || !(located.value instanceof Number number)) {
+        if (located == null) {
             return null;
         }
+        Class<?> type = numberType(located);
+        if (type == null) {
+            return null;
+        }
+        String raw = currentRaw == null || currentRaw.isBlank() ? currentText(rootId, path) : currentRaw.trim();
         int dir = direction < 0 ? -1 : 1;
-        Class<?> type = located.field == null ? number.getClass() : located.field.getType();
         if (type == double.class || type == Double.class || type == float.class || type == Float.class) {
-            double step = Math.abs(number.doubleValue()) >= 20.0 ? 1.0 : 0.1;
-            double next = number.doubleValue() + dir * step;
+            double current;
+            try {
+                current = Double.parseDouble(raw.replace(",", ""));
+            } catch (NumberFormatException e) {
+                if (!(located.value instanceof Number number)) {
+                    return null;
+                }
+                current = number.doubleValue();
+            }
+            double step = Math.abs(current) >= 20.0 ? 1.0 : 0.1;
+            double next = current + dir * step;
             if (Double.isNaN(next) || Double.isInfinite(next)) {
                 return null;
             }
@@ -404,22 +379,50 @@ public final class ConfigEditor {
             }
             return text;
         }
-        return Long.toString(number.longValue() + dir);
+        long current;
+        try {
+            String number = raw.replace(",", "");
+            int dot = number.indexOf('.');
+            if (dot >= 0) {
+                number = number.substring(0, dot);
+            }
+            current = Long.parseLong(number);
+        } catch (NumberFormatException e) {
+            if (!(located.value instanceof Number number)) {
+                return null;
+            }
+            current = number.longValue();
+        }
+        return Long.toString(current + dir);
     }
 
     /** Next enum name, not saved yet. */
     public static String nextEnumValue(String rootId, String path) {
+        return nextEnumValue(rootId, path, null);
+    }
+
+    /** Next enum name after {@code currentRaw}, or after the live value when that text is blank. */
+    public static String nextEnumValue(String rootId, String path, String currentRaw) {
         Located located = locate(rootId, path);
-        if (located == null || located.field == null || !located.field.getType().isEnum()) {
+        if (located == null || located.field == null) {
             return null;
         }
-        Object[] constants = located.field.getType().getEnumConstants();
+        Class<?> type = located.key == null
+                ? located.field.getType()
+                : rawClass(valueType(located.field, located.container instanceof List<?> ? 0 : 1));
+        if (type == null || !type.isEnum()) {
+            return null;
+        }
+        Object[] constants = type.getEnumConstants();
         if (constants == null || constants.length == 0) {
             return null;
         }
+        String current = currentRaw == null || currentRaw.isBlank()
+                ? String.valueOf(located.value)
+                : currentRaw.trim();
         int index = 0;
         for (int i = 0; i < constants.length; i++) {
-            if (constants[i].equals(located.value) || constants[i].toString().equals(String.valueOf(located.value))) {
+            if (constants[i].toString().equalsIgnoreCase(current)) {
                 index = i;
                 break;
             }
@@ -479,6 +482,867 @@ public final class ConfigEditor {
         int dot = path.lastIndexOf('.');
         return dot < 0 ? "" : path.substring(0, dot);
     }
+
+    /** Tabs in menu order. Data files stay on the bar and stay closed. */
+    public static List<EditorTab> editorTabs() {
+        List<EditorTab> tabs = new ArrayList<>();
+        addTab(tabs, "difficulty", "Difficulty");
+        addTab(tabs, "progression", "Progression");
+        addTab(tabs, "character-services", "Character");
+        addTab(tabs, "saga", "Saga");
+        addTab(tabs, "rival", "Rival");
+        addTab(tabs, "sparring", "Sparring");
+        addTab(tabs, "currency", "Currency");
+        return tabs;
+    }
+
+    public static EditorTab tab(String id) {
+        for (EditorTab tab : editorTabs()) {
+            if (tab.id().equals(id)) {
+                return tab;
+            }
+        }
+        return null;
+    }
+
+    public static void rememberSearch(UUID player, String query) {
+        session(player).search = query == null ? "" : query.trim();
+    }
+
+    public static String search(UUID player) {
+        return session(player).search;
+    }
+
+    public static void setBanner(UUID player, String text, BannerTone tone) {
+        Session session = session(player);
+        session.banner = text == null ? "" : text;
+        session.tone = text == null || text.isBlank() ? BannerTone.NONE : tone;
+    }
+
+    public static String banner(UUID player) {
+        return session(player).banner;
+    }
+
+    public static BannerTone bannerTone(UUID player) {
+        return session(player).tone;
+    }
+
+    public static void clearBanner(UUID player) {
+        setBanner(player, "", BannerTone.NONE);
+    }
+
+    public static int dirtyCount(UUID player) {
+        return session(player).drafts.size();
+    }
+
+    public static boolean dirty(UUID player, String moduleId, String path) {
+        if (path == null) {
+            return false;
+        }
+        for (Draft draft : session(player).drafts) {
+            if (!draft.moduleId().equals(moduleId)) {
+                continue;
+            }
+            if (path.equals(draft.path())) {
+                return true;
+            }
+            if (draft.path().startsWith(path + ".") || draft.path().startsWith(path + "[")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Fields on this page, or every matching name in the module when {@code query} is set. */
+    public static List<Entry> visibleFields(String moduleId, String path, String query) {
+        if (query == null || query.isBlank()) {
+            return children(moduleId, path == null ? "" : path);
+        }
+        String needle = query.trim().toLowerCase(Locale.ROOT);
+        List<Entry> all = new ArrayList<>();
+        walkFields(moduleId, "", all, 0);
+        List<Entry> matched = new ArrayList<>();
+        for (Entry entry : all) {
+            String leaf = leafName(entry.path());
+            String name = displayName(leaf).toLowerCase(Locale.ROOT);
+            if (name.contains(needle) || leaf.toLowerCase(Locale.ROOT).contains(needle)) {
+                matched.add(entry);
+            }
+        }
+        return matched;
+    }
+
+    public static String effectiveRaw(UUID player, String moduleId, String path) {
+        Draft draft = findDraft(player, moduleId, path, DraftOp.SET);
+        if (draft != null) {
+            return draft.raw() == null ? "" : draft.raw();
+        }
+        return currentText(moduleId, path);
+    }
+
+    public static String shownValue(UUID player, String moduleId, String path) {
+        Kind kind = kindOf(moduleId, path);
+        if (kind == Kind.LIST || kind == Kind.MAP) {
+            int count = effectiveCount(player, moduleId, path);
+            return count == 1 ? "1 entry" : count + " entries";
+        }
+        if (kind == Kind.GROUP) {
+            int count = children(moduleId, path).size();
+            return count == 1 ? "1 setting" : count + " settings";
+        }
+        String raw = effectiveRaw(player, moduleId, path);
+        if (kind == Kind.BOOLEAN) {
+            return truth(raw) ? "ON" : "OFF";
+        }
+        if (raw == null || raw.isBlank()) {
+            return "empty";
+        }
+        return raw;
+    }
+
+    public static int effectiveCount(UUID player, String moduleId, String path) {
+        int live = 0;
+        Located located = locate(moduleId, path);
+        if (located != null && located.value instanceof Map<?, ?> map) {
+            live = map.size();
+        } else if (located != null && located.value instanceof Collection<?> collection) {
+            live = collection.size();
+        }
+        int added = 0;
+        int removed = 0;
+        for (Draft draft : session(player).drafts) {
+            if (!draft.moduleId().equals(moduleId)) {
+                continue;
+            }
+            if (draft.op() == DraftOp.ADD && path.equals(draft.path())) {
+                added++;
+            }
+            if (draft.op() == DraftOp.REMOVE && path.equals(parentPath(draft.path()))) {
+                removed++;
+            }
+        }
+        return Math.max(0, live + added - removed);
+    }
+
+    /** @return a player-facing error, or null when the draft was stored */
+    public static String stageSet(UUID player, String moduleId, String path, String raw) {
+        clearBanner(player);
+        ChangePreview preview = describeSet(moduleId, path, raw);
+        if (preview.error() != null) {
+            return preview.error();
+        }
+        Session session = session(player);
+        session.drafts.removeIf(draft -> draft.op() == DraftOp.SET
+                && moduleId.equals(draft.moduleId())
+                && path.equals(draft.path()));
+        if (!matchesLive(moduleId, path, raw)) {
+            if (session.drafts.size() >= 100) {
+                return "Save or discard before changing more settings.";
+            }
+            session.drafts.add(new Draft(moduleId, path, DraftOp.SET, raw == null ? "" : raw.trim(), ""));
+        }
+        return null;
+    }
+
+    /** @return a player-facing error, or null when the add was stored */
+    public static String stageAdd(UUID player, String moduleId, String path, String key, String raw) {
+        clearBanner(player);
+        String error = validateAdd(moduleId, path, key, raw);
+        if (error != null) {
+            return error;
+        }
+        Kind kind = kindOf(moduleId, path);
+        if (kind == Kind.MAP && key != null && !key.isBlank()) {
+            String child = joinKey(path, key.trim());
+            Located located = locate(moduleId, path);
+            if (located != null && located.value instanceof Map<?, ?> map && map.containsKey(key.trim())) {
+                return stageSet(player, moduleId, child, raw);
+            }
+        }
+        Session session = session(player);
+        String typedKey = key == null ? "" : key.trim();
+        if (typedKey.isEmpty() && raw != null) {
+            typedKey = raw.trim();
+        }
+        String trimmedKey = typedKey;
+        session.drafts.removeIf(draft -> draft.op() == DraftOp.ADD
+                && moduleId.equals(draft.moduleId())
+                && path.equals(draft.path())
+                && trimmedKey.equals(draft.addKey()));
+        if (session.drafts.size() >= 100) {
+            return "Save or discard before changing more settings.";
+        }
+        session.drafts.add(new Draft(moduleId, path, DraftOp.ADD, raw == null ? "" : raw.trim(), trimmedKey));
+        return null;
+    }
+
+    public static void stageRemove(UUID player, String moduleId, String path) {
+        clearBanner(player);
+        Session session = session(player);
+        String parent = parentPath(path);
+        String key = leafName(path);
+        boolean droppedAdd = session.drafts.removeIf(draft -> draft.op() == DraftOp.ADD
+                && moduleId.equals(draft.moduleId())
+                && parent.equals(draft.path())
+                && key.equals(draft.addKey()));
+        if (droppedAdd) {
+            return;
+        }
+        session.drafts.removeIf(draft -> draft.op() == DraftOp.SET
+                && moduleId.equals(draft.moduleId())
+                && path.equals(draft.path()));
+        boolean already = session.drafts.removeIf(draft -> draft.op() == DraftOp.REMOVE
+                && moduleId.equals(draft.moduleId())
+                && path.equals(draft.path()));
+        if (already) {
+            return;
+        }
+        session.drafts.add(new Draft(moduleId, path, DraftOp.REMOVE, "", key));
+    }
+
+    public static void undo(UUID player, String moduleId, String path, DraftOp op, String addKey) {
+        clearBanner(player);
+        String key = addKey == null ? "" : addKey;
+        session(player).drafts.removeIf(draft -> draft.op() == op
+                && moduleId.equals(draft.moduleId())
+                && path.equals(draft.path())
+                && key.equals(draft.addKey() == null ? "" : draft.addKey()));
+    }
+
+    public static List<ManageRow> manageRows(UUID player, String moduleId, String path) {
+        List<ManageRow> rows = new ArrayList<>();
+        Set<String> removed = new HashSet<>();
+        Set<String> addedKeys = new HashSet<>();
+        for (Draft draft : session(player).drafts) {
+            if (!moduleId.equals(draft.moduleId())) {
+                continue;
+            }
+            if (draft.op() == DraftOp.REMOVE && path.equals(parentPath(draft.path()))) {
+                removed.add(draft.path());
+            }
+        }
+        for (Entry entry : children(moduleId, path)) {
+            boolean removing = removed.contains(entry.path());
+            String value = removing ? "(removing)" : shownValue(player, moduleId, entry.path());
+            rows.add(new ManageRow(displayName(leafName(entry.path())), entry.path(), leafName(entry.path()),
+                    false, removing, value));
+        }
+        for (Draft draft : session(player).drafts) {
+            if (draft.op() != DraftOp.ADD || !moduleId.equals(draft.moduleId()) || !path.equals(draft.path())) {
+                continue;
+            }
+            String key = draft.addKey() == null || draft.addKey().isBlank() ? draft.raw() : draft.addKey();
+            if (!addedKeys.add(key)) {
+                continue;
+            }
+            String child = joinKey(path, key);
+            String title = displayName(key);
+            rows.add(new ManageRow(title, child, key, true, false, draft.raw()));
+        }
+        return rows;
+    }
+
+    public static SaveResult saveAll(UUID player, String actor) {
+        Session session = session(player);
+        if (session.drafts.isEmpty()) {
+            return new SaveResult(null, 0, "Nothing to save.");
+        }
+        List<Draft> drafts = new ArrayList<>(session.drafts);
+        for (Draft draft : drafts) {
+            String error = validateDraft(draft);
+            if (error != null) {
+                return new SaveResult(displayName(leafName(draft.path())) + ": " + error, 0, null);
+            }
+        }
+        drafts.sort(Comparator.comparingInt(draft -> switch (draft.op()) {
+            case SET -> 0;
+            case REMOVE -> 1;
+            case ADD -> 2;
+        }));
+        List<Change> changes = new ArrayList<>();
+        LinkedHashMap<Path, Runnable> saves = new LinkedHashMap<>();
+        LinkedHashMap<Path, Runnable> reloads = new LinkedHashMap<>();
+        for (Draft draft : drafts) {
+            ConfigRegistry.Module module = ConfigRegistry.find(draft.moduleId());
+            if (module == null || !module.editable()) {
+                return new SaveResult("That file is not a settings file.", 0, null);
+            }
+            Path file = module.file() == null ? null : module.file().toAbsolutePath().normalize();
+            if (file == null) {
+                return new SaveResult("That file is not a settings file.", 0, null);
+            }
+            saves.putIfAbsent(file, module.save());
+            reloads.putIfAbsent(file, module.reload());
+            changes.add(new Change(draft, beforeText(draft), afterText(draft), file));
+        }
+        for (Draft draft : drafts) {
+            String error = switch (draft.op()) {
+                case ADD -> mutateAdd(draft.moduleId(), draft.path(), draft.addKey(), draft.raw());
+                case REMOVE -> mutateRemove(draft.moduleId(), draft.path());
+                default -> mutateSet(draft.moduleId(), draft.path(), draft.raw());
+            };
+            if (error != null) {
+                restore(reloads.values());
+                return new SaveResult(error, 0, null);
+            }
+        }
+        Set<Path> saved = new HashSet<>();
+        try {
+            for (Map.Entry<Path, Runnable> entry : saves.entrySet()) {
+                backupOnce(entry.getKey());
+                entry.getValue().run();
+                saved.add(entry.getKey());
+            }
+            for (Runnable reload : reloads.values()) {
+                if (reload != null) {
+                    reload.run();
+                }
+            }
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] config save failed: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
+            restore(reloads.values());
+            String who = actor == null || actor.isBlank() ? "staff" : actor;
+            for (Change change : changes) {
+                if (saved.contains(change.file())) {
+                    writeAudit(who, change.draft().moduleId(), change.draft().path(), change.before(), change.after());
+                }
+            }
+            session.drafts.removeIf(draft -> saved.contains(fileOf(draft.moduleId())));
+            return new SaveResult("The file could not be saved.", 0, null);
+        }
+        String who = actor == null || actor.isBlank() ? "staff" : actor;
+        for (Change change : changes) {
+            if (saved.contains(change.file())) {
+                writeAudit(who, change.draft().moduleId(), change.draft().path(), change.before(), change.after());
+            }
+        }
+        session.drafts.clear();
+        int count = changes.size();
+        String message = count == 1 ? "Saved 1 change." : "Saved " + count + " changes.";
+        return new SaveResult(null, count, message);
+    }
+
+    /** Reloads one settings file and drops unsaved edits for every tab that shares it. */
+    public static String reloadModule(UUID player, String moduleId) {
+        ConfigRegistry.Module module = ConfigRegistry.find(moduleId);
+        if (module == null || !module.editable()) {
+            return "Player records stay in their own file.";
+        }
+        try {
+            if (module.reload() != null) {
+                module.reload().run();
+            }
+        } catch (Throwable t) {
+            return "The file could not be reloaded.";
+        }
+        Path file = module.file() == null ? null : module.file().toAbsolutePath().normalize();
+        session(player).drafts.removeIf(draft -> {
+            ConfigRegistry.Module other = ConfigRegistry.find(draft.moduleId());
+            if (other == null || other.file() == null || file == null) {
+                return false;
+            }
+            return file.equals(other.file().toAbsolutePath().normalize());
+        });
+        return null;
+    }
+
+    public static int discardAll(UUID player) {
+        Session session = session(player);
+        int count = session.drafts.size();
+        session.drafts.clear();
+        return count;
+    }
+
+    public static String typeName(String moduleId, String path) {
+        return switch (kindOf(moduleId, path)) {
+            case BOOLEAN -> "boolean";
+            case NUMBER -> "number";
+            case TEXT -> "string";
+            case ENUM -> "enum";
+            case LIST -> "list";
+            case MAP -> "map";
+            case GROUP -> "group";
+            default -> "value";
+        };
+    }
+
+    /** Short line for the detail page. There is no {@code @ConfigDesc} on these fields. */
+    public static String description(String moduleId, String path) {
+        String name = displayName(leafName(path));
+        return switch (kindOf(moduleId, path)) {
+            case BOOLEAN -> "Turns " + name + " on or off.";
+            case NUMBER -> "Number used for " + name + ".";
+            case TEXT -> "Text for " + name + ".";
+            case ENUM -> "Which " + name + " is selected.";
+            case LIST -> "The list of " + name + ".";
+            case MAP -> "Named values for " + name + ".";
+            case GROUP -> "Settings grouped under " + name + ".";
+            default -> "Setting for " + name + ".";
+        };
+    }
+
+    public static String defaultText(String moduleId, String path) {
+        Object fresh = freshInstance(moduleId);
+        if (fresh == null) {
+            return "empty";
+        }
+        Object value = readValue(fresh, path);
+        if (value instanceof Boolean on) {
+            return on ? "true" : "false";
+        }
+        if (value instanceof Map<?, ?> map) {
+            return map.size() == 1 ? "1 entry" : map.size() + " entries";
+        }
+        if (value instanceof Collection<?> collection) {
+            return collection.size() == 1 ? "1 entry" : collection.size() + " entries";
+        }
+        if (value != null && isGroup(value.getClass())) {
+            return "group";
+        }
+        if (value == null) {
+            return "empty";
+        }
+        String text = String.valueOf(value).replace('\n', ' ');
+        if (text.length() > 40) {
+            return text.substring(0, 39) + "…";
+        }
+        return text;
+    }
+
+    public static LastChange lastChange(String moduleId, String path) {
+        if (moduleId == null || path == null || path.isEmpty()) {
+            return null;
+        }
+        Path log = ConfigPaths.dataDir().resolve("config-audit.log");
+        if (!Files.isRegularFile(log)) {
+            return null;
+        }
+        String marker = " " + moduleId + " " + path + " ";
+        String hit = null;
+        try {
+            List<String> lines = Files.readAllLines(log);
+            int start = Math.max(0, lines.size() - 400);
+            for (int i = start; i < lines.size(); i++) {
+                String line = lines.get(i);
+                if (line != null && line.contains(marker)) {
+                    hit = line;
+                }
+            }
+        } catch (IOException e) {
+            return null;
+        }
+        if (hit == null) {
+            return null;
+        }
+        int at = hit.indexOf(marker);
+        if (at <= 0) {
+            return null;
+        }
+        String head = hit.substring(0, at);
+        int space = head.indexOf(' ');
+        if (space <= 0) {
+            return null;
+        }
+        String actor = head.substring(space + 1).trim();
+        if (actor.isEmpty()) {
+            actor = "staff";
+        }
+        String when = head.substring(0, space);
+        try {
+            when = AUDIT_WHEN.format(Instant.parse(when));
+        } catch (DateTimeParseException ignored) {
+            // Keep the raw timestamp when it is not an instant.
+        }
+        return new LastChange(actor, when);
+    }
+
+    public static List<String> enumNames(String moduleId, String path) {
+        Located located = locate(moduleId, path);
+        if (located == null || located.field == null) {
+            return List.of();
+        }
+        Class<?> type = located.key == null
+                ? located.field.getType()
+                : rawClass(valueType(located.field, located.container instanceof List<?> ? 0 : 1));
+        if (type == null || !type.isEnum()) {
+            return List.of();
+        }
+        List<String> names = new ArrayList<>();
+        Object[] constants = type.getEnumConstants();
+        if (constants == null) {
+            return names;
+        }
+        for (Object constant : constants) {
+            if (names.size() >= 8) {
+                names.add("…");
+                break;
+            }
+            names.add(constant.toString());
+        }
+        return names;
+    }
+
+    private static void addTab(List<EditorTab> tabs, String id, String label) {
+        ConfigRegistry.Module module = ConfigRegistry.find(id);
+        if (module == null) {
+            return;
+        }
+        String fileName = module.file() == null ? "" : module.file().getFileName().toString();
+        tabs.add(new EditorTab(id, label, module.editable(), fileName));
+    }
+
+    private static void walkFields(String moduleId, String path, List<Entry> out, int depth) {
+        if (depth > 5) {
+            return;
+        }
+        for (Entry entry : children(moduleId, path)) {
+            out.add(entry);
+            if (entry.kind() == Kind.GROUP) {
+                walkFields(moduleId, entry.path(), out, depth + 1);
+            }
+        }
+    }
+
+    private static Draft findDraft(UUID player, String moduleId, String path, DraftOp op) {
+        for (Draft draft : session(player).drafts) {
+            if (draft.op() == op && moduleId.equals(draft.moduleId()) && path.equals(draft.path())) {
+                return draft;
+            }
+        }
+        return null;
+    }
+
+    private static boolean truth(String raw) {
+        return "true".equalsIgnoreCase(raw) || "on".equalsIgnoreCase(raw) || "ON".equals(raw);
+    }
+
+    private static boolean matchesLive(String moduleId, String path, String raw) {
+        Located located = locate(moduleId, path);
+        if (located == null) {
+            return false;
+        }
+        try {
+            Object next = coerceLocated(located, raw);
+            return Objects.equals(located.value, next);
+        } catch (RuntimeException e) {
+            return false;
+        }
+    }
+
+    private static String validateDraft(Draft draft) {
+        return switch (draft.op()) {
+            case ADD -> validateAdd(draft.moduleId(), draft.path(), draft.addKey(), draft.raw());
+            case REMOVE -> mutateWouldRemove(draft.moduleId(), draft.path());
+            default -> describeSet(draft.moduleId(), draft.path(), draft.raw()).error();
+        };
+    }
+
+    private static String validateAdd(String rootId, String path, String key, String raw) {
+        Located located = locate(rootId, path);
+        if (located == null || located.field == null || located.owner == null) {
+            return "That list is not on this config.";
+        }
+        try {
+            if (located.value instanceof Map<?, ?> || kindForType(rawClass(located.field.getGenericType())) == Kind.MAP) {
+                if (key == null || key.isBlank()) {
+                    return "Type a name for the new entry.";
+                }
+                coerce(valueType(located.field, 1), raw);
+            } else if (located.value instanceof List<?>
+                    || kindForType(rawClass(located.field.getGenericType())) == Kind.LIST) {
+                coerce(valueType(located.field, 0), raw);
+            } else {
+                return "Entries can't be added here.";
+            }
+        } catch (NumberFormatException e) {
+            return "That needs to be a number.";
+        } catch (IllegalArgumentException e) {
+            String message = e.getMessage();
+            return message == null || message.isBlank() ? "That value didn't work." : message;
+        }
+        return null;
+    }
+
+    /** Checks a remove without changing memory. */
+    private static String mutateWouldRemove(String rootId, String path) {
+        Located located = locate(rootId, path);
+        if (located == null || located.key == null) {
+            return "Select an entry to remove.";
+        }
+        if (located.container instanceof Map<?, ?> map) {
+            return map.containsKey(located.key) ? null : "That entry is already gone.";
+        }
+        if (located.container instanceof List<?> list) {
+            return findListValue(list, located.key) != null ? null : "That entry is already gone.";
+        }
+        return "That entry can't be removed here.";
+    }
+
+    private static String beforeText(Draft draft) {
+        if (draft.op() == DraftOp.ADD) {
+            return "(added)";
+        }
+        Located located = locate(draft.moduleId(), draft.path());
+        if (located == null || located.value == null) {
+            return "empty";
+        }
+        return String.valueOf(located.value);
+    }
+
+    private static String afterText(Draft draft) {
+        if (draft.op() == DraftOp.REMOVE) {
+            return "(removed)";
+        }
+        if (draft.op() == DraftOp.ADD) {
+            return draft.addKey() == null || draft.addKey().isBlank()
+                    ? draft.raw()
+                    : draft.addKey() + "=" + draft.raw();
+        }
+        return draft.raw() == null ? "" : draft.raw();
+    }
+
+    private static Path fileOf(String moduleId) {
+        ConfigRegistry.Module module = ConfigRegistry.find(moduleId);
+        if (module == null || module.file() == null) {
+            return null;
+        }
+        return module.file().toAbsolutePath().normalize();
+    }
+
+    private static void restore(Collection<Runnable> reloads) {
+        for (Runnable reload : reloads) {
+            if (reload == null) {
+                continue;
+            }
+            try {
+                reload.run();
+            } catch (Throwable ignored) {
+                // The live file is the recovery copy.
+            }
+        }
+    }
+
+    private static String mutateSet(String rootId, String path, String raw) {
+        if (root(rootId) == null) {
+            return "That config is not editable.";
+        }
+        Located located = locate(rootId, path);
+        if (located == null || located.owner == null) {
+            return "That setting is not on this config.";
+        }
+        if (isBlocked(located.field)) {
+            return "The admin permission stays in the config file.";
+        }
+        try {
+            if (located.key != null) {
+                int typeIndex = located.container instanceof List<?> ? 0 : 1;
+                Object coerced = coerce(valueType(located.field, typeIndex), raw);
+                if (located.container instanceof Map<?, ?>) {
+                    mutableMap(located.field, located.owner).put(located.key, coerced);
+                } else if (located.container instanceof List<?>) {
+                    List<Object> list = mutableList(located.field, located.owner);
+                    if (!replaceListValue(list, located.field, located.key, coerced)) {
+                        return "That entry is no longer in the list.";
+                    }
+                } else {
+                    return "That entry can't be edited here.";
+                }
+            } else if (located.field != null) {
+                if ("*".equals(raw == null ? "" : raw.trim())
+                        && located.field.getName().toLowerCase(Locale.ROOT).contains("permission")) {
+                    return "A permission node can't be *.";
+                }
+                located.field.set(located.owner, coerce(located.field.getGenericType(), raw));
+            } else {
+                return "That setting can't be edited here.";
+            }
+        } catch (NumberFormatException e) {
+            return "That needs to be a number.";
+        } catch (IllegalArgumentException e) {
+            String message = e.getMessage();
+            return message == null || message.isBlank() ? "That value didn't work." : message;
+        } catch (ReflectiveOperationException e) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] config edit failed {}.{}: {}",
+                    AdaptiveDifficultyMod.MOD_ID, rootId, path, e.toString());
+            return "That setting couldn't be changed.";
+        }
+        return null;
+    }
+
+    private static String mutateAdd(String rootId, String path, String key, String raw) {
+        if (root(rootId) == null) {
+            return "That config is not editable.";
+        }
+        Located located = locate(rootId, path);
+        if (located == null || located.field == null || located.owner == null) {
+            return "That list is not on this config.";
+        }
+        try {
+            if (located.value instanceof Map<?, ?> || kindForType(rawClass(located.field.getGenericType())) == Kind.MAP) {
+                if (key == null || key.isBlank()) {
+                    return "Type a name for the new entry.";
+                }
+                Map<String, Object> map = mutableMap(located.field, located.owner);
+                map.put(key.trim(), coerce(valueType(located.field, 1), raw));
+            } else if (located.value instanceof List<?>
+                    || kindForType(rawClass(located.field.getGenericType())) == Kind.LIST) {
+                List<Object> list = mutableList(located.field, located.owner);
+                list.add(coerce(valueType(located.field, 0), raw));
+            } else {
+                return "Entries can't be added here.";
+            }
+        } catch (NumberFormatException e) {
+            return "That needs to be a number.";
+        } catch (IllegalArgumentException e) {
+            String message = e.getMessage();
+            return message == null || message.isBlank() ? "That value didn't work." : message;
+        } catch (ReflectiveOperationException e) {
+            return "That entry couldn't be added.";
+        }
+        return null;
+    }
+
+    private static String mutateRemove(String rootId, String path) {
+        if (root(rootId) == null) {
+            return "That config is not editable.";
+        }
+        Located located = locate(rootId, path);
+        if (located == null || located.key == null || located.field == null || located.owner == null) {
+            return "Select an entry to remove.";
+        }
+        try {
+            if (located.container instanceof Map<?, ?>) {
+                Map<String, Object> map = mutableMap(located.field, located.owner);
+                if (!map.containsKey(located.key)) {
+                    return "That entry is already gone.";
+                }
+                map.remove(located.key);
+            } else if (located.container instanceof List<?>) {
+                List<Object> list = mutableList(located.field, located.owner);
+                if (!removeListValue(list, located.field, located.key)) {
+                    return "That entry is already gone.";
+                }
+            } else {
+                return "That entry can't be removed here.";
+            }
+        } catch (ReflectiveOperationException e) {
+            return "That entry couldn't be removed.";
+        }
+        return null;
+    }
+
+    private static Object coerceLocated(Located located, String raw) {
+        if (located.key != null) {
+            int typeIndex = located.container instanceof List<?> ? 0 : 1;
+            return coerce(valueType(located.field, typeIndex), raw);
+        }
+        if (located.field != null) {
+            if ("*".equals(raw == null ? "" : raw.trim())
+                    && located.field.getName().toLowerCase(Locale.ROOT).contains("permission")) {
+                throw new IllegalArgumentException("A permission node can't be *.");
+            }
+            return coerce(located.field.getGenericType(), raw);
+        }
+        throw new IllegalArgumentException("That setting can't be edited here.");
+    }
+
+    private static Class<?> numberType(Located located) {
+        if (located.field != null && located.key == null && isNumber(located.field.getType())) {
+            return located.field.getType();
+        }
+        if (located.field != null && located.key != null) {
+            Class<?> type = rawClass(valueType(located.field, located.container instanceof List<?> ? 0 : 1));
+            if (isNumber(type)) {
+                return type;
+            }
+        }
+        if (located.value instanceof Number number) {
+            return number.getClass();
+        }
+        return null;
+    }
+
+    private static Object freshInstance(String moduleId) {
+        return switch (moduleId) {
+            case "difficulty", "progression", "currency" -> DifficultyConfig.freshDefaults();
+            case "character-services" -> CharacterServicesConfig.freshDefaults();
+            case "saga" -> new SagaResetConfig();
+            default -> null;
+        };
+    }
+
+    private static Object readValue(Object current, String path) {
+        if (current == null || path == null || path.isEmpty()) {
+            return current;
+        }
+        int i = 0;
+        while (i < path.length() && current != null) {
+            if (path.charAt(i) == '.') {
+                i++;
+            }
+            if (i >= path.length()) {
+                break;
+            }
+            if (path.charAt(i) == '[') {
+                StringBuilder parsed = new StringBuilder();
+                i++;
+                while (i < path.length()) {
+                    char c = path.charAt(i);
+                    if (c == '\\' && i + 1 < path.length()) {
+                        parsed.append(path.charAt(i + 1));
+                        i += 2;
+                        continue;
+                    }
+                    if (c == ']') {
+                        i++;
+                        break;
+                    }
+                    parsed.append(c);
+                    i++;
+                }
+                String key = parsed.toString();
+                if (current instanceof Map<?, ?> map) {
+                    current = map.get(key);
+                } else if (current instanceof List<?> list) {
+                    current = findListValue(list, key);
+                } else {
+                    return null;
+                }
+                continue;
+            }
+            int start = i;
+            while (i < path.length() && path.charAt(i) != '.' && path.charAt(i) != '[') {
+                i++;
+            }
+            String name = path.substring(start, i);
+            Field field = findField(current.getClass(), name);
+            if (field == null) {
+                return null;
+            }
+            try {
+                current = field.get(current);
+            } catch (ReflectiveOperationException e) {
+                return null;
+            }
+        }
+        return current;
+    }
+
+    private static Session session(UUID player) {
+        UUID key = player == null ? new UUID(0L, 0L) : player;
+        return SESSIONS.computeIfAbsent(key, ignored -> new Session());
+    }
+
+    private static final class Session {
+        private String search = "";
+        private String banner = "";
+        private BannerTone tone = BannerTone.NONE;
+        private final List<Draft> drafts = new ArrayList<>();
+    }
+
+    private record Change(Draft draft, String before, String after, Path file) {}
 
     private static String persist(Root root, String actor, String path, String before, String after) {
         ConfigRegistry.Module module = ConfigRegistry.find(root.id());
