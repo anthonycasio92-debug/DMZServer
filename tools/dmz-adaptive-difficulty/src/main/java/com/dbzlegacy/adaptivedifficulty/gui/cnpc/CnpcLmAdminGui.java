@@ -10,7 +10,7 @@ public final class CnpcLmAdminGui {
     private CnpcLmAdminGui() {}
 
     public static void open(ServerPlayer player, String page) {
-        CnpcUltraStyle.withAccent(CnpcUltraStyle.ACCENT_ADMIN, () -> openAdmin(player, page));
+        CnpcUltraStyle.withAccent(CnpcUltraStyle.ACCENT_CHARACTER, () -> openAdmin(player, page));
     }
 
     private static void openAdmin(ServerPlayer player, String page) {
@@ -37,12 +37,12 @@ public final class CnpcLmAdminGui {
                         ? CnpcMenuFeedback.NOTICE_BODY + "Legacy Mechanics config reloaded."
                         : CnpcMenuFeedback.NOTICE_BODY + "Config reload failed.",
                 () -> open(player, "main")));
-        CnpcGuiSupport.button(gui, 21, CnpcUltraStyle.ACCENT + "Progression panel", CnpcGuiSupport.COL_R, row,
+        CnpcGuiSupport.button(gui, 21, CnpcUltraStyle.ACCENT_PROGRESSION + "Progression panel", CnpcGuiSupport.COL_R, row,
                 () -> CnpcLmGui.open(player, "progression", "main"));
         row += CnpcGuiSupport.ROW_STEP;
-        CnpcGuiSupport.button(gui, 23, CnpcUltraStyle.ACCENT + "Config editor", CnpcGuiSupport.COL_L, row,
+        CnpcGuiSupport.button(gui, 23, CnpcUltraStyle.ACCENT_CONFIG + "Config editor", CnpcGuiSupport.COL_L, row,
                 () -> CnpcLmGui.open(player, "config", "main"));
-        CnpcGuiSupport.button(gui, 22, CnpcUltraStyle.DIM + "Event log", CnpcGuiSupport.COL_R, row,
+        CnpcGuiSupport.button(gui, 22, CnpcUltraStyle.ACCENT_ADMIN + "Event log", CnpcGuiSupport.COL_R, row,
                 () -> CnpcLmLogsGui.open(player, "main"));
         row += CnpcGuiSupport.ROW_STEP;
         CnpcGuiSupport.navSystemRoot(player, gui, row);

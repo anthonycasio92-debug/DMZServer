@@ -1769,7 +1769,7 @@ def main() -> int:
     check("spar dojo home and prestige forms use their system colors",
           'CnpcUltraStyle.ACCENT + "Dojo home"' in read(cnpc_dir / "CnpcLmSparGui.java")
           and 'CnpcUltraStyle.ACCENT + "Forms"' in read(cnpc_dir / "CnpcLmPrestigeGui.java")
-          and 'CnpcUltraStyle.ACCENT + "Progression panel"' in read(cnpc_dir / "CnpcLmAdminGui.java"))
+          and 'CnpcUltraStyle.ACCENT_PROGRESSION + "Progression panel"' in read(cnpc_dir / "CnpcLmAdminGui.java"))
 
     print("\n=== CNPC rival records (4.6.22) ===")
     rival_records = read(cnpc_dir / "CnpcLmRivalGui.java")
@@ -1837,7 +1837,7 @@ def main() -> int:
           "Welcome back" not in snapshot
           and "Combat & progression" not in hub_gui
           and "Remove Android" not in hub_gui
-          and 'CnpcUltraStyle.INFO + "Skill Check"' in hub_gui)
+          and 'CnpcUltraStyle.ACCENT_PROGRESSION + "Skill Check"' in hub_gui)
     check("character hosts remove android and race keep percent",
           'CnpcUltraStyle.DANGER + "Remove Android' in char_gui
           and "Keep " in char_gui
@@ -2276,6 +2276,9 @@ def main() -> int:
 
     style = read(cnpc_dir / "CnpcUltraStyle.java")
     prestige_gui = read(cnpc_dir / "CnpcLmPrestigeGui.java")
+    hub_gui = read(cnpc_dir / "CnpcLmHubGui.java")
+    admin_gui = read(cnpc_dir / "CnpcLmAdminGui.java")
+    test_hub = read(cnpc_dir / "CnpcStyledTestHub.java")
     check("menus keep a per-system accent and prestige has no module list",
           "ACCENT_RIVAL" in style
           and "ACCENT_SPARRING" in style
@@ -2288,7 +2291,24 @@ def main() -> int:
           and "withAccent" in style
           and "modules|Modules" not in prestige_gui
           and "ConfigEditor" not in prestige_gui
-          and "setOnChange" in config_screen)
+          and "setOnChange" in config_screen
+          and "ACCENT_RIVAL + \"Rival\"" in hub_gui
+          and "ACCENT_SPARRING + \"Sparring\"" in hub_gui
+          and "ACCENT_DIFFICULTY + \"Difficulty\"" in hub_gui
+          and "ACCENT_PRESTIGE + \"Prestige\"" in hub_gui
+          and "ACCENT_SAGA + \"Saga\"" in hub_gui
+          and "ACCENT_CHARACTER + \"Character Services\"" in hub_gui
+          and "ACCENT_ADMIN + \"Staff Admin\"" in hub_gui
+          and "ACCENT_PROGRESSION + \"Progression panel\"" in admin_gui
+          and "ACCENT_CONFIG + \"Config editor\"" in admin_gui
+          and "ACCENT_RIVAL" in test_hub
+          and "ACCENT_SAGA" in test_hub)
+
+    check("index headers stay gold while buttons use destination accents",
+          "withAccent(CnpcUltraStyle.ACCENT_CHARACTER" in hub_gui
+          and "withAccent(CnpcUltraStyle.ACCENT_CHARACTER" in admin_gui
+          and "withAccent" in test_hub
+          and "ACCENT_CHARACTER" in test_hub)
 
     print("\n=== Saga reset uses loaded sagas (4.6.69) ===")
     saga_service = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/quest/SagaResetService.java")
@@ -2309,9 +2329,14 @@ def main() -> int:
           and "Not enough Ancient Coins" in saga_service
           and "CnpcRowList" in saga_gui
           and "CnpcUltraStyle" in saga_gui
-          and "saga|Saga" in character_gui
+          and "ID_SAGA" in saga_gui
+          and "sagas|Sagas" in saga_gui
+          and "reset|Reset" in saga_gui
+          and "characterTabs" not in saga_gui
+          and "Reset saga progress" in character_gui
           and "bones|Head parts" in character_gui
-          and "saga|Saga Reset" in character_gui
+          and "reskin|Reskin" in character_gui
+          and "saga|Saga Reset" not in character_gui
           and "services|Services" not in character_gui
           and "CnpcLmSagaGui.open" in read(cnpc_dir / "CnpcLmGui.java")
           and "SagaResetConfig" in build_sh

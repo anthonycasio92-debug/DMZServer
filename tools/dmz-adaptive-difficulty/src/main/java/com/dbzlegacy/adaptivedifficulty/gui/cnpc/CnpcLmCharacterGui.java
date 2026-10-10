@@ -44,7 +44,8 @@ public final class CnpcLmCharacterGui {
             return;
         }
         if ("saga".equals(p) || p.startsWith("saga:")) {
-            CnpcLmSagaGui.openList(player, p);
+            String resetPage = "saga".equals(p) ? "reset" : "reset:" + p.substring("saga:".length());
+            CnpcLmSagaGui.open(player, resetPage);
             return;
         }
         String pageKey = ("main".equals(p) || "services".equals(p)) ? "bones:0" : p;
@@ -52,7 +53,7 @@ public final class CnpcLmCharacterGui {
             int bonePage = parseBonePage(pageKey);
             int boneExtra = CnpcGuiSupport.TAB_BAR_H;
             CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CHARACTER, CnpcGuiSupport.W,
-                    CnpcGuiSupport.heightForScrollPage(420 + boneExtra),
+                    CnpcGuiSupport.heightForScrollPage(420 + boneExtra + CnpcGuiSupport.ROW_STEP),
                     (pl, gui) -> paintBones(pl, gui, bonePage));
             return;
         }
@@ -231,6 +232,10 @@ public final class CnpcLmCharacterGui {
         }
         y += CnpcGuiSupport.ROW_STEP;
         y = paintCharacterActions(player, gui, y);
+        CnpcGuiSupport.buttonSmallFull(gui, 67, "§7Reset saga progress →",
+                CnpcGuiSupport.M, y, CnpcGuiSupport.textBandWidth(),
+                () -> CnpcLmSagaGui.open(player, "reset"));
+        y += CnpcGuiSupport.ROW_STEP;
         CnpcGuiSupport.navSystemRoot(player, gui, y);
         CnpcGuiSupport.paintLivePlayerPreview(player, gui);
     }
@@ -299,13 +304,13 @@ public final class CnpcLmCharacterGui {
 
     static int characterTabs(ServerPlayer player, ICustomGui gui, int y, String active) {
         return CnpcGuiSupport.paintTabBar(gui, y, new String[] {
-                "bones|Head parts", "reskin|Reskin", "saga|Saga Reset"
+                "bones|Head parts", "reskin|Reskin"
         }, active, action -> {
             String id = action.startsWith("tab:") ? action.substring(4) : action;
-            switch (id) {
-                case "reskin" -> open(player, "reskin");
-                case "saga" -> open(player, "saga");
-                default -> open(player, "bones:0");
+            if ("reskin".equals(id)) {
+                open(player, "reskin");
+            } else {
+                open(player, "bones:0");
             }
         });
     }
