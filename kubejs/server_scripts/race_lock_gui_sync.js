@@ -18,23 +18,10 @@ PlayerEvents.loggedIn(function (event) {
   clearPlayer(event.player);
 });
 
-PlayerEvents.tick(function (event) {
-  try {
-    var player = event.player;
-    if (!player) return;
-    var age = 0;
-    try {
-      age = Number(player.age);
-    } catch (e0) {
-      try {
-        age = Number(player.tickCount);
-      } catch (e1) {
-        return;
-      }
-    }
-    if (!isFinite(age) || age <= 0 || age % SYNC_INTERVAL_TICKS !== 0) return;
-    clearPlayer(player);
-  } catch (err) {}
-});
+// PlayerEvents.tick moved to player_tick_consolidated.js.
+global.dmzRaceLockTick = {
+  SYNC_INTERVAL_TICKS: SYNC_INTERVAL_TICKS,
+  clearPlayer: clearPlayer
+};
 
 console.info("[RaceLockGUI] race lock removed; padlocks cleared (" + CHANNEL + ")");

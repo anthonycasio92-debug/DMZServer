@@ -243,14 +243,11 @@ PlayerEvents.loggedIn(function (event) {
     }
 });
 
-PlayerEvents.tick(function (event) {
-    try {
-        var player = event.player;
-        if (player == null) return;
-        if (player.age % TICK_INTERVAL !== 0) return;
-        clampAll(player);
-    } catch (err) {}
-});
+// PlayerEvents.tick moved to player_tick_consolidated.js.
+global.dmzLifestealCapTick = {
+    TICK_INTERVAL: TICK_INTERVAL,
+    clampAll: clampAll
+};
 
 console.info(
     "[DBZ Legacy Reborn] Healing attribute hard caps active (Life Steal=0%, OH<=5%, Healing Received <=+5%)."
