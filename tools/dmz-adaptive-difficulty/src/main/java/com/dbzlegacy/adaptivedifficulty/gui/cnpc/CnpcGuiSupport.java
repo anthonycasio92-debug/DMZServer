@@ -39,6 +39,15 @@ public final class CnpcGuiSupport {
     /** Approximate Minecraft glyph width used to keep labels off the button edges. */
     private static final int BUTTON_CHAR_PX = 6;
     public static final int COL_L = M;
+    /** Space reserved at bottom for nav / close row (pixels). */
+    public static final int FOOTER_RESERVE = 48;
+    /**
+     * Top of the menu content area, under the header divider. The preview is centered
+     * in this band, not in the full window, and this edge does not move between tabs.
+     */
+    public static final int CONTENT_TOP = 48;
+    /** Clear space between the text column and the preview slot. */
+    public static final int PREVIEW_GAP = 12;
     /** Two-column button width — keeps {@link CnpcPlayerPreview#contentRightEdge()} clear of overlap. */
     public static final int BTN_W;
     public static final int COL_R;
@@ -56,8 +65,6 @@ public final class CnpcGuiSupport {
     public static final int SCROLL_LIST_H = 160;
     /** Approximate CNPC scroll row height for overflow detection. */
     private static final int SCROLL_ROW_H = 14;
-    /** Space reserved at bottom for nav / close row (pixels). */
-    public static final int FOOTER_RESERVE = 48;
     /** Notice band: three lines plus padding. Added only when a notice is waiting. */
     public static final int FLASH_MAX_H = 56;
 
@@ -483,14 +490,43 @@ public final class CnpcGuiSupport {
         return textBandWidth();
     }
 
+    /** One preview rectangle. Menus do not pass their own x or y. */
+    public static final class PreviewSlot {
+        public final int x;
+        public final int y;
+        public final int width;
+        public final int height;
+
+        PreviewSlot(int x, int y, int width, int height) {
+            this.x = x;
+            this.y = y;
+            this.width = width;
+            this.height = height;
+        }
+    }
+
     /**
-     * Stable Y for the right-column character preview on every LM menu (does not move when flash
-     * messages or long info blocks change {@link #paintHeader} return value).
+     * The only NPC preview slot. It sits in the right column, vertically centered in the
+     * content band ({@link #CONTENT_TOP} through the footer), and it does not follow the
+     * window height, the active tab, or a notice. Text and buttons stay at {@link #M}.
      */
-    public static int previewAnchorY(net.minecraft.server.level.ServerPlayer viewer) {
-        boolean inspecting = AdminInspectSessions.isInspecting(viewer.m_20148_());
-        int dividerY = inspecting ? 52 : 38;
-        return dividerY + 10;
+    public static PreviewSlot previewAnchor() {
+        int width = CnpcPlayerPreview.SLOT_W;
+        int height = CnpcPlayerPreview.SLOT_H;
+        int x = CnpcPlayerPreview.slotX();
+        int contentBottom = H - FOOTER_RESERVE;
+        int y = CONTENT_TOP + Math.max(0, (contentBottom - CONTENT_TOP - height) / 2);
+        if (x < M) {
+            x = M;
+        }
+        int maxY = H - M - height;
+        if (y > maxY) {
+            y = Math.max(M, maxY);
+        }
+        if (y < M) {
+            y = M;
+        }
+        return new PreviewSlot(x, y, width, height);
     }
 
     /** First Y for lists, buttons, or grids directly under an info block (left column). */
@@ -506,29 +542,29 @@ public final class CnpcGuiSupport {
         return bodyBelowInfo(infoY);
     }
 
-    /** @see CnpcPlayerPreview#paint(ServerPlayer, ICustomGui, int) */
-    public static void paintPlayerPreview(ServerPlayer player, ICustomGui gui, int x, int y) {
-        CnpcPlayerPreview.paint(player, gui, ID_ENTITY_PREVIEW, x, y);
+    /** Preview at {@link #previewAnchor()}. Callers do not pass a position. */
+    public static void paintPlayerPreview(ServerPlayer player, ICustomGui gui) {
+        CnpcPlayerPreview.paint(player, gui);
     }
 
-    public static void paintPlayerPreviewSlot(ServerPlayer player, ICustomGui gui, int anchorY) {
-        CnpcPlayerPreview.paint(player, gui, anchorY);
+    public static void paintPlayerPreviewSlot(ServerPlayer player, ICustomGui gui) {
+        paintPlayerPreview(player, gui);
     }
 
     /**
      * Head-part preview uses the viewer's own entity, not a CNPC clone.
-     * Layout Y still follows the viewer so the slot clears the notice band.
+     * The slot is still {@link #previewAnchor()}.
      */
     public static void paintLivePlayerPreview(ServerPlayer viewer, ICustomGui gui) {
         if (viewer != null) {
-            CnpcPlayerPreview.paintLive(viewer, gui, previewAnchorY(viewer));
+            CnpcPlayerPreview.paintLive(viewer, gui);
         }
     }
 
-    /** Paint preview last at {@link #previewAnchorY(ServerPlayer)} (ProfTools-style). */
+    /** Paint preview last at {@link #previewAnchor()}. */
     public static void paintSubjectPreview(ServerPlayer subject, ICustomGui gui, ServerPlayer layoutViewer) {
         if (subject != null && layoutViewer != null) {
-            paintPlayerPreviewSlot(subject, gui, previewAnchorY(layoutViewer));
+            paintPlayerPreviewSlot(subject, gui);
         }
     }
 

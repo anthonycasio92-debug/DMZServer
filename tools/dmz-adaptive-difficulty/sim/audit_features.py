@@ -1806,7 +1806,13 @@ def main() -> int:
           and "m_20206_()" in preview
           and "REF_PLAYER_HEIGHT = 1.8f" in preview
           and "offsetY" in preview
-          and "scale / PREVIEW_SCALE" in preview)
+          and "scale / PREVIEW_SCALE" in preview
+          and "slot / (float) SLOT_H" in preview
+          and "SLOT_GAP = 12" in preview
+          and "previewAnchor()" in preview
+          and "previewAnchor()" in layout_support
+          and "PREVIEW_GAP = 12" in layout_support
+          and "CONTENT_TOP = 48" in layout_support)
     check("pending notice reserves window height",
           "FLASH_MAX_H = 56" in layout_support
           and "flashReserve" in layout_support
