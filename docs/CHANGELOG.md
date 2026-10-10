@@ -1,6 +1,14 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.70**.
+What changed from **4.5.147** through **4.6.71**.
+
+## Config editor confirms, then saves
+
+`/lm admin config` opens Difficulty, Progression, Character services, and Saga reset. Fields still come from the live objects. A change shows the old value and the new one before it is written. The file is copied to `.bak` once per session, the change is appended to `config-audit.log`, then the file is saved and reloaded. Numbers have minus and plus. Enum values cycle. Rivalry and sparring record files stay closed. Currency, AI, boss, elite, evolution, telemetry, and tier are registered for a later pass.
+
+Head parts no longer has a Body page. Each part is On or Off.
+
+Saga reset still charges the saga base plus your level times 10 Ancient Coins, and that price is on every row.
 
 ## Production menus share one look
 

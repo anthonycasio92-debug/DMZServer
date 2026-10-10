@@ -1,20 +1,29 @@
 package com.dbzlegacy.adaptivedifficulty.config.editor;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
-import com.dbzlegacy.adaptivedifficulty.character.CharacterServicesConfig;
-import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
-import com.dbzlegacy.adaptivedifficulty.quest.SagaResetConfig;
+import com.dbzlegacy.adaptivedifficulty.config.ConfigPaths;
+import com.dbzlegacy.adaptivedifficulty.config.ConfigRegistry;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.function.Supplier;
 
 /**
@@ -27,6 +36,8 @@ public final class ConfigEditor {
     /** Scroll lines stay under the CNPC 64-character trim. */
     private static final int LINE_MAX = 60;
     private static final int LIST_CAP = 200;
+    private static final Set<Path> BACKED_THIS_SESSION = new HashSet<>();
+    private static final Map<UUID, Proposal> PENDING = new HashMap<>();
 
     private ConfigEditor() {}
 
@@ -34,7 +45,27 @@ public final class ConfigEditor {
         BOOLEAN, NUMBER, TEXT, ENUM, GROUP, LIST, MAP, OTHER
     }
 
-    public record Root(String id, String title, String fileName, Supplier<Object> target, Runnable persist) {}
+    public record Root(
+            String id,
+            String title,
+            String fileName,
+            Supplier<Object> target,
+            Runnable persist,
+            Set<String> rootFields) {}
+
+    /** A change waiting on the confirm page. {@code mode} is set, add, or remove. */
+    public record Proposal(String rootId, String path, String raw, String mode, String addKey) {}
+
+    /** Player-facing preview. {@code error} is set when the typed value cannot be saved. */
+    public record ChangePreview(String error, String sentence) {
+        public static ChangePreview ok(String sentence) {
+            return new ChangePreview(null, sentence);
+        }
+
+        public static ChangePreview bad(String error) {
+            return new ChangePreview(error, null);
+        }
+    }
 
     public record Entry(String line, String path, Kind kind) {}
 
@@ -44,35 +75,16 @@ public final class ConfigEditor {
 
     public static List<Root> roots() {
         List<Root> roots = new ArrayList<>();
-        roots.add(new Root(
-                "difficulty",
-                "Legacy Mechanics",
-                "legacymechanics.json",
-                DifficultyConfig::get,
-                () -> {
-                    DifficultyConfig.sanitizeLive();
-                    DifficultyConfig.save();
-                }));
-        roots.add(new Root(
-                "character",
-                "Character services",
-                "character-services.json",
-                CharacterServicesConfig::get,
-                () -> {
-                    if (!CharacterServicesConfig.save()) {
-                        throw new IllegalStateException("character-services save failed");
-                    }
-                }));
-        roots.add(new Root(
-                "saga",
-                "Saga reset",
-                "saga-reset.json",
-                SagaResetConfig::get,
-                () -> {
-                    if (!SagaResetConfig.save()) {
-                        throw new IllegalStateException("saga-reset save failed");
-                    }
-                }));
+        for (ConfigRegistry.Module module : ConfigRegistry.menuModules()) {
+            String fileName = module.file() == null ? module.id() : module.file().getFileName().toString();
+            roots.add(new Root(
+                    module.id(),
+                    module.title(),
+                    fileName,
+                    module.instance(),
+                    module.save(),
+                    module.rootFields()));
+        }
         return roots;
     }
 
@@ -101,7 +113,12 @@ public final class ConfigEditor {
             return listEntries(path, list, valueType(located.field, 0));
         }
         if (isGroup(value.getClass())) {
-            return fieldEntries(path, value);
+            Set<String> only = null;
+            if (path == null || path.isEmpty()) {
+                Root root = root(rootId);
+                only = root == null ? null : root.rootFields();
+            }
+            return fieldEntries(path, value, only);
         }
         return List.of();
     }
@@ -180,6 +197,11 @@ public final class ConfigEditor {
 
     /** @return a player-facing error, or null when the value was saved */
     public static String apply(String rootId, String path, String raw) {
+        return apply(rootId, path, raw, "staff");
+    }
+
+    /** @return a player-facing error, or null when the value was saved */
+    public static String apply(String rootId, String path, String raw, String actor) {
         Root root = root(rootId);
         if (root == null) {
             return "That config is not editable.";
@@ -191,6 +213,7 @@ public final class ConfigEditor {
         if (isBlocked(located.field)) {
             return "The admin permission stays in the config file.";
         }
+        String before = located.value == null ? "empty" : String.valueOf(located.value);
         try {
             if (located.key != null) {
                 int typeIndex = located.container instanceof List<?> ? 0 : 1;
@@ -225,11 +248,17 @@ public final class ConfigEditor {
                     AdaptiveDifficultyMod.MOD_ID, rootId, path, e.toString());
             return "That setting couldn't be changed.";
         }
-        return persist(root);
+        String after = raw == null ? "" : raw.trim();
+        return persist(root, actor, path, before, after);
     }
 
     /** @return a player-facing error, or null when the boolean was flipped and saved */
     public static String toggle(String rootId, String path) {
+        return toggle(rootId, path, "staff");
+    }
+
+    /** @return a player-facing error, or null when the boolean was flipped and saved */
+    public static String toggle(String rootId, String path, String actor) {
         Located located = locate(rootId, path);
         if (located == null || located.value == null) {
             return "That setting is not on this config.";
@@ -237,11 +266,16 @@ public final class ConfigEditor {
         if (!(located.value instanceof Boolean current)) {
             return "That setting is not a switch.";
         }
-        return apply(rootId, path, Boolean.toString(!current));
+        return apply(rootId, path, Boolean.toString(!current), actor);
     }
 
     /** @return a player-facing error, or null when the entry was removed and saved */
     public static String remove(String rootId, String path) {
+        return remove(rootId, path, "staff");
+    }
+
+    /** @return a player-facing error, or null when the entry was removed and saved */
+    public static String remove(String rootId, String path, String actor) {
         Root root = root(rootId);
         if (root == null) {
             return "That config is not editable.";
@@ -250,6 +284,7 @@ public final class ConfigEditor {
         if (located == null || located.key == null || located.field == null || located.owner == null) {
             return "Select an entry to remove.";
         }
+        String before = located.value == null ? "empty" : String.valueOf(located.value);
         try {
             if (located.container instanceof Map<?, ?>) {
                 Map<String, Object> map = mutableMap(located.field, located.owner);
@@ -268,11 +303,16 @@ public final class ConfigEditor {
         } catch (ReflectiveOperationException e) {
             return "That entry couldn't be removed.";
         }
-        return persist(root);
+        return persist(root, actor, path, before, "(removed)");
     }
 
     /** @return a player-facing error, or null when the entry was added and saved */
     public static String add(String rootId, String path, String key, String raw) {
+        return add(rootId, path, key, raw, "staff");
+    }
+
+    /** @return a player-facing error, or null when the entry was added and saved */
+    public static String add(String rootId, String path, String key, String raw, String actor) {
         Root root = root(rootId);
         if (root == null) {
             return "That config is not editable.";
@@ -303,7 +343,129 @@ public final class ConfigEditor {
         } catch (ReflectiveOperationException e) {
             return "That entry couldn't be added.";
         }
-        return persist(root);
+        String label = key == null || key.isBlank() ? raw : key.trim() + "=" + raw;
+        return persist(root, actor, path, "(added)", label);
+    }
+
+    public static void stage(UUID player, Proposal proposal) {
+        if (player != null && proposal != null) {
+            PENDING.put(player, proposal);
+        }
+    }
+
+    public static ChangePreview preview(UUID player) {
+        Proposal proposal = player == null ? null : PENDING.get(player);
+        if (proposal == null) {
+            return ChangePreview.bad("That change expired. Pick the setting again.");
+        }
+        if ("remove".equals(proposal.mode())) {
+            return ChangePreview.ok("Remove " + displayName(leafName(proposal.path()))
+                    + ". Current value: " + currentText(proposal.rootId(), proposal.path()) + ".");
+        }
+        if ("add".equals(proposal.mode())) {
+            String name = proposal.addKey() == null || proposal.addKey().isBlank()
+                    ? proposal.raw()
+                    : proposal.addKey() + " = " + proposal.raw();
+            return ChangePreview.ok("Add " + name + ".");
+        }
+        return describeSet(proposal.rootId(), proposal.path(), proposal.raw());
+    }
+
+    public static String commit(UUID player, String actor) {
+        Proposal proposal = player == null ? null : PENDING.remove(player);
+        if (proposal == null) {
+            return "That change expired. Pick the setting again.";
+        }
+        String who = actor == null || actor.isBlank() ? "staff" : actor;
+        return switch (proposal.mode()) {
+            case "add" -> add(proposal.rootId(), proposal.path(), proposal.addKey(), proposal.raw(), who);
+            case "remove" -> remove(proposal.rootId(), proposal.path(), who);
+            default -> apply(proposal.rootId(), proposal.path(), proposal.raw(), who);
+        };
+    }
+
+    /** Next number in the same direction as {@code direction} ({@code -1} or {@code 1}), not saved yet. */
+    public static String stepNumber(String rootId, String path, int direction) {
+        Located located = locate(rootId, path);
+        if (located == null || !(located.value instanceof Number number)) {
+            return null;
+        }
+        int dir = direction < 0 ? -1 : 1;
+        Class<?> type = located.field == null ? number.getClass() : located.field.getType();
+        if (type == double.class || type == Double.class || type == float.class || type == Float.class) {
+            double step = Math.abs(number.doubleValue()) >= 20.0 ? 1.0 : 0.1;
+            double next = number.doubleValue() + dir * step;
+            if (Double.isNaN(next) || Double.isInfinite(next)) {
+                return null;
+            }
+            String text = String.format(Locale.ROOT, "%.4f", next);
+            while (text.contains(".") && (text.endsWith("0") || text.endsWith("."))) {
+                text = text.substring(0, text.length() - 1);
+            }
+            return text;
+        }
+        return Long.toString(number.longValue() + dir);
+    }
+
+    /** Next enum name, not saved yet. */
+    public static String nextEnumValue(String rootId, String path) {
+        Located located = locate(rootId, path);
+        if (located == null || located.field == null || !located.field.getType().isEnum()) {
+            return null;
+        }
+        Object[] constants = located.field.getType().getEnumConstants();
+        if (constants == null || constants.length == 0) {
+            return null;
+        }
+        int index = 0;
+        for (int i = 0; i < constants.length; i++) {
+            if (constants[i].equals(located.value) || constants[i].toString().equals(String.valueOf(located.value))) {
+                index = i;
+                break;
+            }
+        }
+        return constants[(index + 1) % constants.length].toString();
+    }
+
+    private static ChangePreview describeSet(String rootId, String path, String raw) {
+        Located located = locate(rootId, path);
+        if (located == null) {
+            return ChangePreview.bad("That setting is not on this config.");
+        }
+        try {
+            Object next;
+            if (located.key != null) {
+                int typeIndex = located.container instanceof List<?> ? 0 : 1;
+                next = coerce(valueType(located.field, typeIndex), raw);
+            } else if (located.field != null) {
+                if ("*".equals(raw == null ? "" : raw.trim())
+                        && located.field.getName().toLowerCase(Locale.ROOT).contains("permission")) {
+                    return ChangePreview.bad("A permission node can't be *.");
+                }
+                next = coerce(located.field.getGenericType(), raw);
+            } else {
+                return ChangePreview.bad("That setting can't be edited here.");
+            }
+            String before = located.value == null ? "empty" : String.valueOf(located.value);
+            return ChangePreview.ok(displayName(leafName(path)) + ": " + before + " → " + next);
+        } catch (NumberFormatException e) {
+            return ChangePreview.bad("That needs to be a number.");
+        } catch (IllegalArgumentException e) {
+            String message = e.getMessage();
+            return ChangePreview.bad(message == null || message.isBlank() ? "That value didn't work." : message);
+        }
+    }
+
+    private static String leafName(String path) {
+        if (path == null || path.isEmpty()) {
+            return "Setting";
+        }
+        int bracket = path.lastIndexOf('[');
+        if (path.endsWith("]") && bracket >= 0) {
+            return path.substring(bracket + 1, path.length() - 1);
+        }
+        int dot = path.lastIndexOf('.');
+        return dot < 0 ? path : path.substring(dot + 1);
     }
 
     public static String parentPath(String path) {
@@ -318,9 +480,17 @@ public final class ConfigEditor {
         return dot < 0 ? "" : path.substring(0, dot);
     }
 
-    private static String persist(Root root) {
+    private static String persist(Root root, String actor, String path, String before, String after) {
+        ConfigRegistry.Module module = ConfigRegistry.find(root.id());
         try {
+            if (module != null) {
+                backupOnce(module.file());
+            }
             root.persist().run();
+            if (module != null && module.reload() != null) {
+                module.reload().run();
+            }
+            writeAudit(actor, root.id(), path, before, after);
             return null;
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.warn(
@@ -330,11 +500,42 @@ public final class ConfigEditor {
         }
     }
 
-    private static List<Entry> fieldEntries(String path, Object value) {
+    /** Copy the json once per server session before the first write. */
+    private static void backupOnce(Path file) throws IOException {
+        if (file == null || !Files.isRegularFile(file)) {
+            return;
+        }
+        Path normal = file.toAbsolutePath().normalize();
+        if (BACKED_THIS_SESSION.contains(normal)) {
+            return;
+        }
+        Path bak = normal.resolveSibling(normal.getFileName().toString() + ".bak");
+        Files.copy(normal, bak, StandardCopyOption.REPLACE_EXISTING);
+        BACKED_THIS_SESSION.add(normal);
+    }
+
+    private static void writeAudit(String actor, String module, String path, String before, String after) {
+        try {
+            Path log = ConfigPaths.dataDir().resolve("config-audit.log");
+            Files.createDirectories(log.getParent());
+            String who = actor == null || actor.isBlank() ? "staff" : actor;
+            String line = Instant.now() + " " + who + " " + module + " " + path
+                    + " " + before + " -> " + after + System.lineSeparator();
+            Files.writeString(log, line, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+        } catch (IOException e) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] config audit log failed: {}", AdaptiveDifficultyMod.MOD_ID, e.toString());
+        }
+    }
+
+    private static List<Entry> fieldEntries(String path, Object value, Set<String> only) {
         List<Entry> entries = new ArrayList<>();
         List<Field> fields = new ArrayList<>();
         for (Field field : value.getClass().getFields()) {
             if (skipField(field)) {
+                continue;
+            }
+            if ((path == null || path.isEmpty()) && only != null && !only.contains(field.getName())) {
                 continue;
             }
             fields.add(field);
@@ -390,8 +591,20 @@ public final class ConfigEditor {
         return entries;
     }
 
+    /** Turn {@code enableProgression} into {@code Enable Progression}. Names with spaces stay. */
+    public static String displayName(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return "";
+        }
+        if (raw.indexOf(' ') >= 0) {
+            return raw;
+        }
+        String spaced = raw.replaceAll("([a-z0-9])([A-Z])", "$1 $2").replace('_', ' ');
+        return Character.toUpperCase(spaced.charAt(0)) + spaced.substring(1);
+    }
+
     private static String line(String name, String summary) {
-        String label = name == null ? "" : name;
+        String label = displayName(name);
         String detail = summary == null ? "" : summary;
         String text = "§f" + label + " §8· §7" + detail;
         if (text.length() <= LINE_MAX) {
@@ -515,7 +728,12 @@ public final class ConfigEditor {
 
     private static boolean skipField(Field field) {
         int mod = field.getModifiers();
-        if (Modifier.isStatic(mod) || Modifier.isTransient(mod) || field.isSynthetic()) {
+        if (Modifier.isStatic(mod) || Modifier.isFinal(mod) && Modifier.isStatic(mod)
+                || Modifier.isTransient(mod) || field.isSynthetic()) {
+            return true;
+        }
+        String typeName = field.getType().getName();
+        if (typeName.endsWith("Logger") || typeName.contains("slf4j") || typeName.contains("log4j")) {
             return true;
         }
         return isBlocked(field);

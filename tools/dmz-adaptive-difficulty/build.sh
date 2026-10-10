@@ -408,6 +408,13 @@ merge_onto_base_jar() {
     "$merge/com/dbzlegacy/adaptivedifficulty/mixin/ResourcesPoolClampMixin.class" \
     "$merge/com/dbzlegacy/adaptivedifficulty/mixin/ResourcesLoadClampMixin.class" \
     "$merge/com/dbzlegacy/adaptivedifficulty/mixin/DmzStatsResetAbsorptionWipeMixin.class"
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/config/ConfigRegistry.class" ]]; then
+    mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/config"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/config/ConfigRegistry.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/config/ConfigRegistry.class"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/config/ConfigRegistry\$"*.class \
+      "$merge/com/dbzlegacy/adaptivedifficulty/config/" 2>/dev/null || true
+  fi
   if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/config/DifficultyConfig.class" ]]; then
     mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/config"
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/config/DifficultyConfig.class" \
