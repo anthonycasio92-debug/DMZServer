@@ -18,7 +18,7 @@ public final class CnpcStyledTestHub {
         if (player == null) {
             return;
         }
-        int height = CnpcGuiSupport.suggestHeight(400);
+        int height = CnpcGuiSupport.suggestHeight(430);
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_HUB, CnpcGuiSupport.W, height,
                 CnpcStyledTestHub::paint);
     }
@@ -56,6 +56,7 @@ public final class CnpcStyledTestHub {
             y = currentButton(gui, player, y, CnpcGuiSupport.ID_GRID_BASE + 6, "Skills", "skills", "core");
         }
         y = currentButton(gui, player, y, CnpcGuiSupport.ID_GRID_BASE + 7, "Staff Admin", "admin", "main");
+        y = currentButton(gui, player, y, CnpcGuiSupport.ID_GRID_BASE + 8, "Saga Reset", "saga", "main");
 
         CnpcGuiSupport.footerCloseRefresh(player, gui, y, () -> open(player));
         CnpcGuiSupport.paintSystemMainPreview(CnpcGuiSupport.target(player), gui, player);

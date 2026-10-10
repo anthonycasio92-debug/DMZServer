@@ -2174,6 +2174,20 @@ def main() -> int:
           "CnpcUltraStyle.CONFIRM" in bone_gui
           and "ultraPartCaption" in bone_gui)
 
+    print("\n=== Saga reset uses loaded sagas (4.6.63) ===")
+    saga_service = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/quest/SagaResetService.java")
+    saga_config = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/quest/SagaResetConfig.java")
+    saga_gui = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmSagaGui.java")
+    check("saga reset lists live sagas and defaults the cost",
+          "QuestRegistry.getAllSagas" in saga_service
+          and "defaultBaseCost" in saga_config
+          and "costFor" in saga_config
+          and "resetSaga" in saga_service
+          and "CnpcLmSagaGui.open" in read(cnpc_dir / "CnpcLmGui.java")
+          and "SagaResetConfig" in build_sh
+          and "SagaResetService" in build_sh
+          and "scrollPickList" in saga_gui)
+
     print("\n=== Summary ===")
     for w in warns:
         print(f"WARN: {w}")

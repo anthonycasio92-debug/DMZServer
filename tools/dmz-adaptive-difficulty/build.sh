@@ -253,6 +253,15 @@ merge_onto_base_jar() {
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/character/CharacterServicesSystem.class" \
       "$merge/com/dbzlegacy/adaptivedifficulty/character/CharacterServicesSystem.class"
   fi
+  for class in SagaResetConfig SagaResetService; do
+    if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/quest/${class}.class" ]]; then
+      mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/quest"
+      cp "$OUT/com/dbzlegacy/adaptivedifficulty/quest/${class}.class" \
+        "$merge/com/dbzlegacy/adaptivedifficulty/quest/${class}.class"
+      cp "$OUT/com/dbzlegacy/adaptivedifficulty/quest/${class}\$"*.class \
+        "$merge/com/dbzlegacy/adaptivedifficulty/quest/" 2>/dev/null || true
+    fi
+  done
   for class in CharacterServicesAccess CharacterServicesPermissionBootstrap DmzFightingClassStatsSync \
       DmzClassCommandApply RaceChangeCreationFlow CosmeticHeadBoneService CosmeticHeadBoneCatalog \
       RaceHeadBoneSync HeadPartPieces; do

@@ -38,6 +38,7 @@ public final class MechanicsCommands {
         return root.executes(ctx -> open(ctx.getSource(), "main"))
                 .then(Commands.m_82127_("gui").executes(ctx -> open(ctx.getSource(), "main")))
                 .then(Commands.m_82127_("help").executes(ctx -> playerHelp(ctx.getSource())))
+                .then(Commands.m_82127_("saga").executes(ctx -> openSystem(ctx.getSource(), "saga")))
                 .then(Commands.m_82127_("open")
                         .then(LmCommandSuggestions.word("system", LmCommandSuggestions.LM_OPEN_SYSTEMS)
                                 .executes(ctx -> openSystem(
@@ -257,6 +258,11 @@ public final class MechanicsCommands {
                 com.dbzlegacy.adaptivedifficulty.progression.shop.SkillCheckService.open(player, "core");
                 yield true;
             }
+            case "saga", "sagareset", "saga_reset" -> {
+                com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcUltraPreview.leave(player);
+                com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcLmGui.open(player, "saga", "main");
+                yield true;
+            }
             case "hub", "main", "help", "lm", "legacymechanics" -> {
                 MechanicsMenu.open(player, "main");
                 yield true;
@@ -264,7 +270,7 @@ public final class MechanicsCommands {
             default -> {
                 player.m_213846_(Component.m_237113_(LmCommandMessages.unknownOpenTarget(
                         s,
-                        "difficulty, rival, spar, prestige, skillcheck, character, progression, skills")));
+                        "difficulty, rival, spar, prestige, skillcheck, character, saga, progression, skills")));
                 yield false;
             }
         };

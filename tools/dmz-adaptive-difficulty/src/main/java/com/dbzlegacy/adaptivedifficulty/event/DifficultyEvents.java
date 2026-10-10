@@ -102,6 +102,7 @@ public final class DifficultyEvents {
         try {
             com.dbzlegacy.adaptivedifficulty.progression.race.RaceLockConfig.load();
             com.dbzlegacy.adaptivedifficulty.character.CharacterServicesConfig.load();
+            com.dbzlegacy.adaptivedifficulty.quest.SagaResetConfig.load();
             com.dbzlegacy.adaptivedifficulty.character.CharacterServicesPermissionBootstrap.register();
             com.dbzlegacy.adaptivedifficulty.character.CharacterServicesStore.get().load();
         } catch (Throwable ignored) {
