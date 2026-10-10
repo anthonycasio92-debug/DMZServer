@@ -53,7 +53,7 @@ public final class CnpcLmCharacterGui {
             int bonePage = parseBonePage(pageKey);
             int boneExtra = CnpcGuiSupport.TAB_BAR_H;
             CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CHARACTER, CnpcGuiSupport.W,
-                    CnpcGuiSupport.heightForScrollPage(420 + boneExtra + CnpcGuiSupport.ROW_STEP),
+                    CnpcGuiSupport.heightForScrollPage(420 + boneExtra),
                     (pl, gui) -> paintBones(pl, gui, bonePage));
             return;
         }
@@ -232,10 +232,6 @@ public final class CnpcLmCharacterGui {
         }
         y += CnpcGuiSupport.ROW_STEP;
         y = paintCharacterActions(player, gui, y);
-        CnpcGuiSupport.buttonSmallFull(gui, 67, "§7Reset saga progress →",
-                CnpcGuiSupport.M, y, CnpcGuiSupport.textBandWidth(),
-                () -> CnpcLmSagaGui.open(player, "reset"));
-        y += CnpcGuiSupport.ROW_STEP;
         CnpcGuiSupport.navSystemRoot(player, gui, y);
         CnpcGuiSupport.paintLivePlayerPreview(player, gui);
     }

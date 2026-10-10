@@ -10,7 +10,7 @@ public final class CnpcLmAdminGui {
     private CnpcLmAdminGui() {}
 
     public static void open(ServerPlayer player, String page) {
-        CnpcUltraStyle.withAccent(CnpcUltraStyle.ACCENT_CHARACTER, () -> openAdmin(player, page));
+        CnpcUltraStyle.withAccent(CnpcUltraStyle.ACCENT_ADMIN, () -> openAdmin(player, page));
     }
 
     private static void openAdmin(ServerPlayer player, String page) {

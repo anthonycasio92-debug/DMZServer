@@ -2304,11 +2304,14 @@ def main() -> int:
           and "ACCENT_RIVAL" in test_hub
           and "ACCENT_SAGA" in test_hub)
 
-    check("index headers stay gold while buttons use destination accents",
+    skill_gui = read(cnpc_dir / "CnpcLmSkillCheckGui.java")
+    check("index headers stay gold while each menu uses its accent",
           "withAccent(CnpcUltraStyle.ACCENT_CHARACTER" in hub_gui
-          and "withAccent(CnpcUltraStyle.ACCENT_CHARACTER" in admin_gui
+          and "withAccent(CnpcUltraStyle.ACCENT_ADMIN" in admin_gui
+          and "withAccent(CnpcUltraStyle.ACCENT_CHARACTER" not in admin_gui
           and "withAccent" in test_hub
-          and "ACCENT_CHARACTER" in test_hub)
+          and "ACCENT_CHARACTER" in test_hub
+          and "withAccent(CnpcUltraStyle.ACCENT_PROGRESSION" in skill_gui)
 
     print("\n=== Saga reset uses loaded sagas (4.6.69) ===")
     saga_service = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/quest/SagaResetService.java")
@@ -2333,7 +2336,8 @@ def main() -> int:
           and "sagas|Sagas" in saga_gui
           and "reset|Reset" in saga_gui
           and "characterTabs" not in saga_gui
-          and "Reset saga progress" in character_gui
+          and "Reset saga progress" in saga_gui
+          and "Reset saga progress" not in character_gui
           and "bones|Head parts" in character_gui
           and "reskin|Reskin" in character_gui
           and "saga|Saga Reset" not in character_gui

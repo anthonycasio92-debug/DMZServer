@@ -57,7 +57,7 @@ public final class CnpcLmSagaGui {
             int pager = pages > 1 ? 1 : 0;
             int designed = 168 + CnpcGuiSupport.TAB_BAR_H
                     + shown * (CnpcGuiSupport.BTN_H + CnpcRowList.ROW_GAP)
-                    + pager * CnpcGuiSupport.ROW_STEP + CnpcGuiSupport.ROW_STEP;
+                    + pager * CnpcGuiSupport.ROW_STEP + CnpcGuiSupport.ROW_STEP * 2;
             int pageIndex = pg;
             CnpcGuiSupport.showSized(player, CnpcLmGui.ID_SAGA, CnpcGuiSupport.W,
                     CnpcGuiSupport.window(designed), (pl, gui) -> paintHome(pl, gui, pageIndex));
@@ -109,8 +109,8 @@ public final class CnpcLmSagaGui {
         infoY = sagaTabs(player, gui, infoY, "sagas");
         List<String> info = new ArrayList<>();
         info.add(offers.isEmpty()
-                ? "No sagas are loaded."
-                : offers.size() + " loaded. Reset is its own page.");
+                ? "No sagas are loaded. Ask staff to load one, then open this page again."
+                : offers.size() + " loaded. Reset saga progress replays one.");
         int y = CnpcGuiSupport.bodyBelowInfo(
                 CnpcGuiSupport.paintInfoBeforePickList(gui, infoY, info, 1));
         y = CnpcRowList.paintRow(gui, 184, y, "Sagas",
@@ -129,6 +129,10 @@ public final class CnpcLmSagaGui {
             }
             y += CnpcGuiSupport.ROW_STEP;
         }
+        CnpcGuiSupport.buttonSmallFull(gui, 66, CnpcUltraStyle.ACCENT_SAGA + "Reset saga progress",
+                CnpcGuiSupport.M, y, CnpcGuiSupport.textBandWidth(),
+                () -> open(player, "reset"));
+        y += CnpcGuiSupport.ROW_STEP;
         CnpcGuiSupport.navSystemRoot(player, gui, y);
     }
 

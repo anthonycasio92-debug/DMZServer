@@ -169,7 +169,7 @@ public final class CnpcLmSparGui {
             footer(player, gui, row + CnpcGuiSupport.ROW_STEP, "mentor");
         } else {
             gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER,
-                    CnpcUltraStyle.SUBTITLE + "No bond invites waiting.",
+                    CnpcUltraStyle.SUBTITLE + "No bond invites waiting. Send one from Training bonds, or wait for someone to invite you.",
                     CnpcGuiSupport.M, listY + 4, CnpcGuiSupport.textBandWidth(), 14);
             footer(player, gui, listY + 28, "mentor");
         }
@@ -498,7 +498,7 @@ public final class CnpcLmSparGui {
         int listY = CnpcGuiSupport.bodyBelowHeader(infoY);
         if (args == null || args.isEmpty()) {
             gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER,
-                    CnpcUltraStyle.SUBTITLE + "No bond invites waiting.",
+                    CnpcUltraStyle.SUBTITLE + "No bond invites waiting. Send one from Training bonds, or wait for someone to invite you.",
                     CnpcGuiSupport.M, listY + 4, CnpcGuiSupport.textBandWidth(), 14);
             footer(player, gui, listY + 28, back);
             return;
@@ -515,7 +515,7 @@ public final class CnpcLmSparGui {
         int listY = CnpcGuiSupport.bodyBelowHeader(infoY);
         if (cards.isEmpty()) {
             gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER,
-                    CnpcUltraStyle.SUBTITLE + "No apprentices to release.",
+                    CnpcUltraStyle.SUBTITLE + "No apprentices to release. Take an apprentice from Training bonds first.",
                     CnpcGuiSupport.M, listY + 4, CnpcGuiSupport.textBandWidth(), 14);
             footer(player, gui, listY + 28, "mentor");
             return;

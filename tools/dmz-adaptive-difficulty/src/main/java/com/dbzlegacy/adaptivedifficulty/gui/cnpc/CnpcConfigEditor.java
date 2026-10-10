@@ -174,7 +174,8 @@ public final class CnpcConfigEditor {
             if (!query.isBlank() && countFields(rows) == 0) {
                 y += CnpcRowList.ROW_GAP;
             } else if (rows.isEmpty()) {
-                y = note(gui, y, CnpcUltraStyle.SUBTITLE + "Nothing is listed here yet.");
+                y = note(gui, y, CnpcUltraStyle.SUBTITLE
+                        + "Nothing is listed here yet. Pick another module, or type a field name in Search.");
             } else {
                 int pages = pages(rows.size());
                 int current = Math.min(requested, pages - 1);
@@ -260,7 +261,8 @@ public final class CnpcConfigEditor {
             int pages = pages(rows.size());
             int current = rows.isEmpty() ? 0 : Math.min(requested, pages - 1);
             if (rows.isEmpty()) {
-                y = note(gui, y, CnpcUltraStyle.SUBTITLE + "Nothing is listed here yet.");
+                y = note(gui, y, CnpcUltraStyle.SUBTITLE
+                        + "Nothing is listed here yet. Go back and pick a list that has entries.");
             } else {
                 int from = current * PAGE_SIZE;
                 int to = Math.min(rows.size(), from + PAGE_SIZE);
@@ -537,14 +539,19 @@ public final class CnpcConfigEditor {
         field.setText(ConfigEditor.search(player.m_20148_()));
         press(gui, ID_FILTER, CnpcUltraStyle.SUBTITLE + "[Filter]",
                 CnpcGuiSupport.M + CnpcGuiSupport.textBandWidth() - 64, y, 64, CnpcGuiSupport.BTN_H, player,
-                () -> open(player, firstPage(reopen)));
+                () -> {
+                    if (gui.getComponent(ID_SEARCH) instanceof ITextField current) {
+                        ConfigEditor.rememberSearch(player.m_20148_(), current.getText());
+                    }
+                    open(player, firstPage(reopen));
+                });
         return y + CnpcGuiSupport.BTN_H + CnpcRowList.ROW_GAP;
     }
 
     private static int paintMatch(ICustomGui gui, int y, String query, int count) {
         String line;
         if (query != null && !query.isBlank() && count == 0) {
-            line = "No fields match '" + trim(query, 24) + "'.";
+            line = "No fields match '" + trim(query, 24) + "'. Clear the search to see every field.";
         } else if (query != null && !query.isBlank()) {
             line = count + " fields match";
         } else {

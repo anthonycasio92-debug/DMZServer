@@ -583,7 +583,7 @@ public final class CnpcLmRivalGui {
         if (names == null || names.isEmpty()) {
             gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER,
                     "spectate".equals(action)
-                            ? CnpcUltraStyle.SUBTITLE + "No live challenge right now."
+                            ? CnpcUltraStyle.SUBTITLE + "No live challenge right now. Start one from Challenge, then come back to watch."
                             : CnpcUltraStyle.SUBTITLE + "Nobody else is online right now — try again when other players are on.",
                     CnpcGuiSupport.M, listY + 4, CnpcGuiSupport.textBandWidth(), 14);
             footer(player, gui, listY + 28, returnPage);
@@ -615,7 +615,7 @@ public final class CnpcLmRivalGui {
         List<String> cards = args;
         if (cards == null || cards.isEmpty()) {
             gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER,
-                    CnpcUltraStyle.SUBTITLE + "Nothing to choose yet — check back later.",
+                    CnpcUltraStyle.SUBTITLE + "Nothing to choose yet. Go back and pick an action that has options.",
                     CnpcGuiSupport.M, listY + 4, CnpcGuiSupport.textBandWidth(), 14);
             footer(player, gui, listY + 28, returnPage);
             return;
