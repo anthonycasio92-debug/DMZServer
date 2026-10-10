@@ -839,6 +839,11 @@ public final class DifficultyConfig {
         return INSTANCE;
     }
 
+    /** Field defaults for the editor. Does not replace the live config. */
+    public static DifficultyConfig freshDefaults() {
+        return new DifficultyConfig();
+    }
+
     /** Master gate used by events / scaling / rewards / player purchases. */
     public static boolean isEnabled() {
         return INSTANCE != null && INSTANCE.enabled;
