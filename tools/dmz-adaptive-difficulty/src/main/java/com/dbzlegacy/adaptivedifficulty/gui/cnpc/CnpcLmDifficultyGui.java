@@ -54,7 +54,7 @@ public final class CnpcLmDifficultyGui {
             case "admin" -> 300;
             default -> H;
         };
-        if ("main".equals(pageFinal) && CnpcUltraPreview.active(player)) {
+        if ("main".equals(pageFinal)) {
             designed += 16;
         }
         int height = CnpcGuiSupport.window(designed);
@@ -105,9 +105,7 @@ public final class CnpcLmDifficultyGui {
             lines.add("§8Scaled mobs can hurt other players nearby.");
         }
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX));
-        if (CnpcUltraPreview.active(player)) {
-            row = CnpcGuiSupport.paintSectionTag(gui, CnpcGuiSupport.ID_INLINE_NOTE, row, "Options");
-        }
+        row = CnpcGuiSupport.paintSectionTag(gui, CnpcGuiSupport.ID_INLINE_NOTE, row, "Options");
         CnpcGuiSupport.button(gui, 20, "§eTiers", CnpcGuiSupport.COL_L, row, () -> open(player, "tiers"));
         CnpcGuiSupport.button(gui, 21, "§dTitles", CnpcGuiSupport.COL_R, row, () -> open(player, "titles"));
         row += CnpcGuiSupport.ROW_STEP;

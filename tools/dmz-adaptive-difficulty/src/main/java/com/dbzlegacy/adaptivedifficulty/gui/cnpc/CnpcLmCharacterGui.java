@@ -38,13 +38,13 @@ public final class CnpcLmCharacterGui {
         }
         if (p.startsWith("bones:") || "bones".equals(p)) {
             int bonePage = parseBonePage(p);
-            int boneExtra = CnpcUltraPreview.active(player) ? CnpcGuiSupport.TAB_BAR_H : 0;
+            int boneExtra = CnpcGuiSupport.TAB_BAR_H;
             CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CHARACTER, CnpcGuiSupport.W,
                     CnpcGuiSupport.heightForScrollPage(420 + boneExtra),
                     (pl, gui) -> paintBones(pl, gui, bonePage));
             return;
         }
-        int tab = CnpcUltraPreview.active(player) ? CnpcGuiSupport.TAB_BAR_H : 0;
+        int tab = CnpcGuiSupport.TAB_BAR_H;
         int height = switch (p) {
             case "race", "class" -> CnpcGuiSupport.suggestHeight(280);
             case "reskin" -> CnpcGuiSupport.window(320 + tab);
@@ -69,7 +69,7 @@ public final class CnpcLmCharacterGui {
         infoY = characterTabs(player, gui, infoY, "services");
 
         List<String> lines = new ArrayList<>(CharacterServicesGuiApi.linesForPage(player, "main"));
-        String coinColor = CnpcUltraPreview.active(player) ? CnpcUltraStyle.ACCENT : "§6";
+        String coinColor = CnpcUltraStyle.ACCENT;
         lines.add(0, coinColor + "Ancient Coins §f" + ph.getOrDefault("ancient_coins", "0"));
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX));
 
@@ -226,10 +226,7 @@ public final class CnpcLmCharacterGui {
         infoY = characterTabs(player, gui, infoY, "bones");
         int y = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBeforePickList(gui, infoY,
                 CharacterServicesGuiApi.linesForPage(player, "bones:" + pg), 2));
-        boolean ultra = CnpcUltraPreview.active(player);
-        if (ultra) {
-            y = CnpcRowList.paintRow(gui, 184, y, HeadPartPieces.pageTitle(pg), "On " + worn, null);
-        }
+        y = CnpcRowList.paintRow(gui, 184, y, HeadPartPieces.pageTitle(pg), "On " + worn, null);
 
         if (pg == HeadPartPieces.PAGE_BODY) {
             List<String> names = HeadPartPieces.ultraScrollLines();
@@ -251,13 +248,7 @@ public final class CnpcLmCharacterGui {
                 String name = parts.length > 1 ? parts[1] : id;
                 String state = parts.length > 2 ? parts[2] : "";
                 String cost = parts.length > 3 ? parts[3] : "";
-                String caption = ultra
-                        ? ultraPartCaption(state, name, cost)
-                        : "E".equals(state)
-                                ? CnpcGuiStyle.toggleOn(name)
-                                : "L".equals(state)
-                                        ? CnpcGuiStyle.toggleOff(name + "  " + cost)
-                                        : CnpcGuiStyle.toggleOff(name);
+                String caption = ultraPartCaption(state, name, cost);
                 CnpcGuiSupport.buttonSmallFull(gui, CnpcGuiSupport.ID_GRID_BASE + i, caption,
                         CnpcGuiSupport.M, y, CnpcGuiSupport.textBandWidth(),
                         () -> CnpcGuiSupport.act(player,
@@ -267,8 +258,8 @@ public final class CnpcLmCharacterGui {
             }
         }
 
-        String raceDefault = ultra ? CnpcUltraStyle.CONFIRM + "Equip race default" : "§aEquip race default";
-        String natural = ultra ? CnpcUltraStyle.SUBTITLE + "Reset to natural look" : "§7Reset to natural look";
+        String raceDefault = CnpcUltraStyle.CONFIRM + "Equip race default";
+        String natural = CnpcUltraStyle.SUBTITLE + "Reset to natural look";
         CnpcGuiSupport.buttonSmall(gui, 60, raceDefault, CnpcGuiSupport.COL_L, y, CnpcGuiSupport.BTN_W,
                 () -> CnpcGuiSupport.act(
                         player,
@@ -282,13 +273,13 @@ public final class CnpcLmCharacterGui {
         y += CnpcGuiSupport.ROW_STEP;
         if (pg > 0) {
             String prev = pg == HeadPartPieces.PAGE_BODY ? "« Horns" : "« Head";
-            prev = ultra ? CnpcUltraStyle.SUBTITLE + prev : "§7" + prev;
+            prev = CnpcUltraStyle.SUBTITLE + prev;
             CnpcGuiSupport.buttonSmall(gui, 62, prev, CnpcGuiSupport.COL_L, y, 95,
                     () -> open(player, "bones:" + (pg - 1)));
         }
         if (pg + 1 < pages) {
             String next = pg == HeadPartPieces.PAGE_HEAD ? "Horns »" : "Body »";
-            next = ultra ? CnpcUltraStyle.SUBTITLE + next : "§7" + next;
+            next = CnpcUltraStyle.SUBTITLE + next;
             CnpcGuiSupport.buttonSmall(gui, 63, next, CnpcGuiSupport.COL_R, y, 95,
                     () -> open(player, "bones:" + (pg + 1)));
         }
@@ -300,7 +291,7 @@ public final class CnpcLmCharacterGui {
         CnpcGuiSupport.paintLivePlayerPreview(player, gui);
     }
 
-    /** On/off caption in the test-menu colors. Keeps {@code §lON } / {@code §lOFF } so the label is not cut. */
+    /** On/off caption. Keeps {@code §lON } / {@code §lOFF } so the label is not cut. */
     private static String ultraPartCaption(String state, String name, String cost) {
         if ("E".equals(state)) {
             return CnpcUltraStyle.CONFIRM + "§lON §r" + CnpcUltraStyle.BODY + name;
@@ -364,9 +355,6 @@ public final class CnpcLmCharacterGui {
     }
 
     private static int characterTabs(ServerPlayer player, ICustomGui gui, int y, String active) {
-        if (!CnpcUltraPreview.active(player)) {
-            return y;
-        }
         return CnpcGuiSupport.paintTabBar(gui, y, new String[] {
                 "services|Services", "reskin|Reskin", "bones|Headbones"
         }, active, action -> {

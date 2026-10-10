@@ -6,8 +6,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Staff audit of the DMZUltra CNPC colors.
- * {@code /lm admin testgui} turns it on. {@code /lm} and the other menus turn it off.
+ * Staff test-menu session. Colors are always the gold CNPC style.
+ * While this is on, Hub returns to {@link CnpcStyledTestHub}. {@code /lm} turns it off.
  */
 public final class CnpcUltraPreview {
     private static final Set<UUID> ACTIVE = ConcurrentHashMap.newKeySet();
@@ -44,7 +44,7 @@ public final class CnpcUltraPreview {
         PAINTING.remove();
     }
 
-    /** True only while painting a player who opened the staff test GUI. */
+    /** True while painting a player whose Hub should return to the test menu. */
     static boolean paintingUltra() {
         UUID id = PAINTING.get();
         return id != null && ACTIVE.contains(id);

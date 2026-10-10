@@ -76,7 +76,7 @@ public final class CnpcLmRivalGui {
     }
 
     private static int heightForPage(ServerPlayer player, String page) {
-        int extra = CnpcUltraPreview.active(player) && rivalTabs(page) ? CnpcGuiSupport.TAB_BAR_H : 0;
+        int extra = rivalTabs(page) ? CnpcGuiSupport.TAB_BAR_H : 0;
         if (recordsTab(page) != null) {
             return CnpcGuiSupport.window(440 + extra);
         }
@@ -104,9 +104,6 @@ public final class CnpcLmRivalGui {
     }
 
     private static int rivalTabBar(ServerPlayer player, ICustomGui gui, int y, String active) {
-        if (!CnpcUltraPreview.active(player)) {
-            return y;
-        }
         return CnpcGuiSupport.paintTabBar(gui, y, new String[] {
                 "records|Records", "requests|Requests", "actions|Actions"
         }, active, action -> {
