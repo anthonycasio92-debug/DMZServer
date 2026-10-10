@@ -2,6 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.gui.cnpc;
 
 import com.dbzlegacy.adaptivedifficulty.config.editor.ConfigEditor;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
+import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.server.level.ServerPlayer;
 import noppes.npcs.api.gui.ICustomGui;
@@ -12,7 +13,7 @@ import noppes.npcs.api.gui.ITextField;
  * and rival or sparring record files are never written from here.
  */
 public final class CnpcConfigEditor {
-    private static final int PAGE_SIZE = 3;
+    private static final int PAGE_SIZE = 2;
     private static final int ID_SEARCH_LABEL = 180;
     private static final int ID_SEARCH = 181;
     private static final int ID_MATCH = 182;
@@ -29,6 +30,11 @@ public final class CnpcConfigEditor {
     private static final int ID_VALUE = 470;
     private static final int ID_TEXT = 190;
     private static final int ID_TEXT_2 = 191;
+    private static final int ID_DESC = 500;
+    private static final int ID_UNDO = 520;
+    private static final int ID_GROUP = 540;
+    private static final int ID_RECENT = 560;
+    private static final int ID_CONFIRM = 37;
     private static final int ID_INFO = 210;
     private static final int INDENT = 12;
 
@@ -56,6 +62,10 @@ public final class CnpcConfigEditor {
             paintAdd(player, raw);
             return;
         }
+        if (raw.startsWith("review:")) {
+            paintReview(player, raw);
+            return;
+        }
         if (!raw.startsWith("list:")) {
             raw = "list:difficulty:0:";
         }
@@ -81,21 +91,37 @@ public final class CnpcConfigEditor {
                 y += CnpcRowList.ROW_GAP;
             } else {
                 String query = ConfigEditor.search(player.m_20148_());
-                List<ConfigEditor.Entry> fields = ConfigEditor.visibleFields(module, path, query);
-                y = paintMatch(gui, y, query, fields.size());
+                List<ListRow> rows = listRows(player, module, path, query);
+                int listed = query == null || query.isBlank()
+                        ? ConfigEditor.visibleFields(module, path, "").size()
+                        : countFields(rows);
+                y = paintMatch(gui, y, query, listed);
                 y = paintBanner(player, gui, y);
-                if (!query.isBlank() && fields.isEmpty()) {
+                if (query.isBlank() && ConfigEditor.fieldCount(module) > 30) {
+                    y = note(gui, y, CnpcUltraStyle.SUBTITLE + "30+ fields — type to filter.");
+                }
+                if (query.isBlank() && path.isEmpty()) {
+                    y = paintRecent(player, gui, y, module);
+                }
+                if (!query.isBlank() && countFields(rows) == 0) {
                     y += CnpcRowList.ROW_GAP;
-                } else if (fields.isEmpty()) {
+                } else if (rows.isEmpty()) {
                     y = note(gui, y, CnpcUltraStyle.SUBTITLE + "Nothing is listed here yet.");
                 } else {
-                    int pages = pages(fields.size());
+                    int pages = pages(rows.size());
                     int current = Math.min(requested, pages - 1);
                     int from = current * PAGE_SIZE;
-                    int to = Math.min(fields.size(), from + PAGE_SIZE);
+                    int to = Math.min(rows.size(), from + PAGE_SIZE);
                     String reopen = listPage(module, current, path);
+                    int slot = 0;
                     for (int i = from; i < to; i++) {
-                        y = paintField(player, gui, y, i - from, module, fields.get(i), reopen);
+                        ListRow row = rows.get(i);
+                        if (row.header()) {
+                            y = paintGroup(player, gui, y, slot, module, row.group(), current, path);
+                        } else {
+                            y = paintField(player, gui, y, slot, module, row.entry(), reopen);
+                        }
+                        slot++;
                     }
                     y = paintPager(player, gui, y, module, path, current, pages);
                 }
@@ -122,8 +148,13 @@ public final class CnpcConfigEditor {
                     + ConfigEditor.typeName(module, path) + " " + CnpcUltraStyle.DIM + "· "
                     + CnpcUltraStyle.SUBTITLE + "Default: " + CnpcUltraStyle.BODY
                     + ConfigEditor.defaultText(module, path));
-            y = note(gui, ID_INFO + 1, y, CnpcUltraStyle.SUBTITLE + "Description: " + CnpcUltraStyle.BODY
-                    + trim(ConfigEditor.description(module, path), 80));
+            y = note(gui, ID_INFO + 1, y, CnpcUltraStyle.SUBTITLE
+                    + ConfigEditor.friendlyDescription(module, path,
+                    ConfigEditor.effectiveRaw(player.m_20148_(), module, path)));
+            String invalid = ConfigEditor.invalidMessage(player.m_20148_(), module, path);
+            if (invalid != null) {
+                y = note(gui, ID_INFO + 4, y, CnpcUltraStyle.DANGER + invalid);
+            }
             ConfigEditor.LastChange change = ConfigEditor.lastChange(module, path);
             if (change != null) {
                 y = note(gui, ID_INFO + 2, y, CnpcUltraStyle.DIM + "Last changed by " + change.actor()
@@ -136,7 +167,7 @@ public final class CnpcConfigEditor {
             y = paintBanner(player, gui, y);
             y = paintDetailControl(player, gui, y, module, path, kind, listPage);
             y = paintActions(player, gui, y, page);
-            paintNav(player, gui, y, listPage(module, listPage, ConfigEditor.parentPath(path)));
+            paintDetailNav(player, gui, y, module, path, kind, listPage);
         });
     }
 
@@ -232,11 +263,28 @@ public final class CnpcConfigEditor {
         boolean dirty = ConfigEditor.dirty(player.m_20148_(), module, entry.path());
         String value = ConfigEditor.shownValue(player.m_20148_(), module, entry.path());
         String prefix = dirty ? CnpcUltraStyle.INFO + "● " : "";
-        press(gui, ID_NAME + index, prefix + CnpcUltraStyle.BODY + trim(ConfigEditor.displayName(leaf(entry.path())), 22)
-                        + " " + CnpcUltraStyle.DIM + "· " + CnpcUltraStyle.SUBTITLE + trim(value, 16),
-                CnpcGuiSupport.M, y, CnpcGuiSupport.textBandWidth(), CnpcGuiSupport.BTN_H, player,
+        int nameWidth = dirty ? CnpcGuiSupport.textBandWidth() - 78 : CnpcGuiSupport.textBandWidth();
+        press(gui, ID_NAME + index, prefix + CnpcUltraStyle.BODY + trim(ConfigEditor.displayName(leaf(entry.path())), 18)
+                        + " " + CnpcUltraStyle.DIM + "· " + CnpcUltraStyle.SUBTITLE + trim(value, 12),
+                CnpcGuiSupport.M, y, nameWidth, CnpcGuiSupport.BTN_H, player,
                 () -> open(player, detailPage(module, number(part(listReturn, 2)), entry.path())));
+        if (dirty) {
+            press(gui, ID_UNDO + index, CnpcUltraStyle.DIM + "[undo]",
+                    CnpcGuiSupport.M + CnpcGuiSupport.textBandWidth() - 70, y, 70, CnpcGuiSupport.BTN_H, player,
+                    () -> {
+                        ConfigEditor.undoField(player.m_20148_(), module, entry.path());
+                        open(player, listReturn);
+                    });
+        }
         y += CnpcGuiSupport.BTN_H + 2;
+        String invalid = ConfigEditor.invalidMessage(player.m_20148_(), module, entry.path());
+        String explain = invalid != null
+                ? CnpcUltraStyle.DANGER + invalid
+                : CnpcUltraStyle.SUBTITLE + ConfigEditor.friendlyDescription(module, entry.path(),
+                        ConfigEditor.effectiveRaw(player.m_20148_(), module, entry.path()));
+        gui.addLabel(ID_DESC + index, CnpcGuiSupport.safeChat(explain),
+                CnpcGuiSupport.M, y, CnpcGuiSupport.textBandWidth(), 12);
+        y += 12 + 2;
         int x = CnpcGuiSupport.M + INDENT;
         int width = CnpcGuiSupport.textBandWidth() - INDENT;
         switch (entry.kind()) {
@@ -507,6 +555,21 @@ public final class CnpcConfigEditor {
     }
 
     private static void save(ServerPlayer player, String reopen) {
+        int bad = ConfigEditor.invalidCount(player.m_20148_());
+        if (bad > 0) {
+            fail(player, bad + " fields need fixing");
+            open(player, reopen);
+            return;
+        }
+        if (ConfigEditor.dirtyCount(player.m_20148_()) == 0) {
+            info(player, "Nothing to save.");
+            open(player, reopen);
+            return;
+        }
+        open(player, view("review", moduleOrDefault(part(reopen, 1)), number(part(reopen, 2)), part(reopen, 3)));
+    }
+
+    private static void confirmSave(ServerPlayer player, String reopen) {
         ConfigEditor.SaveResult result = ConfigEditor.saveAll(player.m_20148_(), actor(player));
         if (result.error() != null) {
             fail(player, result.error());
@@ -581,6 +644,167 @@ public final class CnpcConfigEditor {
     private static void fail(ServerPlayer player, String message) {
         ConfigEditor.setBanner(player.m_20148_(), message, ConfigEditor.BannerTone.ERROR);
         CnpcGuiSupport.pushMenuMessage(player, CnpcMenuFeedback.NOTICE_BODY + message);
+    }
+
+    private static void paintReview(ServerPlayer player, String page) {
+        String module = moduleOrDefault(part(page, 1));
+        String back = listPage(module, number(part(page, 2)), part(page, 3));
+        List<ConfigEditor.PendingChange> changes = ConfigEditor.pendingChanges(player.m_20148_());
+        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CONFIG, CnpcGuiSupport.W, 460, (pl, gui) -> {
+            int y = CnpcGuiSupport.paintHeader(pl, gui,
+                    "Review changes (" + changes.size() + ")",
+                    "Nothing is written until you confirm");
+            y = paintBanner(player, gui, y);
+            if (changes.isEmpty()) {
+                y = note(gui, y, CnpcUltraStyle.SUBTITLE + "Nothing to save.");
+            } else {
+                int shown = Math.min(changes.size(), 8);
+                for (int i = 0; i < shown; i++) {
+                    ConfigEditor.PendingChange change = changes.get(i);
+                    y = note(gui, ID_INFO + i, y, CnpcUltraStyle.SUBTITLE + change.name() + ": "
+                            + CnpcUltraStyle.BODY + trim(change.before(), 16) + " "
+                            + CnpcUltraStyle.DIM + "→ " + CnpcUltraStyle.CONFIRM + trim(change.after(), 16));
+                }
+                if (changes.size() > shown) {
+                    y = note(gui, y, CnpcUltraStyle.SUBTITLE + (changes.size() - shown) + " more changes");
+                }
+            }
+            press(gui, ID_CONFIRM, CnpcUltraStyle.CONFIRM + "Confirm", CnpcGuiSupport.M, y,
+                    CnpcGuiSupport.textBandWidth(), 24, player, () -> confirmSave(player, back));
+            y += 24 + CnpcRowList.ROW_GAP;
+            paintNav(player, gui, y, back);
+        });
+    }
+
+    private static int paintRecent(ServerPlayer player, ICustomGui gui, int y, String module) {
+        List<String> paths = ConfigEditor.recentPaths(player.m_20148_(), module);
+        if (paths.isEmpty()) {
+            return y;
+        }
+        y = note(gui, ID_RECENT, y, CnpcUltraStyle.INFO + "● Recent");
+        int shown = Math.min(3, paths.size());
+        for (int i = 0; i < shown; i++) {
+            String path = paths.get(i);
+            int slot = i;
+            press(gui, ID_RECENT + 1 + slot, CnpcUltraStyle.BODY + trim(ConfigEditor.displayName(leaf(path)), 28),
+                    CnpcGuiSupport.M, y, CnpcGuiSupport.textBandWidth(), CnpcGuiSupport.BTN_H, player,
+                    () -> open(player, detailPage(module, 0, path)));
+            y += CnpcGuiSupport.BTN_H + CnpcRowList.ROW_GAP;
+        }
+        return y;
+    }
+
+    private static int paintGroup(
+            ServerPlayer player, ICustomGui gui, int y, int index, String module,
+            String group, int page, String path) {
+        int count = 0;
+        for (ConfigEditor.FieldGroup candidate : ConfigEditor.groups(module, path)) {
+            if (group.equals(candidate.name())) {
+                count = candidate.fields().size();
+                break;
+            }
+        }
+        boolean collapsed = ConfigEditor.groupCollapsed(player.m_20148_(), module, group);
+        String mark = collapsed ? CnpcUltraStyle.SUBTITLE + "▸ " : "";
+        press(gui, ID_GROUP + index, mark + CnpcUltraStyle.section(group) + " "
+                        + CnpcUltraStyle.SUBTITLE + count + " fields",
+                CnpcGuiSupport.M, y, CnpcGuiSupport.textBandWidth(), CnpcGuiSupport.BTN_H, player, () -> {
+                    ConfigEditor.toggleGroup(player.m_20148_(), module, group);
+                    open(player, listPage(module, page, path));
+                });
+        return y + CnpcGuiSupport.BTN_H + CnpcRowList.ROW_GAP;
+    }
+
+    private static void paintDetailNav(
+            ServerPlayer player, ICustomGui gui, int y, String module, String path,
+            ConfigEditor.Kind kind, int listPageNumber) {
+        String back = listPage(module, listPageNumber, ConfigEditor.parentPath(path));
+        boolean typed = kind == ConfigEditor.Kind.NUMBER
+                || kind == ConfigEditor.Kind.TEXT
+                || kind == ConfigEditor.Kind.ENUM;
+        gui.addButton(CnpcGuiSupport.ID_NAV_BACK, CnpcGuiSupport.safeChat(CnpcUltraStyle.BACK),
+                        CnpcGuiSupport.COL_L, y, 95, CnpcGuiSupport.BTN_H)
+                .setOnPress((g, btn) -> {
+                    capture(player, g);
+                    String typedValue = typed ? text(g, ID_TEXT) : null;
+                    CnpcGuiSupport.afterGuiClosed(g, () -> leaveDetail(player, module, path, typed, typedValue, back));
+                });
+        gui.addButton(CnpcGuiSupport.ID_NAV_HUB, CnpcGuiSupport.safeChat(CnpcUltraStyle.HUB),
+                        CnpcGuiSupport.COL_R, y, 95, CnpcGuiSupport.BTN_H)
+                .setOnPress((g, btn) -> {
+                    capture(player, g);
+                    String typedValue = typed ? text(g, ID_TEXT) : null;
+                    CnpcGuiSupport.afterGuiClosed(g, () -> {
+                        if (!leaveDetail(player, module, path, typed, typedValue, null)) {
+                            return;
+                        }
+                        CnpcLmHubGui.open(player, "main");
+                    });
+                });
+    }
+
+    /** @return false when the typed value is invalid and the detail page stays open */
+    private static boolean leaveDetail(
+            ServerPlayer player, String module, String path, boolean typed, String typedValue, String back) {
+        if (typed) {
+            String error = ConfigEditor.stageSet(player.m_20148_(), module, path, typedValue);
+            if (error != null) {
+                fail(player, error);
+                open(player, detailPage(module, 0, path));
+                return false;
+            }
+        }
+        if (back != null) {
+            open(player, back);
+        }
+        return true;
+    }
+
+    private static List<ListRow> listRows(ServerPlayer player, String module, String path, String query) {
+        List<ListRow> rows = new ArrayList<>();
+        boolean grouped = (query == null || query.isBlank()) && (path == null || path.isEmpty());
+        if (!grouped) {
+            for (ConfigEditor.Entry entry : ConfigEditor.visibleFields(module, path, query)) {
+                rows.add(ListRow.field(entry));
+            }
+            return rows;
+        }
+        for (ConfigEditor.FieldGroup group : ConfigEditor.groups(module, "")) {
+            if (group.name() == null || group.name().isEmpty()) {
+                for (ConfigEditor.Entry entry : group.fields()) {
+                    rows.add(ListRow.field(entry));
+                }
+                continue;
+            }
+            rows.add(ListRow.header(group.name()));
+            if (ConfigEditor.groupCollapsed(player.m_20148_(), module, group.name())) {
+                continue;
+            }
+            for (ConfigEditor.Entry entry : group.fields()) {
+                rows.add(ListRow.field(entry));
+            }
+        }
+        return rows;
+    }
+
+    private static int countFields(List<ListRow> rows) {
+        int count = 0;
+        for (ListRow row : rows) {
+            if (!row.header()) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private record ListRow(boolean header, String group, ConfigEditor.Entry entry) {
+        static ListRow header(String group) {
+            return new ListRow(true, group, null);
+        }
+
+        static ListRow field(ConfigEditor.Entry entry) {
+            return new ListRow(false, "", entry);
+        }
     }
 
     private static String boolControl() {

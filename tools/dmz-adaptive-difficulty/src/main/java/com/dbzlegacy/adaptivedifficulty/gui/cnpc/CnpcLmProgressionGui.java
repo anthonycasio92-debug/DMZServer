@@ -272,8 +272,6 @@ public final class CnpcLmProgressionGui {
                 () -> ProgressionGuiApi.handleDo(player, "boost", "end", "boost_panel"),
                 () -> open(player, "boost_panel")));
         row += CnpcGuiSupport.ROW_STEP;
-        CnpcGuiSupport.footerCloseRefresh(player, gui, row, () -> open(player, "boost_panel"));
-        row += CnpcGuiSupport.ROW_STEP;
         CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "tp"), CnpcUltraStyle.BACK);
     }
 

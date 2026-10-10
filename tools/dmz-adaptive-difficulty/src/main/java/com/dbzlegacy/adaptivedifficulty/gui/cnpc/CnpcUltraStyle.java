@@ -8,13 +8,15 @@ public final class CnpcUltraStyle {
     public static final String HEADER = "§6§l";
     public static final String SUBTITLE = "§7";
     public static final String DIVIDER = "§6";
-    public static final String SECTION = "§e§l ▸ ";
+    /** Left-aligned section title. Same gold bold as the page header. */
+    public static final String SECTION = HEADER;
     public static final String BODY = "§f";
     public static final String ACCENT = "§6";
     public static final String CONFIRM = "§a";
     public static final String DANGER = "§c";
     public static final String DIM = "§8";
-    public static final String CARD_TITLE = "§e▸ ";
+    /** Card title: white and bold. */
+    public static final String CARD_TITLE = "§f§l";
     public static final String CARD_BODY = "§7 ";
     /** Yellow notice body. Screens do not pick another notice color. */
     public static final String INFO = "§e";

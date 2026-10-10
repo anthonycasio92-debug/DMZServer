@@ -64,7 +64,7 @@ public final class CnpcLmSagaGui {
         infoY = CnpcLmCharacterGui.characterTabs(player, gui, infoY, "saga");
         List<String> info = new ArrayList<>();
         if (!SagaResetConfig.get().enabled) {
-            info.add("Saga reset is turned off.");
+            info.add("Saga reset is turned off. Ask staff to turn it on if you need to replay a saga.");
         } else {
             info.add("You have " + AncientCoinEconomy.inventoryBreakdown(player));
             info.add("Cost is the saga base plus your level. A saga that is not listed uses the default base.");
@@ -76,11 +76,13 @@ public final class CnpcLmSagaGui {
 
         int rowStep = CnpcGuiSupport.BTN_H + CnpcRowList.ROW_GAP;
         if (!SagaResetConfig.get().enabled) {
-            gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER, CnpcUltraStyle.subtitle("Saga reset is turned off."),
+            gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER,
+                    CnpcUltraStyle.subtitle("Saga reset is turned off. Ask staff to turn it on if you need to replay a saga."),
                     CnpcGuiSupport.M, y, CnpcGuiSupport.textBandWidth(), 14);
             y += rowStep;
         } else if (offers.isEmpty()) {
-            gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER, CnpcUltraStyle.subtitle("No sagas are loaded."),
+            gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER,
+                    CnpcUltraStyle.subtitle("No sagas are loaded. Ask staff to load one, then open this page again."),
                     CnpcGuiSupport.M, y, CnpcGuiSupport.textBandWidth(), 14);
             y += rowStep;
         } else {
@@ -108,7 +110,7 @@ public final class CnpcLmSagaGui {
             }
             y += CnpcGuiSupport.ROW_STEP;
         }
-        CnpcGuiSupport.navSubmenu(player, gui, y, () -> CnpcLmCharacterGui.open(player, "main"), CnpcUltraStyle.BACK);
+        CnpcGuiSupport.navSubmenu(player, gui, y, () -> CnpcLmCharacterGui.open(player, "bones:0"), CnpcUltraStyle.BACK);
     }
 
     private static void paintConfirm(ServerPlayer player, ICustomGui gui, String sagaId) {
@@ -137,8 +139,7 @@ public final class CnpcLmSagaGui {
                             () -> openList(player, "saga"));
                 });
         row += CnpcGuiSupport.ROW_STEP + 8;
-        CnpcGuiSupport.button(gui, 21, CnpcUltraStyle.SUBTITLE + "Cancel", CnpcGuiSupport.COL_L, row,
-                () -> openList(player, "saga"));
+        CnpcGuiSupport.navSubmenu(player, gui, row, () -> openList(player, "saga"), CnpcUltraStyle.BACK);
     }
 
     private static void click(ServerPlayer player, Offer offer, int page) {
