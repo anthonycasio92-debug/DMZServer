@@ -1,8 +1,9 @@
 package com.dbzlegacy.adaptivedifficulty.quest;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
+import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
 import com.dbzlegacy.adaptivedifficulty.config.ConfigPaths;
-import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
+import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -28,7 +29,7 @@ public final class SagaResetConfig {
     private static volatile SagaResetConfig INSTANCE = new SagaResetConfig();
 
     public boolean enabled = true;
-    /** Added to the base once per Dragon Mine Z level ({@link AncientCoinEconomy#getHighestDmzLevel}). */
+    /** Added to the base once per Dragon Mine Z level ({@link PlayerDifficultyData#getHighestDmzLevel()}). */
     public long perLevelCost = 10L;
     /** Base used when {@link #baseCosts} has no entry for that saga id. */
     public long defaultBaseCost = 500L;
@@ -100,13 +101,25 @@ public final class SagaResetConfig {
 
     /**
      * Ancient Coins (copper units) for this player: {@code base + level × perLevelCost}.
-     * Level is {@link AncientCoinEconomy#getHighestDmzLevel}.
+     * Level is {@link PlayerDifficultyData#getHighestDmzLevel()}, a {@code long} with no arguments.
      */
     public long costFor(ServerPlayer player, String sagaId) {
         long base = baseFor(sagaId);
         long per = Math.max(0L, perLevelCost);
-        long level = Math.max(0, AncientCoinEconomy.getHighestDmzLevel(player));
+        long level = highestDmzLevel(player);
         return saturatingAdd(base, saturatingMul(per, level));
+    }
+
+    /** High-water Dragon Mine Z level. The shipped coin class does not expose this. */
+    private static long highestDmzLevel(ServerPlayer player) {
+        if (player == null) {
+            return 0L;
+        }
+        try {
+            return Math.max(0L, DifficultyCache.data(player).getHighestDmzLevel());
+        } catch (Throwable ignored) {
+            return 0L;
+        }
     }
 
     /** @deprecated flat lookup kept so older callers compile; level scaling is {@link #costFor(ServerPlayer, String)}. */

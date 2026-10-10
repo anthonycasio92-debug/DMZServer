@@ -1,6 +1,10 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.74**.
+What changed from **4.5.147** through **4.6.75**.
+
+## Saga reset reads the stored level
+
+Saga reset cost uses `PlayerDifficultyData.getHighestDmzLevel()`, which returns a long and takes no player argument. The coin class on the server does not have `getHighestDmzLevel(ServerPlayer)`.
 
 ## Menus share one header, and the config editor explains itself
 

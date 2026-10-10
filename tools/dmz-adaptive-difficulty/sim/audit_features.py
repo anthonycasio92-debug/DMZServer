@@ -2280,6 +2280,8 @@ def main() -> int:
           and "perLevelCost" in saga_config
           and "baseCosts" in saga_config
           and "getHighestDmzLevel" in saga_config
+          and "AncientCoinEconomy.getHighestDmzLevel" not in saga_config
+          and "DifficultyCache.data" in saga_config
           and "isSagaLocked" in saga_service
           and "resetSaga" in saga_service
           and "setTrackedQuestId" in saga_service
