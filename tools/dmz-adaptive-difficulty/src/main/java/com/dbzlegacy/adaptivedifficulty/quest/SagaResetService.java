@@ -24,59 +24,97 @@ import net.minecraft.world.entity.Entity;
 
 /**
  * Paid saga replay. The menu is whatever {@link QuestRegistry#getAllSagas()} currently loaded
- * (vanilla story plus datapack sagas). Cost is {@link SagaResetConfig#costFor}.
+ * (vanilla story plus datapack sagas). Cost is {@link SagaResetConfig#costFor(ServerPlayer, String)}.
+ * Progress clear is {@link PlayerQuestData#resetSaga}, which also drops a tracked quest in that saga.
  */
 public final class SagaResetService {
+    public static final String NOT_ENOUGH = "Not enough Ancient Coins";
+
     private SagaResetService() {}
 
-    public static List<String> cards(ServerPlayer player) {
-        List<String> cards = new ArrayList<>();
+    public enum Status {
+        COMPLETED,
+        IN_PROGRESS,
+        LOCKED,
+        NOT_STARTED
+    }
+
+    public record Offer(String id, String name, long cost, Status status) {
+        public boolean resettable() {
+            return status == Status.COMPLETED || status == Status.IN_PROGRESS;
+        }
+
+        public String statusLabel() {
+            return switch (status) {
+                case COMPLETED -> "Completed";
+                case IN_PROGRESS -> "In progress";
+                case LOCKED -> "Locked";
+                case NOT_STARTED -> "Not started";
+            };
+        }
+
+        /** Row detail: this player's cost, then the status. Unstarted rows say there is nothing to reset. */
+        public String rowDetail() {
+            String price = SagaResetService.costText(cost);
+            if (status == Status.NOT_STARTED) {
+                return price + " · Not started · Nothing to reset";
+            }
+            return price + " · " + statusLabel();
+        }
+    }
+
+    public static List<Offer> offers(ServerPlayer player) {
+        List<Offer> offers = new ArrayList<>();
         StatsData stats = DmzProgression.stats(player);
         PlayerQuestData data = stats == null ? null : stats.getPlayerQuestData();
+        boolean free = PaidFeatureAccess.bypassAncientCoinCost(player);
         for (Saga saga : loadedSagas()) {
             String id = saga.getId();
-            if (id == null || id.isBlank()) {
-                continue;
-            }
-            int total = saga.getQuests() == null ? 0 : saga.getQuests().size();
-            int started = data == null ? 0 : startedCount(data, id);
-            long cost = PaidFeatureAccess.bypassAncientCoinCost(player)
-                    ? 0L
-                    : SagaResetConfig.get().costFor(id);
-            cards.add(id + "\t" + displayName(saga) + "\t" + started + "\t" + total + "\t" + cost);
+            long cost = free ? 0L : SagaResetConfig.get().costFor(player, id);
+            offers.add(new Offer(id, displayName(saga), cost, status(data, saga)));
         }
-        return cards;
+        return offers;
+    }
+
+    public static Offer findOffer(ServerPlayer player, String sagaId) {
+        if (sagaId == null || sagaId.isBlank()) {
+            return null;
+        }
+        for (Offer offer : offers(player)) {
+            if (offer.id().equalsIgnoreCase(sagaId.trim())) {
+                return offer;
+            }
+        }
+        return null;
     }
 
     public static List<String> confirmLines(ServerPlayer player, String sagaId) {
-        Saga saga = find(sagaId);
+        Offer offer = findOffer(player, sagaId);
         List<String> lines = new ArrayList<>();
-        if (saga == null) {
+        if (offer == null) {
             lines.add("That saga is not loaded.");
             return lines;
         }
+        lines.add(confirmSentence(offer));
         StatsData stats = DmzProgression.stats(player);
         PlayerQuestData data = stats == null ? null : stats.getPlayerQuestData();
-        int total = saga.getQuests() == null ? 0 : saga.getQuests().size();
-        int started = data == null ? 0 : startedCount(data, saga.getId());
-        lines.add(displayName(saga));
-        lines.add(started + " of " + total + " quests on your record");
-        if (PaidFeatureAccess.bypassAncientCoinCost(player)) {
-            lines.add("No Ancient Coin charge");
-        } else {
-            lines.add(AncientCoinEconomy.formatExactCost(SagaResetConfig.get().costFor(saga.getId())));
-        }
-        lines.add("Clears your progress in this saga. Rewards you already received stay.");
         if (data != null && data.isInParty()) {
             lines.add("Leave your quest party before resetting.");
-        } else if (started <= 0) {
-            lines.add("You have not started this saga.");
         }
         return lines;
     }
 
+    /** "Reset Dragon Balls Saga? Cost: 850 Ancient Coins. Your saga progress will be lost." */
+    public static String confirmSentence(Offer offer) {
+        if (offer == null) {
+            return "That saga is not loaded.";
+        }
+        return "Reset " + sagaTitle(offer.name()) + "? Cost: " + costText(offer.cost())
+                + ". Your saga progress will be lost.";
+    }
+
     /**
-     * @return a notice line, or null when the reset completed
+     * @return a notice line, or null when the reset completed with nothing to show
      */
     public static String reset(ServerPlayer player, String sagaId) {
         if (player == null) {
@@ -94,52 +132,68 @@ public final class SagaResetService {
             return "Your quest data is not loaded yet. Try again in a moment.";
         }
         PlayerQuestData data = stats.getPlayerQuestData();
+        String id = saga.getId();
+        if (data.isSagaLocked(id)) {
+            return "That saga is locked.";
+        }
+        if (status(data, saga) == Status.NOT_STARTED) {
+            return "Nothing to reset";
+        }
         if (data.isInParty()) {
             return "Leave your quest party before resetting a saga.";
         }
-        String id = saga.getId();
-        if (startedCount(data, id) <= 0) {
-            return "You have not started " + displayName(saga) + ".";
-        }
-        long cost = SagaResetConfig.get().costFor(id);
         boolean free = PaidFeatureAccess.bypassAncientCoinCost(player);
+        long cost = free ? 0L : SagaResetConfig.get().costFor(player, id);
         if (!free && !AncientCoinEconomy.canAfford(player, cost)) {
-            return AncientCoinEconomy.missingText(player, cost);
+            return NOT_ENOUGH;
         }
         if (!free && !AncientCoinEconomy.charge(player, cost)) {
-            return "Could not take the Ancient Coins.";
+            return NOT_ENOUGH;
         }
         data.resetSaga(id);
+        clearTrackedIfSaga(data, id);
         discardOwnedSagaEntities(player, id);
         try {
             QuestService.syncQuestState(player);
         } catch (Throwable ignored) {
         }
-        String paid = free ? "" : " Paid " + AncientCoinEconomy.formatExactCost(cost) + ".";
-        return "Reset " + displayName(saga) + "." + paid;
+        String paid = free || cost <= 0L ? "" : " Paid " + costText(cost) + ".";
+        return "Reset " + sagaTitle(displayName(saga)) + "." + paid;
+    }
+
+    public static String costText(long coins) {
+        if (coins <= 0L) {
+            return "free";
+        }
+        return coins + " Ancient Coin" + (coins == 1L ? "" : "s");
     }
 
     public static String displayName(Saga saga) {
         if (saga == null) {
             return "Saga";
         }
-        String raw = saga.getName();
-        if (raw == null || raw.isBlank()) {
-            raw = saga.getId();
+        String name = saga.getName();
+        String id = saga.getId();
+        if (name == null || name.isBlank() || looksLikeId(name, id)) {
+            return prettify(id == null || id.isBlank() ? name : id);
         }
+        return name.trim();
+    }
+
+    public static String prettify(String raw) {
         if (raw == null || raw.isBlank()) {
             return "Saga";
         }
-        String name = raw;
+        String name = raw.trim();
         if (name.startsWith("dmz.")) {
             int dot = name.lastIndexOf('.');
             if (dot >= 0 && dot < name.length() - 1) {
                 name = name.substring(dot + 1);
             }
         }
-        name = name.replace('_', ' ').trim();
+        name = name.replace('_', ' ').replace('-', ' ').trim();
         if (name.isEmpty()) {
-            return saga.getId();
+            return "Saga";
         }
         StringBuilder out = new StringBuilder();
         for (String part : name.split(" ")) {
@@ -154,7 +208,26 @@ public final class SagaResetService {
                 out.append(part.substring(1).toLowerCase(Locale.ROOT));
             }
         }
-        return out.toString();
+        return out.isEmpty() ? "Saga" : out.toString();
+    }
+
+    private static boolean looksLikeId(String name, String id) {
+        if (id != null && name.equalsIgnoreCase(id)) {
+            return true;
+        }
+        String trimmed = name.trim();
+        return trimmed.startsWith("dmz.") || trimmed.indexOf('_') >= 0 || trimmed.indexOf('-') >= 0;
+    }
+
+    private static String sagaTitle(String name) {
+        if (name == null || name.isBlank()) {
+            return "Saga";
+        }
+        String trimmed = name.trim();
+        if (trimmed.toLowerCase(Locale.ROOT).endsWith("saga")) {
+            return trimmed;
+        }
+        return trimmed + " Saga";
     }
 
     private static List<Saga> loadedSagas() {
@@ -183,12 +256,39 @@ public final class SagaResetService {
         return null;
     }
 
+    /**
+     * {@link PlayerQuestData#isSagaLocked} reads {@code sagaUnlocks} and defaults to false,
+     * so a saga with no flag is offered. A true flag is locked and is not reset.
+     */
+    private static Status status(PlayerQuestData data, Saga saga) {
+        String id = saga.getId();
+        if (data != null && id != null && data.isSagaLocked(id)) {
+            return Status.LOCKED;
+        }
+        int started = data == null ? 0 : startedCount(data, id);
+        if (started <= 0) {
+            return Status.NOT_STARTED;
+        }
+        int total = saga.getQuests() == null ? 0 : saga.getQuests().size();
+        int completed = data == null ? 0 : completedCount(data, id);
+        if (total > 0 && completed >= total) {
+            return Status.COMPLETED;
+        }
+        return Status.IN_PROGRESS;
+    }
+
     private static int startedCount(PlayerQuestData data, String sagaId) {
         String prefix = sagaId + ":";
         Set<String> keys = new LinkedHashSet<>();
         addMatching(keys, data.getAcceptedQuestIds(), prefix);
         addMatching(keys, data.getCompletedQuestIds(), prefix);
         addMatching(keys, data.getFailedQuestIds(), prefix);
+        return keys.size();
+    }
+
+    private static int completedCount(PlayerQuestData data, String sagaId) {
+        Set<String> keys = new LinkedHashSet<>();
+        addMatching(keys, data.getCompletedQuestIds(), sagaId + ":");
         return keys.size();
     }
 
@@ -200,6 +300,20 @@ public final class SagaResetService {
             if (key != null && key.startsWith(prefix)) {
                 keys.add(key);
             }
+        }
+    }
+
+    /**
+     * {@code resetSaga} already nulls {@code trackedQuestId} when it starts with {@code sagaId:}.
+     * This catches a tracked id that is the bare saga id.
+     */
+    private static void clearTrackedIfSaga(PlayerQuestData data, String sagaId) {
+        String tracked = data.getTrackedQuestId();
+        if (tracked == null || tracked.isBlank()) {
+            return;
+        }
+        if (tracked.equalsIgnoreCase(sagaId) || tracked.startsWith(sagaId + ":")) {
+            data.setTrackedQuestId(null);
         }
     }
 
