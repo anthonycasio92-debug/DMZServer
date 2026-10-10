@@ -2190,7 +2190,17 @@ def main() -> int:
           and "CnpcLmHubGui" not in test_gui
           and "CnpcUltraPreview" not in test_gui
           and "CnpcUltraStyle.header" in test_hub
-          and "CnpcLmGui.open" in test_hub
+          and "Current menus" in test_hub
+          and 'CnpcLmCharacterGui.open(player, "bones:0")' in test_hub
+          and 'CnpcLmCharacterGui.open(player, "reskin")' in test_hub
+          and "CnpcLmRivalGui.open" in test_hub
+          and "CnpcLmSparGui.open" in test_hub
+          and "CnpcLmProgressionGui.open" in test_hub
+          and "CnpcLmPrestigeGui.open" in test_hub
+          and "CnpcLmDifficultyGui.open" in test_hub
+          and "CnpcLmAdminGui.open" in test_hub
+          and '"character", "main"' not in test_hub
+          and "Services" not in test_hub
           and "CnpcUltraPreview" not in test_hub
           and "CnpcStaffTestGui" in build_sh)
     check("head parts use the test menu colors",

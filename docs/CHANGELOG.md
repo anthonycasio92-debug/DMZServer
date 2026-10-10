@@ -1,6 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.71**.
+What changed from **4.5.147** through **4.6.72**.
+
+## Test menu opens each screen directly
+
+`/lm admin testgui` puts Head parts and Reskin at the top. Current menus lists Difficulty, Rival, Sparring, Progression, Prestige, and Staff Admin. Each one opens that screen. The old Character button, which only showed those same choices again, is gone. Skill Check, Skills, and Saga Reset stay as their own buttons.
+
+Head parts is still Head and Horns only. The client-only body accessories stay out of the shop.
 
 ## Config editor confirms, then saves
 
