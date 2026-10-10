@@ -15,6 +15,10 @@ public final class CnpcLmCharacterGui {
     private CnpcLmCharacterGui() {}
 
     public static void open(ServerPlayer player, String page) {
+        CnpcUltraStyle.withAccent(CnpcUltraStyle.ACCENT_CHARACTER, () -> openCharacter(player, page));
+    }
+
+    private static void openCharacter(ServerPlayer player, String page) {
         String p = page == null || page.isBlank() ? "main" : page.toLowerCase(Locale.ROOT);
         if (p.startsWith("race_confirm:")) {
             paintRaceConfirm(player, p.substring("race_confirm:".length()));

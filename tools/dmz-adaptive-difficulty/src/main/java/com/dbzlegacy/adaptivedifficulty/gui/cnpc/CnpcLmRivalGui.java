@@ -19,6 +19,10 @@ public final class CnpcLmRivalGui {
     private CnpcLmRivalGui() {}
 
     public static void open(ServerPlayer player, String page) {
+        CnpcUltraStyle.withAccent(CnpcUltraStyle.ACCENT_RIVAL, () -> openRival(player, page));
+    }
+
+    private static void openRival(ServerPlayer player, String page) {
         String raw = page == null || page.isBlank() ? "main" : page.trim();
         String lower = raw.toLowerCase(Locale.ROOT);
         if (lower.startsWith("challenge_time:")) {
@@ -41,20 +45,21 @@ public final class CnpcLmRivalGui {
             openPickConfirm(player, raw.substring("pick_confirm:".length()).trim());
             return;
         }
-        int height = heightForPage(player, lower);
+        final String pageKey = lower.isBlank() || "main".equals(lower) ? "actions" : lower;
+        int height = heightForPage(player, pageKey);
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_RIVAL, CnpcGuiSupport.W, height, (pl, gui) -> {
-            String records = recordsTab(lower);
+            String records = recordsTab(pageKey);
             if (records != null) {
                 paintRecords(pl, gui, records);
                 return;
             }
-            switch (lower) {
+            switch (pageKey) {
                 case "list" -> paintList(pl, gui);
                 case "actions" -> paintActions(pl, gui);
                 case "pending", "invites" -> paintPending(pl, gui);
                 case "challenge", "challenges" -> paintChallenge(pl, gui);
                 case "challenge_pending", "challenge_requests" -> paintChallengePending(pl, gui);
-                case "top", "leaderboard" -> paintScroll(pl, gui, CnpcGuiStyle.subPage(CnpcUltraStyle.ACCENT, "Rivals", "Leaderboard"), RivalGuiApi.topLines(subject(pl)), "main");
+                case "top", "leaderboard" -> paintScroll(pl, gui, CnpcGuiStyle.subPage(CnpcUltraStyle.ACCENT, "Rivals", "Leaderboard"), RivalGuiApi.topLines(subject(pl)), "actions");
                 case "pick_declare" -> paintNamePick(pl, gui, CnpcGuiStyle.subPage(CnpcUltraStyle.ACCENT, "Rivals", "Declare rival"), RivalGuiApi.onlinePlayerNames(subject(pl)),
                         "declare", "actions");
                 case "pick_silent" -> paintNamePick(pl, gui, CnpcGuiStyle.subPage(CnpcUltraStyle.ACCENT, "Rivals", "Silent rival"), RivalGuiApi.onlinePlayerNames(subject(pl)),
@@ -70,7 +75,7 @@ public final class CnpcLmRivalGui {
                         "spectate", "challenge");
                 case "admin" -> paintAdmin(pl, gui);
                 case "settings" -> paintSettings(pl, gui);
-                default -> paintMain(pl, gui);
+                default -> paintActions(pl, gui);
             }
         });
     }
@@ -82,6 +87,7 @@ public final class CnpcLmRivalGui {
         }
         return CnpcGuiSupport.window(switch (page) {
             case "list" -> 400;
+            case "actions" -> 480;
             case "pending", "invites", "challenge_pending", "challenge_requests" -> 400 + extra;
             case "pick_declare", "pick_silent", "pick_challenge", "pick_spectate",
                     "pick_accept", "pick_decline", "pick_replace_mutual" -> 380;
@@ -91,28 +97,27 @@ public final class CnpcLmRivalGui {
     }
 
     private static boolean rivalTabs(String page) {
-        if (page == null || page.isBlank() || "main".equals(page)) {
-            return true;
+        if (page == null || page.isBlank()) {
+            return false;
         }
         if (recordsTab(page) != null) {
             return true;
         }
         return switch (page) {
-            case "actions", "pending", "invites", "challenge_pending", "challenge_requests" -> true;
+            case "actions", "pending", "invites" -> true;
             default -> false;
         };
     }
 
     private static int rivalTabBar(ServerPlayer player, ICustomGui gui, int y, String active) {
         return CnpcGuiSupport.paintTabBar(gui, y, new String[] {
-                "records|Records", "requests|Requests", "actions|Actions"
+                "actions|Actions", "records|Records", "requests|Requests"
         }, active, action -> {
             String id = action.startsWith("tab:") ? action.substring(4) : action;
             switch (id) {
                 case "records" -> open(player, "records");
                 case "requests" -> open(player, "pending");
-                case "actions" -> open(player, "actions");
-                default -> open(player, "main");
+                default -> open(player, "actions");
             }
         });
     }
@@ -151,38 +156,9 @@ public final class CnpcLmRivalGui {
                 () -> open(viewer, returnPage));
     }
 
+    /** Unknown pages land on Actions. The old overview only repeated the tab bar. */
     private static void paintMain(ServerPlayer player, ICustomGui gui) {
-        ServerPlayer who = subject(player);
-        Map<String, String> ph = RivalGuiApi.placeholders(who);
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcUltraStyle.ACCENT + "Rivals",
-                CnpcUltraStyle.SUBTITLE + "RP " + CnpcUltraStyle.BODY + ph.getOrDefault("rp", "?") + CnpcGuiStyle.SEP + CnpcUltraStyle.SUBTITLE + "Tier " + CnpcUltraStyle.BODY
-                        + ph.getOrDefault("tier", "?"));
-        infoY = rivalTabBar(player, gui, infoY, "");
-
-        if (!"true".equalsIgnoreCase(ph.get("system_enabled"))) {
-            int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of(CnpcGuiStyle.MSG_RIVALS_OFF),
-                            CnpcGuiStyle.INFO_INLINE_MAX));
-            footer(player, gui, row + 8, null);
-            return;
-        }
-
-        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, RivalGuiApi.linesForPage(who, "main"),
-                        CnpcGuiStyle.INFO_INLINE_MAX));
-        CnpcGuiSupport.button(gui, 20, CnpcUltraStyle.INFO + "Rival list", CnpcGuiSupport.COL_L, row, () -> open(player, "list"));
-        CnpcGuiSupport.button(gui, 21, CnpcUltraStyle.CONFIRM + "Actions", CnpcGuiSupport.COL_R, row, () -> open(player, "actions"));
-        row += CnpcGuiSupport.ROW_STEP;
-        CnpcGuiSupport.button(gui, 22, CnpcUltraStyle.DANGER + "Challenge", CnpcGuiSupport.COL_L, row, () -> open(player, "challenge"));
-        CnpcGuiSupport.button(gui, 23, CnpcUltraStyle.ACCENT + "Leaderboard", CnpcGuiSupport.COL_R, row, () -> open(player, "top"));
-        row += CnpcGuiSupport.ROW_STEP;
-        CnpcGuiSupport.button(gui, 24, CnpcUltraStyle.ACCENT + "Records", CnpcGuiSupport.COL_L, row, () -> open(player, "records"));
-        CnpcGuiSupport.button(gui, 25, CnpcUltraStyle.SUBTITLE + "Settings", CnpcGuiSupport.COL_R, row, () -> open(player, "settings"));
-        row += CnpcGuiSupport.ROW_STEP;
-        if (StaffAccess.isStaff(player)) {
-            CnpcGuiSupport.buttonSmall(gui, CnpcGuiSupport.ID_STAFF_EXTRA, CnpcUltraStyle.DANGER + "Staff Admin", CnpcGuiSupport.COL_L, row,
-                    CnpcGuiSupport.BTN_W, () -> open(player, "admin"));
-            row += CnpcGuiSupport.ROW_STEP;
-        }
-        footer(player, gui, row, null);
+        paintActions(player, gui);
     }
 
     private static void paintSettings(ServerPlayer player, ICustomGui gui) {
@@ -204,26 +180,46 @@ public final class CnpcLmRivalGui {
                     () -> act(player, "instinct", "toggle", "settings"));
         }
         row += CnpcGuiSupport.ROW_STEP;
-        footer(player, gui, row, "main");
+        footer(player, gui, row, "actions");
     }
 
     private static void paintActions(ServerPlayer player, ICustomGui gui) {
+        ServerPlayer who = subject(player);
+        Map<String, String> ph = RivalGuiApi.placeholders(who);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage(CnpcUltraStyle.ACCENT, "Rivals", "Actions"),
-                CnpcUltraStyle.SUBTITLE + "Declare, pending board, and silent rivals");
+                CnpcUltraStyle.SUBTITLE + "RP " + CnpcUltraStyle.BODY + ph.getOrDefault("rp", "?")
+                        + CnpcGuiStyle.SEP + CnpcUltraStyle.SUBTITLE + "Tier " + CnpcUltraStyle.BODY
+                        + ph.getOrDefault("tier", "?"));
         infoY = rivalTabBar(player, gui, infoY, "actions");
-        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, RivalGuiApi.linesForPage(subject(player), "actions"),
+        if (!"true".equalsIgnoreCase(ph.get("system_enabled"))) {
+            int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of(CnpcGuiStyle.MSG_RIVALS_OFF),
+                            CnpcGuiStyle.INFO_INLINE_MAX));
+            footer(player, gui, row + 8, null);
+            return;
+        }
+        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, RivalGuiApi.linesForPage(who, "actions"),
                         CnpcGuiStyle.INFO_INLINE_MAX));
         CnpcGuiSupport.button(gui, 20, CnpcUltraStyle.INFO + "Declare…", CnpcGuiSupport.COL_L, row, () -> open(player, "pick_declare"));
         CnpcGuiSupport.button(gui, 21, CnpcUltraStyle.ACCENT + "Declare invites", CnpcGuiSupport.COL_R, row, () -> open(player, "pending"));
         row += CnpcGuiSupport.ROW_STEP;
         CnpcGuiSupport.button(gui, 22, CnpcUltraStyle.DIM + "Silent…", CnpcGuiSupport.COL_L, row, () -> open(player, "pick_silent"));
+        CnpcGuiSupport.button(gui, 23, CnpcUltraStyle.INFO + "Rival list", CnpcGuiSupport.COL_R, row, () -> open(player, "list"));
         row += CnpcGuiSupport.ROW_STEP;
-        if (RivalGuiApi.needsMutualReplacePick(subject(player))) {
+        CnpcGuiSupport.button(gui, 26, CnpcUltraStyle.DANGER + "Challenge", CnpcGuiSupport.COL_L, row, () -> open(player, "challenge"));
+        CnpcGuiSupport.button(gui, 27, CnpcUltraStyle.ACCENT + "Leaderboard", CnpcGuiSupport.COL_R, row, () -> open(player, "top"));
+        row += CnpcGuiSupport.ROW_STEP;
+        CnpcGuiSupport.button(gui, 28, CnpcUltraStyle.SUBTITLE + "Settings", CnpcGuiSupport.COL_L, row, () -> open(player, "settings"));
+        if (StaffAccess.isStaff(player)) {
+            CnpcGuiSupport.buttonSmall(gui, CnpcGuiSupport.ID_STAFF_EXTRA, CnpcUltraStyle.DANGER + "Staff Admin", CnpcGuiSupport.COL_R, row,
+                    CnpcGuiSupport.BTN_W, () -> open(player, "admin"));
+        }
+        row += CnpcGuiSupport.ROW_STEP;
+        if (RivalGuiApi.needsMutualReplacePick(who)) {
             CnpcGuiSupport.button(gui, 24, CnpcUltraStyle.INFO + "Replace mutual…", CnpcGuiSupport.COL_L, row,
                     () -> open(player, "pick_replace_mutual"));
             row += CnpcGuiSupport.ROW_STEP;
         }
-        footer(player, gui, row, "main");
+        footer(player, gui, row, null);
     }
 
     private static void paintPending(ServerPlayer player, ICustomGui gui) {
@@ -400,7 +396,7 @@ public final class CnpcLmRivalGui {
         CnpcGuiSupport.button(gui, 24, CnpcUltraStyle.ACCENT + "Spectate…", CnpcGuiSupport.COL_L, row, () -> open(player, "pick_spectate"));
         CnpcGuiSupport.button(gui, 25, CnpcUltraStyle.DIM + "Stop spectate", CnpcGuiSupport.COL_R, row, () -> act(player, "spectate_stop", "", "challenge"));
         row += CnpcGuiSupport.ROW_STEP;
-        footer(player, gui, row, "main");
+        footer(player, gui, row, "actions");
     }
 
     private static void paintChallengePending(ServerPlayer player, ICustomGui gui) {
@@ -512,7 +508,7 @@ public final class CnpcLmRivalGui {
         }
         row = CnpcGuiLayout.paintTwoColumnButtonGrid(player, gui, row, CnpcGuiSupport.ID_GRID_BASE, tabs, () -> {});
         int bodyBottom = CnpcGuiSupport.paintLongReadOnlyBody(gui, row, recordsLines(player, key));
-        footer(player, gui, bodyBottom, "main");
+        footer(player, gui, bodyBottom, "actions");
     }
 
     private static String recordsLabel(String key) {
@@ -553,10 +549,10 @@ public final class CnpcLmRivalGui {
         if (cards.isEmpty()) {
             listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY,
                     RivalSystem.emptyRivalListGuide(), CnpcGuiStyle.INFO_INLINE_MAX));
-            footer(player, gui, listY + 8, "main");
+            footer(player, gui, listY + 8, "actions");
             return;
         }
-        int rowsBelow = 3;
+        int rowsBelow = 2;
         int bandY = CnpcGuiSupport.pickListBandY(listY, rowsBelow, gui, cards.size());
         int scrollH = CnpcGuiSupport.listScrollHeight(gui, bandY, rowsBelow);
         IScroll scroll = CnpcGuiSupport.scrollPickList(gui, listY, rowsBelow, CnpcGuiSupport.cardLabels(cards, 1));
@@ -571,13 +567,7 @@ public final class CnpcLmRivalGui {
                 },
                 picker -> open(player, "list_detail:" + picker),
                 () -> open(player, "list"));
-        actionRow += CnpcGuiSupport.ROW_STEP;
-        CnpcGuiSupport.buttonSmallFull(gui, 94, CnpcUltraStyle.CONFIRM + "Actions", CnpcGuiSupport.COL_L, actionRow, CnpcGuiSupport.BTN_W,
-                () -> open(player, "actions"));
-        CnpcGuiSupport.buttonSmallFull(gui, 95, CnpcUltraStyle.ACCENT + "Records", CnpcGuiSupport.COL_R, actionRow, CnpcGuiSupport.BTN_W,
-                () -> open(player, "records"));
-        int navRow = actionRow + CnpcGuiSupport.ROW_STEP;
-        footer(player, gui, navRow, "main");
+        footer(player, gui, actionRow + CnpcGuiSupport.ROW_STEP, "actions");
     }
 
     private static void paintNamePick(
@@ -693,7 +683,7 @@ public final class CnpcLmRivalGui {
     private static void paintAdmin(ServerPlayer player, ICustomGui gui) {
         if (!StaffAccess.isStaff(player)) {
             CnpcGuiSupport.pushMenuMessage(player, CnpcMenuFeedback.NOTICE_BODY + "Staff only.");
-            open(player, "main");
+            open(player, "actions");
             return;
         }
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage(CnpcUltraStyle.ACCENT, "Rivals", "Staff Admin"),
@@ -707,7 +697,7 @@ public final class CnpcLmRivalGui {
         CnpcGuiSupport.button(gui, 22, CnpcUltraStyle.SUBTITLE + "Status", CnpcGuiSupport.COL_L, row,
                 () -> act(player, "admin", "status", "admin"));
         row += CnpcGuiSupport.ROW_STEP;
-        footer(player, gui, row, "main");
+        footer(player, gui, row, "actions");
     }
 
     /** {@code parentPage} null on rival main; otherwise Back reopens that page. Main always → LM hub. */

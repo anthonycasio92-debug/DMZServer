@@ -34,6 +34,10 @@ public final class CnpcLmDifficultyGui {
     private CnpcLmDifficultyGui() {}
 
     public static void open(ServerPlayer player, String page) {
+        CnpcUltraStyle.withAccent(CnpcUltraStyle.ACCENT_DIFFICULTY, () -> openDifficulty(player, page));
+    }
+
+    private static void openDifficulty(ServerPlayer player, String page) {
         String raw = page == null || page.isBlank() ? "main" : page.trim();
         String p = raw.toLowerCase(Locale.ROOT);
         if (p.startsWith("title_detail:")) {

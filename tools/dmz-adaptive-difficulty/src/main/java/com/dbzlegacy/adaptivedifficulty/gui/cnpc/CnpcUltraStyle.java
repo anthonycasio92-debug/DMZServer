@@ -10,6 +10,17 @@ public final class CnpcUltraStyle {
     public static final String DIVIDER = "§6";
     /** Left-aligned section title. Same gold bold as the page header. */
     public static final String SECTION = HEADER;
+    /** Page header and active tab only. Body, rows, and buttons stay on the shared colors. */
+    public static final String ACCENT_CHARACTER = "§6";
+    public static final String ACCENT_RIVAL = "§c";
+    public static final String ACCENT_SPARRING = "§9";
+    public static final String ACCENT_PROGRESSION = "§a";
+    public static final String ACCENT_PRESTIGE = "§d";
+    public static final String ACCENT_DIFFICULTY = "§e";
+    public static final String ACCENT_SAGA = "§b";
+    public static final String ACCENT_ADMIN = "§4";
+    public static final String ACCENT_CONFIG = "§7";
+    private static String activeAccent = ACCENT_CHARACTER;
     public static final String BODY = "§f";
     public static final String ACCENT = "§6";
     public static final String CONFIRM = "§a";
@@ -32,6 +43,17 @@ public final class CnpcUltraStyle {
 
     private CnpcUltraStyle() {}
 
+    /** Header and active-tab color for the menu currently being painted. */
+    public static void withAccent(String accent, Runnable work) {
+        String previous = activeAccent;
+        activeAccent = accent == null || accent.isBlank() ? ACCENT_CHARACTER : accent;
+        try {
+            work.run();
+        } finally {
+            activeAccent = previous;
+        }
+    }
+
     /** Strip formatting so a screen can pass its old colored title. */
     public static String plain(String text) {
         if (text == null || text.isBlank()) {
@@ -41,7 +63,7 @@ public final class CnpcUltraStyle {
     }
 
     public static String header(String title) {
-        return HEADER + plain(title);
+        return activeAccent + BOLD + plain(title);
     }
 
     public static String subtitle(String text) {
@@ -58,7 +80,7 @@ public final class CnpcUltraStyle {
     }
 
     public static String tabActive(String label) {
-        return HEADER + plain(label);
+        return activeAccent + BOLD + plain(label);
     }
 
     public static String tabInactive(String label) {

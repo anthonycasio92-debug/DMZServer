@@ -10,6 +10,10 @@ public final class CnpcLmAdminGui {
     private CnpcLmAdminGui() {}
 
     public static void open(ServerPlayer player, String page) {
+        CnpcUltraStyle.withAccent(CnpcUltraStyle.ACCENT_ADMIN, () -> openAdmin(player, page));
+    }
+
+    private static void openAdmin(ServerPlayer player, String page) {
         if (!StaffAccess.isStaff(player)) {
             CnpcGuiSupport.denyToHub(player, CnpcMenuFeedback.NOTICE_BODY + "Staff only.");
             return;
