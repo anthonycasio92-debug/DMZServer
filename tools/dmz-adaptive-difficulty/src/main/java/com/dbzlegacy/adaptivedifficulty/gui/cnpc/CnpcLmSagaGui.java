@@ -37,6 +37,10 @@ public final class CnpcLmSagaGui {
     }
 
     static void openList(ServerPlayer player, String page) {
+        CnpcUltraStyle.withAccent(CnpcUltraStyle.ACCENT_SAGA, () -> openListAccent(player, page));
+    }
+
+    private static void openListAccent(ServerPlayer player, String page) {
         List<Offer> offers = SagaResetService.offers(player);
         int pages = Math.max(1, (offers.size() + ROWS - 1) / ROWS);
         int pg = Math.min(pages - 1, Math.max(0, parsePage(page)));
@@ -50,6 +54,10 @@ public final class CnpcLmSagaGui {
     }
 
     static void openConfirm(ServerPlayer player, String sagaId) {
+        CnpcUltraStyle.withAccent(CnpcUltraStyle.ACCENT_SAGA, () -> openConfirmAccent(player, sagaId));
+    }
+
+    private static void openConfirmAccent(ServerPlayer player, String sagaId) {
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CHARACTER, CnpcGuiSupport.W,
                 CnpcGuiSupport.window(280), (pl, gui) -> paintConfirm(pl, gui, sagaId));
     }

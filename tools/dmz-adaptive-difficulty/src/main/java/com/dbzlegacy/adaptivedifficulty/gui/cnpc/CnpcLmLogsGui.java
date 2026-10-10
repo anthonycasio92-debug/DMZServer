@@ -10,6 +10,10 @@ public final class CnpcLmLogsGui {
     private CnpcLmLogsGui() {}
 
     public static void open(ServerPlayer player, String page) {
+        CnpcUltraStyle.withAccent(CnpcUltraStyle.ACCENT_ADMIN, () -> openLogs(player, page));
+    }
+
+    private static void openLogs(ServerPlayer player, String page) {
         if (!StaffAccess.isStaff(player)) {
             CnpcGuiSupport.denyToHub(player, CnpcMenuFeedback.NOTICE_BODY + "Staff only.");
             return;

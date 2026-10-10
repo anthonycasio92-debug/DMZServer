@@ -1777,7 +1777,9 @@ def main() -> int:
           "records:" in rival_records
           and "void paintProgress" not in rival_records
           and "Hall of fame" in rival_records
-          and 'CnpcUltraStyle.ACCENT + "Records"' in rival_records
+          and '"actions|Actions"' in rival_records
+          and '"records|Records"' in rival_records
+          and '"requests|Requests"' in rival_records
           and 'open(player, "history")' not in rival_records
           and 'open(player, "progress")' not in rival_records
           and 'open(player, "stats")' not in rival_records
@@ -2257,6 +2259,9 @@ def main() -> int:
           and "[undo]" in config_screen
           and "30+ fields" in config_screen
           and "Must be between 0 and 1" in config_editor
+          and "setOnChange" in config_screen
+          and "fields match" in config_screen
+          and "No fields match" in config_screen
           and "moduleLinks" in config_editor
           and "Staff only." in config_screen
           and "CnpcRowList" in config_screen
@@ -2268,6 +2273,22 @@ def main() -> int:
           and "CharacterServicesConfig" in build_sh
           and "public static boolean save()" in read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/character/CharacterServicesConfig.java")
           and "public static boolean save()" in read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/quest/SagaResetConfig.java"))
+
+    style = read(cnpc_dir / "CnpcUltraStyle.java")
+    prestige_gui = read(cnpc_dir / "CnpcLmPrestigeGui.java")
+    check("menus keep a per-system accent and prestige has no module list",
+          "ACCENT_RIVAL" in style
+          and "ACCENT_SPARRING" in style
+          and "ACCENT_PROGRESSION" in style
+          and "ACCENT_PRESTIGE" in style
+          and "ACCENT_DIFFICULTY" in style
+          and "ACCENT_SAGA" in style
+          and "ACCENT_ADMIN" in style
+          and "ACCENT_CONFIG" in style
+          and "withAccent" in style
+          and "modules|Modules" not in prestige_gui
+          and "ConfigEditor" not in prestige_gui
+          and "setOnChange" in config_screen)
 
     print("\n=== Saga reset uses loaded sagas (4.6.69) ===")
     saga_service = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/quest/SagaResetService.java")

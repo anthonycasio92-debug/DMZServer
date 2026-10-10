@@ -1,6 +1,10 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.75**.
+What changed from **4.5.147** through **4.6.76**.
+
+## Menus use their own color, and the config search filters as you type
+
+Each system keeps the same layout. The page title and the active tab use that system's color: Character gold, Rival red, Sparring blue, Progression green, Prestige light purple, Difficulty yellow, Saga aqua, Staff Admin dark red, Config editor gray. Rival opens on Actions, with tabs Actions, Records, and Requests. Sparring opens on Dojo, with tabs Dojo, Rankings, and Wars. Those tabs are the pages, not a second list of the same buttons. Prestige no longer has a Modules list. Config modules stay on Staff Admin → Config editor and `/lm admin config`. Progression lists each module once, opens that module, and Back returns to Progression. The config search filters the current tab by field name while you type, and shows how many fields match.
 
 ## Saga reset reads the stored level
 

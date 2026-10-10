@@ -37,10 +37,15 @@ public final class CnpcConfigEditor {
     private static final int ID_CONFIRM = 37;
     private static final int ID_INFO = 210;
     private static final int INDENT = 12;
+    private static boolean refreshing;
 
     private CnpcConfigEditor() {}
 
     public static void open(ServerPlayer player, String page) {
+        CnpcUltraStyle.withAccent(CnpcUltraStyle.ACCENT_CONFIG, () -> openEditor(player, page));
+    }
+
+    private static void openEditor(ServerPlayer player, String page) {
         if (player == null) {
             return;
         }
@@ -81,54 +86,116 @@ public final class CnpcConfigEditor {
             open(player, "list:difficulty:0:");
             return;
         }
+        final int pageNumber = requested;
+        final String groupPath = path;
+        final boolean editable = tab.editable();
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CONFIG, CnpcGuiSupport.W, 460, (pl, gui) -> {
-            int y = paintChrome(pl, gui, tab.label(), tab.editable() ? tab.fileName() : "Player records", module);
-            y = paintSearch(pl, gui, y, listPage(module, 0, path));
-            if (!tab.editable()) {
-                y = note(gui, y, CnpcUltraStyle.SUBTITLE + "These are player records, not settings.");
-                y = note(gui, y, CnpcUltraStyle.SUBTITLE + tab.fileName());
-                y = note(gui, y, CnpcUltraStyle.BODY + "Change a player from the Rival or Sparring menu.");
-                y += CnpcRowList.ROW_GAP;
-            } else {
-                String query = ConfigEditor.search(player.m_20148_());
-                List<ListRow> rows = listRows(player, module, path, query);
-                int listed = query == null || query.isBlank()
-                        ? ConfigEditor.visibleFields(module, path, "").size()
-                        : countFields(rows);
-                y = paintMatch(gui, y, query, listed);
-                y = paintBanner(player, gui, y);
-                if (query.isBlank() && ConfigEditor.fieldCount(module) > 30) {
-                    y = note(gui, y, CnpcUltraStyle.SUBTITLE + "30+ fields — type to filter.");
-                }
-                if (query.isBlank() && path.isEmpty()) {
-                    y = paintRecent(player, gui, y, module);
-                }
-                if (!query.isBlank() && countFields(rows) == 0) {
-                    y += CnpcRowList.ROW_GAP;
-                } else if (rows.isEmpty()) {
-                    y = note(gui, y, CnpcUltraStyle.SUBTITLE + "Nothing is listed here yet.");
-                } else {
-                    int pages = pages(rows.size());
-                    int current = Math.min(requested, pages - 1);
-                    int from = current * PAGE_SIZE;
-                    int to = Math.min(rows.size(), from + PAGE_SIZE);
-                    String reopen = listPage(module, current, path);
-                    int slot = 0;
-                    for (int i = from; i < to; i++) {
-                        ListRow row = rows.get(i);
-                        if (row.header()) {
-                            y = paintGroup(player, gui, y, slot, module, row.group(), current, path);
-                        } else {
-                            y = paintField(player, gui, y, slot, module, row.entry(), reopen);
-                        }
-                        slot++;
-                    }
-                    y = paintPager(player, gui, y, module, path, current, pages);
-                }
+            int y = paintChrome(pl, gui, tab.label(), editable ? tab.fileName() : "Player records", module);
+            y = paintSearch(pl, gui, y, listPage(module, 0, groupPath));
+            if (editable && gui.getComponent(ID_SEARCH) instanceof ITextField field) {
+                field.setOnChange((g, tf) -> applyFilter(pl, g, module, groupPath, tf));
             }
-            y = paintActions(player, gui, y, listPage(module, requested, path));
-            paintNav(player, gui, y, path.isEmpty() ? null : listPage(module, 0, ConfigEditor.parentPath(path)));
+            paintListBody(pl, gui, y, module, groupPath, pageNumber, editable, tab.fileName());
         });
+    }
+
+    /** Rebuild the rows under the search box without closing the screen, so typing keeps focus. */
+    private static void applyFilter(
+            ServerPlayer player, ICustomGui gui, String module, String path, ITextField field) {
+        if (refreshing || gui == null || field == null || player == null) {
+            return;
+        }
+        ConfigEditor.rememberSearch(player.m_20148_(), field.getText());
+        refreshing = true;
+        try {
+            clearFilterBody(gui);
+            int y = field.getPosY() + CnpcGuiSupport.BTN_H + CnpcRowList.ROW_GAP;
+            ConfigEditor.EditorTab tab = ConfigEditor.tab(module);
+            String file = tab == null ? "" : tab.fileName();
+            paintListBody(player, gui, y, module, path, 0, true, file);
+            field.setFocused(true);
+            gui.update();
+        } finally {
+            refreshing = false;
+        }
+    }
+
+    private static void clearFilterBody(ICustomGui gui) {
+        int[] ids = {
+                ID_MATCH, ID_BANNER, ID_PAGE, ID_PREV, ID_NEXT, ID_SAVE, ID_RELOAD, ID_DISCARD,
+                CnpcGuiSupport.ID_NAV_BACK, CnpcGuiSupport.ID_NAV_HUB
+        };
+        for (int id : ids) {
+            gui.removeComponent(id);
+        }
+        for (int slot = 0; slot < PAGE_SIZE; slot++) {
+            gui.removeComponent(ID_NAME + slot);
+            gui.removeComponent(ID_UNDO + slot);
+            gui.removeComponent(ID_DESC + slot);
+            gui.removeComponent(ID_VALUE + slot);
+            gui.removeComponent(ID_GROUP + slot);
+            gui.removeComponent(ID_CTRL + slot * 3);
+            gui.removeComponent(ID_CTRL + slot * 3 + 1);
+            gui.removeComponent(ID_CTRL + slot * 3 + 2);
+        }
+        for (int i = 0; i < 4; i++) {
+            gui.removeComponent(ID_RECENT + i);
+        }
+        for (int id = ID_INFO; id < ID_INFO + 24; id++) {
+            gui.removeComponent(id);
+        }
+    }
+
+    private static void paintListBody(
+            ServerPlayer player, ICustomGui gui, int y, String module, String path,
+            int requested, boolean editable, String fileName) {
+        if (!editable) {
+            y = note(gui, y, CnpcUltraStyle.SUBTITLE + "These are player records, not settings.");
+            y = note(gui, y, CnpcUltraStyle.SUBTITLE + fileName);
+            y = note(gui, y, CnpcUltraStyle.BODY + "Change a player from the Rival or Sparring menu.");
+            y += CnpcRowList.ROW_GAP;
+        } else {
+            String query = ConfigEditor.search(player.m_20148_());
+            if (query == null) {
+                query = "";
+            }
+            List<ListRow> rows = listRows(player, module, path, query);
+            int listed = query.isBlank()
+                    ? ConfigEditor.visibleFields(module, path, "").size()
+                    : countFields(rows);
+            y = paintMatch(gui, y, query, listed);
+            y = paintBanner(player, gui, y);
+            if (query.isBlank() && ConfigEditor.fieldCount(module) > 30) {
+                y = note(gui, y, CnpcUltraStyle.SUBTITLE + "30+ fields — type to filter.");
+            }
+            if (query.isBlank() && path.isEmpty()) {
+                y = paintRecent(player, gui, y, module);
+            }
+            if (!query.isBlank() && countFields(rows) == 0) {
+                y += CnpcRowList.ROW_GAP;
+            } else if (rows.isEmpty()) {
+                y = note(gui, y, CnpcUltraStyle.SUBTITLE + "Nothing is listed here yet.");
+            } else {
+                int pages = pages(rows.size());
+                int current = Math.min(requested, pages - 1);
+                int from = current * PAGE_SIZE;
+                int to = Math.min(rows.size(), from + PAGE_SIZE);
+                String reopen = listPage(module, current, path);
+                int slot = 0;
+                for (int i = from; i < to; i++) {
+                    ListRow row = rows.get(i);
+                    if (row.header()) {
+                        y = paintGroup(player, gui, y, slot, module, row.group(), current, path);
+                    } else {
+                        y = paintField(player, gui, y, slot, module, row.entry(), reopen);
+                    }
+                    slot++;
+                }
+                y = paintPager(player, gui, y, module, path, current, pages);
+            }
+        }
+        y = paintActions(player, gui, y, listPage(module, requested, path));
+        paintNav(player, gui, y, path.isEmpty() ? null : listPage(module, 0, ConfigEditor.parentPath(path)));
     }
 
     private static void paintDetail(ServerPlayer player, String page) {
