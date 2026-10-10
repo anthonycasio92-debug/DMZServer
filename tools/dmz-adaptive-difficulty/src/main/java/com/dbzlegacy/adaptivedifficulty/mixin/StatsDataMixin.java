@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.mixin;
 
+import com.dbzlegacy.adaptivedifficulty.progression.FusionBonusOwner;
 import com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulCapMath;
 import com.dbzlegacy.adaptivedifficulty.progression.PersonalLevelCapMirror;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem;
@@ -10,6 +11,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
@@ -22,6 +24,16 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class StatsDataMixin {
     @Shadow(remap = false)
     public abstract Player getPlayer();
+
+    @Inject(method = "<init>", at = @At("TAIL"), remap = false)
+    private void lm$rememberFusionOwner(Player player, CallbackInfo ci) {
+        FusionBonusOwner.remember((StatsData) (Object) this);
+    }
+
+    @Inject(method = "getBonusStats", at = @At("RETURN"), remap = false)
+    private void lm$rememberFusionOwnerOnRead(CallbackInfoReturnable<com.dragonminez.common.stats.character.BonusStats> cir) {
+        FusionBonusOwner.remember((StatsData) (Object) this);
+    }
 
     @Inject(method = "getConfiguredMaxValue", at = @At("HEAD"), cancellable = true, remap = false)
     private void lm$personalMaxValueHead(CallbackInfoReturnable<Integer> cir) {

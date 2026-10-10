@@ -27,7 +27,8 @@
     "noea.NoeaAbsorptionBonusGateMixin",
     "noea.NoeaTravelSafetyCorpseFixMixin",
     "noea.HakaiDestroyerGateMixin",
-    "FusionUnfuseBonusClearMixin"
+    "FusionUnfuseBonusClearMixin",
+    "FusionBonusReadGateMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -2160,6 +2160,19 @@ def main() -> int:
           and "import com.dragonminez.server.util.FusionLogic" not in fusion_clear
           and "FusionUnfuseBonusClearMixin" not in mixin_plugin
           and "FusionLogic" not in mixin_plugin)
+    fusion_gate = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/FusionBonusReadGateMixin.java")
+    check("fusion bonus is ignored on read when the player is not fused",
+          "status.isFused()" in read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/progression/FusionBonusOwner.java")
+          and 'method = "calculateBonus"' in fusion_gate
+          and 'method = "hasBonus"' in fusion_gate
+          and 'method = "getBonuses"' in fusion_gate
+          and 'FUSION_BONUS = "FusionBonus"' in fusion_gate
+          and 'lower.contains("fusion") && lower.contains("zenkai")' in fusion_gate
+          and "Zenkai_" in fusion_gate
+          and '"FusionBonusReadGateMixin"' in fusion_mixins
+          and "FusionBonusReadGateMixin" in build_sh
+          and "FusionBonusOwner" in build_sh
+          and "FusionBonusOwner.remember" in read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/StatsDataMixin.java"))
 
     print("\n=== Fall damage diagnostic (4.6.42) ===")
     fall_diag = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/event/FallDamageDiag.java")
