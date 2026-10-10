@@ -2224,19 +2224,27 @@ def main() -> int:
           and "public static boolean save()" in read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/character/CharacterServicesConfig.java")
           and "public static boolean save()" in read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/quest/SagaResetConfig.java"))
 
-    print("\n=== Saga reset uses loaded sagas (4.6.63) ===")
+    print("\n=== Saga reset uses loaded sagas (4.6.69) ===")
     saga_service = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/quest/SagaResetService.java")
     saga_config = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/quest/SagaResetConfig.java")
     saga_gui = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmSagaGui.java")
-    check("saga reset lists live sagas and defaults the cost",
+    character_gui = read(cnpc_dir / "CnpcLmCharacterGui.java")
+    check("saga reset lists live sagas and scales the cost",
           "QuestRegistry.getAllSagas" in saga_service
           and "defaultBaseCost" in saga_config
-          and "costFor" in saga_config
+          and "perLevelCost" in saga_config
+          and "baseCosts" in saga_config
+          and "getHighestDmzLevel" in saga_config
+          and "isSagaLocked" in saga_service
           and "resetSaga" in saga_service
+          and "setTrackedQuestId" in saga_service
+          and "Not enough Ancient Coins" in saga_service
+          and "CnpcRowList" in saga_gui
+          and "CnpcUltraStyle" in saga_gui
+          and "saga|Saga" in character_gui
           and "CnpcLmSagaGui.open" in read(cnpc_dir / "CnpcLmGui.java")
           and "SagaResetConfig" in build_sh
-          and "SagaResetService" in build_sh
-          and "scrollPickList" in saga_gui)
+          and "SagaResetService" in build_sh)
 
     print("\n=== Summary ===")
     for w in warns:

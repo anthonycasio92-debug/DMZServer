@@ -36,6 +36,14 @@ public final class CnpcLmCharacterGui {
                     (pl, gui) -> paintReskinConfirm(pl, gui));
             return;
         }
+        if (p.startsWith("saga_confirm:")) {
+            CnpcLmSagaGui.openConfirm(player, p.substring("saga_confirm:".length()));
+            return;
+        }
+        if ("saga".equals(p) || p.startsWith("saga:")) {
+            CnpcLmSagaGui.openList(player, p);
+            return;
+        }
         if (p.startsWith("bones:") || "bones".equals(p)) {
             int bonePage = parseBonePage(p);
             int boneExtra = CnpcGuiSupport.TAB_BAR_H;
@@ -88,6 +96,9 @@ public final class CnpcLmCharacterGui {
             if ("true".equals(ph.get("can_head_bones"))) {
                 actions.add(CnpcGuiLayout.GridButton.run("§fHead parts", () -> open(player, "bones:0")));
             }
+            if (com.dbzlegacy.adaptivedifficulty.quest.SagaResetConfig.get().enabled) {
+                actions.add(CnpcGuiLayout.GridButton.run("§6Saga reset", () -> open(player, "saga")));
+            }
             actions.add(CnpcGuiLayout.GridButton.run("§cRemove Android Upgrade",
                     () -> CnpcLmGui.open(player, "android_remove", "main")));
             if (actions.isEmpty()) {
@@ -110,6 +121,11 @@ public final class CnpcLmCharacterGui {
             CnpcGuiSupport.button(gui, 40, "§cRemove Android Upgrade", CnpcGuiSupport.COL_L, row,
                     () -> CnpcLmGui.open(player, "android_remove", "main"));
             row += CnpcGuiSupport.ROW_STEP;
+            if (com.dbzlegacy.adaptivedifficulty.quest.SagaResetConfig.get().enabled) {
+                CnpcGuiSupport.button(gui, 41, "§6Saga reset", CnpcGuiSupport.COL_L, row,
+                        () -> open(player, "saga"));
+                row += CnpcGuiSupport.ROW_STEP;
+            }
         }
         footer(player, gui, row, null, subject);
     }
@@ -342,14 +358,15 @@ public final class CnpcLmCharacterGui {
         CnpcGuiSupport.navSubmenu(player, gui, row, () -> open(player, "reskin"), "§7« Back");
     }
 
-    private static int characterTabs(ServerPlayer player, ICustomGui gui, int y, String active) {
+    static int characterTabs(ServerPlayer player, ICustomGui gui, int y, String active) {
         return CnpcGuiSupport.paintTabBar(gui, y, new String[] {
-                "services|Services", "reskin|Reskin", "bones|Headbones"
+                "services|Services", "reskin|Reskin", "bones|Headbones", "saga|Saga"
         }, active, action -> {
             String id = action.startsWith("tab:") ? action.substring(4) : action;
             switch (id) {
                 case "reskin" -> open(player, "reskin");
                 case "bones" -> open(player, "bones:0");
+                case "saga" -> open(player, "saga");
                 default -> open(player, "main");
             }
         });

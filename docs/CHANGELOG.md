@@ -1,6 +1,12 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.68**.
+What changed from **4.5.147** through **4.6.69**.
+
+## Saga reset scales with your level
+
+Character Services has a Saga page. It lists every saga Dragon Mine Z has loaded, including datapack sagas, from `QuestRegistry.getAllSagas()`. A saga with no display name uses a readable id.
+
+The cost is the saga base plus your level times `perLevelCost`. `config/legacymechanics/saga-reset.json` has `defaultBaseCost` for any saga that is not listed. Locked sagas and sagas you have not started cannot be reset. Confirming calls Dragon Mine Z `resetSaga`, which clears that saga's progress and the tracked quest when it belongs to the saga. You need the Ancient Coins first. An old untouched config file picks up these bases; a base you already edited stays.
 
 ## God Ki history is removed, not zeroed
 

@@ -569,6 +569,29 @@ public final class AncientCoinEconomy {
         player.m_213846_(Component.m_237113_("§6+ " + formatExactCost(copper)));
     }
 
+    /**
+     * Highest recorded Dragon Mine Z level. Form changes do not rewrite this.
+     * Used for level-scaled prices such as saga reset.
+     */
+    public static int getHighestDmzLevel(ServerPlayer player) {
+        if (player == null) {
+            return 0;
+        }
+        try {
+            long level = com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache
+                    .data(player).getHighestDmzLevel();
+            if (level <= 0L) {
+                return 0;
+            }
+            if (level > Integer.MAX_VALUE) {
+                return Integer.MAX_VALUE;
+            }
+            return (int) level;
+        } catch (Throwable ignored) {
+            return 0;
+        }
+    }
+
     public static long activationCost(UnlockTier tier) {
         return tier == null ? 0L : normalizeCost(tier.activationCost());
     }
