@@ -21,7 +21,7 @@ public final class CnpcLmAdminGui {
 
     private static void paintMain(ServerPlayer player, ICustomGui gui) {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, "§cStaff Admin",
-                "§7Reload config, progression tools, and event log");
+                "§7Reload, edit config, progression tools, and the event log");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, java.util.List.of(
                 "§7Full commands: §8/lm admin help",
                 "§8/lm admin inspect … §7· §8/difficulty admin …"
@@ -36,8 +36,10 @@ public final class CnpcLmAdminGui {
         CnpcGuiSupport.button(gui, 21, "§9Progression panel", CnpcGuiSupport.COL_R, row,
                 () -> CnpcLmGui.open(player, "progression", "main"));
         row += CnpcGuiSupport.ROW_STEP;
-        CnpcGuiSupport.buttonSmallFull(gui, 22, "§8Event log", CnpcGuiSupport.M, row,
-                CnpcGuiSupport.textBandWidth(), () -> CnpcLmLogsGui.open(player, "main"));
+        CnpcGuiSupport.button(gui, 23, "§6Config editor", CnpcGuiSupport.COL_L, row,
+                () -> CnpcLmGui.open(player, "config", "main"));
+        CnpcGuiSupport.button(gui, 22, "§8Event log", CnpcGuiSupport.COL_R, row,
+                () -> CnpcLmLogsGui.open(player, "main"));
         row += CnpcGuiSupport.ROW_STEP;
         CnpcGuiSupport.navSystemRoot(player, gui, row);
         CnpcGuiSupport.paintSystemMainPreview(CnpcGuiSupport.target(player), gui, player);

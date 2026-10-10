@@ -2182,6 +2182,21 @@ def main() -> int:
           and "paintingUltra()" not in style_support
           and "CnpcUltraPreview.active" not in bone_gui)
 
+    print("\n=== In-game config editor (4.6.65) ===")
+    config_editor = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/config/editor/ConfigEditor.java")
+    config_gui = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmConfigGui.java")
+    check("config editor lists fields by reflection",
+          "getFields()" in config_editor
+          and "adminPermission" in config_editor
+          and "Migrated" in config_editor
+          and "combatCurveExponent" not in config_gui
+          and "enableProgression" not in config_gui
+          and "CnpcLmConfigGui.open" in read(cnpc_dir / "CnpcLmGui.java")
+          and "ConfigEditor" in build_sh
+          and "CharacterServicesConfig" in build_sh
+          and "public static boolean save()" in read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/character/CharacterServicesConfig.java")
+          and "public static boolean save()" in read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/quest/SagaResetConfig.java"))
+
     print("\n=== Saga reset uses loaded sagas (4.6.63) ===")
     saga_service = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/quest/SagaResetService.java")
     saga_config = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/quest/SagaResetConfig.java")

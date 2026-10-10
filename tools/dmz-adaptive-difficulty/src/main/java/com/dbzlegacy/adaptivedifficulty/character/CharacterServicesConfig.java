@@ -60,6 +60,26 @@ public final class CharacterServicesConfig {
         }
     }
 
+    /** Writes the live config. Staff edits use this so the file matches the menu. */
+    public static boolean save() {
+        INSTANCE = sanitize(INSTANCE == null ? defaults() : INSTANCE);
+        Path file = path();
+        try {
+            Files.createDirectories(file.getParent());
+            try (Writer writer = Files.newBufferedWriter(file)) {
+                GSON.toJson(INSTANCE, writer);
+            }
+            CosmeticHeadBoneCatalog.invalidate();
+            return true;
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] character-services config save failed: {}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    t.toString());
+            return false;
+        }
+    }
+
     private static void seedDefault(Path file) throws Exception {
         try (var in = CharacterServicesConfig.class.getClassLoader()
                 .getResourceAsStream("character-services.default.json")) {

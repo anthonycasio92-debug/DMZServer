@@ -1,6 +1,10 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.64**.
+What changed from **4.5.147** through **4.6.65**.
+
+## Staff config editor
+
+`/lm admin config` and the Staff Admin **Config editor** button open the live settings. Legacy Mechanics, character services, and saga reset are listed from the config objects themselves, so a new field shows up without a new button. Switches flip in place. Numbers, text, lists, and maps can be edited, and the file is saved. The admin permission node and one-time migration flags stay in the file. Rivalry, sparring, and rival progression stay player records, not settings.
 
 ## Production menus use the new look
 

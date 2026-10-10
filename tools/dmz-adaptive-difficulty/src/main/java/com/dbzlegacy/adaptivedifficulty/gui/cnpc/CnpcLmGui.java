@@ -15,6 +15,7 @@ public final class CnpcLmGui {
     public static final int ID_LOGS = 18438;
     public static final int ID_ADMIN = 18439;
     public static final int ID_SAGA = 18440;
+    public static final int ID_CONFIG = 18441;
 
     private CnpcLmGui() {}
 
@@ -37,6 +38,7 @@ public final class CnpcLmGui {
             case "logs", "syslog" -> CnpcLmLogsGui.open(player, pg);
             case "admin" -> CnpcLmAdminGui.open(player, pg);
             case "saga", "sagareset", "saga_reset" -> CnpcLmSagaGui.open(player, pg);
+            case "config", "cfgedit", "configeditor" -> CnpcLmConfigGui.open(player, pg);
             case "skills", "skill" -> CnpcLmSkillCheckGui.openSkillsAdmin(player, pg);
             case "android_remove", "androidremove" -> CnpcLmProgressionGui.open(player, "android_remove");
             default -> CnpcLmHubGui.open(player, "main");
