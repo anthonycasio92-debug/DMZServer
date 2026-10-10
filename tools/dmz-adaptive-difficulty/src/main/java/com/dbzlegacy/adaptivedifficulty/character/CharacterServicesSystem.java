@@ -425,7 +425,7 @@ public final class CharacterServicesSystem {
             if (fullWipe) {
                 return "§aOpening character setup for §f" + titleCase(raceId)
                         + "§a. §7Pick your class and appearance — free full wipe."
-                        + " §7Purchased head parts stay unlocked."
+                        + " §7Purchased model pieces stay unlocked."
                         + paid;
             }
             if (openedFreeClassPicker) {

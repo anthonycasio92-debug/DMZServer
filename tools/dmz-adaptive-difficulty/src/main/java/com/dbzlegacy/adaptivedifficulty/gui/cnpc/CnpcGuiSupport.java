@@ -1208,6 +1208,11 @@ public final class CnpcGuiSupport {
         buttonSmall(gui, ID_NAV_BACK, CnpcUltraStyle.BACK, COL_L, row, 95, () -> openMenuHub(player));
     }
 
+    /** A system's Home tab. Wide enough for the full label, never squeezed. */
+    public static void navBackToMainMenu(ServerPlayer player, ICustomGui gui, int row) {
+        buttonSmall(gui, ID_NAV_BACK, CnpcUltraStyle.BACK_TO_MAIN, COL_L, row, 200, () -> openMenuHub(player));
+    }
+
     /**
      * Sub-page opened from inside a tab: « Back returns to that parent.
      * The hub button stays off this row so Back never leaves the system.

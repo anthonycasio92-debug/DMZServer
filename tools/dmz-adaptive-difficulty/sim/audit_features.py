@@ -1235,9 +1235,9 @@ def main() -> int:
         "private static void footer", 1
     )[0]
     check(
-        "CNPC android remove back returns to Race and Class",
+        "CNPC android remove back returns to Character Home",
         "navBackToParent" in android_remove_ui
-        and "raceclass" in android_remove_ui
+        and 'open(player, "main")' in android_remove_ui
         and "CnpcLmHubGui.open" not in android_remove_ui
         and "CnpcLmCharacterGui.open(player, p)" in cnpc_prog,
     )
@@ -1618,11 +1618,11 @@ def main() -> int:
     check("End Dragon submenu page",
           "end_dragon" in chest and "endDragon" in chest
           and "openEndDragon" in cmi_diff
-          and "paintEndDragon" in read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmDifficultyGui.java"))
+          and "paintSummons" in read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmDifficultyGui.java"))
     cnpc_diff = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmDifficultyGui.java")
     check("CNPC teams page refreshes snapshot",
           "private static void paintTeam" in cnpc_diff
-          and "DifficultyActions.prepareGui(subject)" in cnpc_diff.split("private static void paintTeam", 1)[1].split("private static void paintEndDragon", 1)[0])
+          and "DifficultyActions.prepareGui(subject)" in cnpc_diff.split("private static void paintTeam", 1)[1].split("private static void paintSummons", 1)[0])
     check("End Dragon summonMenuLines API", "summonMenuLines" in end_str and "canOpenSummonMenu" in end_str)
     staff_access = read(SRC / "com/dbzlegacy/adaptivedifficulty/util/StaffAccess.java")
     check("StaffAccess uses Bukkit entity for permissions", "getBukkitEntity" in staff_access)
@@ -1763,9 +1763,9 @@ def main() -> int:
     check("progression titles are blue and prestige stays pink",
           'CnpcUltraStyle.ACCENT + "Progression"' in prog
           and "§dProgression" not in prog
+          and '"home|Home"' in prog
           and '"boosts|Boosts"' in prog
           and '"coins|Coins"' in prog
-          and '"tools|Tools"' in prog
           and 'subPage(CnpcUltraStyle.ACCENT, "Progression", "End")' in prog
           and 'CnpcUltraStyle.INFO + "2× · 30m"' in prog
           and 'CnpcUltraStyle.INFO + "2× · 60m"' in prog)
@@ -1787,9 +1787,9 @@ def main() -> int:
           "records:" in rival_records
           and "void paintProgress" not in rival_records
           and "Hall of fame" in rival_records
-          and '"challenges|Challenges"' in rival_records
-          and '"records|Records"' in rival_records
-          and '"requests|Requests"' in rival_records
+          and '"home|Home"' in rival_records
+          and '"actions|Actions"' in rival_records
+          and '"challenge|Challenge"' in rival_records
           and 'open(player, "history")' not in rival_records
           and 'open(player, "progress")' not in rival_records
           and 'open(player, "stats")' not in rival_records
@@ -2344,14 +2344,14 @@ def main() -> int:
           and "CnpcRowList" in saga_gui
           and "CnpcUltraStyle" in saga_gui
           and "ID_SAGA" in saga_gui
-          and "sagas|Sagas" in saga_gui
-          and "reset|Reset" in saga_gui
+          and "servicesTabs" in saga_gui
           and "characterTabs" not in saga_gui
           and "Reset saga progress" in saga_gui
           and "Reset saga progress" not in character_gui
-          and "bones|Head parts" in character_gui
-          and "reskin|Reskin" in character_gui
-          and "saga|Saga Reset" not in character_gui
+          and "home|Home" in character_gui
+          and "saga|Saga Reset" in character_gui
+          and "android|Android Removal" in character_gui
+          and "Model customization" in character_gui
           and "services|Services" not in character_gui
           and "CnpcLmSagaGui.open" in read(cnpc_dir / "CnpcLmGui.java")
           and "SagaResetConfig" in build_sh

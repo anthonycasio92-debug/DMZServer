@@ -34,7 +34,7 @@ public final class CnpcLmSparGui {
             openPickConfirm(player, raw.substring("pick_confirm:".length()).trim());
             return;
         }
-        final String pageKey = lower.isBlank() || "main".equals(lower) ? "dojo" : lower;
+        final String pageKey = lower.isBlank() || "main".equals(lower) ? "main" : lower;
         int tab = sparTabs(pageKey) ? CnpcGuiSupport.TAB_BAR_H : 0;
         int height = CnpcGuiSupport.window(switch (pageKey) {
             case "stats" -> 420;
@@ -76,40 +76,47 @@ public final class CnpcLmSparGui {
                 case "pick_dojo_challenge" -> paintDojoChallengePick(pl, gui);
                 case "admin" -> paintAdmin(pl, gui);
                 case "settings" -> paintChatSettings(pl, gui);
-                default -> paintMain(pl, gui);
+                case "main", "home" -> paintHome(pl, gui);
+                default -> paintHome(pl, gui);
             }
         });
     }
 
-    /** Every sparring page keeps Dojo, Rankings, and Wars, including sub-pages. */
+    /** Every sparring page keeps Home, Dojo, and Wars, including sub-pages. */
     private static boolean sparTabs(String page) {
         return page != null && !page.isBlank();
     }
 
     private static String sparTabId(String page) {
         if (page == null) {
-            return "dojo";
+            return "home";
         }
         String p = page.toLowerCase(Locale.ROOT);
-        if (p.startsWith("top") || "leaderboard".equals(p) || p.startsWith("dojo_top")
-                || "dojo_rank".equals(p) || "dojo_rankings".equals(p)) {
-            return "rankings";
-        }
         if (p.startsWith("dojo_war") || "pick_dojo_challenge".equals(p) || p.contains("dojo_challenge")) {
             return "wars";
         }
-        return "dojo";
+        if (p.startsWith("dojo_top") || "dojo_rank".equals(p) || "dojo_rankings".equals(p) || p.startsWith("top")) {
+            return "home";
+        }
+        if (p.startsWith("dojo") || "mentor".equals(p) || "actions".equals(p) || "pending".equals(p)
+                || "invites".equals(p) || "settings".equals(p) || "admin".equals(p)
+                || p.startsWith("pick_apprentice") || p.startsWith("pick_mentor")
+                || p.startsWith("pick_accept") || p.startsWith("pick_decline") || p.startsWith("pick_release")
+                || "roster".equals(p)) {
+            return "dojo";
+        }
+        return "home";
     }
 
     private static int sparTabBar(ServerPlayer player, ICustomGui gui, int y, String active) {
         return CnpcGuiSupport.paintTabBar(gui, y, new String[] {
-                "dojo|Dojo", "rankings|Rankings", "wars|Wars"
+                "home|Home", "dojo|Dojo", "wars|Wars"
         }, active, action -> {
             String id = action.startsWith("tab:") ? action.substring(4) : action;
             switch (id) {
-                case "rankings" -> open(player, "top");
+                case "dojo" -> open(player, "dojo");
                 case "wars" -> open(player, "dojo_war");
-                default -> open(player, "dojo");
+                default -> open(player, "main");
             }
         });
     }
@@ -123,9 +130,37 @@ public final class CnpcLmSparGui {
                 () -> open(viewer, returnPage));
     }
 
-    /** Unknown pages land on Dojo. The old overview only repeated the tab bar. */
+    /** Rankings, personal stats, and a short explanation. Dojo and Wars stay their own tabs. */
+    private static void paintHome(ServerPlayer player, ICustomGui gui) {
+        ServerPlayer who = subject(player);
+        Map<String, String> ph = SparGuiApi.placeholders(who);
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcUltraStyle.header("Sparring"),
+                CnpcUltraStyle.SUBTITLE + "Rankings, your stats, and how a session works");
+        infoY = sparTabBar(player, gui, infoY, "home");
+        String partner = ph.getOrDefault("partner", "");
+        boolean active = "true".equals(ph.get("session_active"));
+        String session = CnpcUltraStyle.SUBTITLE + "Session " + (active
+                ? CnpcUltraStyle.CONFIRM + "in progress"
+                : CnpcUltraStyle.BODY + "not running");
+        String partnerLine = partner == null || partner.isBlank()
+                ? CnpcUltraStyle.SUBTITLE + "Partner " + CnpcUltraStyle.BODY + "none"
+                : CnpcUltraStyle.SUBTITLE + "Partner " + CnpcUltraStyle.BODY + partner;
+        List<String> lines = List.of(
+                session,
+                partnerLine,
+                CnpcUltraStyle.SUBTITLE + "Rankings show who has trained the most. Your stats are this character only.");
+        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX));
+        CnpcGuiSupport.button(gui, 40, CnpcUltraStyle.INFO + "Player rankings", CnpcGuiSupport.COL_L, row,
+                () -> open(player, "top"));
+        CnpcGuiSupport.button(gui, 41, CnpcUltraStyle.ACCENT + "Your stats", CnpcGuiSupport.COL_R, row,
+                () -> open(player, "stats"));
+        row += CnpcGuiSupport.ROW_STEP;
+        footer(player, gui, row, null);
+    }
+
+    /** Unknown pages land on Home. */
     private static void paintMain(ServerPlayer player, ICustomGui gui) {
-        paintDojo(player, gui, "home");
+        paintHome(player, gui);
     }
 
     private static void paintMentor(ServerPlayer player, ICustomGui gui) {
@@ -215,7 +250,7 @@ public final class CnpcLmSparGui {
                         () -> act(pl, "mentor_decline", pickerFinal, "pending"));
             }
             row += CnpcGuiSupport.ROW_STEP;
-            CnpcGuiSupport.navBackToParent(pl, gui, row, () -> open(pl, "pending"));
+            CnpcGuiSupport.navBackToParent(pl, gui, row, () -> open(pl, "main"));
         });
     }
 
@@ -242,7 +277,7 @@ public final class CnpcLmSparGui {
                     () -> act(pl, action, targetArg, returnPage));
             CnpcGuiSupport.button(gui, 21, CnpcUltraStyle.SUBTITLE + "Cancel", CnpcGuiSupport.COL_R, row, () -> open(pl, returnPage));
             row += CnpcGuiSupport.ROW_STEP;
-            CnpcGuiSupport.navBackToParent(pl, gui, row, () -> open(pl, returnPage));
+            CnpcGuiSupport.navBackToParent(pl, gui, row, () -> open(pl, "main"));
         });
     }
 
@@ -318,7 +353,7 @@ public final class CnpcLmSparGui {
         if (!"true".equalsIgnoreCase(ph.get("system_enabled"))) {
             int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of(CnpcGuiStyle.MSG_SPAR_OFF),
                     CnpcGuiStyle.INFO_INLINE_MAX));
-            footer(player, gui, row + 8, null);
+            footer(player, gui, row + 8, "dojo");
             return;
         }
         int row = CnpcGuiSupport.bodyBelowHeader(infoY);
@@ -358,7 +393,7 @@ public final class CnpcLmSparGui {
                 row += CnpcGuiSupport.ROW_STEP;
             }
         }
-        footer(player, gui, row, "home".equals(key) ? null : "dojo");
+        footer(player, gui, row, "dojo");
     }
 
     private static void paintChatSettings(ServerPlayer player, ICustomGui gui) {
@@ -391,7 +426,7 @@ public final class CnpcLmSparGui {
         String warPendingLabel = warPending > 0 ? CnpcUltraStyle.INFO + "War pending " + CnpcUltraStyle.BODY + "(" + warPending + ")" : CnpcUltraStyle.ACCENT + "War pending";
         CnpcGuiSupport.button(gui, 21, warPendingLabel, CnpcGuiSupport.COL_R, row, () -> open(player, "dojo_war_pending"));
         row += CnpcGuiSupport.ROW_STEP;
-        footer(player, gui, row, null);
+        footer(player, gui, row, "wars");
     }
 
     private static void paintDojoWarPending(ServerPlayer player, ICustomGui gui) {
@@ -435,7 +470,7 @@ public final class CnpcLmSparGui {
             CnpcGuiSupport.button(gui, 21, CnpcUltraStyle.DANGER + "Cancel challenge", CnpcGuiSupport.COL_R, row,
                     () -> act(pl, "dojo_war_cancel", pickerArg, "dojo_war_pending"));
             row += CnpcGuiSupport.ROW_STEP;
-            CnpcGuiSupport.navBackToParent(pl, gui, row, () -> open(pl, "dojo_war_pending"));
+            CnpcGuiSupport.navBackToParent(pl, gui, row, () -> open(pl, "main"));
         });
     }
 
@@ -459,7 +494,7 @@ public final class CnpcLmSparGui {
         int infoY = CnpcGuiSupport.paintHeader(player, gui,
                 CnpcGuiStyle.subPage(CnpcUltraStyle.ACCENT, "Sparring", "Leaderboard · " + CnpcGuiStyle.sparLeaderboardTab(cat)),
                 CnpcUltraStyle.SUBTITLE + "Top sparring players");
-        infoY = sparTabBar(player, gui, infoY, "rankings");
+        infoY = sparTabBar(player, gui, infoY, "home");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines,
                 CnpcGuiStyle.INFO_INLINE_MAX));
         String shown = cat;
@@ -474,7 +509,7 @@ public final class CnpcLmSparGui {
         };
         row = CnpcGuiLayout.paintTwoColumnButtonGrid(player, gui, row, CnpcGuiSupport.ID_GRID_BASE, tabs,
                 () -> {});
-        footer(player, gui, row, null);
+        footer(player, gui, row, "home");
     }
 
     private static void paintScroll(ServerPlayer player, ICustomGui gui, String title, List<String> body, String back) {
@@ -637,11 +672,12 @@ public final class CnpcLmSparGui {
     }
 
     /** {@code parentPage} null on spar main; otherwise Back reopens that page. Main always → LM hub. */
+    /** {@code parentPage} null on Home (back to the hub). Any other page returns to Home. */
     private static void footer(ServerPlayer player, ICustomGui gui, int row, String parentPage) {
         if (parentPage == null) {
-            CnpcGuiSupport.navSystemRoot(player, gui, row);
+            CnpcGuiSupport.navBackToMainMenu(player, gui, row);
         } else {
-            CnpcGuiSupport.navBackToParent(player, gui, row, () -> open(player, parentPage));
+            CnpcGuiSupport.navBackToParent(player, gui, row, () -> open(player, "main"));
         }
         if (parentPage == null) {
             CnpcGuiSupport.paintSystemMainPreview(subject(player), gui, player);

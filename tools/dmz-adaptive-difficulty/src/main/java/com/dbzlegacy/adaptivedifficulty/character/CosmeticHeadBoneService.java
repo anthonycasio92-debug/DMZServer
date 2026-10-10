@@ -592,7 +592,7 @@ public final class CosmeticHeadBoneService {
         }
         String bone = unequipHeadBoneId(player);
         if (bone.isEmpty()) {
-            return applyHeadBoneDirect(player, "", "§aUnequipped extra head parts.");
+            return applyHeadBoneDirect(player, "", "§aUnequipped extra model pieces.");
         }
         return applyHeadBoneDirect(player, bone, "§aUnequipped to §f");
     }
@@ -721,7 +721,7 @@ public final class CosmeticHeadBoneService {
             RaceHeadBoneSync.syncClient(player);
             return message;
         } catch (Throwable t) {
-            return "§cCould not update head parts.";
+            return "§cCould not update model customization.";
         }
     }
 

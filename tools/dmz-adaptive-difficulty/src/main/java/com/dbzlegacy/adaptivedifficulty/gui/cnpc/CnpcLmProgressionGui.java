@@ -52,7 +52,8 @@ public final class CnpcLmProgressionGui {
         }
         String p = page.toLowerCase(Locale.ROOT).trim();
         return switch (p) {
-            case "main", "boosts", "boost_panel", "tpboost" -> "boosts";
+            case "main", "home" -> "main";
+            case "boosts", "boost_panel", "tpboost" -> "boosts";
             case "tools", "android_panel", "android_tools", "androidtools" -> "tools";
             case "android_convert", "androidconvert", "convert_android" -> "android_convert";
             case "android_remove", "androidremove", "remove_android", "deandroid" -> "android_remove";
@@ -69,6 +70,7 @@ public final class CnpcLmProgressionGui {
 
     private static void paint(ServerPlayer player, ICustomGui gui, String page) {
         switch (page) {
+            case "main" -> paintHome(player, gui);
             case "boosts" -> paintBoostPanel(player, gui);
             case "coins" -> paintEconomy(player, gui);
             case "tools" -> paintTools(player, gui);
@@ -77,28 +79,45 @@ public final class CnpcLmProgressionGui {
             case "flags" -> paintAllFlags(player, gui);
             case "android_convert" -> paintAndroidConvert(player, gui);
             case "android_remove" -> paintAndroidRemove(player, gui);
-            default -> paintBoostPanel(player, gui);
+            default -> paintHome(player, gui);
         }
     }
 
     private static int progressionTabs(ServerPlayer player, ICustomGui gui, int y, String active) {
         return CnpcGuiSupport.paintTabBar(gui, y, new String[] {
-                "boosts|Boosts", "coins|Coins", "tools|Tools"
+                "home|Home", "boosts|Boosts", "coins|Coins"
         }, active, action -> {
             String id = action.startsWith("tab:") ? action.substring(4) : action;
             switch (id) {
+                case "boosts" -> open(player, "boosts");
                 case "coins" -> open(player, "coins");
-                case "tools" -> open(player, "tools");
-                default -> open(player, "boosts");
+                default -> open(player, "main");
             }
         });
+    }
+
+    /** Index for boosts, coins, and the tools that are not their own tab. */
+    private static void paintHome(ServerPlayer player, ICustomGui gui) {
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcUltraStyle.ACCENT + "Progression",
+                CnpcUltraStyle.SUBTITLE + "Training boosts, Ancient Coins, and staff tools");
+        infoY = progressionTabs(player, gui, infoY, "home");
+        int row = CnpcGuiSupport.bodyBelowHeader(infoY);
+        CnpcGuiSupport.button(gui, 20, CnpcUltraStyle.INFO + "Boosts", CnpcGuiSupport.COL_L, row,
+                () -> open(player, "boosts"));
+        CnpcGuiSupport.button(gui, 21, CnpcUltraStyle.ACCENT + "Coins", CnpcGuiSupport.COL_R, row,
+                () -> open(player, "coins"));
+        row += CnpcGuiSupport.ROW_STEP;
+        CnpcGuiSupport.button(gui, 22, CnpcUltraStyle.SUBTITLE + "Tools", CnpcGuiSupport.COL_L, row,
+                () -> open(player, "tools"));
+        row += CnpcGuiSupport.ROW_STEP;
+        CnpcGuiSupport.navBackToMainMenu(player, gui, row);
     }
 
     /** Modules, Android tools, and all flags live on Tools. Boosts and coins are the other tabs. */
     private static void paintTools(ServerPlayer player, ICustomGui gui) {
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcUltraStyle.ACCENT + "Progression",
                 CnpcUltraStyle.SUBTITLE + "Modules, Android tools, and flags");
-        infoY = progressionTabs(player, gui, infoY, "tools");
+        infoY = progressionTabs(player, gui, infoY, "home");
         int row = CnpcGuiSupport.bodyBelowHeader(infoY);
         row = CnpcGuiSupport.paintSectionTag(gui, CnpcGuiSupport.ID_INLINE_NOTE, row, CnpcUltraStyle.ACCENT + "Modules");
         String[] moduleIds = {"skills", "tp", "race", "combat", "end", "utility", "status", "shop"};
@@ -123,7 +142,7 @@ public final class CnpcLmProgressionGui {
         CnpcGuiSupport.buttonSmallFull(gui, 29, CnpcUltraStyle.ACCENT + "All flags",
                 CnpcGuiSupport.M, row, CnpcGuiSupport.textBandWidth(), () -> open(player, "flags"));
         row += CnpcGuiSupport.ROW_STEP;
-        CnpcGuiSupport.navSystemRoot(player, gui, row);
+        CnpcGuiSupport.navBackToParent(player, gui, row, () -> open(player, "main"));
     }
 
     private static void paintSection(ServerPlayer player, ICustomGui gui, String page) {
@@ -131,7 +150,7 @@ public final class CnpcLmProgressionGui {
         String title = sectionTitle(page);
         String hint = staff ? CnpcGuiStyle.HINT_TOGGLE_STAFF : CnpcGuiStyle.HINT_READ_ONLY;
         int infoY = CnpcGuiSupport.paintHeader(player, gui, title, hint);
-        infoY = progressionTabs(player, gui, infoY, "tools");
+        infoY = progressionTabs(player, gui, infoY, "home");
         int row = CnpcGuiSupport.bodyBelowHeader(infoY);
         List<String> sectionLines = ProgressionGuiApi.linesForPage(player, page);
         row = sectionLines.size() > 2
@@ -155,14 +174,14 @@ public final class CnpcLmProgressionGui {
                     () -> open(player, page)));
         }
         if (grid.isEmpty()) {
-            CnpcGuiSupport.navBackToParent(player, gui, row + 8, () -> open(player, "tools"));
+            CnpcGuiSupport.navBackToParent(player, gui, row + 8, () -> open(player, "main"));
             return;
         }
         row = CnpcGuiLayout.paintTwoColumnButtonGrid(
                 player, gui, row + 4, 40, grid.toArray(CnpcGuiLayout.GridButton[]::new),
                 () -> open(player, page));
         row += 8;
-        CnpcGuiSupport.navBackToParent(player, gui, row, () -> open(player, "tools"));
+        CnpcGuiSupport.navBackToParent(player, gui, row, () -> open(player, "main"));
     }
 
     private static List<CnpcGuiLayout.GridButton> flagToggleButtons(
@@ -197,7 +216,7 @@ public final class CnpcLmProgressionGui {
     private static void paintAllFlags(ServerPlayer player, ICustomGui gui) {
         int infoY = CnpcGuiSupport.paintHeader(player, gui,
                 CnpcGuiStyle.subPage(CnpcUltraStyle.ACCENT, "Progression", "All flags"), CnpcGuiStyle.HINT_TOGGLE_STAFF);
-        infoY = progressionTabs(player, gui, infoY, "tools");
+        infoY = progressionTabs(player, gui, infoY, "home");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of(
                 CnpcUltraStyle.SUBTITLE + "Turn entire progression modules on or off.",
                 CnpcUltraStyle.DIM + "Category pages have the same toggles plus tools."
@@ -209,7 +228,7 @@ public final class CnpcLmProgressionGui {
                 player, gui, row, CnpcGuiSupport.ID_GRID_BASE, grid.toArray(CnpcGuiLayout.GridButton[]::new),
                 () -> open(player, "flags"));
         row += 8;
-        CnpcGuiSupport.navBackToParent(player, gui, row, () -> open(player, "tools"));
+        CnpcGuiSupport.navBackToParent(player, gui, row, () -> open(player, "main"));
     }
 
     private static int sectionHeight(ServerPlayer player, String page) {
@@ -252,7 +271,7 @@ public final class CnpcLmProgressionGui {
                 () -> ProgressionGuiApi.handleDo(player, "boost", "end", "boosts"),
                 () -> open(player, "boosts")));
         row += CnpcGuiSupport.ROW_STEP;
-        CnpcGuiSupport.navSystemRoot(player, gui, row);
+        CnpcGuiSupport.navBackToParent(player, gui, row, () -> open(player, "main"));
     }
 
     private static int boostPreset(
@@ -268,7 +287,7 @@ public final class CnpcLmProgressionGui {
         ServerPlayer subject = CnpcGuiSupport.target(player);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage(CnpcUltraStyle.ACCENT, "Progression", "Android convert"),
                 CnpcGuiStyle.HINT_DOUBLE_CLICK_PLAYER);
-        infoY = progressionTabs(player, gui, infoY, "tools");
+        infoY = progressionTabs(player, gui, infoY, "home");
         boolean self = subject.m_20148_().equals(player.m_20148_());
         String who = subject.m_7755_().getString();
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of(
@@ -286,7 +305,7 @@ public final class CnpcLmProgressionGui {
         if (StaffAccess.isStaff(player)) {
             row = paintNameScroll(player, gui, row, "android", "android_convert");
         }
-        CnpcGuiSupport.navBackToParent(player, gui, row, () -> open(player, "tools"));
+        CnpcGuiSupport.navBackToParent(player, gui, row, () -> open(player, "main"));
     }
 
     private static void paintAndroidRemove(ServerPlayer player, ICustomGui gui) {
@@ -294,7 +313,7 @@ public final class CnpcLmProgressionGui {
         int infoY = CnpcGuiSupport.paintHeader(player, gui,
                 CnpcGuiStyle.subPage(CnpcUltraStyle.ACCENT, "Progression", "Remove Android"),
                 CnpcUltraStyle.SUBTITLE + "Two-step confirm within 10 seconds");
-        infoY = progressionTabs(player, gui, infoY, "tools");
+        infoY = progressionTabs(player, gui, infoY, "home");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBeforePickList(gui, infoY, List.of(
                 CnpcUltraStyle.SUBTITLE + "Removes Android forms and restores what you had.",
                 CnpcUltraStyle.INFO + "Click again within 10 seconds to confirm."
@@ -308,7 +327,7 @@ public final class CnpcLmProgressionGui {
         if (staff) {
             row = paintNameScroll(player, gui, row, "android_remove", "android_remove");
         }
-        CnpcGuiSupport.navBackToParent(player, gui, row, () -> open(player, "tools"));
+        CnpcGuiSupport.navBackToParent(player, gui, row, () -> open(player, "main"));
     }
 
     /** @return Y row for footer after list (or after empty label). */
@@ -353,7 +372,7 @@ public final class CnpcLmProgressionGui {
                                 staffFree ? "off" : "on", "coins"),
                         () -> open(player, "coins")));
         row += CnpcGuiSupport.ROW_STEP;
-        CnpcGuiSupport.navSystemRoot(player, gui, row);
+        CnpcGuiSupport.navBackToParent(player, gui, row, () -> open(player, "main"));
     }
 
     private static String sectionTitle(String page) {

@@ -32,7 +32,7 @@ public final class CnpcStyledTestHub {
                 CnpcUltraStyle.subtitle("Each button opens that screen."));
         y = CnpcGuiSupport.bodyBelowInfo(y);
         int id = CnpcGuiSupport.ID_GRID_BASE;
-        y = link(gui, y, id++, CnpcUltraStyle.ACCENT_CHARACTER, "Head parts", () -> CnpcLmCharacterGui.open(player, "bones:0"));
+        y = link(gui, y, id++, CnpcUltraStyle.ACCENT_CHARACTER, "Model customization", () -> CnpcLmCharacterGui.open(player, "bones:0"));
         y = link(gui, y, id++, CnpcUltraStyle.ACCENT_CHARACTER, "Reskin", () -> CnpcLmCharacterGui.open(player, "reskin"));
         y = CnpcGuiSupport.paintSectionTag(gui, CnpcGuiSupport.ID_STATUS_TAG, y, "Current menus");
         y = link(gui, y, id++, CnpcUltraStyle.ACCENT_DIFFICULTY, "Difficulty", () -> CnpcLmDifficultyGui.open(player, "main"));

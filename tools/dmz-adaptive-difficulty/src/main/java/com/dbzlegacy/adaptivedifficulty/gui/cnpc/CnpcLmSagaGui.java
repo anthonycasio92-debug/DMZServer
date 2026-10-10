@@ -90,19 +90,9 @@ public final class CnpcLmSagaGui {
                 CnpcGuiSupport.window(280), (pl, gui) -> paintConfirm(pl, gui, sagaId)));
     }
 
+    /** Saga pages sit on the Character Services tab bar. Saga Reset stays selected. */
     private static int sagaTabs(ServerPlayer player, ICustomGui gui, int y, String active) {
-        return CnpcGuiSupport.paintTabBar(gui, y, new String[] {
-                "sagas|Sagas", "reset|Reset", "progress|Progress"
-        }, active, action -> {
-            String id = action.startsWith("tab:") ? action.substring(4) : action;
-            if ("reset".equals(id)) {
-                open(player, "reset");
-            } else if ("progress".equals(id)) {
-                open(player, "progress");
-            } else {
-                open(player, "main");
-            }
-        });
+        return CnpcLmCharacterGui.servicesTabs(player, gui, y, "saga");
     }
 
     private static void paintHome(ServerPlayer player, ICustomGui gui, int page) {
@@ -135,7 +125,7 @@ public final class CnpcLmSagaGui {
             }
             y += CnpcGuiSupport.ROW_STEP;
         }
-        CnpcGuiSupport.navSystemRoot(player, gui, y);
+        CnpcGuiSupport.navBackToParent(player, gui, y, () -> CnpcLmCharacterGui.open(player, "main"));
     }
 
     private static void paintReset(ServerPlayer player, ICustomGui gui, int page) {
@@ -191,7 +181,7 @@ public final class CnpcLmSagaGui {
             }
             y += CnpcGuiSupport.ROW_STEP;
         }
-        CnpcGuiSupport.navSystemRoot(player, gui, y);
+        CnpcGuiSupport.navBackToParent(player, gui, y, () -> CnpcLmCharacterGui.open(player, "main"));
     }
 
     private static void openProgress(ServerPlayer player) {
@@ -244,7 +234,7 @@ public final class CnpcLmSagaGui {
                 y += rowStep;
             }
         }
-        CnpcGuiSupport.navSystemRoot(player, gui, y);
+        CnpcGuiSupport.navBackToParent(player, gui, y, () -> CnpcLmCharacterGui.open(player, "main"));
     }
 
     private static int paintOfferRows(ICustomGui gui, int y, List<Offer> offers, int page) {
@@ -302,7 +292,7 @@ public final class CnpcLmSagaGui {
                             () -> open(player, "reset"));
                 });
         row += CnpcGuiSupport.ROW_STEP + 8;
-        CnpcGuiSupport.navBackToParent(player, gui, row, () -> open(player, "reset"));
+        CnpcGuiSupport.navBackToParent(player, gui, row, () -> CnpcLmCharacterGui.open(player, "main"));
     }
 
     private static void click(ServerPlayer player, Offer offer, int page) {

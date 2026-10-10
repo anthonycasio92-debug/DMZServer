@@ -157,14 +157,14 @@ public final class PrestigeSystem {
         }
 
         int nextRequired = requiredLevel(player);
-        String summary = "§aThat's prestige §f" + newCompleted + "§a.\n"
-                + "§7You're holding §6" + newHeld + "§7/§f" + MAX_HELD + ".\n"
+        String summary = "§aLifetime prestiges §f" + newCompleted + "§a.\n"
+                + "§7Current prestige amount §6" + newHeld + "§7/§f" + MAX_HELD + ".\n"
                 + "§7The next one needs level §e" + DmzRewards.formatWhole(nextRequired) + "§7.";
         if (!preferGuiFeedback()) {
             send(player, "");
             send(player, LmChat.DIVIDER);
-            send(player, "§aThat's prestige §f" + newCompleted + "§a.");
-            send(player, "§7You're holding §6" + newHeld + "§7/§f" + MAX_HELD + ".");
+            send(player, "§aLifetime prestiges §f" + newCompleted + "§a.");
+            send(player, "§7Current prestige amount §6" + newHeld + "§7/§f" + MAX_HELD + ".");
             send(player, "§7The next one needs level §e" + DmzRewards.formatWhole(nextRequired) + "§7.");
             send(player, LmChat.DIVIDER);
         }
@@ -190,8 +190,8 @@ public final class PrestigeSystem {
         int required = requiredLevel(player);
         send(player, "");
         send(player, "§8── §6Prestige §8──");
-        send(player, "§7Prestige: §f" + completed);
-        send(player, "§7Holding §6" + held + "§7/§f" + MAX_HELD
+        send(player, "§7Lifetime prestiges: §f" + completed);
+        send(player, "§7Current prestige amount §6" + held + "§7/§f" + MAX_HELD
                 + " §7· level §f" + DmzRewards.formatWhole(level));
         send(player, "§7Next prestige requires: §e" + DmzRewards.formatWhole(required) + " §7power");
         MutableComponent row = Component.m_237113_("§7")
@@ -206,15 +206,15 @@ public final class PrestigeSystem {
     ) {
         String summary = "§ePrestige now?\n"
                 + "§7This resets your stats. Click again within 10 seconds.\n"
-                + "§7You'll be holding §6" + (held + 1) + "§7/§f" + MAX_HELD + ".";
+                + "§7Current prestige amount will be §6" + (held + 1) + "§7/§f" + MAX_HELD + ".";
         if (!preferGuiFeedback()) {
             send(player, "");
             send(player, LmChat.DIVIDER);
             send(player, "§ePrestige now?");
-            send(player, "§7This resets your stats and gives you one to hold.");
+            send(player, "§7This resets your stats and adds one to your current prestige amount.");
             send(player, "§7Your level §f" + DmzRewards.formatWhole(level)
                     + " §7is enough (needs §e" + DmzRewards.formatWhole(required) + "§7).");
-            send(player, "§7You'll be holding §6" + (held + 1) + "§7/§f" + MAX_HELD + ".");
+            send(player, "§7Current prestige amount will be §6" + (held + 1) + "§7/§f" + MAX_HELD + ".");
             send(player, "§7Click again within 10 seconds.");
             MutableComponent row = Component.m_237113_("§7")
                     .m_7220_(btn("§a[Confirm Prestige]", "/prestige do confirm", "Complete prestige"))

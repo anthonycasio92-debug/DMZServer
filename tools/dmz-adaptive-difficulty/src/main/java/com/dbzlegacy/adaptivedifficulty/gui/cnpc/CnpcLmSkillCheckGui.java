@@ -56,7 +56,7 @@ public final class CnpcLmSkillCheckGui {
             row = CnpcGuiSupport.bodyBelowInfo(
                     CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX));
         }
-        CnpcGuiSupport.navSystemRoot(player, gui, row);
+        CnpcGuiSupport.navBackToMainMenu(player, gui, row);
         CnpcGuiSupport.paintSystemMainPreview(CnpcGuiSupport.target(player), gui, player);
     }
 

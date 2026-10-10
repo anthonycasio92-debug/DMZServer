@@ -46,8 +46,7 @@ public final class CnpcLmRivalGui {
             openPickConfirm(player, raw.substring("pick_confirm:".length()).trim());
             return;
         }
-        final String pageKey = lower.isBlank() || "main".equals(lower) || "actions".equals(lower)
-                ? "challenges" : lower;
+        final String pageKey = lower.isBlank() || "main".equals(lower) ? "home" : lower;
         int height = heightForPage(player, pageKey);
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_RIVAL, CnpcGuiSupport.W, height, (pl, gui) -> {
             String records = recordsTab(pageKey);
@@ -56,6 +55,8 @@ public final class CnpcLmRivalGui {
                 return;
             }
             switch (pageKey) {
+                case "home" -> paintHome(pl, gui);
+                case "actions", "action" -> paintActions(pl, gui);
                 case "list" -> paintList(pl, gui);
                 case "pending", "invites", "requests", "challenge_pending", "challenge_requests" ->
                         paintRequests(pl, gui);
@@ -76,7 +77,7 @@ public final class CnpcLmRivalGui {
                         "spectate", "challenges");
                 case "admin" -> paintAdmin(pl, gui);
                 case "settings" -> paintSettings(pl, gui);
-                default -> paintChallenges(pl, gui);
+                default -> paintHome(pl, gui);
             }
         });
     }
@@ -87,8 +88,9 @@ public final class CnpcLmRivalGui {
             return CnpcGuiSupport.window(520 + extra);
         }
         return CnpcGuiSupport.window(switch (page) {
+            case "home", "actions", "action" -> 440;
             case "list" -> 460;
-            case "challenges", "challenge", "actions" -> 440;
+            case "challenges", "challenge" -> 480;
             case "pending", "invites", "requests", "challenge_pending", "challenge_requests" -> 440;
             case "pick_declare", "pick_silent", "pick_challenge", "pick_spectate",
                     "pick_accept", "pick_decline", "pick_replace_mutual" -> 400;
@@ -104,38 +106,33 @@ public final class CnpcLmRivalGui {
 
     private static String rivalTabId(String page) {
         if (page == null || page.isBlank()) {
-            return "challenges";
+            return "home";
         }
         String p = page.toLowerCase(Locale.ROOT);
-        if (p.startsWith("pending_decide") || p.startsWith("challenge_decide")) {
-            return "requests";
+        if (p.startsWith("pending_decide") || "pending".equals(p) || "invites".equals(p)
+                || "requests".equals(p) || "challenge_pending".equals(p) || "challenge_requests".equals(p)
+                || p.startsWith("pick_declare") || p.startsWith("pick_silent")
+                || p.startsWith("pick_replace") || "replace_mutual".equals(p)
+                || "actions".equals(p) || "action".equals(p) || "settings".equals(p) || "admin".equals(p)) {
+            return "actions";
         }
-        if (p.startsWith("list_detail") || p.startsWith("pick_declare") || p.startsWith("pick_silent")
-                || p.startsWith("pick_replace") || "replace_mutual".equals(p)) {
-            return "records";
+        if (p.startsWith("challenge_time") || p.startsWith("pick_challenge") || p.startsWith("pick_spectate")
+                || "challenge".equals(p) || "challenges".equals(p)
+                || (recordsTab(p) != null && "history".equals(recordsTab(p)))) {
+            return "challenge";
         }
-        if (p.startsWith("challenge_time") || p.startsWith("pick_challenge") || p.startsWith("pick_spectate")) {
-            return "challenges";
-        }
-        if (recordsTab(p) != null) {
-            return "records";
-        }
-        return switch (p) {
-            case "pending", "invites", "requests", "challenge_pending", "challenge_requests" -> "requests";
-            case "list", "top", "leaderboard", "settings", "admin" -> "records";
-            default -> "challenges";
-        };
+        return "home";
     }
 
     private static int rivalTabBar(ServerPlayer player, ICustomGui gui, int y, String active) {
         return CnpcGuiSupport.paintTabBar(gui, y, new String[] {
-                "challenges|Challenges", "requests|Requests", "records|Records"
+                "home|Home", "actions|Actions", "challenge|Challenge"
         }, active, action -> {
             String id = action.startsWith("tab:") ? action.substring(4) : action;
             switch (id) {
-                case "requests" -> open(player, "requests");
-                case "records" -> open(player, "records");
-                default -> open(player, "challenges");
+                case "actions" -> open(player, "actions");
+                case "challenge" -> open(player, "challenges");
+                default -> open(player, "home");
             }
         });
     }
@@ -178,9 +175,62 @@ public final class CnpcLmRivalGui {
                 () -> open(viewer, returnPage));
     }
 
-    /** Unknown pages land on Challenges. */
+    /** Unknown pages land on Home. */
     private static void paintMain(ServerPlayer player, ICustomGui gui) {
-        paintChallenges(player, gui);
+        paintHome(player, gui);
+    }
+
+    /** Overview only: records, the rival list, and the board. Doing lives on Actions and Challenge. */
+    private static void paintHome(ServerPlayer player, ICustomGui gui) {
+        ServerPlayer who = subject(player);
+        Map<String, String> ph = RivalGuiApi.placeholders(who);
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcUltraStyle.header("Rivals"),
+                CnpcUltraStyle.SUBTITLE + "Your record, your list, and the board");
+        infoY = rivalTabBar(player, gui, infoY, "home");
+        List<String> lines = new ArrayList<>();
+        lines.add(CnpcUltraStyle.SUBTITLE + "Wins " + CnpcUltraStyle.BODY + ph.getOrDefault("wins", "0")
+                + CnpcUltraStyle.SUBTITLE + "  Losses " + CnpcUltraStyle.BODY + ph.getOrDefault("losses", "0"));
+        lines.add(CnpcUltraStyle.SUBTITLE + "Open a view below. Declare, answer requests, and challenge from the other tabs.");
+        int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX));
+        CnpcGuiSupport.button(gui, 70, CnpcUltraStyle.INFO + "View rival list", CnpcGuiSupport.COL_L, row,
+                () -> open(player, "list"));
+        CnpcGuiSupport.button(gui, 71, CnpcUltraStyle.ACCENT + "View leaderboard", CnpcGuiSupport.COL_R, row,
+                () -> open(player, "top"));
+        row += CnpcGuiSupport.ROW_STEP;
+        CnpcGuiSupport.button(gui, 72, CnpcUltraStyle.SUBTITLE + "View records", CnpcGuiSupport.COL_L, row,
+                () -> open(player, "records"));
+        row += CnpcGuiSupport.ROW_STEP;
+        footer(player, gui, row, null);
+    }
+
+    /** Declare, silent declare, and incoming or outgoing requests. */
+    private static void paintActions(ServerPlayer player, ICustomGui gui) {
+        ServerPlayer who = subject(player);
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage(CnpcUltraStyle.ACCENT, "Rivals", "Actions"),
+                CnpcUltraStyle.SUBTITLE + "Send a rival request, or answer one you already have");
+        infoY = rivalTabBar(player, gui, infoY, "actions");
+        int row = CnpcGuiSupport.bodyBelowHeader(infoY);
+        CnpcGuiSupport.button(gui, 20, CnpcUltraStyle.INFO + "Declare a rival", CnpcGuiSupport.COL_L, row,
+                () -> open(player, "pick_declare"));
+        CnpcGuiSupport.button(gui, 22, CnpcUltraStyle.DIM + "Silent declare", CnpcGuiSupport.COL_R, row,
+                () -> open(player, "pick_silent"));
+        row += CnpcGuiSupport.ROW_STEP;
+        CnpcGuiSupport.button(gui, 23, CnpcUltraStyle.ACCENT + "Review requests", CnpcGuiSupport.COL_L, row,
+                () -> open(player, "requests"));
+        CnpcGuiSupport.button(gui, 26, CnpcUltraStyle.SUBTITLE + "Settings", CnpcGuiSupport.COL_R, row,
+                () -> open(player, "settings"));
+        row += CnpcGuiSupport.ROW_STEP;
+        if (RivalGuiApi.needsMutualReplacePick(who)) {
+            CnpcGuiSupport.button(gui, 24, CnpcUltraStyle.INFO + "Replace mutual", CnpcGuiSupport.COL_L, row,
+                    () -> open(player, "pick_replace_mutual"));
+            row += CnpcGuiSupport.ROW_STEP;
+        }
+        if (StaffAccess.isStaff(player)) {
+            CnpcGuiSupport.buttonSmall(gui, CnpcGuiSupport.ID_STAFF_EXTRA, CnpcUltraStyle.DANGER + "Staff Admin",
+                    CnpcGuiSupport.COL_L, row, CnpcGuiSupport.BTN_W, () -> open(player, "admin"));
+            row += CnpcGuiSupport.ROW_STEP;
+        }
+        footer(player, gui, row, "home");
     }
 
     private static void paintSettings(ServerPlayer player, ICustomGui gui) {
@@ -211,11 +261,11 @@ public final class CnpcLmRivalGui {
         Map<String, String> ph = RivalGuiApi.placeholders(who);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage(CnpcUltraStyle.ACCENT, "Rivals", "Challenges"),
                 CnpcUltraStyle.SUBTITLE + "Send a challenge, see the live fight, or spectate");
-        infoY = rivalTabBar(player, gui, infoY, "challenges");
+        infoY = rivalTabBar(player, gui, infoY, "challenge");
         if (!"true".equalsIgnoreCase(ph.get("system_enabled"))) {
             int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of(CnpcGuiStyle.MSG_RIVALS_OFF),
                             CnpcGuiStyle.INFO_INLINE_MAX));
-            footer(player, gui, row + 8, null);
+            footer(player, gui, row + 8, "home");
             return;
         }
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY, RivalGuiApi.challengeLines(who),
@@ -227,8 +277,10 @@ public final class CnpcLmRivalGui {
         row += CnpcGuiSupport.ROW_STEP;
         CnpcGuiSupport.button(gui, 25, CnpcUltraStyle.DIM + "Stop spectate", CnpcGuiSupport.COL_L, row,
                 () -> act(player, "spectate_stop", "", "challenges"));
+        CnpcGuiSupport.button(gui, 28, CnpcUltraStyle.SUBTITLE + "Challenge history", CnpcGuiSupport.COL_R, row,
+                () -> open(player, "records:history"));
         row += CnpcGuiSupport.ROW_STEP;
-        footer(player, gui, row, null);
+        footer(player, gui, row, "home");
     }
 
     /**
@@ -239,7 +291,7 @@ public final class CnpcLmRivalGui {
         ServerPlayer who = subject(player);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage(CnpcUltraStyle.ACCENT, "Rivals", "Requests"),
                 CnpcUltraStyle.SUBTITLE + "Declares and challenges you sent or received");
-        infoY = rivalTabBar(player, gui, infoY, "requests");
+        infoY = rivalTabBar(player, gui, infoY, "actions");
         List<String> cards = new ArrayList<>();
         List<String> kinds = new ArrayList<>();
         List<String> labels = new ArrayList<>();
@@ -256,9 +308,9 @@ public final class CnpcLmRivalGui {
         int listY = CnpcGuiSupport.bodyBelowHeader(infoY);
         if (cards.isEmpty()) {
             gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER,
-                    CnpcUltraStyle.SUBTITLE + "No pending requests. A declare invite or a challenge request will show up here.",
+                    CnpcUltraStyle.SUBTITLE + "Nothing is waiting. A declare invite or a challenge request will show up here.",
                     CnpcGuiSupport.M, listY + 4, CnpcGuiSupport.textBandWidth(), 14);
-            footer(player, gui, listY + 28, null);
+            footer(player, gui, listY + 28, "home");
             return;
         }
         int rowsBelow = 3;
@@ -274,7 +326,7 @@ public final class CnpcLmRivalGui {
         row += CnpcGuiSupport.ROW_STEP;
         CnpcGuiSupport.button(gui, 33, CnpcUltraStyle.DANGER + "Cancel", CnpcGuiSupport.COL_L, row,
                 () -> respondRequest(player, scroll, cards, kinds, "cancel"));
-        footer(player, gui, row + CnpcGuiSupport.ROW_STEP, null);
+        footer(player, gui, row + CnpcGuiSupport.ROW_STEP, "home");
     }
 
     /** Scroll text: direction, kind, who, and the action that row accepts. */
@@ -374,7 +426,7 @@ public final class CnpcLmRivalGui {
                         () -> act(pl, "decline", pickerArg, "requests"));
             }
             row += CnpcGuiSupport.ROW_STEP;
-            CnpcGuiSupport.navBackToParent(pl, gui, row, () -> open(pl, "requests"));
+            CnpcGuiSupport.navBackToParent(pl, gui, row, () -> open(pl, "home"));
         });
     }
 
@@ -397,7 +449,7 @@ public final class CnpcLmRivalGui {
                             "list_detail:" + pickerArg,
                             () -> act(pl, "remove", pickerArg, "list")));
             row += CnpcGuiSupport.ROW_STEP;
-            CnpcGuiSupport.navBackToParent(pl, gui, row, () -> open(pl, "list"));
+            CnpcGuiSupport.navBackToParent(pl, gui, row, () -> open(pl, "home"));
         });
     }
 
@@ -427,7 +479,7 @@ public final class CnpcLmRivalGui {
             });
             CnpcGuiSupport.button(gui, 21, CnpcUltraStyle.SUBTITLE + "Cancel", CnpcGuiSupport.COL_R, row, () -> open(pl, returnPage));
             row += CnpcGuiSupport.ROW_STEP;
-            CnpcGuiSupport.navBackToParent(pl, gui, row, () -> open(pl, returnPage));
+            CnpcGuiSupport.navBackToParent(pl, gui, row, () -> open(pl, "home"));
         });
     }
 
@@ -499,7 +551,7 @@ public final class CnpcLmRivalGui {
                         () -> act(pl, "challenge_decline", pickerArg, "challenge_pending"));
             }
             row += CnpcGuiSupport.ROW_STEP;
-            CnpcGuiSupport.navBackToParent(pl, gui, row, () -> open(pl, "requests"));
+            CnpcGuiSupport.navBackToParent(pl, gui, row, () -> open(pl, "home"));
         });
     }
 
@@ -520,7 +572,7 @@ public final class CnpcLmRivalGui {
             }
             row = CnpcGuiLayout.paintTwoColumnButtonGrid(pl, gui, row, CnpcGuiSupport.ID_GRID_BASE, grid, () -> {});
             row += 4;
-            CnpcGuiSupport.navBackToParent(pl, gui, row, () -> open(pl, "challenges"));
+            CnpcGuiSupport.navBackToParent(pl, gui, row, () -> open(pl, "home"));
         });
     }
 
@@ -530,20 +582,8 @@ public final class CnpcLmRivalGui {
         int infoY = CnpcGuiSupport.paintHeader(player, gui,
                 CnpcGuiStyle.subPage(CnpcUltraStyle.ACCENT, "Rivals", "Records · " + label),
                 CnpcGuiStyle.HINT_READ_ONLY);
-        infoY = rivalTabBar(player, gui, infoY, "records");
+        infoY = rivalTabBar(player, gui, infoY, "history".equals(key) ? "challenge" : "home");
         int row = CnpcGuiSupport.bodyBelowHeader(infoY);
-        CnpcGuiSupport.button(gui, 70, CnpcUltraStyle.INFO + "Rival list", CnpcGuiSupport.COL_L, row,
-                () -> open(player, "list"));
-        CnpcGuiSupport.button(gui, 71, CnpcUltraStyle.ACCENT + "Leaderboard", CnpcGuiSupport.COL_R, row,
-                () -> open(player, "top"));
-        row += CnpcGuiSupport.ROW_STEP;
-        CnpcGuiSupport.button(gui, 72, CnpcUltraStyle.SUBTITLE + "Settings", CnpcGuiSupport.COL_L, row,
-                () -> open(player, "settings"));
-        if (StaffAccess.isStaff(player)) {
-            CnpcGuiSupport.buttonSmall(gui, CnpcGuiSupport.ID_STAFF_EXTRA, CnpcUltraStyle.DANGER + "Staff Admin",
-                    CnpcGuiSupport.COL_R, row, CnpcGuiSupport.BTN_W, () -> open(player, "admin"));
-        }
-        row += CnpcGuiSupport.ROW_STEP;
         String[] ids = {"history", "stats", "season", "quests", "achievements", "hof", "journal", "title"};
         CnpcGuiLayout.GridButton[] tabs = new CnpcGuiLayout.GridButton[ids.length];
         for (int i = 0; i < ids.length; i++) {
@@ -554,7 +594,7 @@ public final class CnpcLmRivalGui {
         }
         row = CnpcGuiLayout.paintTwoColumnButtonGrid(player, gui, row, CnpcGuiSupport.ID_GRID_BASE, tabs, () -> {});
         int bodyBottom = CnpcGuiSupport.paintLongReadOnlyBody(gui, row, recordsLines(player, key));
-        footer(player, gui, bodyBottom, null);
+        footer(player, gui, bodyBottom, "home");
     }
 
     private static String recordsLabel(String key) {
@@ -588,7 +628,7 @@ public final class CnpcLmRivalGui {
         ServerPlayer who = subject(player);
         List<String> cards = RivalGuiApi.currentRivalCards(who);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage(CnpcUltraStyle.ACCENT, "Rivals", "Your list"),
-                cards.isEmpty() ? CnpcUltraStyle.SUBTITLE + "Your list is empty — declare a rival below"
+                cards.isEmpty() ? CnpcUltraStyle.SUBTITLE + "Your list is empty. Open Actions to declare a rival."
                         : CnpcUltraStyle.SUBTITLE + cards.size() + " rival" + (cards.size() == 1 ? "" : "s")
                                 + " · select a name, then Open");
         infoY = rivalChrome(player, gui, infoY, "list");
@@ -596,11 +636,7 @@ public final class CnpcLmRivalGui {
         if (cards.isEmpty()) {
             listY = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY,
                     RivalSystem.emptyRivalListGuide(), CnpcGuiStyle.INFO_INLINE_MAX));
-            CnpcGuiSupport.button(gui, 20, CnpcUltraStyle.INFO + "Declare…", CnpcGuiSupport.COL_L, listY,
-                    () -> open(player, "pick_declare"));
-            CnpcGuiSupport.button(gui, 22, CnpcUltraStyle.DIM + "Silent…", CnpcGuiSupport.COL_R, listY,
-                    () -> open(player, "pick_silent"));
-            footer(player, gui, listY + CnpcGuiSupport.ROW_STEP, "records");
+            footer(player, gui, listY, "home");
             return;
         }
         int rowsBelow = 4;
@@ -618,18 +654,7 @@ public final class CnpcLmRivalGui {
                 },
                 picker -> open(player, "list_detail:" + picker),
                 () -> open(player, "list"));
-        int tools = actionRow + CnpcGuiSupport.ROW_STEP;
-        CnpcGuiSupport.button(gui, 20, CnpcUltraStyle.INFO + "Declare…", CnpcGuiSupport.COL_L, tools,
-                () -> open(player, "pick_declare"));
-        CnpcGuiSupport.button(gui, 22, CnpcUltraStyle.DIM + "Silent…", CnpcGuiSupport.COL_R, tools,
-                () -> open(player, "pick_silent"));
-        tools += CnpcGuiSupport.ROW_STEP;
-        if (RivalGuiApi.needsMutualReplacePick(who)) {
-            CnpcGuiSupport.button(gui, 24, CnpcUltraStyle.INFO + "Replace mutual…", CnpcGuiSupport.COL_L, tools,
-                    () -> open(player, "pick_replace_mutual"));
-            tools += CnpcGuiSupport.ROW_STEP;
-        }
-        footer(player, gui, tools, "records");
+        footer(player, gui, actionRow + CnpcGuiSupport.ROW_STEP, "home");
     }
 
     private static void paintNamePick(
@@ -749,7 +774,7 @@ public final class CnpcLmRivalGui {
     private static void paintAdmin(ServerPlayer player, ICustomGui gui) {
         if (!StaffAccess.isStaff(player)) {
             CnpcGuiSupport.pushMenuMessage(player, CnpcMenuFeedback.NOTICE_BODY + "Staff only.");
-            open(player, "records");
+            open(player, "home");
             return;
         }
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage(CnpcUltraStyle.ACCENT, "Rivals", "Staff Admin"),
@@ -767,12 +792,12 @@ public final class CnpcLmRivalGui {
         footer(player, gui, row, "records");
     }
 
-    /** {@code parentPage} null on a rival tab; otherwise Back reopens that parent. */
+    /** {@code parentPage} null on Home (back to the hub). Any other page returns to Home. */
     private static void footer(ServerPlayer player, ICustomGui gui, int row, String parentPage) {
         if (parentPage == null) {
-            CnpcGuiSupport.navSystemRoot(player, gui, row);
+            CnpcGuiSupport.navBackToMainMenu(player, gui, row);
         } else {
-            CnpcGuiSupport.navBackToParent(player, gui, row, () -> open(player, parentPage));
+            CnpcGuiSupport.navBackToParent(player, gui, row, () -> open(player, "home"));
         }
         if (parentPage == null) {
             CnpcGuiSupport.paintSystemMainPreview(subject(player), gui, player);

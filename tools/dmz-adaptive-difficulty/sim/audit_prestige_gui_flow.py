@@ -97,12 +97,15 @@ def main() -> None:
     ok("ForgeBridge prestigeHandleDo", "prestigeHandleDo" in bridge or "handlePrestigeDo" in bridge)
 
     print("\n=== Cross-backend parity ===")
-    ok("CNPC prestige is three tabs; chest still has turn-in and shop on main",
-       "Turn in held" in cnpc
+    ok("CNPC prestige is Home, Prestige, and Shop; chest still has turn-in and shop on main",
+       "Turning in prestiges removes your stat bonus. This cannot be undone." in cnpc
+       and "Exchanging prestige for favor removes the stat bonus from the exchanged prestiges." in cnpc
        and "Permanent tiers" in cnpc
+       and "home|Home" in cnpc
+       and "prestige|Prestige" in cnpc
        and "shop|Shop" in cnpc
-       and "forms|Forms" in cnpc
        and "Skill shop" in cnpc
+       and "prestige favor" in cnpc
        and "Turn In Prestiges" in chest
        and "Skill Shop" in chest
        and "Effects" in chest
