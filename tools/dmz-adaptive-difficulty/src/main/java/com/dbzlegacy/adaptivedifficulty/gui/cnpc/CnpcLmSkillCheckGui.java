@@ -32,7 +32,7 @@ public final class CnpcLmSkillCheckGui {
 
     private static void show(ServerPlayer player, String page, boolean staffAdminBrowser) {
         String p = page == null || page.isBlank() ? "core" : page.toLowerCase();
-        CnpcUltraStyle.withAccent(CnpcUltraStyle.ACCENT_PROGRESSION, () ->
+        CnpcUltraStyle.withAccent(CnpcUltraStyle.ACCENT_ADMIN, () ->
                 CnpcGuiSupport.showSized(player, CnpcLmGui.ID_SKILLCHECK, CnpcGuiSupport.W, CnpcGuiSupport.window(H),
                         (pl, gui) -> paint(pl, gui, p, staffAdminBrowser)));
     }

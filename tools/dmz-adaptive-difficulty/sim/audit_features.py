@@ -1837,7 +1837,7 @@ def main() -> int:
           "Welcome back" not in snapshot
           and "Combat & progression" not in hub_gui
           and "Remove Android" not in hub_gui
-          and 'CnpcUltraStyle.ACCENT_PROGRESSION + "Skill Check"' in hub_gui)
+          and 'CnpcUltraStyle.ACCENT_ADMIN + "Skill Check"' in hub_gui)
     check("character hosts remove android and race keep percent",
           'CnpcUltraStyle.DANGER + "Remove Android' in char_gui
           and "Keep " in char_gui
@@ -2296,7 +2296,9 @@ def main() -> int:
           and "ACCENT_SPARRING + \"Sparring\"" in hub_gui
           and "ACCENT_DIFFICULTY + \"Difficulty\"" in hub_gui
           and "ACCENT_PRESTIGE + \"Prestige\"" in hub_gui
-          and "ACCENT_SAGA + \"Saga\"" in hub_gui
+          and "ACCENT_SAGA + \"Saga\"" not in hub_gui
+          and "ACCENT_CONFIG + CnpcUltraStyle.BOLD + \"Systems\"" in hub_gui
+          and "ACCENT_ADMIN + \"Skill Check\"" in hub_gui
           and "ACCENT_CHARACTER + \"Character Services\"" in hub_gui
           and "ACCENT_ADMIN + \"Staff Admin\"" in hub_gui
           and "ACCENT_PROGRESSION + \"Progression panel\"" in admin_gui
@@ -2305,13 +2307,12 @@ def main() -> int:
           and "ACCENT_SAGA" in test_hub)
 
     skill_gui = read(cnpc_dir / "CnpcLmSkillCheckGui.java")
-    check("index headers stay gold while each menu uses its accent",
+    check("hub header stays gold and each menu uses its accent",
           "withAccent(CnpcUltraStyle.ACCENT_CHARACTER" in hub_gui
           and "withAccent(CnpcUltraStyle.ACCENT_ADMIN" in admin_gui
           and "withAccent(CnpcUltraStyle.ACCENT_CHARACTER" not in admin_gui
-          and "withAccent" in test_hub
-          and "ACCENT_CHARACTER" in test_hub
-          and "withAccent(CnpcUltraStyle.ACCENT_PROGRESSION" in skill_gui)
+          and "withAccent(CnpcUltraStyle.ACCENT_CONFIG" in test_hub
+          and "withAccent(CnpcUltraStyle.ACCENT_ADMIN" in skill_gui)
 
     print("\n=== Saga reset uses loaded sagas (4.6.69) ===")
     saga_service = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/quest/SagaResetService.java")

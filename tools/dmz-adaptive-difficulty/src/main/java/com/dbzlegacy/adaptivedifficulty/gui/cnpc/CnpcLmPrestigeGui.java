@@ -207,7 +207,7 @@ public final class CnpcLmPrestigeGui {
         String cost = ph.getOrDefault("form_cost", "5");
 
         int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcGuiStyle.subPage(CnpcUltraStyle.ACCENT, "Prestige", "Forms"),
-                CnpcUltraStyle.SUBTITLE + "Majin and Mutant · " + CnpcUltraStyle.INFO + cost + " " + CnpcUltraStyle.SUBTITLE + "pts · one form at a time");
+                CnpcUltraStyle.SUBTITLE + "Majin and Mutant · " + CnpcUltraStyle.INFO + cost + " " + CnpcUltraStyle.SUBTITLE + "prestige points · one form at a time");
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(gui, infoY,
                 ProgressionGuiApi.prestigeLines(player, "effects"), CnpcGuiStyle.INFO_INLINE_MAX));
         List<CnpcGuiLayout.GridButton> grid = new ArrayList<>();
@@ -215,7 +215,7 @@ public final class CnpcLmPrestigeGui {
             grid.add(CnpcGuiLayout.GridButton.disabled(CnpcUltraStyle.CONFIRM + "Majin · owned"));
         } else if (canBuyMajin) {
             grid.add(CnpcGuiLayout.GridButton.action(
-                    CnpcUltraStyle.ACCENT + "Buy Majin · " + CnpcUltraStyle.ACCENT + cost + " pts",
+                    CnpcUltraStyle.ACCENT + "Buy Majin · " + cost + " prestige points",
                     () -> ProgressionGuiApi.handlePrestigeDo(player, "majin", "", "effects"),
                     () -> open(player, "effects")));
         } else {
@@ -225,7 +225,7 @@ public final class CnpcLmPrestigeGui {
             grid.add(CnpcGuiLayout.GridButton.disabled(CnpcUltraStyle.CONFIRM + "Mutant · owned"));
         } else if (canBuyMutant) {
             grid.add(CnpcGuiLayout.GridButton.action(
-                    CnpcUltraStyle.ACCENT + "Buy Mutant · " + CnpcUltraStyle.ACCENT + cost + " pts",
+                    CnpcUltraStyle.ACCENT + "Buy Mutant · " + cost + " prestige points",
                     () -> ProgressionGuiApi.handlePrestigeDo(player, "mutant", "", "effects"),
                     () -> open(player, "effects")));
         } else {
@@ -271,7 +271,7 @@ public final class CnpcLmPrestigeGui {
                 grid[t - 1] = CnpcGuiLayout.GridButton.disabled(CnpcUltraStyle.CONFIRM + "T" + tier + " " + CnpcUltraStyle.DIM + "· owned");
             } else if (canBuy) {
                 grid[t - 1] = CnpcGuiLayout.GridButton.action(
-                        CnpcUltraStyle.BODY + "Buy T" + tier + " · " + CnpcUltraStyle.ACCENT + cost + " pts",
+                        CnpcUltraStyle.BODY + "Buy T" + tier + " · " + cost + " prestige points",
                         () -> ProgressionGuiApi.handlePrestigeDo(player, "tier", String.valueOf(tier), "tiers"),
                         () -> open(player, "tiers"));
             } else {

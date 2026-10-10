@@ -146,7 +146,7 @@ public final class CnpcLmSagaGui {
         infoY = sagaTabs(player, gui, infoY, "reset");
         List<String> info = new ArrayList<>();
         if (!SagaResetConfig.get().enabled) {
-            info.add("Saga reset is turned off. Ask staff to turn it on if you need to replay a saga.");
+            info.add(SagaResetService.RESET_OFF);
         } else {
             info.add("You have " + AncientCoinEconomy.inventoryBreakdown(player));
             info.add("Cost is the saga base plus your level. A saga that is not listed uses the default base.");
@@ -158,9 +158,6 @@ public final class CnpcLmSagaGui {
 
         int rowStep = CnpcGuiSupport.BTN_H + CnpcRowList.ROW_GAP;
         if (!SagaResetConfig.get().enabled) {
-            gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER,
-                    CnpcUltraStyle.subtitle("Saga reset is turned off. Ask staff to turn it on if you need to replay a saga."),
-                    CnpcGuiSupport.M, y, CnpcGuiSupport.textBandWidth(), 14);
             y += rowStep;
         } else if (offers.isEmpty()) {
             gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER,
@@ -235,10 +232,10 @@ public final class CnpcLmSagaGui {
                 CnpcGuiSupport.COL_L, row,
                 () -> {
                     if (!ready) {
-                        String notice = offer == null ? "That saga is not loaded."
-                                : offer.status() == SagaResetService.Status.LOCKED ? "That saga is locked."
-                                : offer.status() == SagaResetService.Status.NOT_STARTED ? "Nothing to reset"
-                                : "Saga reset is turned off.";
+                        String notice = offer == null ? SagaResetService.NOT_LOADED
+                                : offer.status() == SagaResetService.Status.LOCKED ? SagaResetService.SAGA_LOCKED
+                                : offer.status() == SagaResetService.Status.NOT_STARTED ? SagaResetService.NOTHING_TO_RESET
+                                : SagaResetService.RESET_OFF;
                         CnpcGuiSupport.feedback(player, notice);
                         open(player, "reset");
                         return;
@@ -259,8 +256,8 @@ public final class CnpcLmSagaGui {
         }
         if (!offer.resettable()) {
             String notice = offer.status() == SagaResetService.Status.LOCKED
-                    ? "That saga is locked."
-                    : "Nothing to reset";
+                    ? SagaResetService.SAGA_LOCKED
+                    : SagaResetService.NOTHING_TO_RESET;
             CnpcGuiSupport.feedback(player, notice);
             open(player, "reset:" + page);
             return;

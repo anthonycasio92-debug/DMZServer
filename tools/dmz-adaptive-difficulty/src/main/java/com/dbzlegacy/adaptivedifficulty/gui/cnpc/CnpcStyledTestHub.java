@@ -23,8 +23,8 @@ public final class CnpcStyledTestHub {
         int height = CnpcGuiSupport.suggestHeight(
                 88 + 16 + links * (CnpcGuiSupport.BTN_H + CnpcRowList.ROW_GAP) + 28);
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_HUB, CnpcGuiSupport.W, height,
-                (player1, gui) -> CnpcUltraStyle.withAccent(
-                        CnpcUltraStyle.ACCENT_CHARACTER, () -> paint(player1, gui)));
+                (player1, gui) -> CnpcUltraStyle.withAccent(CnpcUltraStyle.ACCENT_CONFIG,
+                        () -> paint(player1, gui)));
     }
 
     private static void paint(ServerPlayer player, ICustomGui gui) {
@@ -42,9 +42,9 @@ public final class CnpcStyledTestHub {
         y = link(gui, y, id++, CnpcUltraStyle.ACCENT_PRESTIGE, "Prestige", () -> CnpcLmPrestigeGui.open(player, "main"));
         y = link(gui, y, id++, CnpcUltraStyle.ACCENT_ADMIN, "Staff Admin", () -> CnpcLmAdminGui.open(player, "main"));
         if (SkillCheckService.canUse(player)) {
-            y = link(gui, y, id++, CnpcUltraStyle.ACCENT_PROGRESSION, "Skill Check", () -> CnpcLmSkillCheckGui.open(player, "main"));
+            y = link(gui, y, id++, CnpcUltraStyle.ACCENT_ADMIN, "Skill Check", () -> CnpcLmSkillCheckGui.open(player, "main"));
         }
-        y = link(gui, y, id++, CnpcUltraStyle.ACCENT_PROGRESSION, "Skills", () -> CnpcLmSkillCheckGui.openSkillsAdmin(player, "core"));
+        y = link(gui, y, id++, CnpcUltraStyle.ACCENT_ADMIN, "Skills", () -> CnpcLmSkillCheckGui.openSkillsAdmin(player, "core"));
         y = link(gui, y, id, CnpcUltraStyle.ACCENT_SAGA, "Saga", () -> CnpcLmSagaGui.open(player, "main"));
         CnpcGuiSupport.navSystemRoot(player, gui, y);
         CnpcGuiSupport.paintSystemMainPreview(CnpcGuiSupport.target(player), gui, player);

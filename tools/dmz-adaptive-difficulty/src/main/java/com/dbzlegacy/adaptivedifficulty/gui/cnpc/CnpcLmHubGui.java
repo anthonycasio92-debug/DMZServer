@@ -38,12 +38,18 @@ public final class CnpcLmHubGui {
     }
 
     private static void paintMain(ServerPlayer player) {
-        int height = CnpcGuiSupport.suggestHeight((StaffAccess.isStaff(player) ? 400 : 404) + 16);
+        boolean staff = StaffAccess.isStaff(player);
+        int designed = staff ? 400 : 404 - CnpcGuiSupport.ROW_STEP;
+        int height = CnpcGuiSupport.suggestHeight(designed + 16);
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_HUB, CnpcGuiSupport.W, height,
-                (p, gui) -> CnpcUltraStyle.withAccent(CnpcUltraStyle.ACCENT_CHARACTER, () -> paintMain(p, gui)));
+                (p, gui) -> paintMain(p, gui));
     }
 
     private static void paintMain(ServerPlayer player, ICustomGui gui) {
+        CnpcUltraStyle.withAccent(CnpcUltraStyle.ACCENT_CHARACTER, () -> paintMainBody(player, gui));
+    }
+
+    private static void paintMainBody(ServerPlayer player, ICustomGui gui) {
         ServerPlayer who = CnpcGuiSupport.target(player);
         Map<String, String> ph = MechanicsGuiApi.placeholders(who);
         boolean staff = StaffAccess.isStaff(player);
@@ -55,7 +61,10 @@ public final class CnpcLmHubGui {
         List<String> lines = CnpcPlayerSnapshot.hubLines(who, ph, staff, skillCheck);
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(
                 gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX));
-        row = CnpcGuiSupport.paintSectionTag(gui, CnpcGuiSupport.ID_INLINE_NOTE, row, "Systems");
+        gui.addLabel(CnpcGuiSupport.ID_INLINE_NOTE,
+                CnpcUltraStyle.ACCENT_CONFIG + CnpcUltraStyle.BOLD + "Systems",
+                CnpcGuiSupport.M, row, CnpcGuiSupport.textBandWidth(), 12);
+        row += 16;
         int gap = CnpcGuiSupport.ROW_STEP;
 
         if (!"true".equals(ph.get("bridge_ok"))) {
@@ -80,10 +89,10 @@ public final class CnpcLmHubGui {
         row += gap;
 
         if (skillCheck) {
-            CnpcGuiSupport.button(gui, 24, CnpcUltraStyle.ACCENT_PROGRESSION + "Skill Check", CnpcGuiSupport.COL_L, row,
+            CnpcGuiSupport.button(gui, 24, CnpcUltraStyle.ACCENT_ADMIN + "Skill Check", CnpcGuiSupport.COL_L, row,
                     () -> CnpcLmGui.open(player, "skillcheck", "main"));
         } else if (staff) {
-            CnpcGuiSupport.button(gui, 24, CnpcUltraStyle.ACCENT_PROGRESSION + "Skills", CnpcGuiSupport.COL_L, row,
+            CnpcGuiSupport.button(gui, 24, CnpcUltraStyle.ACCENT_ADMIN + "Skills", CnpcGuiSupport.COL_L, row,
                     () -> CnpcLmGui.open(player, "skills", "core"));
         } else {
             CnpcGuiSupport.buttonSmall(gui, 24, CnpcUltraStyle.DIM + "Skill Check", CnpcGuiSupport.COL_L, row, CnpcGuiSupport.BTN_W,
@@ -101,12 +110,6 @@ public final class CnpcLmHubGui {
         if (staff) {
             CnpcGuiSupport.button(gui, 27, CnpcUltraStyle.ACCENT_ADMIN + "Staff Admin", CnpcGuiSupport.COL_L, row,
                     () -> CnpcLmAdminGui.open(player, "main"));
-            CnpcGuiSupport.button(gui, 28, CnpcUltraStyle.ACCENT_SAGA + "Saga", CnpcGuiSupport.COL_R, row,
-                    () -> CnpcLmGui.open(player, "saga", "main"));
-            row += gap;
-        } else {
-            CnpcGuiSupport.button(gui, 28, CnpcUltraStyle.ACCENT_SAGA + "Saga", CnpcGuiSupport.COL_L, row,
-                    () -> CnpcLmGui.open(player, "saga", "main"));
             row += gap;
         }
         hubFooter(player, gui, row);
