@@ -21,17 +21,13 @@ public final class FusionBonusOwner {
 
     private FusionBonusOwner() {}
 
-    public static void remember(StatsData data) {
-        if (data == null) {
-            return;
-        }
-        BonusStats bonuses;
-        try {
-            bonuses = data.getBonusStats();
-        } catch (Throwable ignored) {
-            return;
-        }
-        if (bonuses == null) {
+    /**
+     * Record the owner of a bonus map that the caller already has.
+     * Never calls back into {@code StatsData} bonus reads: the read mixin is on
+     * that getter, so a lookup here recurses until the stack overflows.
+     */
+    public static void remember(StatsData data, BonusStats bonuses) {
+        if (data == null || bonuses == null) {
             return;
         }
         WeakReference<StatsData> existing = OWNERS.get(bonuses);

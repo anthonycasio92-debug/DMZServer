@@ -5,13 +5,14 @@ import com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulCapMath;
 import com.dbzlegacy.adaptivedifficulty.progression.PersonalLevelCapMirror;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem;
 import com.dragonminez.common.stats.StatsData;
+import com.dragonminez.common.stats.character.BonusStats;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.fml.ModList;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
@@ -25,14 +26,22 @@ public abstract class StatsDataMixin {
     @Shadow(remap = false)
     public abstract Player getPlayer();
 
-    @Inject(method = "<init>", at = @At("TAIL"), remap = false)
-    private void lm$rememberFusionOwner(Player player, CallbackInfo ci) {
-        FusionBonusOwner.remember((StatsData) (Object) this);
-    }
+    /** Bonus map already linked. Later reads skip the owner map. */
+    @Unique
+    private BonusStats lm$fusionBonuses;
 
+    /**
+     * Link this stats object to the map the getter just returned.
+     * One link per map instance. Do not read the getter again from here.
+     */
     @Inject(method = "getBonusStats", at = @At("RETURN"), remap = false)
-    private void lm$rememberFusionOwnerOnRead(CallbackInfoReturnable<com.dragonminez.common.stats.character.BonusStats> cir) {
-        FusionBonusOwner.remember((StatsData) (Object) this);
+    private void lm$rememberFusionOwnerOnRead(CallbackInfoReturnable<BonusStats> cir) {
+        BonusStats bonuses = cir.getReturnValue();
+        if (bonuses == null || bonuses == lm$fusionBonuses) {
+            return;
+        }
+        FusionBonusOwner.remember((StatsData) (Object) this, bonuses);
+        lm$fusionBonuses = bonuses;
     }
 
     @Inject(method = "getConfiguredMaxValue", at = @At("HEAD"), cancellable = true, remap = false)

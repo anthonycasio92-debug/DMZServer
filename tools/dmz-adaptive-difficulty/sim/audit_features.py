@@ -2172,7 +2172,9 @@ def main() -> int:
           and '"FusionBonusReadGateMixin"' in fusion_mixins
           and "FusionBonusReadGateMixin" in build_sh
           and "FusionBonusOwner" in build_sh
-          and "FusionBonusOwner.remember" in read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/StatsDataMixin.java"))
+          and "FusionBonusOwner.remember" in read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/StatsDataMixin.java")
+          and ".getBonusStats(" not in read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/progression/FusionBonusOwner.java")
+          and "lm$fusionBonuses" in read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/StatsDataMixin.java"))
 
     print("\n=== Fall damage diagnostic (4.6.42) ===")
     fall_diag = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/event/FallDamageDiag.java")
