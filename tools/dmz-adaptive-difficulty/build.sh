@@ -263,8 +263,8 @@ merge_onto_base_jar() {
     fi
   done
   for class in CharacterServicesAccess CharacterServicesPermissionBootstrap DmzFightingClassStatsSync \
-      DmzClassCommandApply RaceChangeCreationFlow CosmeticHeadBoneService CosmeticHeadBoneCatalog \
-      RaceHeadBoneSync HeadPartPieces; do
+      DmzClassCommandApply RaceChangeCreationFlow       CosmeticHeadBoneService CosmeticHeadBoneCatalog \
+      RaceHeadBoneSync HeadPartPieces CharacterServicesConfig; do
     if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/character/${class}.class" ]]; then
       mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/character"
       cp "$OUT/com/dbzlegacy/adaptivedifficulty/character/${class}.class" \
@@ -414,6 +414,13 @@ merge_onto_base_jar() {
       "$merge/com/dbzlegacy/adaptivedifficulty/config/DifficultyConfig.class"
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/config/DifficultyConfig\$"*.class \
       "$merge/com/dbzlegacy/adaptivedifficulty/config/" 2>/dev/null || true
+  fi
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/config/editor/ConfigEditor.class" ]]; then
+    mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/config/editor"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/config/editor/ConfigEditor.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/config/editor/ConfigEditor.class"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/config/editor/ConfigEditor\$"*.class \
+      "$merge/com/dbzlegacy/adaptivedifficulty/config/editor/" 2>/dev/null || true
   fi
   rm -rf \
     "$merge/com/dbzlegacy/adaptivedifficulty/net/gui" \

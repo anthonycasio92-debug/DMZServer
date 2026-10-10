@@ -352,7 +352,7 @@ public final class LmCommandSuggestions {
 
     public static final SuggestionProvider<CommandSourceStack> LM_OPEN_SYSTEMS = literals(
             "hub", "main", "difficulty", "rival", "spar", "prestige", "character", "progression",
-            "skills", "skillcheck", "saga", "android_remove"
+            "skills", "skillcheck", "saga", "android_remove", "config"
     );
 
     public static final SuggestionProvider<CommandSourceStack> LM_INSPECT_SYSTEMS = literals(

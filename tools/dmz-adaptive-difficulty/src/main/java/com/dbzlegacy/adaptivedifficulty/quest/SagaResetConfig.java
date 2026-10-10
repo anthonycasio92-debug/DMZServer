@@ -60,6 +60,25 @@ public final class SagaResetConfig {
         }
     }
 
+    /** Writes the live config, including a saga cost added from the staff menu. */
+    public static boolean save() {
+        INSTANCE = sanitize(INSTANCE == null ? new SagaResetConfig() : INSTANCE);
+        Path file = path();
+        try {
+            Files.createDirectories(file.getParent());
+            try (Writer writer = Files.newBufferedWriter(file)) {
+                GSON.toJson(INSTANCE, writer);
+            }
+            return true;
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] saga-reset config save failed: {}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    t.toString());
+            return false;
+        }
+    }
+
     public long costFor(String sagaId) {
         if (sagaId != null && costs != null) {
             Long direct = costs.get(sagaId);

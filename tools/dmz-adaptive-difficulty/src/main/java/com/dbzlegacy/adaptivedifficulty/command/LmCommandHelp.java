@@ -30,6 +30,7 @@ public final class LmCommandHelp {
                 "§7Staff tools and player fixes. Type §f/lm admin help §7anytime—menus stay CNPC-only.",
                 new LmStaffHelp.Section("Config and data",
                         LmStaffHelp.cmd("/lm admin reload", "reload Legacy Mechanics config"),
+                        LmStaffHelp.cmd("/lm admin config", "edit config files in a menu"),
                         LmStaffHelp.cmd("/lm admin migrate-cnpc", "import CNPC rival and spar data"),
                         LmStaffHelp.cmd("/lm admin migrate-cnpc force", "wipe LM stores, then re-import"),
                         LmStaffHelp.note("Backup: config/legacymechanics/cnpc-import-backup/")),
