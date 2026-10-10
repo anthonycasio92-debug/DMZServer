@@ -228,34 +228,26 @@ public final class CnpcLmCharacterGui {
                 CharacterServicesGuiApi.linesForPage(player, "bones:" + pg), 2));
         y = CnpcRowList.paintRow(gui, 184, y, HeadPartPieces.pageTitle(pg), "On " + worn, null);
 
-        if (pg == HeadPartPieces.PAGE_BODY) {
-            List<String> names = HeadPartPieces.ultraScrollLines();
-            int scrollH = CnpcGuiSupport.listScrollHeight(gui, y, 3);
-            CnpcGuiSupport.scroll(gui, CnpcGuiSupport.ID_LIST_SCROLL, CnpcGuiSupport.M, y,
-                    CnpcGuiSupport.textBandWidth(), scrollH, names.toArray(String[]::new));
-            y = y + scrollH + 8;
-        } else {
-            List<String> cards = CharacterServicesGuiApi.headBoneCards(player, pg);
-            int rowStep = CnpcGuiSupport.BTN_H + CnpcRowList.ROW_GAP;
-            if (cards.isEmpty()) {
-                gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER, "§7No head parts in this group.",
-                        CnpcGuiSupport.M, y, CnpcGuiSupport.listWidth(), 14);
-                y += rowStep;
-            }
-            for (int i = 0; i < cards.size(); i++) {
-                String[] parts = cards.get(i).split("\t", -1);
-                String id = parts.length > 0 ? parts[0] : "";
-                String name = parts.length > 1 ? parts[1] : id;
-                String state = parts.length > 2 ? parts[2] : "";
-                String cost = parts.length > 3 ? parts[3] : "";
-                String caption = ultraPartCaption(state, name, cost);
-                CnpcGuiSupport.buttonSmallFull(gui, CnpcGuiSupport.ID_GRID_BASE + i, caption,
-                        CnpcGuiSupport.M, y, CnpcGuiSupport.textBandWidth(),
-                        () -> CnpcGuiSupport.act(player,
-                                () -> CharacterServicesGuiApi.handleDo(player, "bone_toggle", id, "bones"),
-                                () -> open(player, "bones:" + pg)));
-                y += rowStep;
-            }
+        List<String> cards = CharacterServicesGuiApi.headBoneCards(player, pg);
+        int rowStep = CnpcGuiSupport.BTN_H + CnpcRowList.ROW_GAP;
+        if (cards.isEmpty()) {
+            gui.addLabel(CnpcGuiSupport.ID_EMPTY_PLACEHOLDER, "§7No head parts in this group.",
+                    CnpcGuiSupport.M, y, CnpcGuiSupport.listWidth(), 14);
+            y += rowStep;
+        }
+        for (int i = 0; i < cards.size(); i++) {
+            String[] parts = cards.get(i).split("\t", -1);
+            String id = parts.length > 0 ? parts[0] : "";
+            String name = parts.length > 1 ? parts[1] : id;
+            String state = parts.length > 2 ? parts[2] : "";
+            String cost = parts.length > 3 ? parts[3] : "";
+            String caption = ultraPartCaption(state, name, cost);
+            CnpcGuiSupport.buttonSmallFull(gui, CnpcGuiSupport.ID_GRID_BASE + i, caption,
+                    CnpcGuiSupport.M, y, CnpcGuiSupport.textBandWidth(),
+                    () -> CnpcGuiSupport.act(player,
+                            () -> CharacterServicesGuiApi.handleDo(player, "bone_toggle", id, "bones"),
+                            () -> open(player, "bones:" + pg)));
+            y += rowStep;
         }
 
         String raceDefault = CnpcUltraStyle.CONFIRM + "Equip race default";
@@ -272,16 +264,12 @@ public final class CnpcLmCharacterGui {
                         () -> open(player, "bones:" + pg)));
         y += CnpcGuiSupport.ROW_STEP;
         if (pg > 0) {
-            String prev = pg == HeadPartPieces.PAGE_BODY ? "« Horns" : "« Head";
-            prev = CnpcUltraStyle.SUBTITLE + prev;
-            CnpcGuiSupport.buttonSmall(gui, 62, prev, CnpcGuiSupport.COL_L, y, 95,
-                    () -> open(player, "bones:" + (pg - 1)));
+            CnpcGuiSupport.buttonSmall(gui, 62, CnpcUltraStyle.SUBTITLE + "« Head",
+                    CnpcGuiSupport.COL_L, y, 95, () -> open(player, "bones:" + (pg - 1)));
         }
         if (pg + 1 < pages) {
-            String next = pg == HeadPartPieces.PAGE_HEAD ? "Horns »" : "Body »";
-            next = CnpcUltraStyle.SUBTITLE + next;
-            CnpcGuiSupport.buttonSmall(gui, 63, next, CnpcGuiSupport.COL_R, y, 95,
-                    () -> open(player, "bones:" + (pg + 1)));
+            CnpcGuiSupport.buttonSmall(gui, 63, CnpcUltraStyle.SUBTITLE + "Horns »",
+                    CnpcGuiSupport.COL_R, y, 95, () -> open(player, "bones:" + (pg + 1)));
         }
         y += CnpcGuiSupport.ROW_STEP;
         CnpcGuiSupport.navSubmenu(player, gui, y, () -> {

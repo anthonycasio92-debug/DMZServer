@@ -1097,12 +1097,8 @@ public final class CnpcGuiSupport {
         buttonSmall(gui, ID_NAV_HUB, "§7Hub", COL_R, row, 95, () -> openMenuHub(player));
     }
 
-    /** Test-menu session returns to that menu. {@code /lm} still opens the current hub. */
+    /** Hub always opens the main hub. The test menu does not sit in that path. */
     private static void openMenuHub(ServerPlayer player) {
-        if (CnpcUltraPreview.active(player)) {
-            CnpcStyledTestHub.open(player);
-            return;
-        }
         CnpcLmHubGui.open(player, "main");
     }
 
