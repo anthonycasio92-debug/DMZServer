@@ -2004,7 +2004,9 @@ def main() -> int:
     check("god ki progress resets with majin absorption",
           "NoeaGodKiLedgerIdentity" in god_ki
           and "skills.removeSkill(SKILL)" in god_ki
-          and "setMastery(GROUP, FORM, 0.0D, MASTERY_CAP)" in god_ki
+          and "GROUP + \":\"" in god_ki
+          and "getStackFormsUsedBefore" in god_ki
+          and "clearPreviousStackFormRecord" in god_ki
           and "m_128473_(key)" in god_ki
           and "computed from the worn demon form" in god_ki
           and "godforms" in god_ki

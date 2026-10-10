@@ -1,6 +1,10 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.67**.
+What changed from **4.5.147** through **4.6.68**.
+
+## God Ki history is removed, not zeroed
+
+The 4.6.67 wipe left a mastery entry at 0, the used-form list, and the previous stack form. Those are removed now. The skill, the live form, and the ledger string still clear on the same resets. Death still leaves God Ki in place.
 
 ## God Ki resets with the other wipes
 

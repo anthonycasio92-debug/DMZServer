@@ -7,7 +7,10 @@ import com.dragonminez.common.network.S2C.StatsSyncS2C;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.Character;
 import com.dragonminez.common.stats.extras.FormMasteries;
+import com.dragonminez.common.stats.extras.UsedForms;
 import com.dragonminez.common.stats.skills.Skills;
+import java.util.ArrayList;
+import java.util.Locale;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
@@ -29,9 +32,7 @@ public final class GodKiWipeHelper {
     /** Present in the task notes. Noea does not write this key. Removed if a later build does. */
     static final String ENHANCEMENT_KEY = "godkienhancement";
     static final String GROUP = "godkienhancement";
-    static final String FORM = "enhancewithgodki";
     static final String SKILL = "godkienhancement";
-    private static final double MASTERY_CAP = 100.0D;
 
     private GodKiWipeHelper() {}
 
@@ -51,16 +52,18 @@ public final class GodKiWipeHelper {
             String ledger = removePersistent(player, LEDGER_KEY);
             String enhancement = removePersistent(player, ENHANCEMENT_KEY);
             int skill = clearSkill(player);
-            boolean form = clearStackForm(player);
-            double mastery = clearMastery(player);
-            if ((skill >= 0 || form || mastery > 0.0D) && player instanceof ServerPlayer serverPlayer) {
+            boolean form = clearForms(player);
+            boolean mastery = clearMastery(player);
+            boolean history = clearHistory(player);
+            if ((skill >= 0 || form || mastery || history) && player instanceof ServerPlayer serverPlayer) {
                 NetworkHandler.sendToTrackingEntityAndSelf(new StatsSyncS2C(serverPlayer), serverPlayer);
             }
             System.out.println("[LM] wipeGodKi complete ledger=" + ledger
                     + " enhancement=" + enhancement
                     + " skill=" + skill
                     + " form=" + form
-                    + " mastery=" + mastery);
+                    + " mastery=" + mastery
+                    + " history=" + history);
         } catch (Throwable t) {
             try {
                 AbsorptionClearLog.failure(t);
@@ -138,7 +141,7 @@ public final class GodKiWipeHelper {
         return level;
     }
 
-    private static boolean clearStackForm(Player player) {
+    private static boolean clearForms(Player player) {
         Character character = DmzProgression.character(player);
         if (character == null) {
             return false;
@@ -153,30 +156,91 @@ public final class GodKiWipeHelper {
             character.setSelectedStackForm("");
             cleared = true;
         }
+        if (isGroup(character.getActiveFormGroup())) {
+            character.clearActiveForm(player, false);
+            cleared = true;
+        }
+        if (isGroup(character.getSelectedFormGroup())) {
+            character.setSelectedFormGroup("");
+            character.setSelectedForm("");
+            cleared = true;
+        }
         return cleared;
     }
 
-    private static double clearMastery(Player player) {
+    /** Drop {@code godkienhancement:*} mastery keys. A stored 0 still counts as a leftover record. */
+    private static boolean clearMastery(Player player) {
         Character character = DmzProgression.character(player);
         if (character == null) {
-            return 0.0D;
+            return false;
         }
-        double cleared = 0.0D;
-        cleared = Math.max(cleared, zeroMastery(character.getStackFormMasteries()));
-        cleared = Math.max(cleared, zeroMastery(character.getFormMasteries()));
+        boolean cleared = false;
+        cleared |= dropMasteryGroup(character.getStackFormMasteries());
+        cleared |= dropMasteryGroup(character.getFormMasteries());
         return cleared;
     }
 
-    private static double zeroMastery(FormMasteries masteries) {
+    private static boolean dropMasteryGroup(FormMasteries masteries) {
         if (masteries == null) {
-            return 0.0D;
+            return false;
         }
-        double current = masteries.getMastery(GROUP, FORM);
-        if (current <= 0.0D) {
-            return 0.0D;
+        CompoundTag tag = masteries.save();
+        if (tag == null) {
+            return false;
         }
-        masteries.setMastery(GROUP, FORM, 0.0D, MASTERY_CAP);
-        return current;
+        boolean changed = false;
+        String prefix = GROUP + ":";
+        for (String key : new ArrayList<>(tag.m_128431_())) {
+            if (key != null && key.toLowerCase(Locale.ROOT).startsWith(prefix)) {
+                tag.m_128473_(key);
+                changed = true;
+            }
+        }
+        if (changed) {
+            masteries.load(tag);
+        }
+        return changed;
+    }
+
+    /** Drop the used-form list and the previous-form record for this group. */
+    private static boolean clearHistory(Player player) {
+        Character character = DmzProgression.character(player);
+        if (character == null) {
+            return false;
+        }
+        boolean cleared = false;
+        cleared |= dropUsedGroup(character.getStackFormsUsedBefore());
+        cleared |= dropUsedGroup(character.getFormsUsedBefore());
+        if (isGroup(character.getPreviousStackFormGroup())) {
+            character.clearPreviousStackFormRecord();
+            cleared = true;
+        }
+        if (isGroup(character.getPreviousFormGroup())) {
+            character.clearPreviousFormRecord();
+            cleared = true;
+        }
+        return cleared;
+    }
+
+    private static boolean dropUsedGroup(UsedForms used) {
+        if (used == null) {
+            return false;
+        }
+        CompoundTag tag = used.save();
+        if (tag == null) {
+            return false;
+        }
+        boolean changed = false;
+        for (String key : new ArrayList<>(tag.m_128431_())) {
+            if (key != null && GROUP.equalsIgnoreCase(key)) {
+                tag.m_128473_(key);
+                changed = true;
+            }
+        }
+        if (changed) {
+            used.load(tag);
+        }
+        return changed;
     }
 
     private static boolean isGroup(String group) {
