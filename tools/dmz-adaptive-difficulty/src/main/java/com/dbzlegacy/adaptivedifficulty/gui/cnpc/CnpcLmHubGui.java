@@ -39,7 +39,7 @@ public final class CnpcLmHubGui {
 
     private static void paintMain(ServerPlayer player) {
         int extra = CnpcUltraPreview.active(player) ? 16 : 0;
-        int height = CnpcGuiSupport.suggestHeight((StaffAccess.isStaff(player) ? 400 : 380) + extra);
+        int height = CnpcGuiSupport.suggestHeight((StaffAccess.isStaff(player) ? 400 : 404) + extra);
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_HUB, CnpcGuiSupport.W, height,
                 (p, gui) -> paintMain(p, gui));
     }
@@ -104,6 +104,12 @@ public final class CnpcLmHubGui {
         if (staff) {
             CnpcGuiSupport.button(gui, 27, "§6Staff Admin", CnpcGuiSupport.COL_L, row,
                     () -> CnpcLmAdminGui.open(player, "main"));
+            CnpcGuiSupport.button(gui, 28, "§6Saga Reset", CnpcGuiSupport.COL_R, row,
+                    () -> CnpcLmGui.open(player, "saga", "main"));
+            row += gap;
+        } else {
+            CnpcGuiSupport.button(gui, 28, "§6Saga Reset", CnpcGuiSupport.COL_L, row,
+                    () -> CnpcLmGui.open(player, "saga", "main"));
             row += gap;
         }
         CnpcGuiSupport.footerCloseRefresh(player, gui, row, () -> paintMain(player));

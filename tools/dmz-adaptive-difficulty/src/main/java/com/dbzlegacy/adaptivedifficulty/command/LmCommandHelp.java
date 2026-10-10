@@ -16,6 +16,7 @@ public final class LmCommandHelp {
                         LmStaffHelp.cmd("/lm open spar", "sparring and dojo"),
                         LmStaffHelp.cmd("/lm open prestige", "prestige shop"),
                         LmStaffHelp.cmd("/lm open character", "race, class, and reskin services"),
+                        LmStaffHelp.cmd("/lm saga", "pay to replay one loaded saga"),
                         LmStaffHelp.cmd("/lm open skillcheck", "donator skill check (if permitted)")),
                 new LmStaffHelp.Section("Staff",
                         LmStaffHelp.cmd("/lm admin help", "staff tools and player resets"),

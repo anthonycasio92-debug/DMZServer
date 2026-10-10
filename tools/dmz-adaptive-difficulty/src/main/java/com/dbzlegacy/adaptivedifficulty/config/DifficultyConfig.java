@@ -1730,6 +1730,7 @@ public final class DifficultyConfig {
             com.dbzlegacy.adaptivedifficulty.progression.race.RaceLockConfig.reload();
             com.dbzlegacy.adaptivedifficulty.progression.classdef.FightingClassCatalog.reload();
             com.dbzlegacy.adaptivedifficulty.character.CharacterServicesConfig.load();
+            com.dbzlegacy.adaptivedifficulty.quest.SagaResetConfig.load();
             com.dbzlegacy.adaptivedifficulty.character.CosmeticHeadBoneCatalog.invalidate();
         } catch (Throwable ignored) {
         }

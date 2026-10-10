@@ -1,6 +1,14 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.62**.
+What changed from **4.5.147** through **4.6.63**.
+
+## Saga reset follows loaded sagas
+
+`/lm saga` and the hub button open a menu of every saga Dragon Mine Z has loaded, including datapack sagas. The list comes from `QuestRegistry.getAllSagas()`. There is no hardcoded saga list.
+
+Cost is Ancient Coins. `config/legacymechanics/saga-reset.json` has `defaultBaseCost` (100,000 copper unless you change it). A saga id under `costs` overrides that. Any saga that is not named, including one added later, uses `defaultBaseCost` with no config edit. Confirming clears that saga's quest progress and your live quest mobs for it. Rewards you already received stay. Leave a quest party first.
+
+## Test menu is its own screen
 
 ## Test menu is its own screen
 
