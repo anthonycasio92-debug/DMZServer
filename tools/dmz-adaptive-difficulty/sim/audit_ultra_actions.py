@@ -105,6 +105,24 @@ def main() -> int:
     if "panelWidth" not in packet or "layoutJson" not in packet:
         errors.append("GuiOpenPacket must carry panelWidth/panelHeight/layoutJson")
 
+    net = (ROOT / "src/main/java/com/dbzlegacy/adaptivedifficulty/net/gui/LmGuiNetwork.java").read_text(
+        encoding="utf-8"
+    )
+    if "validatePanelBounds" not in net:
+        errors.append("LmGuiNetwork must validate outgoing panelWidth/panelHeight")
+    if "panelWidth <= 0" not in net and "w <= 0" not in net:
+        errors.append("LmGuiNetwork must warn when panelWidth/panelHeight <= 0")
+
+    # Every Ultra*Screens builder must go through UltraScreenSpec.send (panel fields 8–10).
+    for path in sorted(ULTRA.glob("Ultra*Screens.java")):
+        text = path.read_text(encoding="utf-8")
+        if "UltraScreenSpec" not in text:
+            errors.append(f"{path.name}: must build via UltraScreenSpec")
+        if ".send(" not in text and "send(player)" not in text:
+            errors.append(f"{path.name}: must call UltraScreenSpec.send(player)")
+        if "new GuiOpenPacket" in text or "LmGuiNetwork.sendOpen" in text:
+            errors.append(f"{path.name}: must not bypass UltraScreenSpec.send")
+
     if not DOC.is_file():
         errors.append("Missing docs/KAIPATH_GUI_PROTOCOL.md")
     else:

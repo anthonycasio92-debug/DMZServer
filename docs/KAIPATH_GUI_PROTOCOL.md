@@ -23,7 +23,12 @@ LM is **server-only**. KaiPath owns the client screen (`LmScreens` / DMZUltra wi
 
 Match DMZUltra / CNPC dialogs: a **centered panel**, not a framebuffer fill.
 
-`layoutJson` keys (KaiPath should honor these):
+**LM always populates fields 8–10** for every Ultra screen (`hub`, `difficulty`, `rival`, `spar`,
+`prestige`, `character`, `progression`, `config`, `admin`) via `UltraScreenSpec` →
+`GuiOpenPacket`. Defaults are **430×280**, `center: true`, `margin: 8`. The server logs a warning
+if an outgoing packet has `panelWidth <= 0` or `panelHeight <= 0` (should never happen).
+
+`layoutJson` keys (KaiPath **must** honor these):
 
 ```json
 {
@@ -36,12 +41,18 @@ Match DMZUltra / CNPC dialogs: a **centered panel**, not a framebuffer fill.
 }
 ```
 
-- Draw the dialog at `(screenW - panelWidth) / 2`, `(screenH - panelHeight) / 2` when `center` is true.
-- Keep at least `margin` GUI pixels from the screen edge.
-- Button `x`/`y` are **relative to the panel origin**, not the framebuffer.
-- Defaults match CNPC `CnpcGuiSupport` (**430×280**).
+**Expected KaiPath (`LmScreens`) behavior:**
 
-If KaiPath ignores fields 8–10, menus will appear fullscreen — that is a client bug; LM already sends the bounds.
+1. Read varints field 8 (`panelWidth`) and field 9 (`panelHeight`); parse field 10 (`layoutJson`).
+2. Prefer wire varints; fall back to `layoutJson.panelWidth` / `layoutJson.width` (same for height).
+3. When `center` is true (default), place the dialog at  
+   `((screenW - panelWidth) / 2, (screenH - panelHeight) / 2)`.
+4. Keep at least `margin` GUI pixels from the screen edge.
+5. Button `x`/`y` are **relative to the panel origin**, not the framebuffer.
+6. **Do not** stretch the panel to the framebuffer. Fullscreen when these fields are present is a
+   **KaiPath client bug** — fix in `LmScreens`, not by changing LM packet shape.
+
+Defaults match CNPC `CnpcGuiSupport` (**430×280**).
 
 ### Button object
 
@@ -79,4 +90,6 @@ Server strips `@screen:` first (so a wrong/empty packet `screenId` still routes)
 
 ## Failure logging
 
-Unhandled exceptions and “Something went wrong” handler results are logged on the server with `screen`, `actionId`, and stack traces under the `LegacyMechanics` logger.
+Unhandled exceptions and “Something went wrong” handler results are logged on the server with
+`screen`, **`rawActionId`** (as received, before `@screen:` strip), resolved action, and stack
+traces under the `LegacyMechanics` logger.

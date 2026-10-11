@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.net.gui;
 
+import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Map;
@@ -62,7 +63,38 @@ public final class LmGuiNetwork {
         if (player == null || packet == null) {
             return;
         }
+        validatePanelBounds(packet);
         CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+
+    /**
+     * Every Ultra screen must send fields 8–10 ({@code panelWidth}, {@code panelHeight},
+     * {@code layoutJson}). Log when bounds are missing so a fullscreen client is not blamed on
+     * an empty server packet. Does not rewrite the packet — KaiPath must honor the values.
+     */
+    static void validatePanelBounds(GuiOpenPacket packet) {
+        if (packet == null) {
+            return;
+        }
+        int w = packet.panelWidth();
+        int h = packet.panelHeight();
+        String layout = packet.layoutJson();
+        if (w <= 0 || h <= 0) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] GuiOpenPacket missing panel bounds screenId={} page panelWidth={} panelHeight={} layoutJson={}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    packet.screenId(),
+                    w,
+                    h,
+                    layout == null || layout.isBlank() ? "<empty>" : layout);
+        } else if (layout == null || layout.isBlank()) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] GuiOpenPacket missing layoutJson screenId={} panelWidth={} panelHeight={}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    packet.screenId(),
+                    w,
+                    h);
+        }
     }
 
     /**
