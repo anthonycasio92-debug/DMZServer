@@ -3,7 +3,10 @@ package com.dmzlegacy.kaipath.ultra.internal;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
+import java.util.Arrays;
 import java.util.List;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.events.GuiEventListener;
@@ -139,7 +142,7 @@ public final class UltraWidgetReflect {
                 args[i] = onPress;
             } else if (theme != null && param.isInstance(theme)) {
                 args[i] = theme;
-            } else if (onPress != null && param.isInterface()) {
+            } else if (onPress != null && isPressCallback(param)) {
                 args[i] = pressProxy(param, onPress);
             } else {
                 return null;
@@ -152,7 +155,41 @@ public final class UltraWidgetReflect {
         }
     }
 
+    /** Only void SAMs / OnPress-style interfaces — never every interface. */
+    private static boolean isPressCallback(Class<?> param) {
+        if (param == null || !param.isInterface()) {
+            return false;
+        }
+        if (Runnable.class.equals(param)) {
+            return true;
+        }
+        String simple = param.getSimpleName();
+        if ("OnPress".equals(simple) || "Pressable".equals(simple) || "OnClick".equals(simple)) {
+            return true;
+        }
+        Method sam = singleAbstractMethod(param);
+        return sam != null && sam.getReturnType() == void.class;
+    }
+
+    private static Method singleAbstractMethod(Class<?> param) {
+        Method sam = null;
+        for (Method method : param.getMethods()) {
+            if (method.isDefault() || Modifier.isStatic(method.getModifiers())) {
+                continue;
+            }
+            if (method.getDeclaringClass() == Object.class) {
+                continue;
+            }
+            if (sam != null) {
+                return null;
+            }
+            sam = method;
+        }
+        return sam;
+    }
+
     private static Object pressProxy(Class<?> param, Runnable onPress) {
+        Method sam = singleAbstractMethod(param);
         InvocationHandler handler = (proxy, method, methodArgs) -> {
             if (method.getDeclaringClass() == Object.class) {
                 if ("equals".equals(method.getName())) {
@@ -163,7 +200,13 @@ public final class UltraWidgetReflect {
                 }
                 return method.getName();
             }
-            onPress.run();
+            boolean isSam =
+                    sam != null
+                            && method.getName().equals(sam.getName())
+                            && Arrays.equals(method.getParameterTypes(), sam.getParameterTypes());
+            if (isSam || (sam == null && method.getReturnType() == void.class)) {
+                onPress.run();
+            }
             Class<?> ret = method.getReturnType();
             if (ret == boolean.class) {
                 return false;
@@ -171,9 +214,25 @@ public final class UltraWidgetReflect {
             if (ret == int.class) {
                 return 0;
             }
+            if (ret == long.class) {
+                return 0L;
+            }
+            if (ret == float.class) {
+                return 0f;
+            }
+            if (ret == double.class) {
+                return 0d;
+            }
+            if (ret == void.class) {
+                return null;
+            }
             return null;
         };
-        return Proxy.newProxyInstance(param.getClassLoader(), new Class<?>[] {param}, handler);
+        ClassLoader loader = param.getClassLoader();
+        if (loader == null) {
+            loader = UltraWidgetReflect.class.getClassLoader();
+        }
+        return Proxy.newProxyInstance(loader, new Class<?>[] {param}, handler);
     }
 
     private static boolean classExists(String name) {
@@ -186,6 +245,9 @@ public final class UltraWidgetReflect {
     }
 
     private static Object firstField(Object target, String... names) {
+        if (target == null) {
+            return null;
+        }
         for (String name : names) {
             try {
                 Field field = target.getClass().getField(name);
@@ -201,6 +263,9 @@ public final class UltraWidgetReflect {
     }
 
     private static Integer colorField(Object target, String... names) {
+        if (target == null) {
+            return null;
+        }
         for (String name : names) {
             try {
                 Field field = target.getClass().getField(name);

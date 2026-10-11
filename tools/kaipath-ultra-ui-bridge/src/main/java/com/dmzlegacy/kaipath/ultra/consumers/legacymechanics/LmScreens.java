@@ -49,16 +49,13 @@ public final class LmScreens {
 
     @OnlyIn(Dist.CLIENT)
     private static final class MissingScreen extends UltraScreen {
-        private final String screenId;
-
         MissingScreen(String screenId) {
-            super(Component.m_237113_("Unknown screen"));
-            this.screenId = screenId == null ? "" : screenId;
+            super(Component.m_237113_("Unavailable"));
         }
 
         @Override
         protected void m_7856_() {
-            addThemedList(20, 40, 240, 20, java.util.List.of("Unknown screen: " + screenId));
+            addThemedList(20, 40, 240, 20, java.util.List.of("This menu is unavailable."));
         }
     }
 }

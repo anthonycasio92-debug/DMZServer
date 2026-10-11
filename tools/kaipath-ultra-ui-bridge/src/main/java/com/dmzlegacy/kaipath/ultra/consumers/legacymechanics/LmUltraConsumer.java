@@ -1,7 +1,6 @@
 package com.dmzlegacy.kaipath.ultra.consumers.legacymechanics;
 
 import com.dmzlegacy.kaipath.ultra.UltraUiBridge;
-import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 
 /**
@@ -30,8 +29,4 @@ public final class LmUltraConsumer {
             UltraUiBridge.LOGGER.warn("[kaipath] LM Ultra consumer failed: {}", t.toString());
         }
     }
-
-    /** Dist marker so dedicated server never loads screen classes via this entry. */
-    @SuppressWarnings("unused")
-    private static final Dist CLIENT = Dist.CLIENT;
 }

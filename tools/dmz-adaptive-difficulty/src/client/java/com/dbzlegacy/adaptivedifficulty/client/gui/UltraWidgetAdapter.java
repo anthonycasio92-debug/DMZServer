@@ -3,7 +3,10 @@ package com.dbzlegacy.adaptivedifficulty.client.gui;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
+import java.util.Arrays;
 import java.util.List;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.events.GuiEventListener;
@@ -135,7 +138,7 @@ public final class UltraWidgetAdapter {
                 args[i] = onPress;
             } else if (theme != null && param.isInstance(theme)) {
                 args[i] = theme;
-            } else if (onPress != null && param.isInterface()) {
+            } else if (onPress != null && isPressCallback(param)) {
                 args[i] = pressProxy(param, onPress);
             } else {
                 return null;
@@ -148,7 +151,41 @@ public final class UltraWidgetAdapter {
         }
     }
 
+    /** Only void SAMs / OnPress-style interfaces — never every interface. */
+    private static boolean isPressCallback(Class<?> param) {
+        if (param == null || !param.isInterface()) {
+            return false;
+        }
+        if (Runnable.class.equals(param)) {
+            return true;
+        }
+        String simple = param.getSimpleName();
+        if ("OnPress".equals(simple) || "Pressable".equals(simple) || "OnClick".equals(simple)) {
+            return true;
+        }
+        Method sam = singleAbstractMethod(param);
+        return sam != null && sam.getReturnType() == void.class;
+    }
+
+    private static Method singleAbstractMethod(Class<?> param) {
+        Method sam = null;
+        for (Method method : param.getMethods()) {
+            if (method.isDefault() || Modifier.isStatic(method.getModifiers())) {
+                continue;
+            }
+            if (method.getDeclaringClass() == Object.class) {
+                continue;
+            }
+            if (sam != null) {
+                return null;
+            }
+            sam = method;
+        }
+        return sam;
+    }
+
     private static Object pressProxy(Class<?> param, Runnable onPress) {
+        Method sam = singleAbstractMethod(param);
         InvocationHandler handler = (proxy, method, methodArgs) -> {
             if (method.getDeclaringClass() == Object.class) {
                 if ("equals".equals(method.getName())) {
@@ -159,7 +196,13 @@ public final class UltraWidgetAdapter {
                 }
                 return method.getName();
             }
-            onPress.run();
+            boolean isSam =
+                    sam != null
+                            && method.getName().equals(sam.getName())
+                            && Arrays.equals(method.getParameterTypes(), sam.getParameterTypes());
+            if (isSam || (sam == null && method.getReturnType() == void.class)) {
+                onPress.run();
+            }
             Class<?> ret = method.getReturnType();
             if (ret == boolean.class) {
                 return false;
@@ -167,9 +210,22 @@ public final class UltraWidgetAdapter {
             if (ret == int.class) {
                 return 0;
             }
+            if (ret == long.class) {
+                return 0L;
+            }
+            if (ret == float.class) {
+                return 0f;
+            }
+            if (ret == double.class) {
+                return 0d;
+            }
             return null;
         };
-        return Proxy.newProxyInstance(param.getClassLoader(), new Class<?>[] {param}, handler);
+        ClassLoader loader = param.getClassLoader();
+        if (loader == null) {
+            loader = UltraWidgetAdapter.class.getClassLoader();
+        }
+        return Proxy.newProxyInstance(loader, new Class<?>[] {param}, handler);
     }
 
     private static boolean classExists(String name) {
@@ -182,6 +238,9 @@ public final class UltraWidgetAdapter {
     }
 
     private static Object firstField(Object target, String... names) {
+        if (target == null) {
+            return null;
+        }
         for (String name : names) {
             try {
                 Field field = target.getClass().getField(name);
@@ -197,6 +256,9 @@ public final class UltraWidgetAdapter {
     }
 
     private static Integer colorField(Object target, String... names) {
+        if (target == null) {
+            return null;
+        }
         for (String name : names) {
             try {
                 Field field = target.getClass().getField(name);
