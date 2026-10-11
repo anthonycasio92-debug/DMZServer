@@ -115,6 +115,18 @@ mkdir -p "$OUT"
 mapfile -t SOURCES < <(find "$SRC" -name '*.java' | sort)
 javac --release 17 -proc:none -cp "$CP" -d "$OUT" "${SOURCES[@]}"
 
+# Break ldc #0xC2 / operand-C2 + goto(A7) false positives in ultra callers so a
+# raw C2 A7 (§) scan only hits UltraStyle (which owns the mark in its CP).
+ASM_JAR="$ROOT/libraries/org/ow2/asm/asm/9.6/asm-9.6.jar"
+PATCH_SRC="$HERE/sim/PatchUltraGotoFalsePositives.java"
+PATCH_OUT="$HERE/build/patch-ultra"
+if [[ -f "$ASM_JAR" && -f "$PATCH_SRC" ]]; then
+  rm -rf "$PATCH_OUT"
+  mkdir -p "$PATCH_OUT"
+  javac --release 17 -proc:none -cp "$ASM_JAR" -d "$PATCH_OUT" "$PATCH_SRC"
+  java -cp "$PATCH_OUT:$ASM_JAR" PatchUltraGotoFalsePositives "$OUT"
+fi
+
 # For every class this compile actually overlaid, drop base-jar inner classes the
 # new bytecode does not emit, and copy the inner classes it does emit.
 sync_overlaid_inners() {

@@ -82,12 +82,12 @@ public final class UltraGuiActions {
             case "config" -> UltraConfigScreens.handleAction(player, act, arg, page);
             case "hub", "admin" -> MechanicsGuiApi.handleDo(player, act, arg, page);
             case "team" -> DifficultyTeamGuiApi.handleDo(player, act, arg, page);
-            default -> "That menu action is not available.";
+            default -> UltraStyle.dangerLine("That menu action is not available.");
         };
     }
 
     private static String characterDo(ServerPlayer player, String action, String arg, String page) {
-        if ("android_remove".equals(action) || "android".equals(action)) {
+        if (UltraStyle.PAGE_ANDROID_REMOVE.equals(action) || "android".equals(action)) {
             return ProgressionGuiApi.handleDo(player, action, arg, page);
         }
         if ("saga_confirm".equals(action)) {
@@ -175,7 +175,7 @@ public final class UltraGuiActions {
                 default -> homePage(screen);
             };
             case "character" -> switch (parts.action) {
-                case "android_remove", "android" -> "android_remove";
+                case "android_remove", "android" -> UltraStyle.PAGE_ANDROID_REMOVE;
                 default -> homePage(screen);
             };
             default -> homePage(screen);
@@ -194,7 +194,7 @@ public final class UltraGuiActions {
         return switch (screen) {
             case "character" -> switch (tab) {
                 case "saga", "reset" -> "reset";
-                case "android", "android_remove" -> "android_remove";
+                case "android", "android_remove" -> UltraStyle.PAGE_ANDROID_REMOVE;
                 default -> "main";
             };
             case "difficulty" -> switch (tab) {
