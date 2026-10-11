@@ -1,6 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.client.gui;
 
-import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
+import com.dbzlegacy.adaptivedifficulty.client.LegacyMechanicsUltraMod;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -33,9 +33,10 @@ public final class LmScreens {
         try {
             minecraft.m_91152_(factory.apply(minecraft));
         } catch (Throwable t) {
-            AdaptiveDifficultyMod.LOGGER.warn(
+            // Client companion jar must not reference AdaptiveDifficultyMod (server-only).
+            LegacyMechanicsUltraMod.LOGGER.warn(
                     "[{}] native GUI {} failed: {}",
-                    AdaptiveDifficultyMod.MOD_ID,
+                    LegacyMechanicsUltraMod.MOD_ID,
                     id,
                     t.toString());
             minecraft.m_91152_(new LmMissingScreen(id));
