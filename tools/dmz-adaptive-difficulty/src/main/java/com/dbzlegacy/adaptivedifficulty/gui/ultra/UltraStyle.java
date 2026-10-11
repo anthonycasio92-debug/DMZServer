@@ -48,6 +48,18 @@ public final class UltraStyle {
     public static final int COL_R = 178;
     public static final int BTN_W = 150;
 
+    /**
+     * Centered dialog panel — matches CNPC {@code CnpcGuiSupport.W/H} (DMZUltra-style menus),
+     * not the full framebuffer.
+     */
+    public static final int PANEL_W = 430;
+    public static final int PANEL_H = 280;
+    public static final int PANEL_MIN_W = 320;
+    public static final int PANEL_MIN_H = 200;
+    public static final int PANEL_MAX_H = 480;
+    /** Gap between panel edge and screen edge when centered. */
+    public static final int PANEL_MARGIN = 8;
+
     static {
         // Unicode escape keeps the mark out of other sources; static-init prevents folding.
         MARK = "\u00A7";

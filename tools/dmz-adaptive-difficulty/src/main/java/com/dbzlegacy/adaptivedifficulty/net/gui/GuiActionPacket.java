@@ -1,6 +1,9 @@
 package com.dbzlegacy.adaptivedifficulty.net.gui;
 
+import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraGuiActions;
+import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle;
+import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import java.util.function.Supplier;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
@@ -11,13 +14,16 @@ import net.minecraftforge.network.NetworkEvent;
  * No client-only classes are referenced here.
  */
 public final class GuiActionPacket {
+    /** Action ids are {@code @screen:do:…} — allow long saga / module ids. */
+    private static final int ACTION_ID_MAX = 192;
+
     private final String screenId;
     private final String actionId;
     private final String argsJson;
 
     public GuiActionPacket(String screenId, String actionId, String argsJson) {
         this.screenId = GuiOpenPacket.trim(screenId, 64);
-        this.actionId = GuiOpenPacket.trim(actionId, 64);
+        this.actionId = GuiOpenPacket.trim(actionId, ACTION_ID_MAX);
         this.argsJson = GuiOpenPacket.trim(argsJson == null ? "{}" : argsJson, 512);
     }
 
@@ -47,8 +53,25 @@ public final class GuiActionPacket {
         NetworkEvent.Context context = ctx.get();
         ServerPlayer player = context.getSender();
         context.enqueueWork(() -> {
-            if (player != null) {
+            if (player == null || msg == null) {
+                return;
+            }
+            try {
                 UltraGuiActions.dispatch(player, msg.screenId, msg.actionId, msg.argsJson);
+            } catch (Throwable t) {
+                AdaptiveDifficultyMod.LOGGER.error(
+                        "[{}] Ultra GuiActionPacket failed screenId={} actionId={} args={} player={}",
+                        AdaptiveDifficultyMod.MOD_ID,
+                        msg.screenId,
+                        msg.actionId,
+                        msg.argsJson,
+                        player.m_7755_().getString(),
+                        t);
+                DmzRewards.msg(
+                        player,
+                        UltraStyle.dangerLine(
+                                "Something went wrong. Staff: check server log for action "
+                                        + msg.actionId));
             }
         });
         context.setPacketHandled(true);

@@ -9,7 +9,14 @@ import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.server.level.ServerPlayer;
 
-/** Builds a GuiOpenPacket payload for KaiPath. */
+/**
+ * Builds a GuiOpenPacket payload for KaiPath.
+ *
+ * <p>Panel defaults match CNPC / DMZUltra dialog size ({@link UltraStyle#PANEL_W}×{@link
+ * UltraStyle#PANEL_H}), centered with a screen margin. Button action ids are qualified as
+ * {@code @&lt;screenId&gt;:&lt;action&gt;} so KaiPath can omit or mishandle {@code screenId} and
+ * the server still routes correctly.
+ */
 public final class UltraScreenSpec {
     private static final Gson GSON = new Gson();
 
@@ -21,6 +28,10 @@ public final class UltraScreenSpec {
     private final List<String> lines = new ArrayList<>();
     private final List<Button> buttons = new ArrayList<>();
     private int nextRow = 36;
+    private int panelWidth = UltraStyle.PANEL_W;
+    private int panelHeight = UltraStyle.PANEL_H;
+    private boolean centerPanel = true;
+    private int panelMargin = UltraStyle.PANEL_MARGIN;
 
     private UltraScreenSpec(String screenId) {
         this.screenId = screenId == null || screenId.isBlank() ? "hub" : screenId.trim();
@@ -42,6 +53,23 @@ public final class UltraScreenSpec {
 
     public UltraScreenSpec activeTab(String tabId) {
         this.activeTab = tabId == null ? "home" : tabId;
+        return this;
+    }
+
+    /** Explicit panel size in GUI pixels (DMZUltra-style centered dialog). */
+    public UltraScreenSpec panel(int width, int height) {
+        this.panelWidth = Math.max(UltraStyle.PANEL_MIN_W, width);
+        this.panelHeight = Math.max(UltraStyle.PANEL_MIN_H, height);
+        return this;
+    }
+
+    public UltraScreenSpec center(boolean center) {
+        this.centerPanel = center;
+        return this;
+    }
+
+    public UltraScreenSpec margin(int margin) {
+        this.panelMargin = Math.max(0, margin);
         return this;
     }
 
@@ -92,7 +120,7 @@ public final class UltraScreenSpec {
             String actionId, String label, String style, int x, int y, int w) {
         int width = Math.max(UltraStyle.BTN_MIN_W, w);
         buttons.add(new Button(
-                actionId == null ? "" : actionId,
+                qualifyAction(actionId),
                 UltraStyle.buttonLabel(label),
                 style == null ? "normal" : style,
                 x,
@@ -129,10 +157,20 @@ public final class UltraScreenSpec {
     }
 
     public void send(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        // Grow panel if buttons sit below the default dialog height.
+        int contentBottom = nextRow + UltraStyle.BTN_H + UltraStyle.PANEL_MARGIN;
+        if (contentBottom > panelHeight) {
+            panelHeight = Math.min(UltraStyle.PANEL_MAX_H, contentBottom);
+        }
+
         JsonArray tabArr = new JsonArray();
         for (Tab tab : tabs) {
             JsonObject o = new JsonObject();
-            o.addProperty("id", tab.id);
+            // Tab bar clicks: qualify so dispatch can recover screen if KaiPath omits it.
+            o.addProperty("id", qualifyAction("tab:" + tab.id));
             boolean active = tab.id.equalsIgnoreCase(activeTab);
             o.addProperty(
                     "label",
@@ -155,8 +193,20 @@ public final class UltraScreenSpec {
             o.addProperty("y", b.y);
             o.addProperty("w", b.w);
             o.addProperty("h", b.h);
+            // Echoed by KaiPath into GuiActionPacket.argsJson when present.
+            JsonObject args = new JsonObject();
+            args.addProperty("screen", screenId);
+            args.addProperty("page", pageId);
+            o.add("args", args);
             btnArr.add(o);
         }
+        JsonObject layout = new JsonObject();
+        layout.addProperty("panelWidth", panelWidth);
+        layout.addProperty("panelHeight", panelHeight);
+        layout.addProperty("width", panelWidth);
+        layout.addProperty("height", panelHeight);
+        layout.addProperty("center", centerPanel);
+        layout.addProperty("margin", panelMargin);
         LmGuiNetwork.sendOpen(
                 player,
                 new GuiOpenPacket(
@@ -166,7 +216,22 @@ public final class UltraScreenSpec {
                         GSON.toJson(tabArr),
                         activeTab,
                         GSON.toJson(lineArr),
-                        GSON.toJson(btnArr)));
+                        GSON.toJson(btnArr),
+                        panelWidth,
+                        panelHeight,
+                        GSON.toJson(layout)));
+    }
+
+    /** Prefix {@code @screenId:} unless the action is already qualified. */
+    String qualifyAction(String actionId) {
+        if (actionId == null || actionId.isBlank()) {
+            return "@" + screenId + ":nav:refresh";
+        }
+        String raw = actionId.trim();
+        if (raw.startsWith("@")) {
+            return raw;
+        }
+        return "@" + screenId + ":" + raw;
     }
 
     private record Tab(String id, String label) {}

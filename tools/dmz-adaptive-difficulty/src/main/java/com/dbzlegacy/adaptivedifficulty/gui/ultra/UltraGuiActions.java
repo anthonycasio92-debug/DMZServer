@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.gui.ultra;
 
+import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.gui.CharacterServicesGuiApi;
 import com.dbzlegacy.adaptivedifficulty.gui.DifficultyTeamGuiApi;
 import com.dbzlegacy.adaptivedifficulty.gui.MechanicsGuiApi;
@@ -10,6 +11,7 @@ import com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcMenuFeedback;
 import com.dbzlegacy.adaptivedifficulty.quest.SagaResetService;
 import com.dbzlegacy.adaptivedifficulty.service.DifficultyActions;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.minecraft.server.level.ServerPlayer;
@@ -19,15 +21,56 @@ public final class UltraGuiActions {
     private UltraGuiActions() {}
 
     public static void dispatch(ServerPlayer player, String screenId, String actionId, String argsJson) {
-        if (player == null || actionId == null || actionId.isBlank()) {
+        if (player == null) {
             return;
         }
-        String screen = screenId == null ? "hub" : screenId.trim().toLowerCase();
-        String action = actionId.trim();
-        JsonObject args = parse(argsJson);
+        if (actionId == null || actionId.isBlank()) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] Ultra action missing actionId screenId={} args={}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    screenId,
+                    argsJson);
+            return;
+        }
 
+        JsonObject args = parse(argsJson);
+        Qualified q = qualify(screenId, actionId, args);
+        String screen = q.screen();
+        String action = q.action();
+
+        AdaptiveDifficultyMod.LOGGER.debug(
+                "[{}] Ultra action player={} screen={} action={} args={}",
+                AdaptiveDifficultyMod.MOD_ID,
+                player.m_7755_().getString(),
+                screen,
+                action,
+                args);
+
+        try {
+            dispatchResolved(player, screen, action, args);
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.error(
+                    "[{}] UltraGuiActions.handle failed actionId={} screen={} resolvedAction={} args={}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    actionId,
+                    screen,
+                    action,
+                    args,
+                    t);
+            DmzRewards.msg(
+                    player,
+                    UltraStyle.dangerLine(
+                            "Something went wrong (" + action + "). Staff: see server log."));
+        }
+    }
+
+    private static void dispatchResolved(
+            ServerPlayer player, String screen, String action, JsonObject args) {
         if (action.startsWith("tab:")) {
             String tab = action.substring(4);
+            if (tab == null || tab.isBlank()) {
+                return;
+            }
             UltraGui.open(player, screen, tabPage(screen, tab));
             return;
         }
@@ -40,20 +83,36 @@ public final class UltraGuiActions {
             return;
         }
         if ("nav:refresh".equals(action)) {
-            String page = args.has("page") ? args.get("page").getAsString() : homePage(screen);
+            String page = stringArg(args, "page");
+            if (page.isBlank()) {
+                page = homePage(screen);
+            }
             UltraGui.open(player, screen, page);
             return;
         }
         if (action.startsWith("open:")) {
-            UltraGui.open(player, action.substring(5), "main");
+            String target = action.substring(5);
+            if (target == null || target.isBlank()) {
+                return;
+            }
+            UltraGui.open(player, target, "main");
             return;
         }
 
         DoParts parts = parseDo(action);
+        if (parts.action.isBlank()) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] Ultra empty do-action screen={} raw={}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    screen,
+                    action);
+            DmzRewards.msg(player, UltraStyle.dangerLine("That menu action is not available."));
+            return;
+        }
         // Prefer arg encoded in the action id (do:action:arg…); fall back to argsJson.
         if (!parts.arg.isBlank()) {
             args.addProperty("arg", parts.arg);
-        } else if (!args.has("arg")) {
+        } else if (!args.has("arg") || args.get("arg") == null || args.get("arg").isJsonNull()) {
             args.addProperty("arg", "");
         }
 
@@ -66,14 +125,23 @@ public final class UltraGuiActions {
             return;
         }
         String reopen = reopenPage(screen, parts, args);
-        UltraGui.open(player, screen, reopen);
+        UltraGui.open(player, screen, reopen == null || reopen.isBlank() ? homePage(screen) : reopen);
     }
 
     private static String runDo(ServerPlayer player, String screen, String act, JsonObject args) {
-        String arg = args.has("arg") ? args.get("arg").getAsString() : "";
-        String page = args.has("page") ? args.get("page").getAsString() : homePage(screen);
-        return switch (screen) {
-            case "difficulty" -> DifficultyActions.handleArgNoReopen(player, act, arg, page).message();
+        if (player == null || act == null || act.isBlank()) {
+            return UltraStyle.dangerLine("That menu action is not available.");
+        }
+        String arg = stringArg(args, "arg");
+        String page = stringArg(args, "page");
+        if (page.isBlank()) {
+            page = homePage(screen);
+        }
+        String result = switch (screen == null ? "" : screen) {
+            case "difficulty" -> {
+                DifficultyActions.Result r = DifficultyActions.handleArgNoReopen(player, act, arg, page);
+                yield r == null || r.message() == null ? "" : r.message();
+            }
             case "rival" -> RivalGuiApi.handleDo(player, act, arg, page);
             case "spar", "sparring" -> SparGuiApi.handleDo(player, act, arg, page);
             case "prestige" -> ProgressionGuiApi.handlePrestigeDo(player, act, arg, page);
@@ -82,13 +150,44 @@ public final class UltraGuiActions {
             case "config" -> UltraConfigScreens.handleAction(player, act, arg, page);
             case "hub", "admin" -> MechanicsGuiApi.handleDo(player, act, arg, page);
             case "team" -> DifficultyTeamGuiApi.handleDo(player, act, arg, page);
-            default -> UltraStyle.dangerLine("That menu action is not available.");
+            default -> null;
         };
+        if (result == null) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] Ultra unrecognized screen=\"{}\" action=\"{}\" arg=\"{}\"",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    screen,
+                    act,
+                    arg);
+            return UltraStyle.dangerLine("That menu action is not available.");
+        }
+        if (isGenericFailure(result)) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] Ultra handler generic failure screen=\"{}\" action=\"{}\" arg=\"{}\" msg={}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    screen,
+                    act,
+                    arg,
+                    UltraStyle.plain(result));
+        }
+        return result;
+    }
+
+    private static boolean isGenericFailure(String msg) {
+        if (msg == null) {
+            return false;
+        }
+        String plain = UltraStyle.plain(msg).toLowerCase();
+        return plain.contains("something went wrong");
     }
 
     private static String characterDo(ServerPlayer player, String action, String arg, String page) {
+        if (player == null) {
+            return UltraStyle.dangerLine("This only works in-game.");
+        }
         if (UltraStyle.PAGE_ANDROID_REMOVE.equals(action) || "android".equals(action)) {
-            return ProgressionGuiApi.handleDo(player, action, arg, page);
+            String msg = ProgressionGuiApi.handleDo(player, action, arg, page);
+            return msg == null ? "" : msg;
         }
         if ("saga_confirm".equals(action)) {
             String id = arg == null ? "" : arg.trim();
@@ -106,7 +205,8 @@ public final class UltraGuiActions {
             String result = SagaResetService.reset(player, id);
             return result == null ? "" : result;
         }
-        return CharacterServicesGuiApi.handleDo(player, action, arg, page);
+        String msg = CharacterServicesGuiApi.handleDo(player, action, arg, page);
+        return msg == null ? "" : msg;
     }
 
     /**
@@ -133,7 +233,52 @@ public final class UltraGuiActions {
         return action == null ? "" : action;
     }
 
+    /**
+     * Resolve screen + action from packet fields.
+     *
+     * <p>Priority: {@code @screen:action} prefix on actionId, then {@code args.screen}, then packet
+     * {@code screenId}.
+     */
+    static Qualified qualify(String screenId, String actionId, JsonObject args) {
+        String action = actionId == null ? "" : actionId.trim();
+        String screen = "";
+        if (action.startsWith("@")) {
+            int colon = action.indexOf(':');
+            if (colon > 1) {
+                screen = action.substring(1, colon).trim().toLowerCase();
+                action = action.substring(colon + 1).trim();
+            } else {
+                action = action.substring(1).trim();
+            }
+        }
+        if (screen.isBlank()) {
+            screen = stringArg(args, "screen");
+        }
+        if (screen.isBlank() && screenId != null) {
+            screen = screenId.trim();
+        }
+        if (screen.isBlank()) {
+            screen = "hub";
+        }
+        screen = screen.toLowerCase();
+        // Normalize aliases used as open targets / packet ids.
+        screen = switch (screen) {
+            case "lm", "legacymechanics", "main" -> "hub";
+            case "diff" -> "difficulty";
+            case "sparring" -> "spar";
+            case "charservices", "char" -> "character";
+            case "sagareset", "saga_reset" -> "character";
+            case "prog" -> "progression";
+            case "cfgedit", "configeditor" -> "config";
+            default -> screen;
+        };
+        return new Qualified(screen, action);
+    }
+
     private static String reopenPage(String screen, DoParts parts, JsonObject args) {
+        if (parts == null) {
+            return homePage(screen);
+        }
         if ("config".equals(screen) && "open_module".equals(parts.action) && !parts.arg.isBlank()) {
             return "module:" + parts.arg;
         }
@@ -141,11 +286,12 @@ public final class UltraGuiActions {
                 && ("saga_reset".equals(parts.action) || "saga".equals(parts.action))) {
             return "reset";
         }
-        if (args.has("page")) {
-            return args.get("page").getAsString();
+        String page = stringArg(args, "page");
+        if (!page.isBlank()) {
+            return page;
         }
         // Keep player on the tab they acted from when possible.
-        return switch (screen) {
+        return switch (screen == null ? "" : screen) {
             case "difficulty" -> switch (parts.action) {
                 case "activate", "lower_tier", "purchase_tier", "buy", "toggle_personal" -> "tiers";
                 case "summon_end_dragon", "end_dragon", "summon_dragon" -> "summons";
@@ -178,46 +324,49 @@ public final class UltraGuiActions {
                 case "android_remove", "android" -> UltraStyle.PAGE_ANDROID_REMOVE;
                 default -> homePage(screen);
             };
+            case "admin" -> "admin";
             default -> homePage(screen);
         };
     }
 
     private static String homePage(String screen) {
-        return switch (screen) {
+        return switch (screen == null ? "" : screen) {
             case "rival" -> "home";
             case "config" -> "list";
+            case "admin" -> "admin";
             default -> "main";
         };
     }
 
     private static String tabPage(String screen, String tab) {
-        return switch (screen) {
-            case "character" -> switch (tab) {
+        String t = tab == null ? "" : tab.toLowerCase();
+        return switch (screen == null ? "" : screen) {
+            case "character" -> switch (t) {
                 case "saga", "reset" -> "reset";
                 case "android", "android_remove" -> UltraStyle.PAGE_ANDROID_REMOVE;
                 default -> "main";
             };
-            case "difficulty" -> switch (tab) {
+            case "difficulty" -> switch (t) {
                 case "tiers" -> "tiers";
                 case "summons" -> "summons";
                 default -> "main";
             };
-            case "rival" -> switch (tab) {
+            case "rival" -> switch (t) {
                 case "actions" -> "actions";
                 case "challenge" -> "challenge";
                 default -> "home";
             };
-            case "spar", "sparring" -> switch (tab) {
+            case "spar", "sparring" -> switch (t) {
                 case "dojo" -> "dojo";
                 case "wars", "dojo_war" -> "dojo_war";
                 default -> "main";
             };
-            case "prestige" -> switch (tab) {
+            case "prestige" -> switch (t) {
                 case "prestige", "turnin", "points" -> "turnin";
                 case "shop" -> "shop";
                 default -> "main";
             };
-            case "progression" -> switch (tab) {
+            case "progression" -> switch (t) {
                 case "boosts" -> "boosts";
                 case "coins" -> "coins";
                 default -> "main";
@@ -231,11 +380,37 @@ public final class UltraGuiActions {
             if (argsJson == null || argsJson.isBlank()) {
                 return new JsonObject();
             }
-            return JsonParser.parseString(argsJson).getAsJsonObject();
-        } catch (Throwable ignored) {
+            JsonElement el = JsonParser.parseString(argsJson);
+            if (el != null && el.isJsonObject()) {
+                return el.getAsJsonObject();
+            }
+            return new JsonObject();
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] Ultra bad argsJson: {}", AdaptiveDifficultyMod.MOD_ID, argsJson);
             return new JsonObject();
         }
     }
 
+    private static String stringArg(JsonObject args, String key) {
+        if (args == null || key == null || !args.has(key)) {
+            return "";
+        }
+        JsonElement el = args.get(key);
+        if (el == null || el.isJsonNull()) {
+            return "";
+        }
+        try {
+            if (el.isJsonPrimitive()) {
+                return el.getAsString() == null ? "" : el.getAsString().trim();
+            }
+            return el.toString().trim();
+        } catch (Throwable ignored) {
+            return "";
+        }
+    }
+
     record DoParts(String action, String arg) {}
+
+    record Qualified(String screen, String action) {}
 }

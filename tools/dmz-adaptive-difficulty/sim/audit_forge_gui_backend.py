@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -82,6 +83,14 @@ def main() -> int:
         if re.search(r"CmiGuiBridge\s*\.\s*open", body):
             errors.append(f"{name}.java: still opens CmiGuiBridge")
 
+    ultra_actions = ROOT / "sim" / "audit_ultra_actions.py"
+    if ultra_actions.is_file():
+        r = subprocess.run([sys.executable, str(ultra_actions)], check=False)
+        if r.returncode != 0:
+            errors.append("audit_ultra_actions.py failed")
+    else:
+        errors.append("missing sim/audit_ultra_actions.py")
+
     print("=== Forge GUI backend (no Bukkit plugin dependency) ===")
     for e in errors:
         print(f"  FAIL  {e}")
@@ -89,6 +98,7 @@ def main() -> int:
         print(f"\n{len(errors)} error(s)")
         return 1
     print("  OK  *Menu.java routes Ultra/CNPC; cmi/chest migrate to ultra; KaiPath >= 1.2.5")
+    print("  OK  Ultra actions + panel bounds audit")
     return 0
 
 
