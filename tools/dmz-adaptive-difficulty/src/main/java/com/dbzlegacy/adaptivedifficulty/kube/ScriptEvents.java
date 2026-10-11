@@ -108,8 +108,8 @@ public final class ScriptEvents {
             HotLog.tell(
                     player,
                     enable
-                            ? "\u00A77This spawner already has redstone control. Power it to spawn."
-                            : "\u00A77This spawner already has no redstone control.");
+                            ? "This spawner already has redstone control. Power it to spawn."
+                            : "This spawner already has no redstone control.");
             event.setCanceled(true);
             return;
         }
@@ -121,9 +121,10 @@ public final class ScriptEvents {
         }
         HotLog.tell(
                 player,
+                enable ? net.minecraft.ChatFormatting.GREEN : net.minecraft.ChatFormatting.GRAY,
                 enable
-                        ? "\u00A7aSpawner redstone control enabled. Power it to spawn."
-                        : "\u00A77Spawner redstone control removed.");
+                        ? "Spawner redstone control enabled. Power it to spawn."
+                        : "Spawner redstone control removed.");
         event.setCanceled(true);
     }
 

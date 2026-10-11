@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.kube.hotpath;
 
 import java.util.UUID;
+import net.minecraft.ChatFormatting;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.ai.attributes.Attribute;
@@ -29,14 +30,19 @@ public final class HealCap {
         if (player == null || !HotPathConfig.get().healing.enabled) {
             return;
         }
-        double lifeSteal = read(player, "attributeslib:life_steal", 0.0);
         double overheal = read(player, "attributeslib:overheal", 0.0);
         double received = read(player, "attributeslib:healing_received", 1.0);
+        HotPathConfig.Healing healing = HotPathConfig.get().healing;
+        String lifeStealLabel =
+                healing.lifeStealMax <= 0.0
+                        ? "Life Steal off"
+                        : "Life Steal " + pct(read(player, "attributeslib:life_steal", 0.0)) + "%";
         HotLog.tell(
                 player,
-                "\u00A77Healing caps: Life Steal "
-                        + pct(lifeSteal)
-                        + "% (disabled) | Overheal "
+                ChatFormatting.GRAY,
+                "Healing caps: "
+                        + lifeStealLabel
+                        + " | Overheal "
                         + pct(overheal)
                         + "% | Received +"
                         + receivedPct(received)
@@ -157,6 +163,9 @@ public final class HealCap {
             }
             looked = true;
             int colon = attrId.indexOf(':');
+            if (colon <= 0 || colon >= attrId.length() - 1) {
+                return null;
+            }
             resolved = ForgeRegistries.ATTRIBUTES.getValue(
                     new ResourceLocation(attrId.substring(0, colon), attrId.substring(colon + 1)));
             return resolved;

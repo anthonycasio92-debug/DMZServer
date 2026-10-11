@@ -36,8 +36,9 @@ public final class SilkyBan {
         }
         int changed = ItemIds.editPlayer(player, (container, slot, stack) -> editSlot(container, slot, stack, tools));
         if (changed > 0) {
-            HotLog.tell(player, "\u00A77Silky Cloth removed (" + changed
-                    + "). Replaced with cobwebs; tools were kept.");
+            HotLog.tell(
+                    player,
+                    "Silky Cloth removed (" + changed + "). Replaced with cobwebs; tools were kept.");
             HotLog.debug("[Tinkers Silky] purged " + changed + " stack(s)");
         }
     }
@@ -57,7 +58,7 @@ public final class SilkyBan {
         } else {
             player.m_8061_(net.minecraft.world.entity.EquipmentSlot.MAINHAND, replacement);
         }
-        HotLog.tell(player, "\u00A77Silky Cloth is disabled and was replaced with cobwebs.");
+        HotLog.tell(player, "Silky Cloth is disabled and was replaced with cobwebs.");
         return true;
     }
 

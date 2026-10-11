@@ -34,7 +34,8 @@ public final class WeaponBonusScale {
     private static final String BONUS_MAIN = "DMZ Weapon Mainhand";
     private static final String BONUS_OFF = "DMZ Weapon Offhand";
     private static final String BONUS_SLOT9 = "DMZ Weapon Slot 9";
-    private static final String[] CLEAR_STATS = {"STR", "SKP", "DEF", "STM", "VIT", "PWR", "ENE"};
+    /** Must include RES — apply() writes RES via addBonusSplit, and omitting it stacks forever. */
+    private static final String[] CLEAR_STATS = {"STR", "SKP", "DEF", "STM", "RES", "VIT", "PWR", "ENE"};
     private static final String[] OLD_SLOTS = {"MAIN", "OFF", "SLOT9"};
 
     private static final Map<UUID, String> SIGNATURES = new ConcurrentHashMap<>();

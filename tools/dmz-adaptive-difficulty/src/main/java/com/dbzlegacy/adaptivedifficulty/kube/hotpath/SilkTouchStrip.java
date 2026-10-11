@@ -44,8 +44,9 @@ public final class SilkTouchStrip {
             return false;
         });
         if (changed > 0) {
-            HotLog.tell(player, "\u00A77Silk Touch was removed from " + changed
-                    + " item(s). The items were kept.");
+            HotLog.tell(
+                    player,
+                    "Silk Touch was removed from " + changed + " item(s). The items were kept.");
             HotLog.debug("[Silk Touch Remove] stripped " + changed + " stack(s)");
         }
     }

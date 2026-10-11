@@ -33,7 +33,10 @@ public final class CapsuleBan {
             return true;
         });
         if (removed > 0) {
-            HotLog.tell(player, "\u00A7cBlueprint / Overpowered capsules are disabled and were removed.");
+            HotLog.tell(
+                    player,
+                    net.minecraft.ChatFormatting.RED,
+                    "Blueprint / Overpowered capsules are disabled and were removed.");
             HotLog.debug("[Capsule Disable] Removed " + removed + " banned capsule stack(s)");
         }
     }
@@ -48,7 +51,10 @@ public final class CapsuleBan {
         }
         event.setCanceled(true);
         stack.m_41764_(0);
-        HotLog.tell(player, "\u00A7cBlueprint / Overpowered capsules are disabled on this server.");
+        HotLog.tell(
+                player,
+                net.minecraft.ChatFormatting.RED,
+                "Blueprint / Overpowered capsules are disabled on this server.");
         return true;
     }
 
