@@ -1,19 +1,19 @@
 # Branch consolidation
 
-## 2026-10-11 — Legacy Mechanics 4.6.90 main line
+## 2026-10-11 — Legacy Mechanics 4.6.93 main line
 
-The cursor stack through `cursor/drop-dead-mixins-c766` is on **`main`**, together with the uploaded `LM GUI.jar` and the Noea planet-explosion coremod (`cursor/noea-explosion-no-tick-c766`).
+Native KubeJS hot-path ports and the Combat / `hot-path.json` staff tab are on **`main`** as **LegacyMechanics 4.6.93**.
 
 | Area | What landed on main |
 |------|---------------------|
-| LegacyMechanics | 4.6.90 jar. Race-keep prices follow the configured steps. Empty unregistered pool and combat mixins are not packaged. |
-| KubeJS | One `PlayerEvents.tick` handler. The spawner scan is every 10 seconds and staggered per player. |
-| Noea | Planet explosions are discarded instead of ticking. |
+| LegacyMechanics | 4.6.93 jar. Weapon bonus, heal caps, capsules, silk/silky, heartstop, pothala, spawners, and race-lock clear run in-mod. RES is cleared with other weapon bonus stats. |
+| KubeJS | Former tick / item-spawn hot-path scripts removed from `kubejs/` (owned by LM). |
+| Config | `config/legacymechanics/hot-path.json` + Combat tab in the config editor. |
 | Left open | `cursor/ai-relay-c766` stays. Do not merge or delete it. |
 
 **Work from here:** branch off `main` only (`cursor/<topic>-c766`).
 
-Live Forge jar is already **4.6.90**. A restart loads it. `/lm admin reload` only refreshes JSON.
+Ship **4.6.93** to the live Forge `mods/` folder and restart. `/lm admin reload` does not load a new jar.
 
 ## 2026-09-22 — Legacy Mechanics 4.5.49 main line
 
