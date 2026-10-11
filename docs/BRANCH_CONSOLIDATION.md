@@ -15,6 +15,17 @@ The cursor stack through `cursor/drop-dead-mixins-c766` is on **`main`**, togeth
 
 Live Forge jar is already **4.6.90**. A restart loads it. `/lm admin reload` only refreshes JSON.
 
+## 2026-10-11 — open cursor branch audit
+
+| Branch | Verdict |
+|--------|---------|
+| `cursor/item-spawn-consolidated-34d6` | **STALE — do not merge.** Would reintroduce separate player-tick handlers removed by tick consolidation; also has hardcoded chat colors, raw `guiBackend=cnpc` in player text, and unrate-limited logging. |
+| `cursor/lm-kubejs-hotpath-c766` | Fixed on branch (RES clear leak + chat cleanup → 4.6.94). |
+| `cursor/ultra-server-only-34d6` | Fixed on branch (`LmScreens` no longer touches server-only `AdaptiveDifficultyMod`). |
+| `cursor/kaipath-lm-ultra-bridge-34d6` | Fixed on branch (`pressProxy` gated to OnPress SAMs). |
+| `cursor/ai-relay-c766` | Clean (docs-only). |
+| `cursor/ultra-bridge-research-brief-34d6` | Clean (docs-only). |
+
 ## 2026-09-22 — Legacy Mechanics 4.5.49 main line
 
 All LM/CNPC/GUI work is on **`main`** (formerly `cursor/gui-menu-audit-c766` + open cursor PRs).
