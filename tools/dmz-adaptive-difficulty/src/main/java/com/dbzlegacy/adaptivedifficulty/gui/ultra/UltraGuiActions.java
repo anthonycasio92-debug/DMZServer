@@ -93,7 +93,7 @@ public final class UltraGuiActions {
         if ("saga_confirm".equals(action)) {
             String id = arg == null ? "" : arg.trim();
             if (id.isBlank()) {
-                return "§cChoose a saga first.";
+                return UltraStyle.dangerLine("Choose a saga first.");
             }
             UltraCharacterScreens.open(player, "saga_confirm:" + id);
             return "";
@@ -101,7 +101,7 @@ public final class UltraGuiActions {
         if ("saga_reset".equals(action) || "saga".equals(action) || "reset_saga".equals(action)) {
             String id = arg == null ? "" : arg.trim();
             if (id.isBlank()) {
-                return "§cChoose a saga first.";
+                return UltraStyle.dangerLine("Choose a saga first.");
             }
             String result = SagaResetService.reset(player, id);
             return result == null ? "" : result;

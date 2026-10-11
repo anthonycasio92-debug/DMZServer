@@ -134,7 +134,11 @@ public final class UltraScreenSpec {
             JsonObject o = new JsonObject();
             o.addProperty("id", tab.id);
             boolean active = tab.id.equalsIgnoreCase(activeTab);
-            o.addProperty("label", active ? "§6§l" + UltraStyle.plain(tab.label) : "§7" + UltraStyle.plain(tab.label));
+            o.addProperty(
+                    "label",
+                    active
+                            ? UltraStyle.HEADER + UltraStyle.plain(tab.label)
+                            : UltraStyle.LABEL + UltraStyle.plain(tab.label));
             tabArr.add(o);
         }
         JsonArray lineArr = new JsonArray();

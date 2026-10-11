@@ -1,15 +1,36 @@
 package com.dbzlegacy.adaptivedifficulty.gui.ultra;
 
-/** Section-sign colors KaiPath renders. Matches CNPC Ultra standards. */
+/**
+ * Section-sign colors KaiPath renders. Matches CNPC Ultra standards.
+ *
+ * <p>Color strings are built at class-init (not compile-time constant expressions) so
+ * {@code UltraStyle.LABEL + "text"} does not fold a section-sign into caller classfiles.
+ * Screen builders must use these constants — never bare section-sign literals.
+ */
 public final class UltraStyle {
-    public static final String HEADER = "§6§l";
-    public static final String LABEL = "§7";
-    public static final String VALUE = "§f";
-    public static final String CONFIRM = "§a";
-    public static final String DANGER = "§c";
-    public static final String DIM = "§8";
-    public static final String NOTICE_HEAD = "§6§l";
-    public static final String NOTICE_BODY = "§e";
+    /** Single section-sign mark. Not a compile-time constant. */
+    public static final String MARK = mark();
+
+    public static final String BOLD = code('l');
+    public static final String RESET = code('r');
+
+    public static final String GOLD = code('6');
+    public static final String GRAY = code('7');
+    public static final String WHITE = code('f');
+    public static final String GREEN = code('a');
+    public static final String RED = code('c');
+    public static final String DARK_GRAY = code('8');
+    public static final String YELLOW = code('e');
+
+    public static final String HEADER = GOLD + BOLD;
+    public static final String LABEL = GRAY;
+    public static final String VALUE = WHITE;
+    public static final String CONFIRM = GREEN;
+    public static final String DANGER = RED;
+    public static final String DIM = DARK_GRAY;
+    public static final String NOTICE_HEAD = HEADER;
+    public static final String NOTICE_BODY = YELLOW;
+
     public static final String BACK = LABEL + "« Back";
     public static final String BACK_TO_MAIN = LABEL + "« Back to main menu";
     public static final int BTN_MIN_W = 80;
@@ -21,11 +42,20 @@ public final class UltraStyle {
 
     private UltraStyle() {}
 
+    /** Runtime section-sign so callers never embed a folded color mark in their classfile. */
+    private static String mark() {
+        return String.valueOf((char) 0xA7);
+    }
+
+    private static String code(char color) {
+        return mark() + color;
+    }
+
     public static String plain(String text) {
         if (text == null || text.isBlank()) {
             return "";
         }
-        return text.replaceAll("§.", "").trim();
+        return text.replaceAll(MARK + ".", "").trim();
     }
 
     public static String header(String title) {
@@ -67,5 +97,15 @@ public final class UltraStyle {
 
     public static String dim(String label) {
         return DIM + plain(label);
+    }
+
+    /** Chat/status line with yellow notice body (errors stay humanized, not raw IDs). */
+    public static String noticeLine(String body) {
+        return NOTICE_BODY + plain(body);
+    }
+
+    /** Chat/status line with danger red. */
+    public static String dangerLine(String body) {
+        return DANGER + plain(body);
     }
 }

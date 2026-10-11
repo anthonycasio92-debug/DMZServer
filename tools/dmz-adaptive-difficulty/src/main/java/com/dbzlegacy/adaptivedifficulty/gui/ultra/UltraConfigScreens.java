@@ -97,10 +97,10 @@ public final class UltraConfigScreens {
      */
     public static String handleAction(ServerPlayer player, String action, String arg, String page) {
         if (player == null) {
-            return "§cThis only works in-game.";
+            return UltraStyle.dangerLine("This only works in-game.");
         }
         if (!StaffAccess.isStaff(player)) {
-            return "§cStaff only.";
+            return UltraStyle.dangerLine("Staff only.");
         }
         String act = action == null ? "" : action.toLowerCase(Locale.ROOT).trim();
         String a = arg == null ? "" : arg.trim();
@@ -109,27 +109,31 @@ public final class UltraConfigScreens {
                 ConfigEditor.SaveResult result =
                         ConfigEditor.saveAll(player.m_20148_(), player.m_7755_().getString());
                 if (result.error() != null && !result.error().isBlank()) {
-                    yield "§c" + result.error();
+                    yield UltraStyle.dangerLine(result.error());
                 }
                 yield result.message() == null || result.message().isBlank()
-                        ? "§eSaved."
-                        : "§e" + result.message();
+                        ? UltraStyle.noticeLine("Saved.")
+                        : UltraStyle.noticeLine(result.message());
             }
             case "discard_all", "discard" -> {
                 int count = ConfigEditor.discardAll(player.m_20148_());
-                yield count <= 0 ? "§eNothing to discard." : "§eDiscarded " + count + " change(s).";
+                yield count <= 0
+                        ? UltraStyle.noticeLine("Nothing to discard.")
+                        : UltraStyle.noticeLine("Discarded " + count + " change(s).");
             }
             case "reload_module", "reload" -> {
                 String module = !a.isBlank() ? a : moduleFromPage(page);
                 String error = ConfigEditor.reloadModule(player.m_20148_(), module);
-                yield error == null ? "§eReloaded " + module + "." : "§c" + error;
+                yield error == null
+                        ? UltraStyle.noticeLine("Reloaded " + module + ".")
+                        : UltraStyle.dangerLine(error);
             }
             case "open_module" -> {
                 // UltraGuiActions reopens to module:<arg> after this returns.
                 yield "";
             }
             case "page", "refresh" -> "";
-            default -> "§cThat config action is not available.";
+            default -> UltraStyle.dangerLine("That config action is not available.");
         };
     }
 
