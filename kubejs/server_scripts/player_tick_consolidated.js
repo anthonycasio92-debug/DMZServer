@@ -1,7 +1,6 @@
-// Consolidated player tick - replaces 4 separate PlayerEvents.tick handlers
-// (dmz_weapon_bonus_scale, lifesteal_cap, pathalafix1 / dmz_pothala_protection,
-// race_lock_gui_sync).
-// One handler = one Rhino proxy invocation per player per tick instead of four.
+// Consolidated player tick. One handler for every former per-player tick:
+// weapon bonus, lifesteal cap, pothala, race-lock clear, apotheosis spawner
+// vanillaize, capsule purge, heartstop strip, silk touch strip, tinkers silky.
 //
 // Each original file keeps its helpers and publishes them on global. KubeJS
 // gives every server script its own scope, so the bodies below call those
@@ -11,6 +10,8 @@
 // Weapon: a missing age still runs wrap + cleanup (do not bail on null age).
 // Pothala: uses tickCount; if that read throws, the scan still runs.
 // Race lock: falls back to tickCount only when reading age throws.
+// Spawner scan: slower than the old 5s pass, and each player is offset by
+// their id so the chunk walks do not land on the same tick.
 
 PlayerEvents.tick(function (event) {
     try {
@@ -81,9 +82,103 @@ PlayerEvents.tick(function (event) {
                 }
             }
         } catch (err) {}
+
+        // --- apotheosis_spawner_disable (chunk walk; staggered, not every player at once) ---
+        try {
+            var apoth = global.dmzApothSpawnerTick;
+            if (apoth) {
+                var apothAge = NaN;
+                try {
+                    apothAge = Number(player.age);
+                } catch (eApothAge) {
+                    apothAge = NaN;
+                }
+                if (isFinite(apothAge) && apothAge >= 0) {
+                    var span = apoth.SCAN_INTERVAL;
+                    var slot = 0;
+                    try {
+                        var key = "";
+                        try {
+                            key = String(player.uuid);
+                        } catch (eUuid) {
+                            key = "";
+                        }
+                        if (!key || key === "undefined") {
+                            key = String(player.username);
+                        }
+                        var hash = 0;
+                        for (var hi = 0; hi < key.length; hi++) {
+                            hash = (hash * 31 + key.charCodeAt(hi)) | 0;
+                        }
+                        slot = ((hash % span) + span) % span;
+                    } catch (eSlot) {
+                        slot = 0;
+                    }
+                    if (apothAge % span === slot) {
+                        apoth.scan(player);
+                    }
+                }
+            }
+        } catch (err) {}
+
+        // --- capsule_disable (was: every PLAYER_PURGE_INTERVAL) ---
+        try {
+            var capsules = global.dmzCapsuleTick;
+            if (capsules && player.age % capsules.PLAYER_PURGE_INTERVAL === 0) {
+                capsules.purge(player, true);
+            }
+        } catch (err) {
+            console.error("[Capsule Disable] tick error: " + err);
+        }
+
+        // --- heartstop_disable (was: every 40 ticks; a failed age read skips only this) ---
+        try {
+            var heart = global.dmzHeartstopTick;
+            if (heart) {
+                var heartAge = 0;
+                var heartOk = true;
+                try {
+                    heartAge = player.age;
+                } catch (eHeart) {
+                    heartOk = false;
+                }
+                if (heartOk && heartAge % heart.INTERVAL === 0) {
+                    heart.strip(player);
+                }
+            }
+        } catch (err) {}
+
+        // --- remove_silk_touch (was: every PLAYER_SCAN_INTERVAL) ---
+        try {
+            var silk = global.dmzSilkTouchTick;
+            if (silk && player.age % silk.PLAYER_SCAN_INTERVAL === 0) {
+                silk.purge(player, true);
+            }
+        } catch (err) {
+            console.error("[Silk Touch Remove] tick error: " + err);
+        }
+
+        // --- tinkers_silky_disable (cloth every 1s; tools on the slower cadence) ---
+        try {
+            var silky = global.dmzTinkersSilkyTick;
+            if (silky) {
+                var silkyAge = 0;
+                var silkyOk = true;
+                try {
+                    silkyAge = Number(player.age);
+                } catch (eSilky) {
+                    silkyOk = false;
+                }
+                if (silkyOk && silkyAge % silky.CLOTH_SCAN_INTERVAL === 0) {
+                    silky.purge(player, true, silkyAge % silky.TOOL_SCAN_INTERVAL === 0);
+                }
+            }
+        } catch (err) {
+            console.error("[Tinkers Silky] tick error: " + err);
+        }
     } catch (err) {}
 });
 
 console.info(
-    "[DMZ] Consolidated player tick loaded (weapon bonus, lifesteal cap, pothala, race-lock clear)."
+    "[DMZ] Consolidated player tick loaded (weapon, lifesteal, pothala, race-lock, spawner, capsule, heartstop, silk, silky)."
 );

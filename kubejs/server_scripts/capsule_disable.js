@@ -315,16 +315,11 @@ PlayerEvents.loggedIn(function (event) {
     }
 });
 
-PlayerEvents.tick(function (event) {
-    try {
-        var player = event.player;
-        if (player == null) return;
-        if (player.age % PLAYER_PURGE_INTERVAL !== 0) return;
-        purgePlayerCapsules(player, true);
-    } catch (err) {
-        console.error("[Capsule Disable] tick error: " + err);
-    }
-});
+/* Shared tick in player_tick_consolidated.js calls this. No listener here. */
+global.dmzCapsuleTick = {
+    PLAYER_PURGE_INTERVAL: PLAYER_PURGE_INTERVAL,
+    purge: purgePlayerCapsules
+};
 
 ItemEvents.rightClicked("capsule:capsule", function (event) {
     try {

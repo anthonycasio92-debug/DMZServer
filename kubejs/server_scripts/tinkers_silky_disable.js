@@ -708,24 +708,12 @@ PlayerEvents.loggedIn(function (event) {
     }
 });
 
-PlayerEvents.tick(function (event) {
-    try {
-        var player = event.player;
-        if (player == null) return;
-        var age = 0;
-        try {
-            age = Number(player.age);
-        } catch (eAge) {
-            return;
-        }
-        if (age % CLOTH_SCAN_INTERVAL === 0) {
-            /* Cloth every 1s; tools only on the slower cadence. */
-            purgePlayerSilky(player, true, age % TOOL_SCAN_INTERVAL === 0);
-        }
-    } catch (err) {
-        console.error("[Tinkers Silky] tick error: " + err);
-    }
-});
+/* Shared tick in player_tick_consolidated.js calls this. No listener here. */
+global.dmzTinkersSilkyTick = {
+    CLOTH_SCAN_INTERVAL: CLOTH_SCAN_INTERVAL,
+    TOOL_SCAN_INTERVAL: TOOL_SCAN_INTERVAL,
+    purge: purgePlayerSilky
+};
 
 EntityEvents.spawned("minecraft:item", function (event) {
     try {
