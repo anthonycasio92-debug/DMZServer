@@ -304,6 +304,12 @@ merge_onto_base_jar() {
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.class" \
       "$merge/com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.class"
   fi
+  if [[ -d "$OUT/com/dbzlegacy/adaptivedifficulty/kube" ]]; then
+    rm -rf "$merge/com/dbzlegacy/adaptivedifficulty/kube"
+    mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/kube"
+    cp -a "$OUT/com/dbzlegacy/adaptivedifficulty/kube/." \
+      "$merge/com/dbzlegacy/adaptivedifficulty/kube/"
+  fi
   if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/service/DifficultyActions.class" ]]; then
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/service/DifficultyActions.class" \
       "$merge/com/dbzlegacy/adaptivedifficulty/service/DifficultyActions.class"
@@ -474,6 +480,10 @@ fi
 echo "Built $JAR (base: $(basename "$BASE_JAR"))"
 if jar tf "$JAR" | grep -Eq 'StatsDataHudPoolMaxMixin|StatsDataOverhaulCombatScaleMixin'; then
   echo "ERROR: shipped jar still contains unregistered prestige scale mixin classes" >&2
+  exit 1
+fi
+if ! jar tf "$JAR" | grep -q 'kube/LmHotPath.class'; then
+  echo "ERROR: kube/LmHotPath.class missing from $JAR" >&2
   exit 1
 fi
 if ! jar tf "$JAR" | grep -q 'gui/GuiClickConfirm\$Pending.class'; then

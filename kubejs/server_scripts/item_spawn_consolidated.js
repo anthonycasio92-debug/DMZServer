@@ -3,7 +3,20 @@
 //
 // Each original file keeps its helpers and publishes them on global. One
 // listener means one proxy call per spawned item.
+//
+// LegacyMechanics LmHotPath owns this listener once the class is loaded.
 
+function dmzLmOwnsHotPath() {
+    try {
+        return Java.loadClass("com.dbzlegacy.adaptivedifficulty.kube.LmHotPath").ENABLED === true;
+    } catch (e) {
+        return false;
+    }
+}
+
+if (dmzLmOwnsHotPath()) {
+    console.info("[DMZ] Item spawn hot path is native LegacyMechanics; KubeJS listener idle.");
+} else {
 EntityEvents.spawned("minecraft:item", function (event) {
     try {
         var entity = event.entity;
@@ -32,5 +45,6 @@ EntityEvents.spawned("minecraft:item", function (event) {
         } catch (err) {}
     } catch (err) {}
 });
+}
 
 console.info("[DMZ] Consolidated item spawn loaded (spawner, capsule, silk touch, silky).");

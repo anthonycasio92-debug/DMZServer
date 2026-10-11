@@ -63,7 +63,17 @@ function purgePlayerCapsules(player) {
     }
 }
 
-// Inventory + ender chest purge (same cadence as blueprint script)
+function dmzLmOwnsHotPath() {
+    try {
+        return Java.loadClass('com.dbzlegacy.adaptivedifficulty.kube.LmHotPath').ENABLED === true
+    } catch (e) {
+        return false
+    }
+}
+
+// Inventory + ender chest purge (same cadence as blueprint script).
+// Idle when LegacyMechanics owns the capsule ban.
+if (!dmzLmOwnsHotPath()) {
 PlayerEvents.tick(event => {
     const player = event.player
     if (!player || player.level.clientSide) {
@@ -105,6 +115,7 @@ ServerEvents.tick(event => {
         'minecraft:kill @e[type=minecraft:item,nbt={Item:{id:"capsule:capsule",tag:{overpowered:1b}}}]'
     )
 })
+}
 
 ServerEvents.loaded(event => {
     console.log('[DBZ Legacy Reborn] Permanent Overpowered capsule purge enabled.')

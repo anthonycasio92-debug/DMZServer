@@ -1,5 +1,16 @@
 const CapsuleItem = Java.loadClass('capsule.items.CapsuleItem');
 
+function dmzLmOwnsHotPath() {
+    try {
+        return Java.loadClass('com.dbzlegacy.adaptivedifficulty.kube.LmHotPath').ENABLED === true;
+    } catch (e) {
+        return false;
+    }
+}
+
+if (dmzLmOwnsHotPath()) {
+    console.info('[Blueprint Removal] Native LegacyMechanics owns capsule purge; listener idle.');
+} else {
 PlayerEvents.tick(event => {
     const player = event.player;
 
@@ -66,3 +77,4 @@ EntityEvents.spawned(event => {
         entity.discard();
     }
 });
+}

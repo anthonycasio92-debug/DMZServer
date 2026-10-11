@@ -12,7 +12,21 @@
 // Race lock: falls back to tickCount only when reading age throws.
 // Spawner scan: slower than the old 5s pass, and each player is offset by
 // their id so the chunk walks do not land on the same tick.
+//
+// LegacyMechanics LmHotPath owns this listener once the class is loaded.
+// On an older jar the class is missing and this listener keeps running.
 
+function dmzLmOwnsHotPath() {
+    try {
+        return Java.loadClass("com.dbzlegacy.adaptivedifficulty.kube.LmHotPath").ENABLED === true;
+    } catch (e) {
+        return false;
+    }
+}
+
+if (dmzLmOwnsHotPath()) {
+    console.info("[DMZ] Player tick hot path is native LegacyMechanics; KubeJS listener idle.");
+} else {
 PlayerEvents.tick(function (event) {
     try {
         var player = event.player;
@@ -178,6 +192,7 @@ PlayerEvents.tick(function (event) {
         }
     } catch (err) {}
 });
+}
 
 console.info(
     "[DMZ] Consolidated player tick loaded (weapon, lifesteal, pothala, race-lock, spawner, capsule, heartstop, silk, silky)."
