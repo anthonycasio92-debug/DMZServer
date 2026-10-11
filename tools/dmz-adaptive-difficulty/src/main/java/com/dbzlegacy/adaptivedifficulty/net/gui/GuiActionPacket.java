@@ -70,9 +70,7 @@ public final class GuiActionPacket {
                 DmzRewards.msg(
                         player,
                         UltraStyle.dangerLine(
-                                "Something went wrong (raw="
-                                        + msg.actionId
-                                        + "). Staff: see server log."));
+                                "Something went wrong. Try again, or ask staff if it keeps happening."));
             }
         });
         context.setPacketHandled(true);

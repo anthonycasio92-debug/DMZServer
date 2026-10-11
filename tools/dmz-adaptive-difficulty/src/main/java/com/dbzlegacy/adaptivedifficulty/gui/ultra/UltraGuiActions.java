@@ -61,9 +61,7 @@ public final class UltraGuiActions {
             DmzRewards.msg(
                     player,
                     UltraStyle.dangerLine(
-                            "Something went wrong (raw="
-                                    + actionId
-                                    + "). Staff: see server log."));
+                            "Something went wrong. Try again, or ask staff if it keeps happening."));
         }
     }
 
@@ -131,8 +129,7 @@ public final class UltraGuiActions {
                     action);
             DmzRewards.msg(
                     player,
-                    UltraStyle.dangerLine(
-                            "That menu action is not available (raw=" + rawActionId + ")."));
+                    UltraStyle.dangerLine("That menu action is not available."));
             return;
         }
         // Prefer arg encoded in the action id (do:action:arg…); fall back to argsJson.
@@ -198,8 +195,12 @@ public final class UltraGuiActions {
     private static String runDo(
             ServerPlayer player, String screen, String act, JsonObject args, String rawActionId) {
         if (player == null || act == null || act.isBlank()) {
-            return UltraStyle.dangerLine(
-                    "That menu action is not available (raw=" + rawActionId + ").");
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] Ultra empty act screen={} rawActionId={}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    screen,
+                    rawActionId);
+            return UltraStyle.dangerLine("That menu action is not available.");
         }
         String arg = stringArg(args, "arg");
         String page = stringArg(args, "page");
@@ -229,8 +230,7 @@ public final class UltraGuiActions {
                     rawActionId,
                     act,
                     arg);
-            return UltraStyle.dangerLine(
-                    "That menu action is not available (raw=" + rawActionId + ").");
+            return UltraStyle.dangerLine("That menu action is not available.");
         }
         if (isGenericFailure(result)) {
             AdaptiveDifficultyMod.LOGGER.warn(
@@ -266,7 +266,8 @@ public final class UltraGuiActions {
             if (id.isBlank()) {
                 return UltraStyle.dangerLine("Choose a saga first.");
             }
-            UltraCharacterScreens.open(player, "saga_confirm:" + id);
+            // Routes through UltraGui → CNPC when KaiPath lacks screenId=character.
+            UltraGui.open(player, "character", "saga_confirm:" + id);
             return "";
         }
         if ("saga_reset".equals(action) || "saga".equals(action) || "reset_saga".equals(action)) {
