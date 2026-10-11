@@ -32,6 +32,13 @@ tools/dmz-adaptive-difficulty-gui/build/
 /plugins/AdaptiveDifficultyGUI-*.jar
 tools/dmz-adaptive-difficulty/build/
 
+# KaiPath LM Ultra client overlay build artifacts + local base jar (16MB)
+tools/kaipath-lm-ultra-client/build/
+tools/kaipath-lm-ultra-client/base/*.jar
+tools/kaipath-lm-ultra-client/out/
+tools/kaipath-lm-ultra-client/stubs/net/
+tools/kaipath-lm-ultra-client/stubs/org/
+
 # Local convenience copies from adaptive-difficulty build.sh
 /dmz_adaptive_difficulty-*.jar
 tools/dmz-adaptive-difficulty/sim/__pycache__/

@@ -34,10 +34,10 @@ failures.
 Protocol / LM builders use logical ids: `hub`, `difficulty`, `rival`, `spar`, `prestige`,
 `character`, `progression`, `config`, `admin`.
 
-#### Hub wire shim (KaiPath 1.3.0)
+#### Hub wire shim (KaiPath 1.3.0 stock)
 
-KaiPath 1.3.0 `LmScreens.registerDefaults()` only registers **`hub`**. LM tunnels any logical
-id not in `UltraScreenIds.KAIPATH_REGISTERED_IDS` by setting the wire `screenId` to **`hub`**.
+Stock KaiPath 1.3.0 only registers **`hub`**. LM tunnels any logical id not in
+`UltraScreenIds.KAIPATH_REGISTERED_IDS` by setting the wire `screenId` to **`hub`**.
 Title, tabs, buttons, panel (**350×220** default), and layout stay as built.
 The logical system is stored in:
 
@@ -48,6 +48,9 @@ The logical system is stored in:
 `UltraGuiActions` resolves the logical screen from that metadata (not the wire `hub` id).
 Expand `KAIPATH_REGISTERED_IDS` when KaiPath adds handlers — one-line change disables the shim
 for those ids.
+
+**Patched client (`kaipath-1.3.1-lm-ultra` / upstream after JLDK merge):** no screenId whitelist —
+any id opens `LmDynamicScreen`. Hub shim remains harmless for older clients still on 1.3.0.
 
 ## GuiOpenPacket (S→C) — 10 fields
 
@@ -168,10 +171,15 @@ On `LmGuiNetwork.register()`:
 Unhandled exceptions log `screen`, **`rawActionId`**, resolved action, and stack under
 `LegacyMechanics`. Player chat never includes raw action IDs.
 
-## KaiPath 1.3.0 known limits
+## KaiPath client requirements (JLDK)
 
-Bytecode audit: client `GuiOpenPacket` is **one field** (`screenId`); `buttonsJson` is ignored
-and `LmHubScreen` is hardcoded. LM still sends the full 10-field packet so newer KaiPath can
-render it. `/lm admin guitest` and INFO packet traces diagnose delivery vs click silence.
-`KaiPathLmConsumerBootstrapMixin` keeps KaiPath’s `registerClient()` alive when the LM jar is
-also on the client.
+Stock **1.3.0** only decodes `screenId` and shows a hardcoded hub. Required client work
+(decode 10 fields, dynamic render, verbatim action echo, no hardcoding) is specified in
+**`docs/KAIPATH_JLDK_CLIENT_BRIEF.md`**.
+
+Reference patch in this repo: `tools/kaipath-lm-ultra-client/` →
+`mods/kaipath-1.3.1-lm-ultra.jar` (overlay on 1.3.0). Merge upstream so official KaiPath
+ships the dynamic consumer.
+
+`KaiPathLmConsumerBootstrapMixin` (LM) still keeps `registerClient()` alive when the LM jar
+is also on the client.
