@@ -357,8 +357,8 @@ public final class DifficultyConfig {
     /**
      * Player UI backend for {@code /lm} and system menus.
      * {@code ultra} (default) = KaiPath Ultra UI via {@code legacymechanics:gui};
-     * {@code cnpc} = CustomNPCs dialogs (fallback when KaiPath is missing);
-     * also: chat, and legacy cmi/chest/auto aliases (map to cnpc).
+     * {@code cnpc} = CustomNPCs dialogs (explicit fallback);
+     * {@code chat} = text-only. Retired {@code cmi}/{@code chest} values migrate to ultra on load.
      */
     public String guiBackend = "ultra";
     /** Staff {@code /lm admin testgui} — CustomNPCs panel listing all LM systems (experimental). */
@@ -1325,8 +1325,9 @@ public final class DifficultyConfig {
         if (cfg.guiBackend == null || cfg.guiBackend.isBlank()) {
             cfg.guiBackend = "ultra";
         } else {
+            String before = cfg.guiBackend.trim();
             // Canonicalize aliases so Forge + Bukkit agree.
-            cfg.guiBackend = switch (cfg.guiBackend.trim().toLowerCase()) {
+            cfg.guiBackend = switch (before.toLowerCase()) {
                 case "ultra", "kaipath", "dmzultra", "native" -> "ultra";
                 case "cnpc", "customnpcs", "customnpc", "noppes" -> "cnpc";
                 case "cmi", "cmilib", "cmigui", "deluxemenus", "deluxe", "dm" -> "cmi";
@@ -1335,6 +1336,14 @@ public final class DifficultyConfig {
                 case "auto" -> "auto";
                 default -> "ultra";
             };
+            // Retired CMI / chest backends → Ultra (KaiPath). Persist via load()'s save().
+            if ("cmi".equals(cfg.guiBackend) || "chest".equals(cfg.guiBackend)) {
+                AdaptiveDifficultyMod.LOGGER.info(
+                        "[{}] migrated guiBackend \"{}\" → ultra",
+                        AdaptiveDifficultyMod.MOD_ID,
+                        before);
+                cfg.guiBackend = "ultra";
+            }
         }
         if (cfg.vanillaDifficulty == null || cfg.vanillaDifficulty.isBlank()) {
             cfg.vanillaDifficulty = "hard";

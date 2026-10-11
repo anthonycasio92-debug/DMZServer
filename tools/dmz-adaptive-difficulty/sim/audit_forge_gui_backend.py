@@ -26,8 +26,35 @@ def main() -> int:
     backend = BACKEND.read_text(encoding="utf-8")
     if "ULTRA" not in backend:
         errors.append("GuiBackend.java: missing ULTRA backend")
-    if "case \"cmi\"" not in backend or "-> CNPC" not in backend:
-        errors.append("GuiBackend.java: legacy cmi/chest aliases must map to CNPC")
+    if "CNPC" not in backend:
+        errors.append("GuiBackend.java: CNPC must remain a valid explicit backend")
+    if "unrecognized guiBackend" not in backend and "falling back" not in backend:
+        errors.append("GuiBackend.java: must warn and fall back to ultra for unknown values")
+    # Retired cmi/chest must not silently resolve to CNPC anymore (config migrates them).
+    if re.search(r'case\s+"cmi".*->\s*CNPC', backend, re.S):
+        errors.append("GuiBackend.java: cmi must not map to CNPC (migrate to ultra in config)")
+
+    config = (ROOT / "src/main/java/com/dbzlegacy/adaptivedifficulty/config/DifficultyConfig.java").read_text(
+        encoding="utf-8"
+    )
+    if 'guiBackend = "ultra"' not in config and "guiBackend = \"ultra\"" not in config:
+        errors.append("DifficultyConfig: default guiBackend must be ultra")
+    if "migrated guiBackend" not in config:
+        errors.append("DifficultyConfig: must migrate retired cmi/chest guiBackend to ultra")
+
+    net = (ROOT / "src/main/java/com/dbzlegacy/adaptivedifficulty/net/gui/LmGuiNetwork.java").read_text(
+        encoding="utf-8"
+    )
+    if "isVersionAtLeast" not in net or "1.2.5" not in net:
+        errors.append("LmGuiNetwork: must compare KaiPath version >= 1.2.5")
+    if 'equals("1.2.5")' in net or "equals(\"1.2.5\")" in net:
+        errors.append("LmGuiNetwork: must not use exact equals(\"1.2.5\") for KaiPath")
+
+    mods_toml = (ROOT / "src/main/resources/META-INF/mods.toml").read_text(encoding="utf-8")
+    if 'modId = "kaipath"' not in mods_toml:
+        errors.append("mods.toml: missing soft dependency on kaipath")
+    elif "[1.2.5,)" not in mods_toml:
+        errors.append("mods.toml: kaipath versionRange must be [1.2.5,)")
 
     ultra = GUI / "ultra" / "UltraGui.java"
     if not ultra.is_file():
@@ -61,7 +88,7 @@ def main() -> int:
     if errors:
         print(f"\n{len(errors)} error(s)")
         return 1
-    print("  OK  *Menu.java routes Ultra/CNPC; GuiBackend maps legacy bukkit/cmi to CNPC")
+    print("  OK  *Menu.java routes Ultra/CNPC; cmi/chest migrate to ultra; KaiPath >= 1.2.5")
     return 0
 
 

@@ -1044,15 +1044,15 @@ public final class DifficultyCommands {
                     String gui = switch (value.trim().toLowerCase()) {
                         case "ultra", "kaipath", "dmzultra", "native" -> "ultra";
                         case "cnpc", "customnpcs", "customnpc", "noppes" -> "cnpc";
-                        case "cmi", "cmilib", "cmigui", "deluxemenus", "deluxe", "dm" -> "cmi";
-                        case "chest", "bukkit", "inventory", "gui" -> "chest";
+                        // Retired CMI/chest aliases → ultra (same as config load migration).
+                        case "cmi", "cmilib", "cmigui", "deluxemenus", "deluxe", "dm",
+                                "chest", "bukkit", "inventory", "gui", "auto" -> "ultra";
                         case "chat" -> "chat";
-                        case "auto" -> "auto";
                         default -> null;
                     };
                     if (gui == null) {
                         source.m_81352_(Component.m_237113_(
-                                "Unknown guiBackend. Use: ultra, cnpc, cmi, chest, chat, auto."));
+                                "Unknown guiBackend. Use: ultra, cnpc, chat."));
                         return 0;
                     }
                     cfg.guiBackend = gui;
