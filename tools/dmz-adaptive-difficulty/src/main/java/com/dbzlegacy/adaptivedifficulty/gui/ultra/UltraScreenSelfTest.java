@@ -51,17 +51,28 @@ public final class UltraScreenSelfTest {
                     AdaptiveDifficultyMod.MOD_ID,
                     ok);
         } else {
-            AdaptiveDifficultyMod.LOGGER.warn(
-                    "[{}] Ultra screen builder self-test failures ({} ok): {}",
+            AdaptiveDifficultyMod.LOGGER.error(
+                    "[{}] Ultra screen builder self-test FAILED ({} ok): {}",
                     AdaptiveDifficultyMod.MOD_ID,
                     ok,
                     failures);
+            throw new IllegalStateException(
+                    "LegacyMechanics Ultra screen builder self-test failed ("
+                            + failures.size()
+                            + " error(s)): "
+                            + failures);
         }
+    }
+
+    /** Used by {@link LmGuiNetwork#runPacketRoundTripSelfTest()}. */
+    public static void probeBuilderForRoundTrip(String id) {
+        probeBuilder(id);
     }
 
     /**
      * Representative main-page spec mirroring each {@code Ultra*Screens} builder shape.
      * Does not require a {@link net.minecraft.server.level.ServerPlayer}.
+     * Unknown ids in {@link UltraScreenIds#BUILDER_IDS} get a generic zero-config probe.
      */
     private static void probeBuilder(String id) {
         UltraScreenSpec spec =
@@ -163,10 +174,19 @@ public final class UltraScreenSelfTest {
         if (pkt.title() == null || pkt.title().isBlank()) {
             return "empty title";
         }
-        if (pkt.tabsJson() == null || pkt.tabsJson().isBlank()) {
-            return "empty tabsJson";
+        String tabsErr = requireJsonArray("tabsJson", pkt.tabsJson(), false);
+        if (tabsErr != null) {
+            return tabsErr;
         }
-        if (pkt.buttonsJson() == null || pkt.buttonsJson().isBlank() || "[]".equals(pkt.buttonsJson())) {
+        String linesErr = requireJsonArray("linesJson", pkt.linesJson(), true);
+        if (linesErr != null) {
+            return linesErr;
+        }
+        String buttonsErr = requireJsonArray("buttonsJson", pkt.buttonsJson(), false);
+        if (buttonsErr != null) {
+            return buttonsErr;
+        }
+        if (pkt.buttonsJson() == null || "[]".equals(pkt.buttonsJson().trim())) {
             return "empty buttonsJson";
         }
         if (pkt.panelWidth() <= 0) {
@@ -175,10 +195,40 @@ public final class UltraScreenSelfTest {
         if (pkt.panelHeight() <= 0) {
             return "panelHeight=" + pkt.panelHeight();
         }
+        if (pkt.panelWidth() > 2000 || pkt.panelHeight() > 2000) {
+            return "panel dimensions out of range " + pkt.panelWidth() + "x" + pkt.panelHeight();
+        }
         if (pkt.layoutJson() == null || pkt.layoutJson().isBlank()) {
             return "empty layoutJson";
         }
+        try {
+            com.google.gson.JsonElement el =
+                    com.google.gson.JsonParser.parseString(pkt.layoutJson());
+            if (!el.isJsonObject()) {
+                return "layoutJson not a JSON object";
+            }
+        } catch (Throwable t) {
+            return "layoutJson invalid JSON: " + t.getMessage();
+        }
         return null;
+    }
+
+    private static String requireJsonArray(String field, String json, boolean allowEmpty) {
+        if (json == null || json.isBlank()) {
+            return allowEmpty ? null : "empty " + field;
+        }
+        try {
+            com.google.gson.JsonElement el = com.google.gson.JsonParser.parseString(json);
+            if (!el.isJsonArray()) {
+                return field + " not a JSON array";
+            }
+            if (!allowEmpty && el.getAsJsonArray().size() == 0) {
+                return "empty " + field;
+            }
+            return null;
+        } catch (Throwable t) {
+            return field + " invalid JSON: " + t.getMessage();
+        }
     }
 
     /**

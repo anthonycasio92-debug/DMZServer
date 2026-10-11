@@ -142,6 +142,7 @@ public final class UltraScreenSpec {
 
     public UltraScreenSpec button(
             String actionId, String label, String style, int x, int y, int w) {
+        UltraScreenIds.requireValidActionId(screenId, actionId, label);
         int width = Math.max(UltraStyle.BTN_MIN_W, w);
         buttons.add(new Button(
                 qualifyAction(actionId),
@@ -193,6 +194,7 @@ public final class UltraScreenSpec {
             if (tab == null || tab.id == null) {
                 continue;
             }
+            UltraScreenIds.requireValidActionId(screenId, "tab:" + tab.id, tab.label);
             JsonObject o = new JsonObject();
             o.addProperty("id", qualifyAction("tab:" + tab.id));
             boolean active = tab.id.equalsIgnoreCase(activeTab);

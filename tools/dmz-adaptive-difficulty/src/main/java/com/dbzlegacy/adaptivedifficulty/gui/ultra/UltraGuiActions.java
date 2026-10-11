@@ -225,13 +225,7 @@ public final class UltraGuiActions {
 
     /** True when action already uses a protocol verb. */
     static boolean hasVerbPrefix(String action) {
-        if (action == null || action.isBlank()) {
-            return false;
-        }
-        return action.startsWith("do:")
-                || action.startsWith("tab:")
-                || action.startsWith("nav:")
-                || action.startsWith("open:");
+        return UltraScreenIds.hasAllowedVerbPrefix(action);
     }
 
     static boolean isHubScreen(String screen) {
@@ -244,24 +238,11 @@ public final class UltraGuiActions {
 
     /**
      * Map a bare hub tile id to an {@code open:} target, or null if not a known system.
-     * Handles KaiPath clients that send simplified action IDs without verb prefixes.
+     * Zero-config: every {@link UltraScreenIds#PROTOCOL_IDS} / {@link UltraScreenIds#BUILDER_IDS}
+     * name (plus aliases) resolves without a per-system switch here.
      */
     static String bareHubOpenTarget(String action) {
-        if (action == null || action.isBlank() || action.indexOf(':') >= 0) {
-            return null;
-        }
-        return switch (action.trim().toLowerCase()) {
-            case "character", "charservices", "char" -> "character";
-            case "difficulty", "diff" -> "difficulty";
-            case "progression", "prog" -> "progression";
-            case "prestige" -> "prestige";
-            case "spar", "sparring" -> "spar";
-            case "rival" -> "rival";
-            case "config", "cfgedit", "configeditor" -> "config";
-            case "admin" -> "admin";
-            case "hub", "lm", "legacymechanics", "main" -> "hub";
-            default -> null;
-        };
+        return UltraScreenIds.bareOpenTarget(action);
     }
 
     private static String runDo(

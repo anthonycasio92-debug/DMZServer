@@ -92,6 +92,8 @@ def main() -> int:
     spec = SPEC.read_text(encoding="utf-8")
     if "qualifyAction" not in spec:
         errors.append("UltraScreenSpec must qualify action ids with @screen:")
+    if "requireValidActionId" not in spec:
+        errors.append("UltraScreenSpec must validate action ids via requireValidActionId")
     if "panelWidth" not in spec or "PANEL_W" not in spec:
         errors.append("UltraScreenSpec must set panelWidth/panelHeight")
     if '"args"' not in spec and "add(\"args\"" not in spec and 'add("args"' not in spec:
@@ -116,6 +118,20 @@ def main() -> int:
         errors.append("LmGuiNetwork must validate outgoing panelWidth/panelHeight")
     if "panelWidth <= 0" not in net and "w <= 0" not in net:
         errors.append("LmGuiNetwork must warn when panelWidth/panelHeight <= 0")
+    if 'PROTOCOL_VERSION = "1"' not in net:
+        errors.append("LmGuiNetwork must define PROTOCOL_VERSION = \"1\"")
+    if "runPacketRoundTripSelfTest" not in net:
+        errors.append("LmGuiNetwork must run packet round-trip self-test at register")
+    if "screensTested" not in net:
+        errors.append("LmGuiNetwork round-trip self-test must log screensTested")
+
+    ids = (ROOT / "src/main/java/com/dbzlegacy/adaptivedifficulty/gui/ultra/UltraScreenIds.java").read_text(
+        encoding="utf-8"
+    )
+    if "bareOpenTarget" not in ids:
+        errors.append("UltraScreenIds must expose bareOpenTarget for zero-config bare hub actions")
+    if "requireValidActionId" not in ids:
+        errors.append("UltraScreenIds must enforce requireValidActionId")
 
     # Every Ultra*Screens builder must go through UltraScreenSpec.send (panel fields 8–10).
     for path in sorted(ULTRA.glob("Ultra*Screens.java")):
@@ -131,7 +147,19 @@ def main() -> int:
         errors.append("Missing docs/KAIPATH_GUI_PROTOCOL.md")
     else:
         doc = DOC.read_text(encoding="utf-8")
-        for needle in ("panelWidth", "center", "@<screen>", "GuiActionPacket"):
+        for needle in (
+            "panelWidth",
+            "center",
+            "@<screen>",
+            "GuiActionPacket",
+            "PROTOCOL_VERSION",
+            "requireValidActionId",
+            "Zero-config",
+            "buttonsJson",
+            "open:",
+            "do:",
+            "tab:",
+        ):
             if needle not in doc:
                 errors.append(f"KAIPATH_GUI_PROTOCOL.md missing {needle}")
 

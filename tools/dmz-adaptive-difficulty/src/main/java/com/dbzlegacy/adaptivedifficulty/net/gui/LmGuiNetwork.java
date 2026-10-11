@@ -28,7 +28,11 @@ import net.minecraftforge.network.simple.SimpleChannel;
 public final class LmGuiNetwork {
     public static final String CHANNEL_NAMESPACE = "legacymechanics";
     public static final String CHANNEL_PATH = "gui";
-    public static final String PROTOCOL = "1";
+    /**
+     * Forge SimpleChannel protocol string shared with KaiPath.
+     * Bumping this requires coordinated KaiPath release — mismatched clients drop the channel.
+     */
+    public static final String PROTOCOL_VERSION = "1";
 
     /** Forge mod id for KaiPath. */
     public static final String KAIPATH_MOD_ID = "kaipath";
@@ -41,9 +45,9 @@ public final class LmGuiNetwork {
      */
     private static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(CHANNEL_NAMESPACE, CHANNEL_PATH),
-            () -> PROTOCOL,
-            NetworkRegistry.acceptMissingOr(PROTOCOL),
-            NetworkRegistry.acceptMissingOr(PROTOCOL));
+            () -> PROTOCOL_VERSION,
+            NetworkRegistry.acceptMissingOr(PROTOCOL_VERSION),
+            NetworkRegistry.acceptMissingOr(PROTOCOL_VERSION));
 
     private static boolean registered;
     private static Field connectionField;
@@ -185,7 +189,7 @@ public final class LmGuiNetwork {
                 kaipath,
                 CHANNEL_NAMESPACE,
                 CHANNEL_PATH,
-                PROTOCOL,
+                PROTOCOL_VERSION,
                 com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig.get().guiBackend);
         if (!kaipath
                 && com.dbzlegacy.adaptivedifficulty.gui.GuiBackend.fromConfig()
@@ -209,7 +213,7 @@ public final class LmGuiNetwork {
                 AdaptiveDifficultyMod.MOD_ID,
                 CHANNEL_NAMESPACE,
                 CHANNEL_PATH,
-                PROTOCOL);
+                PROTOCOL_VERSION);
         CHANNEL.messageBuilder(GuiOpenPacket.class, 0, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(GuiOpenPacket::encode)
                 .decoder(buf -> decodeOpenLogged(buf))
@@ -221,17 +225,16 @@ public final class LmGuiNetwork {
                 .decoder(buf -> decodeActionLogged(buf))
                 .consumerNetworkThread(LmGuiNetwork::handleGuiAction)
                 .add();
-        runPacketRoundTripSelfTest();
         validateBuilderScreenIdsAtStartup();
         UltraScreenSelfTest.runAtStartup();
         UltraScreenSelfTest.verifyTabStaysOnScreen();
         UltraScreenSelfTest.verifyHubShim();
+        runPacketRoundTripSelfTest();
         AdaptiveDifficultyMod.LOGGER.info(
-                "[{}] KaiPath 1.3.0 note: client GuiOpenPacket reads screenId only — buttonsJson is ignored; "
-                        + "LmHubScreen is hardcoded. Clicks must still send GuiActionPacket via sendAction. "
-                        + "If legacymechanics is also on the client, KaiPathLmConsumerBootstrapMixin keeps "
-                        + "registerClient() alive.",
-                AdaptiveDifficultyMod.MOD_ID);
+                "[{}] KaiPath bridge ready protocol={} — client should render what the server sends "
+                        + "(no hardcoded screen lists on LM). KaiPath 1.3.0 still reads screenId only.",
+                AdaptiveDifficultyMod.MOD_ID,
+                PROTOCOL_VERSION);
     }
 
     private static GuiOpenPacket decodeOpenLogged(net.minecraft.network.FriendlyByteBuf buf) {
@@ -241,7 +244,7 @@ public final class LmGuiNetwork {
             AdaptiveDifficultyMod.LOGGER.error(
                     "[{}] GuiOpenPacket decode failed protocol={} channel={}:{}",
                     AdaptiveDifficultyMod.MOD_ID,
-                    PROTOCOL,
+                    PROTOCOL_VERSION,
                     CHANNEL_NAMESPACE,
                     CHANNEL_PATH,
                     t);
@@ -255,7 +258,7 @@ public final class LmGuiNetwork {
             AdaptiveDifficultyMod.LOGGER.info(
                     "[{}] GuiActionPacket decoded protocol={} screenId={} actionId={} argsJson={}",
                     AdaptiveDifficultyMod.MOD_ID,
-                    PROTOCOL,
+                    PROTOCOL_VERSION,
                     pkt == null ? "<null>" : pkt.screenId(),
                     pkt == null ? "<null>" : pkt.actionId(),
                     pkt == null ? "<null>" : pkt.argsJson());
@@ -264,7 +267,7 @@ public final class LmGuiNetwork {
             AdaptiveDifficultyMod.LOGGER.error(
                     "[{}] GuiActionPacket decode failed protocol={} channel={}:{} — handler will not run",
                     AdaptiveDifficultyMod.MOD_ID,
-                    PROTOCOL,
+                    PROTOCOL_VERSION,
                     CHANNEL_NAMESPACE,
                     CHANNEL_PATH,
                     t);
@@ -273,87 +276,132 @@ public final class LmGuiNetwork {
     }
 
     /**
-     * Encode → decode round-trip for both packet types. Catches field-order / trim regressions
-     * before any player connects.
+     * Encode → decode round-trip for every registered screen builder plus a verbatim
+     * {@link GuiActionPacket}. Any failure aborts startup — a broken packet format must not
+     * reach production.
      */
     static void runPacketRoundTripSelfTest() {
+        java.util.List<String> failures = new java.util.ArrayList<>();
+        int screensTested = 0;
         try {
-            GuiOpenPacket open =
-                    new GuiOpenPacket(
-                            "hub",
-                            "§aSelf-test",
-                            "main",
-                            "[{\"id\":\"@hub:tab:home\",\"label\":\"Home\"}]",
-                            "home",
-                            "[\"line\"]",
-                            "[{\"id\":\"@hub:do:guitest_ack\",\"label\":\"Ping\",\"style\":\"confirm\","
-                                    + "\"x\":16,\"y\":72,\"w\":150,\"h\":18,"
-                                    + "\"args\":{\"screen\":\"hub\",\"system\":\"hub\"}}]",
-                            UltraStyle.PANEL_W,
-                            UltraStyle.PANEL_H,
-                            "{\"panelWidth\":"
-                                    + UltraStyle.PANEL_W
-                                    + ",\"panelHeight\":"
-                                    + UltraStyle.PANEL_H
-                                    + ",\"center\":true,\"margin\":"
-                                    + UltraStyle.PANEL_MARGIN
-                                    + ",\"system\":\"hub\",\"screen\":\"hub\"}");
-            net.minecraft.network.FriendlyByteBuf openBuf =
-                    new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
-            GuiOpenPacket.encode(open, openBuf);
-            GuiOpenPacket openBack = GuiOpenPacket.decode(openBuf);
-            if (!open.screenId().equals(openBack.screenId())
-                    || !open.title().equals(openBack.title())
-                    || !open.pageId().equals(openBack.pageId())
-                    || !open.tabsJson().equals(openBack.tabsJson())
-                    || !open.activeTab().equals(openBack.activeTab())
-                    || !open.linesJson().equals(openBack.linesJson())
-                    || !open.buttonsJson().equals(openBack.buttonsJson())
-                    || open.panelWidth() != openBack.panelWidth()
-                    || open.panelHeight() != openBack.panelHeight()
-                    || !open.layoutJson().equals(openBack.layoutJson())) {
-                AdaptiveDifficultyMod.LOGGER.error(
-                        "[{}] GuiOpenPacket round-trip mismatch original={} decoded={}",
-                        AdaptiveDifficultyMod.MOD_ID,
-                        open,
-                        openBack);
-            } else {
-                AdaptiveDifficultyMod.LOGGER.info(
-                        "[{}] GuiOpenPacket encode/decode self-test OK (10 fields, protocol={})",
-                        AdaptiveDifficultyMod.MOD_ID,
-                        PROTOCOL);
+            for (String id : UltraScreenIds.BUILDER_IDS) {
+                if (id == null || id.isBlank()) {
+                    continue;
+                }
+                java.util.List<GuiOpenPacket> packets =
+                        com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraScreenSpec.captureSends(
+                                () -> UltraScreenSelfTest.probeBuilderForRoundTrip(id));
+                if (packets == null || packets.isEmpty()) {
+                    failures.add(id + ": no GuiOpenPacket produced for round-trip");
+                    continue;
+                }
+                for (GuiOpenPacket open : packets) {
+                    screensTested++;
+                    String mismatch = roundTripOpenFields(open);
+                    if (mismatch != null) {
+                        failures.add(id + ": " + mismatch);
+                    }
+                }
             }
 
+            String verbatimAction = "@hub:do:guitest_ack";
             GuiActionPacket action =
-                    new GuiActionPacket("hub", "@hub:do:guitest_ack", "{\"screen\":\"hub\"}");
+                    new GuiActionPacket("hub", verbatimAction, "{\"screen\":\"hub\",\"system\":\"hub\"}");
             net.minecraft.network.FriendlyByteBuf actionBuf =
                     new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
             GuiActionPacket.encode(action, actionBuf);
             GuiActionPacket actionBack = GuiActionPacket.decode(actionBuf);
             if (!action.screenId().equals(actionBack.screenId())
                     || !action.actionId().equals(actionBack.actionId())
-                    || !action.argsJson().equals(actionBack.argsJson())) {
-                AdaptiveDifficultyMod.LOGGER.error(
-                        "[{}] GuiActionPacket round-trip mismatch original=[{},{},{}] decoded=[{},{},{}]",
-                        AdaptiveDifficultyMod.MOD_ID,
-                        action.screenId(),
-                        action.actionId(),
-                        action.argsJson(),
-                        actionBack.screenId(),
-                        actionBack.actionId(),
-                        actionBack.argsJson());
-            } else {
-                AdaptiveDifficultyMod.LOGGER.info(
-                        "[{}] GuiActionPacket encode/decode self-test OK (3 fields, protocol={})",
-                        AdaptiveDifficultyMod.MOD_ID,
-                        PROTOCOL);
+                    || !action.argsJson().equals(actionBack.argsJson())
+                    || !verbatimAction.equals(actionBack.actionId())) {
+                failures.add(
+                        "GuiActionPacket verbatim actionId round-trip failed original=["
+                                + action.screenId()
+                                + ","
+                                + action.actionId()
+                                + ","
+                                + action.argsJson()
+                                + "] decoded=["
+                                + actionBack.screenId()
+                                + ","
+                                + actionBack.actionId()
+                                + ","
+                                + actionBack.argsJson()
+                                + "]");
             }
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.error(
-                    "[{}] packet round-trip self-test failed",
+                    "[{}] packet round-trip self-test threw",
                     AdaptiveDifficultyMod.MOD_ID,
                     t);
+            throw new IllegalStateException(
+                    "LegacyMechanics Ultra GUI packet round-trip self-test failed — aborting startup",
+                    t);
         }
+
+        if (!failures.isEmpty()) {
+            AdaptiveDifficultyMod.LOGGER.error(
+                    "[{}] GuiOpen/GuiAction round-trip self-test FAILED screensTested={} failures={}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    screensTested,
+                    failures);
+            throw new IllegalStateException(
+                    "LegacyMechanics Ultra GUI packet round-trip self-test failed ("
+                            + failures.size()
+                            + " error(s), screensTested="
+                            + screensTested
+                            + "): "
+                            + failures);
+        }
+        AdaptiveDifficultyMod.LOGGER.info(
+                "[{}] packet round-trip self-test OK screensTested={} protocol={} "
+                        + "(every BUILDER_IDS GuiOpenPacket 10-field + GuiActionPacket verbatim actionId)",
+                AdaptiveDifficultyMod.MOD_ID,
+                screensTested,
+                PROTOCOL_VERSION);
+    }
+
+    /** @return null when all 10 GuiOpen fields survive encode→decode */
+    private static String roundTripOpenFields(GuiOpenPacket open) {
+        if (open == null) {
+            return "null packet";
+        }
+        net.minecraft.network.FriendlyByteBuf buf =
+                new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+        GuiOpenPacket.encode(open, buf);
+        GuiOpenPacket back = GuiOpenPacket.decode(buf);
+        if (!java.util.Objects.equals(open.screenId(), back.screenId())) {
+            return "screenId " + open.screenId() + " → " + back.screenId();
+        }
+        if (!java.util.Objects.equals(open.title(), back.title())) {
+            return "title mismatch";
+        }
+        if (!java.util.Objects.equals(open.pageId(), back.pageId())) {
+            return "pageId mismatch";
+        }
+        if (!java.util.Objects.equals(open.tabsJson(), back.tabsJson())) {
+            return "tabsJson mismatch";
+        }
+        if (!java.util.Objects.equals(open.activeTab(), back.activeTab())) {
+            return "activeTab mismatch";
+        }
+        if (!java.util.Objects.equals(open.linesJson(), back.linesJson())) {
+            return "linesJson mismatch";
+        }
+        if (!java.util.Objects.equals(open.buttonsJson(), back.buttonsJson())) {
+            return "buttonsJson mismatch";
+        }
+        if (open.panelWidth() != back.panelWidth()) {
+            return "panelWidth " + open.panelWidth() + " → " + back.panelWidth();
+        }
+        if (open.panelHeight() != back.panelHeight()) {
+            return "panelHeight " + open.panelHeight() + " → " + back.panelHeight();
+        }
+        if (!java.util.Objects.equals(open.layoutJson(), back.layoutJson())) {
+            return "layoutJson mismatch";
+        }
+        return null;
     }
 
     public static void sendOpen(ServerPlayer player, GuiOpenPacket packet) {
@@ -435,12 +483,18 @@ public final class LmGuiNetwork {
     }
 
     /**
-     * Fail-soft startup check: every Ultra builder {@code screenId} must be in the protocol
-     * list; warn when KaiPath has not registered that id yet.
+     * Startup check: every Ultra builder {@code screenId} must be in the protocol list.
+     * Errors abort channel registration so a mis-cataloged screen never ships live.
      */
     static void validateBuilderScreenIdsAtStartup() {
         Set<String> builderIds = new LinkedHashSet<>(UltraScreenIds.BUILDER_IDS);
-        UltraScreenIds.validateAtStartup(builderIds);
+        int errors = UltraScreenIds.validateAtStartup(builderIds);
+        if (errors > 0) {
+            throw new IllegalStateException(
+                    "LegacyMechanics Ultra screen id catalog invalid ("
+                            + errors
+                            + " error(s)) — fix UltraScreenIds.PROTOCOL_IDS / BUILDER_IDS");
+        }
     }
 
     /**
