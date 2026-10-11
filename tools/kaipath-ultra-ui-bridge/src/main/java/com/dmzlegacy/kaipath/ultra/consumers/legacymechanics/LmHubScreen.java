@@ -1,15 +1,16 @@
-package com.dmzlegacy.kaipath.lmbridge.gui;
+package com.dmzlegacy.kaipath.ultra.consumers.legacymechanics;
 
-import com.dmzlegacy.kaipath.lmbridge.net.LmGuiNetwork;
+import com.dmzlegacy.kaipath.ultra.UltraScreen;
 import java.util.List;
+import net.minecraft.network.chat.Component;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
-/** LM hub. Button ids match server {@code NativeGuiActions}. */
+/** LM hub built on the shared {@link UltraScreen} API. */
 @OnlyIn(Dist.CLIENT)
-public final class LmHubScreen extends LmScreen {
+public final class LmHubScreen extends UltraScreen {
     public LmHubScreen() {
-        super(UltraWidgetAdapter.forgeTheme());
+        super(Component.m_237113_("Legacy Mechanics"));
     }
 
     @Override

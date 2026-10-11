@@ -1,4 +1,4 @@
-package com.dmzlegacy.kaipath.lmbridge.net;
+package com.dmzlegacy.kaipath.ultra.consumers.legacymechanics;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.network.NetworkDirection;
@@ -7,9 +7,7 @@ import net.minecraftforge.network.simple.SimpleChannel;
 
 /**
  * Client half of LegacyMechanics' Ultra GUI channel.
- *
- * <p>Wire format must stay compatible with server {@code LegacyMechanics}:
- * channel {@code legacymechanics:gui}, protocol {@code "1"}.
+ * Wire format must match server LegacyMechanics: {@code legacymechanics:gui} / {@code "1"}.
  */
 public final class LmGuiNetwork {
     public static final String CHANNEL_NAMESPACE = "legacymechanics";
@@ -26,7 +24,6 @@ public final class LmGuiNetwork {
 
     private LmGuiNetwork() {}
 
-    /** Register S2C open + C2S action on the physical client. */
     public static void registerClient() {
         if (registered) {
             return;

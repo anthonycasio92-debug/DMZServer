@@ -1,11 +1,10 @@
-package com.dmzlegacy.kaipath.lmbridge.net;
+package com.dmzlegacy.kaipath.ultra.consumers.legacymechanics;
 
-import com.dmzlegacy.kaipath.lmbridge.gui.LmScreens;
 import java.util.function.Supplier;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.network.NetworkEvent;
 
-/** Server → client. LegacyMechanics asks Kai Path to open one Ultra screen. */
+/** Server → client. LegacyMechanics asks the client to open one Ultra screen. */
 public final class GuiOpenPacket {
     private final String screenId;
 

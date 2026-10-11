@@ -1,24 +1,27 @@
-# Legacy Mechanics — Ultra GUI via Kai Path (server-only LM)
+# Legacy Mechanics — Ultra GUI via Kai Path shared bridge
 
-Ultra menus use **DMZUltra** (`dmzultra`) for textures/widgets. The
+Ultra look-and-feel comes from **DMZUltra** (`dmzultra`). The
 **LegacyMechanics** jar stays on the **dedicated server only**.
 
-The **client bridge lives in Kai Path** (`kaipath`), not in LM and not as a
-patch to `dmzultra`. Drop-in sources + integrate steps:
+Kai Path hosts a **shared Ultra UI API** that **any mod** can call
+(`UltraUiAccess` / `UltraScreen`). LegacyMechanics is only one optional
+consumer of that API (network channel + hub).
 
-→ **`tools/kaipath-lm-ultra-bridge/`** (`INTEGRATE.md`)
+→ Drop-in + docs: **`tools/kaipath-ultra-ui-bridge/`** (`INTEGRATE.md`)
 
 ## Jars
 
 | Jar | Where | Role |
 |-----|--------|------|
-| `mods/LegacyMechanics-*.jar` | **Server only** | Gameplay, commands, opens Ultra screens over the network |
-| `kaipath-*.jar` (with LM bridge) | **Client modpack** | Registers `legacymechanics:gui`; opens Ultra screens |
-| `dmzultra-*.jar` | **Client modpack** | Ultra UI toolkit / textures (optional soft dep) |
+| `mods/LegacyMechanics-*.jar` | **Server only** | Gameplay; opens screens over `legacymechanics:gui` |
+| `kaipath-*.jar` (with Ultra bridge) | **Client modpack** | Shared `UltraUiAccess` for all mods + optional LM consumer |
+| `dmzultra-*.jar` | **Client modpack** | Ultra toolkit / textures (optional soft dep) |
 
-Players do **not** install the server LegacyMechanics jar on their client.
-Do **not** also ship `LegacyMechanicsUltra` once kaipath includes the bridge
-(only one mod may own the channel).
+Other client mods: soft-depend on `kaipath` and call `UltraUiAccess` — do not
+ship their own dmzultra reflective copy if kaipath already provides it.
+
+Do **not** also ship `LegacyMechanicsUltra` once kaipath includes the LM consumer
+(channel conflict).
 
 ## Server config
 
@@ -27,30 +30,14 @@ Do **not** also ship `LegacyMechanicsUltra` once kaipath includes the bridge
 "useNativeTestGui": true
 ```
 
-`/lm admin reload` after changing.
-
-## Commands
-
-| Command | Behavior when `guiBackend=ultra` |
-|---------|----------------------------------|
-| `/lm` | Opens native Ultra hub if the client has the kaipath LM bridge |
-| `/lm admin testgui` | Same Ultra hub for staff |
-| Hub buttons | Server receives an action packet; opens chat menus for subsystems |
-
-If the client lacks the bridge channel, `/lm` falls back to the chat hub.
-
-## Protocol
+## Protocol (LM consumer only)
 
 - Channel: `legacymechanics:gui`
 - Protocol: `"1"`
-- S2C open: `screenId` (e.g. `hub`)
-- C2S action: `screenId`, `actionId`, `argsJson`
+- S2C open: `screenId` · C2S action: `screenId`, `actionId`, `argsJson`
 
 ## Build (server LM)
 
 ```bash
 bash tools/dmz-adaptive-difficulty/build.sh
 ```
-
-Produces the server jar under `mods/`. The optional `LegacyMechanicsUltra`
-companion is a **legacy fallback** only; prefer kaipath hosting the bridge.

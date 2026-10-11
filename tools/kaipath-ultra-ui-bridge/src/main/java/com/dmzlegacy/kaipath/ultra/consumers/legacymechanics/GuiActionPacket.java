@@ -1,13 +1,10 @@
-package com.dmzlegacy.kaipath.lmbridge.net;
+package com.dmzlegacy.kaipath.ultra.consumers.legacymechanics;
 
 import java.util.function.Supplier;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.network.NetworkEvent;
 
-/**
- * Client → server. A hub button press. Server LegacyMechanics owns the handler
- * ({@code NativeGuiActions}); the client only encodes/sends.
- */
+/** Client → server. Hub button press; server LegacyMechanics owns the handler. */
 public final class GuiActionPacket {
     private final String screenId;
     private final String actionId;
@@ -29,7 +26,6 @@ public final class GuiActionPacket {
         return new GuiActionPacket(buf.m_130277_(), buf.m_130277_(), buf.m_130277_());
     }
 
-    /** Client never handles C2S; required by SimpleChannel registration. */
     public static void handleClientNoop(GuiActionPacket msg, Supplier<NetworkEvent.Context> ctx) {
         ctx.get().setPacketHandled(true);
     }

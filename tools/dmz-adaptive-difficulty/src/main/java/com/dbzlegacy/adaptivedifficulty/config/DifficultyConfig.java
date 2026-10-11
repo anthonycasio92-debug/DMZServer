@@ -367,7 +367,7 @@ public final class DifficultyConfig {
     public boolean enableStaffCnpcTestGui = true;
     /**
      * When {@code guiBackend=ultra}, {@code /lm admin testgui} opens the native Ultra hub
-     * if the player has the Kai Path LM GUI bridge. Otherwise falls back to chat.
+     * if the player has the Kai Path Ultra UI bridge (LM consumer). Otherwise chat.
      */
     public boolean useNativeTestGui = true;
     /**

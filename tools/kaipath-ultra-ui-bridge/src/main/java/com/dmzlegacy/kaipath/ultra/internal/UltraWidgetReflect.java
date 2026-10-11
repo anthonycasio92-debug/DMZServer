@@ -1,4 +1,4 @@
-package com.dmzlegacy.kaipath.lmbridge.gui;
+package com.dmzlegacy.kaipath.ultra.internal;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -12,23 +12,27 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
 /**
- * Soft dependency on DMZUltra UI. Screens never import {@code com.dmzultra} types
- * so Kai Path still loads when dmzultra is absent.
+ * Reflective soft-dep on {@code com.dmzultra.client.ui.*}. Package-private —
+ * external mods should use {@link com.dmzlegacy.kaipath.ultra.UltraUiAccess}.
  */
 @OnlyIn(Dist.CLIENT)
-public final class UltraWidgetAdapter {
+public final class UltraWidgetReflect {
     private static final String THEME = "com.dmzultra.client.ui.UltraUi$Theme";
     private static final String BUTTON = "com.dmzultra.client.ui.UltraButton";
     private static final String LIST = "com.dmzultra.client.ui.UltraList";
     private static Boolean available;
 
-    private UltraWidgetAdapter() {}
+    private UltraWidgetReflect() {}
 
-    public static boolean ultraAvailable() {
+    public static void probe() {
+        available = classExists(THEME) && classExists(BUTTON);
+    }
+
+    public static boolean isAvailable() {
         if (available == null) {
-            available = classExists(THEME) && classExists(BUTTON);
+            probe();
         }
-        return available;
+        return Boolean.TRUE.equals(available);
     }
 
     public static Object forgeTheme() {
@@ -174,7 +178,7 @@ public final class UltraWidgetAdapter {
 
     private static boolean classExists(String name) {
         try {
-            Class.forName(name, false, UltraWidgetAdapter.class.getClassLoader());
+            Class.forName(name, false, UltraWidgetReflect.class.getClassLoader());
             return true;
         } catch (Throwable ignored) {
             return false;

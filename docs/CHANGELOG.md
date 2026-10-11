@@ -5,12 +5,11 @@ What changed from **4.5.147** through **4.6.76**.
 ## Ultra GUI without CNPC (server-only LM)
 
 `guiBackend=ultra` opens a native DMZUltra hub. The server jar does not ship client
-screens. The client bridge is a Kai Path drop-in (`tools/kaipath-lm-ultra-bridge/`)
-that registers `legacymechanics:gui` and pulls Ultra widgets from `dmzultra`.
-Players do not put LegacyMechanics on the client. Hub clicks use chat menus for
-subsystems that are not on Ultra screens yet. See
-`tools/dmz-adaptive-difficulty/FORGE-ULTRA-GUI.md` and
-`tools/kaipath-lm-ultra-bridge/INTEGRATE.md`.
+screens. Kai Path hosts a **shared** Ultra UI bridge (`tools/kaipath-ultra-ui-bridge/`,
+`UltraUiAccess`) so any client mod can pull dmzultra widgets; LegacyMechanics is one
+optional consumer of that API (`legacymechanics:gui`). Players do not put
+LegacyMechanics on the client. See `FORGE-ULTRA-GUI.md` and
+`tools/kaipath-ultra-ui-bridge/INTEGRATE.md`.
 
 ## Fusion mixin target
 

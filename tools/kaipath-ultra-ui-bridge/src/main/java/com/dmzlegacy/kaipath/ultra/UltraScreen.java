@@ -1,4 +1,4 @@
-package com.dmzlegacy.kaipath.lmbridge.gui;
+package com.dmzlegacy.kaipath.ultra;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,14 +9,21 @@ import net.minecraft.network.chat.Component;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
-/** Base LM Ultra screen. Widgets come from {@link UltraWidgetAdapter}. */
+/**
+ * Base screen any mod can extend for Ultra look-and-feel.
+ * Widgets come from {@link UltraUiAccess}; no {@code com.dmzultra} imports required.
+ */
 @OnlyIn(Dist.CLIENT)
-public abstract class LmScreen extends Screen {
+public abstract class UltraScreen extends Screen {
     private final Object theme;
     private final List<FallbackList> fallbackLists = new ArrayList<>();
 
-    protected LmScreen(Object theme) {
-        super(Component.m_237113_("Legacy Mechanics"));
+    protected UltraScreen(Component title) {
+        this(title, UltraUiAccess.forgeTheme());
+    }
+
+    protected UltraScreen(Component title, Object theme) {
+        super(title == null ? Component.m_237113_("") : title);
         this.theme = theme;
     }
 
@@ -25,14 +32,14 @@ public abstract class LmScreen extends Screen {
     }
 
     protected final void addThemedButton(int x, int y, int w, int h, String label, Runnable onPress) {
-        GuiEventListener widget = UltraWidgetAdapter.button(x, y, w, h, label, onPress, theme);
+        GuiEventListener widget = UltraUiAccess.button(x, y, w, h, label, onPress, theme);
         if (widget != null) {
             m_142416_(widget);
         }
     }
 
     protected final void addThemedList(int x, int y, int w, int h, List<String> rows) {
-        GuiEventListener widget = UltraWidgetAdapter.list(x, y, w, h, rows, theme);
+        GuiEventListener widget = UltraUiAccess.list(x, y, w, h, rows, theme);
         if (widget != null) {
             m_142416_(widget);
             return;
@@ -42,7 +49,7 @@ public abstract class LmScreen extends Screen {
 
     @Override
     public void m_280273_(GuiGraphics graphics) {
-        graphics.m_280509_(0, 0, this.f_96543_, this.f_96544_, UltraWidgetAdapter.backgroundColor(theme));
+        graphics.m_280509_(0, 0, this.f_96543_, this.f_96544_, UltraUiAccess.backgroundColor(theme));
     }
 
     @Override
@@ -55,7 +62,7 @@ public abstract class LmScreen extends Screen {
                 rowY += 12;
             }
         }
-        if (!UltraWidgetAdapter.ultraAvailable()) {
+        if (!UltraUiAccess.isAvailable()) {
             graphics.m_280653_(
                     this.f_96547_,
                     Component.m_237113_("DMZUltra UI is not installed. Using plain buttons."),

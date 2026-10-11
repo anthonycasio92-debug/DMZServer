@@ -21,7 +21,7 @@ public final class MechanicsMenu {
             }
             DmzRewards.msg(
                     player,
-                    "§eUltra menu needs Kai Path (LM GUI bridge) + DMZUltra. Opening chat hub.");
+                    "§eUltra menu needs Kai Path Ultra UI bridge + DMZUltra. Opening chat hub.");
             MechanicsChatMenu.open(player, target);
             return;
         }

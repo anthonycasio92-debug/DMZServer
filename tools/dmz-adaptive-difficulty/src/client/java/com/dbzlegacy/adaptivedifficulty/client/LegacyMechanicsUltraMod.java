@@ -9,11 +9,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Legacy fallback client companion. Prefer the Kai Path drop-in bridge instead:
- * {@code tools/kaipath-lm-ultra-bridge/} — do not ship both (same channel).
- *
- * <p>Pulls DMZUltra widgets/textures; talks to server LegacyMechanics. Players do not
- * install the server LegacyMechanics jar.
+ * Legacy fallback client companion. Prefer Kai Path's shared Ultra UI bridge:
+ * {@code tools/kaipath-ultra-ui-bridge/} ({@code UltraUiAccess}) — do not ship both
+ * (LM channel conflict). Players do not install the server LegacyMechanics jar.
  */
 @Mod(LegacyMechanicsUltraMod.MOD_ID)
 public final class LegacyMechanicsUltraMod {
