@@ -14,7 +14,9 @@ LegacyMechanics (LM).
 **Principle:** the client renders what the server sends. Packet codecs must not embed a
 channel namespace or mod id. New menus are added on the **server mod** side only.
 
-Drop-in reference (zero LM imports): [`docs/ultra-gui-protocol/reference/`](ultra-gui-protocol/reference/).
+Implement-yourself kit (source only, no jar): [`tools/ultra-gui-kit/`](../tools/ultra-gui-kit/).
+Server codecs: [`tools/ultra-gui-kit/server/`](../tools/ultra-gui-kit/server/) (mirrored under
+[`docs/ultra-gui-protocol/reference/`](ultra-gui-protocol/reference/)).
 
 ---
 
@@ -176,7 +178,7 @@ UltraGuiConsumerRegistry.registerClientChannel("mymod"); // → mymod:gui
 No screen-id whitelist, no hardcoded buttons — KaiPath opens a dynamic screen and echoes
 clicks on `mymod:gui`.
 
-Copy-paste codecs: [`docs/ultra-gui-protocol/reference/`](ultra-gui-protocol/reference/).
+Copy-paste codecs: [`tools/ultra-gui-kit/server/`](../tools/ultra-gui-kit/server/).
 
 ---
 
@@ -189,8 +191,9 @@ Copy-paste codecs: [`docs/ultra-gui-protocol/reference/`](ultra-gui-protocol/ref
 | Multi-mod | Many channels may be registered; clicks return on the channel that opened the screen |
 | Protocol | `"1"` on every channel; bump requires coordinated KaiPath release |
 
-JLDK implementation target: `UltraGuiConsumerRegistry.registerClientChannel(modId)` (see
-`docs/KAIPATH_JLDK_CLIENT_BRIEF.md` and the overlay under `tools/kaipath-lm-ultra-client/`).
+JLDK implementation target: merge `tools/ultra-gui-kit/kaipath-client/` and call
+`UltraGuiConsumerRegistry.registerClientChannel(modId)` (see
+`docs/KAIPATH_JLDK_CLIENT_BRIEF.md`). **No overlay jar is shipped.**
 
 ---
 
@@ -213,8 +216,7 @@ round-trip abort on failure.
 
 Stock 1.3.0 only registers `hub`. LM may rewrite wire `screenId` to `hub` while keeping
 title/tabs/buttons/panel. Logical system stays in `args` / `layoutJson` / `@screen:` prefixes.
-Patched KaiPath (`kaipath-1.3.1-lm-ultra`) needs no shim — any `screenId` opens the dynamic
-screen.
+KaiPath with the kit merged needs no shim — any `screenId` opens the dynamic screen.
 
 LM logical ids today: `hub`, `difficulty`, `rival`, `spar`, `prestige`, `character`,
 `progression`, `config`, `admin`.
@@ -232,4 +234,5 @@ Stock **1.3.0** only decodes `screenId` and shows a hardcoded hub. Required clie
 (items 1–5 dynamic render + items 7–10 multi-mod) is in
 **`docs/KAIPATH_JLDK_CLIENT_BRIEF.md`**.
 
-Reference overlay: `tools/kaipath-lm-ultra-client/` → `mods/kaipath-1.3.1-lm-ultra.jar`.
+**Implement from source:** [`tools/ultra-gui-kit/kaipath-client/`](../tools/ultra-gui-kit/kaipath-client/)
+— merge into KaiPath; do not expect a DMZServer-built KaiPath jar.

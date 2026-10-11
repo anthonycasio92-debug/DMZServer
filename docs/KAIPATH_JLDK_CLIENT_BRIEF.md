@@ -1,11 +1,13 @@
 # JLDK brief — KaiPath Ultra GUI client (multi-mod)
 
-**Status:** DMZServer ships a drop-in patched jar:
-`mods/kaipath-1.3.1-lm-ultra.jar` (`tools/kaipath-lm-ultra-client/`).
-Merge into upstream KaiPath so official releases no longer need the overlay.
+**Status:** implement from source in this repo — **no patched KaiPath jar is shipped.**
 
-**Protocol:** `docs/KAIPATH_GUI_PROTOCOL.md` · reference codecs:
-`docs/ultra-gui-protocol/reference/` (zero LM imports).
+| Kit | Path |
+|-----|------|
+| KaiPath client sources (merge into KaiPath) | [`tools/ultra-gui-kit/kaipath-client/`](../tools/ultra-gui-kit/kaipath-client/) |
+| Server codecs for any mod author | [`tools/ultra-gui-kit/server/`](../tools/ultra-gui-kit/server/) |
+| Kit README | [`tools/ultra-gui-kit/README.md`](../tools/ultra-gui-kit/README.md) |
+| Wire contract | [`docs/KAIPATH_GUI_PROTOCOL.md`](KAIPATH_GUI_PROTOCOL.md) |
 
 ---
 
@@ -37,39 +39,31 @@ registry for other mods.
 channel = <modid>:gui
 ```
 
-KaiPath must key consumers by channel id. Suggested API:
-
 ```java
 UltraGuiConsumerRegistry.registerClientChannel("legacymechanics");
 UltraGuiConsumerRegistry.registerClientChannel("mymod");
-// clicks on a screen echo on the same channel that delivered GuiOpenPacket
 ```
 
-Overlay reference: `com.dmzlegacy.kaipath.ultra.consumers.UltraGuiConsumerRegistry`.
+Reference: `tools/ultra-gui-kit/kaipath-client/.../UltraGuiConsumerRegistry.java`.
 
-### 9. Reference implementation
+### 9. Reference implementation (server mods)
 
-Copy-paste codecs (FriendlyByteBuf only, no LM imports):
+Copy from `tools/ultra-gui-kit/server/` (also mirrored in `docs/ultra-gui-protocol/reference/`):
 
-- `docs/ultra-gui-protocol/reference/UltraGuiChannel.java`
-- `docs/ultra-gui-protocol/reference/UltraGuiOpenPacket.java`
-- `docs/ultra-gui-protocol/reference/UltraGuiActionPacket.java`
+- `UltraGuiChannel.java`
+- `UltraGuiOpenPacket.java`
+- `UltraGuiActionPacket.java`
+- `HelloWorldServerSketch.java` (comments only)
 
 ### 10. Third-party docs
 
-`docs/KAIPATH_GUI_PROTOCOL.md` includes a **For other mod developers** section with channel
-convention, field tables, button schema, verb contract, and a hello-world example.
+`docs/KAIPATH_GUI_PROTOCOL.md` — **For other mod developers** (channel, fields, buttons, verbs, hello-world).
 
 ---
 
-## Overlay map
+## How to merge (KaiPath)
 
-| Path | Role |
-|------|------|
-| `UltraGuiConsumerRegistry` | Multi-mod channel registry |
-| `legacymechanics/*` | LM partner binding + dynamic screen |
-| `docs/KAIPATH_GUI_PROTOCOL.md` | Full wire contract |
-| `docs/ultra-gui-protocol/reference/` | Drop-in codecs for any mod |
-
-Build: `bash tools/kaipath-lm-ultra-client/build.sh`  
-Deploy: clients use `kaipath-1.3.1-lm-ultra.jar`; server mods keep their own `<modid>:gui`.
+1. Copy `tools/ultra-gui-kit/kaipath-client/com/dmzlegacy/kaipath/ultra/consumers/` into the KaiPath sources.
+2. Ensure client bootstrap still calls `LmUltraConsumer.bootstrap()` (or equivalent).
+3. For each partner mod: `UltraGuiConsumerRegistry.registerClientChannel("<modid>")`.
+4. Ship an official KaiPath release — players should **not** need a DMZServer overlay jar.

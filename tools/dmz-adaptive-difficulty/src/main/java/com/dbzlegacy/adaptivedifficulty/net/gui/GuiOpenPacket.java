@@ -10,7 +10,7 @@ import net.minecraftforge.network.NetworkEvent;
  * <p><b>Mod-agnostic wire codec</b> — encode/decode contain no channel namespace, mod id, or
  * content-specific strings. The owning mod selects {@code <modid>:gui} at channel registration
  * ({@link UltraGuiProtocol#channel(String)}). Reference copy for other mods:
- * {@code docs/ultra-gui-protocol/reference/UltraGuiOpenPacket.java}.
+ * {@code tools/ultra-gui-kit/server/UltraGuiOpenPacket.java}.
  *
  * <p>Wire format (protocol {@link UltraGuiProtocol#PROTOCOL_VERSION}, append-compatible):
  *

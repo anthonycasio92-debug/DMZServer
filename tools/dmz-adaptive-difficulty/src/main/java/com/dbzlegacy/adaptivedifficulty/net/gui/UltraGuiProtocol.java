@@ -8,7 +8,7 @@ import net.minecraft.resources.ResourceLocation;
  * <p>Any Forge mod can speak this protocol on its own channel {@code <modid>:gui}.
  * Packet field layouts live in {@link GuiOpenPacket} / {@link GuiActionPacket} and must not
  * embed a channel namespace. See {@code docs/KAIPATH_GUI_PROTOCOL.md} and
- * {@code docs/ultra-gui-protocol/reference/}.
+ * {@code tools/ultra-gui-kit/server/} (implement-yourself codecs for other mods).
  */
 public final class UltraGuiProtocol {
     /** Path segment of every Ultra GUI channel ({@code <modid>:gui}). */
