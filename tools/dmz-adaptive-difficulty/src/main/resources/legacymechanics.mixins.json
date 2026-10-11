@@ -28,9 +28,7 @@
     "noea.NoeaTravelSafetyCorpseFixMixin",
     "noea.HakaiDestroyerGateMixin",
     "FusionUnfuseBonusClearMixin",
-    "FusionBonusReadGateMixin"
-  ],
-  "client": [
+    "FusionBonusReadGateMixin",
     "KaiPathLmConsumerBootstrapMixin"
   ],
   "injectors": {

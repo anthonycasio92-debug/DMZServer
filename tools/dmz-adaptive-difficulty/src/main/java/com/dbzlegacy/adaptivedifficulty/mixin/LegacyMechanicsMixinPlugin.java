@@ -22,7 +22,8 @@ public final class LegacyMechanicsMixinPlugin implements IMixinConfigPlugin {
 
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
-        // Client-only: keep KaiPath's LM GUI consumer alive when the LM jar is also installed.
+        // Physical client only (plugin-gated): keep KaiPath's LM GUI consumer alive when the
+        // LM jar is also installed. Listed under mixins[] so jar audits see the registration.
         if (mixinClassName != null && mixinClassName.endsWith("KaiPathLmConsumerBootstrapMixin")) {
             return !dedicatedServer() && kaipathLmConsumerPresent();
         }
