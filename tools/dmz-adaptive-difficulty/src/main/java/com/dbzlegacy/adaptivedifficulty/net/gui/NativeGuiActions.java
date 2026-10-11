@@ -31,9 +31,6 @@ public final class NativeGuiActions {
                 screen,
                 action,
                 args);
-        if (!"hub".equalsIgnoreCase(screen) && !screen.isEmpty()) {
-            // Future: nested Ultra screens send their own screen ids.
-        }
         switch (action) {
             case "character" -> CharacterServicesMenu.open(player, "main");
             case "difficulty" -> DifficultyChatMenu.open(player, "main");

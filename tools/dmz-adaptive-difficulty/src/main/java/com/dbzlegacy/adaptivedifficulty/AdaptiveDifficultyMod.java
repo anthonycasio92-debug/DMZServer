@@ -36,10 +36,6 @@ public final class AdaptiveDifficultyMod {
     public static final String VERSION = "4.6.76";
 
     /** True on the dedicated server. A failed side check keeps the server startup path. */
-    public static boolean dedicatedServerForGui() {
-        return dedicatedServer();
-    }
-
     private static boolean dedicatedServer() {
         try {
             Class<?> loader = Class.forName("net.minecraftforge.fml.loading.FMLLoader");

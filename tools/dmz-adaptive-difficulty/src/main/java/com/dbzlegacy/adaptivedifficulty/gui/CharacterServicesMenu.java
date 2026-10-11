@@ -21,7 +21,7 @@ public final class CharacterServicesMenu {
         // Ultra / chat: character screens are not ported to native Ultra yet.
         DmzRewards.msg(
                 player,
-                "§eCharacter Services: use §f/character §eor set §fguiBackend=cnpc §efor the full menu.");
+                "§eCharacter Services: use §f/character §efor chat menus, or ask staff for the full GUI.");
         MechanicsChatMenu.open(player, "character");
     }
 }
