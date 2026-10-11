@@ -54,7 +54,7 @@ public final class AdaptiveDifficultyMod {
 
     public AdaptiveDifficultyMod() {
         // Server-side only: clients may join without this mod installed.
-        // Ultra menus use a separate LegacyMechanicsUltra client jar + dmzultra.
+        // Ultra menus: client bridge in kaipath (tools/kaipath-lm-ultra-bridge) + dmzultra.
         ModLoadingContext.get().registerExtensionPoint(
                 IExtensionPoint.DisplayTest.class,
                 () -> new IExtensionPoint.DisplayTest(

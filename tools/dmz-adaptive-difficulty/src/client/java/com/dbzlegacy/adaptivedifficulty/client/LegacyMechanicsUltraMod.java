@@ -9,8 +9,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Client-only companion. Pulls DMZUltra widgets/textures; talks to server LegacyMechanics.
- * Players install this jar + dmzultra. They do not install the server LegacyMechanics jar.
+ * Legacy fallback client companion. Prefer the Kai Path drop-in bridge instead:
+ * {@code tools/kaipath-lm-ultra-bridge/} — do not ship both (same channel).
+ *
+ * <p>Pulls DMZUltra widgets/textures; talks to server LegacyMechanics. Players do not
+ * install the server LegacyMechanics jar.
  */
 @Mod(LegacyMechanicsUltraMod.MOD_ID)
 public final class LegacyMechanicsUltraMod {

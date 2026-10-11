@@ -1,26 +1,26 @@
-# Legacy Mechanics — Ultra GUI (no CNPC, server-only LM)
+# Legacy Mechanics — Ultra GUI via Kai Path (server-only LM)
 
-Ultra menus use **DMZUltra** (`dmzultra`) for textures and widgets. The full
-`LegacyMechanics` jar stays on the **dedicated server only**.
+Ultra menus use **DMZUltra** (`dmzultra`) for textures/widgets. The
+**LegacyMechanics** jar stays on the **dedicated server only**.
 
-## Two jars
+The **client bridge lives in Kai Path** (`kaipath`), not in LM and not as a
+patch to `dmzultra`. Drop-in sources + integrate steps:
+
+→ **`tools/kaipath-lm-ultra-bridge/`** (`INTEGRATE.md`)
+
+## Jars
 
 | Jar | Where | Role |
 |-----|--------|------|
 | `mods/LegacyMechanics-*.jar` | **Server only** | Gameplay, commands, opens Ultra screens over the network |
-| `mods/LegacyMechanicsUltra-*.jar` | **Client modpack** | Opens Ultra screens; **pulls textures from dmzultra** |
+| `kaipath-*.jar` (with LM bridge) | **Client modpack** | Registers `legacymechanics:gui`; opens Ultra screens |
+| `dmzultra-*.jar` | **Client modpack** | Ultra UI toolkit / textures (optional soft dep) |
 
 Players do **not** install the server LegacyMechanics jar on their client.
-
-## Client requirements
-
-1. `dmzultra` (DMZUltra) — provides Ultra UI textures/widgets  
-2. `LegacyMechanicsUltra-*.jar` — thin bridge (this repo builds it)  
-3. CustomNPCs is **not** required for `guiBackend=ultra`
+Do **not** also ship `LegacyMechanicsUltra` once kaipath includes the bridge
+(only one mod may own the channel).
 
 ## Server config
-
-`config/legacymechanics.json` (or DifficultyConfig defaults):
 
 ```json
 "guiBackend": "ultra",
@@ -33,22 +33,24 @@ Players do **not** install the server LegacyMechanics jar on their client.
 
 | Command | Behavior when `guiBackend=ultra` |
 |---------|----------------------------------|
-| `/lm` | Opens native Ultra hub if the client has LegacyMechanicsUltra |
+| `/lm` | Opens native Ultra hub if the client has the kaipath LM bridge |
 | `/lm admin testgui` | Same Ultra hub for staff |
-| Hub buttons | Server receives an action packet; opens chat menus for subsystems not yet on Ultra screens |
+| Hub buttons | Server receives an action packet; opens chat menus for subsystems |
 
-If the client lacks the Ultra companion, `/lm` falls back to the chat hub with a short message.
+If the client lacks the bridge channel, `/lm` falls back to the chat hub.
 
-## Why a client jar is still needed
+## Protocol
 
-Minecraft draws GUIs on the client. DMZUltra’s textures already live in `dmzultra`.
-LegacyMechanicsUltra only calls those widgets and talks to the server. It does **not**
-duplicate gameplay or require the server LM jar on the client.
+- Channel: `legacymechanics:gui`
+- Protocol: `"1"`
+- S2C open: `screenId` (e.g. `hub`)
+- C2S action: `screenId`, `actionId`, `argsJson`
 
-## Build
+## Build (server LM)
 
 ```bash
 bash tools/dmz-adaptive-difficulty/build.sh
 ```
 
-Produces both jars under `mods/`.
+Produces the server jar under `mods/`. The optional `LegacyMechanicsUltra`
+companion is a **legacy fallback** only; prefer kaipath hosting the bridge.

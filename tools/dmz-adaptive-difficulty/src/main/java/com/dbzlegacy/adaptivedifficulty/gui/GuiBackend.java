@@ -5,7 +5,7 @@ import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 /**
  * Which player UI {@code /lm} and subcommands use.
  * {@link #ULTRA} opens DMZUltra screens through the client companion jar
- * (textures come from {@code dmzultra}; LegacyMechanics stays server-only).
+ * (textures from {@code dmzultra}; client bridge in {@code kaipath}; LM server-only).
  */
 public enum GuiBackend {
     CHAT,

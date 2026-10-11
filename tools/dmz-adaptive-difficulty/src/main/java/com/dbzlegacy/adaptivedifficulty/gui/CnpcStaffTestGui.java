@@ -31,7 +31,7 @@ public final class CnpcStaffTestGui {
                 return true;
             }
             player.m_213846_(Component.m_237113_(
-                    "§eUltra client jar missing. Opening chat hub."));
+                    "§eKai Path LM GUI bridge missing. Opening chat hub."));
             MechanicsChatMenu.open(player, "main");
             return true;
         }
