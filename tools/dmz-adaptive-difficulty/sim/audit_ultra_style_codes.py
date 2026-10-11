@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
-"""Fail if gui/ultra screen builders embed raw section-sign color codes.
+"""Fail if gui/ultra callers embed UTF-8 section-sign bytes (C2 A7).
 
-Scans Java sources for bare section-sign characters, and scans jar/class
-constant-pool UTF-8 strings (not raw bytecode — JVM goto is 0xA7 and false-positives
-as UTF-8 § when preceded by 0xC2).
+UltraStyle owns the mark. Every other ultra classfile must contain zero raw
+C2 A7 byte pairs. Sources must not contain a bare section-sign character.
 """
 from __future__ import annotations
 
-import struct
 import sys
 import zipfile
 from pathlib import Path
@@ -18,39 +16,18 @@ MARK_CHAR = "\u00a7"
 MARK = MARK_CHAR.encode("utf-8")  # C2 A7
 
 
-def utf8_constant_pool_strings(data: bytes) -> list[bytes]:
-    if len(data) < 10 or data[:4] != b"\xca\xfe\xba\xbe":
-        return []
-    cp_count = struct.unpack(">H", data[8:10])[0]
-    i = 10
-    n = 1
-    out: list[bytes] = []
-    while n < cp_count and i < len(data):
-        tag = data[i]
-        i += 1
-        if tag == 1:  # CONSTANT_Utf8
-            ln = struct.unpack(">H", data[i : i + 2])[0]
-            i += 2
-            out.append(data[i : i + ln])
-            i += ln
-        elif tag in (3, 4):
-            i += 4
-        elif tag in (5, 6):
-            i += 8
-            n += 1
-        elif tag in (7, 8, 16, 19, 20):
-            i += 2
-        elif tag in (9, 10, 11, 12, 17, 18):
-            i += 4
-        elif tag == 15:
-            i += 3
-        else:
-            break
-        n += 1
-    return out
+def java_string_hash(s: str) -> int:
+    h = 0
+    for ch in s:
+        h = (31 * h + ord(ch)) & 0xFFFFFFFF
+    if h >= 0x80000000:
+        h -= 0x100000000
+    return h
 
 
 def audit_sources() -> list[str]:
+    import re
+
     errors: list[str] = []
     if not SRC.is_dir():
         return [f"Missing {SRC}"]
@@ -59,7 +36,16 @@ def audit_sources() -> list[str]:
         for i, line in enumerate(text.splitlines(), 1):
             if MARK_CHAR in line:
                 errors.append(
-                    f"{path.name}:{i}: bare section-sign — use UltraStyle / char 0xA7 helper"
+                    f"{path.name}:{i}: bare section-sign — use UltraStyle / \\u00A7 in UltraStyle only"
+                )
+        # String.hashCode of switch cases is embedded in lookupswitch tables.
+        if path.name.startswith("UltraStyle"):
+            continue
+        for m in re.finditer(r'case\s+"([^"]+)"', text):
+            raw = java_string_hash(m.group(1)).to_bytes(4, "big", signed=True)
+            if MARK in raw:
+                errors.append(
+                    f'{path.name}: switch case "{m.group(1)}" hashCode bytes are C2 A7 — rename alias'
                 )
     return errors
 
@@ -67,16 +53,13 @@ def audit_sources() -> list[str]:
 def audit_class_bytes(name: str, data: bytes) -> list[str]:
     short = name.rsplit("/", 1)[-1]
     if short.startswith("UltraStyle"):
+        if MARK not in data:
+            return [f"{short}: expected section-sign mark bytes in UltraStyle"]
         return []
-    hits = [s for s in utf8_constant_pool_strings(data) if MARK in s]
-    if not hits:
-        return []
-    sample = hits[0][:60]
-    try:
-        shown = sample.decode("utf-8")
-    except UnicodeDecodeError:
-        shown = repr(sample)
-    return [f"{short}: {len(hits)} UTF-8 section-sign string(s) e.g. {shown!r}"]
+    n = data.count(MARK)
+    if n:
+        return [f"{short}: {n} raw section-sign byte pair(s) (C2 A7) — must be zero outside UltraStyle"]
+    return []
 
 
 def audit_jar(jar: Path) -> list[str]:
@@ -101,13 +84,13 @@ def main() -> int:
         jar_arg = jars[-1] if jars else None
     if jar_arg is not None:
         errors.extend(audit_jar(jar_arg))
-    print("=== Ultra style codes (no bare § outside UltraStyle) ===")
+    print("=== Ultra style codes (raw C2 A7 only in UltraStyle) ===")
     for e in errors:
         print(f"  FAIL  {e}")
     if errors:
         print(f"\n{len(errors)} error(s)")
         return 1
-    print("  OK  ultra screens use UltraStyle only; jar has no folded § in callers")
+    print("  OK  zero C2 A7 outside UltraStyle; UltraStyle owns the mark")
     return 0
 
 

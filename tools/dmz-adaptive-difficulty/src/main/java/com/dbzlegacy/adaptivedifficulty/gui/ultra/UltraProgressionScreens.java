@@ -20,7 +20,8 @@ public final class UltraProgressionScreens {
         }
         String p = page == null || page.isBlank() ? "main" : page.toLowerCase(Locale.ROOT);
         switch (p) {
-            case "boosts", "boost_panel", "tpboost" -> openBoosts(player);
+            // Avoid page alias "tpboost": its String.hashCode bytes are C2 A7 in lookupswitch.
+            case "boosts", "boost_panel", "tp_boost", "boost" -> openBoosts(player);
             case "coins", "economy", "ancient_coins" -> openCoins(player);
             default -> openHome(player);
         }
@@ -50,15 +51,30 @@ public final class UltraProgressionScreens {
         Map<String, String> ph = ProgressionGuiApi.placeholders(player);
         UltraScreenSpec spec = base("boosts", "boosts")
                 .line(ph.getOrDefault("boost", UltraStyle.LABEL + "Global TP boost: Off"))
-                .line(UltraStyle.DIM + "Presets start a boost · End stops it")
+                .line(UltraStyle.DIM + "Presets start a boost " + UltraStyle.SEP + " End stops it")
                 .setRow(100);
-        spec.buttonLeft("do:boost:1.25:30", UltraStyle.confirm("1.25× · 30m"), "confirm")
-                .buttonRight("do:boost:1.5:30", UltraStyle.confirm("1.5× · 30m"), "confirm")
+        spec.buttonLeft(
+                        "do:boost:1.25:30",
+                        UltraStyle.confirm(UltraStyle.boostPreset("1.25", "30")),
+                        "confirm")
+                .buttonRight(
+                        "do:boost:1.5:30",
+                        UltraStyle.confirm(UltraStyle.boostPreset("1.5", "30")),
+                        "confirm")
                 .rowGap();
-        spec.buttonLeft("do:boost:2:30", UltraStyle.confirm("2× · 30m"), "confirm")
-                .buttonRight("do:boost:2:60", UltraStyle.confirm("2× · 60m"), "confirm")
+        spec.buttonLeft(
+                        "do:boost:2:30",
+                        UltraStyle.confirm(UltraStyle.boostPreset("2", "30")),
+                        "confirm")
+                .buttonRight(
+                        "do:boost:2:60",
+                        UltraStyle.confirm(UltraStyle.boostPreset("2", "60")),
+                        "confirm")
                 .rowGap();
-        spec.buttonLeft("do:boost:3:30", UltraStyle.confirm("3× · 30m"), "confirm")
+        spec.buttonLeft(
+                        "do:boost:3:30",
+                        UltraStyle.confirm(UltraStyle.boostPreset("3", "30")),
+                        "confirm")
                 .buttonRight("do:boost:end", UltraStyle.danger("End boost"), "danger")
                 .rowGap();
         spec.footerBackHome();
@@ -74,8 +90,8 @@ public final class UltraProgressionScreens {
         }
         spec.setRow(120);
         String toggle = staffFree
-                ? UltraStyle.confirm("Staff free costs · ON")
-                : UltraStyle.dim("Staff free costs · OFF");
+                ? UltraStyle.confirm("Staff free costs " + UltraStyle.SEP + " ON")
+                : UltraStyle.dim("Staff free costs " + UltraStyle.SEP + " OFF");
         spec.button(
                         "do:toggle_staff_free_coins:" + (staffFree ? "off" : "on"),
                         toggle,

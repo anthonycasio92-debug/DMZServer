@@ -24,7 +24,8 @@ public final class UltraCharacterScreens {
         }
         switch (p) {
             case "reset", "saga", "sagareset", "saga_reset" -> openSagaReset(player);
-            case "android_remove", "android", "androidremove", "remove_android" -> openAndroidRemove(player);
+            case "android_remove", "android", "androidremove", "remove_android" ->
+                    openAndroidRemove(player);
             default -> openHome(player);
         }
     }
@@ -122,11 +123,12 @@ public final class UltraCharacterScreens {
     }
 
     private static void openAndroidRemove(ServerPlayer player) {
-        UltraScreenSpec spec = base("android_remove", "android")
+        UltraScreenSpec spec = base(UltraStyle.PAGE_ANDROID_REMOVE, "android")
                 .line(UltraStyle.LABEL + "Removes Android forms and restores what you had.")
                 .notice("Click again within 10 seconds. This cannot be undone.")
                 .setRow(100);
-        spec.button("do:android_remove", UltraStyle.danger("Remove Android"), "danger").rowGap();
+        spec.button("do:" + UltraStyle.PAGE_ANDROID_REMOVE, UltraStyle.danger("Remove Android"), "danger")
+                .rowGap();
         if (CharacterServicesConfig.get().enabled) {
             spec.button("do:android", UltraStyle.confirm("Convert to Android"), "confirm").rowGap();
         }

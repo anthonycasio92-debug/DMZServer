@@ -39,7 +39,8 @@ public final class UltraGui {
             case "progression", "prog" -> UltraProgressionScreens.open(player, pg);
             case "config", "cfgedit", "configeditor" -> UltraConfigScreens.open(player, pg);
             case "admin" -> UltraHubScreens.open(player, "admin");
-            case "android_remove", "androidremove" -> UltraCharacterScreens.open(player, "android_remove");
+            case "android_remove", "androidremove" ->
+                    UltraCharacterScreens.open(player, UltraStyle.PAGE_ANDROID_REMOVE);
             case "skills", "skill", "skillcheck", "skill_check" -> UltraHubScreens.open(player, "main");
             case "logs", "syslog" -> UltraHubScreens.open(player, "main");
             default -> UltraHubScreens.open(player, "main");
