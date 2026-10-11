@@ -1437,12 +1437,12 @@ ServerEvents.tick(function (event) {
     } catch (err) {}
 });
 
-EntityEvents.spawned("minecraft:item", function (event) {
+/* Handled by item_spawn_consolidated.js. No listener here. */
+global.dmzApothItemSpawn = function (entity, stack, event) {
     try {
-        var stack = event.entity.item;
         stripSpawnerItemNbt(stack);
     } catch (err) {}
-});
+};
 
 console.info(
     "[DBZ Legacy Reborn] Apotheosis spawner upgrades disabled; redstone control via comparator right-click + recipe; world spawners vanillaized via chunk queue + nearby scan."

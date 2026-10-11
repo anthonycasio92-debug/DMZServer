@@ -542,11 +542,10 @@ global.dmzSilkTouchTick = {
     purge: purgePlayerSilkTouch
 };
 
-EntityEvents.spawned("minecraft:item", function (event) {
+/* Handled by item_spawn_consolidated.js. No listener here. */
+global.dmzSilkTouchItemSpawn = function (entity, stack, event) {
     try {
         if (!initJava()) return;
-        var entity = event.entity;
-        var stack = entity.item;
         if (isEmptyStack(stack)) return;
         if (!nbtHasSilkTouch(stack) && !mapWouldHaveSilk(stack)) return;
 
@@ -579,7 +578,7 @@ EntityEvents.spawned("minecraft:item", function (event) {
             }
         }
     } catch (err) {}
-});
+};
 
 console.info(
     "[DBZ Legacy Reborn] Silk Touch enchant strip handlers registered (items kept)."

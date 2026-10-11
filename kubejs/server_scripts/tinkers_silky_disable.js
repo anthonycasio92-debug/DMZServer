@@ -715,10 +715,9 @@ global.dmzTinkersSilkyTick = {
     purge: purgePlayerSilky
 };
 
-EntityEvents.spawned("minecraft:item", function (event) {
+/* Handled by item_spawn_consolidated.js. No listener here. */
+global.dmzSilkyItemSpawn = function (entity, stack, event) {
     try {
-        var entity = event.entity;
-        var stack = entity.item;
         if (isEmptyStack(stack)) return;
 
         var replacement = convertBannedSilkyItem(stack);
@@ -736,7 +735,7 @@ EntityEvents.spawned("minecraft:item", function (event) {
             stripSilkyFromTool(stack);
         }
     } catch (err) {}
-});
+};
 
 console.info(
     "[DBZ Legacy Reborn] Tinkers Silky strip handlers registered (Forge ID + cobweb convert)."

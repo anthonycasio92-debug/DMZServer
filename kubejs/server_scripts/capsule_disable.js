@@ -341,10 +341,9 @@ ItemEvents.rightClicked("capsule:capsule", function (event) {
     }
 });
 
-EntityEvents.spawned("minecraft:item", function (event) {
+/* Handled by item_spawn_consolidated.js. No listener here. */
+global.dmzCapsuleItemSpawn = function (entity, stack, event) {
     try {
-        var entity = event.entity;
-        var stack = entity.item;
         if (isBannedCapsule(stack)) {
             event.cancel();
             try {
@@ -352,7 +351,7 @@ EntityEvents.spawned("minecraft:item", function (event) {
             } catch (eDisc) {}
         }
     } catch (err) {}
-});
+};
 
 console.info(
     "[DBZ Legacy Reborn] Capsule disable handlers registered (slot-safe purge)."
