@@ -6,8 +6,9 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 
-/** Deletes blueprint and overpowered capsules only. Recipes stay in KubeJS. */
+/** Deletes blueprint and overpowered capsules. Recipes are removed by RecipeStrip. */
 public final class CapsuleBan {
     public static final int PLAYER_PURGE_INTERVAL = 100;
     private static Method isBlueprint;
@@ -35,6 +36,17 @@ public final class CapsuleBan {
             HotLog.tell(player, "\u00A7cBlueprint / Overpowered capsules are disabled and were removed.");
             HotLog.debug("[Capsule Disable] Removed " + removed + " banned capsule stack(s)");
         }
+    }
+
+    public static boolean onUse(PlayerInteractEvent.RightClickItem event, ServerPlayer player) {
+        ItemStack stack = event.getItemStack();
+        if (!isBanned(stack)) {
+            return false;
+        }
+        event.setCanceled(true);
+        stack.m_41764_(0);
+        HotLog.tell(player, "\u00A7cBlueprint / Overpowered capsules are disabled on this server.");
+        return true;
     }
 
     public static boolean onItemSpawn(EntityJoinLevelEvent event, ItemEntity entity, ItemStack stack) {

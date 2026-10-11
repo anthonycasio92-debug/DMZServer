@@ -85,6 +85,24 @@ public final class LmHotPath {
     }
 
     @SubscribeEvent
+    public void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) {
+            return;
+        }
+        WeaponBonusScale.clearPlayer(player.m_20148_());
+        WeaponBonusScale.update(player);
+        HealCap.clamp(player);
+        HealCap.announce(player);
+        PothalaClean.clean(player);
+        RaceLockClear.clear(player);
+        SpawnerVanillaize.scan(player);
+        CapsuleBan.purge(player);
+        HeartstopStrip.strip(player);
+        SilkTouchStrip.purge(player);
+        SilkyBan.purge(player, true);
+    }
+
+    @SubscribeEvent
     public void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() != null) {
             WeaponBonusScale.clearPlayer(event.getEntity().m_20148_());

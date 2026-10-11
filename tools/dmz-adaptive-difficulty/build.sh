@@ -444,6 +444,10 @@ merge_onto_base_jar() {
   # not keep a stale base-jar inner the new bytecode no longer emits.
   sync_overlaid_inners "$OUT" "$merge"
   cp "$RES/META-INF/mods.toml" "$merge/META-INF/mods.toml"
+  if [[ -d "$RES/data" ]]; then
+    mkdir -p "$merge/data"
+    cp -a "$RES/data/." "$merge/data/"
+  fi
   if [[ -f "$RES/character-services.default.json" ]]; then
     cp "$RES/character-services.default.json" "$merge/character-services.default.json"
   fi

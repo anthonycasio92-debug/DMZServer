@@ -5,14 +5,14 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
 /** Debug-only console notes. Player chat lines stay, matching the old scripts. */
-final class HotLog {
+public final class HotLog {
     private HotLog() {}
 
     static void debug(String message) {
         AdaptiveDifficultyMod.LOGGER.debug(message);
     }
 
-    static void tell(ServerPlayer player, String text) {
+    public static void tell(ServerPlayer player, String text) {
         if (player == null || text == null) {
             return;
         }

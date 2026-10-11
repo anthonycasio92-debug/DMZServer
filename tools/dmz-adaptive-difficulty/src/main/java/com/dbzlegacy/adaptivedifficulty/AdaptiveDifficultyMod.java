@@ -33,7 +33,7 @@ public final class AdaptiveDifficultyMod {
     /** Forge modId — lowercase; not used for NBT / GUI class lookup. */
     public static final String MOD_ID = "legacymechanics";
     /** Product line version (was DMZ Adaptive Difficulty 3.3.x). */
-    public static final String VERSION = "4.6.91";
+    public static final String VERSION = "4.6.92";
 
     private static boolean dedicatedServer() {
         try {
@@ -72,6 +72,7 @@ public final class AdaptiveDifficultyMod {
         MinecraftForge.EVENT_BUS.register(new DifficultyEvents());
         MinecraftForge.EVENT_BUS.register(new FallDamageDiag());
         MinecraftForge.EVENT_BUS.register(com.dbzlegacy.adaptivedifficulty.kube.LmHotPath.INSTANCE);
+        MinecraftForge.EVENT_BUS.register(com.dbzlegacy.adaptivedifficulty.kube.ScriptEvents.INSTANCE);
         com.dbzlegacy.adaptivedifficulty.kube.LmHotPath.logReady();
         com.dbzlegacy.adaptivedifficulty.claim.ClaimOverlapGuard.register();
         DifficultyCommands.register();

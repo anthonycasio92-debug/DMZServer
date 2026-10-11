@@ -7,10 +7,11 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 
 /**
  * Silky cloth and silky modifier crystals become cobwebs. Silky is stripped from tools.
- * Recipes and the modifier datapack stay in KubeJS.
+ * Recipes are removed by RecipeStrip. The empty modifier json ships in this mod.
  */
 public final class SilkyBan {
     public static final int CLOTH_SCAN_INTERVAL = 20;
@@ -39,6 +40,22 @@ public final class SilkyBan {
                     + "). Replaced with cobwebs; tools were kept.");
             HotLog.debug("[Tinkers Silky] purged " + changed + " stack(s)");
         }
+    }
+
+    public static boolean onUse(PlayerInteractEvent.RightClickItem event, ServerPlayer player) {
+        ItemStack stack = event.getItemStack();
+        if (stack == null || !"tconstruct:silky_cloth".equals(ItemIds.id(stack))) {
+            return false;
+        }
+        event.setCanceled(true);
+        ItemStack replacement = ItemIds.stack("minecraft:cobweb", stack.m_41613_());
+        if (event.getHand() == net.minecraft.world.InteractionHand.OFF_HAND) {
+            player.m_8061_(net.minecraft.world.entity.EquipmentSlot.OFFHAND, replacement);
+        } else {
+            player.m_8061_(net.minecraft.world.entity.EquipmentSlot.MAINHAND, replacement);
+        }
+        HotLog.tell(player, "\u00A77Silky Cloth is disabled and was replaced with cobwebs.");
+        return true;
     }
 
     public static void onItemSpawn(ItemEntity entity, ItemStack stack) {

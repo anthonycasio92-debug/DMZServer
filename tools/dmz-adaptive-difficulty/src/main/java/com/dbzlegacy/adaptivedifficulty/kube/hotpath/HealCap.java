@@ -25,6 +25,24 @@ public final class HealCap {
 
     private HealCap() {}
 
+    public static void announce(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        double lifeSteal = read(player, "attributeslib:life_steal", 0.0);
+        double overheal = read(player, "attributeslib:overheal", 0.0);
+        double received = read(player, "attributeslib:healing_received", 1.0);
+        HotLog.tell(
+                player,
+                "\u00A77Healing caps: Life Steal "
+                        + pct(lifeSteal)
+                        + "% (disabled) | Overheal "
+                        + pct(overheal)
+                        + "% | Received +"
+                        + receivedPct(received)
+                        + "%");
+    }
+
     public static void clamp(ServerPlayer player) {
         if (player == null) {
             return;
@@ -63,6 +81,42 @@ public final class HealCap {
         } catch (Throwable transientFailed) {
             inst.m_22125_(mod);
         }
+    }
+
+    private static double read(ServerPlayer player, String id, double fallback) {
+        Attribute attribute = ForgeRegistries.ATTRIBUTES.getValue(new ResourceLocation(id));
+        if (attribute == null) {
+            return fallback;
+        }
+        try {
+            return player.m_21133_(attribute);
+        } catch (Throwable t) {
+            return fallback;
+        }
+    }
+
+    private static String pct(double value) {
+        double shown = value * 100.0;
+        if (shown < 0.0) {
+            shown = 0.0;
+        }
+        return trim(shown);
+    }
+
+    private static String receivedPct(double value) {
+        double shown = (value - 1.0) * 100.0;
+        if (shown < 0.0) {
+            shown = 0.0;
+        }
+        return trim(shown);
+    }
+
+    private static String trim(double shown) {
+        double rounded = Math.round(shown * 10.0) / 10.0;
+        if (rounded == Math.rint(rounded)) {
+            return Long.toString(Math.round(rounded));
+        }
+        return Double.toString(rounded);
     }
 
     static double multiplyCapAmount(double value, double max) {

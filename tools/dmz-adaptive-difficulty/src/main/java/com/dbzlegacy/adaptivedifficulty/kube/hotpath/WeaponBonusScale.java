@@ -287,7 +287,7 @@ public final class WeaponBonusScale {
             if (map == null) {
                 return 1.0;
             }
-            Collection<AttributeModifier> modifiers = map.get(Attributes.f_22284_);
+            Collection<AttributeModifier> modifiers = map.get(Attributes.f_22281_);
             if (modifiers == null || modifiers.isEmpty()) {
                 return 1.0;
             }

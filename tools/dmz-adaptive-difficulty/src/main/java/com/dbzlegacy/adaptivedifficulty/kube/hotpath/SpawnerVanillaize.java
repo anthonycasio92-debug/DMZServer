@@ -8,7 +8,6 @@ import java.util.Map;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerChunkCache;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
@@ -19,7 +18,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 
 /**
  * Puts nearby Apotheosis spawners back on vanilla delays and clears banned flags.
- * SpawnData and redstone_control stay. Comparator recipes stay in KubeJS.
+ * SpawnData and redstone_control stay. Comparator use and the redstone recipes live in this mod.
  */
 public final class SpawnerVanillaize {
     public static final int SCAN_INTERVAL = 200;
@@ -107,27 +106,73 @@ public final class SpawnerVanillaize {
         return changed;
     }
 
+    public static int vanillaizeChunk(ServerLevel level, int chunkX, int chunkZ) {
+        if (level == null) {
+            return 0;
+        }
+        LevelChunk chunk = level.m_7726_().m_7131_(chunkX, chunkZ);
+        if (chunk == null) {
+            return 0;
+        }
+        Map<BlockPos, BlockEntity> tiles = chunk.m_62954_();
+        if (tiles == null || tiles.isEmpty()) {
+            return 0;
+        }
+        int total = 0;
+        for (BlockEntity be : new ArrayList<>(tiles.values())) {
+            if (be != null && vanillaize(be)) {
+                total++;
+            }
+        }
+        return total;
+    }
+
+    public static void vanillaizeAt(ServerLevel level, BlockPos pos) {
+        if (level == null || pos == null) {
+            return;
+        }
+        BlockEntity be = level.m_7702_(pos);
+        if (be != null) {
+            vanillaize(be);
+        }
+    }
+
+    public static boolean redstoneEnabled(BlockEntity be) {
+        return be != null && readRedstone(be);
+    }
+
+    public static boolean setRedstone(BlockEntity be, boolean enable) {
+        if (be == null) {
+            return false;
+        }
+        if (readRedstone(be) == enable) {
+            return true;
+        }
+        writeBool(be, "redstoneControl", enable);
+        Class<?> apoth = apothClass();
+        if (apoth == null || !apoth.isInstance(be)) {
+            try {
+                CompoundTag tag = be.m_187482_();
+                if (tag != null) {
+                    tag.m_128379_("redstone_control", enable);
+                    be.m_142466_(tag);
+                }
+            } catch (Throwable t) {
+                HotLog.debug("[Apotheosis Spawner] redstone nbt failed: " + t);
+            }
+        }
+        writeBool(be, "redstoneControl", enable);
+        sync(be);
+        return readRedstone(be) == enable;
+    }
+
     private static int vanillaizeNear(ServerLevel level, double x, double z) {
-        ServerChunkCache chunks = level.m_7726_();
         int originX = (int) Math.floor(x / 16.0);
         int originZ = (int) Math.floor(z / 16.0);
         int total = 0;
         for (int dx = -CHUNK_RADIUS; dx <= CHUNK_RADIUS; dx++) {
             for (int dz = -CHUNK_RADIUS; dz <= CHUNK_RADIUS; dz++) {
-                LevelChunk chunk = chunks.m_7131_(originX + dx, originZ + dz);
-                if (chunk == null) {
-                    continue;
-                }
-                Map<BlockPos, BlockEntity> tiles = chunk.m_62954_();
-                if (tiles == null || tiles.isEmpty()) {
-                    continue;
-                }
-                List<BlockEntity> copy = new ArrayList<>(tiles.values());
-                for (BlockEntity be : copy) {
-                    if (be != null && vanillaize(be)) {
-                        total++;
-                    }
-                }
+                total += vanillaizeChunk(level, originX + dx, originZ + dz);
             }
         }
         return total;
