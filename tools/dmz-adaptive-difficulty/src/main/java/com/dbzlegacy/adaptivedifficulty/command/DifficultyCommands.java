@@ -1051,7 +1051,7 @@ public final class DifficultyCommands {
                     };
                     if (gui == null) {
                         source.m_81352_(Component.m_237113_(
-                                "Unknown guiBackend. Use: cnpc, cmi, chest, chat, auto."));
+                                "Unknown guiBackend. Use: ultra, cnpc, chat (cmi/chest/auto → cnpc)."));
                         return 0;
                     }
                     cfg.guiBackend = gui;

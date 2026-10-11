@@ -1,6 +1,14 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.56**.
+What changed from **4.5.147** through **4.6.76**.
+
+## Ultra GUI without CNPC (server-only LM)
+
+`guiBackend=ultra` opens a native DMZUltra hub. The server jar does not ship client
+screens. Clients install `LegacyMechanicsUltra` plus `dmzultra` (textures come from
+dmzultra). Players do not put LegacyMechanics on the client. Hub clicks use chat
+menus for subsystems that are not on Ultra screens yet. See
+`tools/dmz-adaptive-difficulty/FORGE-ULTRA-GUI.md`.
 
 ## Fusion mixin target
 

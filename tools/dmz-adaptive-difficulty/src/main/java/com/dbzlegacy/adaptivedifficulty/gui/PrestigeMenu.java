@@ -11,8 +11,11 @@ public final class PrestigeMenu {
             return;
         }
         String target = page == null || page.isBlank() ? "main" : page;
-        if (GuiBackend.fromConfig() == GuiBackend.CNPC) {
+        GuiBackend backend = GuiBackend.fromConfig();
+        if (backend == GuiBackend.CNPC) {
             com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcLmGui.open(player, "prestige", target);
+            return;
         }
+        MechanicsChatMenu.open(player, "prestige");
     }
 }

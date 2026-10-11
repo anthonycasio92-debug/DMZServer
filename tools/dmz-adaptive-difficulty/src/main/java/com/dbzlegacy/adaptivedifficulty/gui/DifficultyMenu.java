@@ -27,6 +27,7 @@ public final class DifficultyMenu {
             com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcLmGui.open(player, "difficulty", target);
             return;
         }
+        // ultra / chat
         DifficultyChatMenu.open(player, target);
     }
 }

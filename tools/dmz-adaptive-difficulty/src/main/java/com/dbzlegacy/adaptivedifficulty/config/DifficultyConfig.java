@@ -358,10 +358,18 @@ public final class DifficultyConfig {
      * Player UI backend for {@code /difficulty}:
      * {@code cmi} (default), {@code auto} (CMI → chest → chat), {@code chest}, or {@code chat}.
      */
-    /** {@code cnpc} = CustomNPCs-only LM UI (no chest/CMI). Also: cmi, chest, chat, auto. */
-    public String guiBackend = "cnpc";
+    /**
+     * Player UI backend: {@code ultra} (DMZUltra client companion, no CNPC),
+     * {@code cnpc}, {@code chat}. Legacy cmi/chest/auto map to cnpc.
+     */
+    public String guiBackend = "ultra";
     /** Staff {@code /lm admin testgui} — CustomNPCs panel listing all LM systems (experimental). */
     public boolean enableStaffCnpcTestGui = true;
+    /**
+     * When {@code guiBackend=ultra}, {@code /lm admin testgui} opens the native Ultra hub
+     * if the player has LegacyMechanicsUltra. Otherwise falls back to chat.
+     */
+    public boolean useNativeTestGui = true;
     /**
      * If the Minecraft world is on Peaceful (no hostile spawns), restore it on server start.
      * Peaceful prevents adaptive mob scaling from doing anything.
@@ -1317,10 +1325,11 @@ public final class DifficultyConfig {
             cfg.starterCopperCostMigratedV1 = Boolean.TRUE;
         }
         if (cfg.guiBackend == null || cfg.guiBackend.isBlank()) {
-            cfg.guiBackend = "cnpc";
+            cfg.guiBackend = "ultra";
         } else {
             // Canonicalize aliases so Forge + Bukkit agree.
             cfg.guiBackend = switch (cfg.guiBackend.trim().toLowerCase()) {
+                case "ultra", "dmzultra", "native", "ultragui" -> "ultra";
                 case "cnpc", "customnpcs", "customnpc", "noppes" -> "cnpc";
                 case "cmi", "cmilib", "cmigui", "deluxemenus", "deluxe", "dm" -> "cmi";
                 case "chest", "bukkit", "inventory", "gui" -> "chest";
