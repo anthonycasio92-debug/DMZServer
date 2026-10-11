@@ -1,0 +1,23 @@
+modLoader="lowcodefml"
+loaderVersion="[47,)"
+license="All Rights Reserved"
+
+[[mods]]
+modId="noeaexplosionnotick"
+version="1.0.3"
+displayName="Noea Planet Explosion - No Tick"
+description='''Server-side coremod. A destroyed planet still disappears. The explosion entity discards itself in its constructor, so it is never added to the world and clients never render it. The detonation tick does not break blocks or spawn particles.'''
+
+[[dependencies.noeaexplosionnotick]]
+modId="minecraft"
+mandatory=true
+versionRange="[1.20.1,1.20.2)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.noeaexplosionnotick]]
+modId="forge"
+mandatory=true
+versionRange="[47,)"
+ordering="NONE"
+side="BOTH"
