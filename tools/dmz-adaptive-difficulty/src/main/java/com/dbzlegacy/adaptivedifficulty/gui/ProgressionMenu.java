@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.gui;
 
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
+import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraGui;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import net.minecraft.server.level.ServerPlayer;
@@ -26,6 +27,14 @@ public final class ProgressionMenu {
         }
 
         GuiBackend backend = GuiBackend.fromConfig();
+        if (backend == GuiBackend.ULTRA) {
+            if (androidRemove) {
+                UltraGui.open(player, "character", "android_remove");
+            } else {
+                UltraGui.open(player, "progression", target);
+            }
+            return;
+        }
         if (backend == GuiBackend.CNPC) {
             if (androidRemove) {
                 com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcLmGui.open(player, "android_remove", "main");
@@ -35,7 +44,7 @@ public final class ProgressionMenu {
             return;
         }
         if (androidRemove) {
-            DmzRewards.msg(player, "§cAndroid remove needs CNPC GUI (guiBackend=cnpc).");
+            DmzRewards.msg(player, "§cAndroid remove needs CNPC or Ultra GUI (guiBackend=cnpc|ultra).");
             return;
         }
         ProgressionChatMenu.open(player, target);

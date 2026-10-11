@@ -261,7 +261,12 @@ public final class MechanicsCommands {
             }
             case "saga", "sagareset", "saga_reset" -> {
                 com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcUltraPreview.leave(player);
-                com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcLmGui.open(player, "saga", "main");
+                if (com.dbzlegacy.adaptivedifficulty.gui.GuiBackend.fromConfig()
+                        == com.dbzlegacy.adaptivedifficulty.gui.GuiBackend.ULTRA) {
+                    com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraGui.open(player, "character", "reset");
+                } else {
+                    com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcLmGui.open(player, "saga", "main");
+                }
                 yield true;
             }
             case "config", "cfgedit", "configeditor" -> {
@@ -270,7 +275,12 @@ public final class MechanicsCommands {
                     yield false;
                 }
                 com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcUltraPreview.leave(player);
-                com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcLmGui.open(player, "config", "main");
+                if (com.dbzlegacy.adaptivedifficulty.gui.GuiBackend.fromConfig()
+                        == com.dbzlegacy.adaptivedifficulty.gui.GuiBackend.ULTRA) {
+                    com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraGui.open(player, "config", "list");
+                } else {
+                    com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcLmGui.open(player, "config", "main");
+                }
                 yield true;
             }
             case "hub", "main", "help", "lm", "legacymechanics" -> {

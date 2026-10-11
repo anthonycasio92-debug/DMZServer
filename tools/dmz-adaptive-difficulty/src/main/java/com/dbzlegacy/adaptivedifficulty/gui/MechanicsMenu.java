@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.gui;
 
+import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraGui;
 import net.minecraft.server.level.ServerPlayer;
 
 /** Player UI entrypoint for {@code /lm} / {@code /legacymechanics}. */
@@ -14,6 +15,10 @@ public final class MechanicsMenu {
         com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcUltraPreview.leave(player);
 
         GuiBackend backend = GuiBackend.fromConfig();
+        if (backend == GuiBackend.ULTRA) {
+            UltraGui.openHub(player, target);
+            return;
+        }
         if (backend == GuiBackend.CNPC) {
             com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcLmGui.openHub(player, target);
             return;
