@@ -32,28 +32,42 @@ public final class LmScreens {
         }
     }
 
-    /** Preferred entry: full packet → dynamic screen (any screenId). */
+    /** Preferred entry: full packet → dynamic screen (any screenId) on the LM channel. */
     public static void open(GuiOpenPacket packet) {
+        open(packet, LmGuiNetwork.CHANNEL_ID);
+    }
+
+    /**
+     * Open a dynamic screen bound to {@code channelId} so clicks echo on the same
+     * {@code <modid>:gui} that delivered the open.
+     */
+    public static void open(GuiOpenPacket packet, String channelId) {
         Minecraft mc = Minecraft.m_91087_();
         if (mc == null) {
             return;
         }
+        String channel = channelId == null || channelId.isBlank() ? LmGuiNetwork.CHANNEL_ID : channelId;
         if (packet == null) {
-            UltraUiBridge.LOGGER.warn("[kaipath] LM GuiOpenPacket null — opening empty hub");
+            UltraUiBridge.LOGGER.warn(
+                    "[kaipath] GuiOpenPacket null on channel={} — opening empty shell", channel);
             packet = GuiOpenPacket.emptyHub();
         }
         try {
             UltraUiBridge.LOGGER.info(
-                    "[kaipath] GuiOpenPacket ← screenId={} title={} buttons≈{} panel={}x{}",
+                    "[kaipath] GuiOpenPacket ← channel={} screenId={} title={} buttons≈{} panel={}x{}",
+                    channel,
                     packet.screenId(),
                     packet.title(),
                     approxButtonCount(packet.buttonsJson()),
                     packet.panelWidth(),
                     packet.panelHeight());
-            mc.m_91152_(new LmDynamicScreen(packet));
+            mc.m_91152_(new LmDynamicScreen(packet, channel));
         } catch (RuntimeException e) {
             UltraUiBridge.LOGGER.warn(
-                    "[kaipath] LM dynamic screen failed screenId={}", packet.screenId(), e);
+                    "[kaipath] dynamic screen failed channel={} screenId={}",
+                    channel,
+                    packet.screenId(),
+                    e);
             mc.m_91152_(new MissingScreen(packet.screenId(), e.getMessage()));
         }
     }

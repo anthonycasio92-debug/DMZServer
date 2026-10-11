@@ -3,7 +3,6 @@ package com.dbzlegacy.adaptivedifficulty.net.gui;
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraScreenIds;
 import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraScreenSelfTest;
-import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.lang.reflect.Field;
@@ -12,7 +11,6 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import net.minecraft.network.Connection;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.minecraftforge.network.NetworkDirection;
@@ -22,21 +20,28 @@ import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.network.simple.SimpleChannel;
 
 /**
- * Server half of {@code legacymechanics:gui} / protocol {@code "1"}.
- * KaiPath owns the client consumer. No client screen classes are referenced here.
+ * Server half of this mod's Ultra GUI channel ({@code <modid>:gui}).
+ *
+ * <p>Channel namespace comes from {@link AdaptiveDifficultyMod#MOD_ID} via
+ * {@link UltraGuiProtocol#channel(String)} — other mods should register the same packet
+ * shape on <em>their</em> {@code modid:gui}. KaiPath keys client consumers by channel.
+ * No client screen classes are referenced here.
  */
 public final class LmGuiNetwork {
-    public static final String CHANNEL_NAMESPACE = "legacymechanics";
-    public static final String CHANNEL_PATH = "gui";
+    /** This mod's channel namespace (= Forge mod id). Not part of the packet payload. */
+    public static final String CHANNEL_NAMESPACE = AdaptiveDifficultyMod.MOD_ID;
+    /** @see UltraGuiProtocol#CHANNEL_PATH */
+    public static final String CHANNEL_PATH = UltraGuiProtocol.CHANNEL_PATH;
     /**
      * Forge SimpleChannel protocol string shared with KaiPath.
      * Bumping this requires coordinated KaiPath release — mismatched clients drop the channel.
+     * Must stay equal to {@link UltraGuiProtocol#PROTOCOL_VERSION}.
      */
     public static final String PROTOCOL_VERSION = "1";
 
     /** Forge mod id for KaiPath. */
     public static final String KAIPATH_MOD_ID = "kaipath";
-    /** Minimum KaiPath version that speaks {@code legacymechanics:gui}. */
+    /** Minimum KaiPath version that speaks the Ultra GUI protocol on {@code <modid>:gui}. */
     public static final String KAIPATH_MIN_VERSION = "1.2.5";
 
     /**
@@ -44,7 +49,7 @@ public final class LmGuiNetwork {
      * still join; UltraGui then falls back to CustomNPCs for them.
      */
     private static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
-            new ResourceLocation(CHANNEL_NAMESPACE, CHANNEL_PATH),
+            UltraGuiProtocol.channel(CHANNEL_NAMESPACE),
             () -> PROTOCOL_VERSION,
             NetworkRegistry.acceptMissingOr(PROTOCOL_VERSION),
             NetworkRegistry.acceptMissingOr(PROTOCOL_VERSION));
@@ -208,19 +213,28 @@ public final class LmGuiNetwork {
             return;
         }
         registered = true;
+        if (!PROTOCOL_VERSION.equals(UltraGuiProtocol.PROTOCOL_VERSION)) {
+            throw new IllegalStateException(
+                    "LmGuiNetwork.PROTOCOL_VERSION ("
+                            + PROTOCOL_VERSION
+                            + ") != UltraGuiProtocol.PROTOCOL_VERSION ("
+                            + UltraGuiProtocol.PROTOCOL_VERSION
+                            + ")");
+        }
         AdaptiveDifficultyMod.LOGGER.info(
                 "[{}] registering channel {}:{} protocol={} msg0=GuiOpenPacket(S→C) msg1=GuiActionPacket(C→S)",
                 AdaptiveDifficultyMod.MOD_ID,
                 CHANNEL_NAMESPACE,
                 CHANNEL_PATH,
                 PROTOCOL_VERSION);
-        CHANNEL.messageBuilder(GuiOpenPacket.class, 0, NetworkDirection.PLAY_TO_CLIENT)
+        CHANNEL.messageBuilder(GuiOpenPacket.class, UltraGuiProtocol.MSG_OPEN, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(GuiOpenPacket::encode)
                 .decoder(buf -> decodeOpenLogged(buf))
                 .consumerMainThread(GuiOpenPacket::handle)
                 .add();
         // Network-thread receive → enqueueWork (main thread) for all ServerPlayer access.
-        CHANNEL.messageBuilder(GuiActionPacket.class, 1, NetworkDirection.PLAY_TO_SERVER)
+        CHANNEL.messageBuilder(
+                        GuiActionPacket.class, UltraGuiProtocol.MSG_ACTION, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(GuiActionPacket::encode)
                 .decoder(buf -> decodeActionLogged(buf))
                 .consumerNetworkThread(LmGuiNetwork::handleGuiAction)
@@ -231,9 +245,11 @@ public final class LmGuiNetwork {
         UltraScreenSelfTest.verifyHubShim();
         runPacketRoundTripSelfTest();
         AdaptiveDifficultyMod.LOGGER.info(
-                "[{}] KaiPath bridge ready protocol={} — client should render what the server sends "
-                        + "(no hardcoded screen lists on LM). KaiPath 1.3.0 still reads screenId only.",
+                "[{}] Ultra GUI bridge ready channel={} protocol={} — KaiPath renders what the "
+                        + "server sends (channel-keyed; no hardcoded screen lists). "
+                        + "KaiPath 1.3.0 still reads screenId only.",
                 AdaptiveDifficultyMod.MOD_ID,
+                UltraGuiProtocol.channelId(CHANNEL_NAMESPACE),
                 PROTOCOL_VERSION);
     }
 
@@ -467,7 +483,7 @@ public final class LmGuiNetwork {
                     + "\",\"screen\":\""
                     + system
                     + "\",\"center\":true,\"margin\":"
-                    + UltraStyle.PANEL_MARGIN
+                    + UltraGuiProtocol.DEFAULT_MARGIN
                     + "}";
         }
     }

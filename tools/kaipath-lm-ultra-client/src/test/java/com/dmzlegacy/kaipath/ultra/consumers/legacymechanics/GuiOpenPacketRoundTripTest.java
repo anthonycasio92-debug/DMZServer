@@ -65,7 +65,20 @@ public final class GuiOpenPacketRoundTripTest {
             fail("accepts() must tolerate any remote protocol");
         }
 
-        System.out.println("GuiOpenPacketRoundTripTest OK (10 fields + future ignore + action echo)");
+        // Channel convention — namespace is not inside the packet payload
+        if (!"legacymechanics:gui".equals(LmGuiNetwork.CHANNEL_ID)) {
+            fail("CHANNEL_ID expected legacymechanics:gui got " + LmGuiNetwork.CHANNEL_ID);
+        }
+        // Encode must not embed channel strings in the buffer values
+        FriendlyByteBuf probe = new FriendlyByteBuf();
+        GuiOpenPacket.encode(original, probe);
+        // decoded earlier already proved field contents; screenId stays content id not channel
+        if ("legacymechanics".equals(decoded.screenId()) || decoded.screenId().contains(":gui")) {
+            fail("screenId must not be a channel id: " + decoded.screenId());
+        }
+
+        System.out.println(
+                "GuiOpenPacketRoundTripTest OK (10 fields + future ignore + action echo + channel-agnostic)");
     }
 
     private static void assertEq(String name, String expected, String actual) {

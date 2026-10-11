@@ -124,6 +124,17 @@ def main() -> int:
         errors.append("LmGuiNetwork must run packet round-trip self-test at register")
     if "screensTested" not in net:
         errors.append("LmGuiNetwork round-trip self-test must log screensTested")
+    proto = ROOT / "src/main/java/com/dbzlegacy/adaptivedifficulty/net/gui/UltraGuiProtocol.java"
+    if not proto.is_file():
+        errors.append("Missing UltraGuiProtocol (shared <modid>:gui conventions)")
+    else:
+        proto_text = proto.read_text(encoding="utf-8")
+        if 'PROTOCOL_VERSION = "1"' not in proto_text:
+            errors.append("UltraGuiProtocol must define PROTOCOL_VERSION = \"1\"")
+        if 'CHANNEL_PATH = "gui"' not in proto_text:
+            errors.append("UltraGuiProtocol must define CHANNEL_PATH = \"gui\"")
+        if "channel(String" not in proto_text and "channel(String modId)" not in proto_text:
+            errors.append("UltraGuiProtocol must expose channel(modId) helper")
 
     ids = (ROOT / "src/main/java/com/dbzlegacy/adaptivedifficulty/gui/ultra/UltraScreenIds.java").read_text(
         encoding="utf-8"

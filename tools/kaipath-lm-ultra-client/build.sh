@@ -53,12 +53,14 @@ fi
 
 # Overlay onto a copy of the base jar
 cp -f "$BASE_JAR" "$OUT_JAR"
-# Remove old consumer classes then add new ones (incl. LmDynamicScreen)
-jar uf "$OUT_JAR" -C "$CLASSES" com/dmzlegacy/kaipath/ultra/consumers/legacymechanics/
+# Overlay multi-mod registry + LM partner package
+jar uf "$OUT_JAR" -C "$CLASSES" com/dmzlegacy/kaipath/ultra/consumers/
 
 # Verify critical classes
-for c in GuiOpenPacket GuiActionPacket LmGuiNetwork LmScreens LmDynamicScreen LmHubScreen LmUltraConsumer; do
-  if ! jar tf "$OUT_JAR" | grep -q "consumers/legacymechanics/${c}.class"; then
+for c in legacymechanics/GuiOpenPacket legacymechanics/GuiActionPacket legacymechanics/LmGuiNetwork \
+         legacymechanics/LmScreens legacymechanics/LmDynamicScreen legacymechanics/LmHubScreen \
+         legacymechanics/LmUltraConsumer UltraGuiConsumerRegistry; do
+  if ! jar tf "$OUT_JAR" | grep -q "consumers/${c}.class"; then
     echo "ERROR: missing $c in $OUT_JAR" >&2
     exit 1
   fi

@@ -1,6 +1,5 @@
 package com.dbzlegacy.adaptivedifficulty.net.gui;
 
-import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle;
 import java.util.function.Supplier;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.network.NetworkEvent;
@@ -8,7 +7,12 @@ import net.minecraftforge.network.NetworkEvent;
 /**
  * Server → client. Opens an Ultra screen on KaiPath.
  *
- * <p>Wire format (protocol {@code 1}, append-compatible):
+ * <p><b>Mod-agnostic wire codec</b> — encode/decode contain no channel namespace, mod id, or
+ * content-specific strings. The owning mod selects {@code <modid>:gui} at channel registration
+ * ({@link UltraGuiProtocol#channel(String)}). Reference copy for other mods:
+ * {@code docs/ultra-gui-protocol/reference/UltraGuiOpenPacket.java}.
+ *
+ * <p>Wire format (protocol {@link UltraGuiProtocol#PROTOCOL_VERSION}, append-compatible):
  *
  * <ol>
  *   <li>screen id
@@ -26,7 +30,8 @@ import net.minecraftforge.network.NetworkEvent;
  * </ol>
  *
  * <p>KaiPath owns the client handler. Older clients that stop after field 7 still open the
- * screen but may render fullscreen until they read the panel fields.
+ * screen but may render fullscreen until they read the panel fields. Bytes after field 10 are
+ * ignored.
  */
 public final class GuiOpenPacket {
     private final String screenId;
@@ -56,8 +61,8 @@ public final class GuiOpenPacket {
                 activeTab,
                 linesJson,
                 buttonsJson,
-                UltraStyle.PANEL_W,
-                UltraStyle.PANEL_H,
+                UltraGuiProtocol.DEFAULT_PANEL_WIDTH,
+                UltraGuiProtocol.DEFAULT_PANEL_HEIGHT,
                 "");
     }
 
@@ -73,15 +78,16 @@ public final class GuiOpenPacket {
             int panelHeight,
             String layoutJson) {
         String id = trim(screenId, 64);
-        this.screenId = id.isEmpty() ? "hub" : id;
+        // Empty id → "main" (protocol default). LM content often uses "hub" explicitly.
+        this.screenId = id.isEmpty() ? "main" : id;
         this.title = trim(title, 128);
         this.pageId = trim(pageId, 64);
         this.tabsJson = trim(tabsJson, 2048);
         this.activeTab = trim(activeTab, 64);
         this.linesJson = trim(linesJson, 4096);
         this.buttonsJson = trim(buttonsJson, 8192);
-        this.panelWidth = panelWidth > 0 ? panelWidth : UltraStyle.PANEL_W;
-        this.panelHeight = panelHeight > 0 ? panelHeight : UltraStyle.PANEL_H;
+        this.panelWidth = panelWidth > 0 ? panelWidth : UltraGuiProtocol.DEFAULT_PANEL_WIDTH;
+        this.panelHeight = panelHeight > 0 ? panelHeight : UltraGuiProtocol.DEFAULT_PANEL_HEIGHT;
         this.layoutJson = trim(
                 layoutJson == null || layoutJson.isBlank()
                         ? defaultLayoutJson(this.panelWidth, this.panelHeight)
@@ -129,6 +135,7 @@ public final class GuiOpenPacket {
         return layoutJson;
     }
 
+    /** Serialize 10 fields only — no channel / mod-id bytes. */
     public static void encode(GuiOpenPacket msg, FriendlyByteBuf buf) {
         buf.m_130070_(msg.screenId);
         buf.m_130070_(msg.title);
@@ -142,6 +149,10 @@ public final class GuiOpenPacket {
         buf.m_130070_(msg.layoutJson);
     }
 
+    /**
+     * Decode all 10 fields. Missing trailing fields use {@link UltraGuiProtocol} defaults;
+     * leftover bytes after field 10 are left unread (ignored by the caller).
+     */
     public static GuiOpenPacket decode(FriendlyByteBuf buf) {
         String screenId = buf.m_130277_();
         String title = buf.m_130277_();
@@ -150,13 +161,19 @@ public final class GuiOpenPacket {
         String activeTab = buf.m_130277_();
         String linesJson = buf.m_130277_();
         String buttonsJson = buf.m_130277_();
-        int panelWidth = UltraStyle.PANEL_W;
-        int panelHeight = UltraStyle.PANEL_H;
+        int panelWidth = UltraGuiProtocol.DEFAULT_PANEL_WIDTH;
+        int panelHeight = UltraGuiProtocol.DEFAULT_PANEL_HEIGHT;
         String layoutJson = "";
         if (buf.isReadable()) {
             panelWidth = buf.m_130242_();
+            if (panelWidth <= 0) {
+                panelWidth = UltraGuiProtocol.DEFAULT_PANEL_WIDTH;
+            }
             if (buf.isReadable()) {
                 panelHeight = buf.m_130242_();
+                if (panelHeight <= 0) {
+                    panelHeight = UltraGuiProtocol.DEFAULT_PANEL_HEIGHT;
+                }
             }
             if (buf.isReadable()) {
                 layoutJson = buf.m_130277_();
@@ -203,7 +220,7 @@ public final class GuiOpenPacket {
                 + ",\"height\":"
                 + h
                 + ",\"center\":true,\"margin\":"
-                + UltraStyle.PANEL_MARGIN
+                + UltraGuiProtocol.DEFAULT_MARGIN
                 + "}";
     }
 }

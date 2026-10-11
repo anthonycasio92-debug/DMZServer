@@ -1,9 +1,10 @@
-# KaiPath LM Ultra client overlay
+# KaiPath Ultra GUI client overlay (multi-mod)
 
-Patches KaiPath **1.3.0** so the client decodes the full 10-field `GuiOpenPacket` and
-renders LM menus dynamically (no hardcoded hub / screen whitelist).
+Patches KaiPath **1.3.0** so the client decodes the full 10-field `GuiOpenPacket`, renders
+menus dynamically, and registers consumers **by channel** (`<modid>:gui`).
 
-See `docs/KAIPATH_JLDK_CLIENT_BRIEF.md` and `docs/KAIPATH_GUI_PROTOCOL.md`.
+See `docs/KAIPATH_JLDK_CLIENT_BRIEF.md`, `docs/KAIPATH_GUI_PROTOCOL.md`, and
+`docs/ultra-gui-protocol/reference/`.
 
 ## Build
 
@@ -15,19 +16,18 @@ bash tools/kaipath-lm-ultra-client/build.sh
 
 Output: `mods/kaipath-1.3.1-lm-ultra.jar`
 
-The build runs an offline encode/decode round-trip test (10 fields, future-field ignore,
-`GuiActionPacket` verbatim echo, protocol accept-on-mismatch).
-
 ## What changes
 
 | Class | Change |
 |-------|--------|
+| `UltraGuiConsumerRegistry` | Multi-mod registry keyed by `<modid>:gui` |
 | `GuiOpenPacket` | Decode all 10 fields; defaults; ignore bytes after #10 |
-| `LmDynamicScreen` | Title / tabs / lines / buttons from packet JSON |
-| `LmScreens` | No screenId whitelist; unknown id → dynamic screen |
-| `LmGuiNetwork` | Accept any remote protocol (warn); `sendAction` verbatim |
-| `LmHubScreen` | Thin subclass of `LmDynamicScreen` (compat) |
-| `LmUltraConsumer` | Always register client channel (LM is server-only) |
+| `LmDynamicScreen` | Dynamic UI; clicks echo on the bound channel |
+| `LmScreens` | No screenId whitelist; `open(packet, channelId)` |
+| `LmGuiNetwork` | Thin LM binding → registry (`legacymechanics`) |
+| `LmUltraConsumer` | Registers the LM channel via the registry |
+
+Other mods (upstream KaiPath): `UltraGuiConsumerRegistry.registerClientChannel("mymod")`.
 
 ## Deploy
 

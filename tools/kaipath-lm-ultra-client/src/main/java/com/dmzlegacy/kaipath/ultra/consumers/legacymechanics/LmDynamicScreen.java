@@ -3,6 +3,7 @@ package com.dmzlegacy.kaipath.ultra.consumers.legacymechanics;
 import com.dmzlegacy.kaipath.ultra.UltraScreen;
 import com.dmzlegacy.kaipath.ultra.UltraUiAccess;
 import com.dmzlegacy.kaipath.ultra.UltraUiBridge;
+import com.dmzlegacy.kaipath.ultra.consumers.UltraGuiConsumerRegistry;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -13,11 +14,12 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 
 /**
- * Renders whatever LM sends in {@link GuiOpenPacket} — title, tabs, lines, buttons.
- * No hardcoded screen/tab/button lists.
+ * Renders whatever the server sends in {@link GuiOpenPacket} — title, tabs, lines, buttons.
+ * No hardcoded screen/tab/button lists. Clicks go back on the bound {@code <modid>:gui} channel.
  */
 public class LmDynamicScreen extends UltraScreen {
     private final GuiOpenPacket packet;
+    private final String channelId;
     private int panelX;
     private int panelY;
     private int panelW;
@@ -27,8 +29,15 @@ public class LmDynamicScreen extends UltraScreen {
     private final List<String> bodyLines = new ArrayList<>();
 
     public LmDynamicScreen(GuiOpenPacket packet) {
+        this(packet, LmGuiNetwork.CHANNEL_ID);
+    }
+
+    public LmDynamicScreen(GuiOpenPacket packet, String channelId) {
         super(Component.m_237113_(plainTitle(packet)));
         this.packet = packet == null ? GuiOpenPacket.emptyHub() : packet;
+        this.channelId = channelId == null || channelId.isBlank()
+                ? LmGuiNetwork.CHANNEL_ID
+                : channelId;
     }
 
     private static String plainTitle(GuiOpenPacket packet) {
@@ -135,8 +144,12 @@ public class LmDynamicScreen extends UltraScreen {
     }
 
     private void echoClick(String actionId, String argsJson) {
-        // Verbatim echo — never strip/transform actionId
-        LmGuiNetwork.sendAction(packet.screenId(), actionId, argsJson == null ? "{}" : argsJson);
+        // Verbatim echo on the same channel that opened this screen — never strip actionId
+        UltraGuiConsumerRegistry.sendAction(
+                channelId,
+                packet.screenId(),
+                actionId,
+                argsJson == null ? "{}" : argsJson);
     }
 
     private void parseLayout() {

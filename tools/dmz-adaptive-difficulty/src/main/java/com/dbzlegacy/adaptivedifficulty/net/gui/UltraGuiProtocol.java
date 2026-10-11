@@ -1,0 +1,50 @@
+package com.dbzlegacy.adaptivedifficulty.net.gui;
+
+import net.minecraft.resources.ResourceLocation;
+
+/**
+ * Shared Ultra GUI wire conventions — <b>not LM-specific</b>.
+ *
+ * <p>Any Forge mod can speak this protocol on its own channel {@code <modid>:gui}.
+ * Packet field layouts live in {@link GuiOpenPacket} / {@link GuiActionPacket} and must not
+ * embed a channel namespace. See {@code docs/KAIPATH_GUI_PROTOCOL.md} and
+ * {@code docs/ultra-gui-protocol/reference/}.
+ */
+public final class UltraGuiProtocol {
+    /** Path segment of every Ultra GUI channel ({@code <modid>:gui}). */
+    public static final String CHANNEL_PATH = "gui";
+
+    /**
+     * Forge SimpleChannel protocol string. Shared with KaiPath. Bumping requires a coordinated
+     * KaiPath release.
+     */
+    public static final String PROTOCOL_VERSION = "1";
+
+    /** Default panel size when a packet omits fields 8–9. */
+    public static final int DEFAULT_PANEL_WIDTH = 350;
+
+    public static final int DEFAULT_PANEL_HEIGHT = 220;
+
+    public static final int DEFAULT_MARGIN = 6;
+
+    /** Message index: GuiOpenPacket S→C. */
+    public static final int MSG_OPEN = 0;
+
+    /** Message index: GuiActionPacket C→S. */
+    public static final int MSG_ACTION = 1;
+
+    private UltraGuiProtocol() {}
+
+    /** Channel location for {@code modId} → {@code modid:gui}. */
+    public static ResourceLocation channel(String modId) {
+        if (modId == null || modId.isBlank()) {
+            throw new IllegalArgumentException("modId required for Ultra GUI channel");
+        }
+        return new ResourceLocation(modId.trim().toLowerCase(), CHANNEL_PATH);
+    }
+
+    /** Wire id string {@code modid:gui}. */
+    public static String channelId(String modId) {
+        return channel(modId).toString();
+    }
+}

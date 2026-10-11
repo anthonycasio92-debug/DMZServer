@@ -1,30 +1,25 @@
 package com.dmzlegacy.kaipath.ultra.consumers.legacymechanics;
 
-import com.dmzlegacy.kaipath.ultra.UltraUiBridge;
-import net.minecraft.client.Minecraft;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.network.NetworkDirection;
-import net.minecraftforge.network.NetworkRegistry;
-import net.minecraftforge.network.simple.SimpleChannel;
+import com.dmzlegacy.kaipath.ultra.consumers.UltraGuiConsumerRegistry;
 
 /**
- * Client half of {@code legacymechanics:gui}. Protocol string must match LM
- * {@code LmGuiNetwork.PROTOCOL_VERSION}.
+ * LM partner channel helper. Channel namespace is a <em>parameter</em> to
+ * {@link UltraGuiConsumerRegistry#registerClientChannel(String)} — not baked into packet codecs.
+ *
+ * <p>Other mods: call {@code UltraGuiConsumerRegistry.registerClientChannel("mymod")} the same way.
  */
 public final class LmGuiNetwork {
+    /** LM Forge mod id — one of many possible Ultra GUI channel namespaces. */
     public static final String CHANNEL_NAMESPACE = "legacymechanics";
-    public static final String CHANNEL_PATH = "gui";
-    /**
-     * Forge SimpleChannel protocol. Bumping requires coordinated LM release.
-     * Mismatched remotes log a warning but still accept (never refuse to open).
-     */
-    public static final String PROTOCOL_VERSION = "1";
+    public static final String CHANNEL_PATH = UltraGuiConsumerRegistry.CHANNEL_PATH;
+    public static final String PROTOCOL_VERSION = UltraGuiConsumerRegistry.PROTOCOL_VERSION;
+
+    /** Wire id {@code legacymechanics:gui}. */
+    public static final String CHANNEL_ID = CHANNEL_NAMESPACE + ":" + CHANNEL_PATH;
 
     /** @deprecated use {@link #PROTOCOL_VERSION} */
     @Deprecated
     public static final String PROTOCOL = PROTOCOL_VERSION;
-
-    private static SimpleChannel channel;
 
     private LmGuiNetwork() {}
 
@@ -32,72 +27,15 @@ public final class LmGuiNetwork {
         if (remote == null || remote.isBlank()) {
             return true;
         }
-        if (!PROTOCOL_VERSION.equals(remote)) {
-            UltraUiBridge.LOGGER.warn(
-                    "[kaipath] LM gui channel protocol remote={} local={} — accepting anyway",
-                    remote,
-                    PROTOCOL_VERSION);
-        }
-        return true;
+        return true; // mismatch warning lives in UltraGuiConsumerRegistry
     }
 
     public static void registerClient() {
-        if (channel != null) {
-            return;
-        }
-        channel = NetworkRegistry.newSimpleChannel(
-                new ResourceLocation(CHANNEL_NAMESPACE, CHANNEL_PATH),
-                () -> PROTOCOL_VERSION,
-                LmGuiNetwork::accepts,
-                LmGuiNetwork::accepts);
-        channel.messageBuilder(GuiOpenPacket.class, 0, NetworkDirection.PLAY_TO_CLIENT)
-                .encoder(GuiOpenPacket::encode)
-                .decoder(GuiOpenPacket::decode)
-                .consumerMainThread(GuiOpenPacket::handle)
-                .add();
-        channel.messageBuilder(GuiActionPacket.class, 1, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(GuiActionPacket::encode)
-                .decoder(GuiActionPacket::decode)
-                .consumerMainThread(GuiActionPacket::handleClientNoop)
-                .add();
-        UltraUiBridge.LOGGER.info(
-                "[kaipath] LM Ultra GUI channel {}:{} protocol={}",
-                CHANNEL_NAMESPACE,
-                CHANNEL_PATH,
-                PROTOCOL_VERSION);
+        UltraGuiConsumerRegistry.registerClientChannel(CHANNEL_NAMESPACE, PROTOCOL_VERSION);
     }
 
-    /**
-     * Send a click. Echoes {@code screenId} / {@code actionId} / {@code argsJson} verbatim —
-     * no client-side filtering.
-     */
+    /** Send on the LM channel. Prefer {@link UltraGuiConsumerRegistry#sendAction} with an explicit channel. */
     public static void sendAction(String screenId, String actionId, String argsJson) {
-        if (channel == null) {
-            UltraUiBridge.LOGGER.warn(
-                    "[kaipath] sendAction dropped: channel null screenId={} actionId={}",
-                    screenId,
-                    actionId);
-            return;
-        }
-        Minecraft mc = Minecraft.m_91087_();
-        if (mc == null || mc.m_91403_() == null) {
-            UltraUiBridge.LOGGER.warn(
-                    "[kaipath] sendAction dropped: no connection screenId={} actionId={}",
-                    screenId,
-                    actionId);
-            return;
-        }
-        if (!channel.isRemotePresent(mc.m_91403_().m_104910_())) {
-            UltraUiBridge.LOGGER.warn(
-                    "[kaipath] sendAction dropped: channel not present on server screenId={} actionId={}",
-                    screenId,
-                    actionId);
-            return;
-        }
-        UltraUiBridge.LOGGER.info(
-                "[kaipath] GuiActionPacket → screenId={} actionId={}",
-                screenId,
-                actionId);
-        channel.sendToServer(new GuiActionPacket(screenId, actionId, argsJson));
+        UltraGuiConsumerRegistry.sendAction(CHANNEL_ID, screenId, actionId, argsJson);
     }
 }

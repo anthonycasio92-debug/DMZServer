@@ -13,6 +13,10 @@ import net.minecraftforge.network.NetworkEvent;
  * Client → server. KaiPath button / tab press. Server runs the same logic as CNPC handlers.
  * No client-only classes are referenced here.
  *
+ * <p><b>Mod-agnostic wire codec</b> — encode/decode never validate or rewrite action ids.
+ * Channel namespace is not part of this packet; see {@link UltraGuiProtocol}. Reference copy:
+ * {@code docs/ultra-gui-protocol/reference/UltraGuiActionPacket.java}.
+ *
  * <p>Registration uses {@code consumerNetworkThread} + {@link NetworkEvent.Context#enqueueWork}
  * in {@link LmGuiNetwork} so all {@link ServerPlayer} access runs on the main thread.
  */

@@ -1,106 +1,75 @@
-# JLDK brief — KaiPath Ultra GUI client (LM submenus)
+# JLDK brief — KaiPath Ultra GUI client (multi-mod)
 
-**Status:** DMZServer ships a drop-in patched jar built from this brief:
-`mods/kaipath-1.3.1-lm-ultra.jar` (see `tools/kaipath-lm-ultra-client/`).
-Merge these changes into upstream KaiPath so official releases no longer need the overlay.
+**Status:** DMZServer ships a drop-in patched jar:
+`mods/kaipath-1.3.1-lm-ultra.jar` (`tools/kaipath-lm-ultra-client/`).
+Merge into upstream KaiPath so official releases no longer need the overlay.
 
-**LM side (already done):** 4.6.104+ sends full 10-field `GuiOpenPacket` on
-`legacymechanics:gui` / protocol `"1"`. Spec: `docs/KAIPATH_GUI_PROTOCOL.md`.
+**Protocol:** `docs/KAIPATH_GUI_PROTOCOL.md` · reference codecs:
+`docs/ultra-gui-protocol/reference/` (zero LM imports).
 
 ---
 
 ## Problem
 
-KaiPath **1.3.0** only decodes **1 of 10** `GuiOpenPacket` fields (`screenId`) and
-renders a **hardcoded** `LmHubScreen`. Submenus cannot display no matter what LM sends.
+KaiPath **1.3.0** only decodes **1 of 10** `GuiOpenPacket` fields and renders a hardcoded
+hub. Submenus cannot display. The consumer is also LM-only (`legacymechanics:gui`) with no
+registry for other mods.
 
-## Required work (critical path = 1–2)
+## Required work
 
-### 1. Decode all 10 fields in `GuiOpenPacket`
+### 1–5. Dynamic packet UI (critical path)
 
-| # | Field | Type |
-|---|--------|------|
-| 1 | screenId | string |
-| 2 | title | string |
-| 3 | pageId | string |
-| 4 | tabsJson | string (JSON array of `{id,label}`) |
-| 5 | activeTab | string |
-| 6 | linesJson | string (JSON array of body lines) |
-| 7 | buttonsJson | string (JSON array of button objects) |
-| 8 | panelWidth | varint (default 350) |
-| 9 | panelHeight | varint (default 220) |
-| 10 | layoutJson | string (JSON: `{panelWidth,panelHeight,center,margin,…}`) |
+1. Decode all **10** `GuiOpenPacket` fields (defaults; ignore bytes after #10).
+2. Render title / `tabsJson` / `linesJson` / `buttonsJson` dynamically; panel center + margin.
+3. On click, send `GuiActionPacket` with **verbatim** `screenId` / `actionId` / `argsJson`.
+4. **No screenId whitelist** — any id → dynamic screen; `MissingScreen` only for malformed packets.
+5. Future-proof: dynamic tabs; never filter action ids; accept mismatched channel protocol with a warning.
 
-Button object:
+### 7. Namespace-agnostic protocol
 
-```json
-{
-  "id": "@difficulty:do:activate:1",
-  "label": "§aT1 …",
-  "style": "normal",
-  "x": 20,
-  "y": 120,
-  "w": 150,
-  "h": 18,
-  "args": { "screen": "difficulty", "page": "tiers" }
-}
+- Packet encode/decode must **not** contain hardcoded `legacymechanics` (or any mod id).
+- Channel namespace is a **registration parameter** (`<modid>:gui`).
+- Screen ids, verbs, and button schemas are opaque content — work for any mod.
+
+### 8. Shared channel convention + multi-mod registry
+
+```
+channel = <modid>:gui
 ```
 
-### 2. Render dynamic UI (not hardcoded hub)
+KaiPath must key consumers by channel id. Suggested API:
 
-Replace hardcoded `LmHubScreen` buttons with rendering from the packet:
+```java
+UltraGuiConsumerRegistry.registerClientChannel("legacymechanics");
+UltraGuiConsumerRegistry.registerClientChannel("mymod");
+// clicks on a screen echo on the same channel that delivered GuiOpenPacket
+```
 
-- Panel centered at `((screenW - panelWidth) / 2, (screenH - panelHeight) / 2)` when
-  `layoutJson.center` is true; honor `margin` (default 6).
-- Draw **title**, **tabsJson** (tab click → send that tab’s `id`), **linesJson**, then
-  **buttonsJson** (`x`/`y` relative to panel origin).
+Overlay reference: `com.dmzlegacy.kaipath.ultra.consumers.UltraGuiConsumerRegistry`.
 
-### 3. `GuiActionPacket` verbatim echo
+### 9. Reference implementation
 
-On click, send:
+Copy-paste codecs (FriendlyByteBuf only, no LM imports):
 
-- `screenId` — echo received packet `screenId` verbatim  
-- `actionId` — echo button/tab `id` verbatim (do **not** strip/modify)  
-- `argsJson` — echo button `args` JSON verbatim  
+- `docs/ultra-gui-protocol/reference/UltraGuiChannel.java`
+- `docs/ultra-gui-protocol/reference/UltraGuiOpenPacket.java`
+- `docs/ultra-gui-protocol/reference/UltraGuiActionPacket.java`
 
-### 4. Screen IDs
+### 10. Third-party docs
 
-Do **not** require a whitelist. Accept any `screenId` with the dynamic screen class.
-(Optional: also register `character`, `difficulty`, `progression`, `prestige`, `spar`,
-`rival`, `config`, `admin` — unnecessary if open always uses the dynamic class.)
-
-LM’s hub shim already tunnels non-hub ids as wire `hub`; dynamic button rendering alone
-unblocks submenus when the packet body is honored.
-
-### 5. Future-proofing — don’t hardcode anything
-
-To avoid a KaiPath update every time LM adds a menu:
-
-1. **Dynamic screen IDs** — no whitelist in `LmScreens`. Any `screenId` → dynamic screen.
-   `MissingScreen` only for malformed packets / construction failures, never for unknown id.
-2. **Dynamic tabs** — render whatever `tabsJson` contains; tab click sends that tab’s `id`.
-3. **Generic action echo** — never validate/filter/transform `actionId` on the client.
-4. **Field tolerance** — defaults for missing fields (`panelWidth`/`panelHeight` → 350×220,
-   empty JSON arrays, centered layout); **ignore bytes after field 10** so LM can add
-   fields 11+ later.
-5. **Protocol version** — Forge SimpleChannel protocol string is `PROTOCOL_VERSION` (`"1"`),
-   not a field inside `GuiActionPacket`. `GuiActionPacket` wire fields are
-   `screenId`, `actionId`, `argsJson`. If the remote channel protocol differs, **log a
-   warning and still accept** — do not refuse to open the screen.
-
-**Principle:** the client renders what the server sends, no questions asked. Every
-hardcoded list (screens, tabs, actions, buttons) is a future breakage point.
-
-With items **1–5**, LM can add menus/tabs/buttons/actions without touching KaiPath again.
+`docs/KAIPATH_GUI_PROTOCOL.md` includes a **For other mod developers** section with channel
+convention, field tables, button schema, verb contract, and a hello-world example.
 
 ---
 
-## Reference implementation in this repo
+## Overlay map
 
 | Path | Role |
 |------|------|
-| `tools/kaipath-lm-ultra-client/` | Source + `build.sh` → `mods/kaipath-1.3.1-lm-ultra.jar` |
-| `docs/KAIPATH_GUI_PROTOCOL.md` | Full wire contract (LM + client) |
+| `UltraGuiConsumerRegistry` | Multi-mod channel registry |
+| `legacymechanics/*` | LM partner binding + dynamic screen |
+| `docs/KAIPATH_GUI_PROTOCOL.md` | Full wire contract |
+| `docs/ultra-gui-protocol/reference/` | Drop-in codecs for any mod |
 
 Build: `bash tools/kaipath-lm-ultra-client/build.sh`  
-Deploy: replace live `kaipath-*.jar` with `kaipath-1.3.1-lm-ultra.jar` (clients), keep LM 4.6.104+.
+Deploy: clients use `kaipath-1.3.1-lm-ultra.jar`; server mods keep their own `<modid>:gui`.
