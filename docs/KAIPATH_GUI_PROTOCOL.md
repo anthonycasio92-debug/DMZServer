@@ -124,3 +124,37 @@ traces under the `LegacyMechanics` logger.
 **Player-facing chat must never include raw action IDs.** Messages stay human (e.g.
 “Something went wrong. Try again, or ask staff if it keeps happening.”). Debug detail is
 server-log only.
+
+## Button-failure chain (KaiPath 1.3.0 bytecode audit)
+
+Verified against `kaipath-1.3.0.jar` (`com.dmzlegacy.kaipath.ultra.consumers.legacymechanics.*`).
+
+| # | Link | Status in 1.3.0 | What LM logs / does |
+|---|------|-----------------|---------------------|
+| 1 | Client click → `GuiActionPacket` | `LmHubScreen` wires `addThemedButton` → `LmGuiNetwork.sendAction("hub", bareName, "{}")`. **Custom `buttonsJson` is never rendered** — `GuiOpenPacket` is a 1-field record (`screenId` only); handle calls `LmScreens.open(screenId)` → hardcoded hub. | `/lm admin guitest` still sends a rich open packet (proves S→C). Tell the player to click a **hardcoded** hub tile. Expect `GuiActionPacket ←` / decode INFO. |
+| 2 | Channel name | Both sides: `legacymechanics` + `gui`. | Server INFO at register: `channel legacymechanics:gui`. |
+| 3 | Protocol | Both sides: `"1"` + `acceptMissingOr("1")`. | Server INFO at register + on every decode. |
+| 4 | Serialization | **Asymmetric for GuiOpen**: LM encodes 10 fields; KaiPath decodes 1 string (`readUtf(64)`). Leftover bytes ignored — open still works. **GuiAction** 3-string order matches (KaiPath `writeUtf(…,max)` ↔ LM `readUtf()`). | Startup encode→decode self-test for both packets. |
+| 5 | Action id echo | Hardcoded hub sends **bare** names (`character`, `difficulty`, …), not `@hub:open:…`. Ids trimmed to **64** on KaiPath. | INFO logs raw `actionId` before parse; `bareHubOpenTarget` maps bare names → `open:<system>`. |
+| 6 | Server handler | `consumerNetworkThread` → capture sender → `enqueueWork` → `UltraGuiActions.dispatch` (try/catch + stack). | `GuiActionPacket ←` then main-thread dispatch; failures ERROR with stack. |
+| 7 | Response path | Successful `open:` / bare hub opens call `UltraGui.open` → another `GuiOpenPacket →` log. KaiPath 1.3.0 will again show the **same hardcoded hub** (hub shim + only `hub` registered). Rich submenus need a KaiPath update that decodes fields 2–10. | INFO `GuiOpenPacket →` with button count. |
+
+### Silent client drop (most likely for “zero server packets”)
+
+`LmGuiNetwork.sendAction` returns with **no log** when:
+
+1. `channel == null` — `registerClient()` never ran, or  
+2. `Minecraft.getConnection() == null`, or  
+3. `!channel.isRemotePresent(connection)`.
+
+`LmUltraConsumer.bootstrap` **skips** `registerClient()` when `ModList.isLoaded("legacymechanics")` (or `legacymechanicsultra`). LM’s `@Mod` still loads on a client that has the jar, but the constructor returns early on non-dedicated servers and **does not** register a client channel. Result: neither side owns the client consumer → clicks vanish.
+
+**LM 4.6.104 fix:** client mixin `KaiPathLmConsumerBootstrapMixin` redirects those `isLoaded` checks to `false` so KaiPath still calls `registerClient()` when the LM jar is present on the client.
+
+### Live triage
+
+1. Deploy LM 4.6.104 (+ KaiPath 1.3.0 on clients).  
+2. On login: expect `login GUI probe … kaipath=true`.  
+3. `/lm admin guitest <player>`: expect `GuiOpenPacket →`.  
+4. Click **Character** (hardcoded hub): expect `GuiActionPacket decoded` + `GuiActionPacket ←` + a follow-up `GuiOpenPacket →`.  
+5. If step 4 is silent: client `sendAction` is dropping (channel / `isRemotePresent`) — check client has KaiPath consumer ready log and that LM mixin applied if LM jar is on the client.

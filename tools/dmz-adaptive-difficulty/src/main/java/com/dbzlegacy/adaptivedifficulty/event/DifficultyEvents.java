@@ -195,6 +195,10 @@ public final class DifficultyEvents {
     @SubscribeEvent
     public void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
+            try {
+                com.dbzlegacy.adaptivedifficulty.net.gui.LmGuiNetwork.logClientGuiCapability(player);
+            } catch (Throwable ignored) {
+            }
             DmzInflatedAttributeReset.onLogin(player);
             var data = DifficultyCache.data(player);
             // Every server boot: personal difficulty starts OFF for everyone.

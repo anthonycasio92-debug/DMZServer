@@ -7,7 +7,8 @@ import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
 /**
- * LegacyMechanics runs on the dedicated server only. A client copy applies no mixins.
+ * LegacyMechanics is server-primary. Client copies apply no mixins except the optional
+ * KaiPath LM-consumer bootstrap fix ({@code KaiPathLmConsumerBootstrapMixin}).
  */
 public final class LegacyMechanicsMixinPlugin implements IMixinConfigPlugin {
 
@@ -21,6 +22,10 @@ public final class LegacyMechanicsMixinPlugin implements IMixinConfigPlugin {
 
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
+        // Client-only: keep KaiPath's LM GUI consumer alive when the LM jar is also installed.
+        if (mixinClassName != null && mixinClassName.endsWith("KaiPathLmConsumerBootstrapMixin")) {
+            return !dedicatedServer() && kaipathLmConsumerPresent();
+        }
         if (!dedicatedServer()) {
             return false;
         }
@@ -96,6 +101,19 @@ public final class LegacyMechanicsMixinPlugin implements IMixinConfigPlugin {
                     false,
                     LegacyMechanicsMixinPlugin.class.getClassLoader());
             return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    /** KaiPath optional LM GUI consumer — absent when KaiPath is not installed. */
+    private static boolean kaipathLmConsumerPresent() {
+        try {
+            ClassLoader loader = LegacyMechanicsMixinPlugin.class.getClassLoader();
+            return loader != null
+                    && loader.getResource(
+                                    "com/dmzlegacy/kaipath/ultra/consumers/legacymechanics/LmUltraConsumer.class")
+                            != null;
         } catch (Throwable ignored) {
             return false;
         }

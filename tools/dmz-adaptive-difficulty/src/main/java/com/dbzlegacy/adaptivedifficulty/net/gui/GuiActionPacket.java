@@ -79,12 +79,13 @@ public final class GuiActionPacket {
             return;
         }
         try {
-            AdaptiveDifficultyMod.LOGGER.debug(
-                    "[{}] GuiActionPacket main-thread player={} screenId={} actionId={}",
+            AdaptiveDifficultyMod.LOGGER.info(
+                    "[{}] GuiActionPacket main-thread (enqueueWork) player={} screenId={} rawActionId={} argsJson={}",
                     AdaptiveDifficultyMod.MOD_ID,
                     player.m_7755_().getString(),
                     msg.screenId,
-                    msg.actionId);
+                    msg.actionId,
+                    msg.argsJson);
             UltraGuiActions.dispatch(player, msg.screenId, msg.actionId, msg.argsJson);
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.error(

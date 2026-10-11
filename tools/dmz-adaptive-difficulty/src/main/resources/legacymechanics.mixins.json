@@ -30,6 +30,9 @@
     "FusionUnfuseBonusClearMixin",
     "FusionBonusReadGateMixin"
   ],
+  "client": [
+    "KaiPathLmConsumerBootstrapMixin"
+  ],
   "injectors": {
     "defaultRequire": 1
   }

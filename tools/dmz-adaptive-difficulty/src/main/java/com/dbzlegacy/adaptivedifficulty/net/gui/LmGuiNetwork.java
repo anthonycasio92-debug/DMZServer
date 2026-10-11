@@ -144,18 +144,22 @@ public final class LmGuiNetwork {
             return;
         }
         AdaptiveDifficultyMod.LOGGER.info(
-                "[{}] guitest → sending diagnostic GuiOpenPacket to player={}",
+                "[{}] guitest → sending diagnostic GuiOpenPacket to player={} "
+                        + "(KaiPath 1.3.0 ignores buttonsJson — click any hardcoded hub tile)",
                 AdaptiveDifficultyMod.MOD_ID,
                 safeName(player));
+        // Still send a rich packet so wire/logs prove S→C delivery; KaiPath 1.3.0 only reads
+        // screenId and opens its hardcoded LmHubScreen. Click Character/Difficulty/etc. — those
+        // call sendAction("hub", "<bare>", "{}") and must produce GuiActionPacket ← on the server.
         com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraScreenSpec.of("hub")
                 .title("Ultra GUI Test")
                 .page("guitest")
                 .activeTab("home")
                 .tabs("home|Test")
                 .line(com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle.LABEL
-                        + "Diagnostic menu — click Ping server.")
+                        + "KaiPath 1.3.0 shows its hardcoded hub (ignores this packet body).")
                 .line(com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle.DIM
-                        + "Server log should show GuiActionPacket when you click.")
+                        + "Click Character or Difficulty — server log must show GuiActionPacket ←")
                 .setRow(72)
                 .button(
                         "do:guitest_ack",
@@ -166,26 +170,190 @@ public final class LmGuiNetwork {
                 .send(player);
     }
 
+    /**
+     * Login probe: whether this connection advertised KaiPath (Ultra path eligibility).
+     */
+    public static void logClientGuiCapability(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        boolean kaipath = clientHasKaiPath(player);
+        AdaptiveDifficultyMod.LOGGER.info(
+                "[{}] login GUI probe player={} kaipath={} channel={}:{} protocol={} guiBackend={}",
+                AdaptiveDifficultyMod.MOD_ID,
+                safeName(player),
+                kaipath,
+                CHANNEL_NAMESPACE,
+                CHANNEL_PATH,
+                PROTOCOL,
+                com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig.get().guiBackend);
+        if (!kaipath
+                && com.dbzlegacy.adaptivedifficulty.gui.GuiBackend.fromConfig()
+                        == com.dbzlegacy.adaptivedifficulty.gui.GuiBackend.ULTRA) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] player={} has no KaiPath ≥ {} — Ultra GuiOpenPacket will not render; "
+                            + "CNPC/chat fallbacks apply where configured",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    safeName(player),
+                    KAIPATH_MIN_VERSION);
+        }
+    }
+
     public static void register() {
         if (registered) {
             return;
         }
         registered = true;
+        AdaptiveDifficultyMod.LOGGER.info(
+                "[{}] registering channel {}:{} protocol={} msg0=GuiOpenPacket(S→C) msg1=GuiActionPacket(C→S)",
+                AdaptiveDifficultyMod.MOD_ID,
+                CHANNEL_NAMESPACE,
+                CHANNEL_PATH,
+                PROTOCOL);
         CHANNEL.messageBuilder(GuiOpenPacket.class, 0, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(GuiOpenPacket::encode)
-                .decoder(GuiOpenPacket::decode)
+                .decoder(buf -> decodeOpenLogged(buf))
                 .consumerMainThread(GuiOpenPacket::handle)
                 .add();
         // Network-thread receive → enqueueWork (main thread) for all ServerPlayer access.
         CHANNEL.messageBuilder(GuiActionPacket.class, 1, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(GuiActionPacket::encode)
-                .decoder(GuiActionPacket::decode)
+                .decoder(buf -> decodeActionLogged(buf))
                 .consumerNetworkThread(LmGuiNetwork::handleGuiAction)
                 .add();
+        runPacketRoundTripSelfTest();
         validateBuilderScreenIdsAtStartup();
         UltraScreenSelfTest.runAtStartup();
         UltraScreenSelfTest.verifyTabStaysOnScreen();
         UltraScreenSelfTest.verifyHubShim();
+        AdaptiveDifficultyMod.LOGGER.info(
+                "[{}] KaiPath 1.3.0 note: client GuiOpenPacket reads screenId only — buttonsJson is ignored; "
+                        + "LmHubScreen is hardcoded. Clicks must still send GuiActionPacket via sendAction. "
+                        + "If legacymechanics is also on the client, KaiPathLmConsumerBootstrapMixin keeps "
+                        + "registerClient() alive.",
+                AdaptiveDifficultyMod.MOD_ID);
+    }
+
+    private static GuiOpenPacket decodeOpenLogged(net.minecraft.network.FriendlyByteBuf buf) {
+        try {
+            return GuiOpenPacket.decode(buf);
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.error(
+                    "[{}] GuiOpenPacket decode failed protocol={} channel={}:{}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    PROTOCOL,
+                    CHANNEL_NAMESPACE,
+                    CHANNEL_PATH,
+                    t);
+            throw t;
+        }
+    }
+
+    private static GuiActionPacket decodeActionLogged(net.minecraft.network.FriendlyByteBuf buf) {
+        try {
+            GuiActionPacket pkt = GuiActionPacket.decode(buf);
+            AdaptiveDifficultyMod.LOGGER.info(
+                    "[{}] GuiActionPacket decoded protocol={} screenId={} actionId={} argsJson={}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    PROTOCOL,
+                    pkt == null ? "<null>" : pkt.screenId(),
+                    pkt == null ? "<null>" : pkt.actionId(),
+                    pkt == null ? "<null>" : pkt.argsJson());
+            return pkt;
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.error(
+                    "[{}] GuiActionPacket decode failed protocol={} channel={}:{} — handler will not run",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    PROTOCOL,
+                    CHANNEL_NAMESPACE,
+                    CHANNEL_PATH,
+                    t);
+            throw t;
+        }
+    }
+
+    /**
+     * Encode → decode round-trip for both packet types. Catches field-order / trim regressions
+     * before any player connects.
+     */
+    static void runPacketRoundTripSelfTest() {
+        try {
+            GuiOpenPacket open =
+                    new GuiOpenPacket(
+                            "hub",
+                            "§aSelf-test",
+                            "main",
+                            "[{\"id\":\"@hub:tab:home\",\"label\":\"Home\"}]",
+                            "home",
+                            "[\"line\"]",
+                            "[{\"id\":\"@hub:do:guitest_ack\",\"label\":\"Ping\",\"style\":\"confirm\","
+                                    + "\"x\":16,\"y\":72,\"w\":150,\"h\":18,"
+                                    + "\"args\":{\"screen\":\"hub\",\"system\":\"hub\"}}]",
+                            UltraStyle.PANEL_W,
+                            UltraStyle.PANEL_H,
+                            "{\"panelWidth\":"
+                                    + UltraStyle.PANEL_W
+                                    + ",\"panelHeight\":"
+                                    + UltraStyle.PANEL_H
+                                    + ",\"center\":true,\"margin\":"
+                                    + UltraStyle.PANEL_MARGIN
+                                    + ",\"system\":\"hub\",\"screen\":\"hub\"}");
+            net.minecraft.network.FriendlyByteBuf openBuf =
+                    new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+            GuiOpenPacket.encode(open, openBuf);
+            GuiOpenPacket openBack = GuiOpenPacket.decode(openBuf);
+            if (!open.screenId().equals(openBack.screenId())
+                    || !open.title().equals(openBack.title())
+                    || !open.pageId().equals(openBack.pageId())
+                    || !open.tabsJson().equals(openBack.tabsJson())
+                    || !open.activeTab().equals(openBack.activeTab())
+                    || !open.linesJson().equals(openBack.linesJson())
+                    || !open.buttonsJson().equals(openBack.buttonsJson())
+                    || open.panelWidth() != openBack.panelWidth()
+                    || open.panelHeight() != openBack.panelHeight()
+                    || !open.layoutJson().equals(openBack.layoutJson())) {
+                AdaptiveDifficultyMod.LOGGER.error(
+                        "[{}] GuiOpenPacket round-trip mismatch original={} decoded={}",
+                        AdaptiveDifficultyMod.MOD_ID,
+                        open,
+                        openBack);
+            } else {
+                AdaptiveDifficultyMod.LOGGER.info(
+                        "[{}] GuiOpenPacket encode/decode self-test OK (10 fields, protocol={})",
+                        AdaptiveDifficultyMod.MOD_ID,
+                        PROTOCOL);
+            }
+
+            GuiActionPacket action =
+                    new GuiActionPacket("hub", "@hub:do:guitest_ack", "{\"screen\":\"hub\"}");
+            net.minecraft.network.FriendlyByteBuf actionBuf =
+                    new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+            GuiActionPacket.encode(action, actionBuf);
+            GuiActionPacket actionBack = GuiActionPacket.decode(actionBuf);
+            if (!action.screenId().equals(actionBack.screenId())
+                    || !action.actionId().equals(actionBack.actionId())
+                    || !action.argsJson().equals(actionBack.argsJson())) {
+                AdaptiveDifficultyMod.LOGGER.error(
+                        "[{}] GuiActionPacket round-trip mismatch original=[{},{},{}] decoded=[{},{},{}]",
+                        AdaptiveDifficultyMod.MOD_ID,
+                        action.screenId(),
+                        action.actionId(),
+                        action.argsJson(),
+                        actionBack.screenId(),
+                        actionBack.actionId(),
+                        actionBack.argsJson());
+            } else {
+                AdaptiveDifficultyMod.LOGGER.info(
+                        "[{}] GuiActionPacket encode/decode self-test OK (3 fields, protocol={})",
+                        AdaptiveDifficultyMod.MOD_ID,
+                        PROTOCOL);
+            }
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.error(
+                    "[{}] packet round-trip self-test failed",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    t);
+        }
     }
 
     public static void sendOpen(ServerPlayer player, GuiOpenPacket packet) {
