@@ -2,6 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.gui;
 
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcStyledTestHub;
+import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraGui;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -19,10 +20,14 @@ public final class CnpcStaffTestGui {
             return false;
         }
         if (!DifficultyConfig.get().enableStaffCnpcTestGui) {
-            player.m_213846_(Component.m_237113_("§eStaff CNPC test GUI is disabled in config."));
+            player.m_213846_(Component.m_237113_("§eStaff test GUI is disabled in config."));
             return false;
         }
         player.m_213846_(Component.m_237113_("§6Test menu."));
+        if (GuiBackend.fromConfig() == GuiBackend.ULTRA) {
+            UltraGui.openHub(player, "main");
+            return true;
+        }
         CnpcStyledTestHub.open(player);
         return true;
     }

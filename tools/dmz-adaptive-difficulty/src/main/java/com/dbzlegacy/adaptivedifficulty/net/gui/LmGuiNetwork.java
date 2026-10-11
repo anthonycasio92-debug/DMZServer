@@ -19,11 +19,15 @@ public final class LmGuiNetwork {
     public static final String CHANNEL_PATH = "gui";
     public static final String PROTOCOL = "1";
 
+    /**
+     * Optional channel: clients without KaiPath omit it. Accept missing so those players
+     * still join; UltraGui then falls back to CustomNPCs for them.
+     */
     private static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(CHANNEL_NAMESPACE, CHANNEL_PATH),
             () -> PROTOCOL,
-            PROTOCOL::equals,
-            PROTOCOL::equals);
+            NetworkRegistry.acceptMissingOr(PROTOCOL),
+            NetworkRegistry.acceptMissingOr(PROTOCOL));
 
     private static boolean registered;
     private static Field connectionField;

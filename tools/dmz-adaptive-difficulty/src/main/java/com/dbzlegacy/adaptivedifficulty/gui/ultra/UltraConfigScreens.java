@@ -74,7 +74,7 @@ public final class UltraConfigScreens {
                 .title("Config · " + title)
                 .page("module:" + id)
                 .activeTab("home")
-                .labelValue("Module", id)
+                .labelValue("Module", title)
                 .labelValue("Fields", String.valueOf(fields))
                 .labelValue("Unsaved (all)", String.valueOf(dirty))
                 .line(UltraStyle.LABEL + "Detail field editors stay in the CNPC/chest editor.")

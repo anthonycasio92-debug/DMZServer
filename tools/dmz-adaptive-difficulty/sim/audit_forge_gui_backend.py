@@ -20,12 +20,24 @@ def main() -> int:
         rel = path.relative_to(ROOT)
         if "CmiGuiBridge" in text or "BukkitGuiBridge" in text:
             errors.append(f"{rel}: player menu must not call Bukkit/CMI bridge")
-        if "GuiBackend.CNPC" not in text and "GuiBackend.fromConfig()" not in text:
-            errors.append(f"{rel}: expected GuiBackend CNPC routing")
+        if "GuiBackend.fromConfig()" not in text and "GuiBackend.CNPC" not in text:
+            errors.append(f"{rel}: expected GuiBackend routing")
 
     backend = BACKEND.read_text(encoding="utf-8")
+    if "ULTRA" not in backend:
+        errors.append("GuiBackend.java: missing ULTRA backend")
     if "case \"cmi\"" not in backend or "-> CNPC" not in backend:
         errors.append("GuiBackend.java: legacy cmi/chest aliases must map to CNPC")
+
+    ultra = GUI / "ultra" / "UltraGui.java"
+    if not ultra.is_file():
+        errors.append("Missing gui/ultra/UltraGui.java")
+    else:
+        utext = ultra.read_text(encoding="utf-8")
+        if "preferUltra" not in utext or "clientHasKaiPath" not in utext:
+            errors.append("UltraGui.java: must soft-fall back when KaiPath is missing")
+        if "CnpcLmGui" not in utext:
+            errors.append("UltraGui.java: missing CNPC fallback path")
 
     mechanics = (ROOT / "src/main/java/com/dbzlegacy/adaptivedifficulty/command/MechanicsCommands.java").read_text(
         encoding="utf-8"
@@ -49,7 +61,7 @@ def main() -> int:
     if errors:
         print(f"\n{len(errors)} error(s)")
         return 1
-    print("  OK  *Menu.java routes CNPC; GuiBackend maps legacy bukkit/cmi to CNPC")
+    print("  OK  *Menu.java routes Ultra/CNPC; GuiBackend maps legacy bukkit/cmi to CNPC")
     return 0
 
 

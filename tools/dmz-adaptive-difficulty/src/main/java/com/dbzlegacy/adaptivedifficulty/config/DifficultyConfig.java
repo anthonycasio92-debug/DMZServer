@@ -355,11 +355,12 @@ public final class DifficultyConfig {
     /** Admin permission node (Forge PermissionAPI / LuckPerms). Ops always allowed. */
     public String adminPermission = "difficulty.admin";
     /**
-     * Player UI backend for {@code /difficulty}:
-     * {@code cmi} (default), {@code auto} (CMI → chest → chat), {@code chest}, or {@code chat}.
+     * Player UI backend for {@code /lm} and system menus.
+     * {@code ultra} (default) = KaiPath Ultra UI via {@code legacymechanics:gui};
+     * {@code cnpc} = CustomNPCs dialogs (fallback when KaiPath is missing);
+     * also: chat, and legacy cmi/chest/auto aliases (map to cnpc).
      */
-    /** {@code cnpc} = CustomNPCs-only LM UI (no chest/CMI). Also: cmi, chest, chat, auto. */
-    public String guiBackend = "cnpc";
+    public String guiBackend = "ultra";
     /** Staff {@code /lm admin testgui} — CustomNPCs panel listing all LM systems (experimental). */
     public boolean enableStaffCnpcTestGui = true;
     /**
@@ -1322,7 +1323,7 @@ public final class DifficultyConfig {
             cfg.starterCopperCostMigratedV1 = Boolean.TRUE;
         }
         if (cfg.guiBackend == null || cfg.guiBackend.isBlank()) {
-            cfg.guiBackend = "cnpc";
+            cfg.guiBackend = "ultra";
         } else {
             // Canonicalize aliases so Forge + Bukkit agree.
             cfg.guiBackend = switch (cfg.guiBackend.trim().toLowerCase()) {
@@ -1332,7 +1333,7 @@ public final class DifficultyConfig {
                 case "chest", "bukkit", "inventory", "gui" -> "chest";
                 case "chat" -> "chat";
                 case "auto" -> "auto";
-                default -> "auto";
+                default -> "ultra";
             };
         }
         if (cfg.vanillaDifficulty == null || cfg.vanillaDifficulty.isBlank()) {

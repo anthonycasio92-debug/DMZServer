@@ -1042,6 +1042,7 @@ public final class DifficultyCommands {
                 }
                 case "guibackend" -> {
                     String gui = switch (value.trim().toLowerCase()) {
+                        case "ultra", "kaipath", "dmzultra", "native" -> "ultra";
                         case "cnpc", "customnpcs", "customnpc", "noppes" -> "cnpc";
                         case "cmi", "cmilib", "cmigui", "deluxemenus", "deluxe", "dm" -> "cmi";
                         case "chest", "bukkit", "inventory", "gui" -> "chest";
@@ -1051,7 +1052,7 @@ public final class DifficultyCommands {
                     };
                     if (gui == null) {
                         source.m_81352_(Component.m_237113_(
-                                "Unknown guiBackend. Use: cnpc, cmi, chest, chat, auto."));
+                                "Unknown guiBackend. Use: ultra, cnpc, cmi, chest, chat, auto."));
                         return 0;
                     }
                     cfg.guiBackend = gui;
