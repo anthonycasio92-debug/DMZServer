@@ -119,7 +119,9 @@ public final class CharacterServicesConfig {
 
     /**
      * Percents the race-change GUI may offer and {@code executeRaceChange} may charge.
-     * Read from {@code raceChange.preservationCostCopper} so the label and the charge share one map.
+     * Configured keys are included, plus 25 and 75, which the confirm menu has always
+     * shown even though the default map steps by 10. A missing key is priced by
+     * {@link #lookupPreservationCopper}, not by substituting another percent's price.
      */
     public static int[] preservationSteps() {
         Map<String, Long> map = null;
@@ -128,35 +130,105 @@ public final class CharacterServicesConfig {
             map = live.raceChange.preservationCostCopper;
         }
         if (map == null || map.isEmpty()) {
-            return defaultPreservationSteps();
+            map = defaultPreservationCosts();
         }
-        java.util.TreeSet<Integer> steps = new java.util.TreeSet<>();
-        for (Map.Entry<String, Long> entry : map.entrySet()) {
-            if (entry.getKey() == null) {
-                continue;
-            }
-            int pct;
-            try {
-                pct = Integer.parseInt(entry.getKey().trim());
-            } catch (NumberFormatException ignored) {
-                continue;
-            }
-            if (pct < 0 || pct > 100) {
-                continue;
-            }
-            long cost = entry.getValue() == null ? -1L : entry.getValue();
-            if (cost < 0L) {
-                continue;
-            }
-            steps.add(pct);
-        }
+        java.util.TreeSet<Integer> steps = new java.util.TreeSet<>(preservationPoints(map).keySet());
         steps.add(0);
+        steps.add(25);
+        steps.add(50);
+        steps.add(75);
+        steps.add(100);
         int[] out = new int[steps.size()];
         int i = 0;
         for (int pct : steps) {
             out[i++] = pct;
         }
         return out;
+    }
+
+    /**
+     * Copper for one preservation percent. An exact map key wins. A missing key is the
+     * straight line between the next lower and next higher configured costs. The 100%
+     * price is not a stand-in for a missing key.
+     */
+    public static long lookupPreservationCopper(Map<String, Long> map, int preservationPercent) {
+        if (preservationPercent <= 0) {
+            return 0L;
+        }
+        int pct = Math.min(100, preservationPercent);
+        java.util.TreeMap<Integer, Long> points = preservationPoints(map);
+        points.put(0, 0L);
+        Long exact = points.get(pct);
+        if (exact != null) {
+            return Math.max(0L, exact);
+        }
+        Map.Entry<Integer, Long> lower = points.floorEntry(pct);
+        Map.Entry<Integer, Long> higher = points.ceilingEntry(pct);
+        if (lower == null || higher == null || lower.getKey().equals(higher.getKey())) {
+            Map.Entry<Integer, Long> only = lower != null ? lower : higher;
+            return only == null ? 0L : Math.max(0L, only.getValue());
+        }
+        long span = (long) higher.getKey() - lower.getKey();
+        long rise = higher.getValue() - lower.getValue();
+        long steps = (long) pct - lower.getKey();
+        double interpolated = lower.getValue() + (rise * (double) steps) / (double) span;
+        if (interpolated >= Long.MAX_VALUE) {
+            return Long.MAX_VALUE;
+        }
+        if (interpolated <= 0.0) {
+            return 0L;
+        }
+        return Math.round(interpolated);
+    }
+
+    /** Parse the cost map without assuming Gson stored each value as {@link Long}. */
+    static java.util.TreeMap<Integer, Long> preservationPoints(Map<String, Long> map) {
+        java.util.TreeMap<Integer, Long> points = new java.util.TreeMap<>();
+        if (map == null || map.isEmpty()) {
+            return points;
+        }
+        for (Map.Entry<?, ?> entry : ((Map<?, ?>) map).entrySet()) {
+            if (entry.getKey() == null || entry.getValue() == null) {
+                continue;
+            }
+            int pct = parsePercentKey(entry.getKey());
+            if (pct < 0 || pct > 100) {
+                continue;
+            }
+            long cost = parseCostValue(entry.getValue());
+            if (cost < 0L) {
+                continue;
+            }
+            points.put(pct, cost);
+        }
+        return points;
+    }
+
+    private static int parsePercentKey(Object raw) {
+        String text = String.valueOf(raw).trim();
+        try {
+            if (text.indexOf('.') >= 0) {
+                return (int) Math.round(Double.parseDouble(text));
+            }
+            return Integer.parseInt(text);
+        } catch (NumberFormatException ignored) {
+            return -1;
+        }
+    }
+
+    private static long parseCostValue(Object raw) {
+        if (raw instanceof Number number) {
+            double value = number.doubleValue();
+            if (!Double.isFinite(value) || value < 0.0) {
+                return -1L;
+            }
+            return Math.round(value);
+        }
+        try {
+            return Long.parseLong(String.valueOf(raw).trim());
+        } catch (NumberFormatException ignored) {
+            return -1L;
+        }
     }
 
     private static CharacterServicesConfig sanitize(CharacterServicesConfig c) {
@@ -199,18 +271,9 @@ public final class CharacterServicesConfig {
     }
 
     public long raceCostCopper(int preservationPercent) {
-        if (preservationPercent <= 0) {
-            return 0L;
-        }
-        if (raceChange.preservationCostCopper == null) {
-            return 0L;
-        }
-        String key = String.valueOf(preservationPercent);
-        Long v = raceChange.preservationCostCopper.get(key);
-        if (v == null || v < 0L) {
-            return 0L;
-        }
-        return v;
+        return lookupPreservationCopper(
+                raceChange == null ? null : raceChange.preservationCostCopper,
+                preservationPercent);
     }
 
     public Set<String> blockedRaceSet() {

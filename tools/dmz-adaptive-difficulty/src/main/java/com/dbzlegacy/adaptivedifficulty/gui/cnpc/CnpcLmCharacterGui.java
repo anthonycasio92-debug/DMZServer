@@ -127,14 +127,16 @@ public final class CnpcLmCharacterGui {
         }
         int keepSelected = selected;
         String confirmArg = raceId + ":" + keepSelected;
+        int[] keepSteps = com.dbzlegacy.adaptivedifficulty.character.CharacterServicesConfig.preservationSteps();
+        int keepRows = (Math.max(1, keepSteps.length) + 1) / 2;
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CHARACTER, CnpcGuiSupport.W,
-                CnpcGuiSupport.window(460), (pl, gui) -> {
+                CnpcGuiSupport.window(360 + keepRows * CnpcGuiSupport.ROW_STEP), (pl, gui) -> {
             int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcGuiStyle.subPage(CnpcUltraStyle.BODY, "Character", "Confirm race"),
                     CnpcUltraStyle.SUBTITLE + "Becoming " + CnpcUltraStyle.BODY + titleRace(raceId) + " " + CnpcUltraStyle.DIM + "· " + CnpcUltraStyle.SUBTITLE + "keep " + CnpcUltraStyle.BODY + keepSelected + "%");
             infoY = servicesTabs(player, gui, infoY, "home");
             int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintReadOnlyScroll(gui, infoY,
                             CharacterServicesGuiApi.linesForPage(player, "race_confirm:" + confirmArg)));
-            int[] pcts = com.dbzlegacy.adaptivedifficulty.character.CharacterServicesConfig.preservationSteps();
+            int[] pcts = keepSteps;
             CnpcGuiLayout.GridButton[] grid = new CnpcGuiLayout.GridButton[pcts.length];
             for (int i = 0; i < pcts.length; i++) {
                 int keep = pcts[i];

@@ -191,8 +191,8 @@ public final class CharacterServicesSystem {
     }
 
     /**
-     * Copper actually taken for a race change. GUI labels and {@link #executeRaceChange}
-     * both use this, including the staff waiver.
+     * Copper actually taken for a race change. The confirm scroll and {@link #executeRaceChange}
+     * both use this for the same percent the button shows, including level scaling and the staff waiver.
      */
     public static long raceAmountDue(ServerPlayer player, int preservationPercent) {
         return amountDue(player, raceCost(player, preservationPercent));
