@@ -60,7 +60,7 @@ public final class GuiActionPacket {
                 UltraGuiActions.dispatch(player, msg.screenId, msg.actionId, msg.argsJson);
             } catch (Throwable t) {
                 AdaptiveDifficultyMod.LOGGER.error(
-                        "[{}] Ultra GuiActionPacket failed screenId={} actionId={} args={} player={}",
+                        "[{}] Ultra GuiActionPacket failed screenId={} rawActionId={} args={} player={}",
                         AdaptiveDifficultyMod.MOD_ID,
                         msg.screenId,
                         msg.actionId,
@@ -70,8 +70,9 @@ public final class GuiActionPacket {
                 DmzRewards.msg(
                         player,
                         UltraStyle.dangerLine(
-                                "Something went wrong. Staff: check server log for action "
-                                        + msg.actionId));
+                                "Something went wrong (raw="
+                                        + msg.actionId
+                                        + "). Staff: see server log."));
             }
         });
         context.setPacketHandled(true);

@@ -68,9 +68,26 @@ def main() -> int:
         "LOGGER.error",
         "UltraGuiActions.handle failed",
         "stringArg(",
+        "bareHubOpenTarget",
+        "hasVerbPrefix",
+        "rawActionId",
     ):
         if needle not in actions_src:
             errors.append(f"UltraGuiActions missing {needle}")
+    for system in (
+        "character",
+        "difficulty",
+        "progression",
+        "prestige",
+        "spar",
+        "rival",
+        "config",
+        "admin",
+    ):
+        if f'case "{system}"' not in actions_src and f'"{system}"' not in actions_src:
+            errors.append(f"UltraGuiActions bareHubOpenTarget missing {system}")
+    if "rawActionId" not in actions_src:
+        errors.append("UltraGuiActions must log rawActionId on failures")
 
     spec = SPEC.read_text(encoding="utf-8")
     if "qualifyAction" not in spec:

@@ -75,6 +75,8 @@ If KaiPath ignores fields 8–10, menus will appear fullscreen — that is a cli
 
 Server strips `@screen:` first (so a wrong/empty packet `screenId` still routes). Then `do:` / `tab:` / `nav:` / `open:` are handled.
 
+**Hub compatibility:** if the screen is `hub` and the action has no verb prefix, a bare system name (`character`, `difficulty`, `progression`, `prestige`, `spar`, `rival`, `config`, `admin`) is treated as `open:<system>`. Prefer sending the full `@hub:open:…` form.
+
 ## Failure logging
 
 Unhandled exceptions and “Something went wrong” handler results are logged on the server with `screen`, `actionId`, and stack traces under the `LegacyMechanics` logger.

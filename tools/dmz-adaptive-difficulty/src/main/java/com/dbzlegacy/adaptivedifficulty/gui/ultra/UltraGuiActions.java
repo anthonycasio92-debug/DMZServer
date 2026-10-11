@@ -39,18 +39,19 @@ public final class UltraGuiActions {
         String action = q.action();
 
         AdaptiveDifficultyMod.LOGGER.debug(
-                "[{}] Ultra action player={} screen={} action={} args={}",
+                "[{}] Ultra action player={} rawActionId={} screen={} resolvedAction={} args={}",
                 AdaptiveDifficultyMod.MOD_ID,
                 player.m_7755_().getString(),
+                actionId,
                 screen,
                 action,
                 args);
 
         try {
-            dispatchResolved(player, screen, action, args);
+            dispatchResolved(player, screen, action, args, actionId);
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.error(
-                    "[{}] UltraGuiActions.handle failed actionId={} screen={} resolvedAction={} args={}",
+                    "[{}] UltraGuiActions.handle failed rawActionId={} screen={} resolvedAction={} args={}",
                     AdaptiveDifficultyMod.MOD_ID,
                     actionId,
                     screen,
@@ -60,12 +61,33 @@ public final class UltraGuiActions {
             DmzRewards.msg(
                     player,
                     UltraStyle.dangerLine(
-                            "Something went wrong (" + action + "). Staff: see server log."));
+                            "Something went wrong (raw="
+                                    + actionId
+                                    + "). Staff: see server log."));
         }
     }
 
     private static void dispatchResolved(
-            ServerPlayer player, String screen, String action, JsonObject args) {
+            ServerPlayer player,
+            String screen,
+            String action,
+            JsonObject args,
+            String rawActionId) {
+        // KaiPath sometimes sends bare system names (e.g. "character") from the hub
+        // instead of open:character / @hub:open:character.
+        if (!hasVerbPrefix(action) && isHubScreen(screen)) {
+            String openTarget = bareHubOpenTarget(action);
+            if (openTarget != null) {
+                AdaptiveDifficultyMod.LOGGER.debug(
+                        "[{}] Ultra bare hub action rawActionId={} → open:{}",
+                        AdaptiveDifficultyMod.MOD_ID,
+                        rawActionId,
+                        openTarget);
+                UltraGui.open(player, openTarget, "main");
+                return;
+            }
+        }
+
         if (action.startsWith("tab:")) {
             String tab = action.substring(4);
             if (tab == null || tab.isBlank()) {
@@ -102,11 +124,15 @@ public final class UltraGuiActions {
         DoParts parts = parseDo(action);
         if (parts.action.isBlank()) {
             AdaptiveDifficultyMod.LOGGER.warn(
-                    "[{}] Ultra empty do-action screen={} raw={}",
+                    "[{}] Ultra empty do-action screen={} rawActionId={} resolvedAction={}",
                     AdaptiveDifficultyMod.MOD_ID,
                     screen,
+                    rawActionId,
                     action);
-            DmzRewards.msg(player, UltraStyle.dangerLine("That menu action is not available."));
+            DmzRewards.msg(
+                    player,
+                    UltraStyle.dangerLine(
+                            "That menu action is not available (raw=" + rawActionId + ")."));
             return;
         }
         // Prefer arg encoded in the action id (do:action:arg…); fall back to argsJson.
@@ -116,7 +142,7 @@ public final class UltraGuiActions {
             args.addProperty("arg", "");
         }
 
-        String msg = runDo(player, screen, parts.action, args);
+        String msg = runDo(player, screen, parts.action, args, rawActionId);
         if (msg != null && !msg.isBlank()) {
             DmzRewards.msg(player, CnpcMenuFeedback.noticeBody(msg));
         }
@@ -128,9 +154,52 @@ public final class UltraGuiActions {
         UltraGui.open(player, screen, reopen == null || reopen.isBlank() ? homePage(screen) : reopen);
     }
 
-    private static String runDo(ServerPlayer player, String screen, String act, JsonObject args) {
+    /** True when action already uses a protocol verb. */
+    static boolean hasVerbPrefix(String action) {
+        if (action == null || action.isBlank()) {
+            return false;
+        }
+        return action.startsWith("do:")
+                || action.startsWith("tab:")
+                || action.startsWith("nav:")
+                || action.startsWith("open:");
+    }
+
+    static boolean isHubScreen(String screen) {
+        if (screen == null || screen.isBlank()) {
+            return true;
+        }
+        String s = screen.toLowerCase();
+        return "hub".equals(s) || "lm".equals(s) || "legacymechanics".equals(s) || "main".equals(s);
+    }
+
+    /**
+     * Map a bare hub tile id to an {@code open:} target, or null if not a known system.
+     * Handles KaiPath clients that send simplified action IDs without verb prefixes.
+     */
+    static String bareHubOpenTarget(String action) {
+        if (action == null || action.isBlank() || action.indexOf(':') >= 0) {
+            return null;
+        }
+        return switch (action.trim().toLowerCase()) {
+            case "character", "charservices", "char" -> "character";
+            case "difficulty", "diff" -> "difficulty";
+            case "progression", "prog" -> "progression";
+            case "prestige" -> "prestige";
+            case "spar", "sparring" -> "spar";
+            case "rival" -> "rival";
+            case "config", "cfgedit", "configeditor" -> "config";
+            case "admin" -> "admin";
+            case "hub", "lm", "legacymechanics", "main" -> "hub";
+            default -> null;
+        };
+    }
+
+    private static String runDo(
+            ServerPlayer player, String screen, String act, JsonObject args, String rawActionId) {
         if (player == null || act == null || act.isBlank()) {
-            return UltraStyle.dangerLine("That menu action is not available.");
+            return UltraStyle.dangerLine(
+                    "That menu action is not available (raw=" + rawActionId + ").");
         }
         String arg = stringArg(args, "arg");
         String page = stringArg(args, "page");
@@ -154,18 +223,21 @@ public final class UltraGuiActions {
         };
         if (result == null) {
             AdaptiveDifficultyMod.LOGGER.warn(
-                    "[{}] Ultra unrecognized screen=\"{}\" action=\"{}\" arg=\"{}\"",
+                    "[{}] Ultra unrecognized screen=\"{}\" rawActionId=\"{}\" action=\"{}\" arg=\"{}\"",
                     AdaptiveDifficultyMod.MOD_ID,
                     screen,
+                    rawActionId,
                     act,
                     arg);
-            return UltraStyle.dangerLine("That menu action is not available.");
+            return UltraStyle.dangerLine(
+                    "That menu action is not available (raw=" + rawActionId + ").");
         }
         if (isGenericFailure(result)) {
             AdaptiveDifficultyMod.LOGGER.warn(
-                    "[{}] Ultra handler generic failure screen=\"{}\" action=\"{}\" arg=\"{}\" msg={}",
+                    "[{}] Ultra handler generic failure screen=\"{}\" rawActionId=\"{}\" action=\"{}\" arg=\"{}\" msg={}",
                     AdaptiveDifficultyMod.MOD_ID,
                     screen,
+                    rawActionId,
                     act,
                     arg,
                     UltraStyle.plain(result));
