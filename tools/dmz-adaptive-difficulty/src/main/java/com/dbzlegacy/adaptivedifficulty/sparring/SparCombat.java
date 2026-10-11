@@ -1,7 +1,11 @@
 package com.dbzlegacy.adaptivedifficulty.sparring;
 
+import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
+import com.dbzlegacy.adaptivedifficulty.calc.CombatRating;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
+import com.dbzlegacy.adaptivedifficulty.progression.race.AndroidConversion;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalChallengeManager;
+import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import com.dbzlegacy.adaptivedifficulty.util.LmChat;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
@@ -75,6 +79,11 @@ public final class SparCombat {
     };
     /** Token floor when a ki hit lands but DMZ fully mitigates HP loss (script KI_FULL_MIT_FLOOR). */
     public static final float KI_FULL_MIT_FLOOR = 12.0f;
+    /**
+     * {@code getBattlePower()} / Exact above this is an overflow (script ANDROID_FAKE_BP_THRESHOLD),
+     * not a real power level. Anchors run through 100T, so this stays far above the curve.
+     */
+    private static final double ABSURD_BATTLE_POWER = 1.0e30;
 
     private SparCombat() {}
 
@@ -107,6 +116,48 @@ public final class SparCombat {
         double finalMult = BP_MULT_ANCHORS[n - 1];
         double extraDecades = (Math.log(battlePower) - Math.log(finalBp)) / Math.log(10.0);
         return (float) Math.min(MAX_BP_MULTIPLIER, finalMult + extraDecades * 200.0);
+    }
+
+    /**
+     * Live DragonMineZ battle power for this player, read when TP is awarded.
+     * Prefers {@code getBattlePowerExact()} so the float getter cannot flatten the curve.
+     * Android upgrades and non-finite / overflow reads fall back to released combat stats.
+     * This does not use the overhaul stat proxy, which ignores battle power once prestige scale is on.
+     */
+    public static double battlePower(ServerPlayer player) {
+        if (player == null) {
+            return 0.0;
+        }
+        try {
+            if (AndroidConversion.isAndroidUpgraded(player)) {
+                return CombatRating.releasedStatPower(player);
+            }
+            StatsData data = DmzProgression.stats(player);
+            if (data != null) {
+                double exact = data.getBattlePowerExact();
+                if (usableBattlePower(exact)) {
+                    return exact;
+                }
+                double raw = data.getBattlePower();
+                if (usableBattlePower(raw)) {
+                    return raw;
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return CombatRating.releasedStatPower(player);
+    }
+
+    private static boolean usableBattlePower(double value) {
+        return Double.isFinite(value) && value > 0.0 && value < ABSURD_BATTLE_POWER;
+    }
+
+    /** This fighter's own live battle power. A missing read stays at the lowest tier. */
+    private static double earnerBattlePower(TrainingValues earner) {
+        if (earner == null || !usableBattlePower(earner.bp)) {
+            return 0.0;
+        }
+        return earner.bp;
     }
 
     public static float rivalMultiplier(double bpA, double bpB) {
@@ -368,7 +419,7 @@ public final class SparCombat {
                 return null;
             }
             TrainingValues v = new TrainingValues();
-            v.bp = DmzRewards.battlePower(player);
+            v.bp = battlePower(player);
             v.release = DmzRewards.powerReleasePercent(player);
             try {
                 v.gravity = GravityLogic.getNetGravity(player);
@@ -421,10 +472,8 @@ public final class SparCombat {
             TrainingValues a,
             TrainingValues b
     ) {
-        double trainingBp = Math.min(a.bp, b.bp);
-        if (!(trainingBp > 0.0)) {
-            trainingBp = Math.max(a.bp, Math.max(b.bp, 1.0));
-        }
+        // Own live battle power. Partner BP still feeds rival closeness and perfect training.
+        double trainingBp = earnerBattlePower(a);
         double avgRelease = (a.release + b.release) / 2.0;
         double avgGravity = (a.gravity + b.gravity) / 2.0;
         double avgWeight = (a.weight + b.weight) / 2.0;
@@ -492,10 +541,7 @@ public final class SparCombat {
         if (a == null || b == null) {
             return "";
         }
-        double trainingBp = Math.min(a.bp, b.bp);
-        if (!(trainingBp > 0.0)) {
-            trainingBp = Math.max(a.bp, Math.max(b.bp, 1.0));
-        }
+        double trainingBp = earnerBattlePower(a);
         double avgRelease = (a.release + b.release) / 2.0;
         double avgGravity = (a.gravity + b.gravity) / 2.0;
         double avgWeight = (a.weight + b.weight) / 2.0;
@@ -507,7 +553,8 @@ public final class SparCombat {
         float style = styleMultiplier(rt);
         float total = buildTotalMultiplier(player, null, rt, a, b) * GLOBAL_TP_GAIN_MULT;
         StringBuilder sb = new StringBuilder();
-        appendStaffMult(sb, "bp", bp);
+        sb.append(" §8bp§f").append(DmzRewards.formatWhole(trainingBp))
+                .append("§8×§f").append(formatMult(bp));
         appendStaffMult(sb, "riv", rival);
         appendStaffMult(sb, "rel", release);
         appendStaffMult(sb, "grav", gravity);
@@ -611,7 +658,7 @@ public final class SparCombat {
         if (bondBonus > 0.0f) {
             amount = (float) Math.floor(amount * (1.0f + bondBonus));
         }
-        float bpMult = battlePowerMultiplier(Math.min(a.bp, b.bp) > 0 ? Math.min(a.bp, b.bp) : Math.max(a.bp, b.bp));
+        float bpMult = battlePowerMultiplier(earnerBattlePower(a));
         // The hit cap used to ignore the closeness bonus, so a full rival
         // multiplier never increased TP once other factors already filled it.
         float rival = rivalMultiplier(a.bp, b.bp);
@@ -630,6 +677,7 @@ public final class SparCombat {
             return 0;
         }
         rt.sessionTp += award;
+        logBattlePowerAward(player, partner, a.bp, bpMult, award);
         queueTpMessage(player, rt, award, hitKind, a, b);
         SparringSystem.shareTpWithMentor(player, award);
         return award;
@@ -801,7 +849,33 @@ public final class SparCombat {
         updateMomentum(null, rt);
     }
 
+    /**
+     * Printed when TP is awarded. Server log is debug-level. The system event log
+     * ({@code enableSystemTelemetry}) records the same numbers for in-game checks.
+     */
+    private static void logBattlePowerAward(
+            ServerPlayer player, ServerPlayer partner, double battlePower, float battlePowerMultiplier, int award
+    ) {
+        AdaptiveDifficultyMod.LOGGER.debug(
+                "[{}] spar TP {} battlePower={} battlePowerMultiplier={} award={}",
+                AdaptiveDifficultyMod.MOD_ID,
+                player.m_7755_().getString(),
+                battlePower,
+                battlePowerMultiplier,
+                award);
+        SystemTelemetry.log(
+                "sparring",
+                "spar_tp",
+                player,
+                partner,
+                SystemTelemetry.fields(
+                        "battlePower", battlePower,
+                        "battlePowerMultiplier", battlePowerMultiplier,
+                        "award", award));
+    }
+
     public static final class TrainingValues {
+        /** Set by {@link #liveValues} from {@link #battlePower(ServerPlayer)} at award time. */
         public double bp;
         public double release;
         public double gravity;

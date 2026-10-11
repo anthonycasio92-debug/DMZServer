@@ -909,6 +909,13 @@ def main() -> int:
     award_fn = spar_c145.split("int awardCombatTp", 1)[1].split("awardDamageTp", 1)[0] if "int awardCombatTp" in spar_c145 else ""
     check("rival bonus scales the spar action cap",
           "Math.max(1.0f, rival)" in award_fn and "actionCap" in award_fn)
+    check("spar TP scales with the earner's live battle power",
+          "v.bp = battlePower(player)" in spar_c145
+          and "earnerBattlePower(a)" in build_fn
+          and "Math.min(a.bp, b.bp)" not in spar_c145
+          and "getBattlePowerExact" in spar_c145
+          and "logBattlePowerAward" in award_fn
+          and "battlePowerMultiplier" in award_fn)
 
     print("\n=== Spar TP lines player/staff (2.3.147) ===")
     spar_c147 = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparCombat.java")
