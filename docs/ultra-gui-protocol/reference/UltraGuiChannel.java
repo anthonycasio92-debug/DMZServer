@@ -3,8 +3,8 @@ package com.example.ultragui;
 /**
  * Shared channel convention for the Ultra GUI protocol (KaiPath client renderer).
  *
- * <p>Copy this file into your mod and change the package. There are <b>zero</b> LegacyMechanics
- * imports — only the naming rule that every mod owns {@code <modid>:gui}.
+ * <p>From {@code tools/ultra-gui-kit/server/}. Copy into your mod and change the package.
+ * Zero LegacyMechanics imports — every mod owns {@code <modid>:gui}.
  *
  * <p>Convention:
  *
