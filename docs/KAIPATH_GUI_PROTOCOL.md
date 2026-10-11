@@ -4,6 +4,23 @@ Channel: `legacymechanics:gui` · protocol string: `"1"` (append-compatible).
 
 LM is **server-only**. KaiPath owns the client screen (`LmScreens` / DMZUltra widgets).
 
+### Screen id contract (KaiPath owns the renderer)
+
+Protocol / LM builders may use: `hub`, `difficulty`, `rival`, `spar`, `prestige`,
+`character`, `progression`, `config`, `admin`.
+
+**Live KaiPath 1.3.0** `LmScreens.registerDefaults()` only registers **`hub`**. Any other
+`screenId` opens KaiPath `MissingScreen` ("Unknown screen"). Until KaiPath registers more
+handlers, LM:
+
+- Sends Ultra `GuiOpenPacket` only for ids in `UltraScreenIds.KAIPATH_REGISTERED_IDS` (currently `hub`).
+- Opens other systems via CustomNPCs fallback (`UltraGui` / `UltraHubScreens`).
+- At `LmGuiNetwork.register()`, validates every builder id against the protocol list and logs a
+  warning for protocol ids not yet registered on KaiPath.
+- Debug-logs every outgoing `GuiOpenPacket.screenId` (player, panel size, layout length).
+
+Update `UltraScreenIds.KAIPATH_REGISTERED_IDS` when KaiPath grows — LM must match exactly.
+
 ## GuiOpenPacket (S→C)
 
 | # | Field | Type | Notes |
@@ -93,3 +110,7 @@ Server strips `@screen:` first (so a wrong/empty packet `screenId` still routes)
 Unhandled exceptions and “Something went wrong” handler results are logged on the server with
 `screen`, **`rawActionId`** (as received, before `@screen:` strip), resolved action, and stack
 traces under the `LegacyMechanics` logger.
+
+**Player-facing chat must never include raw action IDs.** Messages stay human (e.g.
+“Something went wrong. Try again, or ask staff if it keeps happening.”). Debug detail is
+server-log only.

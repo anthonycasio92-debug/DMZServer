@@ -1,9 +1,12 @@
 package com.dbzlegacy.adaptivedifficulty.net.gui;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
+import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraScreenIds;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 import net.minecraft.network.Connection;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -57,14 +60,40 @@ public final class LmGuiNetwork {
                 .decoder(GuiActionPacket::decode)
                 .consumerMainThread(GuiActionPacket::handle)
                 .add();
+        validateBuilderScreenIdsAtStartup();
     }
 
     public static void sendOpen(ServerPlayer player, GuiOpenPacket packet) {
         if (player == null || packet == null) {
             return;
         }
+        AdaptiveDifficultyMod.LOGGER.debug(
+                "[{}] GuiOpenPacket → player={} screenId={} panel={}x{} layoutLen={}",
+                AdaptiveDifficultyMod.MOD_ID,
+                player.m_7755_().getString(),
+                packet.screenId(),
+                packet.panelWidth(),
+                packet.panelHeight(),
+                packet.layoutJson() == null ? 0 : packet.layoutJson().length());
+        if (!UltraScreenIds.kaipathCanOpen(packet.screenId())) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] GuiOpenPacket screenId=\"{}\" is not registered in KaiPath LmScreens "
+                            + "(known={}) — client will show Unknown screen",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    packet.screenId(),
+                    UltraScreenIds.KAIPATH_REGISTERED_IDS);
+        }
         validatePanelBounds(packet);
         CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+
+    /**
+     * Fail-soft startup check: every Ultra builder {@code screenId} must be in the protocol
+     * list; warn when KaiPath has not registered that id yet.
+     */
+    static void validateBuilderScreenIdsAtStartup() {
+        Set<String> builderIds = new LinkedHashSet<>(UltraScreenIds.BUILDER_IDS);
+        UltraScreenIds.validateAtStartup(builderIds);
     }
 
     /**

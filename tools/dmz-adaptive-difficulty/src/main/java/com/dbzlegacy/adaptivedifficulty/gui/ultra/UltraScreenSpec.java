@@ -1,5 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.gui.ultra;
 
+import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
+import com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcLmGui;
 import com.dbzlegacy.adaptivedifficulty.net.gui.GuiOpenPacket;
 import com.dbzlegacy.adaptivedifficulty.net.gui.LmGuiNetwork;
 import com.google.gson.Gson;
@@ -158,6 +160,18 @@ public final class UltraScreenSpec {
 
     public void send(ServerPlayer player) {
         if (player == null) {
+            return;
+        }
+        // Never wire a screenId KaiPath cannot render (MissingScreen / "Unknown screen").
+        if (!UltraScreenIds.kaipathCanOpen(screenId)) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] UltraScreenSpec.send blocked screenId=\"{}\" page=\"{}\" "
+                            + "(KaiPath registered={}) — CNPC fallback",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    screenId,
+                    pageId,
+                    UltraScreenIds.KAIPATH_REGISTERED_IDS);
+            CnpcLmGui.open(player, screenId, pageId);
             return;
         }
         // Grow panel if buttons sit below the default dialog height.

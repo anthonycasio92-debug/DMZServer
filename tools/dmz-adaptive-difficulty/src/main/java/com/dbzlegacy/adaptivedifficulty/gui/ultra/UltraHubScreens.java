@@ -1,6 +1,8 @@
 package com.dbzlegacy.adaptivedifficulty.gui.ultra;
 
+import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.gui.MechanicsGuiApi;
+import com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcLmGui;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import java.util.List;
 import java.util.Locale;
@@ -17,6 +19,14 @@ public final class UltraHubScreens {
         }
         String p = page == null || page.isBlank() ? "main" : page.toLowerCase(Locale.ROOT);
         if ("admin".equals(p)) {
+            // KaiPath 1.3.0 has no "admin" LmScreen — never wire that screenId.
+            if (!UltraScreenIds.kaipathCanOpen("admin")) {
+                AdaptiveDifficultyMod.LOGGER.debug(
+                        "[{}] Ultra hub admin page → CNPC (KaiPath missing screenId=admin)",
+                        AdaptiveDifficultyMod.MOD_ID);
+                CnpcLmGui.open(player, "admin", "main");
+                return;
+            }
             openAdmin(player);
             return;
         }
