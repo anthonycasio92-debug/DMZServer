@@ -18,7 +18,7 @@ PlayerEvents.loggedIn(function (event) {
   clearPlayer(event.player);
 });
 
-// PlayerEvents.tick moved to player_tick_consolidated.js.
+// Shared tick in player_tick_consolidated.js calls this. No listener here.
 global.dmzRaceLockTick = {
   SYNC_INTERVAL_TICKS: SYNC_INTERVAL_TICKS,
   clearPlayer: clearPlayer

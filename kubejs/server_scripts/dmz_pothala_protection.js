@@ -788,7 +788,7 @@ PlayerEvents.inventoryChanged(function(event) {
 // Maximum normal delay: ~1 second.
 // ============================================================================
 
-// PlayerEvents.tick moved to player_tick_consolidated.js.
+// Shared tick in player_tick_consolidated.js calls this. No listener here.
 global.dmzPothalaTick = {
     CHECK_INTERVAL: CHECK_INTERVAL,
     cleanAllPothalas: cleanAllPothalas

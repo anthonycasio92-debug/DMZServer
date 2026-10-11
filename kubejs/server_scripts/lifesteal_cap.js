@@ -243,7 +243,7 @@ PlayerEvents.loggedIn(function (event) {
     }
 });
 
-// PlayerEvents.tick moved to player_tick_consolidated.js.
+// Shared tick in player_tick_consolidated.js calls this. No listener here.
 global.dmzLifestealCapTick = {
     TICK_INTERVAL: TICK_INTERVAL,
     clampAll: clampAll

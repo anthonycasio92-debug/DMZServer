@@ -4733,8 +4733,7 @@ PlayerEvents.loggedIn(
 );
 
 
-// PlayerEvents.tick moved to player_tick_consolidated.js so this file
-// does not add a second Rhino proxy call per player per tick.
+// Shared tick in player_tick_consolidated.js calls this. No listener here.
 global.dmzWeaponBonusTick = {
     UPDATE_INTERVAL: UPDATE_INTERVAL,
     wrapPlayer: wrapPlayer,
