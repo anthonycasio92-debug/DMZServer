@@ -21,6 +21,7 @@ REQUIRED_LM_ADMIN = [
     "open",
     "inspect",
     "testgui",
+    "guitest",
 ]
 
 FORBIDDEN_LITERALS = [

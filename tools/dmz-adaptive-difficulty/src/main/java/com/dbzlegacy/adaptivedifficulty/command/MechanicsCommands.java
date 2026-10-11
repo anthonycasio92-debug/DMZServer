@@ -97,7 +97,13 @@ public final class MechanicsCommands {
                                                 StringArgumentType.getString(ctx, "system")))))
                         .then(adminInspectRoot())
                         .then(Commands.m_82127_("testgui")
-                                .executes(ctx -> adminTestGui(ctx.getSource()))));
+                                .executes(ctx -> adminTestGui(ctx.getSource())))
+                        .then(Commands.m_82127_("guitest")
+                                .executes(ctx -> adminGuiTest(ctx.getSource(), null))
+                                .then(LmCommandSuggestions.playerWord("player")
+                                        .executes(ctx -> adminGuiTest(
+                                                ctx.getSource(),
+                                                StringArgumentType.getString(ctx, "player")))));
     }
 
     private static LiteralArgumentBuilder<CommandSourceStack> migrateCnpcLiteral() {
@@ -307,6 +313,38 @@ public final class MechanicsCommands {
             return 0;
         }
         return com.dbzlegacy.adaptivedifficulty.gui.CnpcStaffTestGui.open(player) ? 1 : 0;
+    }
+
+    /**
+     * Diagnostic: send a one-button Ultra {@code GuiOpenPacket} to isolate client delivery vs
+     * click handling. Prefer {@code /lm admin guitest <player>} from console.
+     */
+    private static int adminGuiTest(CommandSourceStack source, String playerName) {
+        if (StaffAccess.denyUnlessStaff(source) == 0) {
+            return 0;
+        }
+        ServerPlayer target;
+        if (playerName == null || playerName.isBlank()) {
+            target = source.m_230896_();
+            if (target == null) {
+                source.m_81352_(Component.m_237113_(LmCommandMessages.NEED_IN_GAME
+                        + " §8Or: §f/lm admin guitest <player>"));
+                return 0;
+            }
+        } else {
+            target = onlinePlayer(source.m_81377_(), playerName);
+            if (target == null) {
+                LmCommandFeedback.tell(source, LmCommandMessages.playerOffline(playerName));
+                return 0;
+            }
+        }
+        com.dbzlegacy.adaptivedifficulty.net.gui.LmGuiNetwork.sendGuiTest(target);
+        LmCommandFeedback.tell(
+                source,
+                "§aUltra guitest → §f"
+                        + target.m_7755_().getString()
+                        + "§a. Click Ping server; watch log for GuiActionPacket ←");
+        return 1;
     }
 
     private static int playerHelp(CommandSourceStack source) {

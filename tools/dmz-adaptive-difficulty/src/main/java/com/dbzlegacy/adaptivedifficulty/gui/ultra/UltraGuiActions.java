@@ -171,6 +171,20 @@ public final class UltraGuiActions {
             return;
         }
 
+        // Diagnostic button from /lm admin guitest
+        if ("do:guitest_ack".equals(action) || "guitest_ack".equals(action)) {
+            AdaptiveDifficultyMod.LOGGER.info(
+                    "[{}] guitest_ack received player={} rawActionId={} screen={}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    safeName(player),
+                    rawActionId,
+                    safeScreen);
+            DmzRewards.msg(
+                    player,
+                    UltraStyle.noticeLine("Ultra guitest: click reached the server."));
+            return;
+        }
+
         DoParts parts = parseDo(action);
         if (parts == null || parts.action == null || parts.action.isBlank()) {
             AdaptiveDifficultyMod.LOGGER.warn(

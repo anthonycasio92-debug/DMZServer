@@ -55,14 +55,115 @@ public final class LmGuiNetwork {
      * Captures the sender, then {@link NetworkEvent.Context#enqueueWork}s main-thread dispatch.
      */
     static void handleGuiAction(GuiActionPacket msg, java.util.function.Supplier<NetworkEvent.Context> ctx) {
-        NetworkEvent.Context context = ctx.get();
+        // Diagnostic: first line — if clicks produce nothing here, the client is not sending.
+        ServerPlayer earlySender = null;
+        NetworkEvent.Context context = null;
+        try {
+            context = ctx == null ? null : ctx.get();
+            earlySender = context == null ? null : context.getSender();
+        } catch (Throwable ignored) {
+            // fall through to INFO log with unknowns
+        }
+        String playerName = earlySender == null ? "<null>" : safeName(earlySender);
+        if (msg == null) {
+            AdaptiveDifficultyMod.LOGGER.info(
+                    "[{}] GuiActionPacket ← player={} screenId=<null-packet> actionId=<null-packet>",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    playerName);
+            if (context != null) {
+                context.setPacketHandled(true);
+            }
+            return;
+        }
+        AdaptiveDifficultyMod.LOGGER.info(
+                "[{}] GuiActionPacket ← player={} screenId={} actionId={}",
+                AdaptiveDifficultyMod.MOD_ID,
+                playerName,
+                msg.screenId(),
+                msg.actionId());
+        if (msg.actionId() == null || msg.actionId().isBlank()) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] GuiActionPacket empty actionId — full packet screenId={} actionId={} argsJson={} player={}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    msg.screenId(),
+                    msg.actionId(),
+                    msg.argsJson(),
+                    playerName);
+            if (context != null) {
+                context.setPacketHandled(true);
+            }
+            return;
+        }
         if (context == null) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] GuiActionPacket dropped: null NetworkEvent.Context player={} screenId={} actionId={}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    playerName,
+                    msg.screenId(),
+                    msg.actionId());
             return;
         }
         // Must capture before enqueueWork — context sender is only reliable here.
-        ServerPlayer sender = context.getSender();
+        ServerPlayer sender = earlySender != null ? earlySender : context.getSender();
         context.enqueueWork(() -> GuiActionPacket.dispatchOnMain(sender, msg));
         context.setPacketHandled(true);
+    }
+
+    private static String safeName(ServerPlayer player) {
+        if (player == null) {
+            return "<null>";
+        }
+        try {
+            return player.m_7755_().getString();
+        } catch (Throwable ignored) {
+            return "<name?>";
+        }
+    }
+
+    static int buttonCount(GuiOpenPacket packet) {
+        if (packet == null) {
+            return 0;
+        }
+        String json = packet.buttonsJson();
+        if (json == null || json.isBlank() || "[]".equals(json.trim())) {
+            return 0;
+        }
+        try {
+            return JsonParser.parseString(json).getAsJsonArray().size();
+        } catch (Throwable ignored) {
+            return 0;
+        }
+    }
+
+    /**
+     * Diagnostic: send a one-button Ultra menu to {@code player}. Click should produce an INFO
+     * {@code GuiActionPacket ←} line; ack is handled by {@code do:guitest_ack}.
+     */
+    public static void sendGuiTest(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        AdaptiveDifficultyMod.LOGGER.info(
+                "[{}] guitest → sending diagnostic GuiOpenPacket to player={}",
+                AdaptiveDifficultyMod.MOD_ID,
+                safeName(player));
+        com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraScreenSpec.of("hub")
+                .title("Ultra GUI Test")
+                .page("guitest")
+                .activeTab("home")
+                .tabs("home|Test")
+                .line(com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle.LABEL
+                        + "Diagnostic menu — click Ping server.")
+                .line(com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle.DIM
+                        + "Server log should show GuiActionPacket when you click.")
+                .setRow(72)
+                .button(
+                        "do:guitest_ack",
+                        com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle.confirm("Ping server"),
+                        "confirm")
+                .rowGap()
+                .footerBackToMain()
+                .send(player);
     }
 
     public static void register() {
@@ -92,15 +193,15 @@ public final class LmGuiNetwork {
             return;
         }
         GuiOpenPacket wire = applyHubShim(packet);
-        AdaptiveDifficultyMod.LOGGER.debug(
-                "[{}] GuiOpenPacket → player={} wireScreenId={} logicalSystem={} panel={}x{} layoutLen={}",
+        AdaptiveDifficultyMod.LOGGER.info(
+                "[{}] GuiOpenPacket → player={} screenId={} (logical={}) buttons={} panel={}x{}",
                 AdaptiveDifficultyMod.MOD_ID,
-                player.m_7755_().getString(),
+                safeName(player),
                 wire.screenId(),
                 logicalSystemOf(packet, wire),
+                buttonCount(wire),
                 wire.panelWidth(),
-                wire.panelHeight(),
-                wire.layoutJson() == null ? 0 : wire.layoutJson().length());
+                wire.panelHeight());
         validatePanelBounds(wire);
         CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), wire);
     }
