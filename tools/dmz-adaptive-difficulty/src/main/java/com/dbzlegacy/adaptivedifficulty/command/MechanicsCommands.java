@@ -103,7 +103,7 @@ public final class MechanicsCommands {
                                 .then(LmCommandSuggestions.playerWord("player")
                                         .executes(ctx -> adminGuiTest(
                                                 ctx.getSource(),
-                                                StringArgumentType.getString(ctx, "player")))));
+                                                StringArgumentType.getString(ctx, "player"))))));
     }
 
     private static LiteralArgumentBuilder<CommandSourceStack> migrateCnpcLiteral() {

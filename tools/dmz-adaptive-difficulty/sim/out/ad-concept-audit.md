@@ -57,7 +57,7 @@ Fail-closed checks against the player's stated balance concept.
 
 ## 6) Version / formula revision
 
-- ✅ VERSION 4.6.103
+- ✅ VERSION 4.6.104
 - ✅ Fabled race skill bridge removed
 - ✅ formula revision 45
 - ✅ KP hit-cap relief wired
