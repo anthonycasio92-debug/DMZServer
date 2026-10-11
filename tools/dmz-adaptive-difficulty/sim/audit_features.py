@@ -2141,6 +2141,21 @@ def main() -> int:
     check("fall damage listener class is copied into the forge jar",
           "event/FallDamageDiag.class" in build_sh)
 
+    print("\n=== Staff test GUI stays server-side (4.6.58) ===")
+    native_cmd = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/command/MechanicsCommands.java")
+    native_cfg = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/config/DifficultyConfig.java")
+    native_mod = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.java")
+    client_root = ROOT / "tools/dmz-adaptive-difficulty/src/client"
+    check("staff test gui opens only through CNPC",
+          "CnpcStaffTestGui.open" in native_cmd
+          and "useNativeTestGui" not in native_cmd
+          and "LmGuiNetwork" not in native_cmd
+          and "useNativeTestGui" not in native_cfg
+          and "LmClientBootstrap" not in native_mod
+          and "LmGuiNetwork" not in native_mod
+          and not client_root.exists()
+          and "client-classes" not in build_sh)
+
     print("\n=== Summary ===")
     for w in warns:
         print(f"WARN: {w}")

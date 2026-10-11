@@ -1,6 +1,10 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.56**.
+What changed from **4.5.147** through **4.6.58**.
+
+## Staff test GUI stays on the server
+
+`/lm admin testgui` opens the CustomNPCs hub. The server sends that menu through CustomNPCs, which clients already have. LegacyMechanics does not ship a client screen, a client packet, or a DMZUltra widget, so a staff member does not install this jar to use the menu.
 
 ## Fusion mixin target
 

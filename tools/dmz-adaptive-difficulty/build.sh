@@ -398,6 +398,16 @@ merge_onto_base_jar() {
     "$merge/com/dbzlegacy/adaptivedifficulty/mixin/ResourcesPoolClampMixin.class" \
     "$merge/com/dbzlegacy/adaptivedifficulty/mixin/ResourcesLoadClampMixin.class" \
     "$merge/com/dbzlegacy/adaptivedifficulty/mixin/DmzStatsResetAbsorptionWipeMixin.class"
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/config/DifficultyConfig.class" ]]; then
+    mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/config"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/config/DifficultyConfig.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/config/DifficultyConfig.class"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/config/DifficultyConfig\$"*.class \
+      "$merge/com/dbzlegacy/adaptivedifficulty/config/" 2>/dev/null || true
+  fi
+  rm -rf \
+    "$merge/com/dbzlegacy/adaptivedifficulty/net/gui" \
+    "$merge/com/dbzlegacy/adaptivedifficulty/client"
   # Classes copied from this compile must ship their inner classes, and must
   # not keep a stale base-jar inner the new bytecode no longer emits.
   sync_overlaid_inners "$OUT" "$merge"
@@ -438,6 +448,35 @@ if ! jar tf "$JAR" | grep -q 'gui/GuiClickConfirm\$Pending.class'; then
   exit 1
 fi
 python3 "$HERE/sim/audit_jar_inner_classes.py" "$JAR"
+python3 - "$JAR" << 'PY'
+import sys, zipfile
+jar = sys.argv[1]
+bad = []
+banned = (
+    "com/dbzlegacy/adaptivedifficulty/net/gui/",
+    "com/dbzlegacy/adaptivedifficulty/client/",
+)
+with zipfile.ZipFile(jar) as zf:
+    names = set(zf.namelist())
+    for name in names:
+        norm = name.replace("\\", "/")
+        if any(norm.startswith(prefix) for prefix in banned):
+            bad.append(name)
+            continue
+        if not name.endswith(".class") or not norm.startswith("com/dbzlegacy/"):
+            continue
+        data = zf.read(name)
+        if (b"com/dmzultra/client" in data or b"com.dmzultra.client" in data
+                or b"net/minecraft/client/" in data or b"LmClientBootstrap" in data
+                or b"LmGuiNetwork" in data):
+            bad.append(name)
+if bad:
+    print("ERROR: jar still has a client GUI dependency:", file=sys.stderr)
+    for name in bad:
+        print("  " + name, file=sys.stderr)
+    sys.exit(1)
+print("Server jar has no client GUI dependency")
+PY
 # A second LegacyMechanics jar in mods/ crashes a fresh server on startup.
 find "$ROOT/mods" -maxdepth 1 -type f -name 'LegacyMechanics-*.jar' ! -name "LegacyMechanics-${VERSION}.jar" -delete
 jar tf "$JAR"
