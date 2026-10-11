@@ -1,10 +1,10 @@
 package com.dbzlegacy.adaptivedifficulty.gui.cnpc;
 
+import com.dbzlegacy.adaptivedifficulty.gui.GuiNotice;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Pattern;
 import net.minecraft.server.level.ServerPlayer;
 
 /** One-shot messages shown inside CNPC menus (instead of chat). */
@@ -16,10 +16,7 @@ public final class CnpcMenuFeedback {
      * Yellow body on every flash notice. Matches the gold header.
      * Positive or negative status belongs in the words, not a second color.
      */
-    public static final String NOTICE_BODY = CnpcUltraStyle.INFO;
-
-    /** Color and format codes a caller may have put on a notice line. */
-    private static final Pattern SECTION_CODE = Pattern.compile(CnpcUltraStyle.MARK + "[0-9A-FK-ORa-fk-or]");
+    public static final String NOTICE_BODY = GuiNotice.NOTICE_BODY;
 
     private static final ConcurrentHashMap<UUID, List<String>> PENDING = new ConcurrentHashMap<>();
 
@@ -30,14 +27,7 @@ public final class CnpcMenuFeedback {
      * screen cannot keep its own notice color.
      */
     public static String noticeBody(String line) {
-        if (line == null || line.isBlank()) {
-            return "";
-        }
-        String plain = SECTION_CODE.matcher(line).replaceAll("").trim();
-        if (plain.isEmpty()) {
-            return "";
-        }
-        return NOTICE_BODY + plain;
+        return GuiNotice.noticeBody(line);
     }
 
     public static void set(ServerPlayer player, String message) {

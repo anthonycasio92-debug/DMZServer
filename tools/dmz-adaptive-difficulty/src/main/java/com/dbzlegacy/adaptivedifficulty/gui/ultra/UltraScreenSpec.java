@@ -1,7 +1,5 @@
 package com.dbzlegacy.adaptivedifficulty.gui.ultra;
 
-import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
-import com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcLmGui;
 import com.dbzlegacy.adaptivedifficulty.net.gui.GuiOpenPacket;
 import com.dbzlegacy.adaptivedifficulty.net.gui.LmGuiNetwork;
 import com.google.gson.Gson;
@@ -22,6 +20,9 @@ import net.minecraft.server.level.ServerPlayer;
 public final class UltraScreenSpec {
     private static final Gson GSON = new Gson();
 
+    /** When set, {@link #send} captures packets instead of transmitting (startup self-test). */
+    private static final ThreadLocal<List<GuiOpenPacket>> PROBE = new ThreadLocal<>();
+
     private final String screenId;
     private String title = "";
     private String pageId = "main";
@@ -41,6 +42,23 @@ public final class UltraScreenSpec {
 
     public static UltraScreenSpec of(String screenId) {
         return new UltraScreenSpec(screenId);
+    }
+
+    /**
+     * Run {@code work} while capturing every {@link #send} into a list (no network).
+     * Used by {@link UltraScreenSelfTest}.
+     */
+    public static List<GuiOpenPacket> captureSends(Runnable work) {
+        List<GuiOpenPacket> captured = new ArrayList<>();
+        PROBE.set(captured);
+        try {
+            if (work != null) {
+                work.run();
+            }
+        } finally {
+            PROBE.remove();
+        }
+        return captured;
     }
 
     public UltraScreenSpec title(String title) {
@@ -77,6 +95,9 @@ public final class UltraScreenSpec {
 
     public UltraScreenSpec tabs(String... idLabelPairs) {
         tabs.clear();
+        if (idLabelPairs == null) {
+            return this;
+        }
         for (String pair : idLabelPairs) {
             if (pair == null || pair.isBlank()) {
                 continue;
@@ -158,32 +179,20 @@ public final class UltraScreenSpec {
                 .button("nav:refresh", UltraStyle.LABEL + "Refresh", "dim", UltraStyle.COL_R, nextRow, 95);
     }
 
-    public void send(ServerPlayer player) {
-        if (player == null) {
-            return;
-        }
-        // Never wire a screenId KaiPath cannot render (MissingScreen / "Unknown screen").
-        if (!UltraScreenIds.kaipathCanOpen(screenId)) {
-            AdaptiveDifficultyMod.LOGGER.warn(
-                    "[{}] UltraScreenSpec.send blocked screenId=\"{}\" page=\"{}\" "
-                            + "(KaiPath registered={}) — CNPC fallback",
-                    AdaptiveDifficultyMod.MOD_ID,
-                    screenId,
-                    pageId,
-                    UltraScreenIds.KAIPATH_REGISTERED_IDS);
-            CnpcLmGui.open(player, screenId, pageId);
-            return;
-        }
-        // Grow panel if buttons sit below the default dialog height.
+    /** Build the wire packet without sending. */
+    public GuiOpenPacket toPacket() {
+        int height = panelHeight;
         int contentBottom = nextRow + UltraStyle.BTN_H + UltraStyle.PANEL_MARGIN;
-        if (contentBottom > panelHeight) {
-            panelHeight = Math.min(UltraStyle.PANEL_MAX_H, contentBottom);
+        if (contentBottom > height) {
+            height = Math.min(UltraStyle.PANEL_MAX_H, contentBottom);
         }
 
         JsonArray tabArr = new JsonArray();
         for (Tab tab : tabs) {
+            if (tab == null || tab.id == null) {
+                continue;
+            }
             JsonObject o = new JsonObject();
-            // Tab bar clicks: qualify so dispatch can recover screen if KaiPath omits it.
             o.addProperty("id", qualifyAction("tab:" + tab.id));
             boolean active = tab.id.equalsIgnoreCase(activeTab);
             o.addProperty(
@@ -195,10 +204,15 @@ public final class UltraScreenSpec {
         }
         JsonArray lineArr = new JsonArray();
         for (String line : lines) {
-            lineArr.add(line);
+            if (line != null) {
+                lineArr.add(line);
+            }
         }
         JsonArray btnArr = new JsonArray();
         for (Button b : buttons) {
+            if (b == null) {
+                continue;
+            }
             JsonObject o = new JsonObject();
             o.addProperty("id", b.actionId);
             o.addProperty("label", b.label);
@@ -207,7 +221,6 @@ public final class UltraScreenSpec {
             o.addProperty("y", b.y);
             o.addProperty("w", b.w);
             o.addProperty("h", b.h);
-            // Echoed by KaiPath into GuiActionPacket.argsJson when present.
             JsonObject args = new JsonObject();
             args.addProperty("screen", screenId);
             args.addProperty("page", pageId);
@@ -216,24 +229,35 @@ public final class UltraScreenSpec {
         }
         JsonObject layout = new JsonObject();
         layout.addProperty("panelWidth", panelWidth);
-        layout.addProperty("panelHeight", panelHeight);
+        layout.addProperty("panelHeight", height);
         layout.addProperty("width", panelWidth);
-        layout.addProperty("height", panelHeight);
+        layout.addProperty("height", height);
         layout.addProperty("center", centerPanel);
         layout.addProperty("margin", panelMargin);
-        LmGuiNetwork.sendOpen(
-                player,
-                new GuiOpenPacket(
-                        screenId,
-                        title,
-                        pageId,
-                        GSON.toJson(tabArr),
-                        activeTab,
-                        GSON.toJson(lineArr),
-                        GSON.toJson(btnArr),
-                        panelWidth,
-                        panelHeight,
-                        GSON.toJson(layout)));
+        return new GuiOpenPacket(
+                screenId,
+                title,
+                pageId,
+                GSON.toJson(tabArr),
+                activeTab,
+                GSON.toJson(lineArr),
+                GSON.toJson(btnArr),
+                panelWidth,
+                height,
+                GSON.toJson(layout));
+    }
+
+    public void send(ServerPlayer player) {
+        GuiOpenPacket packet = toPacket();
+        List<GuiOpenPacket> probe = PROBE.get();
+        if (probe != null) {
+            probe.add(packet);
+            return;
+        }
+        if (player == null) {
+            return;
+        }
+        LmGuiNetwork.sendOpen(player, packet);
     }
 
     /** Prefix {@code @screenId:} unless the action is already qualified. */

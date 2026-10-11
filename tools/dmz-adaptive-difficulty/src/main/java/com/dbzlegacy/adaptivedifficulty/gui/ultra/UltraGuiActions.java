@@ -3,11 +3,11 @@ package com.dbzlegacy.adaptivedifficulty.gui.ultra;
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.gui.CharacterServicesGuiApi;
 import com.dbzlegacy.adaptivedifficulty.gui.DifficultyTeamGuiApi;
+import com.dbzlegacy.adaptivedifficulty.gui.GuiNotice;
 import com.dbzlegacy.adaptivedifficulty.gui.MechanicsGuiApi;
 import com.dbzlegacy.adaptivedifficulty.gui.ProgressionGuiApi;
 import com.dbzlegacy.adaptivedifficulty.gui.RivalGuiApi;
 import com.dbzlegacy.adaptivedifficulty.gui.SparGuiApi;
-import com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcMenuFeedback;
 import com.dbzlegacy.adaptivedifficulty.quest.SagaResetService;
 import com.dbzlegacy.adaptivedifficulty.service.DifficultyActions;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
@@ -22,6 +22,11 @@ public final class UltraGuiActions {
 
     public static void dispatch(ServerPlayer player, String screenId, String actionId, String argsJson) {
         if (player == null) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] Ultra action dropped: null player screenId={} actionId={}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    screenId,
+                    actionId);
             return;
         }
         if (actionId == null || actionId.isBlank()) {
@@ -34,14 +39,25 @@ public final class UltraGuiActions {
         }
 
         JsonObject args = parse(argsJson);
+        if (args == null) {
+            args = new JsonObject();
+        }
         Qualified q = qualify(screenId, actionId, args);
-        String screen = q.screen();
-        String action = q.action();
+        if (q == null) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] Ultra qualify returned null screenId={} actionId={}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    screenId,
+                    actionId);
+            return;
+        }
+        String screen = q.screen() == null ? "hub" : q.screen();
+        String action = q.action() == null ? "" : q.action();
 
         AdaptiveDifficultyMod.LOGGER.debug(
                 "[{}] Ultra action player={} rawActionId={} screen={} resolvedAction={} args={}",
                 AdaptiveDifficultyMod.MOD_ID,
-                player.m_7755_().getString(),
+                safeName(player),
                 actionId,
                 screen,
                 action,
@@ -51,12 +67,13 @@ public final class UltraGuiActions {
             dispatchResolved(player, screen, action, args, actionId);
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.error(
-                    "[{}] UltraGuiActions.handle failed rawActionId={} screen={} resolvedAction={} args={}",
+                    "[{}] UltraGuiActions.handle failed rawActionId={} screen={} resolvedAction={} args={} player={}",
                     AdaptiveDifficultyMod.MOD_ID,
                     actionId,
                     screen,
                     action,
                     args,
+                    safeName(player),
                     t);
             DmzRewards.msg(
                     player,
@@ -71,9 +88,25 @@ public final class UltraGuiActions {
             String action,
             JsonObject args,
             String rawActionId) {
+        if (player == null) {
+            return;
+        }
+        if (action == null || action.isBlank()) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] Ultra blank resolved action screen={} rawActionId={}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    screen,
+                    rawActionId);
+            return;
+        }
+        if (args == null) {
+            args = new JsonObject();
+        }
+        String safeScreen = screen == null || screen.isBlank() ? "hub" : screen;
+
         // KaiPath sometimes sends bare system names (e.g. "character") from the hub
         // instead of open:character / @hub:open:character.
-        if (!hasVerbPrefix(action) && isHubScreen(screen)) {
+        if (!hasVerbPrefix(action) && isHubScreen(safeScreen)) {
             String openTarget = bareHubOpenTarget(action);
             if (openTarget != null) {
                 AdaptiveDifficultyMod.LOGGER.debug(
@@ -87,11 +120,24 @@ public final class UltraGuiActions {
         }
 
         if (action.startsWith("tab:")) {
-            String tab = action.substring(4);
-            if (tab == null || tab.isBlank()) {
+            String tab = action.length() > 4 ? action.substring(4) : "";
+            if (tab.isBlank()) {
+                AdaptiveDifficultyMod.LOGGER.warn(
+                        "[{}] Ultra empty tab: screen={} rawActionId={}",
+                        AdaptiveDifficultyMod.MOD_ID,
+                        safeScreen,
+                        rawActionId);
                 return;
             }
-            UltraGui.open(player, screen, tabPage(screen, tab));
+            // Same screenId, updated page — never CNPC, never a different system.
+            String page = tabPage(safeScreen, tab);
+            AdaptiveDifficultyMod.LOGGER.debug(
+                    "[{}] Ultra tab: screen={} tab={} → page={}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    safeScreen,
+                    tab,
+                    page);
+            UltraGui.open(player, safeScreen, page);
             return;
         }
         if ("nav:hub".equals(action)) {
@@ -99,32 +145,38 @@ public final class UltraGuiActions {
             return;
         }
         if ("nav:home".equals(action)) {
-            UltraGui.open(player, screen, homePage(screen));
+            UltraGui.open(player, safeScreen, homePage(safeScreen));
             return;
         }
         if ("nav:refresh".equals(action)) {
             String page = stringArg(args, "page");
             if (page.isBlank()) {
-                page = homePage(screen);
+                page = homePage(safeScreen);
             }
-            UltraGui.open(player, screen, page);
+            UltraGui.open(player, safeScreen, page);
             return;
         }
         if (action.startsWith("open:")) {
-            String target = action.substring(5);
-            if (target == null || target.isBlank()) {
+            String target = action.length() > 5 ? action.substring(5) : "";
+            if (target.isBlank()) {
+                AdaptiveDifficultyMod.LOGGER.warn(
+                        "[{}] Ultra empty open: screen={} rawActionId={}",
+                        AdaptiveDifficultyMod.MOD_ID,
+                        safeScreen,
+                        rawActionId);
                 return;
             }
+            // Always Ultra GuiOpenPacket for the target system (no CNPC submenu fallback).
             UltraGui.open(player, target, "main");
             return;
         }
 
         DoParts parts = parseDo(action);
-        if (parts.action.isBlank()) {
+        if (parts == null || parts.action == null || parts.action.isBlank()) {
             AdaptiveDifficultyMod.LOGGER.warn(
                     "[{}] Ultra empty do-action screen={} rawActionId={} resolvedAction={}",
                     AdaptiveDifficultyMod.MOD_ID,
-                    screen,
+                    safeScreen,
                     rawActionId,
                     action);
             DmzRewards.msg(
@@ -133,22 +185,28 @@ public final class UltraGuiActions {
             return;
         }
         // Prefer arg encoded in the action id (do:action:arg…); fall back to argsJson.
-        if (!parts.arg.isBlank()) {
+        if (parts.arg != null && !parts.arg.isBlank()) {
             args.addProperty("arg", parts.arg);
         } else if (!args.has("arg") || args.get("arg") == null || args.get("arg").isJsonNull()) {
             args.addProperty("arg", "");
         }
 
-        String msg = runDo(player, screen, parts.action, args, rawActionId);
+        String msg = runDo(player, safeScreen, parts.action, args, rawActionId);
         if (msg != null && !msg.isBlank()) {
-            DmzRewards.msg(player, CnpcMenuFeedback.noticeBody(msg));
+            String notice = GuiNotice.noticeBody(msg);
+            if (notice != null && !notice.isBlank()) {
+                DmzRewards.msg(player, notice);
+            }
         }
         // saga_confirm opens its page inside characterDo.
         if ("saga_confirm".equals(parts.action)) {
             return;
         }
-        String reopen = reopenPage(screen, parts, args);
-        UltraGui.open(player, screen, reopen == null || reopen.isBlank() ? homePage(screen) : reopen);
+        String reopen = reopenPage(safeScreen, parts, args);
+        UltraGui.open(
+                player,
+                safeScreen,
+                reopen == null || reopen.isBlank() ? homePage(safeScreen) : reopen);
     }
 
     /** True when action already uses a protocol verb. */
@@ -202,26 +260,51 @@ public final class UltraGuiActions {
                     rawActionId);
             return UltraStyle.dangerLine("That menu action is not available.");
         }
+        if (args == null) {
+            args = new JsonObject();
+        }
         String arg = stringArg(args, "arg");
         String page = stringArg(args, "page");
         if (page.isBlank()) {
             page = homePage(screen);
         }
-        String result = switch (screen == null ? "" : screen) {
-            case "difficulty" -> {
-                DifficultyActions.Result r = DifficultyActions.handleArgNoReopen(player, act, arg, page);
-                yield r == null || r.message() == null ? "" : r.message();
-            }
-            case "rival" -> RivalGuiApi.handleDo(player, act, arg, page);
-            case "spar", "sparring" -> SparGuiApi.handleDo(player, act, arg, page);
-            case "prestige" -> ProgressionGuiApi.handlePrestigeDo(player, act, arg, page);
-            case "character", "saga" -> characterDo(player, act, arg, page);
-            case "progression" -> ProgressionGuiApi.handleDo(player, act, arg, page);
-            case "config" -> UltraConfigScreens.handleAction(player, act, arg, page);
-            case "hub", "admin" -> MechanicsGuiApi.handleDo(player, act, arg, page);
-            case "team" -> DifficultyTeamGuiApi.handleDo(player, act, arg, page);
-            default -> null;
-        };
+        String safeScreen = screen == null ? "" : screen;
+        String result;
+        try {
+            result = switch (safeScreen) {
+                case "difficulty" -> {
+                    DifficultyActions.Result r =
+                            DifficultyActions.handleArgNoReopen(player, act, arg, page);
+                    if (r == null) {
+                        yield "";
+                    }
+                    yield r.message() == null ? "" : r.message();
+                }
+                case "rival" -> nullToEmpty(RivalGuiApi.handleDo(player, act, arg, page));
+                case "spar", "sparring" -> nullToEmpty(SparGuiApi.handleDo(player, act, arg, page));
+                case "prestige" ->
+                        nullToEmpty(ProgressionGuiApi.handlePrestigeDo(player, act, arg, page));
+                case "character", "saga" -> characterDo(player, act, arg, page);
+                case "progression" -> nullToEmpty(ProgressionGuiApi.handleDo(player, act, arg, page));
+                case "config" -> nullToEmpty(UltraConfigScreens.handleAction(player, act, arg, page));
+                case "hub", "admin" -> nullToEmpty(MechanicsGuiApi.handleDo(player, act, arg, page));
+                case "team" -> nullToEmpty(DifficultyTeamGuiApi.handleDo(player, act, arg, page));
+                default -> null;
+            };
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.error(
+                    "[{}] Ultra runDo threw screen={} action={} arg={} page={} rawActionId={} player={}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    safeScreen,
+                    act,
+                    arg,
+                    page,
+                    rawActionId,
+                    safeName(player),
+                    t);
+            return UltraStyle.dangerLine(
+                    "Something went wrong. Try again, or ask staff if it keeps happening.");
+        }
         if (result == null) {
             AdaptiveDifficultyMod.LOGGER.warn(
                     "[{}] Ultra unrecognized screen=\"{}\" rawActionId=\"{}\" action=\"{}\" arg=\"{}\"",
@@ -245,6 +328,10 @@ public final class UltraGuiActions {
         return result;
     }
 
+    private static String nullToEmpty(String s) {
+        return s == null ? "" : s;
+    }
+
     private static boolean isGenericFailure(String msg) {
         if (msg == null) {
             return false;
@@ -257,6 +344,9 @@ public final class UltraGuiActions {
         if (player == null) {
             return UltraStyle.dangerLine("This only works in-game.");
         }
+        if (action == null || action.isBlank()) {
+            return UltraStyle.dangerLine("That menu action is not available.");
+        }
         if (UltraStyle.PAGE_ANDROID_REMOVE.equals(action) || "android".equals(action)) {
             String msg = ProgressionGuiApi.handleDo(player, action, arg, page);
             return msg == null ? "" : msg;
@@ -266,7 +356,6 @@ public final class UltraGuiActions {
             if (id.isBlank()) {
                 return UltraStyle.dangerLine("Choose a saga first.");
             }
-            // Routes through UltraGui → CNPC when KaiPath lacks screenId=character.
             UltraGui.open(player, "character", "saga_confirm:" + id);
             return "";
         }
@@ -289,7 +378,7 @@ public final class UltraGuiActions {
      */
     static DoParts parseDo(String action) {
         String raw = stripDo(action);
-        if (raw.isBlank()) {
+        if (raw == null || raw.isBlank()) {
             return new DoParts("", "");
         }
         int colon = raw.indexOf(':');
@@ -324,7 +413,7 @@ public final class UltraGuiActions {
                 action = action.substring(1).trim();
             }
         }
-        if (screen.isBlank()) {
+        if (screen.isBlank() && args != null) {
             screen = stringArg(args, "screen");
         }
         if (screen.isBlank() && screenId != null) {
@@ -352,7 +441,7 @@ public final class UltraGuiActions {
         if (parts == null) {
             return homePage(screen);
         }
-        if ("config".equals(screen) && "open_module".equals(parts.action) && !parts.arg.isBlank()) {
+        if ("config".equals(screen) && "open_module".equals(parts.action) && parts.arg != null && !parts.arg.isBlank()) {
             return "module:" + parts.arg;
         }
         if (("character".equals(screen) || "saga".equals(screen))
@@ -365,35 +454,35 @@ public final class UltraGuiActions {
         }
         // Keep player on the tab they acted from when possible.
         return switch (screen == null ? "" : screen) {
-            case "difficulty" -> switch (parts.action) {
+            case "difficulty" -> switch (parts.action == null ? "" : parts.action) {
                 case "activate", "lower_tier", "purchase_tier", "buy", "toggle_personal" -> "tiers";
                 case "summon_end_dragon", "end_dragon", "summon_dragon" -> "summons";
                 default -> homePage(screen);
             };
-            case "prestige" -> switch (parts.action) {
+            case "prestige" -> switch (parts.action == null ? "" : parts.action) {
                 case "confirm", "turnin", "turn_in", "redeem" -> "turnin";
                 case "skill", "buy_skill", "skillup" -> "shop";
                 default -> homePage(screen);
             };
-            case "progression" -> switch (parts.action) {
+            case "progression" -> switch (parts.action == null ? "" : parts.action) {
                 case "boost" -> "boosts";
                 case "toggle_staff_free_coins", "staff_free_coins" -> "coins";
                 default -> homePage(screen);
             };
-            case "spar", "sparring" -> switch (parts.action) {
+            case "spar", "sparring" -> switch (parts.action == null ? "" : parts.action) {
                 case "dojo_accept", "dojo_war_accept", "dojo_war_cancel", "dojo_war_revoke",
                         "dojo_cancel", "dojo_challenge" -> "dojo_war";
                 case "mentor", "mentor_accept", "mentor_decline", "mentor_tpmsg", "mentor_tp_msg" -> "dojo";
                 default -> homePage(screen);
             };
-            case "rival" -> switch (parts.action) {
+            case "rival" -> switch (parts.action == null ? "" : parts.action) {
                 case "challenge", "challenge_accept", "challenge_decline", "challenge_cancel",
                         "challenge_send", "spectate", "spectate_stop" -> "challenge";
                 case "tpmsg", "tp_msg", "instinct", "declare", "accept", "decline", "silent",
                         "remove", "accept_replace" -> "actions";
                 default -> homePage(screen);
             };
-            case "character" -> switch (parts.action) {
+            case "character" -> switch (parts.action == null ? "" : parts.action) {
                 case "android_remove", "android" -> UltraStyle.PAGE_ANDROID_REMOVE;
                 default -> homePage(screen);
             };
@@ -475,11 +564,23 @@ public final class UltraGuiActions {
         }
         try {
             if (el.isJsonPrimitive()) {
-                return el.getAsString() == null ? "" : el.getAsString().trim();
+                String s = el.getAsString();
+                return s == null ? "" : s.trim();
             }
             return el.toString().trim();
         } catch (Throwable ignored) {
             return "";
+        }
+    }
+
+    private static String safeName(ServerPlayer player) {
+        if (player == null) {
+            return "?";
+        }
+        try {
+            return player.m_7755_().getString();
+        } catch (Throwable ignored) {
+            return "?";
         }
     }
 

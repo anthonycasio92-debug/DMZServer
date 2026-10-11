@@ -2,6 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.net.gui;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraScreenIds;
+import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraScreenSelfTest;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.LinkedHashSet;
@@ -61,6 +62,8 @@ public final class LmGuiNetwork {
                 .consumerMainThread(GuiActionPacket::handle)
                 .add();
         validateBuilderScreenIdsAtStartup();
+        UltraScreenSelfTest.runAtStartup();
+        UltraScreenSelfTest.verifyTabStaysOnScreen();
     }
 
     public static void sendOpen(ServerPlayer player, GuiOpenPacket packet) {

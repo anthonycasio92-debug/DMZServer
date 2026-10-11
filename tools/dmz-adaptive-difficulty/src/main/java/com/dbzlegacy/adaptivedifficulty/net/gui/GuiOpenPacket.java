@@ -93,6 +93,30 @@ public final class GuiOpenPacket {
         return screenId;
     }
 
+    public String title() {
+        return title;
+    }
+
+    public String pageId() {
+        return pageId;
+    }
+
+    public String tabsJson() {
+        return tabsJson;
+    }
+
+    public String activeTab() {
+        return activeTab;
+    }
+
+    public String linesJson() {
+        return linesJson;
+    }
+
+    public String buttonsJson() {
+        return buttonsJson;
+    }
+
     public int panelWidth() {
         return panelWidth;
     }

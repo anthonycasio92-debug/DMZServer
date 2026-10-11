@@ -9,10 +9,9 @@ import java.util.TreeSet;
 /**
  * Canonical Ultra {@code screenId} values for {@code GuiOpenPacket}.
  *
- * <p>Protocol / docs list the full set LM may send. Live KaiPath 1.3.0
- * {@code LmScreens.registerDefaults()} only registers {@code hub} — any other id opens
- * {@code MissingScreen} ("Unknown screen"). LM must not wire unregistered ids; use CNPC for
- * those systems until KaiPath registers them.
+ * <p>Protocol / LM builders send the full set. KaiPath owns client handlers; LM always wires
+ * every builder id via {@code GuiOpenPacket} when Ultra is active (no CNPC submenu fallback).
+ * {@link #KAIPATH_REGISTERED_IDS} is informational — mismatches log a warning at send time.
  */
 public final class UltraScreenIds {
     /** IDs documented in {@code docs/KAIPATH_GUI_PROTOCOL.md} / LM builders. */
@@ -28,8 +27,8 @@ public final class UltraScreenIds {
             "admin");
 
     /**
-     * Screen ids registered by KaiPath 1.3.0 {@code LmScreens.registerDefaults()}.
-     * Update this when KaiPath adds handlers — LM must match exactly.
+     * Screen ids last observed in KaiPath {@code LmScreens.registerDefaults()} (1.3.0: hub only).
+     * Informational — Ultra still sends every builder {@code GuiOpenPacket}; update when KaiPath grows.
      */
     public static final Set<String> KAIPATH_REGISTERED_IDS = Set.of("hub");
 
@@ -54,10 +53,13 @@ public final class UltraScreenIds {
         return screenId != null && PROTOCOL_IDS.contains(screenId.trim().toLowerCase(Locale.ROOT));
     }
 
-    /** True when KaiPath 1.3.0 can open this wire {@code screenId} without MissingScreen. */
+    /**
+     * True when the id is in the last-known KaiPath registry set. Does not gate sends —
+     * Ultra always wires {@code GuiOpenPacket} for builder ids.
+     */
     public static boolean kaipathCanOpen(String screenId) {
         if (screenId == null || screenId.isBlank()) {
-            return true; // blank → hub on client
+            return true;
         }
         return KAIPATH_REGISTERED_IDS.contains(screenId.trim().toLowerCase(Locale.ROOT));
     }
@@ -85,8 +87,8 @@ public final class UltraScreenIds {
     }
 
     /**
-     * Startup check: every {@code UltraScreenSpec.of("…")} id must be in {@link #PROTOCOL_IDS}.
-     * Warn when protocol ids are not yet registered in KaiPath (CNPC fallback path).
+     * Startup check: every builder id must be in {@link #PROTOCOL_IDS}. Warn when a protocol
+     * id is absent from the last-known KaiPath registry (informational).
      */
     public static void validateAtStartup(Set<String> builderScreenIds) {
         Set<String> found = new TreeSet<>();
@@ -117,18 +119,17 @@ public final class UltraScreenIds {
             }
         }
         AdaptiveDifficultyMod.LOGGER.info(
-                "[{}] Ultra screen ids: builders={} protocol={} kaipathRegistered={} "
-                        + "(unregistered → CNPC fallback until KaiPath LmScreens grows)",
+                "[{}] Ultra screen ids: builders={} protocol={} kaipathKnown={}",
                 AdaptiveDifficultyMod.MOD_ID,
                 found,
                 PROTOCOL_IDS,
                 KAIPATH_REGISTERED_IDS);
         if (!missingOnKaiPath.isEmpty()) {
             AdaptiveDifficultyMod.LOGGER.warn(
-                    "[{}] KaiPath 1.3.0 LmScreens only registers {}; LM will not send wire "
-                            + "screenIds {} (avoids client Unknown screen). CNPC opens those menus.",
+                    "[{}] Ultra will still send GuiOpenPacket for {}; update "
+                            + "UltraScreenIds.KAIPATH_REGISTERED_IDS when KaiPath LmScreens grows "
+                            + "(or shrink the set if a client lacks a handler).",
                     AdaptiveDifficultyMod.MOD_ID,
-                    KAIPATH_REGISTERED_IDS,
                     missingOnKaiPath);
         }
     }

@@ -6,20 +6,23 @@ LM is **server-only**. KaiPath owns the client screen (`LmScreens` / DMZUltra wi
 
 ### Screen id contract (KaiPath owns the renderer)
 
-Protocol / LM builders may use: `hub`, `difficulty`, `rival`, `spar`, `prestige`,
+Protocol / LM builders use: `hub`, `difficulty`, `rival`, `spar`, `prestige`,
 `character`, `progression`, `config`, `admin`.
 
-**Live KaiPath 1.3.0** `LmScreens.registerDefaults()` only registers **`hub`**. Any other
-`screenId` opens KaiPath `MissingScreen` ("Unknown screen"). Until KaiPath registers more
-handlers, LM:
+When Ultra is active (`guiBackend=ultra` + client has KaiPath), **every** `open:<system>` and
+submenu/tab navigation sends a `GuiOpenPacket` via the matching `Ultra*Screens` builder.
+There is **no CNPC fallback inside the Ultra path** for submenus. CNPC is used only when Ultra
+cannot run (missing KaiPath or non-ultra backend); that fallback is logged.
 
-- Sends Ultra `GuiOpenPacket` only for ids in `UltraScreenIds.KAIPATH_REGISTERED_IDS` (currently `hub`).
-- Opens other systems via CustomNPCs fallback (`UltraGui` / `UltraHubScreens`).
-- At `LmGuiNetwork.register()`, validates every builder id against the protocol list and logs a
-  warning for protocol ids not yet registered on KaiPath.
-- Debug-logs every outgoing `GuiOpenPacket.screenId` (player, panel size, layout length).
+At `LmGuiNetwork.register()`:
 
-Update `UltraScreenIds.KAIPATH_REGISTERED_IDS` when KaiPath grows — LM must match exactly.
+- Validate every builder id against the protocol list.
+- Run `UltraScreenSelfTest` (non-empty `screenId` / title / tabsJson / buttonsJson, panel &gt; 0).
+- Debug-log every outgoing `GuiOpenPacket.screenId` (player, panel size, layout length).
+
+`UltraScreenIds.KAIPATH_REGISTERED_IDS` is informational (last-known KaiPath handlers). A send
+for an id outside that set logs a warning but still transmits — KaiPath must register handlers
+for those ids.
 
 ## GuiOpenPacket (S→C)
 

@@ -1,8 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.gui.ultra;
 
-import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.gui.MechanicsGuiApi;
-import com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcLmGui;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import java.util.List;
 import java.util.Locale;
@@ -19,14 +17,6 @@ public final class UltraHubScreens {
         }
         String p = page == null || page.isBlank() ? "main" : page.toLowerCase(Locale.ROOT);
         if ("admin".equals(p)) {
-            // KaiPath 1.3.0 has no "admin" LmScreen — never wire that screenId.
-            if (!UltraScreenIds.kaipathCanOpen("admin")) {
-                AdaptiveDifficultyMod.LOGGER.debug(
-                        "[{}] Ultra hub admin page → CNPC (KaiPath missing screenId=admin)",
-                        AdaptiveDifficultyMod.MOD_ID);
-                CnpcLmGui.open(player, "admin", "main");
-                return;
-            }
             openAdmin(player);
             return;
         }
@@ -34,14 +24,24 @@ public final class UltraHubScreens {
     }
 
     private static void openMain(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
         Map<String, String> ph = MechanicsGuiApi.placeholders(player);
+        if (ph == null) {
+            ph = Map.of();
+        }
         List<String> status = MechanicsGuiApi.linesForPage(player, "main");
         UltraScreenSpec spec = UltraScreenSpec.of("hub")
                 .title("Legacy Mechanics")
                 .page("main")
                 .activeTab("home");
-        for (String line : status) {
-            spec.line(line);
+        if (status != null) {
+            for (String line : status) {
+                if (line != null && !line.isBlank()) {
+                    spec.line(line);
+                }
+            }
         }
         spec.setRow(100);
         systemButton(spec, ph, "difficulty", UltraStyle.confirm("Difficulty"), true);
@@ -59,6 +59,9 @@ public final class UltraHubScreens {
     }
 
     private static void openAdmin(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
         if (!StaffAccess.isStaff(player)) {
             openMain(player);
             return;
@@ -81,7 +84,11 @@ public final class UltraHubScreens {
 
     private static void systemButton(
             UltraScreenSpec spec, Map<String, String> ph, String system, String label, boolean left) {
-        boolean on = "difficulty".equals(system) || "true".equalsIgnoreCase(ph.get(system));
+        if (spec == null || system == null) {
+            return;
+        }
+        boolean on = "difficulty".equals(system)
+                || (ph != null && "true".equalsIgnoreCase(ph.get(system)));
         String action = "open:" + ("spar".equals(system) ? "spar" : system);
         String styled = on ? label : UltraStyle.dim(UltraStyle.plain(label) + " · off");
         String style = on ? "normal" : "dim";
