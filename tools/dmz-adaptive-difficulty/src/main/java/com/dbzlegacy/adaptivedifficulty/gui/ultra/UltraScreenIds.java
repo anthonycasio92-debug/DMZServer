@@ -9,9 +9,10 @@ import java.util.TreeSet;
 /**
  * Canonical Ultra {@code screenId} values for {@code GuiOpenPacket}.
  *
- * <p>Protocol / LM builders send the full set. KaiPath owns client handlers; LM always wires
- * every builder id via {@code GuiOpenPacket} when Ultra is active (no CNPC submenu fallback).
- * {@link #KAIPATH_REGISTERED_IDS} is informational — mismatches log a warning at send time.
+ * <p>{@link #KAIPATH_REGISTERED_IDS} is the source of truth for which wire ids KaiPath can open.
+ * Builders still use logical ids; {@code LmGuiNetwork} tunnels any id not in that set through
+ * {@code hub} on the wire (KaiPath 1.3.0 compatibility shim). Expand this set when KaiPath
+ * registers more {@code LmScreens} — one-line change turns the shim off for those ids.
  */
 public final class UltraScreenIds {
     /** IDs documented in {@code docs/KAIPATH_GUI_PROTOCOL.md} / LM builders. */
@@ -27,8 +28,8 @@ public final class UltraScreenIds {
             "admin");
 
     /**
-     * Screen ids last observed in KaiPath {@code LmScreens.registerDefaults()} (1.3.0: hub only).
-     * Informational — Ultra still sends every builder {@code GuiOpenPacket}; update when KaiPath grows.
+     * Wire {@code screenId} values KaiPath {@code LmScreens.registerDefaults()} can open.
+     * 1.3.0 registers {@code hub} only. Add ids here as KaiPath grows to disable the hub shim.
      */
     public static final Set<String> KAIPATH_REGISTERED_IDS = Set.of("hub");
 
@@ -47,21 +48,37 @@ public final class UltraScreenIds {
             "progression",
             "config");
 
+    /** layoutJson / button-args key for the logical system when wire screenId is hub. */
+    public static final String META_SYSTEM = "system";
+
     private UltraScreenIds() {}
 
     public static boolean isProtocolId(String screenId) {
         return screenId != null && PROTOCOL_IDS.contains(screenId.trim().toLowerCase(Locale.ROOT));
     }
 
-    /**
-     * True when the id is in the last-known KaiPath registry set. Does not gate sends —
-     * Ultra always wires {@code GuiOpenPacket} for builder ids.
-     */
+    /** True when KaiPath can open this wire {@code screenId} without MissingScreen. */
     public static boolean kaipathCanOpen(String screenId) {
         if (screenId == null || screenId.isBlank()) {
             return true;
         }
         return KAIPATH_REGISTERED_IDS.contains(screenId.trim().toLowerCase(Locale.ROOT));
+    }
+
+    /** True when this logical id must be tunneled through wire {@code hub}. */
+    public static boolean needsHubShim(String logicalScreenId) {
+        return !kaipathCanOpen(logicalScreenId);
+    }
+
+    /** Builder / protocol ids that currently require the hub wire shim. */
+    public static Set<String> hubShimTunnelIds() {
+        Set<String> tunneled = new TreeSet<>();
+        for (String id : BUILDER_IDS) {
+            if (needsHubShim(id)) {
+                tunneled.add(id);
+            }
+        }
+        return tunneled;
     }
 
     public static String normalizeLogical(String system) {
@@ -87,8 +104,8 @@ public final class UltraScreenIds {
     }
 
     /**
-     * Startup check: every builder id must be in {@link #PROTOCOL_IDS}. Warn when a protocol
-     * id is absent from the last-known KaiPath registry (informational).
+     * Startup check: every builder id must be in {@link #PROTOCOL_IDS}. Logs a single info line
+     * listing ids tunneled through hub for KaiPath compatibility.
      */
     public static void validateAtStartup(Set<String> builderScreenIds) {
         Set<String> found = new TreeSet<>();
@@ -112,25 +129,19 @@ public final class UltraScreenIds {
                     AdaptiveDifficultyMod.MOD_ID,
                     unknown);
         }
-        Set<String> missingOnKaiPath = new LinkedHashSet<>();
-        for (String id : found) {
-            if (PROTOCOL_IDS.contains(id) && !KAIPATH_REGISTERED_IDS.contains(id)) {
-                missingOnKaiPath.add(id);
-            }
-        }
+        Set<String> tunneled = hubShimTunnelIds();
         AdaptiveDifficultyMod.LOGGER.info(
-                "[{}] Ultra screen ids: builders={} protocol={} kaipathKnown={}",
+                "[{}] Ultra screen ids: builders={} protocol={} kaipathRegistered={}",
                 AdaptiveDifficultyMod.MOD_ID,
                 found,
                 PROTOCOL_IDS,
                 KAIPATH_REGISTERED_IDS);
-        if (!missingOnKaiPath.isEmpty()) {
-            AdaptiveDifficultyMod.LOGGER.warn(
-                    "[{}] Ultra will still send GuiOpenPacket for {}; update "
-                            + "UltraScreenIds.KAIPATH_REGISTERED_IDS when KaiPath LmScreens grows "
-                            + "(or shrink the set if a client lacks a handler).",
+        if (!tunneled.isEmpty()) {
+            AdaptiveDifficultyMod.LOGGER.info(
+                    "[{}] Ultra submenu shim active: tunneling {} through hub screenId "
+                            + "for KaiPath compatibility",
                     AdaptiveDifficultyMod.MOD_ID,
-                    missingOnKaiPath);
+                    tunneled);
         }
     }
 }

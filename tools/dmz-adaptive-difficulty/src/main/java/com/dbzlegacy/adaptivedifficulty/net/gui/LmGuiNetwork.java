@@ -3,6 +3,8 @@ package com.dbzlegacy.adaptivedifficulty.net.gui;
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraScreenIds;
 import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraScreenSelfTest;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.LinkedHashSet;
@@ -64,30 +66,83 @@ public final class LmGuiNetwork {
         validateBuilderScreenIdsAtStartup();
         UltraScreenSelfTest.runAtStartup();
         UltraScreenSelfTest.verifyTabStaysOnScreen();
+        UltraScreenSelfTest.verifyHubShim();
     }
 
     public static void sendOpen(ServerPlayer player, GuiOpenPacket packet) {
         if (player == null || packet == null) {
             return;
         }
+        GuiOpenPacket wire = applyHubShim(packet);
         AdaptiveDifficultyMod.LOGGER.debug(
-                "[{}] GuiOpenPacket → player={} screenId={} panel={}x{} layoutLen={}",
+                "[{}] GuiOpenPacket → player={} wireScreenId={} logicalSystem={} panel={}x{} layoutLen={}",
                 AdaptiveDifficultyMod.MOD_ID,
                 player.m_7755_().getString(),
-                packet.screenId(),
+                wire.screenId(),
+                logicalSystemOf(packet, wire),
+                wire.panelWidth(),
+                wire.panelHeight(),
+                wire.layoutJson() == null ? 0 : wire.layoutJson().length());
+        validatePanelBounds(wire);
+        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), wire);
+    }
+
+    /**
+     * KaiPath compatibility: rewrite wire {@code screenId} to {@code hub} when the logical id
+     * is not in {@link UltraScreenIds#KAIPATH_REGISTERED_IDS}. Title, tabs, buttons, panel, and
+     * layout stay as built; logical system is kept in button {@code args} / {@code layoutJson}.
+     */
+    public static GuiOpenPacket applyHubShim(GuiOpenPacket packet) {
+        if (packet == null) {
+            return null;
+        }
+        String logical = packet.screenId();
+        if (!UltraScreenIds.needsHubShim(logical)) {
+            return packet;
+        }
+        String layout = withLogicalSystem(packet.layoutJson(), logical);
+        return new GuiOpenPacket(
+                "hub",
+                packet.title(),
+                packet.pageId(),
+                packet.tabsJson(),
+                packet.activeTab(),
+                packet.linesJson(),
+                packet.buttonsJson(),
                 packet.panelWidth(),
                 packet.panelHeight(),
-                packet.layoutJson() == null ? 0 : packet.layoutJson().length());
-        if (!UltraScreenIds.kaipathCanOpen(packet.screenId())) {
-            AdaptiveDifficultyMod.LOGGER.warn(
-                    "[{}] GuiOpenPacket screenId=\"{}\" is not registered in KaiPath LmScreens "
-                            + "(known={}) — client will show Unknown screen",
-                    AdaptiveDifficultyMod.MOD_ID,
-                    packet.screenId(),
-                    UltraScreenIds.KAIPATH_REGISTERED_IDS);
+                layout);
+    }
+
+    static String withLogicalSystem(String layoutJson, String logical) {
+        String system = logical == null || logical.isBlank() ? "hub" : logical.trim().toLowerCase();
+        try {
+            JsonObject o;
+            if (layoutJson == null || layoutJson.isBlank()) {
+                o = new JsonObject();
+            } else {
+                o = JsonParser.parseString(layoutJson).getAsJsonObject();
+            }
+            o.addProperty(UltraScreenIds.META_SYSTEM, system);
+            o.addProperty("screen", system);
+            return o.toString();
+        } catch (Throwable ignored) {
+            return "{\"system\":\""
+                    + system
+                    + "\",\"screen\":\""
+                    + system
+                    + "\",\"center\":true,\"margin\":8}";
         }
-        validatePanelBounds(packet);
-        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+
+    private static String logicalSystemOf(GuiOpenPacket original, GuiOpenPacket wire) {
+        if (original != null
+                && original.screenId() != null
+                && !original.screenId().isBlank()
+                && UltraScreenIds.needsHubShim(original.screenId())) {
+            return original.screenId();
+        }
+        return wire == null ? "?" : wire.screenId();
     }
 
     /**

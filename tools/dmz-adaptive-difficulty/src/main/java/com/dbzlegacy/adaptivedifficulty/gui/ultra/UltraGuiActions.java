@@ -396,10 +396,16 @@ public final class UltraGuiActions {
     }
 
     /**
-     * Resolve screen + action from packet fields.
+     * Resolve logical screen + action from packet fields.
      *
-     * <p>Priority: {@code @screen:action} prefix on actionId, then {@code args.screen}, then packet
-     * {@code screenId}.
+     * <p>Priority (hub wire shim aware):
+     * <ol>
+     *   <li>{@code @logical:action} prefix on actionId
+     *   <li>{@code args.system} / {@code args.screen} (logical metadata from button args)
+     *   <li>packet {@code screenId} (may be {@code hub} when KaiPath shim is active)
+     * </ol>
+     * Bare hub tile names ({@code character} → {@code open:character}) still work when the
+     * resolved screen is hub.
      */
     static Qualified qualify(String screenId, String actionId, JsonObject args) {
         String action = actionId == null ? "" : actionId.trim();
@@ -413,27 +419,21 @@ public final class UltraGuiActions {
                 action = action.substring(1).trim();
             }
         }
+        // Prefer logical metadata over wire screenId (hub shim tunnels submenus as hub).
+        if (screen.isBlank() && args != null) {
+            screen = stringArg(args, UltraScreenIds.META_SYSTEM);
+        }
         if (screen.isBlank() && args != null) {
             screen = stringArg(args, "screen");
         }
-        if (screen.isBlank() && screenId != null) {
+        if (screen.isBlank() && screenId != null && !screenId.isBlank()) {
+            // Wire hub with no metadata → real hub. Otherwise treat packet id as logical.
             screen = screenId.trim();
         }
         if (screen.isBlank()) {
             screen = "hub";
         }
-        screen = screen.toLowerCase();
-        // Normalize aliases used as open targets / packet ids.
-        screen = switch (screen) {
-            case "lm", "legacymechanics", "main" -> "hub";
-            case "diff" -> "difficulty";
-            case "sparring" -> "spar";
-            case "charservices", "char" -> "character";
-            case "sagareset", "saga_reset" -> "character";
-            case "prog" -> "progression";
-            case "cfgedit", "configeditor" -> "config";
-            default -> screen;
-        };
+        screen = UltraScreenIds.normalizeLogical(screen);
         return new Qualified(screen, action);
     }
 

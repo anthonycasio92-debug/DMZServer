@@ -6,23 +6,31 @@ LM is **server-only**. KaiPath owns the client screen (`LmScreens` / DMZUltra wi
 
 ### Screen id contract (KaiPath owns the renderer)
 
-Protocol / LM builders use: `hub`, `difficulty`, `rival`, `spar`, `prestige`,
+Protocol / LM builders use logical ids: `hub`, `difficulty`, `rival`, `spar`, `prestige`,
 `character`, `progression`, `config`, `admin`.
 
-When Ultra is active (`guiBackend=ultra` + client has KaiPath), **every** `open:<system>` and
-submenu/tab navigation sends a `GuiOpenPacket` via the matching `Ultra*Screens` builder.
-There is **no CNPC fallback inside the Ultra path** for submenus. CNPC is used only when Ultra
-cannot run (missing KaiPath or non-ultra backend); that fallback is logged.
+When Ultra is active (`guiBackend=ultra` + client has KaiPath), every `open:<system>` and
+submenu/tab navigation builds a `GuiOpenPacket` via the matching `Ultra*Screens` builder.
+There is **no CNPC fallback inside the Ultra path**. CNPC is used only when Ultra cannot run
+(missing KaiPath or `guiBackend=cnpc`); that fallback is logged.
 
-At `LmGuiNetwork.register()`:
+#### Hub wire shim (KaiPath 1.3.0)
 
-- Validate every builder id against the protocol list.
-- Run `UltraScreenSelfTest` (non-empty `screenId` / title / tabsJson / buttonsJson, panel &gt; 0).
-- Debug-log every outgoing `GuiOpenPacket.screenId` (player, panel size, layout length).
+KaiPath 1.3.0 `LmScreens.registerDefaults()` only registers **`hub`**. LM tunnels any logical
+id not in `UltraScreenIds.KAIPATH_REGISTERED_IDS` by setting the wire `screenId` to **`hub`**.
+Title, tabs, buttons, panel **430×280**, and layout (`center: true`, `margin: 8`) stay as built.
+The logical system is stored in:
 
-`UltraScreenIds.KAIPATH_REGISTERED_IDS` is informational (last-known KaiPath handlers). A send
-for an id outside that set logs a warning but still transmits — KaiPath must register handlers
+- button `args.screen` / `args.system` (echoed into `GuiActionPacket`)
+- `layoutJson.system` / `layoutJson.screen`
+- `@&lt;logical&gt;:` prefixes on button/tab action ids
+
+`UltraGuiActions` resolves the logical screen from that metadata (not the wire `hub` id).
+Expand `KAIPATH_REGISTERED_IDS` when KaiPath adds handlers — one-line change disables the shim
 for those ids.
+
+At `LmGuiNetwork.register()`: protocol id check, builder self-test, tab + hub-shim self-checks,
+and a single info line listing tunneled ids.
 
 ## GuiOpenPacket (S→C)
 

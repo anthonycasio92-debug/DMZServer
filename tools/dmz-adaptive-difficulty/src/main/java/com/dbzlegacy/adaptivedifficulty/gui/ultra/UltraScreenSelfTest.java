@@ -2,10 +2,12 @@ package com.dbzlegacy.adaptivedifficulty.gui.ultra;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.net.gui.GuiOpenPacket;
+import com.dbzlegacy.adaptivedifficulty.net.gui.LmGuiNetwork;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Startup self-test: every Ultra builder id produces a non-empty {@link GuiOpenPacket}
@@ -179,7 +181,10 @@ public final class UltraScreenSelfTest {
         return null;
     }
 
-    /** Extra tab-navigation check: tab: must stay on the same screenId. */
+    /**
+     * Tab navigation: builders keep the logical screenId; after hub shim the wire id is hub
+     * while tabsJson / button args still name the logical system. Never CNPC.
+     */
     public static void verifyTabStaysOnScreen() {
         List<String> issues = new ArrayList<>();
         String[] screens = {"difficulty", "character", "rival", "spar", "prestige", "progression"};
@@ -200,21 +205,84 @@ public final class UltraScreenSelfTest {
                 issues.add(screen + ": no packet");
                 continue;
             }
-            GuiOpenPacket pkt = packets.get(0);
-            if (!screen.equalsIgnoreCase(pkt.screenId())) {
-                issues.add(screen + ": got " + pkt.screenId());
+            GuiOpenPacket logical = packets.get(0);
+            if (!screen.equalsIgnoreCase(logical.screenId())) {
+                issues.add(screen + ": logical screenId=" + logical.screenId());
             }
-            if (pkt.tabsJson() == null || !pkt.tabsJson().contains("tab:")) {
+            if (logical.tabsJson() == null || !logical.tabsJson().contains("tab:")) {
                 issues.add(screen + ": tabsJson missing tab: actions");
+            }
+            if (logical.buttonsJson() == null || !logical.buttonsJson().contains("\"screen\":\"" + screen + "\"")) {
+                issues.add(screen + ": buttonsJson missing args.screen metadata");
+            }
+            GuiOpenPacket wire = LmGuiNetwork.applyHubShim(logical);
+            if (wire == null) {
+                issues.add(screen + ": shim returned null");
+                continue;
+            }
+            if (UltraScreenIds.needsHubShim(screen) && !"hub".equalsIgnoreCase(wire.screenId())) {
+                issues.add(screen + ": wire screenId=" + wire.screenId() + " (expected hub)");
+            }
+            if (wire.title() == null || !wire.title().equals(logical.title())) {
+                issues.add(screen + ": shim altered title");
+            }
+            if (wire.panelWidth() <= 0 || wire.panelHeight() <= 0) {
+                issues.add(screen + ": shim lost panel bounds");
             }
         }
         if (issues.isEmpty()) {
             AdaptiveDifficultyMod.LOGGER.info(
-                    "[{}] Ultra tab: self-check OK (same screenId, tab actions in tabsJson)",
+                    "[{}] Ultra tab: self-check OK (logical screen + hub wire shim, no CNPC)",
                     AdaptiveDifficultyMod.MOD_ID);
         } else {
             AdaptiveDifficultyMod.LOGGER.warn(
                     "[{}] Ultra tab: self-check issues: {}", AdaptiveDifficultyMod.MOD_ID, issues);
+        }
+    }
+
+    /** Hub shim: non-registered logical ids rewrite wire screenId to hub and keep system metadata. */
+    public static void verifyHubShim() {
+        List<String> issues = new ArrayList<>();
+        Set<String> tunneled = UltraScreenIds.hubShimTunnelIds();
+        for (String logical : tunneled) {
+            GuiOpenPacket built =
+                    UltraScreenSpec.of(logical)
+                            .title(logical)
+                            .page("main")
+                            .activeTab("home")
+                            .tabs("home|Home")
+                            .line("shim-probe")
+                            .buttonLeft("nav:refresh", "Refresh", "dim")
+                            .toPacket();
+            GuiOpenPacket wire = LmGuiNetwork.applyHubShim(built);
+            if (wire == null || !"hub".equalsIgnoreCase(wire.screenId())) {
+                issues.add(logical + ": wire screenId=" + (wire == null ? "null" : wire.screenId()));
+                continue;
+            }
+            if (wire.layoutJson() == null || !wire.layoutJson().contains(logical)) {
+                issues.add(logical + ": layoutJson missing system metadata");
+            }
+            if (wire.buttonsJson() == null || !wire.buttonsJson().contains("\"screen\":\"" + logical + "\"")) {
+                issues.add(logical + ": buttons lost args.screen");
+            }
+            if (wire.panelWidth() != built.panelWidth() || wire.panelHeight() != built.panelHeight()) {
+                issues.add(logical + ": panel size changed by shim");
+            }
+        }
+        // Registered ids must not be rewritten.
+        GuiOpenPacket hub = UltraScreenSpec.of("hub").title("Hub").page("main").button("nav:refresh", "R", "dim").toPacket();
+        GuiOpenPacket hubWire = LmGuiNetwork.applyHubShim(hub);
+        if (hubWire == null || !"hub".equalsIgnoreCase(hubWire.screenId())) {
+            issues.add("hub: unexpected wire id");
+        }
+        if (issues.isEmpty()) {
+            AdaptiveDifficultyMod.LOGGER.info(
+                    "[{}] Ultra hub shim self-check OK (tunneling {})",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    tunneled);
+        } else {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] Ultra hub shim self-check issues: {}", AdaptiveDifficultyMod.MOD_ID, issues);
         }
     }
 }

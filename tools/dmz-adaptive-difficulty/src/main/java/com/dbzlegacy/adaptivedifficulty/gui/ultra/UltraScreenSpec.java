@@ -222,7 +222,9 @@ public final class UltraScreenSpec {
             o.addProperty("w", b.w);
             o.addProperty("h", b.h);
             JsonObject args = new JsonObject();
+            // Logical system — echoed by KaiPath into GuiActionPacket even when wire screenId is hub.
             args.addProperty("screen", screenId);
+            args.addProperty(UltraScreenIds.META_SYSTEM, screenId);
             args.addProperty("page", pageId);
             o.add("args", args);
             btnArr.add(o);
@@ -234,6 +236,9 @@ public final class UltraScreenSpec {
         layout.addProperty("height", height);
         layout.addProperty("center", centerPanel);
         layout.addProperty("margin", panelMargin);
+        // Logical system metadata (survives hub wire shim in layoutJson).
+        layout.addProperty(UltraScreenIds.META_SYSTEM, screenId);
+        layout.addProperty("screen", screenId);
         return new GuiOpenPacket(
                 screenId,
                 title,
