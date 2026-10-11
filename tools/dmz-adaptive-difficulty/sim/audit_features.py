@@ -1422,10 +1422,8 @@ def main() -> int:
     check("Overhaul maxAssignableTotal uses LM breakthrough",
           "maxAssignableTotal" in revamp_cap
           and "LmOverhaulCapMath.maxAssignableTotal" in revamp_cap)
-    combat_scale = read(SRC / "com/dbzlegacy/adaptivedifficulty/mixin/StatsDataOverhaulCombatScaleMixin.java")
     check("LM combat mixin does not multiply totalMult",
-          "combatScaleMultiplier" not in combat_scale
-          and "setReturnValue" not in combat_scale)
+          not (SRC / "com/dbzlegacy/adaptivedifficulty/mixin/StatsDataOverhaulCombatScaleMixin.java").is_file())
     check("mixins.json does not register LM prestige scale mixins",
           '"StatsDataOverhaulCombatScaleMixin"' not in mixins_json
           and '"StatsDataHudPoolMaxMixin"' not in mixins_json)
@@ -1518,13 +1516,15 @@ def main() -> int:
           and "isReadingNativeMax" in pool_clamp
           and "displayMaxEnergy" in pool_clamp
           and "data.getMaxEnergy()" in pool_clamp)
-    hud_pool = read(SRC / "com/dbzlegacy/adaptivedifficulty/mixin/StatsDataHudPoolMaxMixin.java")
     build_sh = read(lm_root / "build.sh")
     check("build rejects LM prestige scale mixins",
           "must not register LM prestige scale mixins" in build_sh
+          and "still contains unregistered prestige scale mixin classes" in build_sh
+          and "StatsDataHudPoolMaxMixin.class" in build_sh
+          and "StatsDataOverhaulCombatScaleMixin.class" in build_sh
           and '"StatsDataHudPoolMaxMixin"' not in mixins_json)
     check("HUD pool mixin does not rescale max",
-          "setReturnValue" not in hud_pool and "applyOverhaulScale" not in hud_pool)
+          not (SRC / "com/dbzlegacy/adaptivedifficulty/mixin/StatsDataHudPoolMaxMixin.java").is_file())
     check("Revamp prestige does not refill after afterSetCount",
           "refillPoolsLikeOverhaulPrestige" not in bridge
           and "clampToOverhaulPool" in bridge

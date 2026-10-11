@@ -43,9 +43,8 @@ def main() -> int:
             if "scaleBonusPerPrestige" in stripped:
                 errors.append(f"{rel}: scaleBonusPerPrestige must not appear in code (delegate to Overhaul)")
 
-    combat = read("mixin/StatsDataOverhaulCombatScaleMixin.java")
-    if "combatScaleMultiplier" in combat or "base * scale" in combat or "setReturnValue" in combat:
-        errors.append("StatsDataOverhaulCombatScaleMixin must not multiply getTotalMultiplier")
+    if (SRC / "mixin/StatsDataOverhaulCombatScaleMixin.java").is_file():
+        errors.append("StatsDataOverhaulCombatScaleMixin must not ship; it is an unregistered empty mixin")
 
     pool = read("progression/DmzResourcePoolClamp.java")
     if "combatScaleMultiplier" in pool:
@@ -110,9 +109,8 @@ def main() -> int:
     if "return data == null ? 0f : data.getMaxEnergy()" not in pool:
         errors.append("DmzResourcePoolClamp.actualMaxEnergy must be live getMaxEnergy")
 
-    hud = read("mixin/StatsDataHudPoolMaxMixin.java")
-    if "applyOverhaulScale" in hud or "setReturnValue" in hud:
-        errors.append("StatsDataHudPoolMaxMixin must not change getMaxEnergy/getMaxStamina")
+    if (SRC / "mixin/StatsDataHudPoolMaxMixin.java").is_file():
+        errors.append("StatsDataHudPoolMaxMixin must not ship; it is an unregistered empty mixin")
 
     print("=== Overhaul scale delegation audit ===")
     for e in errors:

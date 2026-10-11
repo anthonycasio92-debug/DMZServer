@@ -356,8 +356,7 @@ merge_onto_base_jar() {
       cp -a "$OUT/com/dbzlegacy/adaptivedifficulty/progression/bridge/." \
         "$merge/com/dbzlegacy/adaptivedifficulty/progression/bridge/"
     fi
-    for mixin_cls in StatsDataHudPoolMaxMixin StatsDataOverhaulCombatScaleMixin \
-        ResourcesEnergyDrainGuardMixin StatsDataGuardsMixin StatsDataMixin \
+    for mixin_cls in ResourcesEnergyDrainGuardMixin StatsDataGuardsMixin StatsDataMixin \
         StatsSyncC2SGenderMixin \
         DmzStatsResetPlayerBlockMixin \
         MeleeStatsResetAbsorptionWipeMixin \
@@ -408,7 +407,9 @@ merge_onto_base_jar() {
     "$merge/com/dbzlegacy/adaptivedifficulty/mixin/StatsDataResetPrestigeSyncMixin.class" \
     "$merge/com/dbzlegacy/adaptivedifficulty/mixin/ResourcesPoolClampMixin.class" \
     "$merge/com/dbzlegacy/adaptivedifficulty/mixin/ResourcesLoadClampMixin.class" \
-    "$merge/com/dbzlegacy/adaptivedifficulty/mixin/DmzStatsResetAbsorptionWipeMixin.class"
+    "$merge/com/dbzlegacy/adaptivedifficulty/mixin/DmzStatsResetAbsorptionWipeMixin.class" \
+    "$merge/com/dbzlegacy/adaptivedifficulty/mixin/StatsDataHudPoolMaxMixin.class" \
+    "$merge/com/dbzlegacy/adaptivedifficulty/mixin/StatsDataOverhaulCombatScaleMixin.class"
   if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/config/ConfigRegistry.class" ]]; then
     mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/config"
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/config/ConfigRegistry.class" \
@@ -471,6 +472,10 @@ fi
 # StatsData#load (mixins → DmzResourcePoolClamp) and clients see "Invalid player data".
 
 echo "Built $JAR (base: $(basename "$BASE_JAR"))"
+if jar tf "$JAR" | grep -Eq 'StatsDataHudPoolMaxMixin|StatsDataOverhaulCombatScaleMixin'; then
+  echo "ERROR: shipped jar still contains unregistered prestige scale mixin classes" >&2
+  exit 1
+fi
 if ! jar tf "$JAR" | grep -q 'gui/GuiClickConfirm\$Pending.class'; then
   echo "ERROR: GuiClickConfirm\$Pending.class missing from $JAR (confirm clicks crash the server)" >&2
   exit 1
