@@ -177,7 +177,9 @@ public final class GuiOpenPacket {
 
     /** Server never opens screens; KaiPath owns the client handler. */
     public static void handle(GuiOpenPacket msg, Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().setPacketHandled(true);
+        NetworkEvent.Context context = ctx.get();
+        // No player/world access on the network thread — mark handled only.
+        context.setPacketHandled(true);
     }
 
     static String trim(String value, int max) {

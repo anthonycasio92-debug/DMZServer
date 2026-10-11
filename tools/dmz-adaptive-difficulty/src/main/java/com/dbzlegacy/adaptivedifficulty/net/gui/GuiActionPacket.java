@@ -51,9 +51,13 @@ public final class GuiActionPacket {
 
     public static void handle(GuiActionPacket msg, Supplier<NetworkEvent.Context> ctx) {
         NetworkEvent.Context context = ctx.get();
-        ServerPlayer player = context.getSender();
+        // All ServerPlayer / world access must run on the main thread.
         context.enqueueWork(() -> {
-            if (player == null || msg == null) {
+            if (msg == null || context == null) {
+                return;
+            }
+            ServerPlayer player = context.getSender();
+            if (player == null) {
                 return;
             }
             try {

@@ -214,8 +214,10 @@ public final class LmGuiNetwork {
                         continue;
                     }
                     String version = pairVersion(entry.getValue());
+                    // Null/empty version ⇒ mod present (Forge often omits client mod versions).
+                    // Never call isVersionAtLeast with null — it returns false and would
+                    // incorrectly reject KaiPath.
                     if (version == null || version.isBlank()) {
-                        // Forge server handshake stores empty versions for client mods.
                         return true;
                     }
                     return isVersionAtLeast(version, KAIPATH_MIN_VERSION);
