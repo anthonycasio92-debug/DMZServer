@@ -76,6 +76,7 @@ public final class AdaptiveDifficultyMod {
         MinecraftForge.EVENT_BUS.register(com.dbzlegacy.adaptivedifficulty.kube.ScriptEvents.INSTANCE);
         com.dbzlegacy.adaptivedifficulty.kube.LmHotPath.logReady();
         com.dbzlegacy.adaptivedifficulty.claim.ClaimOverlapGuard.register();
+        com.dbzlegacy.adaptivedifficulty.net.gui.LmGuiNetwork.register();
         DifficultyCommands.register();
         RivalCommands.register();
         SparCommands.register();

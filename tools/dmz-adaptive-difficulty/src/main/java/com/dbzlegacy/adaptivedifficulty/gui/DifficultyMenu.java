@@ -1,10 +1,10 @@
 package com.dbzlegacy.adaptivedifficulty.gui;
 
-import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
+import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraGui;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import net.minecraft.server.level.ServerPlayer;
 
-/** Player UI entrypoint for {@code /difficulty} — CustomNPCs, then chat fallback. */
+/** Player UI entrypoint for {@code /difficulty} — Ultra, CustomNPCs, then chat fallback. */
 public final class DifficultyMenu {
     private DifficultyMenu() {}
 
@@ -24,6 +24,10 @@ public final class DifficultyMenu {
         }
 
         GuiBackend backend = GuiBackend.fromConfig();
+        if (backend == GuiBackend.ULTRA) {
+            UltraGui.open(player, "difficulty", target);
+            return;
+        }
         if (backend == GuiBackend.CNPC) {
             com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcLmGui.open(player, "difficulty", target);
             return;

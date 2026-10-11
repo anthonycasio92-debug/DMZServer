@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.gui;
 
+import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraGui;
 import net.minecraft.server.level.ServerPlayer;
 
 /** Player UI entrypoint for {@code /spar}. */
@@ -12,7 +13,12 @@ public final class SparMenu {
         }
         String target = page == null || page.isBlank() ? "main" : page;
         com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcUltraPreview.leave(player);
-        if (GuiBackend.fromConfig() == GuiBackend.CNPC) {
+        GuiBackend backend = GuiBackend.fromConfig();
+        if (backend == GuiBackend.ULTRA) {
+            UltraGui.open(player, "spar", target);
+            return;
+        }
+        if (backend == GuiBackend.CNPC) {
             com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcLmGui.open(player, "spar", target);
             return;
         }
