@@ -189,8 +189,8 @@ public final class CharacterServicesChestGui implements Listener {
         lore.addAll(toAmp(ForgeBridge.charLines(subject, "race_pct:" + race + ":" + defaultPct)));
         put(holder, inv, 4, item(Material.EXPERIENCE_BOTTLE,
                 GuiTooltips.name("character.race_pct.header", "&e&lHow Much to Keep?"), lore));
-        int[] pcts = {0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
-        int[] slots = {10, 19, 20, 21, 22, 23, 24, 25, 28, 29, 30};
+        int[] pcts = keepSteps(subject);
+        int[] slots = {10, 19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 34};
         for (int i = 0; i < pcts.length && i < slots.length; i++) {
             int pct = pcts[i];
             boolean selected = pct == defaultPct;
@@ -310,6 +310,8 @@ public final class CharacterServicesChestGui implements Listener {
             String name = p.length > 1 ? p[1] : id;
             String state = p.length > 2 ? p[2] : "L";
             String cost = p.length > 3 ? p[3] : "";
+            String group = p.length > 4 ? p[4] : "";
+            String replaces = p.length > 5 ? p[5] : "";
             Material mat;
             String title;
             List<String> lore = new ArrayList<>();
@@ -335,6 +337,14 @@ public final class CharacterServicesChestGui implements Listener {
                     lore.add("&eUnlock and equip");
                     action = SlotAction.act("bone_unlock", id, pageKey);
                 }
+            }
+            if (!group.isBlank()) {
+                lore.add("&8" + groupLabel(group));
+            }
+            if (!"E".equals(state) && replaces != null && !replaces.isBlank()) {
+                mat = Material.GRAY_CONCRETE;
+                title = "&8" + name;
+                lore.add("§8Replaces " + replaces);
             }
             put(holder, inv, slots[i], item(mat, title, lore), action);
         }
@@ -364,6 +374,41 @@ public final class CharacterServicesChestGui implements Listener {
         String back = returnPage == null || returnPage.isBlank() ? "reskin" : returnPage;
         footer54(holder, inv, "character.bones.back", SlotAction.page(back));
         return inv;
+    }
+
+    /** Same percents the confirm scroll and the charge read from {@code preservationCostCopper}. */
+    private static int[] keepSteps(Player subject) {
+        Map<String, String> ph = ForgeBridge.charPlaceholders(subject);
+        String raw = ph == null ? "" : ph.getOrDefault("race_keep_steps", "");
+        if (raw != null && !raw.isBlank()) {
+            String[] bits = raw.split(",");
+            List<Integer> steps = new ArrayList<>();
+            for (String bit : bits) {
+                try {
+                    int pct = Integer.parseInt(bit.trim());
+                    if (pct >= 0 && pct <= 100 && !steps.contains(pct)) {
+                        steps.add(pct);
+                    }
+                } catch (NumberFormatException ignored) {
+                }
+            }
+            if (!steps.isEmpty()) {
+                int[] out = new int[steps.size()];
+                for (int i = 0; i < steps.size(); i++) {
+                    out[i] = steps.get(i);
+                }
+                return out;
+            }
+        }
+        return new int[] {0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
+    }
+
+    private static String groupLabel(String group) {
+        if (group == null || group.isBlank()) {
+            return "";
+        }
+        String id = group.trim().toLowerCase(Locale.ROOT);
+        return Character.toUpperCase(id.charAt(0)) + id.substring(1);
     }
 
     private static int parseBonePage(String page) {

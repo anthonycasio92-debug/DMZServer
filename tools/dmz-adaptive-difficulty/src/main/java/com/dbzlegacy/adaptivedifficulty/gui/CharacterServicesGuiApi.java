@@ -40,9 +40,10 @@ public final class CharacterServicesGuiApi {
         putWalletPlaceholders(player, out);
         boolean bypassCost = CharacterServicesAccess.bypassCost(player);
         out.put("bypass_cost", bypassCost ? "true" : "false");
-        out.put("reskin_cost", bypassCost ? "free" : CharacterServicesSystem.formatCost(CharacterServicesSystem.reskinCost(player)));
-        out.put("class_cost", bypassCost ? "free" : CharacterServicesSystem.formatCost(CharacterServicesSystem.classCost(player)));
-        out.put("race_cost_100", bypassCost ? "free" : CharacterServicesSystem.formatCost(CharacterServicesSystem.raceCost(player, 100)));
+        out.put("reskin_cost", CharacterServicesSystem.formatCost(CharacterServicesSystem.reskinAmountDue(player)));
+        out.put("class_cost", CharacterServicesSystem.formatCost(CharacterServicesSystem.classAmountDue(player)));
+        out.put("race_cost_100", CharacterServicesSystem.formatCost(CharacterServicesSystem.raceAmountDue(player, 100)));
+        out.put("race_keep_steps", keepStepsLabel());
         out.put("race_cooldown", CharacterServicesSystem.cooldownLine(player, "race"));
         out.put("class_cooldown", CharacterServicesSystem.cooldownLine(player, "class"));
         out.put("reskin_cooldown", CharacterServicesSystem.cooldownLine(player, "reskin"));
@@ -106,7 +107,7 @@ public final class CharacterServicesGuiApi {
             lines.add(CharacterServicesConfig.get().classChange.preserveBaseStats
                     ? "§7Your base combat stats stay — class skills and progression reset."
                     : "§7Class skills and progression reset.");
-            lines.add(costLine(player, CharacterServicesSystem.classCost(player)));
+            lines.add(costLine(player, CharacterServicesSystem.classAmountDue(player)));
             lines.add(CharacterServicesSystem.cooldownLine(player, "class"));
             return lines;
         }
@@ -119,7 +120,7 @@ public final class CharacterServicesGuiApi {
                 lines.add("§cYou do not have permission for model customization.");
                 return lines;
             }
-            lines.add("§7Turn parts on or off. Horns, ears, and antennae can be worn together.");
+            lines.add("§7One piece from each group. Demon horns can be worn together.");
             lines.add("§7A locked part charges Ancient Coins when you turn it on.");
             return lines;
         }
@@ -136,7 +137,7 @@ public final class CharacterServicesGuiApi {
             lines.add("§7Use §fModel customization §7for cross-race ears, horns, and more.");
             lines.add("§7Reskin only changes how you look. To change your fighting class, use §fChange class §7instead.");
             lines.add("§7Level, stats, and race are unchanged.");
-            lines.add(costLine(player, CharacterServicesSystem.reskinCost(player)));
+            lines.add(costLine(player, CharacterServicesSystem.reskinAmountDue(player)));
             lines.add(CharacterServicesSystem.reskinCostExplanation(player));
             lines.add("§8You'll be charged Ancient Coins when you confirm on the next screen.");
             lines.add(CharacterServicesSystem.cooldownLine(player, "reskin"));
@@ -153,7 +154,7 @@ public final class CharacterServicesGuiApi {
             }
             lines.add("§7Opens the appearance editor (hair, colors, body, gender).");
             lines.add("§7Level, stats, race, and class stay locked during the session.");
-            lines.add(costLine(player, CharacterServicesSystem.reskinCost(player)));
+            lines.add(costLine(player, CharacterServicesSystem.reskinAmountDue(player)));
             lines.add(CharacterServicesSystem.reskinCostExplanation(player));
             lines.add("§8You'll be charged Ancient Coins when you confirm on the next screen. Cancelling the editor does not refund them.");
             lines.add(CharacterServicesSystem.cooldownLine(player, "reskin"));
@@ -167,7 +168,7 @@ public final class CharacterServicesGuiApi {
             String[] bits = p.split(":", 3);
             int pct = parsePct(bits.length > 2 ? bits[2] : "0");
             lines.addAll(CharacterServicesSystem.statPreviewLines(player, pct));
-            lines.add(costLine(player, CharacterServicesSystem.raceCost(player, pct)));
+            lines.add(costLine(player, CharacterServicesSystem.raceAmountDue(player, pct)));
             if (pct > 0) {
                 lines.add(CharacterServicesConfig.get().raceChange.levelCostMultiplier
                         ? "§8Scales with your DMZ level"
@@ -186,7 +187,7 @@ public final class CharacterServicesGuiApi {
             lines.add("§7If not, the editor opens so you can pick a class at no extra cost.");
             lines.add("§7Keeping §f" + pct + "% §7of eligible stats:");
             lines.addAll(CharacterServicesSystem.statPreviewLines(player, pct));
-            lines.add(costLine(player, CharacterServicesSystem.raceCost(player, pct)));
+            lines.add(costLine(player, CharacterServicesSystem.raceAmountDue(player, pct)));
             lines.add("§8Pay-up OK · change returned");
             lines.add("§cStaff cannot auto-revert this for you.");
             return lines;
@@ -194,7 +195,7 @@ public final class CharacterServicesGuiApi {
         if (p.startsWith("class_confirm:")) {
             String cls = p.substring("class_confirm:".length());
             lines.add("§7New class: §f" + FightingClassLabels.display(cls));
-            lines.add(costLine(player, CharacterServicesSystem.classCost(player)));
+            lines.add(costLine(player, CharacterServicesSystem.classAmountDue(player)));
             lines.add("§8Pay-up OK · change returned");
             lines.add("§8Class skills and progression will reset.");
             return lines;
@@ -278,15 +279,28 @@ public final class CharacterServicesGuiApi {
 
     private static String costLine(ServerPlayer player, long copperCost) {
         if (copperCost <= 0L) {
+            if (CharacterServicesAccess.bypassCost(player)) {
+                if (DifficultyConfig.get().staffFreeAncientCoinCosts && StaffAccess.isStaff(player)) {
+                    return "§7Cost §afree §8(staff waived)";
+                }
+                return "§7Cost §afree §8(cost waived)";
+            }
             return "§7Cost §afree";
         }
-        if (CharacterServicesAccess.bypassCost(player)) {
-            if (DifficultyConfig.get().staffFreeAncientCoinCosts && StaffAccess.isStaff(player)) {
-                return "§7Cost §afree §8(staff waived)";
-            }
-            return "§7Cost §afree §8(cost waived)";
-        }
         return "§7Cost §f" + CharacterServicesSystem.formatCost(copperCost) + " §7Ancient Coins";
+    }
+
+    /** Same percents {@link CharacterServicesSystem#executeRaceChange} will accept. */
+    private static String keepStepsLabel() {
+        int[] steps = CharacterServicesConfig.preservationSteps();
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < steps.length; i++) {
+            if (i > 0) {
+                sb.append(',');
+            }
+            sb.append(steps[i]);
+        }
+        return sb.toString();
     }
 
     private static String titleBone(String id) {

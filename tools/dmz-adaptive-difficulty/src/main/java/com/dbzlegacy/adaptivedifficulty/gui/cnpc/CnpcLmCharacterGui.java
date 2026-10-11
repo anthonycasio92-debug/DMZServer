@@ -128,13 +128,13 @@ public final class CnpcLmCharacterGui {
         int keepSelected = selected;
         String confirmArg = raceId + ":" + keepSelected;
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CHARACTER, CnpcGuiSupport.W,
-                CnpcGuiSupport.window(420), (pl, gui) -> {
+                CnpcGuiSupport.window(460), (pl, gui) -> {
             int infoY = CnpcGuiSupport.paintHeader(pl, gui, CnpcGuiStyle.subPage(CnpcUltraStyle.BODY, "Character", "Confirm race"),
                     CnpcUltraStyle.SUBTITLE + "Becoming " + CnpcUltraStyle.BODY + titleRace(raceId) + " " + CnpcUltraStyle.DIM + "· " + CnpcUltraStyle.SUBTITLE + "keep " + CnpcUltraStyle.BODY + keepSelected + "%");
             infoY = servicesTabs(player, gui, infoY, "home");
             int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintReadOnlyScroll(gui, infoY,
                             CharacterServicesGuiApi.linesForPage(player, "race_confirm:" + confirmArg)));
-            int[] pcts = {0, 25, 50, 75, 100};
+            int[] pcts = com.dbzlegacy.adaptivedifficulty.character.CharacterServicesConfig.preservationSteps();
             CnpcGuiLayout.GridButton[] grid = new CnpcGuiLayout.GridButton[pcts.length];
             for (int i = 0; i < pcts.length; i++) {
                 int keep = pcts[i];
@@ -222,7 +222,9 @@ public final class CnpcLmCharacterGui {
             String name = parts.length > 1 ? parts[1] : id;
             String state = parts.length > 2 ? parts[2] : "";
             String cost = parts.length > 3 ? parts[3] : "";
-            String caption = headPartCaption(state, name, cost);
+            String group = parts.length > 4 ? parts[4] : "";
+            String replaces = parts.length > 5 ? parts[5] : "";
+            String caption = headPartCaption(state, name, cost, group, replaces);
             CnpcGuiSupport.buttonSmallFull(gui, CnpcGuiSupport.ID_GRID_BASE + i, caption,
                     CnpcGuiSupport.M, y, CnpcGuiSupport.textBandWidth(),
                     () -> CnpcGuiSupport.act(player,
@@ -257,15 +259,24 @@ public final class CnpcLmCharacterGui {
         CnpcGuiSupport.paintLivePlayerPreview(player, gui);
     }
 
-    /** On or off, plus the unlock cost when the part is still locked. */
-    private static String headPartCaption(String state, String name, String cost) {
+    /** On or off, the group, the unlock cost, and a gray replace hint when the group is taken. */
+    private static String headPartCaption(String state, String name, String cost, String group, String replaces) {
+        String groupBit = group == null || group.isBlank()
+                ? ""
+                : " " + CnpcUltraStyle.DIM + HeadPartPieces.groupLabel(group);
         if ("E".equals(state)) {
-            return CnpcGuiStyle.toggleOn(name);
+            return CnpcGuiStyle.toggleOn(name) + groupBit;
+        }
+        if (replaces != null && !replaces.isBlank()) {
+            String locked = "L".equals(state) && cost != null && !cost.isBlank()
+                    ? " " + CnpcUltraStyle.ACCENT + cost
+                    : "";
+            return CnpcUltraStyle.DIM + name + groupBit + locked + " §8Replaces " + replaces;
         }
         if ("L".equals(state)) {
-            return CnpcGuiStyle.toggleOff(name) + " " + CnpcUltraStyle.ACCENT + cost;
+            return CnpcGuiStyle.toggleOff(name) + groupBit + " " + CnpcUltraStyle.ACCENT + cost;
         }
-        return CnpcGuiStyle.toggleOff(name);
+        return CnpcGuiStyle.toggleOff(name) + groupBit;
     }
 
     private static int parseBonePage(String page) {

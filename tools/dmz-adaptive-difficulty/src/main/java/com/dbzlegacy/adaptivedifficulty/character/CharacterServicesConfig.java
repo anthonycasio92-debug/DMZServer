@@ -106,14 +106,57 @@ public final class CharacterServicesConfig {
 
     private static Map<String, Long> defaultPreservationCosts() {
         Map<String, Long> m = new LinkedHashMap<>();
-        for (int pct : preservationSteps()) {
+        for (int pct : defaultPreservationSteps()) {
             m.put(String.valueOf(pct), (long) pct * 10_000L);
         }
         return m;
     }
 
-    public static int[] preservationSteps() {
+    /** Seed list used only when the live map is empty. */
+    public static int[] defaultPreservationSteps() {
         return new int[] {0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
+    }
+
+    /**
+     * Percents the race-change GUI may offer and {@code executeRaceChange} may charge.
+     * Read from {@code raceChange.preservationCostCopper} so the label and the charge share one map.
+     */
+    public static int[] preservationSteps() {
+        Map<String, Long> map = null;
+        CharacterServicesConfig live = INSTANCE;
+        if (live != null && live.raceChange != null) {
+            map = live.raceChange.preservationCostCopper;
+        }
+        if (map == null || map.isEmpty()) {
+            return defaultPreservationSteps();
+        }
+        java.util.TreeSet<Integer> steps = new java.util.TreeSet<>();
+        for (Map.Entry<String, Long> entry : map.entrySet()) {
+            if (entry.getKey() == null) {
+                continue;
+            }
+            int pct;
+            try {
+                pct = Integer.parseInt(entry.getKey().trim());
+            } catch (NumberFormatException ignored) {
+                continue;
+            }
+            if (pct < 0 || pct > 100) {
+                continue;
+            }
+            long cost = entry.getValue() == null ? -1L : entry.getValue();
+            if (cost < 0L) {
+                continue;
+            }
+            steps.add(pct);
+        }
+        steps.add(0);
+        int[] out = new int[steps.size()];
+        int i = 0;
+        for (int pct : steps) {
+            out[i++] = pct;
+        }
+        return out;
     }
 
     private static CharacterServicesConfig sanitize(CharacterServicesConfig c) {
@@ -159,12 +202,15 @@ public final class CharacterServicesConfig {
         if (preservationPercent <= 0) {
             return 0L;
         }
+        if (raceChange.preservationCostCopper == null) {
+            return 0L;
+        }
         String key = String.valueOf(preservationPercent);
         Long v = raceChange.preservationCostCopper.get(key);
         if (v == null || v < 0L) {
-            v = raceChange.preservationCostCopper.get(String.valueOf(100));
+            return 0L;
         }
-        return v == null ? 0L : Math.max(0L, v);
+        return v;
     }
 
     public Set<String> blockedRaceSet() {

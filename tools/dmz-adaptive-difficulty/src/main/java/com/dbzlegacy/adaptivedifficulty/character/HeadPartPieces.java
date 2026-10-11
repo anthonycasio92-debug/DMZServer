@@ -54,6 +54,71 @@ public final class HeadPartPieces {
 
     private HeadPartPieces() {}
 
+    /**
+     * Race group from the part id. Trailing digits are the style number
+     * ({@code ears1} and {@code ears2} are group {@code ears}). No separate metadata list.
+     */
+    public static String raceGroup(String partId) {
+        if (partId == null || partId.isBlank()) {
+            return "";
+        }
+        String id = partId.trim().toLowerCase(Locale.ROOT);
+        int end = id.length();
+        while (end > 0 && Character.isDigit(id.charAt(end - 1))) {
+            end--;
+        }
+        return end == 0 ? id : id.substring(0, end);
+    }
+
+    /** Demon horns stack. Every other group keeps a single equipped part. */
+    public static boolean allowsMultipleInGroup(String group) {
+        if (group == null || group.isBlank()) {
+            return false;
+        }
+        return group.toLowerCase(Locale.ROOT).contains("horn");
+    }
+
+    public static String groupLabel(String group) {
+        if (group == null || group.isBlank()) {
+            return "";
+        }
+        String id = group.trim().toLowerCase(Locale.ROOT);
+        return Character.toUpperCase(id.charAt(0)) + id.substring(1);
+    }
+
+    /**
+     * One equipped id per race group. A later id replaces the earlier one in that group.
+     * Groups that {@link #allowsMultipleInGroup} (demon horns) keep every id.
+     */
+    public static List<String> onePerGroup(Collection<String> ids) {
+        List<String> out = new ArrayList<>();
+        if (ids == null || ids.isEmpty()) {
+            return out;
+        }
+        java.util.HashMap<String, Integer> slot = new java.util.HashMap<>();
+        for (String id : ids) {
+            if (id == null || id.isBlank()) {
+                continue;
+            }
+            String part = id.trim().toLowerCase(Locale.ROOT);
+            String group = raceGroup(part);
+            if (group.isEmpty() || allowsMultipleInGroup(group)) {
+                if (!out.contains(part)) {
+                    out.add(part);
+                }
+                continue;
+            }
+            Integer at = slot.get(group);
+            if (at == null) {
+                slot.put(group, out.size());
+                out.add(part);
+            } else {
+                out.set(at, part);
+            }
+        }
+        return out;
+    }
+
     public static boolean isAtomic(String id) {
         if (id == null || id.isBlank()) {
             return false;
