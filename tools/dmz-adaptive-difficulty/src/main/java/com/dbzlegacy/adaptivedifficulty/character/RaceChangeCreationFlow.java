@@ -34,7 +34,7 @@ public final class RaceChangeCreationFlow {
         }
         String keep = null;
         if (headBoneToRestore != null && !headBoneToRestore.isBlank()) {
-            String owned = CosmeticHeadBoneService.ownedPiecesToken(player, headBoneToRestore);
+            String owned = CosmeticHeadBoneService.piecesKeptAcrossRaceChange(player, headBoneToRestore);
             if (!owned.isEmpty()) {
                 keep = owned;
             }

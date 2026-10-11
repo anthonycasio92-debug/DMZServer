@@ -247,7 +247,47 @@ public final class CosmeticHeadBoneService {
                 kept.add(piece);
             }
         }
-        return HeadPartPieces.join(kept);
+        return HeadPartPieces.join(HeadPartPieces.onePerGroup(kept));
+    }
+
+    /**
+     * Pieces to restore after a race change. A worn {@code hair} fragment is kept even when the
+     * new race does not list it, and is recorded as unlocked so a later sync does not delete it.
+     * Race-specific hair rules apply when the player equips a style, not by wiping the old one.
+     */
+    public static String piecesKeptAcrossRaceChange(ServerPlayer player, String token) {
+        String owned = ownedPiecesToken(player, token);
+        if (player == null || token == null || token.isBlank()) {
+            return owned;
+        }
+        boolean hadHair = false;
+        for (String piece : HeadPartPieces.fragments(token)) {
+            if ("hair".equals(piece)) {
+                hadHair = true;
+                break;
+            }
+        }
+        if (!hadHair) {
+            return owned;
+        }
+        rememberHairUnlock(player);
+        List<String> parts = new ArrayList<>(HeadPartPieces.fragments(owned));
+        if (!parts.contains("hair")) {
+            parts.add("hair");
+        }
+        return HeadPartPieces.join(parts);
+    }
+
+    private static void rememberHairUnlock(ServerPlayer player) {
+        CharacterServicesStore.PlayerRecord rec =
+                CharacterServicesStore.get().record(player.m_20148_().toString());
+        if (rec.unlockedHeadBones == null) {
+            rec.unlockedHeadBones = new LinkedHashSet<>();
+        }
+        if (rec.unlockedHeadBones.add("hair")) {
+            CharacterServicesStore.get().markDirty();
+            CharacterServicesStore.get().save();
+        }
     }
 
     public static String wornLabel(String token) {
@@ -408,8 +448,9 @@ public final class CosmeticHeadBoneService {
     }
 
     /**
-     * GUI rows for one group: {@code boneId\\tdisplay\\tstate\\tcostText}.
+     * GUI rows: {@code boneId\\tdisplay\\tstate\\tcostText\\tgroup\\treplacesName}.
      * State is {@code E} on, {@code U} unlocked, {@code N} included with the race, {@code L} locked.
+     * {@code replacesName} is the worn sibling when this group already has a part and does not stack.
      */
     public static List<String> cards(ServerPlayer player, int page) {
         List<String> out = new ArrayList<>();
@@ -435,7 +476,22 @@ public final class CosmeticHeadBoneService {
             String cost = "L".equals(state)
                     ? CharacterServicesSystem.formatCost(unlockCost(player, id))
                     : "";
-            out.add(e.id() + "\t" + e.displayName() + "\t" + state + "\t" + cost);
+            String group = HeadPartPieces.raceGroup(id);
+            String replaces = "";
+            if (!worn.contains(id) && !HeadPartPieces.allowsMultipleInGroup(group)) {
+                for (String other : worn) {
+                    if (!group.equals(HeadPartPieces.raceGroup(other))) {
+                        continue;
+                    }
+                    CosmeticHeadBoneCatalog.Entry wornEntry = CosmeticHeadBoneCatalog.get(other);
+                    replaces = wornEntry == null
+                            ? CosmeticHeadBoneCatalog.prettyId(other)
+                            : wornEntry.displayName();
+                    break;
+                }
+            }
+            out.add(e.id() + "\t" + e.displayName() + "\t" + state + "\t" + cost
+                    + "\t" + group + "\t" + replaces);
         }
         return out;
     }
@@ -524,7 +580,7 @@ public final class CosmeticHeadBoneService {
         }
         discardPreview(player);
         String prior = priorActiveBone == null ? "" : priorActiveBone.trim();
-        String bone = ownedPiecesToken(player, prior);
+        String bone = piecesKeptAcrossRaceChange(player, prior);
         if (!bone.isEmpty() && isBoneAllowed(player, bone)) {
             Character ch = DmzProgression.character(player);
             if (ch != null) {
@@ -636,6 +692,10 @@ public final class CosmeticHeadBoneService {
         }
         restorePreview(player);
         List<String> next = new ArrayList<>(HeadPartPieces.fragments(activeBone(player)));
+        String group = HeadPartPieces.raceGroup(bone);
+        if (!HeadPartPieces.allowsMultipleInGroup(group)) {
+            next.removeIf(part -> group.equals(HeadPartPieces.raceGroup(part)));
+        }
         if (!next.contains(bone)) {
             next.add(bone);
         }
