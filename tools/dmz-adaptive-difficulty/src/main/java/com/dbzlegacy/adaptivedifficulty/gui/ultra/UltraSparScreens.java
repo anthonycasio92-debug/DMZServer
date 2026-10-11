@@ -44,7 +44,7 @@ public final class UltraSparScreens {
         spec.buttonLeft("tab:dojo", UltraStyle.confirm("Dojo"), "normal")
                 .buttonRight("tab:wars", "Wars", "normal")
                 .rowGap();
-        spec.buttonLeft("do:tpmsg:toggle", "Toggle TP messages", "normal")
+        spec.buttonLeft("do:tpmsg:toggle", UltraStyle.confirm("TP"), "normal")
                 .buttonRight("do:end", UltraStyle.danger("End session"), "danger")
                 .rowGap();
         spec.footerBackToMain();
@@ -61,7 +61,7 @@ public final class UltraSparScreens {
                 .labelValue("Streak", ph.getOrDefault("streak", "0")
                         + " best " + ph.getOrDefault("streak_best", "0"))
                 .setRow(140);
-        spec.buttonLeft("do:mentor_tpmsg:toggle", UltraStyle.confirm("Mentor TP messages"), "normal")
+        spec.buttonLeft("do:mentor_tpmsg:toggle", UltraStyle.confirm("Mentor TP"), "normal")
                 .buttonRight("do:mentor:leave", UltraStyle.danger("Leave mentor"), "danger")
                 .rowGap();
         if (StaffAccess.isStaff(player)) {

@@ -2230,19 +2230,21 @@ def main() -> int:
     client_root = ROOT / "tools/dmz-adaptive-difficulty/src/client"
     test_gui = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/gui/CnpcStaffTestGui.java")
     test_hub = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcStyledTestHub.java")
-    check("staff test gui opens only through CNPC",
+    # Staff testgui stays server-side. Ultra may open via KaiPath packets when
+    # guiBackend=ultra; CNPC hub remains the no-KaiPath / cnpc-backend path.
+    check("staff test gui stays server-side",
           "CnpcStaffTestGui.open" in native_cmd
           and "useNativeTestGui" not in native_cmd
-          and "LmGuiNetwork" not in native_cmd
           and "useNativeTestGui" not in native_cfg
           and "LmClientBootstrap" not in native_mod
-          and "LmGuiNetwork" not in native_mod
+          and "LmGuiNetwork.register" in native_mod
           and not client_root.exists()
           and "client-classes" not in build_sh)
-    check("testgui opens the styled hub",
-          "CnpcStyledTestHub.open" in test_gui
+    check("testgui opens Ultra hub or styled CNPC hub",
+          ("UltraGui.openHub" in test_gui or "CnpcStyledTestHub.open" in test_gui)
           and "CnpcLmHubGui" not in test_gui
           and "CnpcUltraPreview" not in test_gui
+          and "CnpcStyledTestHub.open" in test_gui
           and "CnpcUltraStyle.header" in test_hub
           and "Current menus" in test_hub
           and 'CnpcLmCharacterGui.open(player, "bones:0")' in test_hub

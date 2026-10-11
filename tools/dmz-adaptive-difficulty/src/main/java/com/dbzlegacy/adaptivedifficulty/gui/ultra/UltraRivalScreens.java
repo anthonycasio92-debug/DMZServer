@@ -55,7 +55,7 @@ public final class UltraRivalScreens {
                 .line(UltraStyle.LABEL + "Send a rival request, or answer one you have.")
                 .labelValue("Pending invites", ph.getOrDefault("pending_invites", "0"))
                 .setRow(100);
-        spec.buttonLeft("do:tpmsg:toggle", UltraStyle.confirm("Toggle TP messages"), "normal")
+        spec.buttonLeft("do:tpmsg:toggle", UltraStyle.confirm("TP"), "normal")
                 .buttonRight("do:instinct", "Toggle instinct", "normal")
                 .rowGap();
         if (RivalGuiApi.needsMutualReplacePick(player)) {

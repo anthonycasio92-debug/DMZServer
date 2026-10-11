@@ -56,6 +56,13 @@ rm -f "$JAR" \
       "$ROOT"/mods/AdaptiveDifficulty-"${VERSION}".jar \
       "$ROOT"/mods/dmz_adaptive_difficulty-"${VERSION}".jar
 
+NETTY_V="4.1.82.Final"
+NETTY="$ROOT/libraries/io/netty/netty-common/$NETTY_V/netty-common-$NETTY_V.jar:\
+$ROOT/libraries/io/netty/netty-buffer/$NETTY_V/netty-buffer-$NETTY_V.jar:\
+$ROOT/libraries/io/netty/netty-transport/$NETTY_V/netty-transport-$NETTY_V.jar:\
+$ROOT/libraries/io/netty/netty-handler/$NETTY_V/netty-handler-$NETTY_V.jar:\
+$ROOT/libraries/io/netty/netty-codec/$NETTY_V/netty-codec-$NETTY_V.jar:\
+$ROOT/libraries/io/netty/netty-resolver/$NETTY_V/netty-resolver-$NETTY_V.jar"
 CP="$SRG:$FORGE_S:$FORGE_U:$GSON:$LIGHTMANS:$FTB:$FTB_CHUNKS:$FTB_LIBRARY:$ARCHITECTURY:$REVAMP:\
 $ROOT/libraries/net/minecraftforge/fmlcore/1.20.1-47.4.10/fmlcore-1.20.1-47.4.10.jar:\
 $ROOT/libraries/net/minecraftforge/fmlloader/1.20.1-47.4.10/fmlloader-1.20.1-47.4.10.jar:\
@@ -70,6 +77,7 @@ $ROOT/libraries/com/mojang/authlib/4.0.43/authlib-4.0.43.jar:\
 $ROOT/libraries/com/mojang/brigadier/1.1.8/brigadier-1.1.8.jar:\
 $ROOT/libraries/com/google/guava/guava/31.1-jre/guava-31.1-jre.jar:\
 $ROOT/libraries/org/slf4j/slf4j-api/2.0.1/slf4j-api-2.0.1.jar:\
+$NETTY:\
 $CNPC:\
 $DMZ"
 
