@@ -649,8 +649,9 @@ def main() -> int:
           and "challenge_pending" in rival_chest and "challengeDecide" in rival_chest
           and "challenge_pending" in cmi_rival and "openChallengeDecide" in cmi_rival)
     check("challenge hub Send + Pending (not inline accept)",
-          "pick_challenge" in rival_cnpc and "Pending requests" in rival_cnpc
-          and 'act("challenge", "accept"' not in rival_cnpc.split("paintChallenge")[1].split("paintChallengePending")[0]
+          "pick_challenge" in rival_cnpc and "void paintRequests" in rival_cnpc
+          and "Send challenge" in rival_cnpc
+          and "Pending requests" not in rival_cnpc
           and 'SlotAction.act("challenge", "accept"' not in rival_chest.split("private Inventory challenge(")[1].split("private Inventory challengePending")[0])
     check("acceptedMutualOffer flag", "acceptedMutualOffer" in rival_link)
     check("needsMutualConfirm helper", "needsMutualConfirm" in rival_link)
@@ -908,6 +909,27 @@ def main() -> int:
     award_fn = spar_c145.split("int awardCombatTp", 1)[1].split("awardDamageTp", 1)[0] if "int awardCombatTp" in spar_c145 else ""
     check("rival bonus scales the spar action cap",
           "Math.max(1.0f, rival)" in award_fn and "actionCap" in award_fn)
+    check("spar TP scales with the earner's live battle power",
+          "v.bp = battlePower(player)" in spar_c145
+          and "earnerBattlePower(a)" in build_fn
+          and "Math.min(a.bp, b.bp)" not in spar_c145
+          and "getBattlePowerExact" in spar_c145
+          and "logBattlePowerAward" in award_fn
+          and "battlePowerMultiplier" in award_fn)
+
+    print("\n=== Race preservation cost (4.6.89) ===")
+    race_cfg = read(SRC / "com/dbzlegacy/adaptivedifficulty/character/CharacterServicesConfig.java")
+    race_sys = read(SRC / "com/dbzlegacy/adaptivedifficulty/character/CharacterServicesSystem.java")
+    race_api = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/CharacterServicesGuiApi.java")
+    race_confirm = race_api.split('p.startsWith("race_confirm:")', 1)[1].split('p.startsWith("class_confirm:")', 1)[0] if 'p.startsWith("race_confirm:")' in race_api else ""
+    race_exec = race_sys.split("public static String executeRaceChange", 1)[1].split("public static String executeClassChange", 1)[0] if "public static String executeRaceChange" in race_sys else ""
+    check("missing preservation percent is interpolated, not the 100% price",
+          "lookupPreservationCopper" in race_cfg
+          and "The 100% price is not a stand-in" in race_cfg
+          and "steps.add(25)" in race_cfg
+          and 'get(String.valueOf(100))' not in race_cfg
+          and "raceAmountDue(player, pct)" in race_confirm
+          and "raceAmountDue(player, preservationPercent)" in race_exec)
 
     print("\n=== Spar TP lines player/staff (2.3.147) ===")
     spar_c147 = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparCombat.java")
@@ -1229,9 +1251,16 @@ def main() -> int:
     remove_block = cnpc_prog.split("private static void paintAndroidRemove", 1)[1].split(
         "private static int paintNameScroll", 1
     )[0]
+    char_android = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmCharacterGui.java")
+    android_remove_ui = char_android.split("private static void paintAndroidRemove", 1)[1].split(
+        "private static void footer", 1
+    )[0]
     check(
-        "CNPC android remove back goes to LM hub for players",
-        "CnpcLmHubGui.open(player, \"main\")" in remove_block,
+        "CNPC android remove back returns to Character Home",
+        "navBackToParent" in android_remove_ui
+        and 'open(player, "main")' in android_remove_ui
+        and "CnpcLmHubGui.open" not in android_remove_ui
+        and "CnpcLmCharacterGui.open(player, p)" in cnpc_prog,
     )
     check(
         "CNPC android tools stay staff-only",
@@ -1393,10 +1422,8 @@ def main() -> int:
     check("Overhaul maxAssignableTotal uses LM breakthrough",
           "maxAssignableTotal" in revamp_cap
           and "LmOverhaulCapMath.maxAssignableTotal" in revamp_cap)
-    combat_scale = read(SRC / "com/dbzlegacy/adaptivedifficulty/mixin/StatsDataOverhaulCombatScaleMixin.java")
     check("LM combat mixin does not multiply totalMult",
-          "combatScaleMultiplier" not in combat_scale
-          and "setReturnValue" not in combat_scale)
+          not (SRC / "com/dbzlegacy/adaptivedifficulty/mixin/StatsDataOverhaulCombatScaleMixin.java").is_file())
     check("mixins.json does not register LM prestige scale mixins",
           '"StatsDataOverhaulCombatScaleMixin"' not in mixins_json
           and '"StatsDataHudPoolMaxMixin"' not in mixins_json)
@@ -1489,13 +1516,15 @@ def main() -> int:
           and "isReadingNativeMax" in pool_clamp
           and "displayMaxEnergy" in pool_clamp
           and "data.getMaxEnergy()" in pool_clamp)
-    hud_pool = read(SRC / "com/dbzlegacy/adaptivedifficulty/mixin/StatsDataHudPoolMaxMixin.java")
     build_sh = read(lm_root / "build.sh")
     check("build rejects LM prestige scale mixins",
           "must not register LM prestige scale mixins" in build_sh
+          and "still contains unregistered prestige scale mixin classes" in build_sh
+          and "StatsDataHudPoolMaxMixin.class" in build_sh
+          and "StatsDataOverhaulCombatScaleMixin.class" in build_sh
           and '"StatsDataHudPoolMaxMixin"' not in mixins_json)
     check("HUD pool mixin does not rescale max",
-          "setReturnValue" not in hud_pool and "applyOverhaulScale" not in hud_pool)
+          not (SRC / "com/dbzlegacy/adaptivedifficulty/mixin/StatsDataHudPoolMaxMixin.java").is_file())
     check("Revamp prestige does not refill after afterSetCount",
           "refillPoolsLikeOverhaulPrestige" not in bridge
           and "clampToOverhaulPool" in bridge
@@ -1610,11 +1639,11 @@ def main() -> int:
     check("End Dragon submenu page",
           "end_dragon" in chest and "endDragon" in chest
           and "openEndDragon" in cmi_diff
-          and "paintEndDragon" in read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmDifficultyGui.java"))
+          and "paintSummons" in read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmDifficultyGui.java"))
     cnpc_diff = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmDifficultyGui.java")
     check("CNPC teams page refreshes snapshot",
           "private static void paintTeam" in cnpc_diff
-          and "DifficultyActions.prepareGui(subject)" in cnpc_diff.split("private static void paintTeam", 1)[1].split("private static void paintEndDragon", 1)[0])
+          and "DifficultyActions.prepareGui(subject)" in cnpc_diff.split("private static void paintTeam", 1)[1].split("private static void paintSummons", 1)[0])
     check("End Dragon summonMenuLines API", "summonMenuLines" in end_str and "canOpenSummonMenu" in end_str)
     staff_access = read(SRC / "com/dbzlegacy/adaptivedifficulty/util/StaffAccess.java")
     check("StaffAccess uses Bukkit entity for permissions", "getBukkitEntity" in staff_access)
@@ -1675,19 +1704,28 @@ def main() -> int:
           and "canHaveGender" in gender_mixin
           and "ReskinSessionGuard.lockedClass" in gender_mixin
           and "StatsSyncC2SGenderMixin" in mixins_json)
-    check("head bone card previews before it charges",
-          "previewBone" in bones
+    check("head bone rows toggle without clearing the others",
+          "executeToggle" in bones
+          and "HeadPartPieces.join" in bones
+          and "previewBone" in bones
           and "PREVIEW_STASH" in bones
-          and "bone_preview" in bone_gui
+          and "bone_toggle" in bone_gui
           and "paintLivePlayerPreview" in bone_gui
-          and "Unlock & equip" in bone_gui)
+          and "horns1+antennas2" not in bone_gui)
     preview_src = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcPlayerPreview.java")
     live_preview = preview_src.split("void paintLive", 1)[1].split("void paint(", 1)[0]
     check("head bone menu shows the player's own model",
           "tryBindLivePlayer" in live_preview
           and "setEntitySyncedById" in preview_src
           and "CnpcGeckoPreviewBridge" not in live_preview
-          and "Step back and look" in bone_gui)
+          and "paintLivePlayerPreview" in bone_gui)
+    pieces = read(SRC / "com/dbzlegacy/adaptivedifficulty/character/HeadPartPieces.java")
+    check("body accessories are not a shop page",
+          "PAGE_BODY" not in bone_gui
+          and "PAGE_BODY" not in pieces
+          and "Body »" not in bone_gui
+          and "ultraScrollLines" not in pieces
+          and "PAGES = 2" in pieces)
 
     print("\n=== GUI humanization (4.6.17) ===")
     rival_chat = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/RivalChatMenu.java")
@@ -1744,23 +1782,25 @@ def main() -> int:
     check("CNPC screens do not use purple section codes",
           "§5" not in cnpc_src)
     check("progression titles are blue and prestige stays pink",
-          "§9Progression" in prog
+          'CnpcUltraStyle.ACCENT + "Progression"' in prog
           and "§dProgression" not in prog
-          and "§dOpen Prestige" in prog
-          and 'subPage("§9", "Progression", "End")' in prog
-          and "§e2× · 30m" in prog
-          and "§e2× · 60m" in prog)
+          and '"home|Home"' in prog
+          and '"boosts|Boosts"' in prog
+          and '"coins|Coins"' in prog
+          and 'subPage(CnpcUltraStyle.ACCENT, "Progression", "End")' in prog
+          and 'CnpcUltraStyle.INFO + "2× · 30m"' in prog
+          and 'CnpcUltraStyle.INFO + "2× · 60m"' in prog)
     check("inline on and off match the toggle colors",
-          'return on ? "§2§lON" : "§8§lOFF";' in support)
+          'return on ? CnpcUltraStyle.CONFIRM_BOLD + "ON" : CnpcUltraStyle.DIM + CnpcUltraStyle.BOLD + "OFF";' in support)
     check("difficulty confirm and inactive modes use the shared colors",
-          "§aConfirm summon" in diff
-          and "§aEnd Dragon" in diff
-          and "§7Threshold" in diff
-          and "§7Full team" in diff)
+          'CnpcUltraStyle.CONFIRM + "Confirm summon"' in diff
+          and 'CnpcUltraStyle.CONFIRM + "End Dragon"' in diff
+          and 'CnpcUltraStyle.SUBTITLE + "Threshold"' in diff
+          and 'CnpcUltraStyle.SUBTITLE + "Full team"' in diff)
     check("spar dojo home and prestige forms use their system colors",
-          "§bDojo home" in read(cnpc_dir / "CnpcLmSparGui.java")
-          and "§dForms" in read(cnpc_dir / "CnpcLmPrestigeGui.java")
-          and "§9Progression panel" in read(cnpc_dir / "CnpcLmAdminGui.java"))
+          'CnpcUltraStyle.ACCENT + "Dojo home"' in read(cnpc_dir / "CnpcLmSparGui.java")
+          and 'CnpcUltraStyle.ACCENT + "Forms"' in read(cnpc_dir / "CnpcLmPrestigeGui.java")
+          and 'CnpcUltraStyle.ACCENT_PROGRESSION + "Progression panel"' in read(cnpc_dir / "CnpcLmAdminGui.java"))
 
     print("\n=== CNPC rival records (4.6.22) ===")
     rival_records = read(cnpc_dir / "CnpcLmRivalGui.java")
@@ -1768,12 +1808,14 @@ def main() -> int:
           "records:" in rival_records
           and "void paintProgress" not in rival_records
           and "Hall of fame" in rival_records
-          and "§6Records" in rival_records
+          and '"home|Home"' in rival_records
+          and '"actions|Actions"' in rival_records
+          and '"challenge|Challenge"' in rival_records
           and 'open(player, "history")' not in rival_records
           and 'open(player, "progress")' not in rival_records
           and 'open(player, "stats")' not in rival_records
-          and "Duel requests" in rival_records
-          and "Declare invites" in rival_records)
+          and "Challenge request" in rival_records
+          and "Declare invite" in rival_records)
 
     print("\n=== CNPC layout fit (4.6.25) ===")
     preview = read(cnpc_dir / "CnpcPlayerPreview.java")
@@ -1785,7 +1827,13 @@ def main() -> int:
           and "m_20206_()" in preview
           and "REF_PLAYER_HEIGHT = 1.8f" in preview
           and "offsetY" in preview
-          and "scale / PREVIEW_SCALE" in preview)
+          and "scale / PREVIEW_SCALE" in preview
+          and "slot / (float) SLOT_H" in preview
+          and "SLOT_GAP = 12" in preview
+          and "previewAnchor()" in preview
+          and "previewAnchor()" in layout_support
+          and "PREVIEW_GAP = 12" in layout_support
+          and "CONTENT_TOP = 48" in layout_support)
     check("pending notice reserves window height",
           "FLASH_MAX_H = 56" in layout_support
           and "flashReserve" in layout_support
@@ -1826,9 +1874,9 @@ def main() -> int:
           "Welcome back" not in snapshot
           and "Combat & progression" not in hub_gui
           and "Remove Android" not in hub_gui
-          and "§eSkill Check" in hub_gui)
+          and 'CnpcUltraStyle.ACCENT_ADMIN + "Skill Check"' in hub_gui)
     check("character hosts remove android and race keep percent",
-          "§cRemove Android" in char_gui
+          'CnpcUltraStyle.DANGER + "Remove Android' in char_gui
           and "Keep " in char_gui
           and "race_confirm:" in char_gui)
     check("spar dojo tabs keep war and training bonds separate",
@@ -1837,19 +1885,19 @@ def main() -> int:
           and "Training bonds" in spar_gui
           and "void paintDojoWar" in spar_gui
           and 'toggleOn("TP")' in spar_gui)
-    check("rival actions and prestige forms stay their own pages",
-          "void paintActions" in rival_records
+    check("rival challenges and prestige forms stay their own pages",
+          "void paintChallenges" in rival_records
           and "void paintSettings" in rival_records
           and "void paintEffects" in prestige_gui
-          and "§dForms" in prestige_gui)
+          and 'CnpcUltraStyle.ACCENT + "Forms"' in prestige_gui)
     check("progression sections are module tabs",
-          "§9Modules" in prog_menu
+          'CnpcUltraStyle.ACCENT + "Modules"' in prog_menu
           and "moduleIds" in prog_menu
           and '!"android_remove".equals(page)' in prog_menu)
     check("difficulty coin messages live on settings",
           "Coin messages" in diff_gui
           and "§6Rival system" not in diff_gui
-          and "§aEnd Dragon" in diff_gui)
+          and 'CnpcUltraStyle.CONFIRM + "End Dragon"' in diff_gui)
 
     print("\n=== CNPC scroll selection (4.6.26) ===")
     check("scroll lists use a selection button instead of setOnClick",
@@ -1860,7 +1908,7 @@ def main() -> int:
           and "setOnClick(" not in diff_gui
           and "setOnClick(" not in prog_menu
           and "selectionButton" in support
-          and "§ePreview" in char_gui
+          and "bone_toggle" in char_gui
           and "Choose this race" in char_gui
           and "Choose this class" in char_gui
           and "wireScrollDoublePick" in diff_gui
@@ -1988,7 +2036,26 @@ def main() -> int:
           and "StatsDataGuardsMixin" in mixins_json
           and "StatsDataResetPrestigeSyncMixin" not in mixins_json
           and "ResourcesPoolClampMixin" not in mixins_json
-          and "ResourcesLoadClampMixin" not in mixins_json)
+          and "ResourcesLoadClampMixin" not in mixins_json
+          and "GodKiWipeHelper.wipe(player, null)" in absorb_reset
+          and "GodKiWipeHelper.wipeIfRaceChanges" in absorb_reset)
+    god_ki = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/noea/GodKiWipeHelper.java")
+    check("god ki progress resets with majin absorption",
+          "NoeaGodKiLedgerIdentity" in god_ki
+          and "skills.removeSkill(SKILL)" in god_ki
+          and "GROUP + \":\"" in god_ki
+          and "getStackFormsUsedBefore" in god_ki
+          and "clearPreviousStackFormRecord" in god_ki
+          and "m_128473_(key)" in god_ki
+          and "computed from the worn demon form" in god_ki
+          and "godforms" in god_ki
+          and "LivingDeathEvent" not in god_ki
+          and "GodKiWipeHelper.wipe(player, \"StatsCommand.resetStats\")" in absorb_cmd
+          and "GodKiWipeHelper.wipe(player, \"StatsResetCommands.resetSelf\")" in absorb_melee
+          and "GodKiWipeHelper.wipe(player, \"NPCActionC2S.handleDende\")" in absorb_dende
+          and "GodKiWipeHelper.wipe(player, \"CreateCharacterC2S\")" in absorb_create
+          and "GodKiWipeHelper.wipe(player, \"CharacterServicesSystem.executeRaceChange\")" in absorb_services
+          and "GodKiWipeHelper" in build_sh)
 
     print("\n=== CNPC notice color (4.6.41) ===")
     notice = read(cnpc_dir / "CnpcMenuFeedback.java")
@@ -2001,10 +2068,10 @@ def main() -> int:
     bright_start = notice_support.find("private static String brightenNoticeLine")
     bright_end = notice_support.find("private static String noticeChat", bright_start)
     bright = notice_support[bright_start:bright_end] if bright_start >= 0 and bright_end > bright_start else ""
-    diff_main = diff_gui.split("private static void paintMain", 1)[-1].split("private static void paintSettings", 1)[0]
+    diff_main = diff_gui.split("private static void paintTiers", 1)[-1].split("private static void paintTitles", 1)[0]
     check("notice header and body are one pair of constants",
-          'NOTICE_HEADER = "§6§lNotice"' in notice
-          and 'NOTICE_BODY = "§e"' in notice
+          'NOTICE_HEADER = CnpcUltraStyle.HEADER + "Notice"' in notice
+          and "NOTICE_BODY = CnpcUltraStyle.INFO" in notice
           and "public static String noticeBody" in notice
           and "noticeBody(" in notice.split("public static void set", 1)[-1].split("public static boolean hasPending", 1)[0]
           and "CnpcMenuFeedback.NOTICE_HEADER" in notice_support
@@ -2031,10 +2098,10 @@ def main() -> int:
           and "§aProgression " not in prog_api
           and "NOTICE_BODY" in hub_gui)
     check("difficulty status block stays its own info text",
-          "§eYour personal difficulty is off." in diff_main
-          and "§eThis account cannot use personal difficulty." in diff_main
-          and "§6Ancient Coins" in diff_main
-          and "§8Scaled mobs can hurt other players nearby." in diff_main
+          'CnpcUltraStyle.INFO + "Your personal difficulty is off."' in diff_main
+          and 'CnpcUltraStyle.INFO + "This account cannot use personal difficulty."' in diff_main
+          and 'CnpcUltraStyle.ACCENT + "Ancient Coins "' in diff_main
+          and 'CnpcUltraStyle.DIM + "Scaled mobs can hurt other players nearby."' in diff_main
           and "noticeBody" not in diff_main)
 
     def _notice_body(line):
@@ -2120,6 +2187,21 @@ def main() -> int:
           and "import com.dragonminez.server.util.FusionLogic" not in fusion_clear
           and "FusionUnfuseBonusClearMixin" not in mixin_plugin
           and "FusionLogic" not in mixin_plugin)
+    fusion_gate = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/FusionBonusReadGateMixin.java")
+    check("fusion bonus is ignored on read when the player is not fused",
+          "status.isFused()" in read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/progression/FusionBonusOwner.java")
+          and 'method = "calculateBonus"' in fusion_gate
+          and 'method = "hasBonus"' in fusion_gate
+          and 'method = "getBonuses"' in fusion_gate
+          and 'FUSION_BONUS = "FusionBonus"' in fusion_gate
+          and 'lower.contains("fusion") && lower.contains("zenkai")' in fusion_gate
+          and "Zenkai_" in fusion_gate
+          and '"FusionBonusReadGateMixin"' in fusion_mixins
+          and "FusionBonusReadGateMixin" in build_sh
+          and "FusionBonusOwner" in build_sh
+          and "FusionBonusOwner.remember" in read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/StatsDataMixin.java")
+          and ".getBonusStats(" not in read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/progression/FusionBonusOwner.java")
+          and "lm$fusionBonuses" in read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/StatsDataMixin.java"))
 
     print("\n=== Fall damage diagnostic (4.6.42) ===")
     fall_diag = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/event/FallDamageDiag.java")
@@ -2140,6 +2222,182 @@ def main() -> int:
           and "new FallDamageDiag()" in mod_src)
     check("fall damage listener class is copied into the forge jar",
           "event/FallDamageDiag.class" in build_sh)
+
+    print("\n=== Staff test GUI stays server-side (4.6.58) ===")
+    native_cmd = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/command/MechanicsCommands.java")
+    native_cfg = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/config/DifficultyConfig.java")
+    native_mod = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.java")
+    client_root = ROOT / "tools/dmz-adaptive-difficulty/src/client"
+    test_gui = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/gui/CnpcStaffTestGui.java")
+    test_hub = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcStyledTestHub.java")
+    check("staff test gui opens only through CNPC",
+          "CnpcStaffTestGui.open" in native_cmd
+          and "useNativeTestGui" not in native_cmd
+          and "LmGuiNetwork" not in native_cmd
+          and "useNativeTestGui" not in native_cfg
+          and "LmClientBootstrap" not in native_mod
+          and "LmGuiNetwork" not in native_mod
+          and not client_root.exists()
+          and "client-classes" not in build_sh)
+    check("testgui opens the styled hub",
+          "CnpcStyledTestHub.open" in test_gui
+          and "CnpcLmHubGui" not in test_gui
+          and "CnpcUltraPreview" not in test_gui
+          and "CnpcUltraStyle.header" in test_hub
+          and "Current menus" in test_hub
+          and 'CnpcLmCharacterGui.open(player, "bones:0")' in test_hub
+          and 'CnpcLmCharacterGui.open(player, "reskin")' in test_hub
+          and "CnpcLmRivalGui.open" in test_hub
+          and "CnpcLmSparGui.open" in test_hub
+          and "CnpcLmProgressionGui.open" in test_hub
+          and "CnpcLmPrestigeGui.open" in test_hub
+          and "CnpcLmDifficultyGui.open" in test_hub
+          and "CnpcLmAdminGui.open" in test_hub
+          and '"character", "main"' not in test_hub
+          and "Services" not in test_hub
+          and "CnpcUltraPreview" not in test_hub
+          and "CnpcStaffTestGui" in build_sh)
+    check("head parts use the test menu colors",
+          "CnpcGuiStyle.toggleOn" in bone_gui
+          and "CnpcGuiStyle.toggleOff" in bone_gui
+          and "ultraPartCaption" not in bone_gui
+          and "\" Body \"" not in bone_gui)
+    style_support = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcGuiSupport.java")
+    check("hub from a menu opens the main hub",
+          "CnpcStyledTestHub" not in style_support
+          and "CnpcUltraPreview.active" not in style_support
+          and "CnpcLmHubGui.open(player, \"main\")" in style_support)
+    check("production menus use the gold CNPC style",
+          "CnpcUltraStyle.header(title)" in style_support
+          and "CnpcUltraStyle.subtitle(subtitle)" in style_support
+          and "CnpcUltraStyle.DIVIDER" in style_support
+          and "CnpcUltraStyle.section(caption)" in style_support
+          and "paintingUltra()" not in style_support
+          and "CnpcUltraPreview.active" not in bone_gui)
+
+    print("\n=== In-game config editor (4.6.65) ===")
+    config_editor = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/config/editor/ConfigEditor.java")
+    config_gui = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmConfigGui.java")
+    config_registry = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/config/ConfigRegistry.java")
+    config_screen = read(cnpc_dir / "CnpcConfigEditor.java")
+    check("config editor lists fields by reflection",
+          "getFields()" in config_editor
+          and "adminPermission" in config_editor
+          and "Migrated" in config_editor
+          and "combatCurveExponent" not in config_gui
+          and "enableProgression" not in config_gui
+          and "CnpcLmConfigGui.open" in read(cnpc_dir / "CnpcLmGui.java")
+          and "CnpcConfigEditor.open" in config_gui
+          and "config-audit.log" in config_editor
+          and ".bak" in config_editor
+          and "displayName" in config_editor
+          and "\"difficulty\"" in config_registry
+          and "\"progression\"" in config_registry
+          and "\"character-services\"" in config_registry
+          and "rivalry-v4.json" in config_registry
+          and "sparring.json" in config_registry
+          and "editable" in config_registry
+          and "PHASE_MENU" in config_registry
+          and "Save all" in config_screen
+          and "Reload from disk" in config_screen
+          and "Discard changes" in config_screen
+          and "fields match" in config_screen
+          and "No fields match" in config_screen
+          and "Nothing to save." in config_screen
+          and "Saved " in config_screen
+          and "● " in config_screen
+          and "Review changes" in config_screen
+          and "fields need fixing" in config_screen
+          and "[undo]" in config_screen
+          and "30+ fields" in config_screen
+          and "Must be between 0 and 1" in config_editor
+          and "setOnChange" in config_screen
+          and "fields match" in config_screen
+          and "No fields match" in config_screen
+          and "moduleLinks" in config_editor
+          and "Staff only." in config_screen
+          and "CnpcRowList" in config_screen
+          and "stepNumber" in config_editor
+          and "saveAll" in config_editor
+          and "backupOnce" in config_editor
+          and "ConfigEditor" in build_sh
+          and "ConfigRegistry" in build_sh
+          and "CharacterServicesConfig" in build_sh
+          and "public static boolean save()" in read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/character/CharacterServicesConfig.java")
+          and "public static boolean save()" in read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/quest/SagaResetConfig.java"))
+
+    style = read(cnpc_dir / "CnpcUltraStyle.java")
+    prestige_gui = read(cnpc_dir / "CnpcLmPrestigeGui.java")
+    hub_gui = read(cnpc_dir / "CnpcLmHubGui.java")
+    admin_gui = read(cnpc_dir / "CnpcLmAdminGui.java")
+    test_hub = read(cnpc_dir / "CnpcStyledTestHub.java")
+    check("menus keep a per-system accent and prestige has no module list",
+          "ACCENT_RIVAL" in style
+          and "ACCENT_SPARRING" in style
+          and "ACCENT_PROGRESSION" in style
+          and "ACCENT_PRESTIGE" in style
+          and "ACCENT_DIFFICULTY" in style
+          and "ACCENT_SAGA" in style
+          and "ACCENT_ADMIN" in style
+          and "ACCENT_CONFIG" in style
+          and "withAccent" in style
+          and "modules|Modules" not in prestige_gui
+          and "ConfigEditor" not in prestige_gui
+          and "setOnChange" in config_screen
+          and "ACCENT_RIVAL + \"Rival\"" in hub_gui
+          and "ACCENT_SPARRING + \"Sparring\"" in hub_gui
+          and "ACCENT_DIFFICULTY + \"Difficulty\"" in hub_gui
+          and "ACCENT_PRESTIGE + \"Prestige\"" in hub_gui
+          and "ACCENT_SAGA + \"Saga\"" not in hub_gui
+          and "ACCENT_CONFIG + CnpcUltraStyle.BOLD + \"Systems\"" in hub_gui
+          and "ACCENT_ADMIN + \"Skill Check\"" in hub_gui
+          and "ACCENT_CHARACTER + \"Character Services\"" in hub_gui
+          and "ACCENT_ADMIN + \"Staff Admin\"" in hub_gui
+          and "ACCENT_PROGRESSION + \"Progression panel\"" in admin_gui
+          and "ACCENT_CONFIG + \"Config editor\"" in admin_gui
+          and "ACCENT_RIVAL" in test_hub
+          and "ACCENT_SAGA" in test_hub)
+
+    skill_gui = read(cnpc_dir / "CnpcLmSkillCheckGui.java")
+    check("hub header stays gold and each menu uses its accent",
+          "withAccent(CnpcUltraStyle.ACCENT_CHARACTER" in hub_gui
+          and "withAccent(CnpcUltraStyle.ACCENT_ADMIN" in admin_gui
+          and "withAccent(CnpcUltraStyle.ACCENT_CHARACTER" not in admin_gui
+          and "withAccent(CnpcUltraStyle.ACCENT_CONFIG" in test_hub
+          and "withAccent(CnpcUltraStyle.ACCENT_ADMIN" in skill_gui)
+
+    print("\n=== Saga reset uses loaded sagas (4.6.69) ===")
+    saga_service = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/quest/SagaResetService.java")
+    saga_config = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/quest/SagaResetConfig.java")
+    saga_gui = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmSagaGui.java")
+    character_gui = read(cnpc_dir / "CnpcLmCharacterGui.java")
+    check("saga reset lists live sagas and scales the cost",
+          "QuestRegistry.getAllSagas" in saga_service
+          and "defaultBaseCost" in saga_config
+          and "perLevelCost" in saga_config
+          and "baseCosts" in saga_config
+          and "getHighestDmzLevel" in saga_config
+          and "AncientCoinEconomy.getHighestDmzLevel" not in saga_config
+          and "DifficultyCache.data" in saga_config
+          and "isSagaLocked" in saga_service
+          and "resetSaga" in saga_service
+          and "setTrackedQuestId" in saga_service
+          and "Not enough Ancient Coins" in saga_service
+          and "CnpcRowList" in saga_gui
+          and "CnpcUltraStyle" in saga_gui
+          and "ID_SAGA" in saga_gui
+          and "servicesTabs" in saga_gui
+          and "characterTabs" not in saga_gui
+          and "Reset saga progress" in saga_gui
+          and "Reset saga progress" not in character_gui
+          and "home|Home" in character_gui
+          and "saga|Saga Reset" in character_gui
+          and "android|Android Removal" in character_gui
+          and "Model customization" in character_gui
+          and "services|Services" not in character_gui
+          and "CnpcLmSagaGui.open" in read(cnpc_dir / "CnpcLmGui.java")
+          and "SagaResetConfig" in build_sh
+          and "SagaResetService" in build_sh)
 
     print("\n=== Summary ===")
     for w in warns:

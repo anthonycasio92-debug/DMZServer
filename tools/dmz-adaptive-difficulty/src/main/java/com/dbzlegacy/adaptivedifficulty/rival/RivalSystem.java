@@ -263,7 +263,7 @@ public final class RivalSystem {
         store.markDirty();
 
         DmzRewards.msg(target, LmChat.tagged("Rival", "§e" + me.name + " §7visibly declared you as a rival!"));
-        DmzRewards.msg(target, LmChat.tip("/rival", "→ Actions → Pending → Accept or Decline"));
+        DmzRewards.msg(target, LmChat.tip("/rival", "→ Actions → Review requests"));
         return "§aDeclared §f" + them.name + "§a. §8They appear on your list as Declared;"
                 + " they were notified (Pending)." + declaredNote;
     }

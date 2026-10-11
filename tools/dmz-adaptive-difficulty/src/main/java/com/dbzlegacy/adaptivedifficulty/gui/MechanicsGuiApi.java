@@ -89,7 +89,7 @@ public final class MechanicsGuiApi {
      */
     public static String handleDo(ServerPlayer player, String action, String arg, String page) {
         if (player == null) {
-            return "§cPlayers only.";
+            return "§cThis only works in-game — console can't open this menu.";
         }
         String act = action == null ? "" : action.toLowerCase(Locale.ROOT).trim();
         String a = arg == null ? "" : arg.trim();
@@ -119,7 +119,7 @@ public final class MechanicsGuiApi {
                     yield "§eLogs flushed.";
                 }
                 case "status", "0", "" -> "§e" + SystemTelemetry.statusLine();
-                default -> "§cUnknown option."
+                default -> "§cSomething went wrong. Try again, or ask staff if it keeps happening."
                         + "\n§8/lm do syslog on|off|status|flush";
             };
         }
@@ -141,7 +141,7 @@ public final class MechanicsGuiApi {
             return com.dbzlegacy.adaptivedifficulty.data.CnpcDataMigrator.forceMigrateWorld(
                     player.m_20194_(), force);
         }
-        return "§cUnknown hub action: " + act;
+        return "§cSomething went wrong. Try again, or ask staff if it keeps happening.";
     }
 
     private static String onOff(String v) {

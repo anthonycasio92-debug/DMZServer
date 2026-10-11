@@ -11,6 +11,7 @@ public final class PrestigeMenu {
             return;
         }
         String target = page == null || page.isBlank() ? "main" : page;
+        com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcUltraPreview.leave(player);
         if (GuiBackend.fromConfig() == GuiBackend.CNPC) {
             com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcLmGui.open(player, "prestige", target);
         }

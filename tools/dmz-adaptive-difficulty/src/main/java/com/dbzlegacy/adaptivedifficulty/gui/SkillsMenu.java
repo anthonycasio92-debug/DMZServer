@@ -40,6 +40,7 @@ public final class SkillsMenu {
         if (skillCheck && !DifficultyConfig.get().enableSkillCheck) {
             return;
         }
+        com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcUltraPreview.leave(player);
         String target = page == null || page.isBlank() ? "core" : page;
         if (GuiBackend.fromConfig() == GuiBackend.CNPC) {
             if (skillCheck) {

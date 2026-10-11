@@ -102,6 +102,7 @@ public final class DifficultyEvents {
         try {
             com.dbzlegacy.adaptivedifficulty.progression.race.RaceLockConfig.load();
             com.dbzlegacy.adaptivedifficulty.character.CharacterServicesConfig.load();
+            com.dbzlegacy.adaptivedifficulty.quest.SagaResetConfig.load();
             com.dbzlegacy.adaptivedifficulty.character.CharacterServicesPermissionBootstrap.register();
             com.dbzlegacy.adaptivedifficulty.character.CharacterServicesStore.get().load();
         } catch (Throwable ignored) {
@@ -386,6 +387,7 @@ public final class DifficultyEvents {
     @SubscribeEvent
     public void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
+            com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcUltraPreview.leave(player);
             com.dbzlegacy.adaptivedifficulty.progression.tp.DeathTpPenalty.onLogout(player);
             // Flush player AD data only — do NOT clear active tier on disconnect.
             DifficultyCache.save(player);

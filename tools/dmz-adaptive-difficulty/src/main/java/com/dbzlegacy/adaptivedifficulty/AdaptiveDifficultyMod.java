@@ -33,9 +33,8 @@ public final class AdaptiveDifficultyMod {
     /** Forge modId — lowercase; not used for NBT / GUI class lookup. */
     public static final String MOD_ID = "legacymechanics";
     /** Product line version (was DMZ Adaptive Difficulty 3.3.x). */
-    public static final String VERSION = "4.6.56";
+    public static final String VERSION = "4.6.90";
 
-    /** True on the dedicated server. A failed side check keeps the server startup path. */
     private static boolean dedicatedServer() {
         try {
             Class<?> loader = Class.forName("net.minecraftforge.fml.loading.FMLLoader");
@@ -65,6 +64,7 @@ public final class AdaptiveDifficultyMod {
         DifficultyConfig.load();
         com.dbzlegacy.adaptivedifficulty.progression.race.RaceLockConfig.load();
         com.dbzlegacy.adaptivedifficulty.character.CharacterServicesConfig.load();
+        com.dbzlegacy.adaptivedifficulty.quest.SagaResetConfig.load();
         com.dbzlegacy.adaptivedifficulty.character.CharacterServicesStore.get().load();
         com.dbzlegacy.adaptivedifficulty.progression.classdef.FightingClassCatalog.load();
         // Vanilla max_health 1024 / armor 30 / attack-damage 2048 would silently hard-cap scaling.

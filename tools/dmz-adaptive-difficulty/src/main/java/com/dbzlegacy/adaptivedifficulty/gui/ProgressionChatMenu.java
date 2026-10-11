@@ -65,7 +65,6 @@ public final class ProgressionChatMenu {
                     .m_7220_(Component.m_237113_("  "))
                     .m_7220_(btn("§e[All flags]", "/prog do page flags", "Toggle every progression module")));
         }
-        send(player, Component.m_237113_("§8────────────────"));
     }
 
     private static void category(ServerPlayer player, String page) {
@@ -95,7 +94,6 @@ public final class ProgressionChatMenu {
         }
         appendFlagToggles(player, page);
         send(player, btn("§7« Back", "/prog do page main", "Go up one level"));
-        send(player, Component.m_237113_("§8────────────────"));
     }
 
     private static void flagsBoard(ServerPlayer player) {
@@ -107,7 +105,6 @@ public final class ProgressionChatMenu {
         send(player, Component.m_237113_(""));
         appendFlagToggles(player, "flags");
         send(player, btn("§7« Back", "/prog do page main", "Go up one level"));
-        send(player, Component.m_237113_("§8────────────────"));
     }
 
     private static void appendFlagToggles(ServerPlayer player, String page) {
@@ -168,7 +165,6 @@ public final class ProgressionChatMenu {
                 "/prog do toggle_staff_free_coins " + (on ? "off" : "on") + " economy",
                 "Applies to all LM Ancient Coin charges"));
         send(player, btn("§7« Back", "/prog do page main", "Go up one level"));
-        send(player, Component.m_237113_("§8────────────────"));
     }
 
     private static MutableComponent btn(String label, String command, String hover) {

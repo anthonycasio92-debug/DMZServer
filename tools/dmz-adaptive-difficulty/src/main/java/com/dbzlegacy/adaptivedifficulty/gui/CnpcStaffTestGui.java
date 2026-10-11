@@ -1,12 +1,12 @@
 package com.dbzlegacy.adaptivedifficulty.gui;
 
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
-import com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcLmHubGui;
+import com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcStyledTestHub;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
-/** Staff entry for CNPC hub ({@code /lm admin testgui}) — same UI as {@code /lm} when {@code guiBackend=cnpc}. */
+/** Staff shortcut for {@code /lm admin testgui}. {@code /lm} uses the same look. */
 public final class CnpcStaffTestGui {
     private CnpcStaffTestGui() {}
 
@@ -22,7 +22,8 @@ public final class CnpcStaffTestGui {
             player.m_213846_(Component.m_237113_("§eStaff CNPC test GUI is disabled in config."));
             return false;
         }
-        CnpcLmHubGui.open(player, "main");
+        player.m_213846_(Component.m_237113_("§6Test menu."));
+        CnpcStyledTestHub.open(player);
         return true;
     }
 }

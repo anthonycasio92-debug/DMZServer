@@ -4733,71 +4733,13 @@ PlayerEvents.loggedIn(
 );
 
 
-PlayerEvents.tick(
-    function (event) {
-
-        var raw =
-            event.player;
-
-
-        // Once per second. wrapPlayer and the Apothic cleanup do not
-        // need to run on every tick. A missing age still runs the update.
-        if (
-            raw == null
-            ||
-            (
-                raw.age != null
-                &&
-                raw.age % 20 !== 0
-            )
-        ) {
-
-            return;
-        }
-
-
-        try {
-
-            var player =
-                wrapPlayer(
-                    raw
-                );
-
-
-            cleanupApothicFlats(
-                player
-            );
-
-
-            if (
-                (
-                    player.getAge()
-                    %
-                    UPDATE_INTERVAL
-                )
-                != 0
-            ) {
-
-                return;
-            }
-
-
-            updateWeaponMultipliers(
-                player,
-                false
-            );
-
-        } catch (err) {
-
-            console.info(
-
-                "[DMZ Weapon V11 TICK ERROR] " +
-
-                err
-            );
-        }
-    }
-);
+// Shared tick in player_tick_consolidated.js calls this. No listener here.
+global.dmzWeaponBonusTick = {
+    UPDATE_INTERVAL: UPDATE_INTERVAL,
+    wrapPlayer: wrapPlayer,
+    cleanupApothicFlats: cleanupApothicFlats,
+    updateWeaponMultipliers: updateWeaponMultipliers
+};
 
 
 console.info(

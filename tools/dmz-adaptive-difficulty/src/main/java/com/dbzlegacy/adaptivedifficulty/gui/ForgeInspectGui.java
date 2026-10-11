@@ -13,6 +13,7 @@ public final class ForgeInspectGui {
         if (admin == null || subject == null) {
             return false;
         }
+        com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcUltraPreview.leave(admin);
         AdminInspectSessions.set(admin.m_20148_(), subject.m_20148_());
         admin.m_213846_(Component.m_237113_(
                 "§eInspecting §f" + subject.m_7755_().getString()

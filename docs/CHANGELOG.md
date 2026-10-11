@@ -1,6 +1,102 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.56**.
+What changed from **4.5.147** through **4.6.76**.
+
+## Menus use their own color, and the config search filters as you type
+
+Each system keeps the same layout. The page title and the active tab use that system's color: Character gold, Rival red, Sparring blue, Progression green, Prestige light purple, Difficulty yellow, Saga aqua, Staff Admin dark red, Config editor gray. Rival opens on Actions, with tabs Actions, Records, and Requests. Sparring opens on Dojo, with tabs Dojo, Rankings, and Wars. Those tabs are the pages, not a second list of the same buttons. Prestige no longer has a Modules list. Config modules stay on Staff Admin → Config editor and `/lm admin config`. Progression lists each module once, opens that module, and Back returns to Progression. The config search filters the current tab by field name while you type, and shows how many fields match.
+
+## Saga reset reads the stored level
+
+Saga reset cost uses `PlayerDifficultyData.getHighestDmzLevel()`, which returns a long and takes no player argument. The coin class on the server does not have `getHighestDmzLevel(ServerPlayer)`.
+
+## Menus share one header, and the config editor explains itself
+
+Page titles are gold, bold, and centered. Section titles are the same gold, left aligned. Card titles are white and bold. Every page uses « Back on the left. Character Services opens on Head parts, with tabs Head parts, Reskin, and Saga Reset. Prestige Modules lists each config module and opens that tab. A closed module stays on the list in gray.
+
+The config editor puts a plain-English line under each field. Fields with the same prefix sit in a section you can collapse. A bad chance shows "Must be between 0 and 1" on the row. Save all opens a review of old and new values, and Confirm writes them. A dirty row has undo for that field only. Recent changes sit at the top of the tab. A tab with more than 30 fields asks you to type a filter. Drafts still stay in memory until Confirm.
+
+## Config editor uses tabs
+
+`/lm admin config` opens one screen. Difficulty, Progression, Character, Saga, Rival, Sparring, and Currency are tabs across the top. The active tab is gold. A search line filters the current module by field name. Each field shows its value, then the control under it: on/off, minus and plus, edit, or manage. A gold dot marks a change that is not saved yet. Save all writes those changes, copies the json once per session, appends `config-audit.log`, and reloads the file. Reload from disk and Discard changes leave the file or the dots. Rival and sparring stay on the bar and stay closed, because those files are player records. Tapping a field shows its type, default, a short description, and the last person who changed it when the audit log has that line.
+
+## Test menu opens each screen directly
+
+`/lm admin testgui` puts Head parts and Reskin at the top. Current menus lists Difficulty, Rival, Sparring, Progression, Prestige, and Staff Admin. Each one opens that screen. The old Character button, which only showed those same choices again, is gone. Skill Check, Skills, and Saga Reset stay as their own buttons.
+
+Head parts is still Head and Horns only. The client-only body accessories stay out of the shop.
+
+## Config editor confirms, then saves
+
+`/lm admin config` opens Difficulty, Progression, Character services, and Saga reset. Fields still come from the live objects. A change shows the old value and the new one before it is written. The file is copied to `.bak` once per session, the change is appended to `config-audit.log`, then the file is saved and reloaded. Numbers have minus and plus. Enum values cycle. Rivalry and sparring record files stay closed. Currency, AI, boss, elite, evolution, telemetry, and tier are registered for a later pass.
+
+Head parts no longer has a Body page. Each part is On or Off.
+
+Saga reset still charges the saga base plus your level times 10 Ancient Coins, and that price is on every row.
+
+## Production menus share one look
+
+Hub, rivals, sparring, progression, prestige, difficulty, character services, staff admin, logs, and skill check use the same gold headers, gray detail, and 6-pixel row gap. Color codes live in one style class. Prestige shows the 20k / 40k / 60k / 80k ladder, then 50k / 100k, on the main page. Menu errors no longer print internal action names. Back is « Back on every submenu.
+
+
+
+## Saga reset scales with your level
+
+Character Services has a Saga page. It lists every saga Dragon Mine Z has loaded, including datapack sagas, from `QuestRegistry.getAllSagas()`. A saga with no display name uses a readable id.
+
+The cost is the saga base plus your level times `perLevelCost`. `config/legacymechanics/saga-reset.json` has `defaultBaseCost` for any saga that is not listed. Locked sagas and sagas you have not started cannot be reset. Confirming calls Dragon Mine Z `resetSaga`, which clears that saga's progress and the tracked quest when it belongs to the saga. You need the Ancient Coins first. An old untouched config file picks up these bases; a base you already edited stays.
+
+## God Ki history is removed, not zeroed
+
+The 4.6.67 wipe left a mastery entry at 0, the used-form list, and the previous stack form. Those are removed now. The skill, the live form, and the ledger string still clear on the same resets. Death still leaves God Ki in place.
+
+## God Ki resets with the other wipes
+
+`/dmzstats reset`, the melee reset, Dende's reset, a race change, and a new character clear God Ki the same way they clear Majin absorption. That removes the `NoeaGodKiLedgerIdentity` string, the `godkienhancement` skill, the Enhance with God Ki stack form, and its mastery. Death does not clear it. God forms and demon god tier are left alone: those are not stored God Ki progress.
+
+## Test hub links go straight there
+
+`/lm admin testgui` lists each screen once. A button opens that screen. Hub on any screen opens the main hub. Head parts is Head and Horns only. The Body page is gone.
+
+## Staff config editor
+
+`/lm admin config` and the Staff Admin **Config editor** button open the live settings. Legacy Mechanics, character services, and saga reset are listed from the config objects themselves, so a new field shows up without a new button. Switches flip in place. Numbers, text, lists, and maps can be edited, and the file is saved. The admin permission node and one-time migration flags stay in the file. Rivalry, sparring, and rival progression stay player records, not settings.
+
+## Production menus use the new look
+
+`/lm` and the other menus use gold headers, gray subtitles, a gold divider, section tags, and tab strips. Head parts uses the same on/off colors. The wording from the 4.6.53 humanization audit is unchanged.
+
+`/lm admin testgui` still opens the staff shortcut. Hub opens the main hub.
+
+## Saga reset follows loaded sagas
+
+`/lm saga` and the hub button open a menu of every saga Dragon Mine Z has loaded, including datapack sagas. The list comes from `QuestRegistry.getAllSagas()`. There is no hardcoded saga list.
+
+Cost is Ancient Coins. `config/legacymechanics/saga-reset.json` has `defaultBaseCost` (100,000 copper unless you change it). A saga id under `costs` overrides that. Any saga that is not named, including one added later, uses `defaultBaseCost` with no config edit. Confirming clears that saga's quest progress and your live quest mobs for it. Rewards you already received stay. Leave a quest party first.
+
+## Test menu is its own screen
+
+## Test menu is its own screen
+
+`/lm admin testgui` opens its own menu. The title is gold, the rows have a gap, and Head parts on that menu uses the new colors. Difficulty, rival, sparring, prestige, character, and staff admin still open the current menus. `/lm` is unchanged.
+
+The previous build was still running the old test class from the base jar, so the command opened the normal hub. This build copies `CnpcStaffTestGui` from source.
+
+## Head parts turn on one at a time
+
+The head-parts shop no longer sells precombined looks such as Horns 1 + Antennas 2 + Ears 1. Each DMZ bone is its own on/off row: hair, three ears, two antennae, five horns, and three Majin heads. Several can be worn together. Dragon Mine Z stores them as one `activeHeadBone` string joined with `+`, and the client draws each piece.
+
+A combo that was already unlocked is split into those pieces. A truncated piece such as `ma` is dropped.
+
+DMZUltra's 68 body accessories (antennae, capes, wings, tails, and the rest) are not sold here. They are client form parts (`part.<name>`), chosen by the form you are wearing. `DmzLookS2CPacket` menu and restyle actions do not set them, and `SceneFormS2CPacket` only swaps a cutscene form. The server cannot turn a piece on or pre-select it in the form editor. The Body page lists them so you can see the names.
+
+## Test GUI shows the new CNPC colors
+
+`/lm admin testgui` opens the new look: gold headers, gray subtitles, tab strips, and head-part rows that say equipped, unlocked, or locked. `/lm` and the other menus stay on the current look until that audit is done. Nothing on the client changed.
+
+## Staff test GUI stays on the server
+
+`/lm admin testgui` opens the CustomNPCs hub. The server sends that menu through CustomNPCs, which clients already have. LegacyMechanics does not ship a client screen, a client packet, or a DMZUltra widget, so a staff member does not install this jar to use the menu.
 
 ## Fusion mixin target
 

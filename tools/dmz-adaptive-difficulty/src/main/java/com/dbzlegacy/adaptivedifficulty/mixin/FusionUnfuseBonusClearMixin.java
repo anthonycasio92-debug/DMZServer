@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.mixin;
 
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
+import com.dbzlegacy.adaptivedifficulty.progression.FusionBonusOwner;
 import com.dragonminez.common.network.NetworkHandler;
 import com.dragonminez.common.network.S2C.StatsSyncS2C;
 import com.dragonminez.common.stats.StatsData;
@@ -67,7 +68,7 @@ public abstract class FusionUnfuseBonusClearMixin {
         UUID partnerId = PARTNER.get();
         PARTNER.remove();
         try {
-            clearAndSync(player, data);
+            FusionBonusOwner.runRaw(() -> clearAndSync(player, data));
             if (player == null || partnerId == null || partnerId.equals(player.m_20148_())) {
                 return;
             }
@@ -83,7 +84,7 @@ public abstract class FusionUnfuseBonusClearMixin {
             if (partnerData == data) {
                 return;
             }
-            clearAndSync(partner, partnerData);
+            FusionBonusOwner.runRaw(() -> clearAndSync(partner, partnerData));
         } catch (Throwable ignored) {
         }
     }

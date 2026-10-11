@@ -870,7 +870,7 @@ public final class EndDimensionStrength {
         lines.add("§7Location §fThe End §8only");
         lines.add("§8Only you can damage your summoned dragon.");
         if (!personalOn) {
-            lines.add("§cTurn personal difficulty ON first.");
+            lines.add("§cTurn on personal difficulty on the main Difficulty page first.");
         } else if (tier < PLAYER_SUMMON_MIN_TIER || tier > PLAYER_SUMMON_MAX_TIER) {
             lines.add("§cActivate an unlock tier T4–T7 first.");
         } else if (!isTheEnd(player.m_9236_())) {

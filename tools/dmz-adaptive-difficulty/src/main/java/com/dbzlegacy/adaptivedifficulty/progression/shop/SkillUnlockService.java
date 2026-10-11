@@ -122,7 +122,6 @@ public final class SkillUnlockService {
         for (String line : lines) {
             send(player, line);
         }
-        send(player, "§8────────────────");
     }
 
     private static void appendPotential(List<String> out, ServerPlayer player, Skills skills) {

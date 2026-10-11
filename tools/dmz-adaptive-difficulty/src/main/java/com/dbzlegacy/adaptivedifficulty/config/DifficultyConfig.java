@@ -839,6 +839,11 @@ public final class DifficultyConfig {
         return INSTANCE;
     }
 
+    /** Field defaults for the editor. Does not replace the live config. */
+    public static DifficultyConfig freshDefaults() {
+        return new DifficultyConfig();
+    }
+
     /** Master gate used by events / scaling / rewards / player purchases. */
     public static boolean isEnabled() {
         return INSTANCE != null && INSTANCE.enabled;
@@ -1730,6 +1735,7 @@ public final class DifficultyConfig {
             com.dbzlegacy.adaptivedifficulty.progression.race.RaceLockConfig.reload();
             com.dbzlegacy.adaptivedifficulty.progression.classdef.FightingClassCatalog.reload();
             com.dbzlegacy.adaptivedifficulty.character.CharacterServicesConfig.load();
+            com.dbzlegacy.adaptivedifficulty.quest.SagaResetConfig.load();
             com.dbzlegacy.adaptivedifficulty.character.CosmeticHeadBoneCatalog.invalidate();
         } catch (Throwable ignored) {
         }

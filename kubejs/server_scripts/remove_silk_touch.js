@@ -536,16 +536,11 @@ PlayerEvents.loggedIn(function (event) {
     }
 });
 
-PlayerEvents.tick(function (event) {
-    try {
-        var player = event.player;
-        if (player == null) return;
-        if (player.age % PLAYER_SCAN_INTERVAL !== 0) return;
-        purgePlayerSilkTouch(player, true);
-    } catch (err) {
-        console.error("[Silk Touch Remove] tick error: " + err);
-    }
-});
+/* Shared tick in player_tick_consolidated.js calls this. No listener here. */
+global.dmzSilkTouchTick = {
+    PLAYER_SCAN_INTERVAL: PLAYER_SCAN_INTERVAL,
+    purge: purgePlayerSilkTouch
+};
 
 EntityEvents.spawned("minecraft:item", function (event) {
     try {

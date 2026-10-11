@@ -13,6 +13,7 @@ public final class DifficultyMenu {
             return;
         }
         String target = page == null || page.isBlank() ? "main" : page;
+        com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcUltraPreview.leave(player);
         if ("settings".equalsIgnoreCase(target)) {
             if (!StaffAccess.isStaff(player)) {
                 target = "main";

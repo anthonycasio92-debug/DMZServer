@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.mixin;
 
+import com.dbzlegacy.adaptivedifficulty.noea.GodKiWipeHelper;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import com.dragonminez.server.commands.StatsCommand;
 import java.util.Collection;
@@ -58,6 +59,7 @@ public abstract class DmzStatsResetPlayerBlockMixin {
                 continue;
             }
             lm$wipeAbsorption(player, "StatsCommand.resetStats");
+            GodKiWipeHelper.wipe(player, "StatsCommand.resetStats");
         }
     }
 

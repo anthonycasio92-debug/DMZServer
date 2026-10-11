@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.mixin;
 
 import com.dbzlegacy.adaptivedifficulty.noea.AbsorptionWipeHelper;
+import com.dbzlegacy.adaptivedifficulty.noea.GodKiWipeHelper;
 import com.dbzlegacy.mohistmelee.StatsResetCommands;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.level.ServerPlayer;
@@ -38,5 +39,6 @@ public abstract class MeleeStatsResetAbsorptionWipeMixin {
             return;
         }
         AbsorptionWipeHelper.wipe(player, "StatsResetCommands.resetSelf");
+        GodKiWipeHelper.wipe(player, "StatsResetCommands.resetSelf");
     }
 }

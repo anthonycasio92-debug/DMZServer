@@ -19,8 +19,8 @@ public final class CnpcPlayerPreview {
     /** Right column reserved for the model (buttons must stay left of {@link #contentRightEdge()}). */
     public static final int SLOT_W = 88;
     public static final int SLOT_H = 110;
-    /** Gap between button columns and the preview slot. */
-    public static final int SLOT_GAP = 8;
+    /** Gap between the text column and the preview slot. Same on every page. */
+    public static final int SLOT_GAP = 12;
 
     /** Tuned for a 1.8-block player inside the 88×110 slot. */
     private static final float PREVIEW_SCALE = 0.78f;
@@ -42,13 +42,13 @@ public final class CnpcPlayerPreview {
         return contentRightEdge() - CnpcGuiSupport.M;
     }
 
-    public static void paint(ServerPlayer player, ICustomGui gui, int anchorY) {
-        paint(player, gui, CnpcGuiSupport.ID_ENTITY_PREVIEW, anchorY);
+    public static void paint(ServerPlayer player, ICustomGui gui) {
+        paint(player, gui, CnpcGuiSupport.ID_ENTITY_PREVIEW);
     }
 
-    public static void paint(ServerPlayer player, ICustomGui gui, int componentId, int anchorY) {
-        int y = Math.max(CnpcGuiSupport.M, anchorY);
-        paint(player, gui, componentId, slotX(), y);
+    public static void paint(ServerPlayer player, ICustomGui gui, int componentId) {
+        CnpcGuiSupport.PreviewSlot slot = CnpcGuiSupport.previewAnchor();
+        paint(player, gui, componentId, slot);
     }
 
     /**
@@ -56,11 +56,11 @@ public final class CnpcPlayerPreview {
      * wrote the bone and synced it, so DMZ's own renderer draws the part.
      * A Gecko CNPC clone does not.
      */
-    public static void paintLive(ServerPlayer player, ICustomGui gui, int anchorY) {
+    public static void paintLive(ServerPlayer player, ICustomGui gui) {
         if (player == null || gui == null) {
             return;
         }
-        int y = Math.max(CnpcGuiSupport.M, anchorY);
+        CnpcGuiSupport.PreviewSlot slot = CnpcGuiSupport.previewAnchor();
         try {
             if (!NpcAPI.IsAvailable()) {
                 return;
@@ -69,14 +69,14 @@ public final class CnpcPlayerPreview {
             if (live == null) {
                 return;
             }
-            IEntityDisplay display = gui.addEntityDisplay(CnpcGuiSupport.ID_ENTITY_PREVIEW, slotX(), y, live);
+            IEntityDisplay display = gui.addEntityDisplay(CnpcGuiSupport.ID_ENTITY_PREVIEW, slot.x, slot.y, live);
             if (!tryBindLivePlayer(display, live)) {
                 display.setVisible(false);
                 return;
             }
-            float scale = previewScaleFor(player);
-            tuneDisplay(display, true, scale);
-            display.setSize(SLOT_W, SLOT_H);
+            float scale = previewScaleFor(player, slot.height);
+            tuneDisplay(display, scale, slot.height);
+            display.setSize(slot.width, slot.height);
             display.setScale(scale);
             display.setBackground(false);
             try {
@@ -91,14 +91,13 @@ public final class CnpcPlayerPreview {
         }
     }
 
-    public static void paint(ServerPlayer player, ICustomGui gui, int componentId, int x, int y) {
-        if (player == null || gui == null) {
+    private static void paint(ServerPlayer player, ICustomGui gui, int componentId, CnpcGuiSupport.PreviewSlot slot) {
+        if (player == null || gui == null || slot == null) {
             return;
         }
         try {
             IEntity live = NpcAPI.Instance().getIEntity(player);
             IEntity entity = live;
-            boolean liveSync = false;
 
             if (entity == null) {
                 entity = CnpcGeckoPreviewBridge.previewEntity(player);
@@ -108,10 +107,8 @@ public final class CnpcPlayerPreview {
                 return;
             }
 
-            IEntityDisplay display = gui.addEntityDisplay(componentId, x, y, entity);
-            if (live != null && tryBindLivePlayer(display, live)) {
-                liveSync = true;
-            } else {
+            IEntityDisplay display = gui.addEntityDisplay(componentId, slot.x, slot.y, entity);
+            if (live == null || !tryBindLivePlayer(display, live)) {
                 IEntity gecko = entity == live ? CnpcGeckoPreviewBridge.previewEntity(player) : entity;
                 if (gecko != null) {
                     forceNbtSnapshot(display, gecko);
@@ -120,9 +117,9 @@ public final class CnpcPlayerPreview {
                 }
             }
 
-            float scale = previewScaleFor(player);
-            tuneDisplay(display, liveSync, scale);
-            display.setSize(SLOT_W, SLOT_H);
+            float scale = previewScaleFor(player, slot.height);
+            tuneDisplay(display, scale, slot.height);
+            display.setSize(slot.width, slot.height);
             display.setScale(scale);
             display.setBackground(false);
             try {
@@ -167,10 +164,11 @@ public final class CnpcPlayerPreview {
     }
 
     /**
-     * Scale the slot model to the player's real height. A giant form uses a smaller scale so it
-     * stays inside the slot; a short form uses a larger one so it does not disappear.
+     * Scale the slot model to the player's real height and to the slot height.
+     * A giant form, or a body taller than the slot, shrinks so it stays inside.
+     * A short form uses a larger scale so it does not disappear.
      */
-    private static float previewScaleFor(ServerPlayer player) {
+    private static float previewScaleFor(ServerPlayer player, int slotHeight) {
         float bbHeight = REF_PLAYER_HEIGHT;
         try {
             if (player != null) {
@@ -178,18 +176,20 @@ public final class CnpcPlayerPreview {
             }
         } catch (Throwable ignored) {
         }
-        float scale = PREVIEW_SCALE * (REF_PLAYER_HEIGHT / bbHeight);
+        float slot = Math.max(1, slotHeight);
+        float scale = PREVIEW_SCALE * (REF_PLAYER_HEIGHT / bbHeight) * (slot / (float) SLOT_H);
         return Math.min(1.0f, Math.max(0.2f, scale));
     }
 
     /** {@code scaleRatio} keeps the feet planted when the model is larger or smaller than 1.8 blocks. */
-    private static void tuneDisplay(IEntityDisplay display, boolean liveSync, float scale) {
+    private static void tuneDisplay(IEntityDisplay display, float scale, int slotHeight) {
         float scaleRatio = PREVIEW_SCALE <= 0f ? 1f : scale / PREVIEW_SCALE;
         try {
             var x = display.getClass().getField("offsetX");
             var y = display.getClass().getField("offsetY");
             x.setFloat(display, 0f);
-            y.setFloat(display, (liveSync ? 4f : 8f) * scaleRatio);
+            float room = Math.max(0f, slotHeight - SLOT_H);
+            y.setFloat(display, (4f + room * 0.5f) * scaleRatio);
         } catch (Throwable ignored) {
         }
     }

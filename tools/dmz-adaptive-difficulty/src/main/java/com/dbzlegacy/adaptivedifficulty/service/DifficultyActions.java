@@ -294,8 +294,8 @@ public final class DifficultyActions {
                 || "zero".equals(act) || "clear".equals(act))) {
             openGui(player, page == null || page.isBlank() ? "main" : page);
             String hint = ACT_TEAM.equals(act)
-                    ? "§cTurn personal difficulty ON first §7— use Personal difficulty on the main menu, then pick a team mode."
-                    : "§cTurn personal difficulty ON first §7— use Personal difficulty on the main menu, then pick a tier.";
+                    ? "§cTurn on personal difficulty on the main Difficulty page first, then pick a team mode."
+                    : "§cTurn on personal difficulty on the main Difficulty page first, then pick a tier.";
             return Result.fail(hint);
         }
 
@@ -322,7 +322,7 @@ public final class DifficultyActions {
         PlayerDifficultyData data = DifficultyCache.data(player);
         if (!data.isPersonalEnabled()) {
             openGui(player, page == null || page.isBlank() ? "team" : page);
-            return Result.fail("Turn personal difficulty ON before using rival teams.");
+            return Result.fail("Turn on personal difficulty on the main Difficulty page first, then pick a team mode.");
         }
         TeamMode next = resolveTeamModeArg(data.getTeamMode(), arg);
         if (next != TeamMode.PERSONAL_ONLY) {

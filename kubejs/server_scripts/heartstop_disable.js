@@ -93,20 +93,11 @@ function stripHeartstopEffect(entity) {
     } catch (err) {}
 }
 
-PlayerEvents.tick(function (event) {
-    try {
-        var player = event.player;
-        if (player == null) return;
-        var age = 0;
-        try {
-            age = player.age;
-        } catch (eA) {
-            return;
-        }
-        if (age % 40 !== 0) return;
-        stripHeartstopEffect(player);
-    } catch (err) {}
-});
+/* Shared tick in player_tick_consolidated.js calls this. No listener here. */
+global.dmzHeartstopTick = {
+    INTERVAL: 40,
+    strip: stripHeartstopEffect
+};
 
 console.info(
     "[DBZ Legacy Reborn] Heartstop server v1.1.0 ready (recipes + effect strip)."

@@ -32,7 +32,22 @@ public final class CnpcGuiSupport {
     public static final int H = 280;
     public static final int M = 14;
     public static final int BTN_H = 20;
+    /** No button renders narrower than this, including after window compression. */
+    public static final int MIN_BUTTON_WIDTH = 80;
+    /** Horizontal padding on each side of a button label. */
+    public static final int BUTTON_PAD_X = 8;
+    /** Approximate Minecraft glyph width used to keep labels off the button edges. */
+    private static final int BUTTON_CHAR_PX = 6;
     public static final int COL_L = M;
+    /** Space reserved at bottom for nav / close row (pixels). */
+    public static final int FOOTER_RESERVE = 48;
+    /**
+     * Top of the menu content area, under the header divider. The preview is centered
+     * in this band, not in the full window, and this edge does not move between tabs.
+     */
+    public static final int CONTENT_TOP = 48;
+    /** Clear space between the text column and the preview slot. */
+    public static final int PREVIEW_GAP = 12;
     /** Two-column button width — keeps {@link CnpcPlayerPreview#contentRightEdge()} clear of overlap. */
     public static final int BTN_W;
     public static final int COL_R;
@@ -43,14 +58,13 @@ public final class CnpcGuiSupport {
         BTN_W = Math.max(130, (right - COL_L - gap) / 2);
         COL_R = COL_L + BTN_W + gap;
     }
-    public static final int ROW_STEP = 24;
+    /** Button height plus the 6px gap used by every production row. */
+    public static final int ROW_STEP = BTN_H + CnpcRowList.ROW_GAP;
     public static final int LINE_H = 13;
     /** Default height for rival/spar/character player lists. */
     public static final int SCROLL_LIST_H = 160;
     /** Approximate CNPC scroll row height for overflow detection. */
     private static final int SCROLL_ROW_H = 14;
-    /** Space reserved at bottom for nav / close row (pixels). */
-    public static final int FOOTER_RESERVE = 48;
     /** Notice band: three lines plus padding. Added only when a notice is waiting. */
     public static final int FLASH_MAX_H = 56;
 
@@ -85,11 +99,15 @@ public final class CnpcGuiSupport {
     public static final int ID_PRESTIGE_TIER_GRID = 200;
     /** Progression TP boost presets. Not {@link #ID_GRID_BASE} — those ids share one screen only by accident. */
     public static final int ID_BOOST_PRESET_BASE = 210;
+    /** Tab strip under the header. Not {@link #ID_GRID_BASE} or the prestige tier grid. */
+    public static final int ID_TAB_BASE = 170;
+    /** Button height plus the gap under a tab strip. */
+    public static final int TAB_BAR_H = BTN_H + 6;
 
-    /** Shorter divider so labels do not wrap oddly in CNPC. */
+    /** Gold divider under the header. */
     private static String dividerText() {
         int chars = Math.max(14, textBandWidth() / 7);
-        return "§8" + "─".repeat(chars);
+        return CnpcUltraStyle.DIVIDER + "─".repeat(chars);
     }
 
     private static final Pattern PACKAGE_LIKE = Pattern.compile("(?:\\b[a-z]{2,}\\.){2,}[A-Za-z0-9_$]+");
@@ -104,7 +122,7 @@ public final class CnpcGuiSupport {
             return false;
         }
         if (!NpcAPI.IsAvailable()) {
-            feedbackChat(player, "§cThis menu needs CustomNPCs on your client and the server.");
+            feedbackChat(player, CnpcUltraStyle.DANGER + "This menu needs CustomNPCs on your client and the server.");
             return false;
         }
         return true;
@@ -129,7 +147,7 @@ public final class CnpcGuiSupport {
     public static void showSized(ServerPlayer player, int guiId, int width, int height, Painter painter) {
         IPlayer<?> ip = wrap(player);
         if (ip == null) {
-            feedbackChat(player, "§cCould not open the menu. Try relogging, then open it again.");
+            feedbackChat(player, CnpcUltraStyle.DANGER + "Could not open the menu. Try relogging, then open it again.");
             return;
         }
         try {
@@ -137,19 +155,24 @@ public final class CnpcGuiSupport {
             int[] fitted = CnpcUiFit.fit(ip, width, designed);
             ICustomGui gui = NpcAPI.Instance().createCustomGui(guiId, fitted[0], fitted[1], false, ip);
             gui.setClosesOnEsc(true);
-            painter.paint(player, gui);
+            CnpcUltraPreview.bindPaint(player);
+            try {
+                painter.paint(player, gui);
+            } finally {
+                CnpcUltraPreview.clearPaint();
+            }
             CnpcUiFit.compressToWindow(gui);
             ip.showCustomGui(gui);
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.warn("[{}] CNPC GUI {} failed: {}", AdaptiveDifficultyMod.MOD_ID, guiId, t.toString(), t);
-            feedbackChat(player, "§cSomething went wrong opening the menu. Ask staff if this keeps happening.");
+            feedbackChat(player, CnpcUltraStyle.DANGER + "Something went wrong opening the menu. Ask staff if this keeps happening.");
         }
     }
 
     /** Title + subtitle + optional inspect line + divider. Returns Y for the info block. */
     public static int paintHeader(ServerPlayer viewer, ICustomGui gui, String title, String subtitle) {
-        title(gui, ID_TITLE, title);
-        subtitle(gui, ID_SUBTITLE, subtitle == null ? "" : CnpcGuiStyle.readableInfoLine(subtitle));
+        title(gui, ID_TITLE, CnpcUltraStyle.header(title));
+        subtitle(gui, ID_SUBTITLE, subtitle == null ? "" : CnpcUltraStyle.subtitle(subtitle));
         inspectBanner(viewer, gui);
         boolean inspecting = AdminInspectSessions.isInspecting(viewer.m_20148_());
         int dividerY = inspecting ? 52 : 38;
@@ -253,8 +276,91 @@ public final class CnpcGuiSupport {
         if (id == ID_TITLE || id == ID_SUBTITLE || id == ID_DIVIDER || id == ID_STATUS_TAG) {
             id = ID_INLINE_NOTE;
         }
-        gui.addLabel(id, safeChat(caption), M, y, textBandWidth(), 10);
+        String shown = CnpcUltraStyle.section(caption);
+        gui.addLabel(id, safeChat(shown), M, y, textBandWidth(), 12);
         return y + 16;
+    }
+
+    /**
+     * One row of tabs. Active is gold bold, the rest are gray.
+     * {@code tabs} entries are {@code id|Label}. A click passes {@code tab:<id>} to {@code onTab},
+     * and the screen opens the same page that button already opened.
+     * Returns the Y under the strip.
+     */
+    /**
+     * How many buttons of {@link #MIN_BUTTON_WIDTH} fit in {@code bandWidth} with {@code gap} between them.
+     * Extra buttons wrap to the next row instead of shrinking.
+     */
+    public static int buttonsPerRow(int bandWidth, int gap) {
+        int gapPx = Math.max(0, gap);
+        int slot = MIN_BUTTON_WIDTH + gapPx;
+        if (bandWidth <= 0 || slot <= 0) {
+            return 1;
+        }
+        return Math.max(1, (bandWidth + gapPx) / slot);
+    }
+
+    /** Equal share of the row, never under {@link #MIN_BUTTON_WIDTH}. */
+    public static int equalButtonWidth(int count, int bandWidth, int gap) {
+        int n = Math.max(1, count);
+        int gapPx = Math.max(0, gap);
+        int share = (bandWidth - gapPx * (n - 1)) / n;
+        return Math.max(MIN_BUTTON_WIDTH, share);
+    }
+
+    public static int paintTabBar(ICustomGui gui, int y, String[] tabs, String activeTab, Consumer<String> onTab) {
+        if (gui == null || tabs == null || tabs.length == 0) {
+            return y;
+        }
+        int gap = 6;
+        int band = textBandWidth();
+        int rowSize = Math.min(buttonsPerRow(band, gap), tabs.length);
+        int equal = equalButtonWidth(rowSize, band, gap);
+        int[] width = new int[tabs.length];
+        boolean packToLabel = false;
+        for (int i = 0; i < tabs.length; i++) {
+            width[i] = equal;
+            if (tabLabelWidth(tabs[i]) > equal) {
+                packToLabel = true;
+            }
+        }
+        if (packToLabel) {
+            for (int i = 0; i < tabs.length; i++) {
+                width[i] = Math.max(MIN_BUTTON_WIDTH, Math.min(band, tabLabelWidth(tabs[i])));
+            }
+        }
+        int yCursor = y;
+        int x = M;
+        int used = 0;
+        for (int i = 0; i < tabs.length; i++) {
+            boolean wrap = packToLabel ? i > 0 && used + width[i] > band : i > 0 && i % rowSize == 0;
+            if (wrap) {
+                yCursor += TAB_BAR_H;
+                x = M;
+                used = 0;
+            }
+            String[] parts = tabs[i].split("\\|", 2);
+            String id = parts[0];
+            String label = parts.length > 1 ? parts[1] : id;
+            boolean active = id.equals(activeTab);
+            String text = active ? CnpcUltraStyle.tabActive(label) : CnpcUltraStyle.tabInactive(label);
+            String action = "tab:" + id;
+            buttonSmallFull(gui, ID_TAB_BASE + i, text, x, yCursor, width[i], () -> {
+                if (onTab != null) {
+                    onTab.accept(action);
+                }
+            });
+            x += width[i] + gap;
+            used += width[i] + gap;
+        }
+        return yCursor + TAB_BAR_H;
+    }
+
+    /** Padded width of a {@code id|Label} tab, ignoring color codes. */
+    private static int tabLabelWidth(String tab) {
+        String[] parts = tab == null ? new String[0] : tab.split("\\|", 2);
+        String label = parts.length > 1 ? parts[1] : (parts.length == 1 ? parts[0] : "");
+        return visibleWidth(CnpcUltraStyle.tabActive(label)) + BUTTON_PAD_X * 2;
     }
 
     public static int paintInfoBlock(ICustomGui gui, int startY, List<String> lines, int inlineMax) {
@@ -285,7 +391,7 @@ public final class CnpcGuiSupport {
         if (reservePickListScroll && maxInline > 0) {
             if (clean.size() > maxInline) {
                 List<String> trimmed = new ArrayList<>(clean.subList(0, maxInline));
-                trimmed.add(CnpcGuiStyle.readableInfoLine("§eMore summary text is hidden above the list."));
+                trimmed.add(CnpcGuiStyle.readableInfoLine(CnpcUltraStyle.INFO + "More summary text is hidden above the list."));
                 clean = trimmed;
             }
             bodyLines(gui, labelBase, startY, clean, clean.size(), textW);
@@ -323,17 +429,35 @@ public final class CnpcGuiSupport {
     }
 
     public static void footerCloseRefresh(ServerPlayer player, ICustomGui gui, int row, Runnable refresh) {
-        buttonSmall(gui, ID_CLOSE, "§cClose", COL_L, row, 95, () -> {});
-        buttonSmall(gui, ID_REFRESH, "§7Refresh", COL_R, row, 95, refresh);
+        buttonSmall(gui, ID_CLOSE, CnpcUltraStyle.DANGER + "Close", COL_L, row, 95, () -> {});
+        buttonSmall(gui, ID_REFRESH, CnpcUltraStyle.SUBTITLE + "Refresh", COL_R, row, 95, refresh);
     }
 
     public static ILabel title(ICustomGui gui, int id, String text) {
-        ILabel l = gui.addLabel(id, safeChat(text), M, 8, textBandWidth(), 18);
+        ILabel l = gui.addLabel(id, safeChat(centerHeader(text)), M, 8, textBandWidth(), 18);
         try {
             l.setScale(1.15f);
         } catch (Throwable ignored) {
         }
         return l;
+    }
+
+    /** Pad the page title so it sits in the middle of the text band. */
+    private static String centerHeader(String text) {
+        if (text == null || text.isEmpty()) {
+            return "";
+        }
+        String plain = CnpcUltraStyle.plain(text);
+        int band = Math.max(plain.length(), textBandWidth() / 6);
+        int pad = Math.max(0, (band - plain.length()) / 2);
+        if (pad == 0) {
+            return text;
+        }
+        int i = 0;
+        while (i + 1 < text.length() && text.charAt(i) == '§') {
+            i += 2;
+        }
+        return text.substring(0, i) + " ".repeat(pad) + text.substring(i);
     }
 
     public static void subtitle(ICustomGui gui, int id, String text) {
@@ -366,14 +490,43 @@ public final class CnpcGuiSupport {
         return textBandWidth();
     }
 
+    /** One preview rectangle. Menus do not pass their own x or y. */
+    public static final class PreviewSlot {
+        public final int x;
+        public final int y;
+        public final int width;
+        public final int height;
+
+        PreviewSlot(int x, int y, int width, int height) {
+            this.x = x;
+            this.y = y;
+            this.width = width;
+            this.height = height;
+        }
+    }
+
     /**
-     * Stable Y for the right-column character preview on every LM menu (does not move when flash
-     * messages or long info blocks change {@link #paintHeader} return value).
+     * The only NPC preview slot. It sits in the right column, vertically centered in the
+     * content band ({@link #CONTENT_TOP} through the footer), and it does not follow the
+     * window height, the active tab, or a notice. Text and buttons stay at {@link #M}.
      */
-    public static int previewAnchorY(net.minecraft.server.level.ServerPlayer viewer) {
-        boolean inspecting = AdminInspectSessions.isInspecting(viewer.m_20148_());
-        int dividerY = inspecting ? 52 : 38;
-        return dividerY + 10;
+    public static PreviewSlot previewAnchor() {
+        int width = CnpcPlayerPreview.SLOT_W;
+        int height = CnpcPlayerPreview.SLOT_H;
+        int x = CnpcPlayerPreview.slotX();
+        int contentBottom = H - FOOTER_RESERVE;
+        int y = CONTENT_TOP + Math.max(0, (contentBottom - CONTENT_TOP - height) / 2);
+        if (x < M) {
+            x = M;
+        }
+        int maxY = H - M - height;
+        if (y > maxY) {
+            y = Math.max(M, maxY);
+        }
+        if (y < M) {
+            y = M;
+        }
+        return new PreviewSlot(x, y, width, height);
     }
 
     /** First Y for lists, buttons, or grids directly under an info block (left column). */
@@ -389,29 +542,29 @@ public final class CnpcGuiSupport {
         return bodyBelowInfo(infoY);
     }
 
-    /** @see CnpcPlayerPreview#paint(ServerPlayer, ICustomGui, int) */
-    public static void paintPlayerPreview(ServerPlayer player, ICustomGui gui, int x, int y) {
-        CnpcPlayerPreview.paint(player, gui, ID_ENTITY_PREVIEW, x, y);
+    /** Preview at {@link #previewAnchor()}. Callers do not pass a position. */
+    public static void paintPlayerPreview(ServerPlayer player, ICustomGui gui) {
+        CnpcPlayerPreview.paint(player, gui);
     }
 
-    public static void paintPlayerPreviewSlot(ServerPlayer player, ICustomGui gui, int anchorY) {
-        CnpcPlayerPreview.paint(player, gui, anchorY);
+    public static void paintPlayerPreviewSlot(ServerPlayer player, ICustomGui gui) {
+        paintPlayerPreview(player, gui);
     }
 
     /**
      * Head-part preview uses the viewer's own entity, not a CNPC clone.
-     * Layout Y still follows the viewer so the slot clears the notice band.
+     * The slot is still {@link #previewAnchor()}.
      */
     public static void paintLivePlayerPreview(ServerPlayer viewer, ICustomGui gui) {
         if (viewer != null) {
-            CnpcPlayerPreview.paintLive(viewer, gui, previewAnchorY(viewer));
+            CnpcPlayerPreview.paintLive(viewer, gui);
         }
     }
 
-    /** Paint preview last at {@link #previewAnchorY(ServerPlayer)} (ProfTools-style). */
+    /** Paint preview last at {@link #previewAnchor()}. */
     public static void paintSubjectPreview(ServerPlayer subject, ICustomGui gui, ServerPlayer layoutViewer) {
         if (subject != null && layoutViewer != null) {
-            paintPlayerPreviewSlot(subject, gui, previewAnchorY(layoutViewer));
+            paintPlayerPreviewSlot(subject, gui);
         }
     }
 
@@ -524,23 +677,42 @@ public final class CnpcGuiSupport {
     }
 
     public static IButton button(ICustomGui gui, int id, String label, int x, int y, Runnable onPress) {
-        IButton b = gui.addButton(id, safeChat(compactButton(label)), x, y, BTN_W, BTN_H);
-        b.setOnPress((g, btn) -> afterGuiClosed(g, onPress));
-        return b;
+        return placeButton(gui, id, label, x, y, BTN_W, true, onPress);
     }
 
     public static IButton buttonSmall(ICustomGui gui, int id, String label, int x, int y, int w, Runnable onPress) {
-        IButton b = gui.addButton(id, safeChat(compactButton(label)), x, y, w, BTN_H);
+        return placeButton(gui, id, label, x, y, w, true, onPress);
+    }
+
+    /** Button that keeps the full caption, still padded and never narrower than {@link #MIN_BUTTON_WIDTH}. */
+    public static IButton buttonSmallFull(ICustomGui gui, int id, String label, int x, int y, int w,
+            Runnable onPress) {
+        return placeButton(gui, id, label, x, y, w, false, onPress);
+    }
+
+    private static IButton placeButton(
+            ICustomGui gui, int id, String label, int x, int y, int requestedWidth, boolean compact, Runnable onPress) {
+        String prepared = compact ? compactButton(label) : (label == null ? "" : label);
+        int width = buttonWidth(prepared, requestedWidth);
+        IButton b = gui.addButton(id, safeChat(fitButtonLabel(prepared, width)), x, y, width, BTN_H);
         b.setOnPress((g, btn) -> afterGuiClosed(g, onPress));
         return b;
     }
 
-    /** Small button without truncating the label (tier costs, etc.). */
-    public static IButton buttonSmallFull(ICustomGui gui, int id, String label, int x, int y, int w,
-            Runnable onPress) {
-        IButton b = gui.addButton(id, safeChat(label), x, y, w, BTN_H);
-        b.setOnPress((g, btn) -> afterGuiClosed(g, onPress));
-        return b;
+    /**
+     * Rendered width: the caller's slot, the label plus {@link #BUTTON_PAD_X} on each side,
+     * or {@link #MIN_BUTTON_WIDTH}, whichever is larger. A column slot that is already at
+     * least the minimum is not grown into the neighboring column — the label is truncated
+     * instead. Callers with a long label use a full-width row.
+     */
+    public static int buttonWidth(String label, int requested) {
+        int floor = Math.max(MIN_BUTTON_WIDTH, Math.max(0, requested));
+        int padded = visibleWidth(label) + BUTTON_PAD_X * 2;
+        int band = textBandWidth();
+        if (requested > 0 && requested < band && padded > requested) {
+            return floor;
+        }
+        return Math.min(Math.max(band, floor), Math.max(floor, padded));
     }
 
     /**
@@ -597,38 +769,87 @@ public final class CnpcGuiSupport {
         if (label == null) {
             return "";
         }
-        // Toggle captions include § codes — truncating breaks CNPC button text.
-        if (label.contains("§lON ") || label.contains("§lOFF ")) {
+        // Toggle captions include color codes. Pixel fitting below keeps those codes intact.
+        if (label.contains(CnpcUltraStyle.BOLD + "ON ") || label.contains(CnpcUltraStyle.BOLD + "OFF ")) {
             return label;
         }
         String s = label;
-        int hint = s.indexOf(" §8· ");
+        int hint = s.indexOf(" " + CnpcUltraStyle.DIM + "· ");
         if (hint > 0) {
             s = s.substring(0, hint);
         }
-        hint = s.indexOf(" §7· ");
+        hint = s.indexOf(" " + CnpcUltraStyle.SUBTITLE + "· ");
         if (hint > 0) {
             s = s.substring(0, hint);
-        }
-        if (s.length() > 26) {
-            s = s.substring(0, 23) + "…";
         }
         return s;
     }
 
+    /**
+     * Fit a label inside a button, leaving {@link #BUTTON_PAD_X} on each side.
+     * The button is never narrowed to make the text fit — the text is truncated with "…".
+     */
+    public static String fitButtonLabel(String label, int buttonWidth) {
+        if (label == null || label.isEmpty()) {
+            return "";
+        }
+        int room = Math.max(BUTTON_CHAR_PX, buttonWidth - BUTTON_PAD_X * 2);
+        if (visibleWidth(label) <= room) {
+            return label;
+        }
+        return truncateToPixels(label, room);
+    }
+
+    static int visibleWidth(String text) {
+        if (text == null || text.isEmpty()) {
+            return 0;
+        }
+        int px = 0;
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (c == '§' && i + 1 < text.length()) {
+                i++;
+                continue;
+            }
+            px += BUTTON_CHAR_PX;
+        }
+        return px;
+    }
+
+    private static String truncateToPixels(String text, int maxPx) {
+        int budget = Math.max(BUTTON_CHAR_PX, maxPx - BUTTON_CHAR_PX);
+        StringBuilder out = new StringBuilder();
+        int px = 0;
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (c == '§' && i + 1 < text.length()) {
+                out.append(c).append(text.charAt(i + 1));
+                i++;
+                continue;
+            }
+            if (px + BUTTON_CHAR_PX > budget) {
+                break;
+            }
+            out.append(c);
+            px += BUTTON_CHAR_PX;
+        }
+        out.append('…');
+        return out.toString();
+    }
+
     /** Short shop row: skill name + progress + cost (fits CNPC button width). */
     public static String compactShopLabel(String name, int bought, int max, String cost) {
-        String n = name == null ? "" : name.replaceAll("§.", "");
+        String n = name == null ? "" : name.replaceAll(CnpcUltraStyle.MARK + ".", "");
         if (n.length() > 14) {
             n = n.substring(0, 12) + "…";
         }
-        String c = cost == null || cost.isBlank() ? "?" : cost.replaceAll("§.", "");
-        return "§f" + n + " §7" + bought + "/" + max + " · §6" + c;
+        String c = cost == null || cost.isBlank() ? "?" : cost.replaceAll(CnpcUltraStyle.MARK + ".", "");
+        return CnpcUltraStyle.BODY + n + " " + CnpcUltraStyle.SUBTITLE + bought + "/" + max + " · " + CnpcUltraStyle.ACCENT + c;
     }
 
     public static String humanizePickerArg(String arg) {
         if (arg == null || arg.isBlank()) {
-            return "§7(entry)";
+            return CnpcUltraStyle.SUBTITLE + "(entry)";
         }
         String s = arg.trim();
         if (s.startsWith("uuid:")) {
@@ -659,7 +880,7 @@ public final class CnpcGuiSupport {
 
     public static String humanizeToken(String raw) {
         if (raw == null || raw.isBlank()) {
-            return "§7?";
+            return CnpcUltraStyle.SUBTITLE + "?";
         }
         String s = raw.trim();
         if (s.startsWith("uuid:")) {
@@ -678,14 +899,14 @@ public final class CnpcGuiSupport {
             s = splitCamel(s);
         }
         if (s.isBlank()) {
-            return "§7?";
+            return CnpcUltraStyle.SUBTITLE + "?";
         }
-        return "§f" + capitalizeWords(s.toLowerCase(Locale.ROOT));
+        return CnpcUltraStyle.BODY + capitalizeWords(s.toLowerCase(Locale.ROOT));
     }
 
     private static String humanizeUuid(String uuid) {
         if (uuid == null || uuid.isBlank()) {
-            return "§f(player)";
+            return CnpcUltraStyle.BODY + "(player)";
         }
         String u = uuid.trim();
         if (u.regionMatches(true, 0, "uuid:", 0, 5)) {
@@ -693,12 +914,12 @@ public final class CnpcGuiSupport {
         }
         String resolved = resolveStoredPlayerName(u);
         if (resolved != null && !resolved.isBlank()) {
-            return "§f" + safeChat(resolved);
+            return CnpcUltraStyle.BODY + safeChat(resolved);
         }
         if (u.length() > 8) {
-            return "§fPlayer §7" + u.substring(0, 8) + "…";
+            return CnpcUltraStyle.BODY + "Player " + CnpcUltraStyle.SUBTITLE + u.substring(0, 8) + "…";
         }
-        return "§fPlayer §7" + u;
+        return CnpcUltraStyle.BODY + "Player " + CnpcUltraStyle.SUBTITLE + u;
     }
 
     private static String resolveStoredPlayerName(String uuidRaw) {
@@ -842,7 +1063,7 @@ public final class CnpcGuiSupport {
 
     private static String safeScrollLine(String line) {
         String s = safeChat(line);
-        s = s.replace(" §8| ", " · ").replace(" | ", " · ");
+        s = s.replace(" " + CnpcUltraStyle.DIM + "| ", " · ").replace(" | ", " · ");
         if (s.length() > 64) {
             return s.substring(0, 61) + "…";
         }
@@ -884,14 +1105,14 @@ public final class CnpcGuiSupport {
 
     /**
      * Paid external UI (DMZ editor, etc.): do not reopen CNPC on success.
-     * Reopen only when the action returns an error (message starts with {@code §c}).
+     * Reopen only when the action returns an error (message starts with {@code color c}).
      */
     public static void actExternalUi(ServerPlayer player, Supplier<String> action, Runnable reopenOnFailure) {
         String msg = action.get();
         if (msg != null && !msg.isBlank()) {
             pushMenuMessage(player, msg);
         }
-        if (msg != null && msg.startsWith("§c") && reopenOnFailure != null) {
+        if (msg != null && msg.startsWith(CnpcUltraStyle.DANGER) && reopenOnFailure != null) {
             runDeferred(player, reopenOnFailure);
         }
     }
@@ -980,8 +1201,9 @@ public final class CnpcGuiSupport {
             Supplier<String> selected,
             Consumer<String> onSelected,
             Runnable reopen) {
-        int w = width > 0 ? width : BTN_W;
-        IButton b = gui.addButton(id, safeChat(compactButton(label)), x, y, w, BTN_H);
+        String caption = compactButton(label);
+        int w = buttonWidth(caption, width > 0 ? width : BTN_W);
+        IButton b = gui.addButton(id, safeChat(fitButtonLabel(caption, w)), x, y, w, BTN_H);
         b.setOnPress((g, btn) -> {
             String arg = selected == null ? null : selected.get();
             if (arg == null || arg.isBlank()) {
@@ -1043,17 +1265,46 @@ public final class CnpcGuiSupport {
         return null;
     }
 
-    /** System top-level screen (e.g. Prestige main): Main → Legacy Mechanics hub. */
+    /** System top-level screen: « Back on the left, same label as every other page, opens the hub. */
     public static void navSystemRoot(ServerPlayer player, ICustomGui gui, int row) {
-        buttonSmall(gui, ID_NAV_HUB, "§7Hub", COL_L, row, 95, () -> CnpcLmHubGui.open(player, "main"));
+        buttonSmall(gui, ID_NAV_BACK, CnpcUltraStyle.BACK, COL_L, row, 95, () -> openMenuHub(player));
+    }
+
+    /** A system's Home tab. Wide enough for the full label, never squeezed. */
+    public static void navBackToMainMenu(ServerPlayer player, ICustomGui gui, int row) {
+        navBackToMainMenu(player, gui, row, CnpcUltraStyle.BACK_TO_MAIN);
+    }
+
+    /**
+     * Home tab back button. {@code label} is the full caption, including its color code.
+     * Width stays 200 so "Back to main menu" is not truncated. Always opens the hub.
+     */
+    public static void navBackToMainMenu(ServerPlayer player, ICustomGui gui, int row, String label) {
+        String shown = label == null || label.isBlank() ? CnpcUltraStyle.BACK_TO_MAIN : label;
+        buttonSmall(gui, ID_NAV_BACK, shown, COL_L, row, 200, () -> openMenuHub(player));
+    }
+
+    /**
+     * Sub-page opened from inside a tab: « Back returns to that parent.
+     * The hub button stays off this row so Back never leaves the system.
+     */
+    public static void navBackToParent(ServerPlayer player, ICustomGui gui, int row, Runnable back) {
+        if (back != null) {
+            buttonSmall(gui, ID_NAV_BACK, CnpcUltraStyle.BACK, COL_L, row, 95, back);
+        }
     }
 
     /** Submenu: Back → parent page in this system; Main → Legacy Mechanics hub. */
     public static void navSubmenu(ServerPlayer player, ICustomGui gui, int row, Runnable back, String backLabel) {
         if (back != null) {
-            buttonSmall(gui, ID_NAV_BACK, backLabel == null ? "§7« Back" : backLabel, COL_L, row, 95, back);
+            buttonSmall(gui, ID_NAV_BACK, backLabel == null ? CnpcUltraStyle.BACK : backLabel, COL_L, row, 95, back);
         }
-        buttonSmall(gui, ID_NAV_HUB, "§7Hub", COL_R, row, 95, () -> CnpcLmHubGui.open(player, "main"));
+        buttonSmall(gui, ID_NAV_HUB, CnpcUltraStyle.HUB, COL_R, row, 95, () -> openMenuHub(player));
+    }
+
+    /** Hub always opens the main hub. The test menu does not sit in that path. */
+    private static void openMenuHub(ServerPlayer player) {
+        CnpcLmHubGui.open(player, "main");
     }
 
     /** @deprecated use {@link #navSystemRoot} or {@link #navSubmenu} */
@@ -1062,7 +1313,7 @@ public final class CnpcGuiSupport {
         if (openMain == null) {
             navSystemRoot(player, gui, row);
         } else {
-            navSubmenu(player, gui, row, openMain, "§7« Back");
+            navSubmenu(player, gui, row, openMain, CnpcUltraStyle.BACK);
         }
     }
 
@@ -1078,7 +1329,7 @@ public final class CnpcGuiSupport {
 
     public static String flagOnOff(java.util.Map<String, String> ph, String key) {
         boolean on = "true".equalsIgnoreCase(ph.getOrDefault("flag_" + key, "false"));
-        return on ? "§2§lON" : "§8§lOFF";
+        return on ? CnpcUltraStyle.CONFIRM_BOLD + "ON" : CnpcUltraStyle.DIM + CnpcUltraStyle.BOLD + "OFF";
     }
 
     @FunctionalInterface

@@ -3,6 +3,7 @@ package com.dbzlegacy.adaptivedifficulty.mixin;
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.noea.AbsorptionWipeHelper;
+import com.dbzlegacy.adaptivedifficulty.noea.GodKiWipeHelper;
 import com.dbzlegacy.adaptivedifficulty.progression.DmzResourcePoolClamp;
 import com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulPrestigeIntegration;
 import com.dbzlegacy.adaptivedifficulty.progression.PrestigeResourceRecovery;
@@ -198,6 +199,7 @@ public abstract class StatsDataGuardsMixin {
             return;
         }
         AbsorptionWipeHelper.wipe(player, null);
+        GodKiWipeHelper.wipe(player, null);
         try {
             PrestigeResourceRecovery.afterDmzStatsReset(player);
         } catch (Throwable ignored) {
@@ -236,5 +238,6 @@ public abstract class StatsDataGuardsMixin {
             CallbackInfo ci
     ) {
         AbsorptionWipeHelper.wipeIfRaceChanges((StatsData) (Object) this, race);
+        GodKiWipeHelper.wipeIfRaceChanges((StatsData) (Object) this, race);
     }
 }

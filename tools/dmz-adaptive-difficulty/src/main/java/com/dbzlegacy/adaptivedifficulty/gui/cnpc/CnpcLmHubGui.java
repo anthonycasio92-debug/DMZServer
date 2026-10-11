@@ -38,54 +38,64 @@ public final class CnpcLmHubGui {
     }
 
     private static void paintMain(ServerPlayer player) {
-        int height = CnpcGuiSupport.suggestHeight(StaffAccess.isStaff(player) ? 400 : 380);
+        boolean staff = StaffAccess.isStaff(player);
+        int designed = staff ? 400 : 404 - CnpcGuiSupport.ROW_STEP;
+        int height = CnpcGuiSupport.suggestHeight(designed + 16);
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_HUB, CnpcGuiSupport.W, height,
                 (p, gui) -> paintMain(p, gui));
     }
 
     private static void paintMain(ServerPlayer player, ICustomGui gui) {
+        CnpcUltraStyle.withAccent(CnpcUltraStyle.ACCENT_CHARACTER, () -> paintMainBody(player, gui));
+    }
+
+    private static void paintMainBody(ServerPlayer player, ICustomGui gui) {
         ServerPlayer who = CnpcGuiSupport.target(player);
         Map<String, String> ph = MechanicsGuiApi.placeholders(who);
         boolean staff = StaffAccess.isStaff(player);
         boolean skillCheck = SkillCheckService.canUse(player);
 
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§f§lLegacy Mechanics",
-                "§7Scaling, rivals, sparring, prestige, character tools, and more");
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, CnpcUltraStyle.BODY + CnpcUltraStyle.BOLD + "Legacy Mechanics",
+                CnpcUltraStyle.SUBTITLE + "Scaling, rivals, sparring, prestige, character tools, and more");
 
         List<String> lines = CnpcPlayerSnapshot.hubLines(who, ph, staff, skillCheck);
         int row = CnpcGuiSupport.bodyBelowInfo(CnpcGuiSupport.paintInfoBlock(
                 gui, infoY, lines, CnpcGuiStyle.INFO_INLINE_MAX));
+        gui.addLabel(CnpcGuiSupport.ID_INLINE_NOTE,
+                CnpcUltraStyle.ACCENT_CONFIG + CnpcUltraStyle.BOLD + "Systems",
+                CnpcGuiSupport.M, row, CnpcGuiSupport.textBandWidth(), 12);
+        row += 16;
         int gap = CnpcGuiSupport.ROW_STEP;
 
         if (!"true".equals(ph.get("bridge_ok"))) {
-            gui.addLabel(CnpcGuiSupport.ID_STATUS_TAG, "§eLegacy Mechanics could not load your menu data. Try relogging.",
+            gui.addLabel(CnpcGuiSupport.ID_STATUS_TAG, CnpcUltraStyle.INFO + "Legacy Mechanics could not load your menu data. Try relogging.",
                     CnpcGuiSupport.M, row, CnpcGuiSupport.textBandWidth(), 14);
             row += gap;
-            CnpcGuiSupport.footerCloseRefresh(player, gui, row, () -> paintMain(player));
+            hubFooter(player, gui, row);
             CnpcGuiSupport.paintSystemMainPreview(who, gui, player);
             return;
         }
 
-        systemBtn(gui, player, ph, "difficulty", row, CnpcGuiSupport.COL_L, "§aDifficulty",
+        systemBtn(gui, player, ph, "difficulty", row, CnpcGuiSupport.COL_L, CnpcUltraStyle.ACCENT_DIFFICULTY + "Difficulty",
                 () -> CnpcLmGui.open(player, "difficulty", "main"));
-        systemBtn(gui, player, ph, "rival", row, CnpcGuiSupport.COL_R, "§6Rival",
+        systemBtn(gui, player, ph, "rival", row, CnpcGuiSupport.COL_R, CnpcUltraStyle.ACCENT_RIVAL + "Rival",
                 () -> CnpcLmGui.open(player, "rival", "main"));
         row += gap;
 
-        systemBtn(gui, player, ph, "spar", row, CnpcGuiSupport.COL_L, "§bSparring",
+        systemBtn(gui, player, ph, "spar", row, CnpcGuiSupport.COL_L, CnpcUltraStyle.ACCENT_SPARRING + "Sparring",
                 () -> CnpcLmGui.open(player, "spar", "main"));
-        systemBtn(gui, player, ph, "prestige", row, CnpcGuiSupport.COL_R, "§dPrestige",
+        systemBtn(gui, player, ph, "prestige", row, CnpcGuiSupport.COL_R, CnpcUltraStyle.ACCENT_PRESTIGE + "Prestige",
                 () -> CnpcLmGui.open(player, "prestige", "main"));
         row += gap;
 
         if (skillCheck) {
-            CnpcGuiSupport.button(gui, 24, "§eSkill Check", CnpcGuiSupport.COL_L, row,
+            CnpcGuiSupport.button(gui, 24, CnpcUltraStyle.ACCENT_ADMIN + "Skill Check", CnpcGuiSupport.COL_L, row,
                     () -> CnpcLmGui.open(player, "skillcheck", "main"));
         } else if (staff) {
-            CnpcGuiSupport.button(gui, 24, "§eSkills", CnpcGuiSupport.COL_L, row,
+            CnpcGuiSupport.button(gui, 24, CnpcUltraStyle.ACCENT_ADMIN + "Skills", CnpcGuiSupport.COL_L, row,
                     () -> CnpcLmGui.open(player, "skills", "core"));
         } else {
-            CnpcGuiSupport.buttonSmall(gui, 24, "§8Skill Check", CnpcGuiSupport.COL_L, row, CnpcGuiSupport.BTN_W,
+            CnpcGuiSupport.buttonSmall(gui, 24, CnpcUltraStyle.DIM + "Skill Check", CnpcGuiSupport.COL_L, row, CnpcGuiSupport.BTN_W,
                     () -> {
                         CnpcGuiSupport.pushMenuMessage(player,
                                 CnpcMenuFeedback.NOTICE_BODY
@@ -93,17 +103,25 @@ public final class CnpcLmHubGui {
                         paintMain(player);
                     });
         }
-        CnpcGuiSupport.button(gui, 25, "§fCharacter Services", CnpcGuiSupport.COL_R, row,
+        CnpcGuiSupport.button(gui, 25, CnpcUltraStyle.ACCENT_CHARACTER + "Character Services", CnpcGuiSupport.COL_R, row,
                 () -> CnpcLmGui.open(player, "character", "main"));
         row += gap;
 
         if (staff) {
-            CnpcGuiSupport.button(gui, 27, "§6Staff Admin", CnpcGuiSupport.COL_L, row,
+            CnpcGuiSupport.button(gui, 27, CnpcUltraStyle.ACCENT_ADMIN + "Staff Admin", CnpcGuiSupport.COL_L, row,
                     () -> CnpcLmAdminGui.open(player, "main"));
             row += gap;
         }
-        CnpcGuiSupport.footerCloseRefresh(player, gui, row, () -> paintMain(player));
+        hubFooter(player, gui, row);
         CnpcGuiSupport.paintSystemMainPreview(who, gui, player);
+    }
+
+    /** Same « Back label as every other page. On the hub it closes the menu. */
+    private static void hubFooter(ServerPlayer player, ICustomGui gui, int row) {
+        CnpcGuiSupport.buttonSmall(gui, CnpcGuiSupport.ID_NAV_BACK, CnpcUltraStyle.BACK,
+                CnpcGuiSupport.COL_L, row, 95, () -> {});
+        CnpcGuiSupport.buttonSmall(gui, CnpcGuiSupport.ID_REFRESH, CnpcUltraStyle.SUBTITLE + "Refresh",
+                CnpcGuiSupport.COL_R, row, 95, () -> paintMain(player));
     }
 
     private static void systemBtn(
@@ -132,7 +150,7 @@ public final class CnpcLmHubGui {
             case "prestige" -> "Prestige";
             default -> systemKey;
         };
-        CnpcGuiSupport.buttonSmall(gui, id, "§8" + pretty, col, row, CnpcGuiSupport.BTN_W,
+        CnpcGuiSupport.buttonSmall(gui, id, CnpcUltraStyle.DIM + pretty, col, row, CnpcGuiSupport.BTN_W,
                 () -> {
                     CnpcGuiSupport.pushMenuMessage(viewer,
                             CnpcMenuFeedback.NOTICE_BODY + pretty

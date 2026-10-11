@@ -28,7 +28,7 @@ public final class CnpcPlayerSnapshot {
         try {
             int level = DmzProgression.guiDisplayDmzLevel(who);
             String scale = hubPh == null ? "x1" : hubPh.getOrDefault("overhaul_scale", "x1");
-            lines.add("§7DMZ level §f" + DmzRewards.formatWhole(level) + " §8· §7Overhaul scale §f" + scale);
+            lines.add(CnpcUltraStyle.SUBTITLE + "DMZ level " + CnpcUltraStyle.BODY + DmzRewards.formatWhole(level) + " " + CnpcUltraStyle.DIM + "· " + CnpcUltraStyle.SUBTITLE + "Overhaul scale " + CnpcUltraStyle.BODY + scale);
         } catch (Throwable ignored) {
         }
 
@@ -37,9 +37,9 @@ public final class CnpcPlayerSnapshot {
         appendSparring(lines, who);
 
         if (skillCheck && hubPh != null && "true".equals(hubPh.get("skillcheck_session"))) {
-            lines.add("§7Skill Check session is open — finish it from the hub when ready.");
+            lines.add(CnpcUltraStyle.SUBTITLE + "Skill Check session is open — finish it from the hub when ready.");
         } else if (staff) {
-            lines.add("§7Staff tip: §fStaff Admin §7lives under this hub (Progression is inside it).");
+            lines.add(CnpcUltraStyle.SUBTITLE + "Staff tip: " + CnpcUltraStyle.BODY + "Staff Admin " + CnpcUltraStyle.SUBTITLE + "lives under this hub (Progression is inside it).");
         }
 
         return lines;
@@ -52,17 +52,17 @@ public final class CnpcPlayerSnapshot {
         try {
             DifficultySnapshot snap = DifficultyCache.refresh(who);
             if (!snap.personalEnabled) {
-                lines.add("§7Difficulty §ePersonal OFF §8— open §fDifficulty §8to turn it on and pick a tier");
+                lines.add(CnpcUltraStyle.SUBTITLE + "Difficulty " + CnpcUltraStyle.INFO + "Personal OFF " + CnpcUltraStyle.DIM + "— open " + CnpcUltraStyle.BODY + "Difficulty " + CnpcUltraStyle.DIM + "to turn it on and pick a tier");
                 return;
             }
             if (snap.activeTier <= 0 || snap.activeDifficulty <= 0) {
-                lines.add("§7Difficulty §7not active §8— unlock a tier in §fDifficulty");
+                lines.add(CnpcUltraStyle.SUBTITLE + "Difficulty " + CnpcUltraStyle.SUBTITLE + "not active " + CnpcUltraStyle.DIM + "— unlock a tier in " + CnpcUltraStyle.BODY + "Difficulty");
                 return;
             }
             String state = snap.state();
-            lines.add("§7Difficulty §f" + snap.activeTierName + " §8· §" + snap.stateColorCode() + state
-                    + " §8(CR §f" + DmzRewards.formatWhole(snap.combatRating) + "§8)");
-            lines.add("§7Team mode §f" + teamLabel(snap.teamMode) + " §8· §7Active value §f"
+            lines.add(CnpcUltraStyle.SUBTITLE + "Difficulty " + CnpcUltraStyle.BODY + snap.activeTierName + " " + CnpcUltraStyle.DIM + "· " + CnpcUltraStyle.MARK + snap.stateColorCode() + state
+                    + " " + CnpcUltraStyle.DIM + "(CR " + CnpcUltraStyle.BODY + DmzRewards.formatWhole(snap.combatRating) + CnpcUltraStyle.DIM + ")");
+            lines.add(CnpcUltraStyle.SUBTITLE + "Team mode " + CnpcUltraStyle.BODY + teamLabel(snap.teamMode) + " " + CnpcUltraStyle.DIM + "· " + CnpcUltraStyle.SUBTITLE + "Active value " + CnpcUltraStyle.BODY
                     + DmzRewards.formatWhole(snap.activeDifficulty));
         } catch (Throwable ignored) {
         }
@@ -76,7 +76,7 @@ public final class CnpcPlayerSnapshot {
             }
             int mutual = parseInt(rph.get("mutual"), 0);
             int max = parseInt(rph.get("mutual_max"), 3);
-            lines.add("§7Rivals §f" + mutual + "§7/§f" + max + " mutual §8· §7Record §f"
+            lines.add(CnpcUltraStyle.SUBTITLE + "Rivals " + CnpcUltraStyle.BODY + mutual + CnpcUltraStyle.SUBTITLE + "/" + CnpcUltraStyle.BODY + max + " mutual " + CnpcUltraStyle.DIM + "· " + CnpcUltraStyle.SUBTITLE + "Record " + CnpcUltraStyle.BODY
                     + rph.getOrDefault("wins", "0") + "W "
                     + rph.getOrDefault("losses", "0") + "L");
         } catch (Throwable ignored) {
@@ -91,27 +91,27 @@ public final class CnpcPlayerSnapshot {
             }
             if ("true".equals(sph.get("session_active"))) {
                 String partner = sph.getOrDefault("partner", "").trim();
-                lines.add("§7Spar session §aACTIVE"
-                        + (partner.isBlank() ? "" : " §8· §7with §f" + partner));
+                lines.add(CnpcUltraStyle.SUBTITLE + "Spar session " + CnpcUltraStyle.CONFIRM + "ACTIVE"
+                        + (partner.isBlank() ? "" : " " + CnpcUltraStyle.DIM + "· " + CnpcUltraStyle.SUBTITLE + "with " + CnpcUltraStyle.BODY + partner));
                 return;
             }
             int streak = parseInt(sph.get("streak"), 0);
             int best = parseInt(sph.get("streak_best"), 0);
             if (streak > 0) {
-                lines.add("§7Training streak §f" + streak + " day" + (streak == 1 ? "" : "s")
-                        + " §8(best §f" + best + "§8) §7— keep sparring with your bond partner");
+                lines.add(CnpcUltraStyle.SUBTITLE + "Training streak " + CnpcUltraStyle.BODY + streak + " day" + (streak == 1 ? "" : "s")
+                        + " " + CnpcUltraStyle.DIM + "(best " + CnpcUltraStyle.BODY + best + CnpcUltraStyle.DIM + ") " + CnpcUltraStyle.SUBTITLE + "— keep sparring with your bond partner");
                 return;
             }
             if ("true".equals(sph.get("mentor_bonded"))) {
                 String bond = sph.getOrDefault("mentor", "").trim();
                 if (!bond.isBlank()) {
-                    lines.add("§7Spar bond §f" + bond + " §8· §7Spar today to start a day streak");
+                    lines.add(CnpcUltraStyle.SUBTITLE + "Spar bond " + CnpcUltraStyle.BODY + bond + " " + CnpcUltraStyle.DIM + "· " + CnpcUltraStyle.SUBTITLE + "Spar today to start a day streak");
                     return;
                 }
             }
             String dojo = sph.getOrDefault("dojo_name", "").trim();
             if (!dojo.isBlank()) {
-                lines.add("§7Home dojo §f" + dojo + " §8· §7Open §fSpar §7for mentor or spar TP");
+                lines.add(CnpcUltraStyle.SUBTITLE + "Home dojo " + CnpcUltraStyle.BODY + dojo + " " + CnpcUltraStyle.DIM + "· " + CnpcUltraStyle.SUBTITLE + "Open " + CnpcUltraStyle.BODY + "Spar " + CnpcUltraStyle.SUBTITLE + "for mentor or spar TP");
             }
         } catch (Throwable ignored) {
         }

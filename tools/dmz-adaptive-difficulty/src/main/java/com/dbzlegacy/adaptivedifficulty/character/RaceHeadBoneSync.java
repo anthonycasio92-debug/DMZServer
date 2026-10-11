@@ -28,8 +28,14 @@ public final class RaceHeadBoneSync {
 
     public static String normalizeHeadBone(ServerPlayer player, String raceId, String activeHeadBone) {
         String bone = safe(activeHeadBone);
-        if (player != null && !bone.isEmpty() && CosmeticHeadBoneService.isBoneAllowed(player, bone)) {
-            return bone.trim().toLowerCase(Locale.ROOT);
+        if (player != null && !bone.isEmpty()) {
+            if (CosmeticHeadBoneService.isBoneAllowed(player, bone)) {
+                return HeadPartPieces.join(HeadPartPieces.fragments(bone));
+            }
+            String kept = CosmeticHeadBoneService.ownedPiecesToken(player, bone);
+            if (!kept.isEmpty()) {
+                return kept;
+            }
         }
         if (raceId == null || raceId.isBlank()) {
             return bone.isEmpty() ? DEFAULT_BONE : bone;
@@ -40,8 +46,17 @@ public final class RaceHeadBoneSync {
         }
         Set<String> allowed = new HashSet<>();
         for (String entry : configured) {
-            if (entry != null && !entry.isBlank()) {
-                allowed.add(entry.toLowerCase(Locale.ROOT));
+            if (entry == null || entry.isBlank()) {
+                continue;
+            }
+            String id = entry.toLowerCase(Locale.ROOT);
+            allowed.add(id);
+            if (id.contains("+")) {
+                for (String piece : HeadPartPieces.fragments(id)) {
+                    if (HeadPartPieces.isAtomic(piece)) {
+                        allowed.add(piece);
+                    }
+                }
             }
         }
         if (player != null) {
@@ -51,7 +66,8 @@ public final class RaceHeadBoneSync {
             return bone.isEmpty() ? DEFAULT_BONE : bone;
         }
         if (!bone.isEmpty() && allowed.contains(bone.toLowerCase(Locale.ROOT))) {
-            return bone;
+            String joined = HeadPartPieces.join(HeadPartPieces.fragments(bone));
+            return joined.isEmpty() ? bone : joined;
         }
         if (player != null) {
             for (String unlocked : CosmeticHeadBoneService.allowedBoneIds(player)) {
@@ -60,7 +76,9 @@ public final class RaceHeadBoneSync {
                 }
             }
         }
-        return configured[0];
+        String first = configured[0] == null ? "" : configured[0].toLowerCase(Locale.ROOT);
+        String joined = HeadPartPieces.join(HeadPartPieces.fragments(first));
+        return joined.isEmpty() ? (first.isEmpty() ? DEFAULT_BONE : first) : joined;
     }
 
     /** @return true when server character data was updated */

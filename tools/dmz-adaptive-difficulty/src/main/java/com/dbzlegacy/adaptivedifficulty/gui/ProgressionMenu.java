@@ -14,6 +14,7 @@ public final class ProgressionMenu {
             return;
         }
         String target = page == null || page.isBlank() ? "main" : page;
+        com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcUltraPreview.leave(player);
         boolean androidRemove = isAndroidRemovePage(target);
         if (!androidRemove && !StaffAccess.isStaff(player)) {
             DmzRewards.msg(player, "§cStaff only.");

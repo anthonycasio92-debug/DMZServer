@@ -788,36 +788,11 @@ PlayerEvents.inventoryChanged(function(event) {
 // Maximum normal delay: ~1 second.
 // ============================================================================
 
-PlayerEvents.tick(function(event) {
-
-    var player = event.player;
-
-
-    if (player == null) {
-        return;
-    }
-
-
-    try {
-
-        if (
-            (player.tickCount % CHECK_INTERVAL) != 0
-        ) {
-
-            return;
-        }
-
-    } catch (ignored) {
-
-        // If tickCount access fails, allow the scan instead.
-    }
-
-
-    cleanAllPothalas(
-        player
-    );
-
-});
+// Shared tick in player_tick_consolidated.js calls this. No listener here.
+global.dmzPothalaTick = {
+    CHECK_INTERVAL: CHECK_INTERVAL,
+    cleanAllPothalas: cleanAllPothalas
+};
 
 
 // ============================================================================

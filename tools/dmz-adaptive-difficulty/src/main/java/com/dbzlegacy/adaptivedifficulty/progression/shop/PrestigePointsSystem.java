@@ -228,10 +228,10 @@ public final class PrestigePointsSystem {
             return "§cAmount must be positive.";
         }
         if (!trySpend(player, amount, reason)) {
-            return "§cNeed §e" + amount + " §cprestige points (have §e" + getPoints(player) + "§c).";
+            return "§cYou need §e" + amount + " §cprestige favor. You have §e" + getPoints(player) + "§c.";
         }
         String tag = reason == null || reason.isBlank() ? "shop" : reason.trim();
-        return "§aSpent §e" + amount + " §apoint" + (amount == 1 ? "" : "s")
+        return "§aSpent §e" + amount + " §afavor"
                 + " §7(" + tag + ") · Balance: §e" + getPoints(player);
     }
 
@@ -243,7 +243,7 @@ public final class PrestigePointsSystem {
             return "§cAmount must be positive.";
         }
         grantPoints(player, amount, reason);
-        return "§aGranted §e" + amount + " §aprestige point" + (amount == 1 ? "" : "s")
+        return "§aGranted §e" + amount + " §aprestige favor"
                 + " · Balance: §e" + getPoints(player);
     }
 
@@ -287,7 +287,7 @@ public final class PrestigePointsSystem {
             return "§cTurn in §f1§7, §f2§7, §f3§7, §f6§7, or §f9 §cprestiges at a time.";
         }
         if (want > held) {
-            return "§cYou only hold §6" + held + " §cprestige" + (held == 1 ? "" : "s") + ".";
+            return "§cYour current prestige amount is only §6" + held + "§c. Exchange fewer, or prestige again first.";
         }
         int gained = pointsForTurnIn(want);
         int newHeld = held - want;
@@ -301,9 +301,9 @@ public final class PrestigePointsSystem {
                 "points", balance
         ));
         return "§aTurned in §6" + want + " §aprestige" + (want == 1 ? "" : "s")
-                + " §7→ §e+" + gained + " §7point" + (gained == 1 ? "" : "s")
+                + " §7→ §e+" + gained + " §7favor"
                 + " §8(+" + (gained - want) + " bonus)"
-                + "\n§7Balance: §e" + balance + " §7· Held: §6" + newHeld;
+                + "\n§7Prestige favor: §e" + balance + " §7· Current prestige amount: §6" + newHeld;
     }
 
     // ── Skill upgrades ─────────────────────────────────────────────────
@@ -380,7 +380,7 @@ public final class PrestigePointsSystem {
                 "live_after", liveAfter
         ));
         String perPoint = levelsPerPoint(offer.id) > 1
-                ? " §8(" + levelsPerPoint(offer.id) + " levels/point in shop)"
+                ? " §8(" + levelsPerPoint(offer.id) + " levels per favor in shop)"
                 : "";
         return "§a" + offer.label + " §7kept level §f" + before + " §7→ §f" + next
                 + " §8/ §f" + offer.maxLevel + perPoint
@@ -441,7 +441,7 @@ public final class PrestigePointsSystem {
         }
         int points = getPoints(player);
         if (points < SKILL_POINT_COST) {
-            return "§cNeed §e" + SKILL_POINT_COST + " §cpoint (have §e" + points + "§c).";
+            return "§cNeed §e" + SKILL_POINT_COST + " §cfavor (have §e" + points + "§c).";
         }
         int levelsPerPoint = levelsPerPoint(offer.id);
         int room = Math.max(0, floorMax - purchased);
@@ -480,7 +480,7 @@ public final class PrestigePointsSystem {
         return "§a+" + gain + " §7" + offer.label + " kept level §f" + purchased
                 + " §7→ §f" + nextPurchased + liveNote
                 + " §8(survives prestige)"
-                + "\n§7Points left: §e" + getPoints(player);
+                + "\n§7Favor left: §e" + getPoints(player);
     }
 
     /** Prestige-shop levels gained per spent point for {@code skillId}. */
@@ -703,12 +703,12 @@ public final class PrestigePointsSystem {
         int cost = tierPointCost(tierId);
         int points = getPoints(player);
         if (points < cost) {
-            return "§cNeed §e" + cost + " §cpoint" + (cost == 1 ? "" : "s")
+            return "§cNeed §e" + cost + " §cfavor"
                     + " (have §e" + points + "§c).";
         }
         if (!GuiClickConfirm.confirmed(player.m_20148_(), "prestige-tier:" + tierId)) {
             return "§eUnlock permanent §fT" + tierId + " §efor §6" + cost
-                    + " §epoints? Click again within 10 seconds.";
+                    + " §efavor? Click again within 10 seconds.";
         }
         setPoints(player, points - cost);
         ProgressionData.storedPutBool(player, KEY_TIER_PREFIX + tierId, true);
@@ -740,9 +740,9 @@ public final class PrestigePointsSystem {
                 "points", getPoints(player)
         ));
         return "§aPermanent unlock §fT" + tierId + " " + tier.display
-                + " §7(§e-" + cost + " §7point" + (cost == 1 ? "" : "s") + ")"
+                + " §7(§e-" + cost + " §7favor)"
                 + "\n§7Survives prestige · still activate with Ancient Coins via §f/difficulty §7Tiers"
-                + "\n§7Points left: §e" + getPoints(player);
+                + "\n§7Favor left: §e" + getPoints(player);
     }
 
     /** Staff: grant permanent tier unlock(s) without spending points. */
@@ -889,7 +889,7 @@ public final class PrestigePointsSystem {
         }
         int points = getPoints(player);
         if (points < FORM_COST) {
-            return "§cNeed §e" + FORM_COST + " §cpoints (have §e" + points + "§c).";
+            return "§cNeed §e" + FORM_COST + " §cfavor (have §e" + points + "§c).";
         }
         if (majin && hasMutant(player)) {
             return "§cYou have §fPermanent Mutant§c."
@@ -901,7 +901,7 @@ public final class PrestigePointsSystem {
         }
         if (!GuiClickConfirm.confirmed(player.m_20148_(), "form-buy:" + label)) {
             return "§eBuy §f" + label + " §efor §6" + FORM_COST
-                    + " §epoints? Click again within 10 seconds.";
+                    + " §efavor? Click again within 10 seconds.";
         }
         setPoints(player, points - FORM_COST);
         ProgressionData.storedPutBool(player, majin ? KEY_MAJIN : KEY_MUTANT, true);
@@ -909,8 +909,8 @@ public final class PrestigePointsSystem {
         SystemTelemetry.log("prestige_points", majin ? "buy_majin" : "buy_mutant", player, null, Map.of(
                 "points", getPoints(player)
         ));
-        return "§aUnlocked §f" + label + " §7(§e-" + FORM_COST + " §7points)"
-                + "\n§7Points left: §e" + getPoints(player)
+        return "§aUnlocked §f" + label + " §7(§e-" + FORM_COST + " §7favor)"
+                + "\n§7Favor left: §e" + getPoints(player)
                 + "\n§8To switch: remove it (no refund), then buy the other form.";
     }
 
@@ -924,12 +924,12 @@ public final class PrestigePointsSystem {
         }
         if (!GuiClickConfirm.confirmed(player.m_20148_(), "form-remove:" + label)) {
             return "§eRemove §f" + label + "§e? You will §cnot §eget your "
-                    + FORM_COST + " points back. Click again within 10 seconds.";
+                    + FORM_COST + " favor back. Click again within 10 seconds.";
         }
         clearForm(player, majin);
         SystemTelemetry.log("prestige_points", majin ? "unbuy_majin" : "unbuy_mutant", player, null, Map.of());
-        return "§7Removed §f" + label + "§7. §cNo points refunded."
-                + "\n§7Points: §e" + getPoints(player);
+        return "§7Removed §f" + label + "§7. §cNo favor refunded."
+                + "\n§7Favor: §e" + getPoints(player);
     }
 
     private static void clearForm(ServerPlayer player, boolean majin) {
@@ -1025,7 +1025,7 @@ public final class PrestigePointsSystem {
         int cost = breakthroughCost(next);
         int points = getPoints(player);
         if (points < cost) {
-            return "§cNeed §e" + cost + " §cpoints for breakthrough §f#" + next
+            return "§cNeed §e" + cost + " §cfavor for breakthrough §f#" + next
                     + " §c(have §e" + points + "§c).";
         }
         setPoints(player, points - cost);
@@ -1062,13 +1062,13 @@ public final class PrestigePointsSystem {
                         + " §c(expected §f" + DmzRewards.formatWhole(newCap)
                         + "§c) — remount / report if this persists.";
         return "§aPersonal level cap raised to §f" + DmzRewards.formatWhole(newCap)
-                + " §7(§e-" + cost + " §7points)"
+                + " §7(§e-" + cost + " §7favor)"
                 + "\n§7Keep leveling with TP / buy stats into the new cap."
                 + "\n§7Future prestige requirements now scale up to §f"
                 + DmzRewards.formatWhole(newCap) + "§7."
                 + "\n§8Others stay soft-locked at their personal cap until they breakthrough too."
                 + "\n§7Breakthrough §f" + next + "§7/§f" + MAX_BREAKTHROUGHS
-                + " · Points left: §e" + getPoints(player)
+                + " · Favor left: §e" + getPoints(player)
                 + "\n§7Live DMZ max now: §f" + DmzRewards.formatWhole(liveCap)
                 + note;
     }

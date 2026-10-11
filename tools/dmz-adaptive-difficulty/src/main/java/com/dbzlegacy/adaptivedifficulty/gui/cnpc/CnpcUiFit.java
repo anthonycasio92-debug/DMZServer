@@ -1,11 +1,17 @@
 package com.dbzlegacy.adaptivedifficulty.gui.cnpc;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import noppes.npcs.api.IScreenSize;
 import noppes.npcs.api.entity.IPlayer;
+import noppes.npcs.api.gui.IButton;
 import noppes.npcs.api.gui.ICustomGui;
 import noppes.npcs.api.gui.ICustomGuiComponent;
+import noppes.npcs.api.gui.IScroll;
 import noppes.npcs.api.wrapper.gui.GuiComponentsScrollableWrapper;
 
 /**
@@ -23,6 +29,10 @@ public final class CnpcUiFit {
     static final int MIN_SCALED_HEIGHT = 240;
     /** Gap so the window is not flush with the edge of the screen. */
     private static final int SCREEN_MARGIN = 8;
+    /**
+     * Layout scale never goes below this. Further overflow scrolls instead of squeezing buttons.
+     */
+    private static final float MIN_COMPRESS_SCALE = 0.9f;
 
     private CnpcUiFit() {}
 
@@ -82,9 +92,11 @@ public final class CnpcUiFit {
     }
 
     /**
-     * Shrink widget positions so a layout drawn for the design size stays inside the window.
+     * Shrink a layout drawn for the design size so it stays inside the window.
      * One scale is used for both axes ({@code Math.min(sx, sy)}) so buttons stay the same
-     * shape. The window is then pulled in around that layout so it stays centered.
+     * shape, and that scale never goes below {@link #MIN_COMPRESS_SCALE}. Past that, the
+     * page scrolls instead of squeezing buttons narrower. Button width is also held at
+     * {@link CnpcGuiSupport#MIN_BUTTON_WIDTH}.
      */
     public static void compressToWindow(ICustomGui gui) {
         if (gui == null) {
@@ -97,29 +109,21 @@ public final class CnpcUiFit {
         }
         List<ICustomGuiComponent> components = gui.getComponents();
         GuiComponentsScrollableWrapper panel = scrollPanel(gui);
-        int maxRight = 0;
-        int maxBottom = 0;
-        if (components != null) {
-            for (ICustomGuiComponent component : components) {
-                if (component == null) {
-                    continue;
-                }
-                maxRight = Math.max(maxRight, component.getPosX() + Math.max(0, component.getWidth()));
-                maxBottom = Math.max(maxBottom, component.getPosY() + Math.max(0, component.getHeight()));
-            }
-        }
-        if (panel != null && panel.width > 0 && panel.height > 0) {
-            maxRight = Math.max(maxRight, panel.x + panel.width);
-            maxBottom = Math.max(maxBottom, panel.y + panel.height);
-        }
+        int[] extent = contentExtent(components, panel);
+        int maxRight = extent[0];
+        int maxBottom = extent[1];
         float sx = maxRight > width ? (width - 2f) / maxRight : 1f;
         float sy = maxBottom > height ? (height - 2f) / maxBottom : 1f;
-        float scale = Math.min(sx, sy);
-        if (scale > 0.999f) {
+        float needed = Math.min(sx, sy);
+        if (needed > 0.999f) {
+            enforceButtonWidths(components);
+            enforceButtonWidths(panel == null ? null : panel.getComponents());
+            relieveButtonOverlap(components, width);
+            relieveButtonOverlap(panel == null ? null : panel.getComponents(), width);
             return;
         }
-        scale = Math.min(1f, Math.max(0.05f, scale));
-        if (scale < 0.9f) {
+        float scale = Math.min(1f, Math.max(MIN_COMPRESS_SCALE, needed));
+        if (needed < 0.9f) {
             AdaptiveDifficultyMod.LOGGER.warn(
                     "[{}] GUI {} compressed to {}x — content overflows window",
                     AdaptiveDifficultyMod.MOD_ID,
@@ -143,11 +147,43 @@ public final class CnpcUiFit {
                 }
             }
         }
+        relieveButtonOverlap(components, width);
+        relieveButtonOverlap(panel == null ? null : panel.getComponents(), width);
+        int bottom = contentExtent(gui.getComponents(), scrollPanel(gui))[1];
+        if (bottom > height) {
+            if (hasPickList(gui.getComponents())) {
+                // The pick list already owns CNPC's one scroll region. Shorten that list
+                // so the buttons under it stay on screen, and leave button widths alone.
+                shrinkPickList(gui, height);
+            } else {
+                enablePageScroll(gui, width, height);
+            }
+            return;
+        }
         int fittedW = Math.max(1, Math.min(width, Math.round(maxRight * scale) + 2));
         int fittedH = Math.max(1, Math.min(height, Math.round(maxBottom * scale) + 2));
         if (fittedW < width || fittedH < height) {
             gui.setSize(fittedW, fittedH);
         }
+    }
+
+    private static int[] contentExtent(List<ICustomGuiComponent> components, GuiComponentsScrollableWrapper panel) {
+        int maxRight = 0;
+        int maxBottom = 0;
+        if (components != null) {
+            for (ICustomGuiComponent component : components) {
+                if (component == null) {
+                    continue;
+                }
+                maxRight = Math.max(maxRight, component.getPosX() + Math.max(0, component.getWidth()));
+                maxBottom = Math.max(maxBottom, component.getPosY() + Math.max(0, component.getHeight()));
+            }
+        }
+        if (panel != null && panel.width > 0 && panel.height > 0) {
+            maxRight = Math.max(maxRight, panel.x + panel.width);
+            maxBottom = Math.max(maxBottom, panel.y + panel.height);
+        }
+        return new int[] {maxRight, maxBottom};
     }
 
     private static void scaleComponent(ICustomGuiComponent component, float sx, float sy) {
@@ -158,12 +194,163 @@ public final class CnpcUiFit {
         int w = component.getWidth();
         int h = component.getHeight();
         if (w > 0) {
-            w = Math.max(1, Math.round(w * sx));
+            int scaled = Math.max(1, Math.round(w * sx));
+            w = component instanceof IButton
+                    ? Math.max(CnpcGuiSupport.MIN_BUTTON_WIDTH, scaled)
+                    : scaled;
         }
         if (h > 0) {
             h = Math.max(1, Math.round(h * sy));
         }
         component.setSize(w, h);
+    }
+
+    /** Buttons that were laid out under the floor are widened. Positions are fixed afterward. */
+    private static void enforceButtonWidths(List<ICustomGuiComponent> components) {
+        if (components == null) {
+            return;
+        }
+        for (ICustomGuiComponent component : components) {
+            if (!(component instanceof IButton) || component.getWidth() <= 0) {
+                continue;
+            }
+            if (component.getWidth() < CnpcGuiSupport.MIN_BUTTON_WIDTH) {
+                component.setSize(CnpcGuiSupport.MIN_BUTTON_WIDTH, component.getHeight());
+            }
+        }
+    }
+
+    /**
+     * Widening a button back to {@link CnpcGuiSupport#MIN_BUTTON_WIDTH} can cover the next
+     * button in the row. Push that neighbor right when the window still has room.
+     */
+    private static void relieveButtonOverlap(List<ICustomGuiComponent> components, int windowWidth) {
+        if (components == null || components.isEmpty()) {
+            return;
+        }
+        List<ICustomGuiComponent> buttons = new ArrayList<>();
+        for (ICustomGuiComponent component : components) {
+            if (component instanceof IButton) {
+                buttons.add(component);
+            }
+        }
+        buttons.sort(Comparator.comparingInt(ICustomGuiComponent::getPosY)
+                .thenComparingInt(ICustomGuiComponent::getPosX));
+        int rowY = Integer.MIN_VALUE;
+        int cursor = -1;
+        for (ICustomGuiComponent button : buttons) {
+            int y = button.getPosY();
+            if (rowY == Integer.MIN_VALUE || Math.abs(y - rowY) > 3) {
+                rowY = y;
+                cursor = -1;
+            }
+            if (cursor >= 0 && button.getPosX() < cursor) {
+                int next = cursor;
+                if (next + button.getWidth() <= windowWidth - 2) {
+                    button.setPos(next, y);
+                }
+            }
+            cursor = button.getPosX() + button.getWidth() + 4;
+        }
+    }
+
+    private static boolean hasPickList(List<ICustomGuiComponent> components) {
+        if (components == null) {
+            return false;
+        }
+        for (ICustomGuiComponent component : components) {
+            if (component instanceof IScroll) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Give the footer its pixels back by shortening the pick list, not the buttons. */
+    private static void shrinkPickList(ICustomGui gui, int height) {
+        List<ICustomGuiComponent> components = gui.getComponents();
+        if (components == null) {
+            return;
+        }
+        ICustomGuiComponent list = null;
+        int bottom = 0;
+        for (ICustomGuiComponent component : components) {
+            if (component == null) {
+                continue;
+            }
+            bottom = Math.max(bottom, component.getPosY() + Math.max(0, component.getHeight()));
+            if (component instanceof IScroll) {
+                list = component;
+            }
+        }
+        if (list == null || bottom <= height) {
+            return;
+        }
+        int overflow = bottom - height;
+        int room = list.getHeight() - 48;
+        if (room <= 0) {
+            return;
+        }
+        int shrink = Math.min(overflow, room);
+        int oldBottom = list.getPosY() + list.getHeight();
+        list.setSize(list.getWidth(), Math.max(48, list.getHeight() - shrink));
+        for (ICustomGuiComponent component : components) {
+            if (component == null || component == list) {
+                continue;
+            }
+            if (component.getPosY() >= oldBottom - 2) {
+                component.setPos(component.getPosX(), component.getPosY() - shrink);
+            }
+        }
+    }
+
+    /**
+     * Move the page into CNPC's scroll panel so the rest of the content can be reached.
+     * Skipped when a pick list is present — that list is the one scroll region.
+     */
+    private static void enablePageScroll(ICustomGui gui, int width, int height) {
+        GuiComponentsScrollableWrapper panel = scrollPanel(gui);
+        if (panel == null) {
+            return;
+        }
+        List<ICustomGuiComponent> inner = panel.getComponents();
+        List<ICustomGuiComponent> root = gui.getComponents();
+        Set<Integer> ids = new HashSet<>();
+        if (inner != null) {
+            for (ICustomGuiComponent child : inner) {
+                if (child != null && !ids.add(child.getID())) {
+                    return;
+                }
+            }
+        }
+        List<ICustomGuiComponent> move = new ArrayList<>();
+        if (root != null) {
+            for (ICustomGuiComponent component : root) {
+                if (component == null) {
+                    continue;
+                }
+                if (!ids.add(component.getID())) {
+                    return;
+                }
+                move.add(component);
+            }
+        }
+        if (inner != null && !inner.isEmpty()) {
+            int originX = panel.x;
+            int originY = panel.y;
+            for (ICustomGuiComponent child : new ArrayList<>(inner)) {
+                if (child != null) {
+                    child.setPos(child.getPosX() + originX, child.getPosY() + originY);
+                }
+            }
+        }
+        panel.init(0, 0, Math.max(1, width - 2), Math.max(1, height - 2));
+        for (ICustomGuiComponent component : move) {
+            gui.removeComponent(component.getID());
+        }
+        for (ICustomGuiComponent component : move) {
+            panel.addComponent(component);
+        }
     }
 
     private static GuiComponentsScrollableWrapper scrollPanel(ICustomGui gui) {

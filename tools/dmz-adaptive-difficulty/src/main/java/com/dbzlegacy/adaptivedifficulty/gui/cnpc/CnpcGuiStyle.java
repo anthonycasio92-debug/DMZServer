@@ -10,26 +10,26 @@ public final class CnpcGuiStyle {
     /** Short header above a scroll list (equipped title, etc.). */
     public static final int INFO_LIST_HEADER_MAX = 2;
 
-    public static final String SEP = " §8· ";
+    public static final String SEP = " " + CnpcUltraStyle.DIM + "· ";
 
-    public static final String HINT_CLICK_ENTRY = "§7Select an entry below";
-    public static final String HINT_CLICK_PLAYER = "§7Select a player below";
-    public static final String HINT_CLICK_INVITE = "§7Tap a name — Accept or Decline (or withdraw outgoing)";
+    public static final String HINT_CLICK_ENTRY = CnpcUltraStyle.SUBTITLE + "Select an entry below";
+    public static final String HINT_CLICK_PLAYER = CnpcUltraStyle.SUBTITLE + "Select a player below";
+    public static final String HINT_CLICK_INVITE = CnpcUltraStyle.SUBTITLE + "Tap a name — Accept or Decline (or withdraw outgoing)";
     /** Shown above a scrollable read-only status band (mouse wheel). */
-    public static final String HINT_SCROLL_STATUS = "§7Scroll this section with your mouse wheel";
+    public static final String HINT_SCROLL_STATUS = CnpcUltraStyle.SUBTITLE + "Scroll this section with your mouse wheel";
     /** Shown above CNPC {@code IScroll} pick lists only when rows do not fit. */
     public static final String HINT_PICK_LIST =
-            "§7Use search to filter · drag the list scrollbar to browse";
-    public static final String HINT_DOUBLE_CLICK_PLAYER = "§7Double-click a player to choose them";
-    public static final String HINT_REVIEW_PAY = "§7Read the summary before you confirm";
-    public static final String HINT_TOGGLE_STAFF = "§7Staff: tap a row to turn a flag on or off";
-    public static final String HINT_READ_ONLY = "§7View-only — nothing to change here";
+            CnpcUltraStyle.SUBTITLE + "Use search to filter · drag the list scrollbar to browse";
+    public static final String HINT_DOUBLE_CLICK_PLAYER = CnpcUltraStyle.SUBTITLE + "Double-click a player to choose them";
+    public static final String HINT_REVIEW_PAY = CnpcUltraStyle.SUBTITLE + "Read the summary before you confirm";
+    public static final String HINT_TOGGLE_STAFF = CnpcUltraStyle.SUBTITLE + "Staff: tap a row to turn a flag on or off";
+    public static final String HINT_READ_ONLY = CnpcUltraStyle.SUBTITLE + "View-only — nothing to change here";
     public static final String HINT_TITLE_EQUIP =
-            "§7Select a row, then Details · double-click to equip";
-    public static final String HINT_REVIEW_DOJO = "§7Select a rival dojo below";
+            CnpcUltraStyle.SUBTITLE + "Select a row, then Details · double-click to equip";
+    public static final String HINT_REVIEW_DOJO = CnpcUltraStyle.SUBTITLE + "Select a rival dojo below";
 
-    public static final String MSG_RIVALS_OFF = "§cRivals are turned off on this server.";
-    public static final String MSG_SPAR_OFF = "§cSparring is turned off on this server.";
+    public static final String MSG_RIVALS_OFF = CnpcUltraStyle.DANGER + "Rivals are turned off on this server.";
+    public static final String MSG_SPAR_OFF = CnpcUltraStyle.DANGER + "Sparring is turned off on this server.";
 
     private static final Pattern MULTI_SPACE = Pattern.compile(" {2,}");
     private static final Pattern SEP_PIPE = Pattern.compile(" ?\\| ?");
@@ -49,10 +49,10 @@ public final class CnpcGuiStyle {
             return "";
         }
         String s = sentence.trim();
-        if (s.startsWith("§")) {
+        if (s.startsWith(CnpcUltraStyle.MARK)) {
             return s;
         }
-        return "§7" + s;
+        return CnpcUltraStyle.SUBTITLE + s;
     }
 
     /**
@@ -65,8 +65,8 @@ public final class CnpcGuiStyle {
             return line == null ? "" : line;
         }
         String s = line.trim();
-        s = s.replace("§7", "§f");
-        s = s.replace("§8", "§e");
+        s = s.replace(CnpcUltraStyle.SUBTITLE, CnpcUltraStyle.BODY);
+        s = s.replace(CnpcUltraStyle.DIM, CnpcUltraStyle.INFO);
         return s;
     }
 
@@ -77,22 +77,22 @@ public final class CnpcGuiStyle {
         }
         String s = line.trim();
         s = SEP_PIPE.matcher(s).replaceAll(" · ");
-        s = s.replace(" §8| ", SEP).replace(" | ", " · ");
-        while (s.contains("§8··")) {
-            s = s.replace("§8··", "§8·");
+        s = s.replace(" " + CnpcUltraStyle.DIM + "| ", SEP).replace(" | ", " · ");
+        while (s.contains(CnpcUltraStyle.DIM + "··")) {
+            s = s.replace(CnpcUltraStyle.DIM + "··", CnpcUltraStyle.DIM + "·");
         }
-        s = s.replace("§8·§8·", "§8·");
-        s = s.replace("  §8·  ", SEP).replace(" §8·  ", SEP).replace("  §8· ", SEP);
+        s = s.replace(CnpcUltraStyle.DIM + "·" + CnpcUltraStyle.DIM + "·", CnpcUltraStyle.DIM + "·");
+        s = s.replace("  " + CnpcUltraStyle.DIM + "·  ", SEP).replace(" " + CnpcUltraStyle.DIM + "·  ", SEP).replace("  " + CnpcUltraStyle.DIM + "· ", SEP);
         s = MULTI_SPACE.matcher(s).replaceAll(" ");
         return s;
     }
 
     public static String toggleOn(String feature) {
-        return "§2§lON §r§a" + feature;
+        return CnpcUltraStyle.CONFIRM_BOLD + "ON " + CnpcUltraStyle.RESET + CnpcUltraStyle.CONFIRM + feature;
     }
 
     public static String toggleOff(String feature) {
-        return "§8§lOFF §r§7" + feature;
+        return CnpcUltraStyle.DIM + CnpcUltraStyle.BOLD + "OFF " + CnpcUltraStyle.RESET + CnpcUltraStyle.SUBTITLE + feature;
     }
 
     /** Friendly spar leaderboard tab name (replaces raw keys like tp / rp). */

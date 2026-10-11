@@ -3,6 +3,7 @@ package com.dbzlegacy.adaptivedifficulty.character;
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.noea.AbsorptionWipeHelper;
+import com.dbzlegacy.adaptivedifficulty.noea.GodKiWipeHelper;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.progression.race.RaceLock;
@@ -189,6 +190,30 @@ public final class CharacterServicesSystem {
         return payableCost(player, base, CharacterServicesConfig.get().raceChange.levelCostMultiplier);
     }
 
+    /**
+     * Copper actually taken for a race change. The confirm scroll and {@link #executeRaceChange}
+     * both use this for the same percent the button shows, including level scaling and the staff waiver.
+     */
+    public static long raceAmountDue(ServerPlayer player, int preservationPercent) {
+        return amountDue(player, raceCost(player, preservationPercent));
+    }
+
+    public static long classAmountDue(ServerPlayer player) {
+        return amountDue(player, classCost(player));
+    }
+
+    public static long reskinAmountDue(ServerPlayer player) {
+        return amountDue(player, reskinCost(player));
+    }
+
+    /** Listed copper after the staff/bypass waiver. Zero means the charge call takes nothing. */
+    public static long amountDue(ServerPlayer player, long listedCopper) {
+        if (player != null && CharacterServicesAccess.bypassCost(player)) {
+            return 0L;
+        }
+        return Math.max(0L, listedCopper);
+    }
+
     public static long classCost(ServerPlayer player) {
         CharacterServicesConfig.ClassChange cc = CharacterServicesConfig.get().classChange;
         return payableCost(player, cc.baseCostCopper, cc.levelCostMultiplier);
@@ -312,7 +337,7 @@ public final class CharacterServicesSystem {
             }
         }
         releaseTransformation(player);
-        long cost = CharacterServicesAccess.bypassCost(player) ? 0L : raceCost(player, preservationPercent);
+        long cost = raceAmountDue(player, preservationPercent);
         AncientCoinEconomy.migrateWalletToItems(player);
         if (cost > 0L && !AncientCoinEconomy.canAfford(player, cost)) {
             return insufficientFunds(player, cost);
@@ -344,6 +369,7 @@ public final class CharacterServicesSystem {
                 return "§cCharacter data unavailable.";
             }
             AbsorptionWipeHelper.wipe(player, "CharacterServicesSystem.executeRaceChange");
+            GodKiWipeHelper.wipe(player, "CharacterServicesSystem.executeRaceChange");
             clearForms(ch, player);
             String priorHeadBone = CosmeticHeadBoneService.activeBone(player);
             String priorClassBeforeRaceChange = "";
@@ -423,7 +449,7 @@ public final class CharacterServicesSystem {
             if (fullWipe) {
                 return "§aOpening character setup for §f" + titleCase(raceId)
                         + "§a. §7Pick your class and appearance — free full wipe."
-                        + " §7Purchased head parts stay unlocked."
+                        + " §7Purchased model pieces stay unlocked."
                         + paid;
             }
             if (openedFreeClassPicker) {
@@ -498,7 +524,7 @@ public final class CharacterServicesSystem {
             }
         }
         releaseTransformation(player);
-        long cost = CharacterServicesAccess.bypassCost(player) ? 0L : classCost(player);
+        long cost = classAmountDue(player);
         AncientCoinEconomy.migrateWalletToItems(player);
         if (cost > 0L && !AncientCoinEconomy.canAfford(player, cost)) {
             return insufficientFunds(player, cost);
@@ -576,7 +602,7 @@ public final class CharacterServicesSystem {
                 return "§cYou must wait §f" + formatDuration(left) + " §cbefore another reskin.";
             }
         }
-        long cost = CharacterServicesAccess.bypassCost(player) ? 0L : reskinCost(player);
+        long cost = reskinAmountDue(player);
         AncientCoinEconomy.migrateWalletToItems(player);
         if (cost > 0L && !AncientCoinEconomy.canAfford(player, cost)) {
             return insufficientFunds(player, cost);
@@ -592,7 +618,7 @@ public final class CharacterServicesSystem {
         if (pre != null && !pre.isBlank()) {
             return pre;
         }
-        long cost = CharacterServicesAccess.bypassCost(player) ? 0L : reskinCost(player);
+        long cost = reskinAmountDue(player);
         AncientCoinEconomy.migrateWalletToItems(player);
         if (cost > 0L && !chargeAc(player, cost)) {
             return insufficientFunds(player, cost);

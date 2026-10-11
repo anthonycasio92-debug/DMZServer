@@ -38,6 +38,7 @@ public final class MechanicsCommands {
         return root.executes(ctx -> open(ctx.getSource(), "main"))
                 .then(Commands.m_82127_("gui").executes(ctx -> open(ctx.getSource(), "main")))
                 .then(Commands.m_82127_("help").executes(ctx -> playerHelp(ctx.getSource())))
+                .then(Commands.m_82127_("saga").executes(ctx -> openSystem(ctx.getSource(), "saga")))
                 .then(Commands.m_82127_("open")
                         .then(LmCommandSuggestions.word("system", LmCommandSuggestions.LM_OPEN_SYSTEMS)
                                 .executes(ctx -> openSystem(
@@ -78,6 +79,7 @@ public final class MechanicsCommands {
                         .executes(ctx -> adminHelp(ctx.getSource()))
                         .then(Commands.m_82127_("help").executes(ctx -> adminHelp(ctx.getSource())))
                         .then(Commands.m_82127_("reload").executes(ctx -> adminReload(ctx.getSource())))
+                        .then(Commands.m_82127_("config").executes(ctx -> adminConfig(ctx.getSource())))
                         .then(migrateCnpcLiteral())
                         .then(adminClearRoot())
                         .then(characterCooldownAdmin())
@@ -257,6 +259,20 @@ public final class MechanicsCommands {
                 com.dbzlegacy.adaptivedifficulty.progression.shop.SkillCheckService.open(player, "core");
                 yield true;
             }
+            case "saga", "sagareset", "saga_reset" -> {
+                com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcUltraPreview.leave(player);
+                com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcLmGui.open(player, "saga", "main");
+                yield true;
+            }
+            case "config", "cfgedit", "configeditor" -> {
+                if (!StaffAccess.isStaff(player)) {
+                    player.m_213846_(Component.m_237113_(LmCommandMessages.STAFF_ONLY));
+                    yield false;
+                }
+                com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcUltraPreview.leave(player);
+                com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcLmGui.open(player, "config", "main");
+                yield true;
+            }
             case "hub", "main", "help", "lm", "legacymechanics" -> {
                 MechanicsMenu.open(player, "main");
                 yield true;
@@ -264,7 +280,7 @@ public final class MechanicsCommands {
             default -> {
                 player.m_213846_(Component.m_237113_(LmCommandMessages.unknownOpenTarget(
                         s,
-                        "difficulty, rival, spar, prestige, skillcheck, character, progression, skills")));
+                        "difficulty, rival, spar, prestige, skillcheck, character, saga, progression, skills, config")));
                 yield false;
             }
         };
@@ -396,6 +412,13 @@ public final class MechanicsCommands {
                 source.m_81377_(), player, kind);
         LmCommandFeedback.tellLines(source, msg);
         return msg != null && msg.startsWith("§c") ? 0 : 1;
+    }
+
+    private static int adminConfig(CommandSourceStack source) {
+        if (StaffAccess.denyUnlessStaff(source) == 0) {
+            return 0;
+        }
+        return openSystem(source, "config");
     }
 
     private static int adminReload(CommandSourceStack source) {

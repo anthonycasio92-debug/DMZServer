@@ -11,6 +11,7 @@ public final class MechanicsMenu {
             return;
         }
         String target = page == null || page.isBlank() ? "main" : page;
+        com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcUltraPreview.leave(player);
 
         GuiBackend backend = GuiBackend.fromConfig();
         if (backend == GuiBackend.CNPC) {
