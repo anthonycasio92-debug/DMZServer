@@ -295,6 +295,60 @@ var FAMILY_PROFILES = {
 
 
 // ============================================================================
+// WEAPON DAMAGE CONTROL
+//
+// Direct damage overrides per weapon ID or family. When porting to LM,
+// this maps 1:1 to a Java Map<String, Double>.
+//
+// Format:
+//   "modid:item_id": <multiplier>    - multiplies the weapon's base damage
+//   "family:<family_name>": <multiplier> - applies to all weapons in family
+//
+// 1.0 = no change, 0.5 = half damage, 2.0 = double damage
+// Set to 0 to effectively disable a weapon's damage (still usable for stats).
+//
+// Examples:
+//   "minecraft:diamond_sword": 1.25,
+//   "family:claymore": 0.8,
+// ============================================================================
+
+var WEAPON_DAMAGE_OVERRIDES = {
+    // -- Add overrides here --
+    // "minecraft:netherite_sword": 1.5,
+    // "family:dagger": 0.7,
+};
+
+var WEAPON_DAMAGE_DEFAULT = 1.0;
+
+// ----------------------------------------------------------------------------
+// Damage lookup - do not edit below
+// ----------------------------------------------------------------------------
+
+function getWeaponDamageMultiplier(itemId, family) {
+    if (!itemId) return WEAPON_DAMAGE_DEFAULT;
+    // Exact item match takes priority
+    if (WEAPON_DAMAGE_OVERRIDES.hasOwnProperty(itemId)) {
+        return WEAPON_DAMAGE_OVERRIDES[itemId];
+    }
+    // Family fallback
+    if (family) {
+        var familyKey = "family:" + family;
+        if (WEAPON_DAMAGE_OVERRIDES.hasOwnProperty(familyKey)) {
+            return WEAPON_DAMAGE_OVERRIDES[familyKey];
+        }
+    }
+    return WEAPON_DAMAGE_DEFAULT;
+}
+
+// Publish for the consolidated tick handler and future LM port
+global.dmzWeaponDamageControl = {
+    overrides: WEAPON_DAMAGE_OVERRIDES,
+    defaultMultiplier: WEAPON_DAMAGE_DEFAULT,
+    getMultiplier: getWeaponDamageMultiplier
+};
+
+
+// ============================================================================
 // SIMPLY SWORDS / SIMPLY MORE EXACT FAMILY MAP
 // ============================================================================
 
@@ -2534,6 +2588,25 @@ function calculateWeapon(
             getWeaponAttackDamage(
                 stack
             );
+
+        damage =
+            damage
+            *
+            getWeaponDamageMultiplier(
+                info.id,
+                info.family
+            );
+
+        if (
+            !isFinite(
+                damage
+            )
+            ||
+            damage < 0
+        ) {
+
+            damage = 0;
+        }
 
 
         damageScale =

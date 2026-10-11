@@ -123,7 +123,10 @@ public final class WeaponBonusScale {
         double damage = 1.0;
         double damageScale = 1.0;
         if (!info.shield) {
-            damage = attackDamage(stack);
+            damage = attackDamage(stack) * WeaponDamageControl.multiplier(info.id, info.family);
+            if (!Double.isFinite(damage) || damage < 0.0) {
+                damage = 0.0;
+            }
             damageScale = 0.75 + (damage / 18.0);
         }
         double profileScale = damageScale;
