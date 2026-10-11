@@ -18,7 +18,7 @@ public final class CapsuleBan {
     private CapsuleBan() {}
 
     public static void purge(ServerPlayer player) {
-        if (player == null) {
+        if (player == null || !HotPathConfig.get().capsules.enabled) {
             return;
         }
         int removed = ItemIds.editPlayer(player, (container, slot, stack) -> {
@@ -39,6 +39,9 @@ public final class CapsuleBan {
     }
 
     public static boolean onUse(PlayerInteractEvent.RightClickItem event, ServerPlayer player) {
+        if (!HotPathConfig.get().capsules.enabled) {
+            return false;
+        }
         ItemStack stack = event.getItemStack();
         if (!isBanned(stack)) {
             return false;
@@ -50,6 +53,9 @@ public final class CapsuleBan {
     }
 
     public static boolean onItemSpawn(EntityJoinLevelEvent event, ItemEntity entity, ItemStack stack) {
+        if (!HotPathConfig.get().capsules.enabled) {
+            return false;
+        }
         if (!isBanned(stack)) {
             return false;
         }

@@ -21,7 +21,7 @@ public final class SilkTouchStrip {
     private SilkTouchStrip() {}
 
     public static void purge(ServerPlayer player) {
-        if (player == null) {
+        if (player == null || !HotPathConfig.get().silkTouch.enabled) {
             return;
         }
         int changed = ItemIds.editPlayer(player, (container, slot, stack) -> {
@@ -51,6 +51,9 @@ public final class SilkTouchStrip {
     }
 
     public static void onItemSpawn(ItemEntity entity, ItemStack stack) {
+        if (!HotPathConfig.get().silkTouch.enabled) {
+            return;
+        }
         if (entity == null || stack == null || stack.m_41619_() || !mentionsSilk(stack)) {
             return;
         }

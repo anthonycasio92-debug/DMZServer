@@ -5,6 +5,7 @@ import com.dbzlegacy.adaptivedifficulty.character.CharacterServicesConfig;
 import com.dbzlegacy.adaptivedifficulty.config.ConfigPaths;
 import com.dbzlegacy.adaptivedifficulty.config.ConfigRegistry;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
+import com.dbzlegacy.adaptivedifficulty.kube.hotpath.HotPathConfig;
 import com.dbzlegacy.adaptivedifficulty.quest.SagaResetConfig;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -502,6 +503,7 @@ public final class ConfigEditor {
         addTab(tabs, "rival", "Rival");
         addTab(tabs, "sparring", "Sparring");
         addTab(tabs, "currency", "Currency");
+        addTab(tabs, "hot-path", "Combat");
         return tabs;
     }
 
@@ -1575,6 +1577,7 @@ public final class ConfigEditor {
             case "difficulty", "progression", "currency" -> DifficultyConfig.freshDefaults();
             case "character-services" -> CharacterServicesConfig.freshDefaults();
             case "saga" -> new SagaResetConfig();
+            case "hot-path" -> HotPathConfig.freshDefaults();
             default -> null;
         };
     }

@@ -69,6 +69,19 @@ public final class WeaponBonusScale {
         if (bonus == null) {
             return;
         }
+        if (!HotPathConfig.get().weaponBonus.enabled) {
+            UUID offId = player.m_20148_();
+            if (!"OFF".equals(SIGNATURES.get(offId))) {
+                clearWeaponBonuses(bonus);
+                SIGNATURES.put(offId, "OFF");
+                try {
+                    NetworkHandler.sendToPlayer(new StatsSyncS2C(player), player);
+                } catch (Throwable t) {
+                    HotLog.debug("[DMZ Weapon V11] Sync error: " + t);
+                }
+            }
+            return;
+        }
 
         boolean slot9Selected = player.m_150109_().f_35977_ == SLOT_9;
         ItemStack mainStack = player.m_21205_();
@@ -127,11 +140,13 @@ public final class WeaponBonusScale {
             if (!Double.isFinite(damage) || damage < 0.0) {
                 damage = 0.0;
             }
-            damageScale = 0.75 + (damage / 18.0);
+            HotPathConfig.WeaponBonus bonus = HotPathConfig.get().weaponBonus;
+            damageScale = bonus.damageFloor + (damage / bonus.damageDivisor);
         }
         double profileScale = damageScale;
+        HotPathConfig.WeaponBonus bonus = HotPathConfig.get().weaponBonus;
         if (info.unique) {
-            profileScale *= UNIQUE_BASE;
+            profileScale *= bonus.uniqueBase;
         }
         double[] stats = new double[6];
         for (int i = 0; i < 6; i++) {
@@ -142,7 +157,7 @@ public final class WeaponBonusScale {
         if (info.unique) {
             int third = statIndex(chooseThird(info.id, info.profile));
             if (third >= 0) {
-                stats[third] += 0.12 * damageScale * UNIQUE_THIRD;
+                stats[third] += bonus.thirdStat * damageScale * bonus.uniqueThird;
             }
         }
         return new Result(slot, info.id, info.family, info.definition, damage, stats);

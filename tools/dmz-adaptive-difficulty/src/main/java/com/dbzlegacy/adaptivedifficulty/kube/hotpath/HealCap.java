@@ -26,7 +26,7 @@ public final class HealCap {
     private HealCap() {}
 
     public static void announce(ServerPlayer player) {
-        if (player == null) {
+        if (player == null || !HotPathConfig.get().healing.enabled) {
             return;
         }
         double lifeSteal = read(player, "attributeslib:life_steal", 0.0);
@@ -44,7 +44,7 @@ public final class HealCap {
     }
 
     public static void clamp(ServerPlayer player) {
-        if (player == null) {
+        if (player == null || !HotPathConfig.get().healing.enabled) {
             return;
         }
         for (Cap cap : CAPS) {
@@ -70,7 +70,7 @@ public final class HealCap {
         } catch (Throwable ignored) {
         }
         double value = inst.m_22135_();
-        double amount = multiplyCapAmount(value, cap.max);
+        double amount = multiplyCapAmount(value, maxFor(cap));
         if (amount == 0.0) {
             return;
         }
@@ -117,6 +117,16 @@ public final class HealCap {
             return Long.toString(Math.round(rounded));
         }
         return Double.toString(rounded);
+    }
+
+    private static double maxFor(Cap cap) {
+        HotPathConfig.Healing healing = HotPathConfig.get().healing;
+        return switch (cap.attrId) {
+            case "attributeslib:life_steal" -> healing.lifeStealMax;
+            case "attributeslib:overheal" -> healing.overhealMax;
+            case "attributeslib:healing_received" -> healing.healingReceivedMax;
+            default -> cap.max;
+        };
     }
 
     static double multiplyCapAmount(double value, double max) {

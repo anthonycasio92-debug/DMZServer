@@ -1,7 +1,9 @@
 package com.dbzlegacy.adaptivedifficulty.kube.hotpath;
 
+import com.dbzlegacy.adaptivedifficulty.kube.hotpath.HotPathConfig;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -168,8 +170,15 @@ public final class WeaponBaseDamage {
 
     private WeaponBaseDamage() {}
 
+    public static Map<String, Double> copyDefaults() {
+        return new LinkedHashMap<>(BASE_DAMAGE);
+    }
+
     public static void onAttributes(ItemAttributeModifierEvent event) {
         try {
+            if (!HotPathConfig.get().weaponDamage.enabled) {
+                return;
+            }
             if (event.getSlotType() != EquipmentSlot.MAINHAND) {
                 return;
             }
@@ -181,7 +190,7 @@ public final class WeaponBaseDamage {
             if (key == null) {
                 return;
             }
-            Double damage = BASE_DAMAGE.get(key.toString());
+            Double damage = HotPathConfig.get().weaponDamage.baseOf(key.toString());
             if (damage == null) {
                 return;
             }

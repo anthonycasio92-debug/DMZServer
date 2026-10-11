@@ -37,6 +37,9 @@ public final class PothalaClean {
     private PothalaClean() {}
 
     public static void clean(ServerPlayer player) {
+        if (!HotPathConfig.get().pothala.enabled) {
+            return;
+        }
         if (player == null) {
             return;
         }

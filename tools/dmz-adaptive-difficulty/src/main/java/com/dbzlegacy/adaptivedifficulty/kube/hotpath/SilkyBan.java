@@ -31,7 +31,7 @@ public final class SilkyBan {
     private SilkyBan() {}
 
     public static void purge(ServerPlayer player, boolean tools) {
-        if (player == null) {
+        if (player == null || !HotPathConfig.get().silky.enabled) {
             return;
         }
         int changed = ItemIds.editPlayer(player, (container, slot, stack) -> editSlot(container, slot, stack, tools));
@@ -43,6 +43,9 @@ public final class SilkyBan {
     }
 
     public static boolean onUse(PlayerInteractEvent.RightClickItem event, ServerPlayer player) {
+        if (!HotPathConfig.get().silky.enabled) {
+            return false;
+        }
         ItemStack stack = event.getItemStack();
         if (stack == null || !"tconstruct:silky_cloth".equals(ItemIds.id(stack))) {
             return false;
@@ -59,6 +62,9 @@ public final class SilkyBan {
     }
 
     public static void onItemSpawn(ItemEntity entity, ItemStack stack) {
+        if (!HotPathConfig.get().silky.enabled) {
+            return;
+        }
         if (entity == null || stack == null || stack.m_41619_()) {
             return;
         }

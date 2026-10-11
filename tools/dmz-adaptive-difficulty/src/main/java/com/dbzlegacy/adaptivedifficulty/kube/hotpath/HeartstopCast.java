@@ -7,7 +7,6 @@ import net.minecraftforge.eventbus.api.EventPriority;
 
 /** Cancels irons_spellbooks:heartstop before it is cast. No compile dependency on that mod. */
 public final class HeartstopCast {
-    private static final String SPELL = "irons_spellbooks:heartstop";
     private static boolean hooked;
 
     private HeartstopCast() {}
@@ -35,8 +34,12 @@ public final class HeartstopCast {
 
     private static void cancel(Event event) {
         try {
+            if (!HotPathConfig.get().heartstop.enabled) {
+                return;
+            }
             Object id = event.getClass().getMethod("getSpellId").invoke(event);
-            if (id == null || !SPELL.equalsIgnoreCase(String.valueOf(id))) {
+            String spell = HotPathConfig.get().heartstop.spellId;
+            if (id == null || spell == null || !spell.equalsIgnoreCase(String.valueOf(id))) {
                 return;
             }
             event.setCanceled(true);

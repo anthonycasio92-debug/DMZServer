@@ -21,14 +21,6 @@ import net.minecraftforge.registries.ForgeRegistries;
  * SpawnData and redstone_control stay. Comparator use and the redstone recipes live in this mod.
  */
 public final class SpawnerVanillaize {
-    public static final int SCAN_INTERVAL = 200;
-    private static final int CHUNK_RADIUS = 3;
-    private static final int MIN_DELAY = 200;
-    private static final int MAX_DELAY = 800;
-    private static final int SPAWN_COUNT = 4;
-    private static final int MAX_NEARBY = 6;
-    private static final int PLAYER_RANGE = 16;
-    private static final int SPAWN_RANGE = 4;
     private static final String[] NBT_BOOLS = {
         "ignore_players", "ignore_conditions", "ignore_light", "no_ai", "silent", "baby"
     };
@@ -39,16 +31,15 @@ public final class SpawnerVanillaize {
         "minSpawnDelay", "maxSpawnDelay", "spawnCount", "maxNearbyEntities",
         "requiredPlayerRange", "spawnRange"
     };
-    private static final int[] LOGIC_VALUES = {
-        MIN_DELAY, MAX_DELAY, SPAWN_COUNT, MAX_NEARBY, PLAYER_RANGE, SPAWN_RANGE
-    };
-
     private static Class<?> apothClass;
     private static boolean apothLooked;
 
     private SpawnerVanillaize() {}
 
     public static boolean staggered(ServerPlayer player) {
+        if (!active()) {
+            return false;
+        }
         int age = player.f_19797_;
         if (age < 0) {
             return false;
@@ -58,12 +49,13 @@ public final class SpawnerVanillaize {
         for (int i = 0; i < key.length(); i++) {
             hash = (hash * 31) + key.charAt(i);
         }
-        int slot = Math.floorMod(hash, SCAN_INTERVAL);
-        return Math.floorMod(age, SCAN_INTERVAL) == slot;
+        int span = scanInterval();
+        int slot = Math.floorMod(hash, span);
+        return Math.floorMod(age, span) == slot;
     }
 
     public static void scan(ServerPlayer player) {
-        if (player == null || !(player.m_9236_() instanceof ServerLevel level)) {
+        if (!active() || player == null || !(player.m_9236_() instanceof ServerLevel level)) {
             return;
         }
         int changed = vanillaizeNear(level, player.m_20185_(), player.m_20189_());
@@ -80,6 +72,9 @@ public final class SpawnerVanillaize {
     }
 
     public static void onItemSpawn(ItemStack stack) {
+        if (!active()) {
+            return;
+        }
         stripItem(stack);
     }
 
@@ -107,7 +102,7 @@ public final class SpawnerVanillaize {
     }
 
     public static int vanillaizeChunk(ServerLevel level, int chunkX, int chunkZ) {
-        if (level == null) {
+        if (!active() || level == null) {
             return 0;
         }
         LevelChunk chunk = level.m_7726_().m_7131_(chunkX, chunkZ);
@@ -128,7 +123,7 @@ public final class SpawnerVanillaize {
     }
 
     public static void vanillaizeAt(ServerLevel level, BlockPos pos) {
-        if (level == null || pos == null) {
+        if (!active() || level == null || pos == null) {
             return;
         }
         BlockEntity be = level.m_7702_(pos);
@@ -142,7 +137,7 @@ public final class SpawnerVanillaize {
     }
 
     public static boolean setRedstone(BlockEntity be, boolean enable) {
-        if (be == null) {
+        if (!active() || be == null) {
             return false;
         }
         if (readRedstone(be) == enable) {
@@ -169,9 +164,10 @@ public final class SpawnerVanillaize {
     private static int vanillaizeNear(ServerLevel level, double x, double z) {
         int originX = (int) Math.floor(x / 16.0);
         int originZ = (int) Math.floor(z / 16.0);
+        int radius = chunkRadius();
         int total = 0;
-        for (int dx = -CHUNK_RADIUS; dx <= CHUNK_RADIUS; dx++) {
-            for (int dz = -CHUNK_RADIUS; dz <= CHUNK_RADIUS; dz++) {
+        for (int dx = -radius; dx <= radius; dx++) {
+            for (int dz = -radius; dz <= radius; dz++) {
                 total += vanillaizeChunk(level, originX + dx, originZ + dz);
             }
         }
@@ -230,12 +226,13 @@ public final class SpawnerVanillaize {
         }
         Object logic = spawnerLogic(be);
         if (logic != null) {
+            int[] values = logicValues();
             for (int i = 0; i < LOGIC_INTS.length; i++) {
                 Integer current = readInt(logic, LOGIC_INTS[i]);
-                if (current == null || current == LOGIC_VALUES[i]) {
+                if (current == null || current == values[i]) {
                     continue;
                 }
-                if (writeInt(logic, LOGIC_INTS[i], LOGIC_VALUES[i])) {
+                if (writeInt(logic, LOGIC_INTS[i], values[i])) {
                     changed = true;
                 }
             }
@@ -274,12 +271,13 @@ public final class SpawnerVanillaize {
                 return true;
             }
         }
-        return intDiffers(tag, "MinSpawnDelay", MIN_DELAY)
-                || intDiffers(tag, "MaxSpawnDelay", MAX_DELAY)
-                || intDiffers(tag, "SpawnCount", SPAWN_COUNT)
-                || intDiffers(tag, "MaxNearbyEntities", MAX_NEARBY)
-                || intDiffers(tag, "RequiredPlayerRange", PLAYER_RANGE)
-                || intDiffers(tag, "SpawnRange", SPAWN_RANGE);
+        int[] values = logicValues();
+        return intDiffers(tag, "MinSpawnDelay", values[0])
+                || intDiffers(tag, "MaxSpawnDelay", values[1])
+                || intDiffers(tag, "SpawnCount", values[2])
+                || intDiffers(tag, "MaxNearbyEntities", values[3])
+                || intDiffers(tag, "RequiredPlayerRange", values[4])
+                || intDiffers(tag, "SpawnRange", values[5]);
     }
 
     private static boolean intDiffers(CompoundTag tag, String key, int vanilla) {
@@ -306,12 +304,13 @@ public final class SpawnerVanillaize {
             }
             tag.m_128379_("redstone_control", true);
         }
-        changed = putIntIfDiffers(tag, "MinSpawnDelay", MIN_DELAY) || changed;
-        changed = putIntIfDiffers(tag, "MaxSpawnDelay", MAX_DELAY) || changed;
-        changed = putIntIfDiffers(tag, "SpawnCount", SPAWN_COUNT) || changed;
-        changed = putIntIfDiffers(tag, "MaxNearbyEntities", MAX_NEARBY) || changed;
-        changed = putIntIfDiffers(tag, "RequiredPlayerRange", PLAYER_RANGE) || changed;
-        changed = putIntIfDiffers(tag, "SpawnRange", SPAWN_RANGE) || changed;
+        int[] values = logicValues();
+        changed = putIntIfDiffers(tag, "MinSpawnDelay", values[0]) || changed;
+        changed = putIntIfDiffers(tag, "MaxSpawnDelay", values[1]) || changed;
+        changed = putIntIfDiffers(tag, "SpawnCount", values[2]) || changed;
+        changed = putIntIfDiffers(tag, "MaxNearbyEntities", values[3]) || changed;
+        changed = putIntIfDiffers(tag, "RequiredPlayerRange", values[4]) || changed;
+        changed = putIntIfDiffers(tag, "SpawnRange", values[5]) || changed;
         return changed;
     }
 
@@ -352,6 +351,34 @@ public final class SpawnerVanillaize {
             }
         } catch (Throwable ignored) {
         }
+    }
+
+    private static boolean active() {
+        return HotPathConfig.get().spawners.enabled;
+    }
+
+    private static int scanInterval() {
+        return HotPathConfig.ticks(HotPathConfig.get().spawners.scanInterval);
+    }
+
+    private static int chunkRadius() {
+        int radius = HotPathConfig.get().spawners.chunkRadius;
+        if (radius < 0) {
+            return 0;
+        }
+        return Math.min(16, radius);
+    }
+
+    private static int[] logicValues() {
+        HotPathConfig.Spawners spawners = HotPathConfig.get().spawners;
+        return new int[] {
+                HotPathConfig.ticks(spawners.minSpawnDelay),
+                HotPathConfig.ticks(spawners.maxSpawnDelay),
+                HotPathConfig.ticks(spawners.spawnCount),
+                HotPathConfig.ticks(spawners.maxNearby),
+                HotPathConfig.ticks(spawners.requiredPlayerRange),
+                HotPathConfig.ticks(spawners.spawnRange)
+        };
     }
 
     private static Class<?> apothClass() {

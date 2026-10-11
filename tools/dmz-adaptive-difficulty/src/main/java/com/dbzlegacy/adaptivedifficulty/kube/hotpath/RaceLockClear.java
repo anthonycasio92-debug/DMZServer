@@ -19,7 +19,7 @@ public final class RaceLockClear {
     private RaceLockClear() {}
 
     public static void clear(ServerPlayer player) {
-        if (player == null) {
+        if (player == null || !HotPathConfig.get().raceLocks.enabled) {
             return;
         }
         Method method = sendData(player);

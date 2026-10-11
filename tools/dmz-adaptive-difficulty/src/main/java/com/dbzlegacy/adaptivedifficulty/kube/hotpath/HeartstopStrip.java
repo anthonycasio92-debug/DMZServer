@@ -16,7 +16,7 @@ public final class HeartstopStrip {
     private HeartstopStrip() {}
 
     public static void strip(ServerPlayer player) {
-        if (player == null) {
+        if (player == null || !HotPathConfig.get().heartstop.enabled) {
             return;
         }
         Collection<MobEffectInstance> effects;
@@ -62,6 +62,12 @@ public final class HeartstopStrip {
         }
         ResourceLocation id = ForgeRegistries.MOB_EFFECTS.getKey(effect);
         String key = (desc + " " + (id == null ? "" : id.toString())).toLowerCase();
-        return key.contains("heartstop");
+        String spell = HotPathConfig.get().heartstop.spellId;
+        String needle = spell == null ? "heartstop" : spell.toLowerCase();
+        int colon = needle.indexOf(':');
+        if (colon >= 0 && colon + 1 < needle.length()) {
+            needle = needle.substring(colon + 1);
+        }
+        return !needle.isBlank() && key.contains(needle);
     }
 }

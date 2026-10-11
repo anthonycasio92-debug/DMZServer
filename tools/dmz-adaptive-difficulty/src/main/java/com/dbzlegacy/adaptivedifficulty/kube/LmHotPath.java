@@ -3,6 +3,7 @@ package com.dbzlegacy.adaptivedifficulty.kube;
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.kube.hotpath.CapsuleBan;
 import com.dbzlegacy.adaptivedifficulty.kube.hotpath.HealCap;
+import com.dbzlegacy.adaptivedifficulty.kube.hotpath.HotPathConfig;
 import com.dbzlegacy.adaptivedifficulty.kube.hotpath.HeartstopStrip;
 import com.dbzlegacy.adaptivedifficulty.kube.hotpath.PothalaClean;
 import com.dbzlegacy.adaptivedifficulty.kube.hotpath.RaceLockClear;
@@ -38,32 +39,33 @@ public final class LmHotPath {
         if (age < 0) {
             return;
         }
-        if (age % WeaponBonusScale.UPDATE_INTERVAL == 0) {
+        HotPathConfig config = HotPathConfig.get();
+        if (due(age, config.weaponBonus.updateInterval)) {
             WeaponBonusScale.update(player);
         }
-        if (age % HealCap.TICK_INTERVAL == 0) {
+        if (due(age, config.healing.tickInterval)) {
             HealCap.clamp(player);
         }
-        if (age % PothalaClean.CHECK_INTERVAL == 0) {
+        if (due(age, config.pothala.checkInterval)) {
             PothalaClean.clean(player);
         }
-        if (age > 0 && age % RaceLockClear.SYNC_INTERVAL_TICKS == 0) {
+        if (age > 0 && due(age, config.raceLocks.syncInterval)) {
             RaceLockClear.clear(player);
         }
         if (SpawnerVanillaize.staggered(player)) {
             SpawnerVanillaize.scan(player);
         }
-        if (age % CapsuleBan.PLAYER_PURGE_INTERVAL == 0) {
+        if (due(age, config.capsules.purgeInterval)) {
             CapsuleBan.purge(player);
         }
-        if (age % HeartstopStrip.INTERVAL == 0) {
+        if (due(age, config.heartstop.interval)) {
             HeartstopStrip.strip(player);
         }
-        if (age % SilkTouchStrip.PLAYER_SCAN_INTERVAL == 0) {
+        if (due(age, config.silkTouch.scanInterval)) {
             SilkTouchStrip.purge(player);
         }
-        if (age % SilkyBan.CLOTH_SCAN_INTERVAL == 0) {
-            SilkyBan.purge(player, age % SilkyBan.TOOL_SCAN_INTERVAL == 0);
+        if (due(age, config.silky.clothInterval)) {
+            SilkyBan.purge(player, due(age, config.silky.toolInterval));
         }
     }
 
@@ -107,6 +109,10 @@ public final class LmHotPath {
         if (event.getEntity() != null) {
             WeaponBonusScale.clearPlayer(event.getEntity().m_20148_());
         }
+    }
+
+    private static boolean due(int age, int interval) {
+        return age % HotPathConfig.ticks(interval) == 0;
     }
 
     public static void logReady() {

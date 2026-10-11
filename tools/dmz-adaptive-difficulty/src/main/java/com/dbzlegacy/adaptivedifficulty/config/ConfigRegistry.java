@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.config;
 
 import com.dbzlegacy.adaptivedifficulty.character.CharacterServicesConfig;
+import com.dbzlegacy.adaptivedifficulty.kube.hotpath.HotPathConfig;
 import com.dbzlegacy.adaptivedifficulty.quest.SagaResetConfig;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -86,6 +87,21 @@ public final class ConfigRegistry {
                 null));
         modules.add(settings("currency", "Currency", DifficultyConfig.class, DifficultyConfig.path(),
                 DifficultyConfig::get, ConfigRegistry::currencyField, PHASE_MENU));
+        modules.add(new Module(
+                "hot-path",
+                "Combat",
+                HotPathConfig.class,
+                HotPathConfig.path(),
+                HotPathConfig::get,
+                () -> {
+                    if (!HotPathConfig.save()) {
+                        throw new IllegalStateException("hot-path save failed");
+                    }
+                },
+                HotPathConfig::load,
+                true,
+                PHASE_MENU,
+                null));
         modules.add(settings("ai", "AI", DifficultyConfig.class, DifficultyConfig.path(),
                 DifficultyConfig::get, ConfigRegistry::aiField, 2));
         modules.add(settings("boss", "Boss", DifficultyConfig.class, DifficultyConfig.path(),

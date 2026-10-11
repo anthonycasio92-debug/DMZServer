@@ -13,33 +13,36 @@ import net.minecraftforge.registries.ForgeRegistries;
  * healing received 1.05, life steal 0, overheal 0.05.
  */
 public final class HealEventCap {
-    private static final double MAX_HEALING_RECEIVED = 1.05;
-    private static final double MAX_OVERHEAL = 0.05;
-    private static final double MAX_LIFE_STEAL = 0.0;
-
     private HealEventCap() {}
 
     public static void onHeal(LivingHealEvent event) {
         try {
+            if (!HotPathConfig.get().healing.enabled) {
+                return;
+            }
             LivingEntity entity = event.getEntity();
             if (!(entity instanceof Player)) {
                 return;
             }
+            double cap = HotPathConfig.get().healing.healingReceivedMax;
             double factor = value(entity, "attributeslib:healing_received", 1.0);
-            if (!(factor > MAX_HEALING_RECEIVED)) {
+            if (!(factor > cap) || !(cap > 0.0)) {
                 return;
             }
             float amount = event.getAmount();
             if (!(amount > 0.0f)) {
                 return;
             }
-            event.setAmount((float) (amount * (MAX_HEALING_RECEIVED / factor)));
+            event.setAmount((float) (amount * (cap / factor)));
         } catch (Throwable ignored) {
         }
     }
 
     public static void onHurt(LivingHurtEvent event) {
         try {
+            if (!HotPathConfig.get().healing.enabled) {
+                return;
+            }
             if (event.getSource() == null || !(event.getSource().m_7639_() instanceof Player attacker)) {
                 return;
             }
@@ -47,9 +50,10 @@ public final class HealEventCap {
             if (!(damage > 0.0f)) {
                 return;
             }
+            HotPathConfig.Healing healing = HotPathConfig.get().healing;
             double lifeSteal = value(attacker, "attributeslib:life_steal", 0.0);
-            if (lifeSteal > MAX_LIFE_STEAL) {
-                float undo = (float) (damage * (lifeSteal - MAX_LIFE_STEAL));
+            if (lifeSteal > healing.lifeStealMax) {
+                float undo = (float) (damage * (lifeSteal - healing.lifeStealMax));
                 if (undo > 0.0f) {
                     float next = attacker.m_21223_() - undo;
                     if (next < 1.0f) {
@@ -59,8 +63,8 @@ public final class HealEventCap {
                 }
             }
             double overheal = value(attacker, "attributeslib:overheal", 0.0);
-            if (overheal > MAX_OVERHEAL) {
-                float excess = (float) (damage * (overheal - MAX_OVERHEAL));
+            if (overheal > healing.overhealMax) {
+                float excess = (float) (damage * (overheal - healing.overhealMax));
                 if (excess > 0.0f) {
                     float nextAbs = attacker.m_6103_() - excess;
                     if (nextAbs < 0.0f) {
