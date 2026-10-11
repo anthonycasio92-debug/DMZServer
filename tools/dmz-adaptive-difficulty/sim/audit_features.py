@@ -2069,14 +2069,18 @@ def main() -> int:
     bright_end = notice_support.find("private static String noticeChat", bright_start)
     bright = notice_support[bright_start:bright_end] if bright_start >= 0 and bright_end > bright_start else ""
     diff_main = diff_gui.split("private static void paintTiers", 1)[-1].split("private static void paintTitles", 1)[0]
+    gui_notice = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/gui/GuiNotice.java")
     check("notice header and body are one pair of constants",
           'NOTICE_HEADER = CnpcUltraStyle.HEADER + "Notice"' in notice
-          and "NOTICE_BODY = CnpcUltraStyle.INFO" in notice
+          and ("NOTICE_BODY = GuiNotice.NOTICE_BODY" in notice
+              or "NOTICE_BODY = CnpcUltraStyle.INFO" in notice)
           and "public static String noticeBody" in notice
+          and "GuiNotice.noticeBody" in notice
           and "noticeBody(" in notice.split("public static void set", 1)[-1].split("public static boolean hasPending", 1)[0]
           and "CnpcMenuFeedback.NOTICE_HEADER" in notice_support
           and "noticeBody(line)" in bright
-          and "readableInfoLine" not in bright)
+          and "readableInfoLine" not in bright
+          and "public static String noticeBody" in gui_notice)
     check("spar and rival chat toggles use the yellow notice body",
           "§eSpar TP chat " in spar_sys
           and "§aSpar TP chat" not in spar_sys

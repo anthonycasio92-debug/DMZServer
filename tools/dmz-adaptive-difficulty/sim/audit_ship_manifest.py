@@ -386,12 +386,16 @@ def main() -> int:
     check("CNPC afterGuiClosed defer reopen", "afterGuiClosed" in cnpc_support)
     check("CNPC flash notice separate widget ids", "ID_FLASH_LABEL_BASE" in cnpc_support)
     cnpc_feedback = read(SRC / "gui/cnpc/CnpcMenuFeedback.java")
+    gui_notice = read(SRC / "gui/GuiNotice.java")
     check("CNPC flash notice readable",
           'NOTICE_HEADER = CnpcUltraStyle.HEADER + "Notice"' in cnpc_feedback
-          and "NOTICE_BODY = CnpcUltraStyle.INFO" in cnpc_feedback
+          and ("NOTICE_BODY = GuiNotice.NOTICE_BODY" in cnpc_feedback
+              or "NOTICE_BODY = CnpcUltraStyle.INFO" in cnpc_feedback)
+          and "GuiNotice.noticeBody" in cnpc_feedback
           and "CnpcMenuFeedback.NOTICE_HEADER" in cnpc_support
           and "brightenNoticeLine" in cnpc_support
-          and "noticeBody" in cnpc_support)
+          and "noticeBody" in cnpc_support
+          and "public static String noticeBody" in gui_notice)
     check("CNPC info blocks readable (readableInfoLine)", "readableInfoLine" in cnpc_support
           and "readableInfoLine" in read(SRC / "gui/cnpc/CnpcGuiStyle.java"))
     check("CNPC difficulty clear tier avoids flash ids", "ID_GRID_BASE" in cnpc_diff

@@ -68,6 +68,7 @@ public final class UltraScreenSelfTest {
                             .title("Legacy Mechanics")
                             .page("main")
                             .activeTab("home")
+                            .tabs("home|Home")
                             .line("self-test")
                             .buttonLeft("open:difficulty", "Difficulty", "normal")
                             .buttonRight("open:character", "Character", "normal")
@@ -76,6 +77,7 @@ public final class UltraScreenSelfTest {
                             .title("Staff Admin")
                             .page("admin")
                             .activeTab("home")
+                            .tabs("home|Home")
                             .line("self-test")
                             .button("do:reload", "Reload", "confirm")
                             .buttonLeft("open:progression", "Progression", "normal")
@@ -128,6 +130,7 @@ public final class UltraScreenSelfTest {
                             .title("Config Editor")
                             .page("list")
                             .activeTab("home")
+                            .tabs("home|Home")
                             .line("self-test")
                             .button("nav:refresh", "Refresh", "dim")
                             .footerBackToMain();
@@ -135,6 +138,7 @@ public final class UltraScreenSelfTest {
                             .title(id)
                             .page("main")
                             .activeTab("home")
+                            .tabs("home|Home")
                             .line("self-test")
                             .button("nav:refresh", "Refresh", "dim");
                 };
