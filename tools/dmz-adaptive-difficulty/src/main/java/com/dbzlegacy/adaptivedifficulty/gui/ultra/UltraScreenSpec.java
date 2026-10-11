@@ -12,7 +12,7 @@ import net.minecraft.server.level.ServerPlayer;
 /**
  * Builds a GuiOpenPacket payload for KaiPath.
  *
- * <p>Panel defaults match CNPC / DMZUltra dialog size ({@link UltraStyle#PANEL_W}×{@link
+ * <p>Panel defaults are the compact Ultra dialog ({@link UltraStyle#PANEL_W}×{@link
  * UltraStyle#PANEL_H}), centered with a screen margin. Button action ids are qualified as
  * {@code @&lt;screenId&gt;:&lt;action&gt;} so KaiPath can omit or mishandle {@code screenId} and
  * the server still routes correctly.
@@ -30,7 +30,8 @@ public final class UltraScreenSpec {
     private final List<Tab> tabs = new ArrayList<>();
     private final List<String> lines = new ArrayList<>();
     private final List<Button> buttons = new ArrayList<>();
-    private int nextRow = 36;
+    /** Compact title + tab row; content starts immediately below. */
+    private int nextRow = 28;
     private int panelWidth = UltraStyle.PANEL_W;
     private int panelHeight = UltraStyle.PANEL_H;
     private boolean centerPanel = true;
@@ -154,7 +155,7 @@ public final class UltraScreenSpec {
     }
 
     public UltraScreenSpec rowGap() {
-        nextRow += 24;
+        nextRow += UltraStyle.BTN_H + UltraStyle.BTN_GAP;
         return this;
     }
 

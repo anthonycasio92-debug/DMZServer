@@ -42,23 +42,25 @@ public final class UltraStyle {
     public static final String BACK;
     public static final String BACK_TO_MAIN;
     public static final int BTN_MIN_W = 80;
-    public static final int BTN_PAD = 8;
-    public static final int BTN_H = 20;
-    public static final int COL_L = 20;
-    public static final int COL_R = 178;
+    public static final int BTN_PAD = 6;
+    public static final int BTN_H = 18;
+    /** Vertical gap between button rows (top-to-top advance = BTN_H + BTN_GAP). */
+    public static final int BTN_GAP = 4;
+    public static final int COL_L = 16;
+    public static final int COL_R = 174;
     public static final int BTN_W = 150;
 
     /**
-     * Centered dialog panel — matches CNPC {@code CnpcGuiSupport.W/H} (DMZUltra-style menus),
-     * not the full framebuffer.
+     * Compact Ultra centered dialog (not fullscreen). Defaults 350×220; may grow to
+     * {@link #PANEL_MAX_H} when content requires it.
      */
-    public static final int PANEL_W = 430;
-    public static final int PANEL_H = 280;
-    public static final int PANEL_MIN_W = 320;
-    public static final int PANEL_MIN_H = 200;
-    public static final int PANEL_MAX_H = 480;
+    public static final int PANEL_W = 350;
+    public static final int PANEL_H = 220;
+    public static final int PANEL_MIN_W = 300;
+    public static final int PANEL_MIN_H = 180;
+    public static final int PANEL_MAX_H = 320;
     /** Gap between panel edge and screen edge when centered. */
-    public static final int PANEL_MARGIN = 8;
+    public static final int PANEL_MARGIN = 6;
 
     static {
         // Unicode escape keeps the mark out of other sources; static-init prevents folding.

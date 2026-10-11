@@ -3,6 +3,7 @@ package com.dbzlegacy.adaptivedifficulty.net.gui;
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraScreenIds;
 import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraScreenSelfTest;
+import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.lang.reflect.Field;
@@ -131,7 +132,9 @@ public final class LmGuiNetwork {
                     + system
                     + "\",\"screen\":\""
                     + system
-                    + "\",\"center\":true,\"margin\":8}";
+                    + "\",\"center\":true,\"margin\":"
+                    + UltraStyle.PANEL_MARGIN
+                    + "}";
         }
     }
 

@@ -98,8 +98,12 @@ def main() -> int:
         errors.append("UltraScreenSpec buttons must include args {screen,page}")
 
     style = STYLE.read_text(encoding="utf-8")
-    if "PANEL_W = 430" not in style or "PANEL_H = 280" not in style:
-        errors.append("UltraStyle panel defaults must be 430×280 (CNPC/DMZUltra dialog)")
+    if "PANEL_W = 350" not in style or "PANEL_H = 220" not in style:
+        errors.append("UltraStyle panel defaults must be 350×220 (compact Ultra dialog)")
+    if "BTN_H = 18" not in style or "BTN_GAP = 4" not in style:
+        errors.append("UltraStyle button height/gap must be 18 / 4")
+    if "PANEL_MARGIN = 6" not in style or "PANEL_MAX_H = 320" not in style:
+        errors.append("UltraStyle panel margin/max must be 6 / 320")
 
     packet = PACKET.read_text(encoding="utf-8")
     if "panelWidth" not in packet or "layoutJson" not in packet:
@@ -211,7 +215,7 @@ def main() -> int:
     if errors:
         print(f"\n{len(errors)} error(s)")
         return 1
-    print("  OK  action ids covered; @screen qualify; panel 430×280; protocol doc")
+    print("  OK  action ids covered; @screen qualify; panel 350×220; protocol doc")
     return 0
 
 

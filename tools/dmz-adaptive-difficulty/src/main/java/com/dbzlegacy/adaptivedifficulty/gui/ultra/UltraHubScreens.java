@@ -43,7 +43,7 @@ public final class UltraHubScreens {
                 }
             }
         }
-        spec.setRow(100);
+        spec.setRow(72);
         systemButton(spec, ph, "difficulty", UltraStyle.confirm("Difficulty"), true);
         systemButton(spec, ph, "rival", "Rival", false);
         spec.rowGap();
@@ -54,7 +54,7 @@ public final class UltraHubScreens {
         if (StaffAccess.isStaff(player)) {
             spec.buttonRight("open:admin", UltraStyle.danger("Staff Admin"), "danger");
         }
-        spec.rowGap().setRow(spec.row() + 8).footerBackToMain();
+        spec.rowGap().setRow(spec.row() + UltraStyle.BTN_GAP).footerBackToMain();
         spec.send(player);
     }
 
@@ -72,7 +72,7 @@ public final class UltraHubScreens {
                 .activeTab("home")
                 .line(UltraStyle.LABEL + "Reload, config editor, progression tools")
                 .line(UltraStyle.DIM + "Full commands: /lm admin help")
-                .setRow(80);
+                .setRow(64);
         spec.button("do:reload", UltraStyle.confirm("Reload LM config"), "confirm")
                 .rowGap();
         spec.buttonLeft("open:progression", "Progression panel", "normal")

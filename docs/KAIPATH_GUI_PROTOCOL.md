@@ -18,7 +18,7 @@ There is **no CNPC fallback inside the Ultra path**. CNPC is used only when Ultr
 
 KaiPath 1.3.0 `LmScreens.registerDefaults()` only registers **`hub`**. LM tunnels any logical
 id not in `UltraScreenIds.KAIPATH_REGISTERED_IDS` by setting the wire `screenId` to **`hub`**.
-Title, tabs, buttons, panel **430×280**, and layout (`center: true`, `margin: 8`) stay as built.
+Title, tabs, buttons, panel (**350×220** default), and layout (`center: true`, `margin: 6`) stay as built.
 The logical system is stored in:
 
 - button `args.screen` / `args.system` (echoed into `GuiActionPacket`)
@@ -43,29 +43,30 @@ and a single info line listing tunneled ids.
 | 5 | `activeTab` | string | Active tab key (unqualified, e.g. `tiers`) |
 | 6 | `linesJson` | string | JSON **array** of body lines |
 | 7 | `buttonsJson` | string | JSON **array** of button objects (below) |
-| 8 | `panelWidth` | varint | **Required for correct layout** — GUI pixels, default **430** |
-| 9 | `panelHeight` | varint | **Required for correct layout** — GUI pixels, default **280** |
+| 8 | `panelWidth` | varint | **Required for correct layout** — GUI pixels, default **350** |
+| 9 | `panelHeight` | varint | **Required for correct layout** — GUI pixels, default **220** (grows up to **320** if content needs it) |
 | 10 | `layoutJson` | string | JSON object (below) |
 
 ### Panel layout (do not fullscreen)
 
-Match DMZUltra / CNPC dialogs: a **centered panel**, not a framebuffer fill.
+Compact Ultra centered dialog — not a framebuffer fill.
 
-**LM always populates fields 8–10** for every Ultra screen (`hub`, `difficulty`, `rival`, `spar`,
-`prestige`, `character`, `progression`, `config`, `admin`) via `UltraScreenSpec` →
-`GuiOpenPacket`. Defaults are **430×280**, `center: true`, `margin: 8`. The server logs a warning
-if an outgoing packet has `panelWidth <= 0` or `panelHeight <= 0` (should never happen).
+**LM always populates fields 8–10** for every Ultra screen via `UltraScreenSpec` →
+`GuiOpenPacket`. Defaults are **350×220**, `center: true`, `margin: 6`. Button height **18**,
+row gap **4**. Title and tab rows are single-line compact. If content overflows 220px height,
+the panel may grow vertically up to **320** max. The server logs a warning if an outgoing
+packet has `panelWidth <= 0` or `panelHeight <= 0` (should never happen).
 
 `layoutJson` keys (KaiPath **must** honor these):
 
 ```json
 {
-  "panelWidth": 430,
-  "panelHeight": 280,
-  "width": 430,
-  "height": 280,
+  "panelWidth": 350,
+  "panelHeight": 220,
+  "width": 350,
+  "height": 220,
   "center": true,
-  "margin": 8
+  "margin": 6
 }
 ```
 
@@ -80,8 +81,6 @@ if an outgoing packet has `panelWidth <= 0` or `panelHeight <= 0` (should never 
 6. **Do not** stretch the panel to the framebuffer. Fullscreen when these fields are present is a
    **KaiPath client bug** — fix in `LmScreens`, not by changing LM packet shape.
 
-Defaults match CNPC `CnpcGuiSupport` (**430×280**).
-
 ### Button object
 
 ```json
@@ -89,11 +88,11 @@ Defaults match CNPC `CnpcGuiSupport` (**430×280**).
   "id": "@difficulty:do:activate:1",
   "label": "§aT1 …",
   "style": "normal",
-  "x": 20,
-  "y": 120,
+  "x": 16,
+  "y": 100,
   "w": 150,
-  "h": 20,
-  "args": { "screen": "difficulty", "page": "tiers" }
+  "h": 18,
+  "args": { "screen": "difficulty", "system": "difficulty", "page": "tiers" }
 }
 ```
 
