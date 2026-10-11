@@ -53,6 +53,7 @@ When you ask for a behavior change, add a row here and a matching check in `audi
 | cnpc-preview-live-player | Main-system CNPC menus: character preview uses **live player sync** (inventory-style) before Gecko clone fallback | 4.5.84+ | manifest §cnpc |
 | prestige-cnpc-tier-ids | Prestige **Tiers** grid must not reuse CNPC flash widget ids (50+) — avoids menu errors after buy/turn-in | 4.5.85+ | manifest §prestige |
 | version-handshake | Forge `VERSION`, `mods.toml`, and GUI `plugin.yml` source are the **same version**. `plugins/` does not ship `LegacyMechanicsGUI-*.jar` | always | `audit_gui_abi.py`, manifest §version |
+| ultra-gui-split | `guiBackend=ultra` opens native DMZUltra menus. Server ships `LegacyMechanics` without client screens. Clients install `LegacyMechanicsUltra` + `dmzultra` (textures from dmzultra). No CNPC required for Ultra. Server jar must not contain `com/.../client/` | 4.6.76+ | `build.sh` client-leak check, `FORGE-ULTRA-GUI.md` |
 
 ## Deploy process (do not skip)
 

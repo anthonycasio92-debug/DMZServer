@@ -56,7 +56,13 @@ rm -f "$JAR" \
       "$ROOT"/mods/AdaptiveDifficulty-"${VERSION}".jar \
       "$ROOT"/mods/dmz_adaptive_difficulty-"${VERSION}".jar
 
-CP="$SRG:$FORGE_S:$FORGE_U:$GSON:$LIGHTMANS:$FTB:$FTB_CHUNKS:$FTB_LIBRARY:$ARCHITECTURY:$REVAMP:\
+NETTY_CP="$ROOT/libraries/io/netty/netty-buffer/4.1.82.Final/netty-buffer-4.1.82.Final.jar:\
+$ROOT/libraries/io/netty/netty-common/4.1.82.Final/netty-common-4.1.82.Final.jar:\
+$ROOT/libraries/io/netty/netty-codec/4.1.82.Final/netty-codec-4.1.82.Final.jar:\
+$ROOT/libraries/io/netty/netty-handler/4.1.82.Final/netty-handler-4.1.82.Final.jar:\
+$ROOT/libraries/io/netty/netty-transport/4.1.82.Final/netty-transport-4.1.82.Final.jar:\
+$ROOT/libraries/io/netty/netty-resolver/4.1.82.Final/netty-resolver-4.1.82.Final.jar"
+CP="$NETTY_CP:$SRG:$FORGE_S:$FORGE_U:$GSON:$LIGHTMANS:$FTB:$FTB_CHUNKS:$FTB_LIBRARY:$ARCHITECTURY:$REVAMP:\
 $ROOT/libraries/net/minecraftforge/fmlcore/1.20.1-47.4.10/fmlcore-1.20.1-47.4.10.jar:\
 $ROOT/libraries/net/minecraftforge/fmlloader/1.20.1-47.4.10/fmlloader-1.20.1-47.4.10.jar:\
 $ROOT/libraries/net/minecraftforge/forgespi/7.0.1/forgespi-7.0.1.jar:\
@@ -106,6 +112,23 @@ mkdir -p "$OUT"
 
 mapfile -t SOURCES < <(find "$SRC" -name '*.java' | sort)
 javac --release 17 -proc:none -cp "$CP" -d "$OUT" "${SOURCES[@]}"
+
+# Client Ultra companion: compile against stubs + server classes. Packaged separately.
+CLIENT_SRC="$HERE/src/client/java"
+STUB_SRC="$HERE/src/client-stubs/java"
+STUB_OUT="$HERE/build/client-stubs"
+CLIENT_OUT="$HERE/build/client-classes"
+CLIENT_RES="$HERE/src/client/resources"
+ONLYIN_JAR="$ROOT/libraries/net/minecraftforge/mergetool/1.1.5/mergetool-1.1.5-api.jar"
+ULTRA_JAR="$ROOT/mods/LegacyMechanicsUltra-${VERSION}.jar"
+if [[ -d "$CLIENT_SRC" && -d "$STUB_SRC" ]]; then
+  rm -rf "$STUB_OUT" "$CLIENT_OUT"
+  mkdir -p "$STUB_OUT" "$CLIENT_OUT"
+  mapfile -t STUBS < <(find "$STUB_SRC" -name '*.java' | sort)
+  javac --release 17 -proc:none -cp "$CP" -d "$STUB_OUT" "${STUBS[@]}"
+  mapfile -t CLIENTS < <(find "$CLIENT_SRC" -name '*.java' | sort)
+  javac --release 17 -proc:none -cp "$STUB_OUT:$CP:$OUT:$ONLYIN_JAR" -d "$CLIENT_OUT" "${CLIENTS[@]}"
+fi
 
 # For every class this compile actually overlaid, drop base-jar inner classes the
 # new bytecode does not emit, and copy the inner classes it does emit.
@@ -209,7 +232,9 @@ merge_onto_base_jar() {
       "$merge/com/dbzlegacy/adaptivedifficulty/progression/shop/" 2>/dev/null || true
   fi
   # Hub/chat fallback + /lm open|page — must ship from src (base jar may still reference /lmdo).
-  for class in MechanicsChatMenu DifficultyChatMenu RivalChatMenu SparChatMenu ProgressionChatMenu GuiClickConfirm DifficultyTeamGuiApi; do
+  for class in MechanicsChatMenu DifficultyChatMenu RivalChatMenu SparChatMenu ProgressionChatMenu \
+      GuiClickConfirm DifficultyTeamGuiApi MechanicsMenu GuiBackend CharacterServicesMenu PrestigeMenu \
+      DifficultyMenu RivalMenu SparMenu ProgressionMenu SkillsMenu CnpcStaffTestGui; do
     if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/gui/${class}.class" ]]; then
       cp "$OUT/com/dbzlegacy/adaptivedifficulty/gui/${class}.class" \
         "$merge/com/dbzlegacy/adaptivedifficulty/gui/${class}.class"
@@ -219,6 +244,19 @@ merge_onto_base_jar() {
         "$merge/com/dbzlegacy/adaptivedifficulty/gui/" 2>/dev/null || true
     fi
   done
+  # Native Ultra GUI channel (server side). Client screens ship in LegacyMechanicsUltra.
+  if [[ -d "$OUT/com/dbzlegacy/adaptivedifficulty/net/gui" ]]; then
+    mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/net/gui"
+    cp -a "$OUT/com/dbzlegacy/adaptivedifficulty/net/gui/." \
+      "$merge/com/dbzlegacy/adaptivedifficulty/net/gui/"
+  fi
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/config/DifficultyConfig.class" ]]; then
+    mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/config"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/config/DifficultyConfig.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/config/DifficultyConfig.class"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/config/DifficultyConfig\$"*.class \
+      "$merge/com/dbzlegacy/adaptivedifficulty/config/" 2>/dev/null || true
+  fi
   if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/command/MechanicsCommands.class" ]]; then
     mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/command"
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/command/MechanicsCommands.class" \
@@ -398,6 +436,9 @@ merge_onto_base_jar() {
     "$merge/com/dbzlegacy/adaptivedifficulty/mixin/ResourcesPoolClampMixin.class" \
     "$merge/com/dbzlegacy/adaptivedifficulty/mixin/ResourcesLoadClampMixin.class" \
     "$merge/com/dbzlegacy/adaptivedifficulty/mixin/DmzStatsResetAbsorptionWipeMixin.class"
+  # Server jar must not ship Ultra client screens or CNPC→Ultra mixins.
+  rm -rf "$merge/com/dbzlegacy/adaptivedifficulty/client"
+  rm -f "$merge/legacymechanics.ultra.client.mixins.json"
   # Classes copied from this compile must ship their inner classes, and must
   # not keep a stale base-jar inner the new bytecode no longer emits.
   sync_overlaid_inners "$OUT" "$merge"
@@ -437,10 +478,69 @@ if ! jar tf "$JAR" | grep -q 'gui/GuiClickConfirm\$Pending.class'; then
   echo "ERROR: GuiClickConfirm\$Pending.class missing from $JAR (confirm clicks crash the server)" >&2
   exit 1
 fi
+if jar tf "$JAR" | grep -q 'com/dbzlegacy/adaptivedifficulty/client/'; then
+  echo "ERROR: server jar must not contain client Ultra classes" >&2
+  exit 1
+fi
+if ! jar tf "$JAR" | grep -q 'net/gui/LmGuiNetwork.class'; then
+  echo "ERROR: LmGuiNetwork missing from server jar" >&2
+  exit 1
+fi
 python3 "$HERE/sim/audit_jar_inner_classes.py" "$JAR"
+
+# Thin client companion: Ultra screens + network. Textures come from dmzultra.
+rm -f "$ULTRA_JAR" "$ROOT"/mods/LegacyMechanicsUltra-*.jar
+if [[ -n "${CLIENT_OUT:-}" && -d "$CLIENT_OUT/com/dbzlegacy/adaptivedifficulty/client" ]]; then
+  ultra_tmp="$(mktemp -d)"
+  mkdir -p "$ultra_tmp/META-INF" \
+    "$ultra_tmp/com/dbzlegacy/adaptivedifficulty/net/gui" \
+    "$ultra_tmp/com/dbzlegacy/adaptivedifficulty/client"
+  cp -a "$CLIENT_OUT/com/dbzlegacy/adaptivedifficulty/client/." \
+    "$ultra_tmp/com/dbzlegacy/adaptivedifficulty/client/"
+  cp -a "$OUT/com/dbzlegacy/adaptivedifficulty/net/gui/." \
+    "$ultra_tmp/com/dbzlegacy/adaptivedifficulty/net/gui/"
+  # Client must not load NativeGuiActions (server menu opens).
+  rm -f "$ultra_tmp/com/dbzlegacy/adaptivedifficulty/net/gui/NativeGuiActions.class"
+  cp "$CLIENT_RES/META-INF/mods.toml" "$ultra_tmp/META-INF/mods.toml"
+  printf 'Manifest-Version: 1.0\nImplementation-Title: LegacyMechanicsUltra\nImplementation-Version: %s\n' \
+    "$VERSION" > "$ultra_tmp/META-INF/MANIFEST.MF"
+  (cd "$ultra_tmp" && jar cfm "$ULTRA_JAR" META-INF/MANIFEST.MF .)
+  rm -rf "$ultra_tmp"
+  echo "Built $ULTRA_JAR (client companion — install with dmzultra, not on the dedicated server)"
+  if ! jar tf "$ULTRA_JAR" | grep -q 'client/gui/UltraWidgetAdapter.class'; then
+    echo "ERROR: UltraWidgetAdapter missing from client companion" >&2
+    exit 1
+  fi
+  python3 - "$ULTRA_JAR" <<'PY'
+import sys, zipfile
+jar = sys.argv[1]
+with zipfile.ZipFile(jar) as zf:
+    names = set(zf.namelist())
+need = [
+    "com/dbzlegacy/adaptivedifficulty/client/LegacyMechanicsUltraMod.class",
+    "com/dbzlegacy/adaptivedifficulty/client/gui/UltraWidgetAdapter.class",
+    "com/dbzlegacy/adaptivedifficulty/net/gui/LmGuiNetwork.class",
+]
+missing = [n for n in need if n not in names]
+if "com/dbzlegacy/adaptivedifficulty/net/gui/NativeGuiActions.class" in names:
+    print("ERROR: client companion must not ship NativeGuiActions", file=sys.stderr)
+    sys.exit(1)
+if missing:
+    print("ERROR: ultra client missing:", *missing, sep="\n  ", file=sys.stderr)
+    sys.exit(1)
+print("Ultra client companion ok")
+PY
+else
+  echo "WARN: client Ultra sources missing — skipped LegacyMechanicsUltra jar" >&2
+fi
+
 # A second LegacyMechanics jar in mods/ crashes a fresh server on startup.
 find "$ROOT/mods" -maxdepth 1 -type f -name 'LegacyMechanics-*.jar' ! -name "LegacyMechanics-${VERSION}.jar" -delete
-jar tf "$JAR"
+# Keep the matching Ultra client companion.
+find "$ROOT/mods" -maxdepth 1 -type f -name 'LegacyMechanicsUltra-*.jar' ! -name "LegacyMechanicsUltra-${VERSION}.jar" -delete
+jar tf "$JAR" | head -40
+echo "..."
+jar tf "$JAR" | rg 'net/gui|GuiBackend|MechanicsMenu' || true
 
 # Fail-closed audits: product features, combat scaling sim, GUI ABI.
 HERE_SIM="$(cd "$(dirname "$0")" && pwd)/sim"

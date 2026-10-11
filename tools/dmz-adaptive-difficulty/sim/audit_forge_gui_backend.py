@@ -26,6 +26,8 @@ def main() -> int:
     backend = BACKEND.read_text(encoding="utf-8")
     if "case \"cmi\"" not in backend or "-> CNPC" not in backend:
         errors.append("GuiBackend.java: legacy cmi/chest aliases must map to CNPC")
+    if "ULTRA" not in backend or "case \"ultra\"" not in backend:
+        errors.append("GuiBackend.java: ultra/dmzultra backend missing")
 
     mechanics = (ROOT / "src/main/java/com/dbzlegacy/adaptivedifficulty/command/MechanicsCommands.java").read_text(
         encoding="utf-8"
@@ -33,8 +35,8 @@ def main() -> int:
     if "CmiGuiBridge" in mechanics or "BukkitGuiBridge" in mechanics:
         errors.append("MechanicsCommands.java: /lm must not require Bukkit GUI plugin")
 
-    # Forge menu entrypoints should open CNPC or chat — not reflect into plugin.
-    for name in ("DifficultyMenu", "RivalMenu", "SparMenu", "PrestigeMenu", "CharacterServicesMenu"):
+    # Forge menu entrypoints should open Ultra, CNPC, or chat — not reflect into plugin.
+    for name in ("DifficultyMenu", "RivalMenu", "SparMenu", "PrestigeMenu", "CharacterServicesMenu", "MechanicsMenu"):
         path = GUI / f"{name}.java"
         if not path.is_file():
             errors.append(f"Missing {name}.java")
@@ -49,7 +51,7 @@ def main() -> int:
     if errors:
         print(f"\n{len(errors)} error(s)")
         return 1
-    print("  OK  *Menu.java routes CNPC; GuiBackend maps legacy bukkit/cmi to CNPC")
+    print("  OK  *Menu.java routes Ultra/CNPC/chat; GuiBackend maps legacy bukkit/cmi to CNPC")
     return 0
 
 

@@ -33,9 +33,13 @@ public final class AdaptiveDifficultyMod {
     /** Forge modId — lowercase; not used for NBT / GUI class lookup. */
     public static final String MOD_ID = "legacymechanics";
     /** Product line version (was DMZ Adaptive Difficulty 3.3.x). */
-    public static final String VERSION = "4.6.56";
+    public static final String VERSION = "4.6.76";
 
     /** True on the dedicated server. A failed side check keeps the server startup path. */
+    public static boolean dedicatedServerForGui() {
+        return dedicatedServer();
+    }
+
     private static boolean dedicatedServer() {
         try {
             Class<?> loader = Class.forName("net.minecraftforge.fml.loading.FMLLoader");
@@ -50,6 +54,7 @@ public final class AdaptiveDifficultyMod {
 
     public AdaptiveDifficultyMod() {
         // Server-side only: clients may join without this mod installed.
+        // Ultra menus use a separate LegacyMechanicsUltra client jar + dmzultra.
         ModLoadingContext.get().registerExtensionPoint(
                 IExtensionPoint.DisplayTest.class,
                 () -> new IExtensionPoint.DisplayTest(
@@ -62,6 +67,7 @@ public final class AdaptiveDifficultyMod {
             return;
         }
 
+        com.dbzlegacy.adaptivedifficulty.net.gui.LmGuiNetwork.register();
         DifficultyConfig.load();
         com.dbzlegacy.adaptivedifficulty.progression.race.RaceLockConfig.load();
         com.dbzlegacy.adaptivedifficulty.character.CharacterServicesConfig.load();

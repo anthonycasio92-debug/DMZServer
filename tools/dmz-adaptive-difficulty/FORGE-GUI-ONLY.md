@@ -1,7 +1,11 @@
 # Forge-only Legacy Mechanics GUI (CustomNPCs)
 
-Legacy Mechanics **4.5.3+** can run with **only** `mods/LegacyMechanics-*.jar`. The Bukkit plugin
-`LegacyMechanicsGUI` is **optional** and should be **removed** once CNPC UI is verified on live.
+For **DMZUltra** menus (no CustomNPCs), see **`FORGE-ULTRA-GUI.md`**: server
+`LegacyMechanics` + client `LegacyMechanicsUltra` + `dmzultra`.
+
+Legacy Mechanics **4.5.3+** can also run with **only** `mods/LegacyMechanics-*.jar` and
+`guiBackend=cnpc`. The Bukkit plugin `LegacyMechanicsGUI` is **optional** and should be
+**removed** once CNPC UI is verified on live.
 
 ## Requirements
 
