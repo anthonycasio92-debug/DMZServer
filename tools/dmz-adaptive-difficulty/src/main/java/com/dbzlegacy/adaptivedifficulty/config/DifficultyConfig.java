@@ -1326,6 +1326,7 @@ public final class DifficultyConfig {
         } else {
             // Canonicalize aliases so Forge + Bukkit agree.
             cfg.guiBackend = switch (cfg.guiBackend.trim().toLowerCase()) {
+                case "ultra", "kaipath", "dmzultra", "native" -> "ultra";
                 case "cnpc", "customnpcs", "customnpc", "noppes" -> "cnpc";
                 case "cmi", "cmilib", "cmigui", "deluxemenus", "deluxe", "dm" -> "cmi";
                 case "chest", "bukkit", "inventory", "gui" -> "chest";
