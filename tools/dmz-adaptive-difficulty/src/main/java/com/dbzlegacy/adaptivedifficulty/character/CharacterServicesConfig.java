@@ -148,8 +148,8 @@ public final class CharacterServicesConfig {
 
     /**
      * Copper for one preservation percent. An exact map key wins. A missing key is the
-     * straight line between the next lower and next higher configured costs. The 100%
-     * price is not a stand-in for a missing key.
+     * straight line between the next lower and next higher configured costs.
+     * The 100% price is not a stand-in for a missing key.
      */
     public static long lookupPreservationCopper(Map<String, Long> map, int preservationPercent) {
         if (preservationPercent <= 0) {
