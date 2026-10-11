@@ -12,6 +12,9 @@ import net.minecraftforge.network.NetworkEvent;
 /**
  * Client → server. KaiPath button / tab press. Server runs the same logic as CNPC handlers.
  * No client-only classes are referenced here.
+ *
+ * <p>Registration uses {@code consumerNetworkThread} + {@link NetworkEvent.Context#enqueueWork}
+ * in {@link LmGuiNetwork} so all {@link ServerPlayer} access runs on the main thread.
  */
 public final class GuiActionPacket {
     /** Action ids are {@code @screen:do:…} — allow long saga / module ids. */
@@ -49,34 +52,53 @@ public final class GuiActionPacket {
         return new GuiActionPacket(buf.m_130277_(), buf.m_130277_(), buf.m_130277_());
     }
 
+    /**
+     * Network-thread entry (via {@link LmGuiNetwork}). Captures the sender, then
+     * {@code enqueueWork}s main-thread dispatch.
+     */
     public static void handle(GuiActionPacket msg, Supplier<NetworkEvent.Context> ctx) {
         NetworkEvent.Context context = ctx.get();
-        // All ServerPlayer / world access must run on the main thread.
-        context.enqueueWork(() -> {
-            if (msg == null || context == null) {
-                return;
-            }
-            ServerPlayer player = context.getSender();
-            if (player == null) {
-                return;
-            }
-            try {
-                UltraGuiActions.dispatch(player, msg.screenId, msg.actionId, msg.argsJson);
-            } catch (Throwable t) {
-                AdaptiveDifficultyMod.LOGGER.error(
-                        "[{}] Ultra GuiActionPacket failed screenId={} rawActionId={} args={} player={}",
-                        AdaptiveDifficultyMod.MOD_ID,
-                        msg.screenId,
-                        msg.actionId,
-                        msg.argsJson,
-                        player.m_7755_().getString(),
-                        t);
-                DmzRewards.msg(
-                        player,
-                        UltraStyle.dangerLine(
-                                "Something went wrong. Try again, or ask staff if it keeps happening."));
-            }
-        });
+        // Capture while the network context is still valid (before deferral).
+        ServerPlayer sender = context.getSender();
+        context.enqueueWork(() -> dispatchOnMain(sender, msg));
         context.setPacketHandled(true);
+    }
+
+    /** Main-thread work only — no network-context access. */
+    public static void dispatchOnMain(ServerPlayer player, GuiActionPacket msg) {
+        if (msg == null) {
+            return;
+        }
+        if (player == null) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] GuiActionPacket dropped: null sender screenId={} actionId={} args={}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    msg.screenId,
+                    msg.actionId,
+                    msg.argsJson);
+            return;
+        }
+        try {
+            AdaptiveDifficultyMod.LOGGER.debug(
+                    "[{}] GuiActionPacket main-thread player={} screenId={} actionId={}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    player.m_7755_().getString(),
+                    msg.screenId,
+                    msg.actionId);
+            UltraGuiActions.dispatch(player, msg.screenId, msg.actionId, msg.argsJson);
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.error(
+                    "[{}] Ultra GuiActionPacket failed screenId={} rawActionId={} args={} player={}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    msg.screenId,
+                    msg.actionId,
+                    msg.argsJson,
+                    player.m_7755_().getString(),
+                    t);
+            DmzRewards.msg(
+                    player,
+                    UltraStyle.dangerLine(
+                            "Something went wrong. Try again, or ask staff if it keeps happening."));
+        }
     }
 }

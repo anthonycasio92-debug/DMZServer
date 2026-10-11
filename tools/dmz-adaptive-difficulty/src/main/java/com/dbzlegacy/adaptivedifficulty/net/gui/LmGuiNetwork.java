@@ -49,6 +49,21 @@ public final class LmGuiNetwork {
 
     private LmGuiNetwork() {}
 
+    /**
+     * PLAY_TO_SERVER {@link GuiActionPacket} entry on the network thread.
+     * Captures the sender, then {@link NetworkEvent.Context#enqueueWork}s main-thread dispatch.
+     */
+    static void handleGuiAction(GuiActionPacket msg, java.util.function.Supplier<NetworkEvent.Context> ctx) {
+        NetworkEvent.Context context = ctx.get();
+        if (context == null) {
+            return;
+        }
+        // Must capture before enqueueWork — context sender is only reliable here.
+        ServerPlayer sender = context.getSender();
+        context.enqueueWork(() -> GuiActionPacket.dispatchOnMain(sender, msg));
+        context.setPacketHandled(true);
+    }
+
     public static void register() {
         if (registered) {
             return;
@@ -59,10 +74,11 @@ public final class LmGuiNetwork {
                 .decoder(GuiOpenPacket::decode)
                 .consumerMainThread(GuiOpenPacket::handle)
                 .add();
+        // Network-thread receive → enqueueWork (main thread) for all ServerPlayer access.
         CHANNEL.messageBuilder(GuiActionPacket.class, 1, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(GuiActionPacket::encode)
                 .decoder(GuiActionPacket::decode)
-                .consumerMainThread(GuiActionPacket::handle)
+                .consumerNetworkThread(LmGuiNetwork::handleGuiAction)
                 .add();
         validateBuilderScreenIdsAtStartup();
         UltraScreenSelfTest.runAtStartup();
