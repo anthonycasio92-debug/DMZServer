@@ -174,7 +174,7 @@ def main() -> int:
     packet = PACKET.read_text(encoding="utf-8")
     if "panelWidth" not in packet or "layoutJson" not in packet:
         errors.append("GuiOpenPacket must carry panelWidth/panelHeight/layoutJson")
-    if 'titleAlign":"center"' not in packet.replace(" ", ""):
+    if 'titleAlign\\":\\"center' not in packet and 'titleAlign":"center' not in packet:
         errors.append('GuiOpenPacket.defaultLayoutJson must include "titleAlign":"center"')
     if "2048" not in packet:
         errors.append("GuiOpenPacket layoutJson trim limit must be 2048 (playerModel fits)")
