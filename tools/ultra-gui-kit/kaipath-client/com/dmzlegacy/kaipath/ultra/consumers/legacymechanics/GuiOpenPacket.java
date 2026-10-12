@@ -11,8 +11,8 @@ import net.minecraftforge.network.NetworkEvent;
  */
 public final class GuiOpenPacket {
     public static final int DEFAULT_PANEL_W = 350;
-    public static final int DEFAULT_PANEL_H = 260;
-    public static final int DEFAULT_MARGIN = 8;
+    public static final int DEFAULT_PANEL_H = 300;
+    public static final int DEFAULT_MARGIN = 10;
 
     private final String screenId;
     private final String title;
@@ -59,8 +59,8 @@ public final class GuiOpenPacket {
                 "[]",
                 DEFAULT_PANEL_W,
                 DEFAULT_PANEL_H,
-                "{\"center\":true,\"margin\":8,\"lineHeight\":14,\"lineGap\":4,"
-                        + "\"bodyTop\":36,\"bodyMaxHeight\":96,\"scrollBody\":true,"
+                "{\"center\":true,\"margin\":10,\"titleAlign\":\"center\",\"lineHeight\":16,\"lineGap\":8,"
+                        + "\"bodyTop\":42,\"bodyPad\":10,\"bodyMaxHeight\":140,\"scrollBody\":true,"
                         + "\"buttonPad\":8,\"buttonGap\":6,\"buttonMinWidth\":80,\"buttonHeight\":18}");
     }
 

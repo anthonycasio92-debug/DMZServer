@@ -263,7 +263,7 @@ public final class UltraRivalScreens {
         Map<String, String> ph = RivalGuiApi.placeholders(player);
         UltraScreenSpec spec = base("settings", "actions")
                 .line(UltraStyle.LABEL + "Rival chat and instinct toggles.")
-                .labelValue("TP messages", ph.getOrDefault("tpmsg", "—"))
+                .labelValue("TP", ph.getOrDefault("tpmsg", "—"))
                 .setRow(UltraStyle.CONTENT_ROW_TABS + 80);
         spec.buttonLeft("do:tpmsg:toggle", UltraStyle.confirm("TP"), "normal")
                 .buttonRight("do:instinct", "Toggle instinct", "normal")

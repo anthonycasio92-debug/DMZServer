@@ -155,7 +155,7 @@ Protocol `"1"`. Message 0 open, 1 action, 2 features (optional).
 | 6 | `linesJson` | string | JSON array of body lines |
 | 7 | `buttonsJson` | string | JSON array of button objects (incl. **style**) |
 | 8 | `panelWidth` | varint | Default **350** |
-| 9 | `panelHeight` | varint | Default **260** |
+| 9 | `panelHeight` | varint | Default **300** (grows to **380** when needed) |
 | 10 | `layoutJson` | string | JSON object (panel + body/button metrics + optional `playerModel`) |
 
 Missing trailing fields → defaults. Bytes after field 10 ignored.
@@ -173,15 +173,17 @@ Missing trailing fields → defaults. Bytes after field 10 ignored.
 ```json
 {
   "panelWidth": 350,
-  "panelHeight": 260,
+  "panelHeight": 300,
   "width": 350,
-  "height": 260,
+  "height": 300,
   "center": true,
-  "margin": 8,
-  "lineHeight": 14,
-  "lineGap": 4,
-  "bodyTop": 36,
-  "bodyMaxHeight": 120,
+  "margin": 10,
+  "titleAlign": "center",
+  "lineHeight": 16,
+  "lineGap": 8,
+  "bodyTop": 42,
+  "bodyPad": 10,
+  "bodyMaxHeight": 140,
   "scrollBody": true,
   "buttonPad": 8,
   "buttonGap": 6,
@@ -205,9 +207,11 @@ honor `margin`. Button `x`/`y` are panel-relative.
 
 | Field | Meaning |
 |-------|---------|
+| `titleAlign` | `center` or `left` — hub/system titles sit at the top of the panel |
 | `lineHeight` | Body line height in GUI pixels (do **not** squeeze below this) |
 | `lineGap` | Extra gap between body lines |
 | `bodyTop` | Panel-relative Y where the body/scroll region starts |
+| `bodyPad` | Vertical padding inside the body scroll region |
 | `bodyMaxHeight` | Vertical room for body text inside the panel |
 | `scrollBody` | When `true`, long body content **scrolls** instead of compressing |
 | `buttonPad` | Horizontal padding inside buttons (default **8**) |
@@ -252,9 +256,9 @@ GuiOpenPacket open = new GuiOpenPacket(
     "[{\"id\":\"home\",\"label\":\"Home\"}]",
     "home",
     "[\"Welcome.\"]",
-    buttons, 350, 260,
-    "{\"center\":true,\"margin\":8,\"lineHeight\":14,\"lineGap\":4,"
-        + "\"bodyTop\":36,\"bodyMaxHeight\":96,\"scrollBody\":true,"
+    buttons, 350, 300,
+    "{\"center\":true,\"margin\":10,\"titleAlign\":\"center\",\"lineHeight\":16,\"lineGap\":8,"
+        + "\"bodyTop\":42,\"bodyPad\":10,\"bodyMaxHeight\":140,\"scrollBody\":true,"
         + "\"buttonPad\":8,\"buttonGap\":6,\"buttonMinWidth\":80,\"buttonHeight\":18}");
 CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), open);
 ```

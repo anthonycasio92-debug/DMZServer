@@ -18,7 +18,17 @@ DOC = ROOT.parents[1] / "docs" / "KAIPATH_GUI_PROTOCOL.md"
 KNOWN_DO: dict[str, set[str]] = {
     "hub": {"reload", "skillcheck_denied"},
     "admin": {"reload"},
-    "difficulty": {"activate", "lower_tier", "toggle_personal", "summon_end_dragon"},
+    "difficulty": {
+        "activate",
+        "lower_tier",
+        "toggle_personal",
+        "summon_end_dragon",
+        "mode",
+        "equip_title",
+        "clear_title",
+        "toggle_title_sense",
+        "toggle_coin_chat",
+    },
     "character": {
         "reskin_confirm",
         "bone_race_default",
@@ -35,18 +45,40 @@ KNOWN_DO: dict[str, set[str]] = {
         "accept_replace",
         "admin",
         "challenge",
+        "challenge_send",
+        "spectate",
         "spectate_stop",
+        "declare",
+        "silent",
+        "accept",
+        "decline",
+        "remove",
     },
     "spar": {
         "tpmsg",
         "end",
         "mentor_tpmsg",
         "mentor",
+        "mentor_accept",
+        "mentor_decline",
+        "mentor_invite",
+        "apprentice_invite",
+        "mentor_release",
         "admin",
         "dojo_accept",
         "dojo_war_cancel",
+        "dojo_challenge",
     },
-    "config": {"open_module", "save_all", "discard_all", "reload_module"},
+    "config": {
+        "open_module",
+        "save_all",
+        "discard_all",
+        "reload_module",
+        "toggle",
+        "step",
+        "cycle",
+        "undo",
+    },
     "skillcheck": set(),
     "skills": set(),
 }
@@ -117,10 +149,14 @@ def main() -> int:
         errors.append("UltraStyle button height/gap must be 18 / 6")
     if "BTN_PAD = 8" not in style or "BTN_MIN_W = 80" not in style:
         errors.append("UltraStyle button pad/min width must be 8 / 80")
-    if "PANEL_MARGIN = 8" not in style or "PANEL_MAX_H = 360" not in style:
-        errors.append("UltraStyle panel margin/max must be 8 / 360")
-    if "LINE_H = 14" not in style or "LINE_GAP = 4" not in style:
-        errors.append("UltraStyle body line height/gap must be 14 / 4")
+    if "PANEL_MARGIN = 10" not in style or "PANEL_MAX_H = 380" not in style:
+        errors.append("UltraStyle panel margin/max must be 10 / 380")
+    if "LINE_H = 16" not in style or "LINE_GAP = 8" not in style:
+        errors.append("UltraStyle body line height/gap must be 16 / 8")
+    if "BODY_PAD = 10" not in style or "BODY_MIN_H = 140" not in style:
+        errors.append("UltraStyle body pad/min height must be 10 / 140")
+    if 'TITLE_ALIGN = "center"' not in style:
+        errors.append('UltraStyle TITLE_ALIGN must be "center"')
     if "playerModel" not in SPEC.read_text(encoding="utf-8"):
         errors.append("UltraScreenSpec must support optional playerModel in layoutJson")
     if "scrollBody" not in SPEC.read_text(encoding="utf-8"):
@@ -213,6 +249,8 @@ def main() -> int:
             "playerModel",
             "scrollBody",
             "buttonPad",
+            "titleAlign",
+            "bodyPad",
         ):
             if needle not in doc:
                 errors.append(f"KAIPATH_GUI_PROTOCOL.md missing {needle}")
