@@ -1,12 +1,16 @@
 # JLDK brief — KaiPath Ultra GUI client conformance
 
-**Status (LM 4.6.108 + KaiPath 1.3.5):** Title centering and active-tab highlight are on
-both sides. Button styles, player model draw, and text inputs still need KaiPath work
-(LM already sends the data).
+**Status (LM 4.6.112 + KaiPath 1.3.5):** LM already sends styles, text inputs, titleAlign,
+activeTab, and `playerModel` (+ optional `parts`). KaiPath 1.3.5 centers titles and
+highlights the active tab. **Still needed on KaiPath:** button colors, entity preview
+draw, UTF-8 decode, and text-field widgets.
+
+Full gap matrix: [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md).
 
 | Kit | Path |
 |-----|------|
 | Protocol + conformance contract | [`docs/KAIPATH_GUI_PROTOCOL.md`](KAIPATH_GUI_PROTOCOL.md) |
+| Bridge gap matrix | [`docs/KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md) |
 | KaiPath client sources (reference) | [`tools/ultra-gui-kit/kaipath-client/`](../tools/ultra-gui-kit/kaipath-client/) |
 | Server codecs (any mod) | [`tools/ultra-gui-kit/server/`](../tools/ultra-gui-kit/server/) |
 
@@ -32,8 +36,9 @@ The client renders what the server sends — **no hardcoded screen/tab/button/ac
 | Feature | Where | Client TODO |
 |---------|-------|-------------|
 | Button `style` | each button | Map `confirm`→green, `danger`→red, `dim`→dark-gray, `normal`→default |
-| `playerModel` | `layoutJson.playerModel` | Draw local player in bounds (Character). Honor optional `parts` (schema 1: `headBones`, `form`, `extras`) — see protocol doc |
+| `playerModel` | `layoutJson.playerModel` | Draw local player in bounds. Honor optional `parts` (schema 1: `headBones`, `form`, `extras`) |
 | Text fields | GuiOpenPacket **field 11** `inputsJson` | Render `type=text`; on Enter / `args.bindInput` button click, send `args.value` |
+| UTF-8 strings | all GuiOpen string fields | Decode with **UTF-8** (not platform default) — LM encodes with `StandardCharsets.UTF_8` |
 
 ## Advertise (after implementing)
 
@@ -43,9 +48,9 @@ UltraGuiConsumerRegistry.advertiseFeatures(
     "[\"style\",\"activeTab\",\"titleAlign\",\"playerModel\",\"textInput\"]");
 ```
 
-## Text input contract (new in LM 4.6.108)
+## Text input contract (LM 4.6.108+)
 
-`inputsJson` example:
+Config TEXT / NUMBER / ENUM detail pages send:
 
 ```json
 [{
@@ -62,3 +67,7 @@ UltraGuiConsumerRegistry.advertiseFeatures(
 Apply button includes `"bindInput":"@config:input:…"`. Before sending the click,
 copy that field’s text into `args.value`. Enter on the field may send the input `id`
 as `actionId` with `args.value` set.
+
+## Deferred (not blocking)
+
+- `inputsJson` types `slider` / `toggle` — reserved in [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md); BOOLEAN stays styled buttons for now.

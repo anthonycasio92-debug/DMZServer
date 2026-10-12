@@ -41,7 +41,9 @@ The client **must** render what the server sends (no hardcoded screen/tab/button
 | Honor button **`style`** | next | **no** — all buttons look identical |
 | Honor **`layoutJson.playerModel`** (+ optional `parts`) | next | **no** — no entity preview / parts |
 | Honor **`inputsJson`** text fields (field 11) | next | **no** — ignore trailing field |
+| Decode GuiOpen strings as **UTF-8** | next | **fix if platform-default** — LM uses `StandardCharsets.UTF_8` |
 | Send **GuiFeaturesPacket** | next | advertise implemented features |
+| `inputsJson` `slider` / `toggle` | later | reserved — see [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md) |
 
 ### Button JSON schema
 
@@ -191,9 +193,19 @@ Missing trailing fields → defaults. Bytes after the last understood field igno
 }]
 ```
 
+| `type` | Status | Notes |
+|--------|--------|-------|
+| `text` | **Shipped** (LM 4.6.108+) | Config TEXT / NUMBER / ENUM detail editors |
+| `toggle` | Reserved | Not on wire yet — BOOLEAN uses styled buttons |
+| `slider` | Reserved | Not on wire yet — see [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md) |
+
 Buttons that apply a field include `args.bindInput` set to that input’s `id`. On click (or
 Enter in the field), the client must set `args.value` to the typed string before sending
 `GuiActionPacket`.
+
+**UTF-8:** All GuiOpen string fields (title, lines, labels, placeholders, …) are encoded and
+decoded by LM with explicit `StandardCharsets.UTF_8`. Clients must decode the same way;
+platform-default charset causes mojibake on accents (é/à).
 
 ### 4. Layout JSON
 

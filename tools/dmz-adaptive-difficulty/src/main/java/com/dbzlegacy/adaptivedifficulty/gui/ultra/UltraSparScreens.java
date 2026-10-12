@@ -359,11 +359,23 @@ public final class UltraSparScreens {
                 .labelValue("Target", who == null || who.isBlank() ? "—" : who)
                 .line(UltraStyle.LABEL + copy[1])
                 .setRow(UltraStyle.CONTENT_ROW_TABS + 100);
-        spec.buttonLeft("do:" + action + ":" + targetArg, UltraStyle.confirm("Confirm"), "confirm")
-                .buttonRight("page:" + returnPage, UltraStyle.dim("Cancel"), "dim")
+        boolean destructive = isDestructiveConfirm(action);
+        spec.buttonLeft(
+                        "do:" + action + ":" + targetArg,
+                        destructive ? UltraStyle.danger("Confirm") : UltraStyle.confirm("Confirm"),
+                        destructive ? UltraStyle.STYLE_DANGER : UltraStyle.STYLE_CONFIRM)
+                .buttonRight("page:" + returnPage, UltraStyle.dim("Cancel"), UltraStyle.STYLE_DIM)
                 .rowGap();
         spec.footerBackHome();
         spec.send(player);
+    }
+
+    /** Leave / release / decline are irreversible or dismissive — wire danger, not confirm. */
+    private static boolean isDestructiveConfirm(String action) {
+        return switch (action == null ? "" : action) {
+            case "mentor", "mentor_release", "mentor_decline" -> true;
+            default -> false;
+        };
     }
 
     private static String[] confirmCopy(String action) {

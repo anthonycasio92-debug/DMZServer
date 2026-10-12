@@ -202,6 +202,19 @@ def main() -> int:
         errors.append("UltraScreenSpec/GuiOpenPacket must support textField → inputsJson (field 11)")
     if "bindInput" not in spec_text_full:
         errors.append("UltraScreenSpec buttons must support args.bindInput for text submit")
+    config_screens = (ULTRA / "UltraConfigScreens.java").read_text(encoding="utf-8")
+    number_block = config_screens.split("case NUMBER")[1].split("case ENUM")[0] if "case NUMBER" in config_screens else ""
+    enum_block = config_screens.split("case ENUM")[1].split("case LIST")[0] if "case ENUM" in config_screens else ""
+    if "textFieldRow" not in number_block:
+        errors.append("UltraConfigScreens NUMBER detail must offer textFieldRow (typed value), not only ± steps")
+    if "textFieldRow" not in enum_block:
+        errors.append("UltraConfigScreens ENUM detail must offer textFieldRow + Apply")
+    bridge_gaps = ROOT.parent.parent / "docs" / "KAIPATH_BRIDGE_GAPS.md"
+    if not bridge_gaps.is_file():
+        # ROOT = .../tools/dmz-adaptive-difficulty
+        bridge_gaps = Path(__file__).resolve().parents[3] / "docs" / "KAIPATH_BRIDGE_GAPS.md"
+    if not bridge_gaps.is_file():
+        errors.append("docs/KAIPATH_BRIDGE_GAPS.md must document LM vs KaiPath gap matrix")
     if 'STYLE_DIM' not in (ultra_hub := (ULTRA / "UltraHubScreens.java").read_text(encoding="utf-8")):
         errors.append("UltraHubScreens must wire STYLE_DIM for unavailable system tiles")
     if "skillcheck_denied" not in ultra_hub or "STYLE_DIM" not in ultra_hub:

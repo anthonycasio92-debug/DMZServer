@@ -383,7 +383,9 @@ public final class UltraCharacterScreens {
                         UltraStyle.confirm("Race default look"),
                         UltraStyle.STYLE_CONFIRM)
                 .buttonRight(
-                        "do:bone_unequip", UltraStyle.dim("Clear head parts"), UltraStyle.STYLE_DIM)
+                        "do:bone_unequip",
+                        UltraStyle.danger("Clear head parts"),
+                        UltraStyle.STYLE_DANGER)
                 .rowGap();
         if (pg > 0) {
             spec.buttonLeft(

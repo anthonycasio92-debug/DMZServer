@@ -209,15 +209,46 @@ public final class UltraConfigScreens {
                         .rowGap();
             }
             case NUMBER -> {
-                spec.buttonLeft("do:step:" + module + "|" + encoded + "|-1", UltraStyle.dim("−"), "dim")
-                        .buttonRight("do:step:" + module + "|" + encoded + "|1", UltraStyle.dim("+"), "dim")
+                // Direct typing is the critical path; ± steps stay as shortcuts.
+                String inputId = "input:" + module + "|" + encoded;
+                spec.textFieldRow(
+                                inputId,
+                                value == null ? "" : value,
+                                "Type a number…")
+                        .rowGap();
+                spec.buttonBound(
+                                "do:set:" + module + "|" + encoded,
+                                UltraStyle.confirm("Apply"),
+                                UltraStyle.STYLE_CONFIRM,
+                                inputId)
+                        .rowGap();
+                spec.buttonLeft(
+                                "do:step:" + module + "|" + encoded + "|-1",
+                                UltraStyle.dim("−"),
+                                UltraStyle.STYLE_DIM)
+                        .buttonRight(
+                                "do:step:" + module + "|" + encoded + "|1",
+                                UltraStyle.dim("+"),
+                                UltraStyle.STYLE_DIM)
                         .rowGap();
             }
             case ENUM -> {
+                String inputId = "input:" + module + "|" + encoded;
+                spec.textFieldRow(
+                                inputId,
+                                value == null ? "" : value,
+                                "Type an option…")
+                        .rowGap();
+                spec.buttonBound(
+                                "do:set:" + module + "|" + encoded,
+                                UltraStyle.confirm("Apply"),
+                                UltraStyle.STYLE_CONFIRM,
+                                inputId)
+                        .rowGap();
                 spec.buttonLeft(
                                 "do:cycle:" + module + "|" + encoded,
                                 UltraStyle.confirm("Next value"),
-                                "confirm")
+                                UltraStyle.STYLE_CONFIRM)
                         .rowGap();
             }
             case LIST, MAP, GROUP -> {
