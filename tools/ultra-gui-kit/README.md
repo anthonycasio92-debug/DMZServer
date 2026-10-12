@@ -36,4 +36,4 @@ Until then LM logs warnings and `/lm admin guitest` reports missing features.
 
 ---
 
-LM server impl: `tools/dmz-adaptive-difficulty/…/net/gui/` (**4.6.105**).
+LM server impl: `tools/dmz-adaptive-difficulty/…/net/gui/` (**4.6.106**).

@@ -6,6 +6,7 @@ import com.dbzlegacy.adaptivedifficulty.net.gui.LmGuiNetwork;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -14,6 +15,12 @@ import java.util.Set;
  * with valid panel bounds. Runs without a live player (structural probe specs + capture).
  */
 public final class UltraScreenSelfTest {
+    /**
+     * Single-screen menus with no tab bar. Empty {@code tabsJson} ({@code []} / blank) is
+     * correct for these — do not treat as a structural failure.
+     */
+    static final Set<String> TABLESS_SCREEN_IDS = Set.of("skillcheck", "skills");
+
     private UltraScreenSelfTest() {}
 
     public static void runAtStartup() {
@@ -191,9 +198,15 @@ public final class UltraScreenSelfTest {
         if (pkt.title() == null || pkt.title().isBlank()) {
             return "empty title";
         }
-        String tabsErr = requireJsonArray("tabsJson", pkt.tabsJson(), false);
+        // Skill Check / Skills are intentionally tab-less (single screen). Empty tabsJson is valid.
+        boolean allowEmptyTabs =
+                isTablessScreen(expectedId) || isTablessScreen(pkt.screenId());
+        String tabsErr = requireJsonArray("tabsJson", pkt.tabsJson(), allowEmptyTabs);
         if (tabsErr != null) {
             return tabsErr;
+        }
+        if (allowEmptyTabs && hasTabBarEntries(pkt.tabsJson())) {
+            return "tabsJson must be empty for tab-less screen " + pkt.screenId();
         }
         String linesErr = requireJsonArray("linesJson", pkt.linesJson(), true);
         if (linesErr != null) {
@@ -228,6 +241,30 @@ public final class UltraScreenSelfTest {
             return "layoutJson invalid JSON: " + t.getMessage();
         }
         return null;
+    }
+
+    static boolean isTablessScreen(String screenId) {
+        return screenId != null
+                && !screenId.isBlank()
+                && TABLESS_SCREEN_IDS.contains(screenId.trim().toLowerCase(Locale.ROOT));
+    }
+
+    /** True when tabsJson declares at least one tab entry (id / tab: action). */
+    private static boolean hasTabBarEntries(String tabsJson) {
+        if (tabsJson == null || tabsJson.isBlank()) {
+            return false;
+        }
+        String trimmed = tabsJson.trim();
+        if ("[]".equals(trimmed)) {
+            return false;
+        }
+        try {
+            com.google.gson.JsonElement el = com.google.gson.JsonParser.parseString(trimmed);
+            return el.isJsonArray() && el.getAsJsonArray().size() > 0;
+        } catch (Throwable t) {
+            // Invalid JSON is already reported by requireJsonArray.
+            return trimmed.contains("\"id\"") || trimmed.contains("tab:");
+        }
     }
 
     private static String requireJsonArray(String field, String json, boolean allowEmpty) {
@@ -454,12 +491,15 @@ public final class UltraScreenSelfTest {
                 broken.add("character: layoutJson missing playerModel");
             }
         }
-        List<GuiOpenPacket> skillPkts =
-                UltraScreenSpec.captureSends(() -> probeBuilder("skillcheck"));
-        if (!skillPkts.isEmpty()) {
-            String tabs = skillPkts.get(0).tabsJson() == null ? "" : skillPkts.get(0).tabsJson();
-            if (tabs.contains("tab:") || tabs.contains("\"id\"")) {
-                broken.add("skillcheck: must have no tab bar (empty tabsJson)");
+        for (String tablessId : TABLESS_SCREEN_IDS) {
+            List<GuiOpenPacket> skillPkts =
+                    UltraScreenSpec.captureSends(() -> probeBuilder(tablessId));
+            if (skillPkts.isEmpty()) {
+                broken.add(tablessId + ": no GuiOpenPacket for tab-less probe");
+                continue;
+            }
+            if (hasTabBarEntries(skillPkts.get(0).tabsJson())) {
+                broken.add(tablessId + ": must have no tab bar (empty tabsJson)");
             }
         }
         if (broken.isEmpty()) {

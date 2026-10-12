@@ -357,6 +357,24 @@ def main() -> int:
         elif "nav:refresh" in m.group(1) or "Refresh" in m.group(1):
             errors.append(f"UltraScreenSpec.{method} must not include Refresh / nav:refresh")
 
+    # Startup self-test must allow empty tabsJson for intentional tab-less screens.
+    self_test_path = ULTRA / "UltraScreenSelfTest.java"
+    self_test = self_test_path.read_text(encoding="utf-8")
+    if "TABLESS_SCREEN_IDS" not in self_test or "isTablessScreen" not in self_test:
+        errors.append(
+            "UltraScreenSelfTest must define TABLESS_SCREEN_IDS / isTablessScreen "
+            "(skillcheck + skills are single-screen, empty tabsJson is valid)"
+        )
+    else:
+        for sid in ("skillcheck", "skills"):
+            if f'"{sid}"' not in self_test.split("TABLESS_SCREEN_IDS", 1)[1].split(";", 1)[0]:
+                errors.append(f"UltraScreenSelfTest.TABLESS_SCREEN_IDS missing {sid}")
+    if "allowEmptyTabs" not in self_test:
+        errors.append("UltraScreenSelfTest.validatePacket must allow empty tabs for tab-less screens")
+    skill_ui = (ULTRA / "UltraSkillCheckScreens.java").read_text(encoding="utf-8")
+    if ".tabs(" in skill_ui:
+        errors.append("UltraSkillCheckScreens must not call .tabs() (no tab bar)")
+
     print("=== Ultra action / panel audit ===")
     for e in errors:
         print(f"  FAIL  {e}")
