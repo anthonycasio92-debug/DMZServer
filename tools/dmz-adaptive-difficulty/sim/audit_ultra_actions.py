@@ -28,6 +28,8 @@ KNOWN_DO: dict[str, set[str]] = {
         "clear_title",
         "toggle_title_sense",
         "toggle_coin_chat",
+        "reload",
+        "syslog",
     },
     "character": {
         "reskin_confirm",

@@ -325,7 +325,9 @@ public final class UltraGuiActions {
                     "migrate-cnpc",
                     "migratecnpc",
                     "cnpcmigrate",
-                    "guitest_ack" -> true;
+                    "guitest_ack",
+                    // Staff convert only — android_remove stays player-facing.
+                    "android" -> true;
             default -> false;
         };
     }
@@ -390,6 +392,12 @@ public final class UltraGuiActions {
                     if ("mode".equals(act) || "set_mode".equals(act) || "team".equals(act)) {
                         yield nullToEmpty(
                                 DifficultyTeamGuiApi.handleDo(player, "mode", arg, page));
+                    }
+                    // Staff tools on the difficulty admin sub-page.
+                    if ("reload".equals(act)
+                            || "reloadconfig".equals(act)
+                            || "syslog".equals(act)) {
+                        yield nullToEmpty(MechanicsGuiApi.handleDo(player, act, arg, page));
                     }
                     DifficultyActions.Result r =
                             DifficultyActions.handleArgNoReopen(player, act, arg, page);
@@ -466,23 +474,46 @@ public final class UltraGuiActions {
         if (action == null || action.isBlank()) {
             return UltraStyle.dangerLine("That menu action is not available.");
         }
-        if (UltraStyle.PAGE_ANDROID_REMOVE.equals(action) || "android".equals(action)) {
-            String msg = ProgressionGuiApi.handleDo(player, action, arg, page);
+        String act = action.toLowerCase(Locale.ROOT).trim();
+        // Staff convert only — Removal stays available to players.
+        if ("android".equals(act)) {
+            if (!StaffAccess.isStaff(player)) {
+                AdaptiveDifficultyMod.LOGGER.warn(
+                        "[{}] Ultra android convert denied for non-staff player={}",
+                        AdaptiveDifficultyMod.MOD_ID,
+                        safeName(player));
+                return UltraStyle.dangerLine("That menu action is not available.");
+            }
+            String msg = ProgressionGuiApi.handleDo(player, act, arg, page);
             return msg == null ? "" : msg;
         }
-        if ("saga_confirm".equals(action)) {
+        if (UltraStyle.PAGE_ANDROID_REMOVE.equals(act) || "android_remove".equals(act)) {
+            String msg = ProgressionGuiApi.handleDo(player, UltraStyle.PAGE_ANDROID_REMOVE, arg, page);
+            return msg == null ? "" : msg;
+        }
+        if ("saga_confirm".equals(act)) {
             String id = arg == null ? "" : arg.trim();
             if (id.isBlank()) {
                 return UltraStyle.dangerLine("Choose a saga first.");
             }
+            AdaptiveDifficultyMod.LOGGER.debug(
+                    "[{}] Ultra saga_confirm player={} sagaId={}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    safeName(player),
+                    id);
             UltraGui.open(player, "character", "saga_confirm:" + id);
             return "";
         }
-        if ("saga_reset".equals(action) || "saga".equals(action) || "reset_saga".equals(action)) {
+        if ("saga_reset".equals(act) || "saga".equals(act) || "reset_saga".equals(act)) {
             String id = arg == null ? "" : arg.trim();
             if (id.isBlank()) {
                 return UltraStyle.dangerLine("Choose a saga first.");
             }
+            AdaptiveDifficultyMod.LOGGER.info(
+                    "[{}] Ultra saga_reset player={} sagaId={}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    safeName(player),
+                    id);
             String result = SagaResetService.reset(player, id);
             return result == null ? "" : result;
         }
@@ -573,11 +604,17 @@ public final class UltraGuiActions {
             case "difficulty" -> switch (parts.action == null ? "" : parts.action) {
                 case "activate", "lower_tier", "purchase_tier", "buy" -> "tiers";
                 case "toggle_personal" ->
-                        page != null && page.startsWith("team") ? "team" : "tiers";
+                        page != null && (page.startsWith("team") || "team".equals(page))
+                                ? "team"
+                                : "tiers";
                 case "summon_end_dragon", "end_dragon", "summon_dragon" -> "end_dragon";
                 case "mode", "set_mode", "team" -> "team";
-                case "equip_title", "clear_title", "toggle_title_sense" -> "titles";
+                case "equip_title" ->
+                        page != null && page.startsWith("title_detail:") ? page : "titles";
+                case "clear_title", "toggle_title_sense" -> "titles";
                 case "toggle_coin_chat" -> "settings";
+                case "reload", "reloadconfig" -> "admin";
+                case "syslog" -> "eventlog";
                 default -> page.isBlank() ? homePage(screen) : page;
             };
             case "prestige" -> switch (parts.action == null ? "" : parts.action) {

@@ -2,20 +2,32 @@ package com.dbzlegacy.adaptivedifficulty.gui.ultra;
 
 import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
 import com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot;
+import com.dbzlegacy.adaptivedifficulty.calc.PlayerCombatProfile;
+import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
 import com.dbzlegacy.adaptivedifficulty.data.TeamMode;
 import com.dbzlegacy.adaptivedifficulty.gui.DifficultyTeamGuiApi;
+import com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcDifficultyTierUi;
+import com.dbzlegacy.adaptivedifficulty.calc.LmOverhaulScaledCombat;
 import com.dbzlegacy.adaptivedifficulty.progression.end.EndDimensionStrength;
 import com.dbzlegacy.adaptivedifficulty.service.DifficultyActions;
+import com.dbzlegacy.adaptivedifficulty.tier.UnlockSystem;
 import com.dbzlegacy.adaptivedifficulty.tier.UnlockTier;
 import com.dbzlegacy.adaptivedifficulty.title.DifficultyTitle;
 import com.dbzlegacy.adaptivedifficulty.title.TitleSystem;
+import com.dbzlegacy.adaptivedifficulty.util.PaidFeatureAccess;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
+import com.dbzlegacy.adaptivedifficulty.util.SystemGate;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import net.minecraft.server.level.ServerPlayer;
 
-/** Difficulty — Home overview / Tiers / Summons; sub-pages for teams, titles, settings. */
+/**
+ * Difficulty — Home / Tiers / Summons with CNPC-parity sub-pages (teams, titles, stats,
+ * coin settings, staff tools). Home is overview only.
+ */
 public final class UltraDifficultyScreens {
     private UltraDifficultyScreens() {}
 
@@ -24,8 +36,13 @@ public final class UltraDifficultyScreens {
             return;
         }
         DifficultyActions.prepareGui(player);
-        String p = page == null || page.isBlank() ? "main" : page.toLowerCase(Locale.ROOT);
-        switch (p) {
+        String raw = page == null || page.isBlank() ? "main" : page.trim();
+        String lower = raw.toLowerCase(Locale.ROOT);
+        if (lower.startsWith("title_detail:")) {
+            openTitleDetail(player, raw.substring("title_detail:".length()).trim());
+            return;
+        }
+        switch (lower) {
             case "tiers", "buy", "tier", "purchase", "unlock", "adjust", "change", "set", "lower" ->
                     openTiers(player);
             case "summons", "summon" -> openSummons(player);
@@ -33,6 +50,9 @@ public final class UltraDifficultyScreens {
             case "team", "teams" -> openTeam(player);
             case "titles", "title" -> openTitles(player);
             case "settings", "coins" -> openSettings(player);
+            case "stats", "statistics", "details" -> openStats(player);
+            case "admin", "staff" -> openStaffAdmin(player);
+            case "eventlog", "event_log", "logs", "syslog" -> openEventLog(player);
             default -> openHome(player);
         }
     }
@@ -45,73 +65,171 @@ public final class UltraDifficultyScreens {
                 .tabs("home|Home", "tiers|Tiers", "summons|Summons");
     }
 
-    /** Overview only — titles / rival teams / coin settings. Tabs hold Tiers & Summons. */
+    /** Overview — where you stand, titles, rival teams, coins. Not a copy of Tiers/Summons. */
     private static void openHome(ServerPlayer player) {
         DifficultySnapshot snap = DifficultyCache.refresh(player);
         PlayerDifficultyData data = DifficultyCache.data(player);
         boolean personal = data != null && data.isPersonalEnabled();
         String tierName = snap == null || snap.activeTier <= 0 ? "None" : snap.activeTierName;
+        long cr = snap == null ? 0L : (snap.combatRating > 0 ? snap.combatRating : snap.calculated);
         UltraScreenSpec spec = base("main", "home")
                 .labelValue("Personal difficulty", personal ? "On" : "Off")
                 .labelValue("Active tier", tierName)
+                .labelValue("Combat rating", String.valueOf(cr))
                 .labelValue("Title", blank(TitleSystem.activeDisplay(player)))
+                .labelValue("Title score", String.valueOf(TitleSystem.computeTitleScore(player)))
                 .labelValue("Ancient Coins", AncientCoinEconomy.inventoryBreakdown(player))
+                .line(UltraStyle.LABEL + "Where you stand, your titles, and rival teams.")
                 .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
         UltraPickHelper.placePageButtons(
-                spec, "titles|Titles", "team|Rival teams", "settings|Coin settings");
+                spec,
+                "titles|Titles",
+                "team|Rival teams",
+                "settings|Coin settings",
+                "stats|Combat rating");
         if (StaffAccess.isStaff(player)) {
-            spec.buttonLeft("open:admin", UltraStyle.danger("Staff Admin"), "danger").rowGap();
+            UltraPickHelper.placePageButtons(spec, "admin|Server tools");
         }
         spec.footerBackToMain();
         spec.send(player);
     }
 
     private static void openTiers(ServerPlayer player) {
-        DifficultySnapshot snap = DifficultyCache.refresh(player);
+        if (!DifficultyConfig.isEnabled()) {
+            openFeatureLocked(
+                    player,
+                    "tiers",
+                    "tiers",
+                    "Tiers locked",
+                    "Adaptive Difficulty is off on this server. Ask staff to enable it.");
+            return;
+        }
+        if (!SystemGate.allows(player)) {
+            openFeatureLocked(
+                    player,
+                    "tiers",
+                    "tiers",
+                    "Tiers locked",
+                    "This account cannot use personal difficulty. Ask staff to add you to the whitelist.");
+            return;
+        }
         PlayerDifficultyData data = DifficultyCache.data(player);
-        int active = data == null ? 0 : data.getActiveTier();
+        if (data == null || !data.isPersonalEnabled()) {
+            UltraScreenSpec spec = base("tiers", "tiers")
+                    .line(UltraStyle.LABEL + "Your personal difficulty is off.")
+                    .line(UltraStyle.LABEL + "Turn personal ON, then pick a tier.")
+                    .line(UltraStyle.DIM + "Activation cost scales with your level.")
+                    .setRow(UltraStyle.CONTENT_ROW_TABS + 90);
+            spec.buttonLeft("do:toggle_personal", UltraStyle.confirm("Turn personal ON"), "confirm")
+                    .rowGap();
+            spec.footerBackHome();
+            spec.send(player);
+            return;
+        }
+        UnlockSystem.syncUnlocks(player, data);
+        DifficultySnapshot snap = DifficultyCache.refresh(player);
         int max = snap == null ? 0 : Math.max(0, snap.highestUnlockedTier);
-        UltraScreenSpec spec = base("tiers", "tiers")
-                .labelValue("Active tier", active <= 0 ? "None" : (snap == null ? "T" + active : snap.activeTierName))
-                .labelValue("Unlocked up to", "T" + max)
+        int active = data.getActiveTier();
+        UltraScreenSpec spec = base("tiers", "tiers");
+        if (active <= 0) {
+            spec.labelValue("Active tier", "None");
+        } else {
+            spec.labelValue("Active tier", snap == null ? "T" + active : snap.activeTierName);
+        }
+        spec.labelValue("Unlocked up to", "T" + max)
                 .labelValue("Ancient Coins", AncientCoinEconomy.inventoryBreakdown(player))
-                .notice("Click a tier again within 10 seconds to confirm.")
-                .setRow(UltraStyle.CONTENT_ROW_TABS + 90);
+                .line(UltraStyle.DIM + "Scaled mobs can hurt other players nearby.")
+                .line(UltraStyle.DIM + "Costs show on each button · click again within 10 seconds to buy");
+        if (!PaidFeatureAccess.bypassAncientCoinCost(player)) {
+            spec.line(UltraStyle.DIM + "Activation cost scales with your level");
+        }
+        UnlockTier nextLocked = UnlockTier.byId(max + 1);
+        if (nextLocked != null) {
+            spec.labelValue("Next tier", "T" + nextLocked.id + " · " + UltraStyle.plain(CnpcDifficultyTierUi.humanRequirement(nextLocked)))
+                    .labelValue(
+                            "Cost to activate",
+                            UltraStyle.plain(CnpcDifficultyTierUi.formatActivationCost(player, nextLocked)));
+        }
+        spec.setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
         for (int t = 1; t <= 7; t += 2) {
-            UnlockTier left = UnlockTier.byId(t);
-            UnlockTier right = UnlockTier.byId(t + 1);
-            if (left != null) {
-                boolean on = active == t;
-                String label = on
-                        ? UltraStyle.confirm("T" + t + " " + left.display + " · active")
-                        : "T" + t + " " + left.display;
-                spec.buttonLeft("do:activate:" + t, label, on ? "confirm" : "normal");
-            }
-            if (right != null) {
-                boolean on = active == t + 1;
-                String label = on
-                        ? UltraStyle.confirm("T" + (t + 1) + " " + right.display + " · active")
-                        : "T" + (t + 1) + " " + right.display;
-                spec.buttonRight("do:activate:" + (t + 1), label, on ? "confirm" : "normal");
-            }
+            placeTierButton(spec, player, data, max, active, t, true);
+            placeTierButton(spec, player, data, max, active, t + 1, false);
             spec.rowGap();
         }
         spec.buttonLeft("do:lower_tier:0", UltraStyle.danger("Clear active tier"), "danger")
-                .buttonRight("do:toggle_personal", UltraStyle.confirm("Toggle personal"), "normal")
+                .buttonRight(
+                        "do:toggle_personal",
+                        data.isPersonalEnabled()
+                                ? UltraStyle.confirm("Personal difficulty · ON")
+                                : UltraStyle.dim("Personal difficulty · OFF"),
+                        data.isPersonalEnabled() ? "confirm" : "dim")
                 .rowGap();
         spec.footerBackHome();
         spec.send(player);
     }
 
-    /** Summons tab — boss list. "Summon End Dragon" opens the confirm sub-page. */
+    private static void placeTierButton(
+            UltraScreenSpec spec,
+            ServerPlayer player,
+            PlayerDifficultyData data,
+            int max,
+            int active,
+            int t,
+            boolean left) {
+        UnlockTier ut = UnlockTier.byId(t);
+        if (ut == null) {
+            return;
+        }
+        boolean unlocked = data.hasUnlockedTier(t) || t <= max;
+        boolean eligible = CnpcDifficultyTierUi.isEligible(player, ut);
+        String rawLabel = CnpcDifficultyTierUi.tierActionLabel(player, t, active, unlocked, eligible);
+        String label = UltraStyle.plain(rawLabel);
+        boolean enabled = CnpcDifficultyTierUi.tierButtonEnabled(t, active, unlocked, eligible);
+        String style;
+        String action;
+        if (active == t) {
+            style = "confirm";
+            label = UltraStyle.confirm(label);
+            action = "do:activate:" + t;
+        } else if (enabled) {
+            style = "confirm";
+            label = UltraStyle.confirm(label);
+            action = "do:activate:" + t;
+        } else {
+            style = "dim";
+            label = UltraStyle.dim(label.isBlank() ? ("T" + t + " · locked") : label);
+            action = "do:activate:" + t;
+        }
+        if (left) {
+            spec.buttonLeft(action, label, style);
+        } else {
+            spec.buttonRight(action, label, style);
+        }
+    }
+
+    private static void openFeatureLocked(
+            ServerPlayer player, String page, String tab, String title, String body) {
+        UltraScreenSpec spec = base(page, tab)
+                .line(UltraStyle.danger(title))
+                .line(UltraStyle.LABEL + body)
+                .setRow(UltraStyle.CONTENT_ROW_TABS + 80);
+        if (DifficultyConfig.isEnabled() && SystemGate.allows(player)) {
+            spec.buttonLeft("do:toggle_personal", UltraStyle.confirm("Turn personal ON"), "confirm")
+                    .rowGap();
+        }
+        spec.footerBackHome();
+        spec.send(player);
+    }
+
     private static void openSummons(ServerPlayer player) {
         boolean ready = EndDimensionStrength.canOpenSummonMenu(player);
-        boolean free = StaffAccess.isStaff(player);
+        boolean free = PaidFeatureAccess.bypassAncientCoinCost(player);
         String cost = free
                 ? "free for staff"
                 : AncientCoinEconomy.formatExactCost(EndDimensionStrength.summonCopperCost());
         UltraScreenSpec spec = base("summons", "summons")
-                .line(UltraStyle.LABEL + "Select a boss, then confirm. More bosses can be added to this list.");
+                .line(UltraStyle.LABEL + "Select a boss, then confirm. More bosses can be added to this list.")
+                .line(UltraStyle.LABEL + "The dragon matches your difficulty. Only you can damage it.");
         for (String line : EndDimensionStrength.summonMenuLines(player)) {
             if (line != null && !line.isBlank()) {
                 spec.line(line);
@@ -119,19 +237,15 @@ public final class UltraDifficultyScreens {
         }
         spec.labelValue("End Dragon", ready ? "Ready · " + cost : "Requirements not met")
                 .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
-        spec.buttonLeft(
-                        "page:end_dragon",
-                        UltraStyle.confirm("Summon End Dragon"),
-                        "confirm")
+        spec.buttonLeft("page:end_dragon", UltraStyle.confirm("Summon End Dragon"), "confirm")
                 .rowGap();
         spec.footerBackHome();
         spec.send(player);
     }
 
-    /** End Dragon confirm sub-page — opened from the Summons list. */
     private static void openSummonConfirm(ServerPlayer player) {
         boolean ready = EndDimensionStrength.canOpenSummonMenu(player);
-        boolean free = StaffAccess.isStaff(player);
+        boolean free = PaidFeatureAccess.bypassAncientCoinCost(player);
         String cost = free
                 ? "free for staff"
                 : AncientCoinEconomy.formatExactCost(EndDimensionStrength.summonCopperCost());
@@ -139,44 +253,57 @@ public final class UltraDifficultyScreens {
                 .line(UltraStyle.LABEL + "End Dragon")
                 .labelValue("Cost", cost)
                 .labelValue("Status", ready ? "Ready" : "Requirements not met")
+                .line(UltraStyle.LABEL + "The dragon matches your difficulty. Only you can damage it.")
                 .line(UltraStyle.LABEL + "Travel to The End, then confirm the summon.")
                 .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
         if (ready) {
-            spec.button(
-                            "do:summon_end_dragon",
-                            UltraStyle.confirm("Confirm summon"),
-                            "confirm")
-                    .rowGap();
+            spec.button("do:summon_end_dragon", UltraStyle.confirm("Confirm summon"), "confirm").rowGap();
         } else {
-            spec.button(
-                            "do:summon_end_dragon",
-                            UltraStyle.dim("Confirm summon · locked"),
-                            "dim")
+            spec.line(UltraStyle.dim("Select End Dragon first — clear the notes above, then return."))
+                    .button("do:summon_end_dragon", UltraStyle.dim("Confirm summon · locked"), "dim")
                     .rowGap();
         }
-        spec.button("page:summons", UltraStyle.dim("Back to summons"), "dim").rowGap();
+        spec.buttonLeft("page:summons", UltraStyle.dim("Back to summons"), "dim").rowGap();
         spec.footerBackHome();
         spec.send(player);
     }
 
     private static void openTeam(ServerPlayer player) {
+        if (!DifficultyConfig.isEnabled()) {
+            openFeatureLocked(
+                    player,
+                    "team",
+                    "home",
+                    "Teams locked",
+                    "Adaptive Difficulty is off. Ask staff to enable it before using team scaling.");
+            return;
+        }
+        if (!SystemGate.allows(player)) {
+            openFeatureLocked(
+                    player,
+                    "team",
+                    "home",
+                    "Teams locked",
+                    "You cannot use personal difficulty yet. Ask staff to add you to the whitelist.");
+            return;
+        }
         PlayerDifficultyData data = DifficultyCache.data(player);
-        boolean personal = data != null && data.isPersonalEnabled();
-        TeamMode mode = data == null ? TeamMode.PERSONAL_ONLY : data.getTeamMode();
-        UltraScreenSpec spec = base("team", "home");
+        if (data == null || !data.isPersonalEnabled()) {
+            openFeatureLocked(
+                    player,
+                    "team",
+                    "home",
+                    "Teams locked",
+                    "Turn on Personal difficulty on the Tiers tab first, then return here to pick a team mode.");
+            return;
+        }
+        TeamMode mode = data.getTeamMode();
+        UltraScreenSpec spec = base("team", "home")
+                .line(UltraStyle.LABEL + "How rival teams affect scaling");
         for (String line : DifficultyTeamGuiApi.linesForPage(player, "team")) {
             if (line != null && !line.isBlank()) {
                 spec.line(line);
             }
-        }
-        if (!personal) {
-            spec.notice("Enable personal difficulty before changing team modes.")
-                    .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
-            spec.buttonLeft("do:toggle_personal", UltraStyle.confirm("Personal difficulty"), "confirm")
-                    .rowGap();
-            spec.footerBackHome();
-            spec.send(player);
-            return;
         }
         spec.setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
         spec.buttonLeft(
@@ -198,7 +325,12 @@ public final class UltraDifficultyScreens {
                                 ? UltraStyle.confirm("Full team · on")
                                 : "Full team",
                         mode == TeamMode.FULL_TEAM_SCALING ? "confirm" : "normal")
-                .buttonRight("do:toggle_personal", UltraStyle.confirm("Toggle personal"), "normal")
+                .buttonRight(
+                        "do:toggle_personal",
+                        data.isPersonalEnabled()
+                                ? UltraStyle.confirm("Personal difficulty · ON")
+                                : UltraStyle.dim("Personal difficulty · OFF"),
+                        data.isPersonalEnabled() ? "confirm" : "dim")
                 .rowGap();
         spec.footerBackHome();
         spec.send(player);
@@ -207,13 +339,13 @@ public final class UltraDifficultyScreens {
     private static void openTitles(ServerPlayer player) {
         String active = TitleSystem.activeId(player);
         UltraScreenSpec spec = base("titles", "home")
-                .labelValue("Active title", blank(TitleSystem.activeDisplay(player)))
+                .labelValue("Equipped", blank(TitleSystem.activeDisplay(player)))
                 .labelValue("Title score", String.valueOf(TitleSystem.computeTitleScore(player)))
                 .line(UltraStyle.LABEL + "Equip a title you have unlocked.")
                 .setRow(UltraStyle.CONTENT_ROW_TABS + 80);
         int placed = 0;
         for (DifficultyTitle t : DifficultyTitle.values()) {
-            if (placed >= 8 || t == null) {
+            if (placed >= 10 || t == null) {
                 continue;
             }
             boolean earned = TitleSystem.has(player, t);
@@ -222,7 +354,7 @@ public final class UltraDifficultyScreens {
                     ? UltraStyle.confirm(t.display + " · equipped")
                     : (earned ? t.display : UltraStyle.dim(t.display + " · locked"));
             String style = on ? "confirm" : (earned ? "normal" : "dim");
-            String action = "do:equip_title:" + t.id;
+            String action = "page:title_detail:" + t.id;
             if (placed % 2 == 0) {
                 spec.buttonLeft(action, label, style);
             } else {
@@ -234,20 +366,89 @@ public final class UltraDifficultyScreens {
         if (placed % 2 == 1) {
             spec.rowGap();
         }
-        spec.buttonLeft("do:clear_title", UltraStyle.danger("Unequip title"), "danger")
-                .buttonRight("do:toggle_title_sense", "Title Sense", "normal")
+        PlayerDifficultyData data = DifficultyCache.data(player);
+        boolean sense = data != null && data.titleProgress().titleSenseChat();
+        spec.buttonLeft(
+                        "do:toggle_title_sense",
+                        sense ? UltraStyle.confirm("Title Sense · ON") : UltraStyle.dim("Title Sense · OFF"),
+                        sense ? "confirm" : "dim")
+                .buttonRight("do:clear_title", UltraStyle.danger("Unequip title"), "danger")
                 .rowGap();
         spec.footerBackHome();
         spec.send(player);
+    }
+
+    private static void openTitleDetail(ServerPlayer player, String titleIdRaw) {
+        DifficultyTitle title = DifficultyTitle.byId(titleIdRaw);
+        UltraScreenSpec spec = base("title_detail:" + (titleIdRaw == null ? "" : titleIdRaw), "home");
+        if (title == null) {
+            spec.line(UltraStyle.dim("Couldn't find that — try refreshing the list."))
+                    .setRow(UltraStyle.CONTENT_ROW_TABS + 80);
+            spec.button("page:titles", UltraStyle.dim("Back to titles"), "dim").rowGap();
+            spec.footerBackHome();
+            spec.send(player);
+            return;
+        }
+        boolean earned = TitleSystem.has(player, title);
+        boolean equipped = title.id.equals(TitleSystem.activeId(player));
+        int mastery = DifficultyCache.data(player).titleProgress().masteryLevel(title.id);
+        spec.line(UltraStyle.LABEL + title.masteryDisplay(mastery))
+                .labelValue("Kind", kindLabel(title.kind))
+                .line(earned
+                        ? UltraStyle.confirm("You have this title.")
+                        : UltraStyle.dim("You do not have this yet."))
+                .line(equipped ? UltraStyle.confirm("Currently equipped.") : "")
+                .line(UltraStyle.LABEL + "How to earn " + UltraStyle.VALUE + humanRequirement(title))
+                .line(UltraStyle.LABEL + "Bonus when worn " + UltraStyle.VALUE
+                        + UltraStyle.plain(title.perkTip(mastery)))
+                .labelValue("Title score", "+" + title.scorePoints)
+                .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
+        if (earned && !equipped) {
+            spec.buttonLeft("do:equip_title:" + title.id, UltraStyle.confirm("Equip this title"), "confirm")
+                    .buttonRight("page:titles", UltraStyle.dim("Back"), "dim")
+                    .rowGap();
+        } else if (earned) {
+            spec.buttonLeft("do:equip_title:" + title.id, UltraStyle.confirm("Already equipped"), "confirm")
+                    .buttonRight("page:titles", UltraStyle.dim("Back"), "dim")
+                    .rowGap();
+        } else {
+            spec.line(UltraStyle.dim("Equip unlocks after you earn the title."));
+            spec.button("page:titles", UltraStyle.dim("Back to titles"), "dim").rowGap();
+        }
+        spec.footerBackHome();
+        spec.send(player);
+    }
+
+    private static String kindLabel(DifficultyTitle.Kind kind) {
+        if (kind == null) {
+            return "—";
+        }
+        return switch (kind) {
+            case TIER -> "Tier milestone";
+            case COMBAT -> "Combat challenge";
+            case CHALLENGE -> "Special challenge";
+        };
+    }
+
+    private static String humanRequirement(DifficultyTitle title) {
+        if (title == null) {
+            return "—";
+        }
+        return UltraStyle.plain(title.requirementTip())
+                .replace("DMZ ", "Level ")
+                .replace(" or Prestige ", " or prestige ");
     }
 
     private static void openSettings(ServerPlayer player) {
         PlayerDifficultyData data = DifficultyCache.data(player);
         boolean coinChat = data != null && data.isCoinDropChat();
         UltraScreenSpec spec = base("settings", "home")
+                .line(UltraStyle.LABEL + "Ancient Coin settings")
+                .labelValue("Ancient Coins", AncientCoinEconomy.inventoryBreakdown(player))
                 .line(UltraStyle.LABEL + "Coin drop messages in chat.")
                 .labelValue("Coin messages", coinChat ? "On" : "Off")
-                .setRow(UltraStyle.CONTENT_ROW_TABS + 80);
+                .line(UltraStyle.DIM + "Earn coins from scaled kills and tier play.")
+                .setRow(UltraStyle.CONTENT_ROW_TABS + 90);
         spec.button(
                         "do:toggle_coin_chat",
                         coinChat
@@ -255,6 +456,94 @@ public final class UltraDifficultyScreens {
                                 : UltraStyle.dim("Coin messages · OFF"),
                         coinChat ? "confirm" : "dim")
                 .rowGap();
+        if (StaffAccess.isStaff(player)) {
+            spec.buttonLeft("page:stats", UltraStyle.dim("Staff details"), "dim").rowGap();
+        }
+        spec.footerBackHome();
+        spec.send(player);
+    }
+
+    private static void openStats(ServerPlayer player) {
+        DifficultySnapshot snap = DifficultyCache.refresh(player);
+        PlayerCombatProfile profile = PlayerCombatProfile.of(player);
+        Map<String, String> ph = new HashMap<>();
+        LmOverhaulScaledCombat.putPlaceholders(ph, player);
+        long cr = snap == null ? 0L : (snap.combatRating > 0 ? snap.combatRating : snap.calculated);
+        UltraScreenSpec spec = base("stats", "home")
+                .line(UltraStyle.LABEL + "Combat rating and scaled stats")
+                .labelValue(
+                        "Tier",
+                        (snap == null ? "—" : snap.activeTierName)
+                                + " · State "
+                                + (snap == null ? "—" : snap.state()))
+                .labelValue(
+                        "Combat Rating",
+                        String.valueOf(cr)
+                                + " · Unlocked T"
+                                + (snap == null ? 0 : snap.highestUnlockedTier))
+                .labelValue(
+                        "Level",
+                        (snap == null ? "—" : String.valueOf(snap.dmzLevel))
+                                + " · Prestige "
+                                + (snap == null ? "—" : String.valueOf(snap.prestige)))
+                .labelValue("Title", blank(TitleSystem.activeDisplay(player)))
+                .labelValue(
+                        "Overhaul",
+                        ph.getOrDefault("overhaul_scale", "x1")
+                                + " · Melee "
+                                + ph.getOrDefault("melee_scaled", "?")
+                                + " · Strike "
+                                + ph.getOrDefault("strike_scaled", "?"))
+                .labelValue(
+                        "Ki / Defense",
+                        ph.getOrDefault("ki_scaled", "?") + " / " + ph.getOrDefault("defense_scaled", "?"))
+                .labelValue(
+                        "Class / Style",
+                        blank(profile.fightingClass)
+                                + " / "
+                                + (profile.style == null ? "HYBRID" : profile.style.name()))
+                .labelValue("Top stats", blank(profile.topStatsLabel()))
+                .labelValue("Ancient Coins", AncientCoinEconomy.inventoryBreakdown(player))
+                .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
+        spec.footerBackHome();
+        spec.send(player);
+    }
+
+    private static void openStaffAdmin(ServerPlayer player) {
+        if (!StaffAccess.isStaff(player)) {
+            openHome(player);
+            return;
+        }
+        UltraScreenSpec spec = base("admin", "home")
+                .line(UltraStyle.LABEL + "Server tools · typed admin: /difficulty admin")
+                .line(UltraStyle.DIM + "Reload config, event log, and LM Staff Admin hub")
+                .setRow(UltraStyle.CONTENT_ROW_TABS + 90);
+        spec.buttonLeft("do:reload", UltraStyle.confirm("Reload LM config"), "confirm")
+                .buttonRight("page:stats", UltraStyle.dim("Staff details"), "dim")
+                .rowGap();
+        spec.buttonLeft("open:admin", UltraStyle.danger("LM Staff Admin"), "danger")
+                .buttonRight("page:eventlog", UltraStyle.dim("Event log"), "dim")
+                .rowGap();
+        spec.footerBackHome();
+        spec.send(player);
+    }
+
+    private static void openEventLog(ServerPlayer player) {
+        if (!StaffAccess.isStaff(player)) {
+            openHome(player);
+            return;
+        }
+        UltraScreenSpec spec = base("eventlog", "home")
+                .line(UltraStyle.LABEL + "Unified system event log")
+                .line(UltraStyle.DIM + "Use the toggles, or typed: /lm admin syslog …")
+                .setRow(UltraStyle.CONTENT_ROW_TABS + 90);
+        spec.buttonLeft("do:syslog:status", UltraStyle.confirm("Status"), "confirm")
+                .buttonRight("do:syslog:on", UltraStyle.confirm("Turn ON"), "confirm")
+                .rowGap();
+        spec.buttonLeft("do:syslog:off", UltraStyle.danger("Turn OFF"), "danger")
+                .buttonRight("do:syslog:flush", UltraStyle.dim("Flush"), "dim")
+                .rowGap();
+        spec.button("page:admin", UltraStyle.dim("Back to server tools"), "dim").rowGap();
         spec.footerBackHome();
         spec.send(player);
     }
