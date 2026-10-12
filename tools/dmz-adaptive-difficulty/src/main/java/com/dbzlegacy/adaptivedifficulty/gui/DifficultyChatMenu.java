@@ -26,6 +26,9 @@ import net.minecraft.server.level.ServerPlayer;
 /**
  * Chat fallback when CMI/chest GUI is unavailable.
  * Tier-centric: no difficulty points, no V3 branding.
+ *
+ * <p>Player-facing colors go through {@link UltraStyle} only — never raw section-sign
+ * literals in this class.
  */
 public final class DifficultyChatMenu {
     private DifficultyChatMenu() {}
@@ -79,22 +82,27 @@ public final class DifficultyChatMenu {
     private static void main(ServerPlayer player) {
         DifficultySnapshot snap = DifficultyCache.refresh(player);
         send(player, Component.m_237113_(""));
-        send(player, Component.m_237113_("§8── §fLegacy Mechanics · Difficulty §8──"));
+        send(player, Component.m_237113_(
+                UltraStyle.DIM + "── " + UltraStyle.VALUE + "Legacy Mechanics · Difficulty "
+                        + UltraStyle.DIM + "──"));
         if (!DifficultyConfig.isEnabled()) {
-            send(player, Component.m_237113_("§c§lSYSTEM DISABLED"));
+            send(player, Component.m_237113_(UltraStyle.DANGER + UltraStyle.BOLD + "SYSTEM DISABLED"));
             if (isStaff(player)) {
-                send(player, Component.m_237113_("§8Re-enable: §f/difficulty admin on"));
+                send(player, Component.m_237113_(
+                        UltraStyle.DIM + "Re-enable: " + UltraStyle.VALUE + "/difficulty admin on"));
             } else {
-                send(player, Component.m_237113_("§7Please try again later."));
+                send(player, Component.m_237113_(UltraStyle.LABEL + "Please try again later."));
             }
             return;
         }
         if (!SystemGate.allows(player)) {
-            send(player, Component.m_237113_("§e§lNOT AVAILABLE"));
+            send(player, Component.m_237113_(UltraStyle.YELLOW + UltraStyle.BOLD + "NOT AVAILABLE"));
             if (isStaff(player)) {
-                send(player, Component.m_237113_("§8Whitelist: §f/difficulty admin whitelist add <you>"));
+                send(player, Component.m_237113_(
+                        UltraStyle.DIM + "Whitelist: " + UltraStyle.VALUE
+                                + "/difficulty admin whitelist add <you>"));
             } else {
-                send(player, Component.m_237113_("§7Ask an admin if you need access."));
+                send(player, Component.m_237113_(UltraStyle.LABEL + "Ask an admin if you need access."));
             }
             return;
         }
@@ -102,44 +110,71 @@ public final class DifficultyChatMenu {
         boolean personalOn = data.isPersonalEnabled();
         boolean coinChatOn = data.isCoinDropChat();
         if (!personalOn) {
-            send(player, Component.m_237113_("§e§lDIFFICULTY OFF"));
-            send(player, Component.m_237113_("§7No scaling, kill coins, AI pressure, or tier buys"));
-            send(player, Component.m_237113_("§8Saved tier §f" + snap.activeTierName
-                    + "  §8·  §7Unlocked §fT" + snap.highestUnlockedTier));
+            send(player, Component.m_237113_(UltraStyle.YELLOW + UltraStyle.BOLD + "DIFFICULTY OFF"));
+            send(player, Component.m_237113_(
+                    UltraStyle.LABEL + "No scaling, kill coins, AI pressure, or tier buys"));
+            send(player, Component.m_237113_(
+                    UltraStyle.DIM + "Saved tier " + UltraStyle.VALUE + snap.activeTierName
+                            + "  " + UltraStyle.DIM + UltraStyle.SEP + "  "
+                            + UltraStyle.LABEL + "Unlocked " + UltraStyle.VALUE + "T"
+                            + snap.highestUnlockedTier));
         } else {
-            send(player, Component.m_237113_("§7Tier §f" + snap.activeTierName
-                    + "  §8·  §" + snap.stateColorCode() + snap.state()
-                    + "  §8·  §7Unlocked §fT" + snap.highestUnlockedTier));
+            send(player, Component.m_237113_(
+                    UltraStyle.LABEL + "Tier " + UltraStyle.VALUE + snap.activeTierName
+                            + "  " + UltraStyle.DIM + UltraStyle.SEP + "  "
+                            + UltraStyle.color(snap.stateColorCode(), snap.state())
+                            + "  " + UltraStyle.DIM + UltraStyle.SEP + "  "
+                            + UltraStyle.LABEL + "Unlocked " + UltraStyle.VALUE + "T"
+                            + snap.highestUnlockedTier));
         }
-        send(player, Component.m_237113_("§6Ancient Coins §f" + AncientCoinEconomy.inventoryBreakdown(player)));
+        send(player, Component.m_237113_(
+                UltraStyle.GOLD + "Ancient Coins " + UltraStyle.VALUE
+                        + AncientCoinEconomy.inventoryBreakdown(player)));
         if (!TitleSystem.activeDisplay(player).equals("None")) {
-            send(player, Component.m_237113_("§7Title §e" + TitleSystem.activeDisplay(player)));
+            send(player, Component.m_237113_(
+                    UltraStyle.LABEL + "Title " + UltraStyle.YELLOW + TitleSystem.activeDisplay(player)));
         }
-        send(player, Component.m_237113_("§cWarning: §7Scaled mobs can attack other players as well"));
+        send(player, Component.m_237113_(
+                UltraStyle.DANGER + "Warning: " + UltraStyle.LABEL
+                        + "Scaled mobs can attack other players as well"));
         send(player, Component.m_237113_(""));
-        MutableComponent hub = Component.m_237113_("§7")
-                .m_7220_(btn("§e[Tiers]", "/difficulty do page tiers",
+        MutableComponent hub = Component.m_237113_(UltraStyle.LABEL)
+                .m_7220_(btn(
+                        UltraStyle.YELLOW + "[Tiers]",
+                        "/difficulty do page tiers",
                         "Buy higher · lower unlocked · clear active tier"))
                 .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§d[Titles]", "/difficulty do page titles", "Equip difficulty titles"));
+                .m_7220_(btn(
+                        UltraStyle.LIGHT_PURPLE + "[Titles]",
+                        "/difficulty do page titles",
+                        "Equip difficulty titles"));
         send(player, hub);
-        MutableComponent toggles = Component.m_237113_("§7")
-                .m_7220_(btn(personalOn ? "§e[Turn Difficulty OFF]" : "§a[Turn Difficulty ON]",
+        MutableComponent toggles = Component.m_237113_(UltraStyle.LABEL)
+                .m_7220_(btn(
+                        personalOn
+                                ? UltraStyle.YELLOW + "[Turn Difficulty OFF]"
+                                : UltraStyle.confirm("[Turn Difficulty ON]"),
                         "/difficulty do toggle_personal 0 main",
                         personalOn
                                 ? "Turn OFF — no scaling, kill coins, AI pressure, or tier buys · your summoned dragon despawns"
                                 : "Turn ON — restore scaling. Scaled mobs can attack other players as well"))
                 .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn(coinChatOn ? "§a[Coin messages ON]" : "§8[Coin messages OFF]",
+                .m_7220_(btn(
+                        coinChatOn
+                                ? UltraStyle.confirm("[Coin messages ON]")
+                                : UltraStyle.dim("[Coin messages OFF]"),
                         "/difficulty do toggle_coin_chat 0 main",
                         coinChatOn
                                 ? "Mute Ancient Coin drop chat messages"
                                 : "Show Ancient Coin drop chat messages"));
         send(player, toggles);
         if (isStaff(player)) {
-            send(player, btn("§8[Staff details]", "/difficulty do page stats", "Staff breakdown"));
+            send(player, btn(
+                    UltraStyle.dim("[Staff details]"),
+                    "/difficulty do page stats",
+                    "Staff breakdown"));
         }
-        send(player, btn("§7« Hub", "/lm", "Main hub"));
+        send(player, btn(UltraStyle.LABEL + "\u00AB Hub", "/lm", "Main hub"));
     }
 
     private static void tiers(ServerPlayer player) {
@@ -148,21 +183,37 @@ public final class DifficultyChatMenu {
         int level = DmzProgression.tierScalingDmzLevel(player);
         int active = data.getActiveTier();
         send(player, Component.m_237113_(""));
-        send(player, Component.m_237113_("§8──────── §eDifficulty Tiers §8────────"));
+        send(player, Component.m_237113_(
+                UltraStyle.DIM + "──────── " + UltraStyle.YELLOW + "Difficulty Tiers "
+                        + UltraStyle.DIM + "────────"));
         if (!data.isPersonalEnabled()) {
-            send(player, Component.m_237113_("§ePersonal difficulty is OFF — turn it ON on the main menu to change tiers."));
-            send(player, btn("§7« Back", "/difficulty do page main", "Return"));
+            send(player, Component.m_237113_(
+                    UltraStyle.YELLOW
+                            + "Personal difficulty is OFF — turn it ON on the main menu to change tiers."));
+            send(player, btn(UltraStyle.BACK, "/difficulty do page main", "Return"));
             return;
         }
         int prestige = DmzProgression.prestige(player);
-        send(player, Component.m_237113_("§7Current §f" + (active <= 0 ? "None" : ("T" + active))
-                + "  §8·  §7DMZ §f" + level
-                + "  §8·  §7Prestige §f" + prestige));
-        send(player, Component.m_237113_("§8Upgrades cost Ancient Coins · downgrades are Free · clear active tier."));
-        send(player, Component.m_237113_("§8Unlock with §fDMZ level §8OR §fPrestige §8(either one). Upgrade cost scales with level."));
-        send(player, Component.m_237113_("§f" + AncientCoinEconomy.inventoryBreakdown(player)));
+        send(player, Component.m_237113_(
+                UltraStyle.LABEL + "Current " + UltraStyle.VALUE
+                        + (active <= 0 ? "None" : ("T" + active))
+                        + "  " + UltraStyle.DIM + UltraStyle.SEP + "  "
+                        + UltraStyle.LABEL + "DMZ " + UltraStyle.VALUE + level
+                        + "  " + UltraStyle.DIM + UltraStyle.SEP + "  "
+                        + UltraStyle.LABEL + "Prestige " + UltraStyle.VALUE + prestige));
+        send(player, Component.m_237113_(
+                UltraStyle.DIM + "Upgrades cost Ancient Coins · downgrades are Free · clear active tier."));
+        send(player, Component.m_237113_(
+                UltraStyle.DIM + "Unlock with " + UltraStyle.VALUE + "DMZ level " + UltraStyle.DIM + "OR "
+                        + UltraStyle.VALUE + "Prestige " + UltraStyle.DIM
+                        + "(either one). Upgrade cost scales with level."));
+        send(player, Component.m_237113_(
+                UltraStyle.VALUE + AncientCoinEconomy.inventoryBreakdown(player)));
         send(player, Component.m_237113_(""));
-        send(player, btn("§c[Clear active tier]", "/difficulty do lower_tier 0 tiers", "Clear active tier"));
+        send(player, btn(
+                UltraStyle.danger("[Clear active tier]"),
+                "/difficulty do lower_tier 0 tiers",
+                "Clear active tier"));
         for (UnlockTier tier : UnlockTier.values()) {
             boolean freeCost = PaidFeatureAccess.bypassAncientCoinCost(player);
             boolean unlocked = data.hasUnlockedTier(tier.id);
@@ -199,52 +250,80 @@ public final class DifficultyChatMenu {
             send(player, line);
         }
         send(player, Component.m_237113_(""));
-        send(player, btn("§7« Back", "/difficulty do page main", "Return"));
+        send(player, btn(UltraStyle.BACK, "/difficulty do page main", "Return"));
     }
 
     private static void titles(ServerPlayer player) {
         TitleSystem.syncTierTitles(player, true);
         PlayerDifficultyData data = DifficultyCache.data(player);
         send(player, Component.m_237113_(""));
-        send(player, Component.m_237113_("§8──────── §dDifficulty Titles §8────────"));
-        send(player, Component.m_237113_("§7Unlock with DMZ level or Prestige — keeps after lowering tier."));
-        send(player, Component.m_237113_("§7Swap freely. Rarity adds landing relief · AD damage · TP."));
-        send(player, Component.m_237113_("§7Equipped §e" + TitleSystem.activeDisplay(player)));
-        send(player, btn("§c[Clear Title]", "/difficulty do clear_title 0 titles", "Unequip title"));
+        send(player, Component.m_237113_(
+                UltraStyle.DIM + "──────── " + UltraStyle.LIGHT_PURPLE + "Difficulty Titles "
+                        + UltraStyle.DIM + "────────"));
+        send(player, Component.m_237113_(
+                UltraStyle.LABEL + "Unlock with DMZ level or Prestige — keeps after lowering tier."));
+        send(player, Component.m_237113_(
+                UltraStyle.LABEL + "Swap freely. Rarity adds landing relief · AD damage · TP."));
+        send(player, Component.m_237113_(
+                UltraStyle.LABEL + "Equipped " + UltraStyle.YELLOW + TitleSystem.activeDisplay(player)));
+        send(player, btn(
+                UltraStyle.danger("[Clear Title]"),
+                "/difficulty do clear_title 0 titles",
+                "Unequip title"));
         send(player, Component.m_237113_(""));
         for (DifficultyTitle title : DifficultyTitle.values()) {
             boolean earned = TitleSystem.has(player, title);
             MutableComponent line = Component.m_237113_(
-                    (earned ? "§6" : "§8") + title.display + " §7" + title.requirementTip());
+                    (earned ? UltraStyle.GOLD : UltraStyle.DIM)
+                            + title.display
+                            + " "
+                            + UltraStyle.LABEL
+                            + title.requirementTip());
             if (earned) {
                 boolean equipped = title.id.equals(data.getActiveTitle());
                 if (equipped) {
-                    line = line.m_7220_(Component.m_237113_(" §aEQUIPPED"));
+                    line = line.m_7220_(Component.m_237113_(" " + UltraStyle.confirm("EQUIPPED")));
                 } else {
                     line = line.m_7220_(Component.m_237113_(" "))
-                            .m_7220_(btn("§a[EQUIP]", "/difficulty do equip_title " + title.id + " titles",
+                            .m_7220_(btn(
+                                    UltraStyle.confirm("[EQUIP]"),
+                                    "/difficulty do equip_title " + title.id + " titles",
                                     "Equip " + title.display));
                 }
             }
             send(player, line);
         }
         send(player, Component.m_237113_(""));
-        send(player, btn("§7« Back", "/difficulty do page main", "Return"));
+        send(player, btn(UltraStyle.BACK, "/difficulty do page main", "Return"));
     }
 
     private static void teams(ServerPlayer player) {
         send(player, Component.m_237113_(""));
-        send(player, Component.m_237113_("§8──────── §bRival Teams §8────────"));
-        for (String line : com.dbzlegacy.adaptivedifficulty.gui.DifficultyTeamGuiApi.linesForPage(player, "team")) {
-            send(player, Component.m_237113_(line));
+        send(player, Component.m_237113_(
+                UltraStyle.DIM + "──────── " + UltraStyle.AQUA + "Rival Teams "
+                        + UltraStyle.DIM + "────────"));
+        for (String line : DifficultyTeamGuiApi.linesForPage(player, "team")) {
+            // API may still carry legacy marks; strip and re-label plain for chat until that API migrates.
+            send(player, Component.m_237113_(UltraStyle.LABEL + UltraStyle.plain(line)));
         }
         send(player, Component.m_237113_(""));
-        send(player, btn("§7Personal", "/difficulty do team personal team", "Personal ceiling only — no rival bonus."));
-        send(player, btn("§aThreshold", "/difficulty do team threshold team", "Extra max + harder spawns"));
-        send(player, btn("§2Full team", "/difficulty do team full team",
+        send(player, btn(
+                UltraStyle.LABEL + "Personal",
+                "/difficulty do team personal team",
+                "Personal ceiling only — no rival bonus."));
+        send(player, btn(
+                UltraStyle.confirm("Threshold"),
+                "/difficulty do team threshold team",
+                "Extra max + harder spawns"));
+        send(player, btn(
+                UltraStyle.DARK_GREEN + "Full team",
+                "/difficulty do team full team",
                 "Threshold + nearby spare + stronger spawn boost when rivals are close"));
-        send(player, btn("§6Open Rival", "/rival", "Manage mutual rivals"));
-        send(player, btn("§7« Back", "/difficulty do page main", "Return"));
+        send(player, btn(
+                UltraStyle.GOLD + "Open Rival",
+                "/rival",
+                "Manage mutual rivals"));
+        send(player, btn(UltraStyle.BACK, "/difficulty do page main", "Return"));
     }
 
     private static void stats(ServerPlayer player) {
@@ -254,23 +333,38 @@ public final class DifficultyChatMenu {
         }
         DifficultySnapshot snap = DifficultyCache.refresh(player);
         PlayerCombatProfile profile = PlayerCombatProfile.of(player);
-        send(player, Component.m_237113_("§8── §fDetails §8(staff) ──"));
-        send(player, Component.m_237113_("§7Tier §f" + snap.activeTierName
-                + "  §8·  §7State §" + snap.stateColorCode() + snap.state()));
-        send(player, Component.m_237113_("§7Combat Rating §f" + snap.combatRating
-                + "  §8·  §7DMZ §f" + snap.dmzLevel
-                + "  §8·  §7Prestige §f" + snap.prestige));
-        send(player, Component.m_237113_("§7Class §f"
-                + (profile.fightingClass.isBlank() ? "?" : profile.fightingClass)
-                + "  §8·  §7Style §f" + profile.style.name()));
-        send(player, Component.m_237113_("§7Top stats §f" + profile.topStatsLabel()));
+        send(player, Component.m_237113_(
+                UltraStyle.DIM + "── " + UltraStyle.VALUE + "Details " + UltraStyle.DIM + "(staff) ──"));
+        send(player, Component.m_237113_(
+                UltraStyle.LABEL + "Tier " + UltraStyle.VALUE + snap.activeTierName
+                        + "  " + UltraStyle.DIM + UltraStyle.SEP + "  "
+                        + UltraStyle.LABEL + "State "
+                        + UltraStyle.color(snap.stateColorCode(), snap.state())));
+        send(player, Component.m_237113_(
+                UltraStyle.LABEL + "Combat Rating " + UltraStyle.VALUE + snap.combatRating
+                        + "  " + UltraStyle.DIM + UltraStyle.SEP + "  "
+                        + UltraStyle.LABEL + "DMZ " + UltraStyle.VALUE + snap.dmzLevel
+                        + "  " + UltraStyle.DIM + UltraStyle.SEP + "  "
+                        + UltraStyle.LABEL + "Prestige " + UltraStyle.VALUE + snap.prestige));
+        send(player, Component.m_237113_(
+                UltraStyle.LABEL + "Class " + UltraStyle.VALUE
+                        + (profile.fightingClass.isBlank() ? "?" : profile.fightingClass)
+                        + "  " + UltraStyle.DIM + UltraStyle.SEP + "  "
+                        + UltraStyle.LABEL + "Style " + UltraStyle.VALUE + profile.style.name()));
+        send(player, Component.m_237113_(
+                UltraStyle.LABEL + "Top stats " + UltraStyle.VALUE + profile.topStatsLabel()));
         for (String line : LmOverhaulScaledCombat.compactLines(DmzProgression.stats(player))) {
-            send(player, Component.m_237113_(line));
+            send(player, Component.m_237113_(UltraStyle.LABEL + UltraStyle.plain(line)));
         }
-        send(player, Component.m_237113_("§7Unlocked §fT" + snap.highestUnlockedTier
-                + "  §8·  §7Title §e" + TitleSystem.activeDisplay(player)));
-        send(player, Component.m_237113_("§6Ancient Coins §f" + AncientCoinEconomy.inventoryBreakdown(player)));
-        send(player, btn("§7« Back", "/difficulty do page main", "Return"));
+        send(player, Component.m_237113_(
+                UltraStyle.LABEL + "Unlocked " + UltraStyle.VALUE + "T" + snap.highestUnlockedTier
+                        + "  " + UltraStyle.DIM + UltraStyle.SEP + "  "
+                        + UltraStyle.LABEL + "Title " + UltraStyle.YELLOW
+                        + TitleSystem.activeDisplay(player)));
+        send(player, Component.m_237113_(
+                UltraStyle.GOLD + "Ancient Coins " + UltraStyle.VALUE
+                        + AncientCoinEconomy.inventoryBreakdown(player)));
+        send(player, btn(UltraStyle.BACK, "/difficulty do page main", "Return"));
     }
 
     private static void settings(ServerPlayer player) {
@@ -279,27 +373,39 @@ public final class DifficultyChatMenu {
             return;
         }
         DifficultyConfig cfg = DifficultyConfig.get();
-        send(player, Component.m_237113_("§8──────── §fAdmin §8────────"));
         send(player, Component.m_237113_(
-                (cfg.enabled ? "§aSystem ENABLED" : "§cSystem DISABLED")
-                        + " §8· "
+                UltraStyle.DIM + "──────── " + UltraStyle.VALUE + "Admin " + UltraStyle.DIM + "────────"));
+        send(player, Component.m_237113_(
+                (cfg.enabled ? UltraStyle.confirm("System ENABLED") : UltraStyle.danger("System DISABLED"))
+                        + " " + UltraStyle.DIM + UltraStyle.SEP + " "
                         + (cfg.whitelistEnabled
-                        ? "§eWhitelist ON §7(" + DifficultyConfig.whitelistEntries().size() + ")"
-                        : "§7Whitelist OFF")));
-        send(player, Component.m_237113_("§8/difficulty admin off|on · whitelist on|off|add|remove|list"));
+                                ? UltraStyle.YELLOW + "Whitelist ON " + UltraStyle.LABEL + "("
+                                        + DifficultyConfig.whitelistEntries().size() + ")"
+                                : UltraStyle.LABEL + "Whitelist OFF")));
         send(player, Component.m_237113_(
-                "§7Staff Ancient Coin pricing §8→ §f/lm §7→ Progression → Ancient Coins"));
-        send(player, Component.m_237113_("§7Tier cost anchor §f" + (long) cfg.tierCostLevelAnchor
-                + " §8· T7 target §f" + cfg.tierCostT7TargetCopper
-                + " copper"));
-        send(player, Component.m_237113_("§8/difficulty admin set tierCostLevelAnchor|tierCostT7TargetCopper <n>"));
-        send(player, Component.m_237113_("§7Coin drops §f" + cfg.enableAncientCoinDrops
-                + "  §7Death reset §f" + cfg.deathResetsActiveDifficulty));
-        send(player, Component.m_237113_("§7Drop chance §f" + cfg.ancientCoinDropChance
-                + "  §7Dual upgrade §f" + cfg.ancientCoinUpgradeChance
-                + " §8(stock 0.05 / 0.005)"));
-        send(player, Component.m_237113_("§8/difficulty admin set ancientCoinDropChance|ancientCoinUpgradeChance <0-1>"));
-        send(player, btn("§7« Back", "/difficulty do page main", "Return"));
+                UltraStyle.DIM + "/difficulty admin off|on · whitelist on|off|add|remove|list"));
+        send(player, Component.m_237113_(
+                UltraStyle.LABEL + "Staff Ancient Coin pricing " + UltraStyle.DIM + "→ "
+                        + UltraStyle.VALUE + "/lm " + UltraStyle.LABEL + "→ Progression → Ancient Coins"));
+        send(player, Component.m_237113_(
+                UltraStyle.LABEL + "Tier cost anchor " + UltraStyle.VALUE + (long) cfg.tierCostLevelAnchor
+                        + " " + UltraStyle.DIM + UltraStyle.SEP + " T7 target " + UltraStyle.VALUE
+                        + cfg.tierCostT7TargetCopper + " copper"));
+        send(player, Component.m_237113_(
+                UltraStyle.DIM + "/difficulty admin set tierCostLevelAnchor|tierCostT7TargetCopper <n>"));
+        send(player, Component.m_237113_(
+                UltraStyle.LABEL + "Coin drops " + UltraStyle.VALUE + cfg.enableAncientCoinDrops
+                        + "  " + UltraStyle.LABEL + "Death reset " + UltraStyle.VALUE
+                        + cfg.deathResetsActiveDifficulty));
+        send(player, Component.m_237113_(
+                UltraStyle.LABEL + "Drop chance " + UltraStyle.VALUE + cfg.ancientCoinDropChance
+                        + "  " + UltraStyle.LABEL + "Dual upgrade " + UltraStyle.VALUE
+                        + cfg.ancientCoinUpgradeChance
+                        + " " + UltraStyle.DIM + "(stock 0.05 / 0.005)"));
+        send(player, Component.m_237113_(
+                UltraStyle.DIM
+                        + "/difficulty admin set ancientCoinDropChance|ancientCoinUpgradeChance <0-1>"));
+        send(player, btn(UltraStyle.BACK, "/difficulty do page main", "Return"));
     }
 
     private static MutableComponent btn(String label, String command, String hover) {

@@ -21,6 +21,9 @@ public final class UltraStyle {
     public static final String RED;
     public static final String DARK_GRAY;
     public static final String YELLOW;
+    public static final String AQUA;
+    public static final String LIGHT_PURPLE;
+    public static final String DARK_GREEN;
 
     public static final String HEADER;
     public static final String LABEL;
@@ -105,6 +108,9 @@ public final class UltraStyle {
         RED = MARK + "c";
         DARK_GRAY = MARK + "8";
         YELLOW = MARK + "e";
+        AQUA = MARK + "b";
+        LIGHT_PURPLE = MARK + "d";
+        DARK_GREEN = MARK + "2";
         HEADER = GOLD + BOLD;
         LABEL = GRAY;
         VALUE = WHITE;
@@ -183,5 +189,17 @@ public final class UltraStyle {
     /** Boost preset caption, e.g. {@code 1.25× · 30m}. */
     public static String boostPreset(String mult, String minutes) {
         return plain(mult) + TIMES + " " + SEP + " " + plain(minutes) + "m";
+    }
+
+    /**
+     * Apply a single-letter Minecraft color code (e.g. {@code "a"}, {@code "e"}) from
+     * APIs like {@code DifficultySnapshot.stateColorCode()}. Prefer named constants when
+     * the color is known at the call site.
+     */
+    public static String color(String codeLetter, String text) {
+        String letter = codeLetter == null || codeLetter.isBlank()
+                ? "f"
+                : codeLetter.trim().substring(0, 1);
+        return MARK + letter + plain(text);
     }
 }
