@@ -73,9 +73,18 @@ def main() -> int:
         "bareHubOpenTarget",
         "hasVerbPrefix",
         "rawActionId",
+        "requiresStaff",
+        "rejectStaffGated",
+        "StaffAccess.isStaff",
+        "That menu action is not available.",
     ):
         if needle not in actions_src:
             errors.append(f"UltraGuiActions missing {needle}")
+    if "rejectStaffGated(" not in actions_src or actions_src.count("rejectStaffGated(") < 3:
+        # declaration + dispatch + dispatchResolved
+        errors.append(
+            "UltraGuiActions must call rejectStaffGated from dispatch and dispatchResolved"
+        )
     for system in (
         "character",
         "difficulty",

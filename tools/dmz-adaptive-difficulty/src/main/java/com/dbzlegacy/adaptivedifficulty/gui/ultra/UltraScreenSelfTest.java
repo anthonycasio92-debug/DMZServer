@@ -312,6 +312,78 @@ public final class UltraScreenSelfTest {
     }
 
     /**
+     * Staff trust boundary: forged GuiActionPackets for admin/config/progression/skills /
+     * {@code do:admin:*} / reload must require staff. Player systems must not.
+     */
+    public static void verifyStaffGate() {
+        List<String> broken = new ArrayList<>();
+        for (String system : List.of("admin", "config", "progression", "skills")) {
+            if (!UltraGuiActions.isStaffOnlySystem(system)) {
+                broken.add("isStaffOnlySystem missing " + system);
+            }
+            if (!UltraGuiActions.requiresStaff(system, "nav:home")) {
+                broken.add("staff screen " + system + " must require staff");
+            }
+            if (!UltraGuiActions.requiresStaff("hub", "open:" + system)) {
+                broken.add("open:" + system + " must require staff");
+            }
+        }
+        for (String act :
+                List.of(
+                        "do:admin:status",
+                        "do:reload",
+                        "do:syslog:status",
+                        "do:guitest_ack",
+                        "do:migrate-cnpc",
+                        "admin",
+                        "config",
+                        "progression",
+                        "skills")) {
+            if (!UltraGuiActions.requiresStaff("hub", act)) {
+                broken.add(act + " must require staff on hub");
+            }
+        }
+        if (!UltraGuiActions.requiresStaff("rival", "do:admin:status")) {
+            broken.add("rival do:admin:status must require staff");
+        }
+        if (!UltraGuiActions.requiresStaff("spar", "do:admin:status")) {
+            broken.add("spar do:admin:status must require staff");
+        }
+        for (String act :
+                List.of(
+                        "open:difficulty",
+                        "open:rival",
+                        "open:spar",
+                        "open:prestige",
+                        "open:character",
+                        "open:skillcheck",
+                        "do:activate:1",
+                        "tab:tiers",
+                        "nav:hub")) {
+            if (UltraGuiActions.requiresStaff("hub", act)) {
+                broken.add("player action wrongly staff-gated: " + act);
+            }
+        }
+        if (UltraGuiActions.requiresStaff("rival", "do:challenge:accept")) {
+            broken.add("rival challenge must stay player-facing");
+        }
+        if (UltraGuiActions.requiresStaff("difficulty", "do:activate:1")) {
+            broken.add("difficulty activate must stay player-facing");
+        }
+        if (broken.isEmpty()) {
+            AdaptiveDifficultyMod.LOGGER.info(
+                    "[{}] Ultra staff gate self-check OK", AdaptiveDifficultyMod.MOD_ID);
+        } else {
+            AdaptiveDifficultyMod.LOGGER.error(
+                    "[{}] Ultra staff gate self-check FAILED: {}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    broken);
+            throw new IllegalStateException(
+                    "LegacyMechanics Ultra staff gate self-check failed: " + broken);
+        }
+    }
+
+    /**
      * Audit hub + Home-tab {@code open:} targets: each must normalize to a registered builder
      * and not collapse to hub unless the target truly is hub.
      */

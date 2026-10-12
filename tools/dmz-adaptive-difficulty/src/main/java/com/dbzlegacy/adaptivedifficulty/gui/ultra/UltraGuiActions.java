@@ -11,9 +11,11 @@ import com.dbzlegacy.adaptivedifficulty.gui.SparGuiApi;
 import com.dbzlegacy.adaptivedifficulty.quest.SagaResetService;
 import com.dbzlegacy.adaptivedifficulty.service.DifficultyActions;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
+import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import java.util.Locale;
 import net.minecraft.server.level.ServerPlayer;
 
 /** Dispatches KaiPath GuiActionPacket presses to existing server menu APIs. */
@@ -63,6 +65,11 @@ public final class UltraGuiActions {
                 action,
                 args);
 
+        // Trust boundary: hiding staff buttons is not enough — reject forged packets here.
+        if (rejectStaffGated(player, screen, action, actionId)) {
+            return;
+        }
+
         try {
             dispatchResolved(player, screen, action, args, actionId);
         } catch (Throwable t) {
@@ -103,6 +110,11 @@ public final class UltraGuiActions {
             args = new JsonObject();
         }
         String safeScreen = screen == null || screen.isBlank() ? "hub" : screen;
+
+        // Defense in depth — same gate as dispatch() (covers any future call sites).
+        if (rejectStaffGated(player, safeScreen, action, rawActionId)) {
+            return;
+        }
 
         // KaiPath sometimes sends bare system names (e.g. "character") from the hub
         // instead of open:character / @hub:open:character.
@@ -242,8 +254,92 @@ public final class UltraGuiActions {
         if (screen == null || screen.isBlank()) {
             return true;
         }
-        String s = screen.toLowerCase();
+        String s = screen.toLowerCase(Locale.ROOT);
         return "hub".equals(s) || "lm".equals(s) || "legacymechanics".equals(s) || "main".equals(s);
+    }
+
+    /**
+     * Staff-only Ultra systems. Non-staff must not open these or run actions on them,
+     * even if a forged {@code GuiActionPacket} names them.
+     */
+    static boolean isStaffOnlySystem(String system) {
+        if (system == null || system.isBlank()) {
+            return false;
+        }
+        String id = UltraScreenIds.normalizeLogical(system);
+        return "admin".equals(id)
+                || "config".equals(id)
+                || "progression".equals(id)
+                || "skills".equals(id);
+    }
+
+    /**
+     * Whether this resolved screen/action requires {@link StaffAccess#isStaff}.
+     * Covers staff screens, {@code open:} / bare opens to them, {@code do:admin:*},
+     * hub reload/syslog/migrate, and guitest ack.
+     */
+    static boolean requiresStaff(String screen, String action) {
+        if (isStaffOnlySystem(screen)) {
+            return true;
+        }
+        if (action == null || action.isBlank()) {
+            return false;
+        }
+        String a = action.trim();
+        if (a.startsWith("open:")) {
+            return isStaffOnlySystem(a.substring(5));
+        }
+        if (!hasVerbPrefix(a)) {
+            String bare = UltraScreenIds.bareOpenTarget(a);
+            return bare != null && isStaffOnlySystem(bare);
+        }
+        if ("do:guitest_ack".equals(a) || "guitest_ack".equals(a)) {
+            return true;
+        }
+        if (!a.startsWith("do:")) {
+            return false;
+        }
+        DoParts parts = parseDo(a);
+        if (parts == null || parts.action == null || parts.action.isBlank()) {
+            return false;
+        }
+        String act = parts.action.toLowerCase(Locale.ROOT);
+        return switch (act) {
+            case "admin",
+                    "reload",
+                    "reloadconfig",
+                    "syslog",
+                    "migrate-cnpc",
+                    "migratecnpc",
+                    "cnpcmigrate",
+                    "guitest_ack" -> true;
+            default -> false;
+        };
+    }
+
+    /**
+     * @return {@code true} when the action was rejected (caller must stop)
+     */
+    static boolean rejectStaffGated(
+            ServerPlayer player, String screen, String action, String rawActionId) {
+        if (!requiresStaff(screen, action)) {
+            return false;
+        }
+        if (player != null && StaffAccess.isStaff(player)) {
+            return false;
+        }
+        AdaptiveDifficultyMod.LOGGER.warn(
+                "[{}] Ultra staff action denied player={} screen={} action={} rawActionId={}",
+                AdaptiveDifficultyMod.MOD_ID,
+                safeName(player),
+                screen,
+                action,
+                rawActionId);
+        if (player != null) {
+            DmzRewards.msg(
+                    player, UltraStyle.dangerLine("That menu action is not available."));
+        }
+        return true;
     }
 
     /**
