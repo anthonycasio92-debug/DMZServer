@@ -70,6 +70,8 @@ public final class UltraGui {
                 case "spar" -> UltraSparScreens.open(player, pg);
                 case "prestige" -> UltraPrestigeScreens.open(player, pg);
                 case "character" -> UltraCharacterScreens.open(player, pg);
+                case "skillcheck" -> UltraSkillCheckScreens.open(player, pg);
+                case "skills" -> UltraSkillCheckScreens.openSkillsAdmin(player, pg);
                 case "progression" -> UltraProgressionScreens.open(player, pg);
                 case "config" -> UltraConfigScreens.open(player, pg);
                 default -> {

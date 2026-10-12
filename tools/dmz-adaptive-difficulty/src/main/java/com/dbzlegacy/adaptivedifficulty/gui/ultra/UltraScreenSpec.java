@@ -16,6 +16,11 @@ import net.minecraft.server.level.ServerPlayer;
  * UltraStyle#PANEL_H}), centered with a screen margin. Button action ids are qualified as
  * {@code @&lt;screenId&gt;:&lt;action&gt;} so KaiPath can omit or mishandle {@code screenId} and
  * the server still routes correctly.
+ *
+ * <p>Layout JSON includes shared body/button metrics ({@code lineHeight}, {@code lineGap},
+ * {@code bodyMaxHeight}, {@code scrollBody}, {@code buttonPad}, …) so every screen benefits.
+ * Optional {@link #playerModel} declares a client-rendered entity preview (JLDK implements
+ * rendering; unknown clients ignore the field).
  */
 public final class UltraScreenSpec {
     private static final Gson GSON = new Gson();
@@ -31,11 +36,14 @@ public final class UltraScreenSpec {
     private final List<String> lines = new ArrayList<>();
     private final List<Button> buttons = new ArrayList<>();
     /** Compact title + tab row; content starts immediately below. */
-    private int nextRow = 28;
+    private int nextRow = UltraStyle.CONTENT_ROW;
     private int panelWidth = UltraStyle.PANEL_W;
     private int panelHeight = UltraStyle.PANEL_H;
     private boolean centerPanel = true;
     private int panelMargin = UltraStyle.PANEL_MARGIN;
+    private PlayerModel playerModel;
+    /** Lowest button top Y seen so far; used to size the body scroll region. */
+    private int firstButtonY = -1;
 
     private UltraScreenSpec(String screenId) {
         this.screenId = screenId == null || screenId.isBlank() ? "hub" : screenId.trim();
@@ -94,6 +102,28 @@ public final class UltraScreenSpec {
         return this;
     }
 
+    /**
+     * Optional client-rendered player model preview. Unknown clients ignore this field;
+     * layout and buttons still work. JLDK draws the entity; LM only declares bounds.
+     */
+    public UltraScreenSpec playerModel(
+            int x, int y, int width, int height, float scale, boolean rotate) {
+        this.playerModel = new PlayerModel(
+                x,
+                y,
+                Math.max(16, width),
+                Math.max(16, height),
+                scale <= 0f ? 1f : scale,
+                rotate);
+        return this;
+    }
+
+    /** Clear any previously set player model (default: off). */
+    public UltraScreenSpec clearPlayerModel() {
+        this.playerModel = null;
+        return this;
+    }
+
     public UltraScreenSpec tabs(String... idLabelPairs) {
         tabs.clear();
         if (idLabelPairs == null) {
@@ -144,14 +174,19 @@ public final class UltraScreenSpec {
             String actionId, String label, String style, int x, int y, int w) {
         UltraScreenIds.requireValidActionId(screenId, actionId, label);
         int width = Math.max(UltraStyle.BTN_MIN_W, w);
+        String resolvedStyle = normalizeStyle(style);
+        if (firstButtonY < 0 || y < firstButtonY) {
+            firstButtonY = y;
+        }
         buttons.add(new Button(
                 qualifyAction(actionId),
                 UltraStyle.buttonLabel(label),
-                style == null ? "normal" : style,
+                resolvedStyle,
                 x,
                 y,
                 width,
-                UltraStyle.BTN_H));
+                UltraStyle.BTN_H,
+                UltraStyle.BTN_PAD));
         return this;
     }
 
@@ -189,6 +224,16 @@ public final class UltraScreenSpec {
             height = Math.min(UltraStyle.PANEL_MAX_H, contentBottom);
         }
 
+        int lineStep = UltraStyle.LINE_H + UltraStyle.LINE_GAP;
+        int naturalBodyH = lines.isEmpty() ? 0 : lines.size() * lineStep;
+        // Body region sits under title/tabs and above the first button row (or panel bottom).
+        int bodyBottom = firstButtonY < 0
+                ? height - UltraStyle.PANEL_MARGIN
+                : Math.min(firstButtonY - UltraStyle.BTN_GAP, height - UltraStyle.PANEL_MARGIN);
+        int bodyMaxH = Math.max(
+                UltraStyle.BODY_MIN_H, Math.max(lineStep, bodyBottom - UltraStyle.BODY_TOP));
+        boolean scrollBody = naturalBodyH > bodyMaxH || contentBottom > UltraStyle.PANEL_MAX_H;
+
         JsonArray tabArr = new JsonArray();
         for (Tab tab : tabs) {
             if (tab == null || tab.id == null) {
@@ -224,6 +269,7 @@ public final class UltraScreenSpec {
             o.addProperty("y", b.y);
             o.addProperty("w", b.w);
             o.addProperty("h", b.h);
+            o.addProperty("pad", b.pad);
             JsonObject args = new JsonObject();
             // Logical system — echoed by KaiPath into GuiActionPacket even when wire screenId is hub.
             args.addProperty("screen", screenId);
@@ -239,9 +285,29 @@ public final class UltraScreenSpec {
         layout.addProperty("height", height);
         layout.addProperty("center", centerPanel);
         layout.addProperty("margin", panelMargin);
+        // Shared body / button metrics — every screen benefits.
+        layout.addProperty("lineHeight", UltraStyle.LINE_H);
+        layout.addProperty("lineGap", UltraStyle.LINE_GAP);
+        layout.addProperty("bodyTop", UltraStyle.BODY_TOP);
+        layout.addProperty("bodyMaxHeight", bodyMaxH);
+        layout.addProperty("scrollBody", scrollBody);
+        layout.addProperty("buttonPad", UltraStyle.BTN_PAD);
+        layout.addProperty("buttonGap", UltraStyle.BTN_GAP);
+        layout.addProperty("buttonMinWidth", UltraStyle.BTN_MIN_W);
+        layout.addProperty("buttonHeight", UltraStyle.BTN_H);
         // Logical system metadata (survives hub wire shim in layoutJson).
         layout.addProperty(UltraScreenIds.META_SYSTEM, screenId);
         layout.addProperty("screen", screenId);
+        if (playerModel != null) {
+            JsonObject pm = new JsonObject();
+            pm.addProperty("x", playerModel.x);
+            pm.addProperty("y", playerModel.y);
+            pm.addProperty("width", playerModel.width);
+            pm.addProperty("height", playerModel.height);
+            pm.addProperty("scale", playerModel.scale);
+            pm.addProperty("rotate", playerModel.rotate);
+            layout.add("playerModel", pm);
+        }
         return new GuiOpenPacket(
                 screenId,
                 title,
@@ -280,7 +346,21 @@ public final class UltraScreenSpec {
         return "@" + screenId + ":" + raw;
     }
 
+    private static String normalizeStyle(String style) {
+        if (style == null || style.isBlank()) {
+            return "normal";
+        }
+        String s = style.trim().toLowerCase();
+        return switch (s) {
+            case "confirm", "danger", "dim", "normal" -> s;
+            default -> "normal";
+        };
+    }
+
     private record Tab(String id, String label) {}
 
-    private record Button(String actionId, String label, String style, int x, int y, int w, int h) {}
+    private record Button(
+            String actionId, String label, String style, int x, int y, int w, int h, int pad) {}
+
+    private record PlayerModel(int x, int y, int width, int height, float scale, boolean rotate) {}
 }

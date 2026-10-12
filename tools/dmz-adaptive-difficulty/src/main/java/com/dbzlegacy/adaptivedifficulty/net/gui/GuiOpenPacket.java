@@ -92,7 +92,7 @@ public final class GuiOpenPacket {
                 layoutJson == null || layoutJson.isBlank()
                         ? defaultLayoutJson(this.panelWidth, this.panelHeight)
                         : layoutJson,
-                512);
+                1024);
     }
 
     public String screenId() {

@@ -36,6 +36,14 @@ public class LmDynamicScreen extends UltraScreen {
     private int panelH;
     private boolean center = true;
     private int margin = GuiOpenPacket.DEFAULT_MARGIN;
+    private int lineHeight = 14;
+    private int lineGap = 4;
+    private int bodyTop = 36;
+    private int bodyMaxHeight = 96;
+    private boolean scrollBody = true;
+    private int buttonPad = 8;
+    private int buttonMinWidth = 80;
+    private JsonObject playerModel;
     private final List<String> bodyLines = new ArrayList<>();
 
     public LmDynamicScreen(GuiOpenPacket packet) {
@@ -99,17 +107,34 @@ public class LmDynamicScreen extends UltraScreen {
             cursorY += 20;
         }
 
-        // Body lines
+        // Body lines — honor layoutJson lineHeight/lineGap/bodyMaxHeight; scroll, don't squeeze
         JsonArray lines = parseArray(packet.linesJson());
         for (JsonElement el : lines) {
             if (el != null && el.isJsonPrimitive()) {
                 bodyLines.add(el.getAsString());
             }
         }
-        int listH = Math.min(72, Math.max(12, bodyLines.size() * 12));
+        int lineStep = Math.max(8, lineHeight + lineGap);
+        int naturalH = bodyLines.isEmpty() ? 0 : bodyLines.size() * lineStep;
+        int listH = scrollBody
+                ? Math.min(Math.max(bodyMaxHeight, lineStep), Math.max(lineStep, naturalH > 0 ? bodyMaxHeight : 0))
+                : Math.max(lineStep, naturalH);
         if (!bodyLines.isEmpty()) {
-            addThemedList(panelX + 8, cursorY, Math.max(1, panelW - 16), listH, bodyLines);
-            cursorY += listH + 6;
+            int listY = panelY + Math.max(cursorY - panelY, bodyTop);
+            addThemedList(panelX + 8, listY, Math.max(1, panelW - 16), listH, bodyLines);
+            cursorY = listY + listH + 6;
+        }
+
+        // Optional playerModel — JLDK draws the entity; unknown clients ignore the field.
+        if (playerModel != null) {
+            UltraUiBridge.LOGGER.debug(
+                    "[kaipath] playerModel present x={} y={} w={} h={} scale={} rotate={}",
+                    intVal(playerModel, "x", 0),
+                    intVal(playerModel, "y", 0),
+                    intVal(playerModel, "width", 0),
+                    intVal(playerModel, "height", 0),
+                    playerModel.has("scale") ? playerModel.get("scale").getAsFloat() : 1f,
+                    playerModel.has("rotate") && playerModel.get("rotate").getAsBoolean());
         }
 
         // Buttons — dynamic from buttonsJson; x/y relative to panel origin
@@ -126,8 +151,13 @@ public class LmDynamicScreen extends UltraScreen {
             String label = str(b, "label", id);
             int x = intVal(b, "x", 8);
             int y = intVal(b, "y", cursorY - panelY);
-            int w = intVal(b, "w", 150);
+            int w = Math.max(buttonMinWidth, intVal(b, "w", 150));
             int h = intVal(b, "h", 18);
+            int pad = intVal(b, "pad", buttonPad);
+            // pad reserved for themed button label inset (min width already enforced)
+            if (pad < 0) {
+                pad = buttonPad;
+            }
             String argsJson = "{}";
             if (b.has("args") && b.get("args").isJsonObject()) {
                 argsJson = b.get("args").toString();
@@ -137,7 +167,7 @@ public class LmDynamicScreen extends UltraScreen {
             addThemedButton(
                     panelX + x,
                     panelY + y,
-                    Math.max(20, w),
+                    Math.max(buttonMinWidth, w),
                     Math.max(12, h),
                     stripSection(label),
                     () -> echoClick(actionId, args));
@@ -165,6 +195,14 @@ public class LmDynamicScreen extends UltraScreen {
     private void parseLayout() {
         center = true;
         margin = GuiOpenPacket.DEFAULT_MARGIN;
+        lineHeight = 14;
+        lineGap = 4;
+        bodyTop = 36;
+        bodyMaxHeight = 96;
+        scrollBody = true;
+        buttonPad = 8;
+        buttonMinWidth = 80;
+        playerModel = null;
         panelW = packet.panelWidth() > 0 ? packet.panelWidth() : GuiOpenPacket.DEFAULT_PANEL_W;
         panelH = packet.panelHeight() > 0 ? packet.panelHeight() : GuiOpenPacket.DEFAULT_PANEL_H;
         String layout = packet.layoutJson();
@@ -200,6 +238,30 @@ public class LmDynamicScreen extends UltraScreen {
                 if (h > 0) {
                     panelH = h;
                 }
+            }
+            if (o.has("lineHeight")) {
+                lineHeight = Math.max(8, o.get("lineHeight").getAsInt());
+            }
+            if (o.has("lineGap")) {
+                lineGap = Math.max(0, o.get("lineGap").getAsInt());
+            }
+            if (o.has("bodyTop")) {
+                bodyTop = Math.max(0, o.get("bodyTop").getAsInt());
+            }
+            if (o.has("bodyMaxHeight")) {
+                bodyMaxHeight = Math.max(lineHeight, o.get("bodyMaxHeight").getAsInt());
+            }
+            if (o.has("scrollBody") && o.get("scrollBody").isJsonPrimitive()) {
+                scrollBody = o.get("scrollBody").getAsBoolean();
+            }
+            if (o.has("buttonPad")) {
+                buttonPad = Math.max(0, o.get("buttonPad").getAsInt());
+            }
+            if (o.has("buttonMinWidth")) {
+                buttonMinWidth = Math.max(20, o.get("buttonMinWidth").getAsInt());
+            }
+            if (o.has("playerModel") && o.get("playerModel").isJsonObject()) {
+                playerModel = o.getAsJsonObject("playerModel");
             }
         } catch (Throwable t) {
             UltraUiBridge.LOGGER.warn("[kaipath] layoutJson parse failed — using defaults", t);

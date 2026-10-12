@@ -33,6 +33,8 @@ public final class UltraScreenIds {
             "spar",
             "prestige",
             "character",
+            "skillcheck",
+            "skills",
             "progression",
             "config",
             "admin");
@@ -54,6 +56,8 @@ public final class UltraScreenIds {
             "spar",
             "prestige",
             "character",
+            "skillcheck",
+            "skills",
             "progression",
             "config",
             "admin");
@@ -71,6 +75,8 @@ public final class UltraScreenIds {
             "spar",
             "prestige",
             "character",
+            "skillcheck",
+            "skills",
             "progression",
             "config");
 
@@ -86,6 +92,8 @@ public final class UltraScreenIds {
             Map.entry("sparring", "spar"),
             Map.entry("charservices", "character"),
             Map.entry("char", "character"),
+            Map.entry("skill_check", "skillcheck"),
+            Map.entry("skill", "skills"),
             Map.entry("prog", "progression"),
             Map.entry("cfgedit", "config"),
             Map.entry("configeditor", "config"));
@@ -167,7 +175,9 @@ public final class UltraScreenIds {
             case "admin" -> "admin";
             case "android_remove", "androidremove" -> "character";
             case "team" -> "difficulty";
-            case "skills", "skill", "skillcheck", "skill_check", "logs", "syslog" -> "hub";
+            case "skillcheck", "skill_check" -> "skillcheck";
+            case "skills", "skill" -> "skills";
+            case "logs", "syslog" -> "hub";
             default -> {
                 if (PROTOCOL_IDS.contains(key) || BUILDER_IDS.contains(key)) {
                     yield key;

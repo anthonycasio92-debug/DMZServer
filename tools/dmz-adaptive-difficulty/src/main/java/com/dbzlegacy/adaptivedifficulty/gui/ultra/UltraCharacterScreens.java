@@ -31,11 +31,13 @@ public final class UltraCharacterScreens {
     }
 
     private static UltraScreenSpec base(String page, String tab) {
+        // Player-model preview on the right of the info band (client-rendered; optional).
         return UltraScreenSpec.of("character")
                 .title("Character Services")
                 .page(page)
                 .activeTab(tab)
-                .tabs("home|Home", "saga|Saga Reset", "android|Android Removal");
+                .tabs("home|Home", "saga|Saga Reset", "android|Android Removal")
+                .playerModel(248, 36, 86, 120, 1.0f, true);
     }
 
     private static void openHome(ServerPlayer player) {

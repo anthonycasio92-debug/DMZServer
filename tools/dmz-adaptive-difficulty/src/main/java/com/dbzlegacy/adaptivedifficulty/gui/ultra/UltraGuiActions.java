@@ -171,6 +171,16 @@ public final class UltraGuiActions {
             return;
         }
 
+        // Hub dim tile when the player lacks Skill Check access.
+        if ("do:skillcheck_denied".equals(action) || "skillcheck_denied".equals(action)) {
+            DmzRewards.msg(
+                    player,
+                    UltraStyle.noticeLine(
+                            "Skill Check is a donator perk — ask staff if you want access."));
+            UltraGui.openHub(player, "main");
+            return;
+        }
+
         // Diagnostic button from /lm admin guitest
         if ("do:guitest_ack".equals(action) || "guitest_ack".equals(action)) {
             AdaptiveDifficultyMod.LOGGER.info(
@@ -283,6 +293,7 @@ public final class UltraGuiActions {
                 case "progression" -> nullToEmpty(ProgressionGuiApi.handleDo(player, act, arg, page));
                 case "config" -> nullToEmpty(UltraConfigScreens.handleAction(player, act, arg, page));
                 case "hub", "admin" -> nullToEmpty(MechanicsGuiApi.handleDo(player, act, arg, page));
+                case "skillcheck", "skills" -> "";
                 case "team" -> nullToEmpty(DifficultyTeamGuiApi.handleDo(player, act, arg, page));
                 default -> null;
             };
@@ -491,6 +502,7 @@ public final class UltraGuiActions {
             case "rival" -> "home";
             case "config" -> "list";
             case "admin" -> "admin";
+            case "skillcheck", "skills" -> "main";
             default -> "main";
         };
     }
@@ -526,6 +538,11 @@ public final class UltraGuiActions {
             case "progression" -> switch (t) {
                 case "boosts" -> "boosts";
                 case "coins" -> "coins";
+                default -> "main";
+            };
+            case "skillcheck", "skills" -> switch (t) {
+                case "skills", "core", "natural", "saga", "list" -> "skills";
+                case "help", "about" -> "help";
                 default -> "main";
             };
             default -> homePage(screen);

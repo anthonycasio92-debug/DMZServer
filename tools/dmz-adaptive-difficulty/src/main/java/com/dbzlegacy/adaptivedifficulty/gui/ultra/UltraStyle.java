@@ -42,25 +42,38 @@ public final class UltraStyle {
     public static final String BACK;
     public static final String BACK_TO_MAIN;
     public static final int BTN_MIN_W = 80;
-    public static final int BTN_PAD = 6;
+    /** Horizontal padding inside buttons (client honors via layoutJson / button pad). */
+    public static final int BTN_PAD = 8;
     public static final int BTN_H = 18;
     /** Vertical gap between button rows (top-to-top advance = BTN_H + BTN_GAP). */
-    public static final int BTN_GAP = 4;
+    public static final int BTN_GAP = 6;
     public static final int COL_L = 16;
     public static final int COL_R = 174;
     public static final int BTN_W = 150;
 
     /**
-     * Compact Ultra centered dialog (not fullscreen). Defaults 350×220; may grow to
-     * {@link #PANEL_MAX_H} when content requires it.
+     * Compact Ultra centered dialog (not fullscreen). Defaults 350×260; may grow to
+     * {@link #PANEL_MAX_H} when content requires it. Body text scrolls rather than
+     * compressing when content exceeds the panel.
      */
     public static final int PANEL_W = 350;
-    public static final int PANEL_H = 220;
+    public static final int PANEL_H = 260;
     public static final int PANEL_MIN_W = 300;
-    public static final int PANEL_MIN_H = 180;
-    public static final int PANEL_MAX_H = 320;
+    public static final int PANEL_MIN_H = 200;
+    public static final int PANEL_MAX_H = 360;
     /** Gap between panel edge and screen edge when centered. */
-    public static final int PANEL_MARGIN = 6;
+    public static final int PANEL_MARGIN = 8;
+
+    /** Body-text line height (GUI pixels). Client should not squeeze below this. */
+    public static final int LINE_H = 14;
+    /** Extra gap between body lines (top-to-top advance = LINE_H + LINE_GAP). */
+    public static final int LINE_GAP = 4;
+    /** Y where the body/scroll region starts under title + tabs. */
+    public static final int BODY_TOP = 36;
+    /** Minimum body scroll region height so lines stay readable. */
+    public static final int BODY_MIN_H = 96;
+    /** Default content row after title/tabs (buttons start here when not overridden). */
+    public static final int CONTENT_ROW = 36;
 
     static {
         // Unicode escape keeps the mark out of other sources; static-init prevents folding.

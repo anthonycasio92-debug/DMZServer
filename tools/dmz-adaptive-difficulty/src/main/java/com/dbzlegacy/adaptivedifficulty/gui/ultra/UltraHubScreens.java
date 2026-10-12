@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.gui.ultra;
 
 import com.dbzlegacy.adaptivedifficulty.gui.MechanicsGuiApi;
+import com.dbzlegacy.adaptivedifficulty.progression.shop.SkillCheckService;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import java.util.List;
 import java.util.Locale;
@@ -43,18 +44,33 @@ public final class UltraHubScreens {
                 }
             }
         }
-        spec.setRow(72);
+        spec.setRow(80);
         systemButton(spec, ph, "difficulty", UltraStyle.confirm("Difficulty"), true);
         systemButton(spec, ph, "rival", "Rival", false);
         spec.rowGap();
         systemButton(spec, ph, "spar", "Sparring", true);
         systemButton(spec, ph, "prestige", "Prestige", false);
         spec.rowGap();
-        spec.buttonLeft("open:character", UltraStyle.confirm("Character Services"), "normal");
-        if (StaffAccess.isStaff(player)) {
-            spec.buttonRight("open:admin", UltraStyle.danger("Staff Admin"), "danger");
+        // Match CNPC hub: Skill Check (or staff Skills) left, Character Services right.
+        boolean skillCheck = SkillCheckService.canUse(player);
+        boolean staff = StaffAccess.isStaff(player);
+        if (skillCheck) {
+            spec.buttonLeft("open:skillcheck", UltraStyle.confirm("Skill Check"), "confirm");
+        } else if (staff) {
+            spec.buttonLeft("open:skills", UltraStyle.confirm("Skills"), "confirm");
+        } else {
+            spec.buttonLeft(
+                    "do:skillcheck_denied",
+                    UltraStyle.dim("Skill Check"),
+                    "dim");
         }
-        spec.rowGap().setRow(spec.row() + UltraStyle.BTN_GAP).footerBackToMain();
+        spec.buttonRight("open:character", UltraStyle.confirm("Character Services"), "confirm");
+        spec.rowGap();
+        if (staff) {
+            spec.buttonLeft("open:admin", UltraStyle.danger("Staff Admin"), "danger");
+            spec.rowGap();
+        }
+        // Hub IS the main menu — do not call footerBackToMain() here.
         spec.send(player);
     }
 
@@ -72,13 +88,13 @@ public final class UltraHubScreens {
                 .activeTab("home")
                 .line(UltraStyle.LABEL + "Reload, config editor, progression tools")
                 .line(UltraStyle.DIM + "Full commands: /lm admin help")
-                .setRow(64);
+                .setRow(80);
         spec.button("do:reload", UltraStyle.confirm("Reload LM config"), "confirm")
                 .rowGap();
         spec.buttonLeft("open:progression", "Progression panel", "normal")
                 .buttonRight("open:config", "Config editor", "normal")
                 .rowGap();
-        spec.setRow(spec.row() + 8).footerBackToMain();
+        spec.setRow(spec.row() + UltraStyle.BTN_GAP).footerBackToMain();
         spec.send(player);
     }
 

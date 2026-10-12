@@ -23,9 +23,9 @@ public final class UltraGuiProtocol {
     /** Default panel size when a packet omits fields 8–9. */
     public static final int DEFAULT_PANEL_WIDTH = 350;
 
-    public static final int DEFAULT_PANEL_HEIGHT = 220;
+    public static final int DEFAULT_PANEL_HEIGHT = 260;
 
-    public static final int DEFAULT_MARGIN = 6;
+    public static final int DEFAULT_MARGIN = 8;
 
     /** Message index: GuiOpenPacket S→C. */
     public static final int MSG_OPEN = 0;

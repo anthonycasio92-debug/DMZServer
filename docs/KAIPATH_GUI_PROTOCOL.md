@@ -49,8 +49,9 @@ Every button object in `buttonsJson`:
 | `style` | no | string | Visual role — see table below (default `normal`) |
 | `x` | yes | number | Panel-relative X |
 | `y` | yes | number | Panel-relative Y |
-| `w` | yes | number | Width |
+| `w` | yes | number | Width (minimum **80** — never shrink for long labels) |
 | `h` | yes | number | Height |
+| `pad` | no | number | Horizontal label padding (default **8**) |
 | `args` | recommended | object | Opaque JSON echoed to the server |
 
 ```json
@@ -62,6 +63,7 @@ Every button object in `buttonsJson`:
   "y": 100,
   "w": 150,
   "h": 18,
+  "pad": 8,
   "args": { "screen": "difficulty", "page": "tiers" }
 }
 ```
@@ -153,8 +155,8 @@ Protocol `"1"`. Message 0 open, 1 action, 2 features (optional).
 | 6 | `linesJson` | string | JSON array of body lines |
 | 7 | `buttonsJson` | string | JSON array of button objects (incl. **style**) |
 | 8 | `panelWidth` | varint | Default **350** |
-| 9 | `panelHeight` | varint | Default **220** |
-| 10 | `layoutJson` | string | JSON object |
+| 9 | `panelHeight` | varint | Default **260** |
+| 10 | `layoutJson` | string | JSON object (panel + body/button metrics + optional `playerModel`) |
 
 Missing trailing fields → defaults. Bytes after field 10 ignored.
 
@@ -171,16 +173,63 @@ Missing trailing fields → defaults. Bytes after field 10 ignored.
 ```json
 {
   "panelWidth": 350,
-  "panelHeight": 220,
+  "panelHeight": 260,
   "width": 350,
-  "height": 220,
+  "height": 260,
   "center": true,
-  "margin": 6
+  "margin": 8,
+  "lineHeight": 14,
+  "lineGap": 4,
+  "bodyTop": 36,
+  "bodyMaxHeight": 120,
+  "scrollBody": true,
+  "buttonPad": 8,
+  "buttonGap": 6,
+  "buttonMinWidth": 80,
+  "buttonHeight": 18,
+  "playerModel": {
+    "x": 248,
+    "y": 36,
+    "width": 86,
+    "height": 120,
+    "scale": 1.0,
+    "rotate": true
+  }
 }
 ```
 
 Panel at `((screenW - panelWidth) / 2, (screenH - panelHeight) / 2)` when `center` is true;
 honor `margin`. Button `x`/`y` are panel-relative.
+
+#### Shared body / button metrics
+
+| Field | Meaning |
+|-------|---------|
+| `lineHeight` | Body line height in GUI pixels (do **not** squeeze below this) |
+| `lineGap` | Extra gap between body lines |
+| `bodyTop` | Panel-relative Y where the body/scroll region starts |
+| `bodyMaxHeight` | Vertical room for body text inside the panel |
+| `scrollBody` | When `true`, long body content **scrolls** instead of compressing |
+| `buttonPad` | Horizontal padding inside buttons (default **8**) |
+| `buttonGap` | Vertical gap between button rows |
+| `buttonMinWidth` | Minimum button width (**80**) — never shrink for long labels |
+| `buttonHeight` | Standard button height |
+
+Buttons also carry per-button `pad` (same default). Overlong labels truncate with `…`;
+pages scroll rather than squeezing buttons.
+
+#### `playerModel` (optional, client-rendered)
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `x`, `y` | number | Panel-relative origin |
+| `width`, `height` | number | Bounds for the preview |
+| `scale` | number | Entity scale (default `1.0`) |
+| `rotate` | boolean | Slow turntable when `true` |
+
+**Backward compatible:** clients that do not know `playerModel` ignore it; the rest of the
+layout still works. JLDK implements the entity rendering; the server only declares position
+and size. Screen builders opt in per screen (LM Character Services uses it; others default off).
 
 ### 5. Action verb contract (recommended)
 
@@ -196,15 +245,17 @@ LM enforces this at packet **build** time via `UltraScreenIds.requireValidAction
 String buttons = "["
     + "{\"id\":\"@myshop:do:ping\",\"label\":\"§aPing\","
     + "\"style\":\"confirm\",\"x\":20,\"y\":80,\"w\":150,\"h\":18,"
-    + "\"args\":{\"screen\":\"hello\",\"page\":\"main\"}}"
+    + "\"pad\":8,\"args\":{\"screen\":\"hello\",\"page\":\"main\"}}"
     + "]";
 GuiOpenPacket open = new GuiOpenPacket(
     "hello", "§6My Shop", "main",
     "[{\"id\":\"home\",\"label\":\"Home\"}]",
     "home",
     "[\"Welcome.\"]",
-    buttons, 350, 220,
-    "{\"center\":true,\"margin\":6}");
+    buttons, 350, 260,
+    "{\"center\":true,\"margin\":8,\"lineHeight\":14,\"lineGap\":4,"
+        + "\"bodyTop\":36,\"bodyMaxHeight\":96,\"scrollBody\":true,"
+        + "\"buttonPad\":8,\"buttonGap\":6,\"buttonMinWidth\":80,\"buttonHeight\":18}");
 CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), open);
 ```
 

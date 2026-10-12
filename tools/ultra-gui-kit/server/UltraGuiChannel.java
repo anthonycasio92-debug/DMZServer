@@ -29,8 +29,8 @@ public final class UltraGuiChannel {
     public static final String PROTOCOL_VERSION = "1";
 
     public static final int DEFAULT_PANEL_WIDTH = 350;
-    public static final int DEFAULT_PANEL_HEIGHT = 220;
-    public static final int DEFAULT_MARGIN = 6;
+    public static final int DEFAULT_PANEL_HEIGHT = 260;
+    public static final int DEFAULT_MARGIN = 8;
 
     private UltraGuiChannel() {}
 

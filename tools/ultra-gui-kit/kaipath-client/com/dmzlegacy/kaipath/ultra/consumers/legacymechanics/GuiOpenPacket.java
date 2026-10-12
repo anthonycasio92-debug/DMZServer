@@ -11,8 +11,8 @@ import net.minecraftforge.network.NetworkEvent;
  */
 public final class GuiOpenPacket {
     public static final int DEFAULT_PANEL_W = 350;
-    public static final int DEFAULT_PANEL_H = 220;
-    public static final int DEFAULT_MARGIN = 6;
+    public static final int DEFAULT_PANEL_H = 260;
+    public static final int DEFAULT_MARGIN = 8;
 
     private final String screenId;
     private final String title;
@@ -45,7 +45,7 @@ public final class GuiOpenPacket {
         this.buttonsJson = blankTo(trim(buttonsJson, 8192), "[]");
         this.panelWidth = panelWidth > 0 ? panelWidth : DEFAULT_PANEL_W;
         this.panelHeight = panelHeight > 0 ? panelHeight : DEFAULT_PANEL_H;
-        this.layoutJson = trim(layoutJson, 512);
+        this.layoutJson = trim(layoutJson, 1024);
     }
 
     public static GuiOpenPacket emptyHub() {
@@ -59,7 +59,9 @@ public final class GuiOpenPacket {
                 "[]",
                 DEFAULT_PANEL_W,
                 DEFAULT_PANEL_H,
-                "{\"center\":true,\"margin\":6}");
+                "{\"center\":true,\"margin\":8,\"lineHeight\":14,\"lineGap\":4,"
+                        + "\"bodyTop\":36,\"bodyMaxHeight\":96,\"scrollBody\":true,"
+                        + "\"buttonPad\":8,\"buttonGap\":6,\"buttonMinWidth\":80,\"buttonHeight\":18}");
     }
 
     public String screenId() {

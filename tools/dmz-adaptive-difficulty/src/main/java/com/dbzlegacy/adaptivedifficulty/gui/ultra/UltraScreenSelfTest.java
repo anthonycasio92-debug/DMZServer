@@ -84,8 +84,13 @@ public final class UltraScreenSelfTest {
                             .tabs("home|Home")
                             .line("self-test")
                             .buttonLeft("open:difficulty", "Difficulty", "normal")
-                            .buttonRight("open:character", "Character", "normal")
-                            .footerBackToMain();
+                            .buttonRight("open:rival", "Rival", "normal")
+                            .rowGap()
+                            .buttonLeft("open:spar", "Sparring", "normal")
+                            .buttonRight("open:prestige", "Prestige", "normal")
+                            .rowGap()
+                            .buttonLeft("open:skillcheck", "Skill Check", "confirm")
+                            .buttonRight("open:character", "Character", "confirm");
                     case "admin" -> UltraScreenSpec.of("admin")
                             .title("Staff Admin")
                             .page("admin")
@@ -131,7 +136,24 @@ public final class UltraScreenSelfTest {
                             .activeTab("home")
                             .tabs("home|Home", "saga|Saga Reset", "android|Android Removal")
                             .line("self-test")
+                            .playerModel(248, 36, 86, 120, 1.0f, true)
                             .footerBackHome();
+                    case "skillcheck" -> UltraScreenSpec.of("skillcheck")
+                            .title("Skill Check")
+                            .page("main")
+                            .activeTab("home")
+                            .tabs("home|Home", "skills|Skills", "help|Help")
+                            .line("self-test")
+                            .buttonLeft("tab:skills", "View skills", "confirm")
+                            .footerBackToMain();
+                    case "skills" -> UltraScreenSpec.of("skills")
+                            .title("Skills")
+                            .page("main")
+                            .activeTab("home")
+                            .tabs("home|Home", "skills|Skills", "help|Help")
+                            .line("self-test")
+                            .buttonLeft("tab:skills", "View skills", "confirm")
+                            .footerBackToMain();
                     case "progression" -> UltraScreenSpec.of("progression")
                             .title("Progression")
                             .page("main")
@@ -287,6 +309,87 @@ public final class UltraScreenSelfTest {
         } else {
             AdaptiveDifficultyMod.LOGGER.warn(
                     "[{}] Ultra tab: self-check issues: {}", AdaptiveDifficultyMod.MOD_ID, issues);
+        }
+    }
+
+    /**
+     * Audit hub + Home-tab {@code open:} targets: each must normalize to a registered builder
+     * and not collapse to hub unless the target truly is hub.
+     */
+    public static void verifyMenuLinks() {
+        List<String> broken = new ArrayList<>();
+        List<String[]> expected =
+                List.of(
+                        new String[] {"hub", "open:difficulty", "difficulty"},
+                        new String[] {"hub", "open:rival", "rival"},
+                        new String[] {"hub", "open:spar", "spar"},
+                        new String[] {"hub", "open:prestige", "prestige"},
+                        new String[] {"hub", "open:skillcheck", "skillcheck"},
+                        new String[] {"hub", "open:skills", "skills"},
+                        new String[] {"hub", "open:character", "character"},
+                        new String[] {"hub", "open:admin", "admin"},
+                        new String[] {"admin", "open:progression", "progression"},
+                        new String[] {"admin", "open:config", "config"},
+                        new String[] {"difficulty", "open:admin", "admin"},
+                        new String[] {"prestige", "open:prestige", "prestige"});
+        for (String[] row : expected) {
+            String from = row[0];
+            String action = row[1];
+            String want = row[2];
+            String target = action.startsWith("open:") ? action.substring(5) : action;
+            String logical = UltraScreenIds.normalizeLogical(target);
+            if (!want.equals(logical)) {
+                broken.add(from + " " + action + " → normalize=" + logical + " (want " + want + ")");
+                continue;
+            }
+            if (!UltraScreenIds.BUILDER_IDS.contains(logical)
+                    && !UltraScreenIds.PROTOCOL_IDS.contains(logical)) {
+                broken.add(from + " " + action + " → " + logical + " not in BUILDER/PROTOCOL ids");
+            }
+        }
+        // Structural: hub probe must emit skillcheck + character opens, not nav:hub back.
+        List<GuiOpenPacket> hubPkts =
+                UltraScreenSpec.captureSends(() -> probeBuilder("hub"));
+        if (hubPkts.isEmpty()) {
+            broken.add("hub: no packet for link audit");
+        } else {
+            String buttons = hubPkts.get(0).buttonsJson() == null ? "" : hubPkts.get(0).buttonsJson();
+            if (!buttons.contains("open:skillcheck") && !buttons.contains("open:skills")) {
+                broken.add("hub: missing open:skillcheck / open:skills button");
+            }
+            if (!buttons.contains("open:character")) {
+                broken.add("hub: missing open:character button");
+            }
+            if (buttons.contains("nav:hub")) {
+                broken.add("hub: still has nav:hub (Back to main menu) — remove footerBackToMain");
+            }
+            if (hubPkts.get(0).layoutJson() == null
+                    || !hubPkts.get(0).layoutJson().contains("scrollBody")) {
+                broken.add("hub: layoutJson missing scrollBody / shared body metrics");
+            }
+            if (hubPkts.get(0).layoutJson() == null
+                    || !hubPkts.get(0).layoutJson().contains("\"buttonPad\":")) {
+                broken.add("hub: layoutJson missing buttonPad");
+            }
+        }
+        List<GuiOpenPacket> charPkts =
+                UltraScreenSpec.captureSends(() -> probeBuilder("character"));
+        if (!charPkts.isEmpty()) {
+            String layout = charPkts.get(0).layoutJson() == null ? "" : charPkts.get(0).layoutJson();
+            if (!layout.contains("playerModel")) {
+                broken.add("character: layoutJson missing playerModel");
+            }
+        }
+        if (broken.isEmpty()) {
+            AdaptiveDifficultyMod.LOGGER.info(
+                    "[{}] Ultra menu link audit OK ({} open: targets + hub/character layout checks)",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    expected.size());
+        } else {
+            AdaptiveDifficultyMod.LOGGER.error(
+                    "[{}] Ultra menu link audit FAILED: {}", AdaptiveDifficultyMod.MOD_ID, broken);
+            throw new IllegalStateException(
+                    "LegacyMechanics Ultra menu link audit failed: " + broken);
         }
     }
 

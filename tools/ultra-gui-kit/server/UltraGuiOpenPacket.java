@@ -59,7 +59,7 @@ public final class UltraGuiOpenPacket {
         this.buttonsJson = blankTo(trim(buttonsJson, 8192), "[]");
         this.panelWidth = panelWidth > 0 ? panelWidth : UltraGuiChannel.DEFAULT_PANEL_WIDTH;
         this.panelHeight = panelHeight > 0 ? panelHeight : UltraGuiChannel.DEFAULT_PANEL_HEIGHT;
-        this.layoutJson = trim(layoutJson, 512);
+        this.layoutJson = trim(layoutJson, 1024);
     }
 
     public String screenId() {
