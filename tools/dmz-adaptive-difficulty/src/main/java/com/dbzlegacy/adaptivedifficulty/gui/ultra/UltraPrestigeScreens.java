@@ -65,10 +65,9 @@ public final class UltraPrestigeScreens {
                 spec.line(UltraStyle.danger("You need a higher level first."));
             }
         }
-        spec.setRow(140);
-        spec.buttonLeft("tab:prestige", UltraStyle.confirm("Prestige"), "normal")
-                .buttonRight("tab:shop", "Shop", "normal")
-                .rowGap();
+        // Overview only — Prestige turn-in and Shop live on their tabs.
+        spec.line(UltraStyle.LABEL + "Open the Prestige tab to turn in, or Shop to spend favor.")
+                .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
         spec.footerBackToMain();
         spec.send(player);
     }

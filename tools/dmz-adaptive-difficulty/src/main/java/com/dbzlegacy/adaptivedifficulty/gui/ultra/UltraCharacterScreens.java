@@ -40,14 +40,15 @@ public final class UltraCharacterScreens {
                 .playerModel(248, 36, 86, 120, 1.0f, true);
     }
 
+    /** Overview + look tools only — Saga / Android live on their tabs. */
     private static void openHome(ServerPlayer player) {
         Map<String, String> ph = CharacterServicesGuiApi.placeholders(player);
         UltraScreenSpec spec = base("main", "home")
                 .labelValue("Race", ph.getOrDefault("current_race", "—"))
                 .labelValue("Class", ph.getOrDefault("current_class", "—"))
                 .labelValue("Services", "true".equals(ph.get("enabled")) ? "On" : "Off")
-                .line(UltraStyle.LABEL + "Race and class pickers use the full Character menu when needed.")
-                .setRow(110);
+                .line(UltraStyle.LABEL + "Use the Saga Reset and Android Removal tabs for those services.")
+                .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
         if ("true".equals(ph.get("can_reskin"))) {
             spec.buttonLeft("do:reskin_confirm", UltraStyle.confirm("Reskin"), "confirm");
         }
@@ -57,9 +58,6 @@ public final class UltraCharacterScreens {
         if ("true".equals(ph.get("can_reskin")) || "true".equals(ph.get("can_head_bones"))) {
             spec.rowGap();
         }
-        spec.buttonLeft("tab:saga", "Saga Reset", "normal")
-                .buttonRight("tab:android", UltraStyle.danger("Android Removal"), "danger")
-                .rowGap();
         spec.footerBackToMain();
         spec.send(player);
     }

@@ -142,17 +142,13 @@ public final class UltraScreenSelfTest {
                             .title("Skill Check")
                             .page("main")
                             .activeTab("home")
-                            .tabs("home|Home", "skills|Skills", "help|Help")
                             .line("self-test")
-                            .buttonLeft("tab:skills", "View skills", "confirm")
                             .footerBackToMain();
                     case "skills" -> UltraScreenSpec.of("skills")
                             .title("Skills")
                             .page("main")
                             .activeTab("home")
-                            .tabs("home|Home", "skills|Skills", "help|Help")
                             .line("self-test")
-                            .buttonLeft("tab:skills", "View skills", "confirm")
                             .footerBackToMain();
                     case "progression" -> UltraScreenSpec.of("progression")
                             .title("Progression")
@@ -445,6 +441,10 @@ public final class UltraScreenSelfTest {
                     || !hubPkts.get(0).layoutJson().contains("\"buttonPad\":")) {
                 broken.add("hub: layoutJson missing buttonPad");
             }
+            if (hubPkts.get(0).layoutJson() == null
+                    || !hubPkts.get(0).layoutJson().contains("titleAlign")) {
+                broken.add("hub: layoutJson missing titleAlign");
+            }
         }
         List<GuiOpenPacket> charPkts =
                 UltraScreenSpec.captureSends(() -> probeBuilder("character"));
@@ -452,6 +452,14 @@ public final class UltraScreenSelfTest {
             String layout = charPkts.get(0).layoutJson() == null ? "" : charPkts.get(0).layoutJson();
             if (!layout.contains("playerModel")) {
                 broken.add("character: layoutJson missing playerModel");
+            }
+        }
+        List<GuiOpenPacket> skillPkts =
+                UltraScreenSpec.captureSends(() -> probeBuilder("skillcheck"));
+        if (!skillPkts.isEmpty()) {
+            String tabs = skillPkts.get(0).tabsJson() == null ? "" : skillPkts.get(0).tabsJson();
+            if (tabs.contains("tab:") || tabs.contains("\"id\"")) {
+                broken.add("skillcheck: must have no tab bar (empty tabsJson)");
             }
         }
         if (broken.isEmpty()) {

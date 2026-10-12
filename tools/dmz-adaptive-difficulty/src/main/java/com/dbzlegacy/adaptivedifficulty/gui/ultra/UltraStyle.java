@@ -57,23 +57,31 @@ public final class UltraStyle {
      * compressing when content exceeds the panel.
      */
     public static final int PANEL_W = 350;
-    public static final int PANEL_H = 260;
+    public static final int PANEL_H = 300;
     public static final int PANEL_MIN_W = 300;
-    public static final int PANEL_MIN_H = 200;
-    public static final int PANEL_MAX_H = 360;
+    public static final int PANEL_MIN_H = 220;
+    public static final int PANEL_MAX_H = 380;
     /** Gap between panel edge and screen edge when centered. */
-    public static final int PANEL_MARGIN = 8;
+    public static final int PANEL_MARGIN = 10;
 
     /** Body-text line height (GUI pixels). Client should not squeeze below this. */
-    public static final int LINE_H = 14;
+    public static final int LINE_H = 16;
     /** Extra gap between body lines (top-to-top advance = LINE_H + LINE_GAP). */
-    public static final int LINE_GAP = 4;
-    /** Y where the body/scroll region starts under title + tabs. */
-    public static final int BODY_TOP = 36;
+    public static final int LINE_GAP = 8;
+    /** Vertical padding inside the body scroll region. */
+    public static final int BODY_PAD = 10;
+    /** Y where the body/scroll region starts under a title-only header. */
+    public static final int BODY_TOP = 42;
+    /** Y where the body starts when a tab strip is present. */
+    public static final int BODY_TOP_TABS = 60;
     /** Minimum body scroll region height so lines stay readable. */
-    public static final int BODY_MIN_H = 96;
-    /** Default content row after title/tabs (buttons start here when not overridden). */
-    public static final int CONTENT_ROW = 36;
+    public static final int BODY_MIN_H = 140;
+    /** Default content row after title (no tabs). */
+    public static final int CONTENT_ROW = 40;
+    /** Default content row after title + tabs. */
+    public static final int CONTENT_ROW_TABS = 58;
+    /** Title alignment in layoutJson: {@code center} or {@code left}. */
+    public static final String TITLE_ALIGN = "center";
 
     static {
         // Unicode escape keeps the mark out of other sources; static-init prevents folding.

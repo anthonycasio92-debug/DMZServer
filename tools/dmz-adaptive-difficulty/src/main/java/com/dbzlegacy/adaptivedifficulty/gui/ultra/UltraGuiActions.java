@@ -152,6 +152,19 @@ public final class UltraGuiActions {
             UltraGui.open(player, safeScreen, page);
             return;
         }
+        if (action.startsWith("page:")) {
+            String page = action.length() > 5 ? action.substring(5) : "";
+            if (page.isBlank()) {
+                AdaptiveDifficultyMod.LOGGER.warn(
+                        "[{}] Ultra empty page: screen={} rawActionId={}",
+                        AdaptiveDifficultyMod.MOD_ID,
+                        safeScreen,
+                        rawActionId);
+                return;
+            }
+            UltraGui.open(player, safeScreen, page);
+            return;
+        }
         if ("nav:hub".equals(action)) {
             UltraGui.openHub(player, "main");
             return;
@@ -374,6 +387,10 @@ public final class UltraGuiActions {
         try {
             result = switch (safeScreen) {
                 case "difficulty" -> {
+                    if ("mode".equals(act) || "set_mode".equals(act) || "team".equals(act)) {
+                        yield nullToEmpty(
+                                DifficultyTeamGuiApi.handleDo(player, "mode", arg, page));
+                    }
                     DifficultyActions.Result r =
                             DifficultyActions.handleArgNoReopen(player, act, arg, page);
                     if (r == null) {
@@ -543,23 +560,25 @@ public final class UltraGuiActions {
         if (parts == null) {
             return homePage(screen);
         }
-        if ("config".equals(screen) && "open_module".equals(parts.action) && parts.arg != null && !parts.arg.isBlank()) {
-            return "module:" + parts.arg;
-        }
         if (("character".equals(screen) || "saga".equals(screen))
                 && ("saga_reset".equals(parts.action) || "saga".equals(parts.action))) {
             return "reset";
         }
         String page = stringArg(args, "page");
-        if (!page.isBlank()) {
+        if (!page.isBlank() && !"config".equals(screen) && !"spar".equals(screen) && !"sparring".equals(screen)) {
             return page;
         }
         // Keep player on the tab they acted from when possible.
         return switch (screen == null ? "" : screen) {
             case "difficulty" -> switch (parts.action == null ? "" : parts.action) {
-                case "activate", "lower_tier", "purchase_tier", "buy", "toggle_personal" -> "tiers";
-                case "summon_end_dragon", "end_dragon", "summon_dragon" -> "summons";
-                default -> homePage(screen);
+                case "activate", "lower_tier", "purchase_tier", "buy" -> "tiers";
+                case "toggle_personal" ->
+                        page != null && page.startsWith("team") ? "team" : "tiers";
+                case "summon_end_dragon", "end_dragon", "summon_dragon" -> "end_dragon";
+                case "mode", "set_mode", "team" -> "team";
+                case "equip_title", "clear_title", "toggle_title_sense" -> "titles";
+                case "toggle_coin_chat" -> "settings";
+                default -> page.isBlank() ? homePage(screen) : page;
             };
             case "prestige" -> switch (parts.action == null ? "" : parts.action) {
                 case "confirm", "turnin", "turn_in", "redeem" -> "turnin";
@@ -573,10 +592,24 @@ public final class UltraGuiActions {
             };
             case "spar", "sparring" -> switch (parts.action == null ? "" : parts.action) {
                 case "dojo_accept", "dojo_war_accept", "dojo_war_cancel", "dojo_war_revoke",
-                        "dojo_cancel", "dojo_challenge" -> "dojo_war";
-                case "mentor", "mentor_accept", "mentor_decline", "mentor_tpmsg", "mentor_tp_msg" -> "dojo";
-                default -> homePage(screen);
+                        "dojo_cancel" -> "dojo_war_pending";
+                case "dojo_challenge" -> "dojo_war";
+                case "mentor_accept", "mentor_decline", "mentor" -> "pending";
+                case "mentor_invite", "apprentice_invite", "mentor_release" -> "mentor";
+                case "tpmsg", "mentor_tpmsg", "mentor_tp_msg" -> "settings";
+                case "admin" -> "admin";
+                default -> {
+                    String pageHint = stringArg(args, "page");
+                    yield pageHint.isBlank() ? homePage(screen) : pageHint;
+                }
             };
+            case "config" -> {
+                if ("open_module".equals(parts.action) && parts.arg != null && !parts.arg.isBlank()) {
+                    yield "list:" + parts.arg + ":0:";
+                }
+                String cfgPage = stringArg(args, "page");
+                yield cfgPage.isBlank() ? homePage(screen) : cfgPage;
+            }
             case "rival" -> switch (parts.action == null ? "" : parts.action) {
                 case "challenge", "challenge_accept", "challenge_decline", "challenge_cancel",
                         "challenge_send", "spectate", "spectate_stop" -> "challenge";
@@ -596,7 +629,7 @@ public final class UltraGuiActions {
     private static String homePage(String screen) {
         return switch (screen == null ? "" : screen) {
             case "rival" -> "home";
-            case "config" -> "list";
+            case "config" -> "modules";
             case "admin" -> "admin";
             case "skillcheck", "skills" -> "main";
             default -> "main";

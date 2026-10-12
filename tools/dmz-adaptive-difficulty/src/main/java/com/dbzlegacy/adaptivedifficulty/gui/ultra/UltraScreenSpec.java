@@ -140,6 +140,10 @@ public final class UltraScreenSpec {
                 tabs.add(new Tab(pair.substring(0, bar), pair.substring(bar + 1)));
             }
         }
+        // Content starts below title + tab strip when tabs are present.
+        if (!tabs.isEmpty() && nextRow < UltraStyle.CONTENT_ROW_TABS) {
+            nextRow = UltraStyle.CONTENT_ROW_TABS;
+        }
         return this;
     }
 
@@ -222,14 +226,18 @@ public final class UltraScreenSpec {
             height = Math.min(UltraStyle.PANEL_MAX_H, contentBottom);
         }
 
+        int bodyTop = tabs.isEmpty() ? UltraStyle.BODY_TOP : UltraStyle.BODY_TOP_TABS;
         int lineStep = UltraStyle.LINE_H + UltraStyle.LINE_GAP;
-        int naturalBodyH = lines.isEmpty() ? 0 : lines.size() * lineStep;
+        int naturalBodyH =
+                lines.isEmpty()
+                        ? 0
+                        : UltraStyle.BODY_PAD * 2 + lines.size() * lineStep;
         // Body region sits under title/tabs and above the first button row (or panel bottom).
         int bodyBottom = firstButtonY < 0
                 ? height - UltraStyle.PANEL_MARGIN
                 : Math.min(firstButtonY - UltraStyle.BTN_GAP, height - UltraStyle.PANEL_MARGIN);
         int bodyMaxH = Math.max(
-                UltraStyle.BODY_MIN_H, Math.max(lineStep, bodyBottom - UltraStyle.BODY_TOP));
+                UltraStyle.BODY_MIN_H, Math.max(lineStep + UltraStyle.BODY_PAD * 2, bodyBottom - bodyTop));
         boolean scrollBody = naturalBodyH > bodyMaxH || contentBottom > UltraStyle.PANEL_MAX_H;
 
         JsonArray tabArr = new JsonArray();
@@ -283,10 +291,12 @@ public final class UltraScreenSpec {
         layout.addProperty("height", height);
         layout.addProperty("center", centerPanel);
         layout.addProperty("margin", panelMargin);
+        layout.addProperty("titleAlign", UltraStyle.TITLE_ALIGN);
         // Shared body / button metrics — every screen benefits.
         layout.addProperty("lineHeight", UltraStyle.LINE_H);
         layout.addProperty("lineGap", UltraStyle.LINE_GAP);
-        layout.addProperty("bodyTop", UltraStyle.BODY_TOP);
+        layout.addProperty("bodyTop", bodyTop);
+        layout.addProperty("bodyPad", UltraStyle.BODY_PAD);
         layout.addProperty("bodyMaxHeight", bodyMaxH);
         layout.addProperty("scrollBody", scrollBody);
         layout.addProperty("buttonPad", UltraStyle.BTN_PAD);

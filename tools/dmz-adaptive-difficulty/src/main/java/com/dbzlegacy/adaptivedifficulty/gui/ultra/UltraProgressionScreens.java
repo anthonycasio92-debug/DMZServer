@@ -35,14 +35,13 @@ public final class UltraProgressionScreens {
                 .tabs("home|Home", "boosts|Boosts", "coins|Coins");
     }
 
+    /** Overview only — Boosts and Coins live on their tabs. */
     private static void openHome(ServerPlayer player) {
         UltraScreenSpec spec = base("main", "home")
                 .line(UltraStyle.LABEL + "Training boosts, Ancient Coins, and staff tools")
                 .line(ProgressionGuiApi.statusText())
-                .setRow(100);
-        spec.buttonLeft("tab:boosts", UltraStyle.confirm("Boosts"), "normal")
-                .buttonRight("tab:coins", "Coins", "normal")
-                .rowGap();
+                .line(UltraStyle.LABEL + "Open the Boosts or Coins tab for controls.")
+                .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
         spec.footerBackToMain();
         spec.send(player);
     }

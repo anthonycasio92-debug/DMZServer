@@ -39,10 +39,12 @@ public class LmDynamicScreen extends UltraScreen {
     private int lineHeight = 14;
     private int lineGap = 4;
     private int bodyTop = 36;
+    private int bodyPad = 0;
     private int bodyMaxHeight = 96;
     private boolean scrollBody = true;
     private int buttonPad = 8;
     private int buttonMinWidth = 80;
+    private String titleAlign = "left";
     private JsonObject playerModel;
     private final List<String> bodyLines = new ArrayList<>();
 
@@ -115,26 +117,37 @@ public class LmDynamicScreen extends UltraScreen {
             }
         }
         int lineStep = Math.max(8, lineHeight + lineGap);
-        int naturalH = bodyLines.isEmpty() ? 0 : bodyLines.size() * lineStep;
+        int pad = Math.max(0, bodyPad);
+        int naturalH = bodyLines.isEmpty() ? 0 : pad * 2 + bodyLines.size() * lineStep;
         int listH = scrollBody
-                ? Math.min(Math.max(bodyMaxHeight, lineStep), Math.max(lineStep, naturalH > 0 ? bodyMaxHeight : 0))
-                : Math.max(lineStep, naturalH);
+                ? Math.max(lineStep + pad * 2, Math.min(Math.max(bodyMaxHeight, lineStep + pad * 2), Math.max(lineStep + pad * 2, naturalH > 0 ? bodyMaxHeight : 0)))
+                : Math.max(lineStep + pad * 2, naturalH);
         if (!bodyLines.isEmpty()) {
             int listY = panelY + Math.max(cursorY - panelY, bodyTop);
+            // Vertical padding inside the scroll region: inset list content via taller viewport.
             addThemedList(panelX + 8, listY, Math.max(1, panelW - 16), listH, bodyLines);
             cursorY = listY + listH + 6;
         }
 
-        // Optional playerModel — JLDK draws the entity; unknown clients ignore the field.
+        // Optional playerModel — layout bounds for client entity preview (JLDK renders).
         if (playerModel != null) {
+            int pmX = intVal(playerModel, "x", 0);
+            int pmY = intVal(playerModel, "y", 0);
+            int pmW = Math.max(16, intVal(playerModel, "width", 64));
+            int pmH = Math.max(16, intVal(playerModel, "height", 96));
+            float pmScale = playerModel.has("scale") ? playerModel.get("scale").getAsFloat() : 1f;
+            boolean pmRotate = playerModel.has("rotate") && playerModel.get("rotate").getAsBoolean();
+            // Bounds are absolute within the panel; JLDK draws the living entity preview.
             UltraUiBridge.LOGGER.debug(
-                    "[kaipath] playerModel present x={} y={} w={} h={} scale={} rotate={}",
-                    intVal(playerModel, "x", 0),
-                    intVal(playerModel, "y", 0),
-                    intVal(playerModel, "width", 0),
-                    intVal(playerModel, "height", 0),
-                    playerModel.has("scale") ? playerModel.get("scale").getAsFloat() : 1f,
-                    playerModel.has("rotate") && playerModel.get("rotate").getAsBoolean());
+                    "[kaipath] playerModel x={} y={} w={} h={} scale={} rotate={} at={},{}",
+                    pmX,
+                    pmY,
+                    pmW,
+                    pmH,
+                    pmScale,
+                    pmRotate,
+                    panelX + pmX,
+                    panelY + pmY);
         }
 
         // Buttons — dynamic from buttonsJson; x/y relative to panel origin
@@ -198,10 +211,12 @@ public class LmDynamicScreen extends UltraScreen {
         lineHeight = 14;
         lineGap = 4;
         bodyTop = 36;
+        bodyPad = 0;
         bodyMaxHeight = 96;
         scrollBody = true;
         buttonPad = 8;
         buttonMinWidth = 80;
+        titleAlign = "left";
         playerModel = null;
         panelW = packet.panelWidth() > 0 ? packet.panelWidth() : GuiOpenPacket.DEFAULT_PANEL_W;
         panelH = packet.panelHeight() > 0 ? packet.panelHeight() : GuiOpenPacket.DEFAULT_PANEL_H;
@@ -248,6 +263,13 @@ public class LmDynamicScreen extends UltraScreen {
             if (o.has("bodyTop")) {
                 bodyTop = Math.max(0, o.get("bodyTop").getAsInt());
             }
+            if (o.has("bodyPad")) {
+                bodyPad = Math.max(0, o.get("bodyPad").getAsInt());
+            }
+            if (o.has("titleAlign") && o.get("titleAlign").isJsonPrimitive()) {
+                String align = o.get("titleAlign").getAsString();
+                titleAlign = align == null ? "left" : align.trim().toLowerCase();
+            }
             if (o.has("bodyMaxHeight")) {
                 bodyMaxHeight = Math.max(lineHeight, o.get("bodyMaxHeight").getAsInt());
             }
@@ -292,10 +314,16 @@ public class LmDynamicScreen extends UltraScreen {
         m_280273_(g);
         UltraUiAccess.themed(theme(), () -> {
             String title = stripSection(packet.title());
+            int maxTitleW = Math.max(8, panelW - 16);
+            var titleComp = this.f_96547_.m_92834_(title, maxTitleW);
+            int titleW = this.f_96547_.m_92852_(titleComp);
+            int titleX = "center".equalsIgnoreCase(titleAlign)
+                    ? panelX + Math.max(8, (panelW - titleW) / 2)
+                    : panelX + 8;
             g.m_280488_(
                     this.f_96547_,
-                    this.f_96547_.m_92834_(title, Math.max(8, panelW - 16)),
-                    panelX + 8,
+                    titleComp,
+                    titleX,
                     panelY + 8,
                     0xFFE8E8E8);
             super.m_88315_(g, mouseX, mouseY, tick);
