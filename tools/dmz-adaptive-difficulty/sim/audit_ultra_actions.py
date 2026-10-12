@@ -16,7 +16,7 @@ DOC = ROOT.parents[1] / "docs" / "KAIPATH_GUI_PROTOCOL.md"
 
 # Known do-actions emitted by Ultra*Screens (action name after do: / before next :).
 KNOWN_DO: dict[str, set[str]] = {
-    "hub": {"reload"},
+    "hub": {"reload", "skillcheck_denied"},
     "admin": {"reload"},
     "difficulty": {"activate", "lower_tier", "toggle_personal", "summon_end_dragon"},
     "character": {
@@ -47,6 +47,8 @@ KNOWN_DO: dict[str, set[str]] = {
         "dojo_war_cancel",
     },
     "config": {"open_module", "save_all", "discard_all", "reload_module"},
+    "skillcheck": set(),
+    "skills": set(),
 }
 
 
@@ -100,12 +102,20 @@ def main() -> int:
         errors.append("UltraScreenSpec buttons must include args {screen,page}")
 
     style = STYLE.read_text(encoding="utf-8")
-    if "PANEL_W = 350" not in style or "PANEL_H = 220" not in style:
-        errors.append("UltraStyle panel defaults must be 350×220 (compact Ultra dialog)")
-    if "BTN_H = 18" not in style or "BTN_GAP = 4" not in style:
-        errors.append("UltraStyle button height/gap must be 18 / 4")
-    if "PANEL_MARGIN = 6" not in style or "PANEL_MAX_H = 320" not in style:
-        errors.append("UltraStyle panel margin/max must be 6 / 320")
+    if "PANEL_W = 350" not in style or "PANEL_H = 260" not in style:
+        errors.append("UltraStyle panel defaults must be 350×260 (compact Ultra dialog)")
+    if "BTN_H = 18" not in style or "BTN_GAP = 6" not in style:
+        errors.append("UltraStyle button height/gap must be 18 / 6")
+    if "BTN_PAD = 8" not in style or "BTN_MIN_W = 80" not in style:
+        errors.append("UltraStyle button pad/min width must be 8 / 80")
+    if "PANEL_MARGIN = 8" not in style or "PANEL_MAX_H = 360" not in style:
+        errors.append("UltraStyle panel margin/max must be 8 / 360")
+    if "LINE_H = 14" not in style or "LINE_GAP = 4" not in style:
+        errors.append("UltraStyle body line height/gap must be 14 / 4")
+    if "playerModel" not in SPEC.read_text(encoding="utf-8"):
+        errors.append("UltraScreenSpec must support optional playerModel in layoutJson")
+    if "scrollBody" not in SPEC.read_text(encoding="utf-8"):
+        errors.append("UltraScreenSpec must emit scrollBody in layoutJson")
 
     packet = PACKET.read_text(encoding="utf-8")
     if "panelWidth" not in packet or "layoutJson" not in packet:
@@ -191,6 +201,9 @@ def main() -> int:
             "open:",
             "do:",
             "tab:",
+            "playerModel",
+            "scrollBody",
+            "buttonPad",
         ):
             if needle not in doc:
                 errors.append(f"KAIPATH_GUI_PROTOCOL.md missing {needle}")
@@ -243,7 +256,7 @@ def main() -> int:
 
     # Explicit per-file checks (clearer than the loop above).
     checks = [
-        ("UltraHubScreens.java", "hub", {"reload"}),
+        ("UltraHubScreens.java", "hub", KNOWN_DO["hub"]),
         ("UltraDifficultyScreens.java", "difficulty", KNOWN_DO["difficulty"]),
         ("UltraCharacterScreens.java", "character", KNOWN_DO["character"]),
         ("UltraPrestigeScreens.java", "prestige", KNOWN_DO["prestige"]),
@@ -251,6 +264,7 @@ def main() -> int:
         ("UltraRivalScreens.java", "rival", KNOWN_DO["rival"]),
         ("UltraSparScreens.java", "spar", KNOWN_DO["spar"]),
         ("UltraConfigScreens.java", "config", KNOWN_DO["config"]),
+        ("UltraSkillCheckScreens.java", "skillcheck", KNOWN_DO["skillcheck"]),
     ]
     for fname, screen, known in checks:
         path = ULTRA / fname
@@ -275,7 +289,7 @@ def main() -> int:
     if errors:
         print(f"\n{len(errors)} error(s)")
         return 1
-    print("  OK  action ids covered; @screen qualify; panel 350×220; protocol doc")
+    print("  OK  action ids covered; @screen qualify; panel 350×260; protocol doc")
     return 0
 
 
