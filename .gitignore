@@ -39,6 +39,10 @@ tools/kaipath-lm-ultra-client/out/
 tools/kaipath-lm-ultra-client/stubs/
 /mods/kaipath-*-lm-ultra.jar
 
+# LM / KaiPath build & vendored client artifacts (not source)
+/mods/LegacyMechanics-*.jar
+/mods/kaipath-*.jar
+
 # Local convenience copies from adaptive-difficulty build.sh
 /dmz_adaptive_difficulty-*.jar
 tools/dmz-adaptive-difficulty/sim/__pycache__/

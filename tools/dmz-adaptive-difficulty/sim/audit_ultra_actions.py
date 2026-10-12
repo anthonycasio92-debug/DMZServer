@@ -278,10 +278,29 @@ def main() -> int:
             if act not in known:
                 errors.append(f"{fname}: unexpected do:{act} for {screen}")
 
-    # Admin reload
+    # Admin reload; hub main must not call footerBackToMain (admin may).
     hub = (ULTRA / "UltraHubScreens.java").read_text(encoding="utf-8")
     if "do:reload" not in hub:
         errors.append("UltraHubScreens missing do:reload")
+    footer_calls = hub.count(".footerBackToMain()")
+    if footer_calls != 1:
+        errors.append(
+            f"UltraHubScreens must call .footerBackToMain() only on admin "
+            f"(found {footer_calls}; hub main must not)"
+        )
+    # Footers must not ship a Refresh button.
+    spec_text = SPEC.read_text(encoding="utf-8")
+    for method in ("footerBackToMain", "footerBackHome"):
+        # Crude extract: method body until next public method
+        m = re.search(
+            rf"public UltraScreenSpec {method}\(\)\s*\{{(.*?)\n    \}}",
+            spec_text,
+            re.S,
+        )
+        if m is None:
+            errors.append(f"UltraScreenSpec.{method} not found")
+        elif "nav:refresh" in m.group(1) or "Refresh" in m.group(1):
+            errors.append(f"UltraScreenSpec.{method} must not include Refresh / nav:refresh")
 
     print("=== Ultra action / panel audit ===")
     for e in errors:

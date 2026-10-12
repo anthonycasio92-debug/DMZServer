@@ -4,6 +4,7 @@ import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.gui.MechanicsGuiApi;
 import com.dbzlegacy.adaptivedifficulty.gui.MechanicsMenu;
+import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -309,7 +310,7 @@ public final class MechanicsCommands {
         ServerPlayer player = playerOrNull(source);
         if (player == null) {
             source.m_81352_(Component.m_237113_(LmCommandMessages.NEED_IN_GAME
-                    + " §8Then: §f/lm admin testgui"));
+                    + " " + UltraStyle.DARK_GRAY + "Then: " + UltraStyle.WHITE + "/lm admin testgui"));
             return 0;
         }
         return com.dbzlegacy.adaptivedifficulty.gui.CnpcStaffTestGui.open(player) ? 1 : 0;
@@ -328,7 +329,8 @@ public final class MechanicsCommands {
             target = source.m_230896_();
             if (target == null) {
                 source.m_81352_(Component.m_237113_(LmCommandMessages.NEED_IN_GAME
-                        + " §8Or: §f/lm admin guitest <player>"));
+                        + " " + UltraStyle.DARK_GRAY + "Or: " + UltraStyle.WHITE
+                        + "/lm admin guitest <player>"));
                 return 0;
             }
         } else {
@@ -343,11 +345,16 @@ public final class MechanicsCommands {
         com.dbzlegacy.adaptivedifficulty.net.gui.LmGuiNetwork.sendGuiTest(target);
         LmCommandFeedback.tell(
                 source,
-                "§aUltra guitest → §f"
+                UltraStyle.CONFIRM
+                        + "Ultra guitest → "
+                        + UltraStyle.WHITE
                         + target.m_7755_().getString()
-                        + "§a — §f"
+                        + UltraStyle.CONFIRM
+                        + " — "
+                        + UltraStyle.WHITE
                         + features
-                        + "§a. Click Ping server; watch log for GuiActionPacket ←");
+                        + UltraStyle.CONFIRM
+                        + ". Click Ping server; watch log for GuiActionPacket ←");
         return 1;
     }
 

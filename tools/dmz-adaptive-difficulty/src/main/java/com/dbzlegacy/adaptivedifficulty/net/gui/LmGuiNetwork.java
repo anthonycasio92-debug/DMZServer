@@ -189,11 +189,9 @@ public final class LmGuiNetwork {
                         com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle.danger("Danger look"),
                         "danger")
                 .button(
-                        "nav:refresh",
+                        "do:guitest_ack",
                         com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle.dim("Dim look"),
                         "dim")
-                .rowGap()
-                .footerBackToMain()
                 .send(player);
     }
 

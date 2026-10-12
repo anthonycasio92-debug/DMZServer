@@ -167,7 +167,6 @@ public final class UltraScreenSelfTest {
                             .activeTab("home")
                             .tabs("home|Home")
                             .line("self-test")
-                            .button("nav:refresh", "Refresh", "dim")
                             .footerBackToMain();
                     default -> UltraScreenSpec.of(id)
                             .title(id)
@@ -175,7 +174,7 @@ public final class UltraScreenSelfTest {
                             .activeTab("home")
                             .tabs("home|Home")
                             .line("self-test")
-                            .button("nav:refresh", "Refresh", "dim");
+                            .button("nav:home", "Home", "dim");
                 };
         spec.send(null); // probe mode captures without a player
     }
@@ -363,6 +362,9 @@ public final class UltraScreenSelfTest {
             if (buttons.contains("nav:hub")) {
                 broken.add("hub: still has nav:hub (Back to main menu) — remove footerBackToMain");
             }
+            if (buttons.contains("nav:refresh") || buttons.contains("Refresh")) {
+                broken.add("hub: must not show Refresh");
+            }
             if (hubPkts.get(0).layoutJson() == null
                     || !hubPkts.get(0).layoutJson().contains("scrollBody")) {
                 broken.add("hub: layoutJson missing scrollBody / shared body metrics");
@@ -413,7 +415,7 @@ public final class UltraScreenSelfTest {
                                 .activeTab("home")
                                 .tabs("home|Home")
                                 .line("shim-probe")
-                                .buttonLeft("nav:refresh", "Refresh", "dim")
+                                .buttonLeft("nav:home", "Home", "dim")
                                 .toPacket();
                 GuiOpenPacket wire = LmGuiNetwork.applyHubShim(built);
                 if (wire == null || !logical.equalsIgnoreCase(wire.screenId())) {
@@ -441,7 +443,7 @@ public final class UltraScreenSelfTest {
                             .activeTab("home")
                             .tabs("home|Home")
                             .line("shim-probe")
-                            .buttonLeft("nav:refresh", "Refresh", "dim")
+                            .buttonLeft("nav:home", "Home", "dim")
                             .toPacket();
             GuiOpenPacket wire = LmGuiNetwork.applyHubShim(built);
             if (wire == null || !"hub".equalsIgnoreCase(wire.screenId())) {
@@ -459,7 +461,7 @@ public final class UltraScreenSelfTest {
             }
         }
         // Registered ids must not be rewritten.
-        GuiOpenPacket hub = UltraScreenSpec.of("hub").title("Hub").page("main").button("nav:refresh", "R", "dim").toPacket();
+        GuiOpenPacket hub = UltraScreenSpec.of("hub").title("Hub").page("main").button("nav:home", "Home", "dim").toPacket();
         GuiOpenPacket hubWire = LmGuiNetwork.applyHubShim(hub);
         if (hubWire == null || !"hub".equalsIgnoreCase(hubWire.screenId())) {
             issues.add("hub: unexpected wire id");

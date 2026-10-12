@@ -204,16 +204,14 @@ public final class UltraScreenSpec {
         return nextRow;
     }
 
-    /** Home tab footer: back to main menu. */
+    /** Home tab footer: back to main menu (no Refresh — pages reopen via actions/tabs). */
     public UltraScreenSpec footerBackToMain() {
-        return button("nav:hub", UltraStyle.BACK_TO_MAIN, "dim", UltraStyle.COL_L, nextRow, 120)
-                .button("nav:refresh", UltraStyle.LABEL + "Refresh", "dim", UltraStyle.COL_R, nextRow, 95);
+        return button("nav:hub", UltraStyle.BACK_TO_MAIN, "dim", UltraStyle.COL_L, nextRow, UltraStyle.BTN_W);
     }
 
-    /** Sub-page footer: back to system home. */
+    /** Sub-page footer: back to system home (no Refresh). */
     public UltraScreenSpec footerBackHome() {
-        return button("nav:home", UltraStyle.BACK, "dim", UltraStyle.COL_L, nextRow, 95)
-                .button("nav:refresh", UltraStyle.LABEL + "Refresh", "dim", UltraStyle.COL_R, nextRow, 95);
+        return button("nav:home", UltraStyle.BACK, "dim", UltraStyle.COL_L, nextRow, UltraStyle.BTN_W);
     }
 
     /** Build the wire packet without sending. */
@@ -337,7 +335,7 @@ public final class UltraScreenSpec {
     /** Prefix {@code @screenId:} unless the action is already qualified. */
     String qualifyAction(String actionId) {
         if (actionId == null || actionId.isBlank()) {
-            return "@" + screenId + ":nav:refresh";
+            return "@" + screenId + ":nav:home";
         }
         String raw = actionId.trim();
         if (raw.startsWith("@")) {
