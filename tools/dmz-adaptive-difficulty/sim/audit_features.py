@@ -256,6 +256,23 @@ def main() -> int:
         and "— Free" in tier_ui
         and has(actions, "activationCost(tier, player, current)", "downgrade", "charge = (staffFree || downgrade)"),
     )
+    diff_chat_tiers = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/DifficultyChatMenu.java")
+    check(
+        "chat Free label uses UltraStyle (no raw §aFree)",
+        "UltraStyle.confirm(\"Free\")" in diff_chat_tiers
+        and "§aFree" not in diff_chat_tiers
+        and "§afree" not in diff_chat_tiers,
+    )
+    char_ultra = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/ultra/UltraCharacterScreens.java")
+    check(
+        "Character playerModel y=60 (below tab strip)",
+        "248, 60, 86, 120" in char_ultra,
+    )
+    parts_helper = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/ultra/PlayerModelParts.java")
+    check(
+        "playerModel.parts schema 1 helper",
+        "SCHEMA = 1" in parts_helper and "headBones" in parts_helper,
+    )
 
     print("\n=== Combat model (STR/SKP/PWR + ENE, class + top-2) ===")
     check("blended offense includes PWR/ENE", has(profile, "blendedOffense", "ENERGY_OFFENSE_FACTOR")

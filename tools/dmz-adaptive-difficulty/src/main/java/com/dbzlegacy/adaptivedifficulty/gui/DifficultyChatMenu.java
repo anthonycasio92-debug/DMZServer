@@ -9,6 +9,7 @@ import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.util.PaidFeatureAccess;
 import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
+import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle;
 import com.dbzlegacy.adaptivedifficulty.tier.UnlockSystem;
 import com.dbzlegacy.adaptivedifficulty.tier.UnlockTier;
 import com.dbzlegacy.adaptivedifficulty.title.DifficultyTitle;
@@ -168,27 +169,32 @@ public final class DifficultyChatMenu {
             boolean activeHere = active == tier.id;
             boolean canLower = unlocked && active > 0 && tier.id < active;
             MutableComponent line = Component.m_237113_(
-                    (activeHere ? "§a● " : unlocked ? "§e" : "§8")
+                    (activeHere ? UltraStyle.CONFIRM + "● " : unlocked ? UltraStyle.YELLOW : UltraStyle.DIM)
                             + "T" + tier.id + " " + tier.display);
             if (activeHere) {
-                line = line.m_7220_(Component.m_237113_(" §aCURRENT"));
+                line = line.m_7220_(Component.m_237113_(" " + UltraStyle.confirm("CURRENT")));
             } else if (canLower) {
-                line = line.m_7220_(Component.m_237113_(" §aFree "))
-                        .m_7220_(btn("§f[DOWNGRADE]", "/difficulty do activate " + tier.id + " tiers",
+                line = line.m_7220_(Component.m_237113_(" " + UltraStyle.confirm("Free") + " "))
+                        .m_7220_(btn(
+                                UltraStyle.VALUE + "[DOWNGRADE]",
+                                "/difficulty do activate " + tier.id + " tiers",
                                 "Downgrade to Tier " + tier.id + " — Free"));
             } else if (unlocked) {
                 long directed = AncientCoinEconomy.activationCost(tier, player, active);
                 String costLabel = freeCost || directed <= 0L
-                        ? (freeCost ? "§afree (staff)" : "§aFree")
-                        : ("§6" + AncientCoinEconomy.formatExactCost(directed));
+                        ? (freeCost ? UltraStyle.confirm("free (staff)") : UltraStyle.confirm("Free"))
+                        : (UltraStyle.GOLD + AncientCoinEconomy.formatExactCost(directed));
                 line = line.m_7220_(Component.m_237113_(" " + costLabel + " "))
-                        .m_7220_(btn("§a[SWITCH]", "/difficulty do activate " + tier.id + " tiers",
+                        .m_7220_(btn(
+                                UltraStyle.confirm("[SWITCH]"),
+                                "/difficulty do activate " + tier.id + " tiers",
                                 freeCost || directed <= 0L
                                         ? "Activate Tier " + tier.id + " — Free"
                                         : "Pay Ancient Coins for Tier " + tier.id + " (pay-up OK, change returned)"));
             } else {
                 line = line.m_7220_(Component.m_237113_(
-                        " §cLOCKED §8(" + tier.requirementTip() + ")"));
+                        " " + UltraStyle.danger("LOCKED") + " " + UltraStyle.DIM + "("
+                                + tier.requirementTip() + ")"));
             }
             send(player, line);
         }
