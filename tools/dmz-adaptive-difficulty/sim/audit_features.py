@@ -246,6 +246,16 @@ def main() -> int:
     )
     check("reliable-sample revoke", has(unlock, "revokeTier", "hasReliableUnlockGateSample", "resetTemporary"))
     check("buy charges Ancient Coins", has(actions, "AncientCoinEconomy", "activationCost", "charge", "setTier"))
+    coins_src = read(SRC / "com/dbzlegacy/adaptivedifficulty/currency/AncientCoinEconomy.java")
+    tier_ui = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/ultra/UltraDifficultyTierUi.java")
+    check(
+        "tier downgrade activationCost is free",
+        "tier.id < currentActiveTier" in coins_src
+        and "activationCost(UnlockTier tier, ServerPlayer player, int currentActiveTier)" in coins_src
+        and "Downgrade to Tier" in tier_ui
+        and "— Free" in tier_ui
+        and has(actions, "activationCost(tier, player, current)", "downgrade", "charge = (staffFree || downgrade)"),
+    )
 
     print("\n=== Combat model (STR/SKP/PWR + ENE, class + top-2) ===")
     check("blended offense includes PWR/ENE", has(profile, "blendedOffense", "ENERGY_OFFENSE_FACTOR")

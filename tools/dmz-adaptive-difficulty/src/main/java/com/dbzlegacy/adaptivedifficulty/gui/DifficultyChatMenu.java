@@ -157,32 +157,34 @@ public final class DifficultyChatMenu {
         send(player, Component.m_237113_("§7Current §f" + (active <= 0 ? "None" : ("T" + active))
                 + "  §8·  §7DMZ §f" + level
                 + "  §8·  §7Prestige §f" + prestige));
-        send(player, Component.m_237113_("§8Buy higher (Ancient Coins) · lower unlocked (free) · clear active tier."));
-        send(player, Component.m_237113_("§8Unlock with §fDMZ level §8OR §fPrestige §8(either one). Costs scale with level."));
+        send(player, Component.m_237113_("§8Upgrades cost Ancient Coins · downgrades are Free · clear active tier."));
+        send(player, Component.m_237113_("§8Unlock with §fDMZ level §8OR §fPrestige §8(either one). Upgrade cost scales with level."));
         send(player, Component.m_237113_("§f" + AncientCoinEconomy.inventoryBreakdown(player)));
         send(player, Component.m_237113_(""));
         send(player, btn("§c[Clear active tier]", "/difficulty do lower_tier 0 tiers", "Clear active tier"));
         for (UnlockTier tier : UnlockTier.values()) {
-            long cost = AncientCoinEconomy.activationCost(tier, player);
             boolean freeCost = PaidFeatureAccess.bypassAncientCoinCost(player);
             boolean unlocked = data.hasUnlockedTier(tier.id);
             boolean activeHere = active == tier.id;
-            boolean canLower = unlocked && tier.id < active;
+            boolean canLower = unlocked && active > 0 && tier.id < active;
             MutableComponent line = Component.m_237113_(
                     (activeHere ? "§a● " : unlocked ? "§e" : "§8")
                             + "T" + tier.id + " " + tier.display);
             if (activeHere) {
                 line = line.m_7220_(Component.m_237113_(" §aCURRENT"));
             } else if (canLower) {
-                line = line.m_7220_(Component.m_237113_(" "))
-                        .m_7220_(btn("§f[LOWER]", "/difficulty do activate " + tier.id + " tiers",
-                                "Lower to Tier " + tier.id + " (free)"));
+                line = line.m_7220_(Component.m_237113_(" §aFree "))
+                        .m_7220_(btn("§f[DOWNGRADE]", "/difficulty do activate " + tier.id + " tiers",
+                                "Downgrade to Tier " + tier.id + " — Free"));
             } else if (unlocked) {
-                String costLabel = freeCost ? "§afree (staff)" : ("§6" + AncientCoinEconomy.formatExactCost(cost));
+                long directed = AncientCoinEconomy.activationCost(tier, player, active);
+                String costLabel = freeCost || directed <= 0L
+                        ? (freeCost ? "§afree (staff)" : "§aFree")
+                        : ("§6" + AncientCoinEconomy.formatExactCost(directed));
                 line = line.m_7220_(Component.m_237113_(" " + costLabel + " "))
                         .m_7220_(btn("§a[SWITCH]", "/difficulty do activate " + tier.id + " tiers",
-                                freeCost
-                                        ? "Activate Tier " + tier.id + " (staff — no coin charge)"
+                                freeCost || directed <= 0L
+                                        ? "Activate Tier " + tier.id + " — Free"
                                         : "Pay Ancient Coins for Tier " + tier.id + " (pay-up OK, change returned)"));
             } else {
                 line = line.m_7220_(Component.m_237113_(

@@ -518,22 +518,26 @@ public final class DifficultyActions {
             return Result.ok("Already on " + tier.display + " (T" + tier.id + ").");
         }
 
-        // Lowering / lateral via buy menu is free (still must be eligible).
-        if (tier.id < current) {
+        // Direction-aware cost: downgrade (weaker tier) is always 0.
+        long cost = AncientCoinEconomy.activationCost(tier, player, current);
+        boolean staffFree = PaidFeatureAccess.bypassAncientCoinCost(player);
+        boolean downgrade = current > 0 && tier.id < current;
+        long charge = (staffFree || downgrade) ? 0L : cost;
+        String costText = downgrade
+                ? "Free"
+                : (staffFree ? "free (staff)" : AncientCoinEconomy.formatExactCost(cost));
+
+        if (downgrade) {
             if (!GuiClickConfirm.confirmed(player.m_20148_(), "diff-tier:" + tier.id)) {
                 openGui(player, returnPage);
-                return Result.ok("§eSwitch to §f" + tier.display
-                        + " §e(free)? Click again within 10 seconds.");
+                return Result.ok("§eDowngrade to §f" + tier.display
+                        + " §e(Tier " + tier.id + ") — Free? Click again within 10 seconds.");
             }
             applyTier(data, player, tier);
             openGui(player, returnPage);
-            return Result.ok("Lowered to " + tier.display + " (T" + tier.id + ") — free.");
+            return Result.ok("Downgraded to " + tier.display + " (T" + tier.id + ") — Free.");
         }
 
-        long cost = AncientCoinEconomy.activationCost(tier, player);
-        boolean free = PaidFeatureAccess.bypassAncientCoinCost(player);
-        long charge = free ? 0L : cost;
-        String costText = free ? "free (staff)" : AncientCoinEconomy.formatExactCost(cost);
         if (!canPersist(player)) {
             openGui(player, returnPage);
             return Result.fail("Could not save difficulty data — purchase cancelled (try relogging).");
@@ -591,7 +595,7 @@ public final class DifficultyActions {
         }
         applyTier(data, player, tier);
         openGui(player, returnPage);
-        return Result.ok("Lowered to " + tier.display + " (T" + tier.id + ") — free.");
+        return Result.ok("Downgraded to " + tier.display + " (T" + tier.id + ") — Free.");
     }
 
     private static void applyTier(PlayerDifficultyData data, ServerPlayer player, UnlockTier tier) {

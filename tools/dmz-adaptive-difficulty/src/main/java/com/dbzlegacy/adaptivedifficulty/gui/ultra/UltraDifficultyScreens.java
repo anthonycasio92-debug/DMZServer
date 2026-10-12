@@ -138,9 +138,10 @@ public final class UltraDifficultyScreens {
         spec.labelValue("Unlocked up to", "T" + max)
                 .labelValue("Ancient Coins", AncientCoinEconomy.inventoryBreakdown(player))
                 .line(UltraStyle.DIM + "Scaled mobs can hurt other players nearby.")
-                .line(UltraStyle.DIM + "Costs show on each button · click again within 10 seconds to buy");
+                .line(UltraStyle.DIM + "Upgrades cost Ancient Coins · downgrades are Free")
+                .line(UltraStyle.DIM + "Click again within 10 seconds to confirm");
         if (!PaidFeatureAccess.bypassAncientCoinCost(player)) {
-            spec.line(UltraStyle.DIM + "Activation cost scales with your level");
+            spec.line(UltraStyle.DIM + "Upgrade cost scales with your level");
         }
         UnlockTier nextLocked = UnlockTier.byId(max + 1);
         if (nextLocked != null) {

@@ -120,6 +120,7 @@ OPTIONAL_METHODS = {
         ("balance", "ServerPlayer"),
         ("countOf", "ServerPlayer"),
         ("activationCost", "UnlockTier, net.minecraft.server.level.ServerPlayer"),
+        ("activationCost", "UnlockTier, net.minecraft.server.level.ServerPlayer, int"),
     ],
     "com.dbzlegacy.adaptivedifficulty.tier.UnlockTier": [
         ("values", ""),

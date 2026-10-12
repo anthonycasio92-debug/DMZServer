@@ -10,13 +10,36 @@ import net.minecraft.server.level.ServerPlayer;
 public final class UltraDifficultyTierUi {
     private UltraDifficultyTierUi() {}
 
+    /** Cost label for unlocking/upgrading to {@code tier} (no active-tier context). */
     public static String formatActivationCost(ServerPlayer player, UnlockTier tier) {
-        if (tier == null || PaidFeatureAccess.bypassAncientCoinCost(player)) {
+        int current = 0;
+        try {
+            if (player != null) {
+                current = com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache
+                        .data(player)
+                        .getActiveTier();
+            }
+        } catch (Throwable ignored) {
+        }
+        return formatActivationCost(player, tier, current);
+    }
+
+    /**
+     * Direction-aware cost label. Downgrades ({@code tier.id < activeTier}) always show free.
+     */
+    public static String formatActivationCost(ServerPlayer player, UnlockTier tier, int activeTier) {
+        if (tier == null) {
             return UltraStyle.LABEL + "free";
         }
-        long cost = AncientCoinEconomy.activationCost(tier, player);
+        if (PaidFeatureAccess.bypassAncientCoinCost(player)) {
+            return UltraStyle.LABEL + "free";
+        }
+        if (activeTier > 0 && tier.id < activeTier) {
+            return UltraStyle.LABEL + "Free";
+        }
+        long cost = AncientCoinEconomy.activationCost(tier, player, activeTier);
         if (cost <= 0L) {
-            return UltraStyle.DIM + "—";
+            return UltraStyle.LABEL + "Free";
         }
         return UltraStyle.VALUE + AncientCoinEconomy.formatExactCost(cost);
     }
@@ -38,21 +61,30 @@ public final class UltraDifficultyTierUi {
         if (activeTier == t) {
             return UltraStyle.confirm("Tier " + t + " · active");
         }
-        if (!unlocked) {
-            if (eligible) {
-                return UltraStyle.confirm(
-                        "Unlock T" + t + " · " + UltraStyle.plain(formatActivationCost(player, UnlockTier.byId(t))));
+        // Downgrade first — never show a coin cost for a weaker tier.
+        if (activeTier > 0 && t < activeTier) {
+            if (unlocked || eligible) {
+                return UltraStyle.confirm("Downgrade to Tier " + t + " — Free");
             }
             return UltraStyle.dim("Tier " + t + " · locked");
         }
-        if (t < activeTier) {
-            return UltraStyle.LABEL + "Use T" + t + " " + UltraStyle.DIM + "(free)";
+        if (!unlocked) {
+            if (eligible) {
+                return UltraStyle.confirm(
+                        "Unlock T"
+                                + t
+                                + " · "
+                                + UltraStyle.plain(
+                                        formatActivationCost(
+                                                player, UnlockTier.byId(t), activeTier)));
+            }
+            return UltraStyle.dim("Tier " + t + " · locked");
         }
         return UltraStyle.LABEL
                 + "Switch T"
                 + t
                 + " · "
-                + UltraStyle.plain(formatActivationCost(player, UnlockTier.byId(t)));
+                + UltraStyle.plain(formatActivationCost(player, UnlockTier.byId(t), activeTier));
     }
 
     public static boolean tierButtonEnabled(int t, int activeTier, boolean unlocked, boolean eligible) {
@@ -61,6 +93,10 @@ public final class UltraDifficultyTierUi {
         }
         if (activeTier == t) {
             return false;
+        }
+        // Downgrade to a weaker tier when already eligible/unlocked.
+        if (activeTier > 0 && t < activeTier) {
+            return unlocked || eligible;
         }
         if (!unlocked) {
             return eligible;
