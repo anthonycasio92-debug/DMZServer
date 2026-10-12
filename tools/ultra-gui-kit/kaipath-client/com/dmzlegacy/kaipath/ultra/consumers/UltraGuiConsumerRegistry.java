@@ -19,16 +19,17 @@ import net.minecraftforge.network.simple.SimpleChannel;
  * consumers by that channel id — never assume a single mod.
  *
  * <p>JLDK: call {@link #registerClientChannel(String)} once per partner mod. After implementing
- * button {@code style} and {@code activeTab} highlight, call
- * {@link #advertiseFeatures(String, String)} with {@code ["style","activeTab"]}.
+ * optional render features, call {@link #advertiseFeatures(String, String)} with
+ * {@code ["style","activeTab","titleAlign","playerModel"]}.
  */
 public final class UltraGuiConsumerRegistry {
     public static final String CHANNEL_PATH = "gui";
     public static final String PROTOCOL_VERSION = "1";
 
     /**
-     * Features this client build honors. Update when style / activeTab rendering ships.
-     * Empty = 1.3.1 baseline (server treats optional features as missing).
+     * Features this client build honors. Update when style / activeTab / titleAlign /
+     * playerModel rendering ships. Empty = 1.3.1 baseline (server treats optional features
+     * as missing).
      */
     public static final String ADVERTISED_FEATURES_JSON = "[]";
 
@@ -148,7 +149,8 @@ public final class UltraGuiConsumerRegistry {
 
     /**
      * Advertise optional render features to the server. Use
-     * {@code ["style","activeTab"]} once both are implemented. Safe to call repeatedly.
+     * {@code ["style","activeTab","titleAlign","playerModel"]} once implemented. Safe to call
+     * repeatedly.
      */
     public static void advertiseFeatures(String channelId, String featuresJson) {
         BoundChannel bound = CHANNELS.get(channelId);

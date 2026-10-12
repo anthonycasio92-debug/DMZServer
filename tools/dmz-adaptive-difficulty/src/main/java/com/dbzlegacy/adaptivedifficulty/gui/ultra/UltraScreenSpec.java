@@ -220,8 +220,8 @@ public final class UltraScreenSpec {
 
     /** Build the wire packet without sending. */
     public GuiOpenPacket toPacket() {
-        int height = panelHeight;
         int contentBottom = nextRow + UltraStyle.BTN_H + UltraStyle.PANEL_MARGIN;
+        int height = panelHeight;
         if (contentBottom > height) {
             height = Math.min(UltraStyle.PANEL_MAX_H, contentBottom);
         }
@@ -232,13 +232,61 @@ public final class UltraScreenSpec {
                 lines.isEmpty()
                         ? 0
                         : UltraStyle.BODY_PAD * 2 + lines.size() * lineStep;
+
+        // Grow toward PANEL_MAX_H when body text needs more viewport than the default
+        // BODY_MIN_H band — shift buttons down so extra height expands the body, not
+        // empty space under the footer.
+        int buttonTop = firstButtonY;
+        int buttonStackH =
+                buttonTop < 0
+                        ? UltraStyle.PANEL_MARGIN
+                        : Math.max(
+                                UltraStyle.BTN_H + UltraStyle.PANEL_MARGIN,
+                                contentBottom - buttonTop);
+        int maxBodyAtCap =
+                Math.max(
+                        UltraStyle.BODY_MIN_H,
+                        UltraStyle.PANEL_MAX_H - bodyTop - buttonStackH);
+        int targetBodyH =
+                Math.max(
+                        UltraStyle.BODY_MIN_H,
+                        Math.min(Math.max(naturalBodyH, UltraStyle.BODY_MIN_H), maxBodyAtCap));
+        int targetHeight = bodyTop + targetBodyH + buttonStackH;
+        if (targetHeight > height) {
+            height = Math.min(UltraStyle.PANEL_MAX_H, targetHeight);
+        }
+
+        int buttonShift = 0;
+        if (buttonTop >= 0) {
+            int currentBodyRoom = Math.max(0, buttonTop - UltraStyle.BTN_GAP - bodyTop);
+            if (targetBodyH > currentBodyRoom) {
+                int need = targetBodyH - currentBodyRoom;
+                int slack = Math.max(0, height - contentBottom);
+                buttonShift = Math.min(need, slack);
+                // If still short of targetBodyH, grow panel once more (capped) then shift.
+                if (buttonShift < need && height < UltraStyle.PANEL_MAX_H) {
+                    int grow = Math.min(need - buttonShift, UltraStyle.PANEL_MAX_H - height);
+                    height += grow;
+                    slack = Math.max(0, height - contentBottom);
+                    buttonShift = Math.min(need, slack);
+                }
+            }
+        }
+
         // Body region sits under title/tabs and above the first button row (or panel bottom).
-        int bodyBottom = firstButtonY < 0
-                ? height - UltraStyle.PANEL_MARGIN
-                : Math.min(firstButtonY - UltraStyle.BTN_GAP, height - UltraStyle.PANEL_MARGIN);
-        int bodyMaxH = Math.max(
-                UltraStyle.BODY_MIN_H, Math.max(lineStep + UltraStyle.BODY_PAD * 2, bodyBottom - bodyTop));
-        boolean scrollBody = naturalBodyH > bodyMaxH || contentBottom > UltraStyle.PANEL_MAX_H;
+        int effectiveButtonTop = buttonTop < 0 ? -1 : buttonTop + buttonShift;
+        int bodyBottom =
+                effectiveButtonTop < 0
+                        ? height - UltraStyle.PANEL_MARGIN
+                        : Math.min(
+                                effectiveButtonTop - UltraStyle.BTN_GAP,
+                                height - UltraStyle.PANEL_MARGIN);
+        int bodyMaxH =
+                Math.max(
+                        UltraStyle.BODY_MIN_H,
+                        Math.max(lineStep + UltraStyle.BODY_PAD * 2, bodyBottom - bodyTop));
+        boolean scrollBody =
+                naturalBodyH > bodyMaxH || contentBottom + buttonShift > UltraStyle.PANEL_MAX_H;
 
         JsonArray tabArr = new JsonArray();
         for (Tab tab : tabs) {
@@ -272,7 +320,7 @@ public final class UltraScreenSpec {
             o.addProperty("label", b.label);
             o.addProperty("style", b.style);
             o.addProperty("x", b.x);
-            o.addProperty("y", b.y);
+            o.addProperty("y", b.y + buttonShift);
             o.addProperty("w", b.w);
             o.addProperty("h", b.h);
             o.addProperty("pad", b.pad);
@@ -291,6 +339,7 @@ public final class UltraScreenSpec {
         layout.addProperty("height", height);
         layout.addProperty("center", centerPanel);
         layout.addProperty("margin", panelMargin);
+        // Always present — KaiPath must center titles when value is "center" (not left-default).
         layout.addProperty("titleAlign", UltraStyle.TITLE_ALIGN);
         // Shared body / button metrics — every screen benefits.
         layout.addProperty("lineHeight", UltraStyle.LINE_H);

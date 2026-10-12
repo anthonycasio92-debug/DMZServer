@@ -21,21 +21,33 @@ import net.minecraft.server.level.ServerPlayer;
  *   <li>{@link #FEATURE_STYLE} — button {@code style} ({@code normal}/{@code confirm}/
  *       {@code danger}/{@code dim})
  *   <li>{@link #FEATURE_ACTIVE_TAB} — {@link GuiOpenPacket} field 5 {@code activeTab} highlight
+ *   <li>{@link #FEATURE_TITLE_ALIGN} — {@code layoutJson.titleAlign} ({@code center}/{@code left})
+ *   <li>{@link #FEATURE_PLAYER_MODEL} — {@code layoutJson.playerModel} entity preview
  * </ul>
  *
  * <p>Clients that never send {@link GuiFeaturesPacket} are treated as the KaiPath <b>1.3.1
- * baseline</b>: dynamic layout/buttons only (no style / activeTab).
+ * baseline</b>: dynamic layout/buttons only (no style / activeTab / titleAlign / playerModel).
  */
 public final class UltraClientFeatures {
     public static final String FEATURE_STYLE = "style";
     public static final String FEATURE_ACTIVE_TAB = "activetab";
+    public static final String FEATURE_TITLE_ALIGN = "titlealign";
+    public static final String FEATURE_PLAYER_MODEL = "playermodel";
 
     /** Wire / doc spellings accepted for {@link #FEATURE_ACTIVE_TAB}. */
     public static final String FEATURE_ACTIVE_TAB_DOC = "activeTab";
+    /** Wire / doc spelling for {@link #FEATURE_TITLE_ALIGN}. */
+    public static final String FEATURE_TITLE_ALIGN_DOC = "titleAlign";
+    /** Wire / doc spelling for {@link #FEATURE_PLAYER_MODEL}. */
+    public static final String FEATURE_PLAYER_MODEL_DOC = "playerModel";
 
     /** Optional features the LM bridge expects a conforming client to advertise. */
     public static final Set<String> EXPECTED_OPTIONAL =
-            Set.of(FEATURE_STYLE, FEATURE_ACTIVE_TAB);
+            Set.of(
+                    FEATURE_STYLE,
+                    FEATURE_ACTIVE_TAB,
+                    FEATURE_TITLE_ALIGN,
+                    FEATURE_PLAYER_MODEL);
 
     private static final Map<UUID, State> BY_PLAYER = new ConcurrentHashMap<>();
 
@@ -121,6 +133,12 @@ public final class UltraClientFeatures {
         if (state == null || !state.has(FEATURE_ACTIVE_TAB)) {
             missing.add(FEATURE_ACTIVE_TAB_DOC);
         }
+        if (state == null || !state.has(FEATURE_TITLE_ALIGN)) {
+            missing.add(FEATURE_TITLE_ALIGN_DOC);
+        }
+        if (state == null || !state.has(FEATURE_PLAYER_MODEL)) {
+            missing.add(FEATURE_PLAYER_MODEL_DOC);
+        }
         return missing;
     }
 
@@ -138,6 +156,12 @@ public final class UltraClientFeatures {
                                 + "(style=confirm/danger/dim ignored)");
             } else if (FEATURE_ACTIVE_TAB.equals(key)) {
                 lines.add("active tab is not highlighted (GuiOpenPacket.activeTab ignored)");
+            } else if (FEATURE_TITLE_ALIGN.equals(key)) {
+                lines.add(
+                        "titles left-align instead of layoutJson.titleAlign=center");
+            } else if (FEATURE_PLAYER_MODEL.equals(key)) {
+                lines.add(
+                        "Character playerModel preview not drawn (layoutJson.playerModel ignored)");
             }
         }
         return lines;

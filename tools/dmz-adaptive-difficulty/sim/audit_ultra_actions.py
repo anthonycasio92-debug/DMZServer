@@ -151,22 +151,33 @@ def main() -> int:
         errors.append("UltraStyle button height/gap must be 18 / 6")
     if "BTN_PAD = 8" not in style or "BTN_MIN_W = 80" not in style:
         errors.append("UltraStyle button pad/min width must be 8 / 80")
-    if "PANEL_MARGIN = 10" not in style or "PANEL_MAX_H = 380" not in style:
-        errors.append("UltraStyle panel margin/max must be 10 / 380")
+    if "PANEL_MARGIN = 10" not in style or "PANEL_MAX_H = 420" not in style:
+        errors.append("UltraStyle panel margin/max must be 10 / 420")
     if "LINE_H = 16" not in style or "LINE_GAP = 8" not in style:
         errors.append("UltraStyle body line height/gap must be 16 / 8")
     if "BODY_PAD = 10" not in style or "BODY_MIN_H = 140" not in style:
         errors.append("UltraStyle body pad/min height must be 10 / 140")
     if 'TITLE_ALIGN = "center"' not in style:
         errors.append('UltraStyle TITLE_ALIGN must be "center"')
-    if "playerModel" not in SPEC.read_text(encoding="utf-8"):
+    spec_text_full = SPEC.read_text(encoding="utf-8")
+    if "playerModel" not in spec_text_full:
         errors.append("UltraScreenSpec must support optional playerModel in layoutJson")
-    if "scrollBody" not in SPEC.read_text(encoding="utf-8"):
+    if "scrollBody" not in spec_text_full:
         errors.append("UltraScreenSpec must emit scrollBody in layoutJson")
+    if "buttonShift" not in spec_text_full or "targetBodyH" not in spec_text_full:
+        errors.append(
+            "UltraScreenSpec must grow panel toward PANEL_MAX_H and shift buttons for dense body text"
+        )
+    if 'titleAlign' not in spec_text_full or "TITLE_ALIGN" not in spec_text_full:
+        errors.append("UltraScreenSpec must emit layoutJson.titleAlign from UltraStyle.TITLE_ALIGN")
 
     packet = PACKET.read_text(encoding="utf-8")
     if "panelWidth" not in packet or "layoutJson" not in packet:
         errors.append("GuiOpenPacket must carry panelWidth/panelHeight/layoutJson")
+    if 'titleAlign":"center"' not in packet.replace(" ", ""):
+        errors.append('GuiOpenPacket.defaultLayoutJson must include "titleAlign":"center"')
+    if "2048" not in packet:
+        errors.append("GuiOpenPacket layoutJson trim limit must be 2048 (playerModel fits)")
 
     net = (ROOT / "src/main/java/com/dbzlegacy/adaptivedifficulty/net/gui/LmGuiNetwork.java").read_text(
         encoding="utf-8"
@@ -202,8 +213,18 @@ def main() -> int:
         errors.append("Missing UltraClientFeatures (server-side feature gap diagnostics)")
     else:
         feat_text = client_feat.read_text(encoding="utf-8")
-        if "FEATURE_STYLE" not in feat_text or "FEATURE_ACTIVE_TAB" not in feat_text:
-            errors.append("UltraClientFeatures must define FEATURE_STYLE and FEATURE_ACTIVE_TAB")
+        for needle in (
+            "FEATURE_STYLE",
+            "FEATURE_ACTIVE_TAB",
+            "FEATURE_TITLE_ALIGN",
+            "FEATURE_PLAYER_MODEL",
+        ):
+            if needle not in feat_text:
+                errors.append(f"UltraClientFeatures must define {needle}")
+        if "titleAlign" not in feat_text or "playerModel" not in feat_text:
+            errors.append(
+                "UltraClientFeatures impact/missing lists must cover titleAlign + playerModel"
+            )
     if "roundTripStyleAndActiveTab" not in net:
         errors.append("LmGuiNetwork must round-trip style + activeTab in self-test")
     if "GuiFeaturesPacket" not in net:

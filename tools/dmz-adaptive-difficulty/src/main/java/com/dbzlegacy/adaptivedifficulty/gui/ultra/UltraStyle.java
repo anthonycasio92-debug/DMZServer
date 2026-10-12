@@ -52,15 +52,16 @@ public final class UltraStyle {
     public static final int BTN_W = 150;
 
     /**
-     * Compact Ultra centered dialog (not fullscreen). Defaults 350×260; may grow to
-     * {@link #PANEL_MAX_H} when content requires it. Body text scrolls rather than
-     * compressing when content exceeds the panel.
+     * Compact Ultra centered dialog (not fullscreen). Defaults 350×300; grows toward
+     * {@link #PANEL_MAX_H} when body text or buttons need more room. Body text scrolls
+     * rather than compressing when content still exceeds the grown panel.
      */
     public static final int PANEL_W = 350;
     public static final int PANEL_H = 300;
     public static final int PANEL_MIN_W = 300;
     public static final int PANEL_MIN_H = 220;
-    public static final int PANEL_MAX_H = 380;
+    /** Upper bound for content-driven panel growth (dense menus, e.g. Difficulty lines). */
+    public static final int PANEL_MAX_H = 420;
     /** Gap between panel edge and screen edge when centered. */
     public static final int PANEL_MARGIN = 10;
 

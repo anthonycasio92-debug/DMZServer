@@ -88,11 +88,12 @@ public final class GuiOpenPacket {
         this.buttonsJson = trim(buttonsJson, 8192);
         this.panelWidth = panelWidth > 0 ? panelWidth : UltraGuiProtocol.DEFAULT_PANEL_WIDTH;
         this.panelHeight = panelHeight > 0 ? panelHeight : UltraGuiProtocol.DEFAULT_PANEL_HEIGHT;
+        // 2048: full layout metrics + optional playerModel must not truncate mid-JSON.
         this.layoutJson = trim(
                 layoutJson == null || layoutJson.isBlank()
                         ? defaultLayoutJson(this.panelWidth, this.panelHeight)
                         : layoutJson,
-                1024);
+                2048);
     }
 
     public String screenId() {
@@ -221,6 +222,6 @@ public final class GuiOpenPacket {
                 + h
                 + ",\"center\":true,\"margin\":"
                 + UltraGuiProtocol.DEFAULT_MARGIN
-                + "}";
+                + ",\"titleAlign\":\"center\"}";
     }
 }

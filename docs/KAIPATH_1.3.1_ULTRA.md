@@ -1,16 +1,13 @@
-# KaiPath 1.3.1 + LegacyMechanics 4.6.105
+# KaiPath 1.3.x + LegacyMechanics 4.6.107
 
-Live clients run **kaipath-1.3.1.jar** with:
+Live clients run **kaipath-1.3.x** with the dynamic Ultra consumer. LM **4.6.107** pairs
+with that client:
 
-- 10-field `GuiOpenPacket` decode
-- `LmDynamicScreen` (title / tabs / lines / buttons from JSON)
-- `UltraGuiConsumerRegistry` (`legacymechanics:gui`)
-- Verbatim `GuiActionPacket` echo
+| Side | Role |
+|------|------|
+| LM | Builds `GuiOpenPacket` (350×300 default, grow to **420**, `titleAlign=center`, styles, `activeTab`, optional `playerModel`) |
+| KaiPath | Renders the packet; must advertise optional features when implemented |
 
-LM **4.6.105** pairs with that client:
-
-- `guiBackend=ultra` (default)
-- `UltraScreenIds.KAIPATH_DYNAMIC_ANY_SCREEN_ID=true` → no hub wire shim
-- Logical `screenId`s on the wire (`difficulty`, `rival`, …)
-
-Smoke: `/lm admin guitest` → click **Ping server** → server log `GuiActionPacket ←`.
+See [`KAIPATH_GUI_PROTOCOL.md`](KAIPATH_GUI_PROTOCOL.md) and
+[`KAIPATH_JLDK_CLIENT_BRIEF.md`](KAIPATH_JLDK_CLIENT_BRIEF.md) for the JLDK gap list
+(`style`, `activeTab`, `titleAlign`, `playerModel`).

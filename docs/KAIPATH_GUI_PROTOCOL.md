@@ -16,11 +16,13 @@ LegacyMechanics (LM).
 channel namespace or mod id. New menus are added on the **server mod** side only. Optional
 fields (`style`, `activeTab`) are **data**, not new hardcoded screens.
 
-**KaiPath 1.3.1** baseline: decodes 10 fields and renders dynamic buttons/tabs/lines, but
-**ignores** button `style` and packet `activeTab`. LM 4.6.105+ advertises the gap in logs
-until the client reports those features via `GuiFeaturesPacket`.
+**KaiPath 1.3.x** baseline: decodes 10 fields and renders dynamic buttons/tabs/lines, but
+typically **ignores** button `style`, packet `activeTab`, `layoutJson.titleAlign`, and
+`layoutJson.playerModel`. LM **4.6.107+** logs the gap until the client reports those
+features via `GuiFeaturesPacket`.
 
 Implement-yourself kit: [`tools/ultra-gui-kit/`](../tools/ultra-gui-kit/).
+JLDK handoff: [`docs/KAIPATH_JLDK_CLIENT_BRIEF.md`](KAIPATH_JLDK_CLIENT_BRIEF.md).
 
 ---
 
@@ -28,14 +30,16 @@ Implement-yourself kit: [`tools/ultra-gui-kit/`](../tools/ultra-gui-kit/).
 
 The client **must** render what the server sends (no hardcoded screen/tab/button lists).
 
-| Capability | Required since | Status on KaiPath 1.3.1 |
+| Capability | Required since | Status on KaiPath 1.3.x |
 |------------|----------------|-------------------------|
 | Decode all 10 GuiOpen fields | 1.3.1 | yes |
 | Dynamic title / tabs / lines / buttons | 1.3.1 | yes |
 | Verbatim GuiAction echo | 1.3.1 | yes |
 | Any `screenId` (no whitelist) | 1.3.1 | yes |
+| Honor **`layoutJson.titleAlign`** | next | **no** — titles left-align by default |
 | Honor button **`style`** | next | **no** — all buttons look identical |
 | Honor **`activeTab`** highlight | next | **no** — active tab not distinguished |
+| Honor **`layoutJson.playerModel`** | next | **no** — no entity preview |
 | Send **GuiFeaturesPacket** | next | **no** — treated as 1.3.1 baseline |
 
 ### Button JSON schema
@@ -112,17 +116,19 @@ Known optional feature ids:
 |----|--------------------------|
 | `style` | Button `style` values above |
 | `activeTab` | GuiOpenPacket field 5 highlight |
+| `titleAlign` | `layoutJson.titleAlign` (`center` / `left`) |
+| `playerModel` | `layoutJson.playerModel` entity preview |
 
-Example (conforming client after implementing both):
+Example (conforming client after implementing all):
 
 ```json
-["style","activeTab"]
+["style","activeTab","titleAlign","playerModel"]
 ```
 
 Send once after channel registration (client setup / first join). Extra ids are ignored.
 Extra wire fields after #1 are ignored.
 
-LM logs a **warning** when a player’s feature set lacks `style` or `activeTab`, naming:
+LM logs a **warning** when a player’s feature set lacks expected optionals, naming:
 
 - player
 - KaiPath version if known
@@ -207,12 +213,12 @@ honor `margin`. Button `x`/`y` are panel-relative.
 
 | Field | Meaning |
 |-------|---------|
-| `titleAlign` | `center` or `left` — hub/system titles sit at the top of the panel |
+| `titleAlign` | **`center`** (LM default) or `left` — **must** position the title; do not assume left |
 | `lineHeight` | Body line height in GUI pixels (do **not** squeeze below this) |
 | `lineGap` | Extra gap between body lines |
 | `bodyTop` | Panel-relative Y where the body/scroll region starts |
 | `bodyPad` | Vertical padding inside the body scroll region |
-| `bodyMaxHeight` | Vertical room for body text inside the panel |
+| `bodyMaxHeight` | Vertical room for body text inside the panel (grows with `panelHeight`) |
 | `scrollBody` | When `true`, long body content **scrolls** instead of compressing |
 | `buttonPad` | Horizontal padding inside buttons (default **8**) |
 | `buttonGap` | Vertical gap between button rows |
@@ -264,7 +270,8 @@ CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), open);
 ```
 
 Client: `UltraGuiConsumerRegistry.registerClientChannel("mymod")` then send
-`GuiFeaturesPacket` with `["style","activeTab"]` once implemented.
+`GuiFeaturesPacket` with `["style","activeTab","titleAlign","playerModel"]` once
+implemented.
 
 ---
 

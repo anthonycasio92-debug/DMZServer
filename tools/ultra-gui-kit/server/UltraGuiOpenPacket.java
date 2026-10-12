@@ -20,8 +20,8 @@ import net.minecraft.network.FriendlyByteBuf;
  *   <li>linesJson — string (JSON array of body lines)
  *   <li>buttonsJson — string (JSON array of button objects)
  *   <li>panelWidth — varint (default 350)
- *   <li>panelHeight — varint (default 220)
- *   <li>layoutJson — string (JSON object)
+ *   <li>panelHeight — varint (default 300; may grow toward 420 when content requires)
+ *   <li>layoutJson — string (JSON object; always includes {@code titleAlign})
  * </ol>
  *
  * <p>Missing trailing fields use defaults. Bytes after field 10 are ignored so newer servers
@@ -59,7 +59,7 @@ public final class UltraGuiOpenPacket {
         this.buttonsJson = blankTo(trim(buttonsJson, 8192), "[]");
         this.panelWidth = panelWidth > 0 ? panelWidth : UltraGuiChannel.DEFAULT_PANEL_WIDTH;
         this.panelHeight = panelHeight > 0 ? panelHeight : UltraGuiChannel.DEFAULT_PANEL_HEIGHT;
-        this.layoutJson = trim(layoutJson, 1024);
+        this.layoutJson = trim(layoutJson, 2048);
     }
 
     public String screenId() {
