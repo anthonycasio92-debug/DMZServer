@@ -290,10 +290,46 @@ public final class UltraScreenSelfTest {
         }
     }
 
-    /** Hub shim: non-registered logical ids rewrite wire screenId to hub and keep system metadata. */
+    /**
+     * Hub shim: when {@link UltraScreenIds#KAIPATH_DYNAMIC_ANY_SCREEN_ID} is false, non-registered
+     * logical ids rewrite wire screenId to hub. When dynamic-any is on (KaiPath 1.3.1+), expect
+     * an empty tunnel set and identity wire ids.
+     */
     public static void verifyHubShim() {
         List<String> issues = new ArrayList<>();
         Set<String> tunneled = UltraScreenIds.hubShimTunnelIds();
+        if (UltraScreenIds.KAIPATH_DYNAMIC_ANY_SCREEN_ID) {
+            if (!tunneled.isEmpty()) {
+                issues.add("dynamic-any on but tunnel set non-empty: " + tunneled);
+            }
+            for (String logical : UltraScreenIds.BUILDER_IDS) {
+                GuiOpenPacket built =
+                        UltraScreenSpec.of(logical)
+                                .title(logical)
+                                .page("main")
+                                .activeTab("home")
+                                .tabs("home|Home")
+                                .line("shim-probe")
+                                .buttonLeft("nav:refresh", "Refresh", "dim")
+                                .toPacket();
+                GuiOpenPacket wire = LmGuiNetwork.applyHubShim(built);
+                if (wire == null || !logical.equalsIgnoreCase(wire.screenId())) {
+                    issues.add(
+                            logical
+                                    + ": expected identity wire id, got "
+                                    + (wire == null ? "null" : wire.screenId()));
+                }
+            }
+            if (issues.isEmpty()) {
+                AdaptiveDifficultyMod.LOGGER.info(
+                        "[{}] Ultra hub shim self-check OK (KaiPath dynamic-any — no tunneling)",
+                        AdaptiveDifficultyMod.MOD_ID);
+            } else {
+                AdaptiveDifficultyMod.LOGGER.warn(
+                        "[{}] Ultra hub shim self-check issues: {}", AdaptiveDifficultyMod.MOD_ID, issues);
+            }
+            return;
+        }
         for (String logical : tunneled) {
             GuiOpenPacket built =
                     UltraScreenSpec.of(logical)

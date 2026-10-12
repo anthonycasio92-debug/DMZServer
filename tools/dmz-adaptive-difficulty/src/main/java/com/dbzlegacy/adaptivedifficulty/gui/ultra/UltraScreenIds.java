@@ -20,8 +20,9 @@ import java.util.TreeSet;
  *       com.dbzlegacy.adaptivedifficulty.net.gui.LmGuiNetwork#sendOpen}.
  * </ol>
  *
- * <p>{@link #KAIPATH_REGISTERED_IDS} is the source of truth for which <em>wire</em> ids KaiPath
- * can open without MissingScreen. Expand that set when KaiPath registers more {@code LmScreens}.
+ * <p>KaiPath <b>1.3.1+</b> opens any {@code screenId} via {@code LmDynamicScreen} (no whitelist),
+ * so the hub wire shim is off ({@link #KAIPATH_DYNAMIC_ANY_SCREEN_ID}). Stock 1.3.0 only
+ * registered {@code hub}; keep {@link #KAIPATH_REGISTERED_IDS} for docs / rollback.
  */
 public final class UltraScreenIds {
     /** IDs documented in {@code docs/KAIPATH_GUI_PROTOCOL.md} / LM builders. */
@@ -37,10 +38,25 @@ public final class UltraScreenIds {
             "admin");
 
     /**
-     * Wire {@code screenId} values KaiPath {@code LmScreens.registerDefaults()} can open.
-     * 1.3.0 registers {@code hub} only. Add ids here as KaiPath grows to disable the hub shim.
+     * KaiPath 1.3.1+ dynamic consumer: any screenId renders. When {@code true},
+     * {@link #needsHubShim} is always false so wire ids stay logical.
      */
-    public static final Set<String> KAIPATH_REGISTERED_IDS = Set.of("hub");
+    public static final boolean KAIPATH_DYNAMIC_ANY_SCREEN_ID = true;
+
+    /**
+     * Legacy whitelist for stock KaiPath 1.3.0 ({@code hub} only). Unused while
+     * {@link #KAIPATH_DYNAMIC_ANY_SCREEN_ID} is true; set that flag false to re-enable shim.
+     */
+    public static final Set<String> KAIPATH_REGISTERED_IDS = Set.of(
+            "hub",
+            "difficulty",
+            "rival",
+            "spar",
+            "prestige",
+            "character",
+            "progression",
+            "config",
+            "admin");
 
     /**
      * Every {@code UltraScreenSpec.of("…")} id used by Ultra*Screens builders.
@@ -85,6 +101,9 @@ public final class UltraScreenIds {
 
     /** True when KaiPath can open this wire {@code screenId} without MissingScreen. */
     public static boolean kaipathCanOpen(String screenId) {
+        if (KAIPATH_DYNAMIC_ANY_SCREEN_ID) {
+            return true;
+        }
         if (screenId == null || screenId.isBlank()) {
             return true;
         }
@@ -93,6 +112,9 @@ public final class UltraScreenIds {
 
     /** True when this logical id must be tunneled through wire {@code hub}. */
     public static boolean needsHubShim(String logicalScreenId) {
+        if (KAIPATH_DYNAMIC_ANY_SCREEN_ID) {
+            return false;
+        }
         return !kaipathCanOpen(logicalScreenId);
     }
 

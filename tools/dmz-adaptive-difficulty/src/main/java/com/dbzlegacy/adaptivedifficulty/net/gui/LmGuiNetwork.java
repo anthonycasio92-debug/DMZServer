@@ -41,8 +41,15 @@ public final class LmGuiNetwork {
 
     /** Forge mod id for KaiPath. */
     public static final String KAIPATH_MOD_ID = "kaipath";
-    /** Minimum KaiPath version that speaks the Ultra GUI protocol on {@code <modid>:gui}. */
+    /**
+     * Minimum KaiPath version that speaks the Ultra GUI protocol on {@code <modid>:gui}.
+     * Full dynamic menus (10-field decode + buttonsJson) require <b>1.3.1+</b>; channel
+     * handshake still accepts {@code >= 1.2.5}.
+     */
     public static final String KAIPATH_MIN_VERSION = "1.2.5";
+
+    /** First KaiPath release with dynamic Ultra GUI (10 fields + multi-mod registry). */
+    public static final String KAIPATH_DYNAMIC_UI_VERSION = "1.3.1";
 
     /**
      * Optional channel: clients without KaiPath omit it. Accept missing so those players
@@ -154,21 +161,21 @@ public final class LmGuiNetwork {
         }
         AdaptiveDifficultyMod.LOGGER.info(
                 "[{}] guitest → sending diagnostic GuiOpenPacket to player={} "
-                        + "(KaiPath 1.3.0 ignores buttonsJson — click any hardcoded hub tile)",
+                        + "(KaiPath {}+ should render the Ping button from buttonsJson)",
                 AdaptiveDifficultyMod.MOD_ID,
-                safeName(player));
-        // Still send a rich packet so wire/logs prove S→C delivery; KaiPath 1.3.0 only reads
-        // screenId and opens its hardcoded LmHubScreen. Click Character/Difficulty/etc. — those
-        // call sendAction("hub", "<bare>", "{}") and must produce GuiActionPacket ← on the server.
+                safeName(player),
+                KAIPATH_DYNAMIC_UI_VERSION);
         com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraScreenSpec.of("hub")
                 .title("Ultra GUI Test")
                 .page("guitest")
                 .activeTab("home")
                 .tabs("home|Test")
                 .line(com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle.LABEL
-                        + "KaiPath 1.3.0 shows its hardcoded hub (ignores this packet body).")
+                        + "KaiPath "
+                        + KAIPATH_DYNAMIC_UI_VERSION
+                        + "+ renders this packet (title/tabs/buttons).")
                 .line(com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle.DIM
-                        + "Click Character or Difficulty — server log must show GuiActionPacket ←")
+                        + "Click Ping server — log must show GuiActionPacket ←")
                 .setRow(72)
                 .button(
                         "do:guitest_ack",
@@ -245,12 +252,12 @@ public final class LmGuiNetwork {
         UltraScreenSelfTest.verifyHubShim();
         runPacketRoundTripSelfTest();
         AdaptiveDifficultyMod.LOGGER.info(
-                "[{}] Ultra GUI bridge ready channel={} protocol={} — KaiPath renders what the "
-                        + "server sends (channel-keyed; no hardcoded screen lists). "
-                        + "KaiPath 1.3.0 still reads screenId only.",
+                "[{}] Ultra GUI bridge ready channel={} protocol={} — KaiPath {}+ dynamic UI "
+                        + "(any screenId; no hub shim). Client renders what the server sends.",
                 AdaptiveDifficultyMod.MOD_ID,
                 UltraGuiProtocol.channelId(CHANNEL_NAMESPACE),
-                PROTOCOL_VERSION);
+                PROTOCOL_VERSION,
+                KAIPATH_DYNAMIC_UI_VERSION);
     }
 
     private static GuiOpenPacket decodeOpenLogged(net.minecraft.network.FriendlyByteBuf buf) {

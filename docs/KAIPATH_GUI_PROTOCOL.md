@@ -14,9 +14,11 @@ LegacyMechanics (LM).
 **Principle:** the client renders what the server sends. Packet codecs must not embed a
 channel namespace or mod id. New menus are added on the **server mod** side only.
 
-Implement-yourself kit (source only, no jar): [`tools/ultra-gui-kit/`](../tools/ultra-gui-kit/).
-Server codecs: [`tools/ultra-gui-kit/server/`](../tools/ultra-gui-kit/server/) (mirrored under
-[`docs/ultra-gui-protocol/reference/`](ultra-gui-protocol/reference/)).
+**KaiPath 1.3.1+** ships the dynamic Ultra consumer (10-field decode, `LmDynamicScreen`,
+`UltraGuiConsumerRegistry`). LM 4.6.105+ sends logical wire `screenId`s (hub shim off).
+
+Implement-yourself kit (for other mods / older notes): [`tools/ultra-gui-kit/`](../tools/ultra-gui-kit/).
+Server codecs: [`tools/ultra-gui-kit/server/`](../tools/ultra-gui-kit/server/).
 
 ---
 

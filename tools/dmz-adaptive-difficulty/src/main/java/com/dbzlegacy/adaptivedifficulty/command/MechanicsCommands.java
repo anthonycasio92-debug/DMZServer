@@ -343,8 +343,7 @@ public final class MechanicsCommands {
                 source,
                 "§aUltra guitest → §f"
                         + target.m_7755_().getString()
-                        + "§a. KaiPath 1.3.0 shows hardcoded hub — click Character/Difficulty; "
-                        + "watch log for GuiActionPacket ←");
+                        + "§a. KaiPath 1.3.1+ should show Ping server — watch log for GuiActionPacket ←");
         return 1;
     }
 
