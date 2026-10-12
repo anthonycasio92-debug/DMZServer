@@ -287,16 +287,22 @@ def main() -> int:
             if act not in known:
                 errors.append(f"{fname}: unexpected do:{act} for {screen}")
 
-    # Admin reload; hub main must not call footerBackToMain (admin may).
+    # Hub builder must never call footerBackToMain (hub IS the main menu).
     hub = (ULTRA / "UltraHubScreens.java").read_text(encoding="utf-8")
     if "do:reload" not in hub:
         errors.append("UltraHubScreens missing do:reload")
-    footer_calls = hub.count(".footerBackToMain()")
-    if footer_calls != 1:
+    if ".footerBackToMain()" in hub:
         errors.append(
-            f"UltraHubScreens must call .footerBackToMain() only on admin "
-            f"(found {footer_calls}; hub main must not)"
+            "UltraHubScreens must not call .footerBackToMain() "
+            "(hub main has no back; admin uses explicit nav:hub)"
         )
+    # Hub main packet shape: of("hub") builder path must not emit nav:hub.
+    if 'UltraScreenSpec.of("hub")' in hub:
+        main_chunk = hub.split('UltraScreenSpec.of("hub")', 1)[1].split("openAdmin", 1)[0]
+        if ".footerBackToMain()" in main_chunk or '"nav:hub"' in main_chunk:
+            errors.append(
+                'UltraHubScreens openMain (of("hub")) must not add nav:hub / .footerBackToMain()'
+            )
     # Footers must not ship a Refresh button.
     spec_text = SPEC.read_text(encoding="utf-8")
     for method in ("footerBackToMain", "footerBackHome"):

@@ -94,7 +94,16 @@ public final class UltraHubScreens {
         spec.buttonLeft("open:progression", "Progression panel", "normal")
                 .buttonRight("open:config", "Config editor", "normal")
                 .rowGap();
-        spec.setRow(spec.row() + UltraStyle.BTN_GAP).footerBackToMain();
+        // Admin is not the hub — back to hub is fine. Do not call footerBackToMain()
+        // anywhere in this class (hub main must never ship « Back to main menu).
+        spec.setRow(spec.row() + UltraStyle.BTN_GAP)
+                .button(
+                        "nav:hub",
+                        UltraStyle.BACK_TO_MAIN,
+                        "dim",
+                        UltraStyle.COL_L,
+                        spec.row(),
+                        UltraStyle.BTN_W);
         spec.send(player);
     }
 
