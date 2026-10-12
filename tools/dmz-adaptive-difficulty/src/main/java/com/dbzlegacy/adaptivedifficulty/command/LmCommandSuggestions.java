@@ -403,7 +403,8 @@ public final class LmCommandSuggestions {
 
     public static final SuggestionProvider<CommandSourceStack> DIFFICULTY_ADMIN_SET_KEYS = literals(
             "enabled", "whitelistEnabled", "staffFreeAncientCoinCosts", "balanceTelemetryEnabled",
-            "enableSystemTelemetry", "prestigeMultiplier", "levelMultiplier", "rewardScaling"
+            "enableSystemTelemetry", "prestigeMultiplier", "levelMultiplier", "rewardScaling",
+            "guibackend"
     );
 
     public static SuggestionProvider<CommandSourceStack> literals(String... values) {
