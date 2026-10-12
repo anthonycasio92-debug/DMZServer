@@ -39,7 +39,7 @@ The client **must** render what the server sends (no hardcoded screen/tab/button
 | Honor **`layoutJson.titleAlign`** | 1.3.5 | **yes** — titles centered |
 | Honor **`activeTab`** highlight | 1.3.5 | **yes** |
 | Honor button **`style`** | next | **no** — all buttons look identical |
-| Honor **`layoutJson.playerModel`** | next | **no** — no entity preview |
+| Honor **`layoutJson.playerModel`** (+ optional `parts`) | next | **no** — no entity preview / parts |
 | Honor **`inputsJson`** text fields (field 11) | next | **no** — ignore trailing field |
 | Send **GuiFeaturesPacket** | next | advertise implemented features |
 
@@ -218,11 +218,27 @@ Enter in the field), the client must set `args.value` to the typed string before
   "buttonHeight": 18,
   "playerModel": {
     "x": 248,
-    "y": 36,
+    "y": 60,
     "width": 86,
     "height": 120,
     "scale": 1.0,
-    "rotate": true
+    "rotate": true,
+    "parts": {
+      "schema": 1,
+      "subject": "local",
+      "headBones": {
+        "token": "hair+ears1+horns2",
+        "pieces": ["hair", "ears1", "horns2"]
+      },
+      "form": {
+        "race": "saiyan",
+        "group": "super_saiyan",
+        "form": "ssj",
+        "stackGroup": "",
+        "stackForm": ""
+      },
+      "extras": []
+    }
   }
 }
 ```
@@ -257,10 +273,64 @@ pages scroll rather than squeezing buttons.
 | `width`, `height` | number | Bounds for the preview |
 | `scale` | number | Entity scale (default `1.0`) |
 | `rotate` | boolean | Slow turntable when `true` |
+| `parts` | object | Optional cosmetics snapshot — see below |
 
 **Backward compatible:** clients that do not know `playerModel` ignore it; the rest of the
-layout still works. JLDK implements the entity rendering; the server only declares position
-and size. Screen builders opt in per screen (LM Character Services uses it; others default off).
+layout still works. JLDK implements the entity rendering; the server declares position, size,
+and (when present) equipped custom parts. Screen builders opt in per screen (LM Character
+Services uses it; others default off).
+
+##### `playerModel.parts` (optional, schema 1)
+
+LM sends this so the client can draw **custom body pieces** on top of / instead of a bare
+Steve preview — DMZ head bones today, DMZUltra form accessories next. Omit the whole
+`parts` object when nothing is equipped / unavailable. Clients that only honor bounds still
+work; unknown sub-fields are ignored.
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `schema` | number | yes | **`1`** for this document. Bump only on breaking shape changes. |
+| `subject` | string | yes | Who to draw. LM Character Services always sends **`local`** (the viewing player). Future: `uuid:<player-uuid>` for inspect. |
+| `headBones` | object | no | Equipped DMZ `activeHeadBone` cosmetics. Omit when empty. |
+| `headBones.token` | string | yes* | Authoritative DMZ token (`+`-joined). Same string DMZ stores on the character. |
+| `headBones.pieces` | string[] | yes* | Atomic bone ids split from the token (stable shop order when known). Prefer this list when iterating geo bones. |
+| `form` | object | no | Worn transformation identity so the client can attach **DMZUltra FormParts** (client-side catalog keyed by form). Omit when fully base. |
+| `form.race` | string | no | Race id (lowercase), e.g. `saiyan`. |
+| `form.group` | string | no | Active form group. |
+| `form.form` | string | no | Active form name. |
+| `form.stackGroup` | string | no | Stack form group (empty when none). |
+| `form.stackForm` | string | no | Stack form name (empty when none). |
+| `extras` | array | no | Open extension list. Each entry is `{ "kind": string, "id": string, … }`. Unknown `kind` values **must** be ignored. LM currently sends `[]`. |
+
+\* When `headBones` is present, both `token` and `pieces` are required. `pieces` may be empty
+only if `token` is empty (do not send `headBones` in that case).
+
+**Client render contract (JLDK):**
+
+1. Draw the subject player entity inside `x/y/width/height` at `scale`, with turntable when
+   `rotate` is true.
+2. If `parts.headBones` is present, apply those geo bones the same way DMZ applies
+   `activeHeadBone` (split `token` on `+`, or iterate `pieces`).
+3. If `parts.form` is present, resolve DMZUltra FormParts for that race/group/form (and
+   stack, when set) and draw them with the preview.
+4. Iterate `parts.extras`; skip unknown `kind`s.
+5. If `parts` is missing entirely, draw the local player with whatever the client already
+   knows from entity sync (no server cosmetics hint).
+
+**`extras` entry shape (forward-compatible):**
+
+```json
+{ "kind": "dmzultra.formPart", "id": "example_accessory", "meta": {} }
+```
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `kind` | string | Namespaced role (`dmz.headBone` is redundant with `headBones`; prefer the typed object). |
+| `id` | string | Piece id within that kind. |
+| `meta` | object | Optional opaque bag (tint, slot, …). Ignore unknown keys. |
+
+LM server helper: `PlayerModelParts.snapshot(ServerPlayer)` → Gson object attached under
+`playerModel.parts`.
 
 ### 5. Action verb contract (recommended)
 

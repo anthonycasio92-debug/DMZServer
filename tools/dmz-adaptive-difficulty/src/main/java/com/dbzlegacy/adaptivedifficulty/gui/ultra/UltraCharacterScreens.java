@@ -51,13 +51,14 @@ public final class UltraCharacterScreens {
         }
     }
 
-    private static UltraScreenSpec base(String page, String tab) {
+    private static UltraScreenSpec base(ServerPlayer player, String page, String tab) {
+        // y=60 sits below the tab strip (CONTENT_ROW_TABS=58); y=36 clipped the head.
         return UltraScreenSpec.of("character")
                 .title("Character Services")
                 .page(page)
                 .activeTab(tab)
                 .tabs("home|Home", "saga|Saga Reset", "android|Android Removal")
-                .playerModel(248, 36, 86, 120, 1.0f, true);
+                .playerModel(player, 248, 60, 86, 120, 1.0f, true);
     }
 
     /** Overview + look tools — Change Race / Class / Model / Reskin on Home. */
@@ -67,7 +68,7 @@ public final class UltraCharacterScreens {
         boolean canClass = "true".equals(ph.get("can_class_change"));
         boolean canReskin = "true".equals(ph.get("can_reskin"));
         boolean canBones = "true".equals(ph.get("can_head_bones"));
-        UltraScreenSpec spec = base("main", "home")
+        UltraScreenSpec spec = base(player, "main", "home")
                 .labelValue("Race", ph.getOrDefault("current_race", "—"))
                 .labelValue("Class", ph.getOrDefault("current_class", "—"))
                 .line(UltraStyle.LABEL + "Change your race, class, or look. Saga and Android have their own tabs.")
@@ -106,7 +107,7 @@ public final class UltraCharacterScreens {
     }
 
     private static void openRace(ServerPlayer player) {
-        UltraScreenSpec spec = base("race", "home")
+        UltraScreenSpec spec = base(player, "race", "home")
                 .line(UltraStyle.LABEL + "Choose the race you want to become.")
                 .notice("Race-only form ladders reset when the new race does not use them.");
         for (String line : CharacterServicesGuiApi.linesForPage(player, "race")) {
@@ -169,7 +170,7 @@ public final class UltraCharacterScreens {
             }
         }
         String confirmArg = raceId + ":" + selected;
-        UltraScreenSpec spec = base("race_confirm:" + confirmArg, "home")
+        UltraScreenSpec spec = base(player, "race_confirm:" + confirmArg, "home")
                 .line(UltraStyle.LABEL + "Review cost, then confirm.");
         for (String line : CharacterServicesGuiApi.linesForPage(player, "race_confirm:" + confirmArg)) {
             if (line != null && !line.isBlank()) {
@@ -207,7 +208,7 @@ public final class UltraCharacterScreens {
     }
 
     private static void openClass(ServerPlayer player) {
-        UltraScreenSpec spec = base("class", "home")
+        UltraScreenSpec spec = base(player, "class", "home")
                 .line(UltraStyle.LABEL + "Pick a new fighting class for your current race.");
         for (String line : CharacterServicesGuiApi.linesForPage(player, "class")) {
             if (line != null && !line.isBlank()) {
@@ -259,7 +260,7 @@ public final class UltraCharacterScreens {
 
     private static void openClassConfirm(ServerPlayer player, String classId) {
         String id = classId == null ? "" : classId.trim();
-        UltraScreenSpec spec = base("class_confirm:" + id, "home")
+        UltraScreenSpec spec = base(player, "class_confirm:" + id, "home")
                 .line(UltraStyle.LABEL + "Review cost, then confirm.");
         for (String line : CharacterServicesGuiApi.linesForPage(player, "class_confirm:" + id)) {
             if (line != null && !line.isBlank()) {
@@ -278,7 +279,7 @@ public final class UltraCharacterScreens {
     }
 
     private static void openReskin(ServerPlayer player) {
-        UltraScreenSpec spec = base("reskin", "home")
+        UltraScreenSpec spec = base(player, "reskin", "home")
                 .line(UltraStyle.LABEL + "Opens the appearance editor after you confirm.");
         for (String line : CharacterServicesGuiApi.linesForPage(player, "reskin")) {
             if (line != null && !line.isBlank()) {
@@ -293,7 +294,7 @@ public final class UltraCharacterScreens {
     }
 
     private static void openReskinConfirm(ServerPlayer player) {
-        UltraScreenSpec spec = base("reskin_confirm", "home")
+        UltraScreenSpec spec = base(player, "reskin_confirm", "home")
                 .line(UltraStyle.LABEL + "Review cost, then confirm.");
         for (String line : CharacterServicesGuiApi.linesForPage(player, "reskin_confirm")) {
             if (line != null && !line.isBlank()) {
@@ -326,7 +327,7 @@ public final class UltraCharacterScreens {
         if (wornCount > 2) {
             worn = wornCount + " parts on";
         }
-        UltraScreenSpec spec = base("bones:" + pg, "home")
+        UltraScreenSpec spec = base(player, "bones:" + pg, "home")
                 .line(UltraStyle.LABEL
                         + HeadPartPieces.pageTitle(pg)
                         + " · On "
@@ -419,7 +420,7 @@ public final class UltraCharacterScreens {
     }
 
     private static void openSagaReset(ServerPlayer player) {
-        UltraScreenSpec spec = base("reset", "saga")
+        UltraScreenSpec spec = base(player, "reset", "saga")
                 .line(UltraStyle.LABEL + "Pay Ancient Coins to replay one saga.")
                 .notice("Resetting clears that saga's progress. This cannot be undone.");
         if (!SagaResetConfig.get().enabled) {
@@ -478,7 +479,7 @@ public final class UltraCharacterScreens {
 
     private static void openSagaConfirm(ServerPlayer player, String sagaId) {
         Offer offer = SagaResetService.findOffer(player, sagaId);
-        UltraScreenSpec spec = base("saga_confirm:" + sagaId, "saga");
+        UltraScreenSpec spec = base(player, "saga_confirm:" + sagaId, "saga");
         for (String line : SagaResetService.confirmLines(player, sagaId)) {
             spec.line(line);
         }
@@ -511,7 +512,7 @@ public final class UltraCharacterScreens {
     }
 
     private static void openAndroidRemove(ServerPlayer player) {
-        UltraScreenSpec spec = base(UltraStyle.PAGE_ANDROID_REMOVE, "android")
+        UltraScreenSpec spec = base(player, UltraStyle.PAGE_ANDROID_REMOVE, "android")
                 .line(UltraStyle.LABEL + "Removes Android forms and restores what you had.")
                 .notice("Click again within 10 seconds. This cannot be undone.")
                 .setRow(UltraStyle.CONTENT_ROW_TABS + 80);

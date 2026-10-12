@@ -22,8 +22,8 @@ import net.minecraft.network.chat.Component;
  * <ul>
  *   <li>Honor button {@code style}: {@code normal}, {@code confirm} (green), {@code danger}
  *       (red), {@code dim} (dark gray).
- *   <li>Render {@code layoutJson.playerModel} (entity preview bounds are parsed; draw the
- *       local player).
+ *   <li>Render {@code layoutJson.playerModel} (entity preview bounds + optional {@code parts}
+ *       schema 1: headBones / form / extras — see KAIPATH_GUI_PROTOCOL.md).
  *   <li>Render {@link GuiOpenPacket#inputsJson()} text fields; on Enter / {@code bindInput}
  *       button click, put typed text in {@code args.value}.
  *   <li>Advertise {@code ["style","activeTab","titleAlign","playerModel","textInput"]} via
@@ -132,7 +132,7 @@ public class LmDynamicScreen extends UltraScreen {
             cursorY = listY + listH + 6;
         }
 
-        // Optional playerModel — layout bounds for client entity preview (JLDK renders).
+        // Optional playerModel — layout bounds + parts for client entity preview (JLDK renders).
         if (playerModel != null) {
             int pmX = intVal(playerModel, "x", 0);
             int pmY = intVal(playerModel, "y", 0);
@@ -140,15 +140,20 @@ public class LmDynamicScreen extends UltraScreen {
             int pmH = Math.max(16, intVal(playerModel, "height", 96));
             float pmScale = playerModel.has("scale") ? playerModel.get("scale").getAsFloat() : 1f;
             boolean pmRotate = playerModel.has("rotate") && playerModel.get("rotate").getAsBoolean();
-            // Bounds are absolute within the panel; JLDK draws the living entity preview.
+            JsonObject parts =
+                    playerModel.has("parts") && playerModel.get("parts").isJsonObject()
+                            ? playerModel.getAsJsonObject("parts")
+                            : null;
+            // Bounds are absolute within the panel; JLDK draws the living entity + parts.
             UltraUiBridge.LOGGER.debug(
-                    "[kaipath] playerModel x={} y={} w={} h={} scale={} rotate={} at={},{}",
+                    "[kaipath] playerModel x={} y={} w={} h={} scale={} rotate={} parts={} at={},{}",
                     pmX,
                     pmY,
                     pmW,
                     pmH,
                     pmScale,
                     pmRotate,
+                    parts == null ? "none" : parts.toString(),
                     panelX + pmX,
                     panelY + pmY);
         }

@@ -109,14 +109,45 @@ public final class UltraScreenSpec {
      */
     public UltraScreenSpec playerModel(
             int x, int y, int width, int height, float scale, boolean rotate) {
+        return playerModel(x, y, width, height, scale, rotate, null);
+    }
+
+    /**
+     * Player model preview with an optional {@code parts} snapshot (head bones, form identity,
+     * extras). See {@link PlayerModelParts} and {@code docs/KAIPATH_GUI_PROTOCOL.md}.
+     */
+    public UltraScreenSpec playerModel(
+            int x,
+            int y,
+            int width,
+            int height,
+            float scale,
+            boolean rotate,
+            JsonObject parts) {
         this.playerModel = new PlayerModel(
                 x,
                 y,
                 Math.max(16, width),
                 Math.max(16, height),
                 scale <= 0f ? 1f : scale,
-                rotate);
+                rotate,
+                parts);
         return this;
+    }
+
+    /**
+     * Bounds plus a live {@link PlayerModelParts#snapshot} for {@code player} (Character
+     * Services).
+     */
+    public UltraScreenSpec playerModel(
+            ServerPlayer player,
+            int x,
+            int y,
+            int width,
+            int height,
+            float scale,
+            boolean rotate) {
+        return playerModel(x, y, width, height, scale, rotate, PlayerModelParts.snapshot(player));
     }
 
     /** Clear any previously set player model (default: off). */
@@ -466,6 +497,9 @@ public final class UltraScreenSpec {
             pm.addProperty("height", playerModel.height);
             pm.addProperty("scale", playerModel.scale);
             pm.addProperty("rotate", playerModel.rotate);
+            if (playerModel.parts != null && !playerModel.parts.entrySet().isEmpty()) {
+                pm.add("parts", playerModel.parts);
+            }
             layout.add("playerModel", pm);
         }
         return new GuiOpenPacket(
@@ -545,5 +579,6 @@ public final class UltraScreenSpec {
             int h,
             int maxLength) {}
 
-    private record PlayerModel(int x, int y, int width, int height, float scale, boolean rotate) {}
+    private record PlayerModel(
+            int x, int y, int width, int height, float scale, boolean rotate, JsonObject parts) {}
 }

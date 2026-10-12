@@ -174,6 +174,22 @@ def main() -> int:
     spec_text_full = SPEC.read_text(encoding="utf-8")
     if "playerModel" not in spec_text_full:
         errors.append("UltraScreenSpec must support optional playerModel in layoutJson")
+    parts_helper = ULTRA / "PlayerModelParts.java"
+    char_screens = (ULTRA / "UltraCharacterScreens.java").read_text(encoding="utf-8")
+    if not parts_helper.is_file():
+        errors.append("PlayerModelParts helper must exist for playerModel.parts snapshots")
+    else:
+        parts_text = parts_helper.read_text(encoding="utf-8")
+        if "SCHEMA = 1" not in parts_text or "headBones" not in parts_text:
+            errors.append("PlayerModelParts schema 1 must serialize headBones (+ form/extras)")
+        if 'addProperty("parts"' not in spec_text_full and 'pm.add("parts"' not in spec_text_full:
+            errors.append("UltraScreenSpec must emit optional playerModel.parts")
+    if "playerModel(player, 248, 60," not in char_screens and ".playerModel(player, 248, 60," not in char_screens:
+        # allow either chained form
+        if "248, 60, 86, 120" not in char_screens:
+            errors.append(
+                "UltraCharacterScreens playerModel y must be 60 (below tab strip; 36 clips head)"
+            )
     if "scrollBody" not in spec_text_full:
         errors.append("UltraScreenSpec must emit scrollBody in layoutJson")
     if "buttonShift" not in spec_text_full or "targetBodyH" not in spec_text_full:

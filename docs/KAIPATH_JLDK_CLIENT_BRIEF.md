@@ -32,7 +32,7 @@ The client renders what the server sends — **no hardcoded screen/tab/button/ac
 | Feature | Where | Client TODO |
 |---------|-------|-------------|
 | Button `style` | each button | Map `confirm`→green, `danger`→red, `dim`→dark-gray, `normal`→default |
-| `playerModel` | `layoutJson.playerModel` | Draw local player in bounds (Character) |
+| `playerModel` | `layoutJson.playerModel` | Draw local player in bounds (Character). Honor optional `parts` (schema 1: `headBones`, `form`, `extras`) — see protocol doc |
 | Text fields | GuiOpenPacket **field 11** `inputsJson` | Render `type=text`; on Enter / `args.bindInput` button click, send `args.value` |
 
 ## Advertise (after implementing)
