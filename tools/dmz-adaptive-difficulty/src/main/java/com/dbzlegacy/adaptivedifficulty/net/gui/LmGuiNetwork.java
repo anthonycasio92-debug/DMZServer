@@ -63,6 +63,9 @@ public final class LmGuiNetwork {
 
     private static boolean registered;
     private static Field connectionField;
+    /** Players already warned this session for missing style/activeTab on GuiOpen. */
+    private static final java.util.Set<java.util.UUID> FEATURE_GAP_WARNED =
+            java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     private LmGuiNetwork() {}
 
@@ -159,28 +162,36 @@ public final class LmGuiNetwork {
         if (player == null) {
             return;
         }
+        String featureSummary = UltraClientFeatures.summarizeForStaff(player);
         AdaptiveDifficultyMod.LOGGER.info(
-                "[{}] guitest → sending diagnostic GuiOpenPacket to player={} "
-                        + "(KaiPath {}+ should render the Ping button from buttonsJson)",
+                "[{}] guitest → player={} {} — sending GuiOpenPacket with style=confirm + activeTab=home",
                 AdaptiveDifficultyMod.MOD_ID,
                 safeName(player),
-                KAIPATH_DYNAMIC_UI_VERSION);
+                featureSummary);
+        UltraClientFeatures.warnMissingOptionalFeatures(player, "guitest");
         com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraScreenSpec.of("hub")
                 .title("Ultra GUI Test")
                 .page("guitest")
                 .activeTab("home")
-                .tabs("home|Test")
+                .tabs("home|Test", "other|Other")
                 .line(com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle.LABEL
-                        + "KaiPath "
-                        + KAIPATH_DYNAMIC_UI_VERSION
-                        + "+ renders this packet (title/tabs/buttons).")
+                        + "Features: "
+                        + featureSummary)
                 .line(com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle.DIM
-                        + "Click Ping server — log must show GuiActionPacket ←")
-                .setRow(72)
+                        + "Ping=confirm (green). Active tab should highlight home.")
+                .setRow(80)
                 .button(
                         "do:guitest_ack",
                         com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle.confirm("Ping server"),
                         "confirm")
+                .button(
+                        "do:guitest_ack",
+                        com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle.danger("Danger look"),
+                        "danger")
+                .button(
+                        "nav:refresh",
+                        com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle.dim("Dim look"),
+                        "dim")
                 .rowGap()
                 .footerBackToMain()
                 .send(player);
@@ -212,6 +223,9 @@ public final class LmGuiNetwork {
                     AdaptiveDifficultyMod.MOD_ID,
                     safeName(player),
                     KAIPATH_MIN_VERSION);
+        } else if (kaipath) {
+            // Baseline until GuiFeaturesPacket arrives — surface style/activeTab gaps early.
+            UltraClientFeatures.warnMissingOptionalFeatures(player, "login");
         }
     }
 
@@ -229,7 +243,8 @@ public final class LmGuiNetwork {
                             + ")");
         }
         AdaptiveDifficultyMod.LOGGER.info(
-                "[{}] registering channel {}:{} protocol={} msg0=GuiOpenPacket(S→C) msg1=GuiActionPacket(C→S)",
+                "[{}] registering channel {}:{} protocol={} "
+                        + "msg0=GuiOpenPacket(S→C) msg1=GuiActionPacket(C→S) msg2=GuiFeaturesPacket(C→S)",
                 AdaptiveDifficultyMod.MOD_ID,
                 CHANNEL_NAMESPACE,
                 CHANNEL_PATH,
@@ -246,6 +261,12 @@ public final class LmGuiNetwork {
                 .decoder(buf -> decodeActionLogged(buf))
                 .consumerNetworkThread(LmGuiNetwork::handleGuiAction)
                 .add();
+        CHANNEL.messageBuilder(
+                        GuiFeaturesPacket.class, UltraGuiProtocol.MSG_FEATURES, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(GuiFeaturesPacket::encode)
+                .decoder(GuiFeaturesPacket::decode)
+                .consumerNetworkThread(GuiFeaturesPacket::handle)
+                .add();
         validateBuilderScreenIdsAtStartup();
         UltraScreenSelfTest.runAtStartup();
         UltraScreenSelfTest.verifyTabStaysOnScreen();
@@ -253,7 +274,8 @@ public final class LmGuiNetwork {
         runPacketRoundTripSelfTest();
         AdaptiveDifficultyMod.LOGGER.info(
                 "[{}] Ultra GUI bridge ready channel={} protocol={} — KaiPath {}+ dynamic UI "
-                        + "(any screenId; no hub shim). Client renders what the server sends.",
+                        + "(any screenId; no hub shim). Client renders what the server sends; "
+                        + "optional features style/activeTab via GuiFeaturesPacket.",
                 AdaptiveDifficultyMod.MOD_ID,
                 UltraGuiProtocol.channelId(CHANNEL_NAMESPACE),
                 PROTOCOL_VERSION,
@@ -353,6 +375,28 @@ public final class LmGuiNetwork {
                                 + actionBack.argsJson()
                                 + "]");
             }
+
+            // style + activeTab must survive encode/decode (client conformance contract).
+            String styleFail = roundTripStyleAndActiveTab();
+            if (styleFail != null) {
+                failures.add(styleFail);
+            }
+
+            GuiFeaturesPacket features =
+                    new GuiFeaturesPacket("[\"style\",\"activeTab\"]");
+            net.minecraft.network.FriendlyByteBuf featBuf =
+                    new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+            GuiFeaturesPacket.encode(features, featBuf);
+            GuiFeaturesPacket featuresBack = GuiFeaturesPacket.decode(featBuf);
+            java.util.Set<String> parsed = GuiFeaturesPacket.parseFeatures(featuresBack.featuresJson());
+            if (!parsed.contains(UltraClientFeatures.FEATURE_STYLE)
+                    || !parsed.contains(UltraClientFeatures.FEATURE_ACTIVE_TAB)) {
+                failures.add(
+                        "GuiFeaturesPacket round-trip failed featuresJson="
+                                + featuresBack.featuresJson()
+                                + " parsed="
+                                + parsed);
+            }
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.error(
                     "[{}] packet round-trip self-test threw",
@@ -379,10 +423,57 @@ public final class LmGuiNetwork {
         }
         AdaptiveDifficultyMod.LOGGER.info(
                 "[{}] packet round-trip self-test OK screensTested={} protocol={} "
-                        + "(every BUILDER_IDS GuiOpenPacket 10-field + GuiActionPacket verbatim actionId)",
+                        + "(BUILDER_IDS 10-field + style/activeTab + GuiActionPacket + GuiFeaturesPacket)",
                 AdaptiveDifficultyMod.MOD_ID,
                 screensTested,
                 PROTOCOL_VERSION);
+    }
+
+    /**
+     * Assert button {@code style} values and {@code activeTab} survive encode→decode.
+     *
+     * @return null on success, failure message otherwise
+     */
+    private static String roundTripStyleAndActiveTab() {
+        GuiOpenPacket open =
+                com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraScreenSpec.of("difficulty")
+                        .title("Style probe")
+                        .page("tiers")
+                        .activeTab("tiers")
+                        .tabs("tiers|Tiers", "info|Info")
+                        .line("style-activeTab probe")
+                        .button("do:ok", "Confirm", "confirm")
+                        .button("do:bad", "Danger", "danger")
+                        .button("do:off", "Dim", "dim")
+                        .button("do:plain", "Normal", "normal")
+                        .toPacket();
+        if (!"tiers".equals(open.activeTab())) {
+            return "style/activeTab probe: activeTab not set on builder packet";
+        }
+        String buttons = open.buttonsJson() == null ? "" : open.buttonsJson();
+        for (String style : new String[] {"confirm", "danger", "dim", "normal"}) {
+            if (!buttons.contains("\"style\":\"" + style + "\"")) {
+                return "style/activeTab probe: buttonsJson missing style=" + style;
+            }
+        }
+        String mismatch = roundTripOpenFields(open);
+        if (mismatch != null) {
+            return "style/activeTab probe: " + mismatch;
+        }
+        net.minecraft.network.FriendlyByteBuf buf =
+                new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+        GuiOpenPacket.encode(open, buf);
+        GuiOpenPacket back = GuiOpenPacket.decode(buf);
+        if (!"tiers".equals(back.activeTab())) {
+            return "style/activeTab probe: activeTab lost in decode → " + back.activeTab();
+        }
+        String backButtons = back.buttonsJson() == null ? "" : back.buttonsJson();
+        for (String style : new String[] {"confirm", "danger", "dim", "normal"}) {
+            if (!backButtons.contains("\"style\":\"" + style + "\"")) {
+                return "style/activeTab probe: style=" + style + " lost after decode";
+            }
+        }
+        return null;
     }
 
     /** @return null when all 10 GuiOpen fields survive encode→decode */
@@ -433,16 +524,31 @@ public final class LmGuiNetwork {
         }
         GuiOpenPacket wire = applyHubShim(packet);
         AdaptiveDifficultyMod.LOGGER.info(
-                "[{}] GuiOpenPacket → player={} screenId={} (logical={}) buttons={} panel={}x{}",
+                "[{}] GuiOpenPacket → player={} screenId={} (logical={}) buttons={} panel={}x{} "
+                        + "activeTab={} {}",
                 AdaptiveDifficultyMod.MOD_ID,
                 safeName(player),
                 wire.screenId(),
                 logicalSystemOf(packet, wire),
                 buttonCount(wire),
                 wire.panelWidth(),
-                wire.panelHeight());
+                wire.panelHeight(),
+                wire.activeTab(),
+                UltraClientFeatures.summarizeForStaff(player));
         validatePanelBounds(wire);
+        if (FEATURE_GAP_WARNED.add(player.m_20148_())) {
+            UltraClientFeatures.warnMissingOptionalFeatures(player, "GuiOpenPacket");
+        }
         CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), wire);
+    }
+
+    /** Clear per-session feature advertisement (call on logout). */
+    public static void clearClientSession(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        UltraClientFeatures.clear(player);
+        FEATURE_GAP_WARNED.remove(player.m_20148_());
     }
 
     /**
@@ -559,15 +665,34 @@ public final class LmGuiNetwork {
         if (player == null) {
             return false;
         }
+        String version = probeKaiPathVersion(player);
+        if (version == null) {
+            // null = mod absent; blank = present without version string
+            return false;
+        }
+        if (version.isBlank()) {
+            return true;
+        }
+        return isVersionAtLeast(version, KAIPATH_MIN_VERSION);
+    }
+
+    /**
+     * KaiPath version from the Forge client mod list, or {@code ""} when present without a
+     * version string, or {@code null} when KaiPath is not listed.
+     */
+    public static String probeKaiPathVersion(ServerPlayer player) {
+        if (player == null) {
+            return null;
+        }
         try {
             Connection connection = connectionOf(player);
             if (connection == null) {
-                return false;
+                return null;
             }
             Class<?> hooks = Class.forName("net.minecraftforge.network.NetworkHooks");
             Object data = hooks.getMethod("getConnectionData", Connection.class).invoke(null, connection);
             if (data == null) {
-                return false;
+                return null;
             }
             Object modData = data.getClass().getMethod("getModData").invoke(data);
             if (modData instanceof Map<?, ?> map) {
@@ -577,27 +702,20 @@ public final class LmGuiNetwork {
                         continue;
                     }
                     String version = pairVersion(entry.getValue());
-                    // Null/empty version ⇒ mod present (Forge often omits client mod versions).
-                    // Never call isVersionAtLeast with null — it returns false and would
-                    // incorrectly reject KaiPath.
-                    if (version == null || version.isBlank()) {
-                        return true;
-                    }
-                    return isVersionAtLeast(version, KAIPATH_MIN_VERSION);
+                    return version == null ? "" : version;
                 }
             }
-            // Older ConnectionData path: mod id list only.
             Object modList = data.getClass().getMethod("getModList").invoke(data);
             if (modList instanceof Iterable<?> mods) {
                 for (Object mod : mods) {
                     if (mod != null && KAIPATH_MOD_ID.equalsIgnoreCase(String.valueOf(mod))) {
-                        return true;
+                        return "";
                     }
                 }
             }
-            return false;
+            return null;
         } catch (Throwable ignored) {
-            return false;
+            return null;
         }
     }
 

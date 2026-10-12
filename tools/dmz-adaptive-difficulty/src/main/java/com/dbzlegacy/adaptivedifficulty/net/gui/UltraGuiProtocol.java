@@ -33,6 +33,9 @@ public final class UltraGuiProtocol {
     /** Message index: GuiActionPacket C→S. */
     public static final int MSG_ACTION = 1;
 
+    /** Message index: GuiFeaturesPacket C→S (optional client capability advertisement). */
+    public static final int MSG_FEATURES = 2;
+
     private UltraGuiProtocol() {}
 
     /** Channel location for {@code modId} → {@code modid:gui}. */

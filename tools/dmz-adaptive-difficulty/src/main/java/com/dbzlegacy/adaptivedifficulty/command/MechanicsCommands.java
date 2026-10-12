@@ -338,12 +338,16 @@ public final class MechanicsCommands {
                 return 0;
             }
         }
+        String features =
+                com.dbzlegacy.adaptivedifficulty.net.gui.UltraClientFeatures.summarizeForStaff(target);
         com.dbzlegacy.adaptivedifficulty.net.gui.LmGuiNetwork.sendGuiTest(target);
         LmCommandFeedback.tell(
                 source,
                 "§aUltra guitest → §f"
                         + target.m_7755_().getString()
-                        + "§a. KaiPath 1.3.1+ should show Ping server — watch log for GuiActionPacket ←");
+                        + "§a — §f"
+                        + features
+                        + "§a. Click Ping server; watch log for GuiActionPacket ←");
         return 1;
     }
 

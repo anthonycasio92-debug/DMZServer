@@ -1,69 +1,51 @@
-# JLDK brief — KaiPath Ultra GUI client (multi-mod)
+# JLDK brief — KaiPath Ultra GUI client conformance
 
-**Status:** implement from source in this repo — **no patched KaiPath jar is shipped.**
+**Status:** KaiPath **1.3.1** ships the dynamic Ultra consumer (10-field decode,
+`LmDynamicScreen`, multi-mod registry). LM **4.6.105+** still sends button **`style`** and
+packet **`activeTab`** that 1.3.1 ignores — implement those next and advertise via
+`GuiFeaturesPacket`.
 
 | Kit | Path |
 |-----|------|
-| KaiPath client sources (merge into KaiPath) | [`tools/ultra-gui-kit/kaipath-client/`](../tools/ultra-gui-kit/kaipath-client/) |
-| Server codecs for any mod author | [`tools/ultra-gui-kit/server/`](../tools/ultra-gui-kit/server/) |
-| Kit README | [`tools/ultra-gui-kit/README.md`](../tools/ultra-gui-kit/README.md) |
-| Wire contract | [`docs/KAIPATH_GUI_PROTOCOL.md`](KAIPATH_GUI_PROTOCOL.md) |
+| Protocol + conformance contract | [`docs/KAIPATH_GUI_PROTOCOL.md`](KAIPATH_GUI_PROTOCOL.md) |
+| KaiPath client sources | [`tools/ultra-gui-kit/kaipath-client/`](../tools/ultra-gui-kit/kaipath-client/) |
+| Server codecs (any mod) | [`tools/ultra-gui-kit/server/`](../tools/ultra-gui-kit/server/) |
 
 ---
 
-## Problem
+## Governing rule
 
-KaiPath **1.3.0** only decodes **1 of 10** `GuiOpenPacket` fields and renders a hardcoded
-hub. Submenus cannot display. The consumer is also LM-only (`legacymechanics:gui`) with no
-registry for other mods.
+The client renders what the server sends — **no hardcoded screen/tab/button/action lists**.
+`style` and `activeTab` are **packet data**, not new screens.
 
-## Required work
+## Gap vs LM today (1.3.1)
 
-### 1–5. Dynamic packet UI (critical path)
+| Feature | Server sends | 1.3.1 client |
+|---------|--------------|--------------|
+| Button `style` (`normal`/`confirm`/`danger`/`dim`) | yes | ignored — all buttons identical |
+| `activeTab` (GuiOpenPacket field 5) | yes | ignored — no tab highlight |
+| `GuiFeaturesPacket` msg 2 | accepted | not sent → treated as baseline |
 
-1. Decode all **10** `GuiOpenPacket` fields (defaults; ignore bytes after #10).
-2. Render title / `tabsJson` / `linesJson` / `buttonsJson` dynamically; panel center + margin.
-3. On click, send `GuiActionPacket` with **verbatim** `screenId` / `actionId` / `argsJson`.
-4. **No screenId whitelist** — any id → dynamic screen; `MissingScreen` only for malformed packets.
-5. Future-proof: dynamic tabs; never filter action ids; accept mismatched channel protocol with a warning.
+LM logs a warning naming the player, KaiPath version, missing features, and player-visible
+impact. `/lm admin guitest` prints the feature summary.
 
-### 7. Namespace-agnostic protocol
+## Required next work
 
-- Packet encode/decode must **not** contain hardcoded `legacymechanics` (or any mod id).
-- Channel namespace is a **registration parameter** (`<modid>:gui`).
-- Screen ids, verbs, and button schemas are opaque content — work for any mod.
-
-### 8. Shared channel convention + multi-mod registry
-
-```
-channel = <modid>:gui
-```
+1. **Button styles** — map `style` to green / red / dim / normal themed buttons.
+2. **activeTab** — highlight the tab whose key matches `GuiOpenPacket.activeTab()`.
+3. **Advertise** — after channel register (when remote present):
 
 ```java
-UltraGuiConsumerRegistry.registerClientChannel("legacymechanics");
-UltraGuiConsumerRegistry.registerClientChannel("mymod");
+UltraGuiConsumerRegistry.advertiseFeatures(
+    "legacymechanics:gui",
+    "[\"style\",\"activeTab\"]");
 ```
 
-Reference: `tools/ultra-gui-kit/kaipath-client/.../UltraGuiConsumerRegistry.java`.
+Set `UltraGuiConsumerRegistry.ADVERTISED_FEATURES_JSON` accordingly in the kit.
 
-### 9. Reference implementation (server mods)
+4. Keep encoding/decoding tolerant (defaults; ignore trailing fields).
 
-Copy from `tools/ultra-gui-kit/server/` (also mirrored in `docs/ultra-gui-protocol/reference/`):
+## Already done in 1.3.1
 
-- `UltraGuiChannel.java`
-- `UltraGuiOpenPacket.java`
-- `UltraGuiActionPacket.java`
-- `HelloWorldServerSketch.java` (comments only)
-
-### 10. Third-party docs
-
-`docs/KAIPATH_GUI_PROTOCOL.md` — **For other mod developers** (channel, fields, buttons, verbs, hello-world).
-
----
-
-## How to merge (KaiPath)
-
-1. Copy `tools/ultra-gui-kit/kaipath-client/com/dmzlegacy/kaipath/ultra/consumers/` into the KaiPath sources.
-2. Ensure client bootstrap still calls `LmUltraConsumer.bootstrap()` (or equivalent).
-3. For each partner mod: `UltraGuiConsumerRegistry.registerClientChannel("<modid>")`.
-4. Ship an official KaiPath release — players should **not** need a DMZServer overlay jar.
+Decode 10 fields; dynamic UI; verbatim action echo; any `screenId`; multi-mod
+`UltraGuiConsumerRegistry`.

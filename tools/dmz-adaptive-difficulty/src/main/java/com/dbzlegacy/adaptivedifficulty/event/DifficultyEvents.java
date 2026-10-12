@@ -391,6 +391,10 @@ public final class DifficultyEvents {
     @SubscribeEvent
     public void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
+            try {
+                com.dbzlegacy.adaptivedifficulty.net.gui.LmGuiNetwork.clearClientSession(player);
+            } catch (Throwable ignored) {
+            }
             com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcUltraPreview.leave(player);
             com.dbzlegacy.adaptivedifficulty.progression.tp.DeathTpPenalty.onLogout(player);
             // Flush player AD data only — do NOT clear active tier on disconnect.

@@ -9,16 +9,125 @@ LegacyMechanics (LM).
 | Forge protocol string | `"1"` (`UltraGuiProtocol.PROTOCOL_VERSION`) |
 | Message 0 | GuiOpenPacket (server → client) |
 | Message 1 | GuiActionPacket (client → server) |
+| Message 2 | GuiFeaturesPacket (client → server, **optional**) |
 | Client renderer | KaiPath (dynamic — renders the packet, no hardcoded menus) |
 
 **Principle:** the client renders what the server sends. Packet codecs must not embed a
-channel namespace or mod id. New menus are added on the **server mod** side only.
+channel namespace or mod id. New menus are added on the **server mod** side only. Optional
+fields (`style`, `activeTab`) are **data**, not new hardcoded screens.
 
-**KaiPath 1.3.1+** ships the dynamic Ultra consumer (10-field decode, `LmDynamicScreen`,
-`UltraGuiConsumerRegistry`). LM 4.6.105+ sends logical wire `screenId`s (hub shim off).
+**KaiPath 1.3.1** baseline: decodes 10 fields and renders dynamic buttons/tabs/lines, but
+**ignores** button `style` and packet `activeTab`. LM 4.6.105+ advertises the gap in logs
+until the client reports those features via `GuiFeaturesPacket`.
 
-Implement-yourself kit (for other mods / older notes): [`tools/ultra-gui-kit/`](../tools/ultra-gui-kit/).
-Server codecs: [`tools/ultra-gui-kit/server/`](../tools/ultra-gui-kit/server/).
+Implement-yourself kit: [`tools/ultra-gui-kit/`](../tools/ultra-gui-kit/).
+
+---
+
+## Client conformance contract (JLDK)
+
+The client **must** render what the server sends (no hardcoded screen/tab/button lists).
+
+| Capability | Required since | Status on KaiPath 1.3.1 |
+|------------|----------------|-------------------------|
+| Decode all 10 GuiOpen fields | 1.3.1 | yes |
+| Dynamic title / tabs / lines / buttons | 1.3.1 | yes |
+| Verbatim GuiAction echo | 1.3.1 | yes |
+| Any `screenId` (no whitelist) | 1.3.1 | yes |
+| Honor button **`style`** | next | **no** — all buttons look identical |
+| Honor **`activeTab`** highlight | next | **no** — active tab not distinguished |
+| Send **GuiFeaturesPacket** | next | **no** — treated as 1.3.1 baseline |
+
+### Button JSON schema
+
+Every button object in `buttonsJson`:
+
+| Field | Required | Type | Notes |
+|-------|----------|------|--------|
+| `id` | yes | string | Action id (echoed verbatim on click) |
+| `label` | yes | string | Display text (may include `§` colors) |
+| `style` | no | string | Visual role — see table below (default `normal`) |
+| `x` | yes | number | Panel-relative X |
+| `y` | yes | number | Panel-relative Y |
+| `w` | yes | number | Width |
+| `h` | yes | number | Height |
+| `args` | recommended | object | Opaque JSON echoed to the server |
+
+```json
+{
+  "id": "@difficulty:do:activate:1",
+  "label": "§aActivate T1",
+  "style": "confirm",
+  "x": 20,
+  "y": 100,
+  "w": 150,
+  "h": 18,
+  "args": { "screen": "difficulty", "page": "tiers" }
+}
+```
+
+#### `style` values (client must implement)
+
+| Value | Meaning | Visual expectation |
+|-------|---------|-------------------|
+| `normal` | Default button | Neutral / standard themed button |
+| `confirm` | Safe / positive action | **Green** (or confirm theme) |
+| `danger` | Destructive / irreversible | **Red** (or danger theme) |
+| `dim` | Disabled / unavailable look | **Dark gray** / muted (still clickable unless server says otherwise) |
+
+Unknown style values → fall back to `normal`. Missing `style` → `normal`.
+
+KaiPath **1.3.1** ignores `style`: all buttons render identically (no green/red/dim
+distinction).
+
+### `activeTab` (GuiOpenPacket field 5)
+
+| | |
+|--|--|
+| Wire field | #5 `activeTab` (string) |
+| Meaning | Id of the **currently open** tab |
+| Client must | Visually distinguish that tab from the others (highlight / selected state) |
+
+`tabsJson` entries use `{id,label}`. Match `activeTab` against the tab’s **unqualified**
+key when the server sends keys like `tiers`, or against the full `id` when that is what
+`activeTab` contains. LM builders set `activeTab` to the short key (e.g. `home`, `tiers`).
+
+KaiPath **1.3.1** ignores `activeTab`: the active tab is not highlighted.
+
+### GuiFeaturesPacket (C→S) — message 2
+
+Optional capability advertisement. **Backward compatible:** a client that never sends it
+is treated as supporting **nothing beyond the 1.3.1 baseline** (dynamic UI, but no
+`style` / `activeTab`).
+
+| # | Field | Type | Notes |
+|---|--------|------|--------|
+| 1 | `featuresJson` | string | JSON **array** of feature ids |
+
+Known optional feature ids:
+
+| Id | Means the client honors… |
+|----|--------------------------|
+| `style` | Button `style` values above |
+| `activeTab` | GuiOpenPacket field 5 highlight |
+
+Example (conforming client after implementing both):
+
+```json
+["style","activeTab"]
+```
+
+Send once after channel registration (client setup / first join). Extra ids are ignored.
+Extra wire fields after #1 are ignored.
+
+LM logs a **warning** when a player’s feature set lacks `style` or `activeTab`, naming:
+
+- player
+- KaiPath version if known
+- missing features
+- player-visible impact (e.g. “all buttons render identically…” / “active tab is not highlighted”)
+
+`/lm admin guitest` includes the reported features in staff chat and the open packet body.
 
 ---
 
@@ -26,80 +135,38 @@ Server codecs: [`tools/ultra-gui-kit/server/`](../tools/ultra-gui-kit/server/).
 
 ### 1. Channel naming
 
-Register a Forge `SimpleChannel` on:
-
 ```java
 new ResourceLocation(YOUR_MOD_ID, "gui")  // → "mymod:gui"
 ```
 
-Use protocol `"1"`. Accept missing/mismatched remotes if players without KaiPath should
-still join (KaiPath is optional for them).
+Protocol `"1"`. Message 0 open, 1 action, 2 features (optional).
 
-KaiPath keys **client consumers by channel id**. Each partner mod needs its own
-`registerClientChannel(modId)` entry — do not share `legacymechanics:gui`.
-
-### 2. Packet field reference
-
-#### GuiOpenPacket (S→C) — 10 fields
+### 2. GuiOpenPacket (S→C) — 10 fields
 
 | # | Field | Type | Notes |
 |---|--------|------|--------|
-| 1 | `screenId` | string | Your screen / system id (any string; not a whitelist) |
-| 2 | `title` | string | Title (may include `§` color codes) |
+| 1 | `screenId` | string | Any string (not a whitelist) |
+| 2 | `title` | string | May include `§` colors |
 | 3 | `pageId` | string | Page within the system |
-| 4 | `tabsJson` | string | JSON **array** of `{id,label}` |
-| 5 | `activeTab` | string | Active tab key |
-| 6 | `linesJson` | string | JSON **array** of body text lines |
-| 7 | `buttonsJson` | string | JSON **array** of button objects |
+| 4 | `tabsJson` | string | JSON array of `{id,label}` |
+| 5 | `activeTab` | string | **Active tab key — client must highlight** |
+| 6 | `linesJson` | string | JSON array of body lines |
+| 7 | `buttonsJson` | string | JSON array of button objects (incl. **style**) |
 | 8 | `panelWidth` | varint | Default **350** |
 | 9 | `panelHeight` | varint | Default **220** |
-| 10 | `layoutJson` | string | JSON object (below) |
+| 10 | `layoutJson` | string | JSON object |
 
-Missing trailing fields → defaults. Bytes after field 10 are ignored (forward-compatible).
+Missing trailing fields → defaults. Bytes after field 10 ignored.
 
-#### GuiActionPacket (C→S) — 3 fields
+### 3. GuiActionPacket (C→S) — 3 fields
 
 | # | Field | Type | Notes |
 |---|--------|------|--------|
-| 1 | `screenId` | string | Echo open packet `screenId` verbatim |
+| 1 | `screenId` | string | Echo open `screenId` verbatim |
 | 2 | `actionId` | string | Echo button/tab `id` verbatim |
-| 3 | `argsJson` | string | Echo button `args` JSON verbatim |
+| 3 | `argsJson` | string | Echo button `args` verbatim |
 
-The Forge channel protocol (`"1"`) is **not** a field inside `GuiActionPacket`.
-
-### 3. Button JSON schema
-
-```json
-{
-  "id": "@myshop:do:buy:starter",
-  "label": "§aBuy starter pack",
-  "style": "confirm",
-  "x": 20,
-  "y": 100,
-  "w": 150,
-  "h": 18,
-  "args": { "screen": "shop", "page": "main", "sku": "starter" }
-}
-```
-
-| Field | Required | Notes |
-|-------|----------|--------|
-| `id` | yes | Action id (see verb contract) |
-| `label` | yes | Display text |
-| `style` | no | Hint: `normal` / `confirm` / `danger` / `dim` … |
-| `x`,`y`,`w`,`h` | yes | **Panel-relative** geometry |
-| `args` | recommended | Opaque JSON echoed to the server |
-
-### 4. Tabs
-
-`tabsJson` is a JSON array. Tab click sends that tab’s `id` as `actionId` (same as buttons).
-Do not hardcode tab lists on the client.
-
-```json
-[{"id":"@myshop:tab:weapons","label":"Weapons"},{"id":"@myshop:tab:armor","label":"Armor"}]
-```
-
-### 5. Layout JSON
+### 4. Layout JSON
 
 ```json
 {
@@ -112,75 +179,37 @@ Do not hardcode tab lists on the client.
 }
 ```
 
-KaiPath places the panel at `((screenW - panelWidth) / 2, (screenH - panelHeight) / 2)` when
-`center` is true, clamped by `margin` from the screen edges. Extra keys (e.g. `system`) are
-allowed and ignored by the renderer.
+Panel at `((screenW - panelWidth) / 2, (screenH - panelHeight) / 2)` when `center` is true;
+honor `margin`. Button `x`/`y` are panel-relative.
 
-### 6. Action verb contract (recommended)
+### 5. Action verb contract (recommended)
 
-Servers may use any non-empty `actionId`. The recommended shape (used by LM and easy for
-KaiPath tooling) is:
+Optional `@<screen>:` prefix, then bare id or `open:` / `do:` / `tab:` / `nav:` / `page:`.
+Client never validates action ids — echo verbatim.
 
-- Optional `@<screen>:` prefix
-- Then either a **bare** id (no `:`) or a **verb-prefixed** id: `open:`, `do:`, `tab:`,
-  `nav:`, `page:`
+LM enforces this at packet **build** time via `UltraScreenIds.requireValidActionId`
+(malformed ids never reach the client).
 
-Examples:
-
-- `@myshop:do:buy:starter`
-- `@myshop:tab:weapons`
-- `@myshop:open:cart`
-- bare `close` (if you choose to support it)
-
-**Client never validates or rewrites action ids** — echo verbatim. The server decides what
-is legal.
-
-LM enforces this at packet **build** time via `UltraScreenIds.requireValidActionId` (malformed
-ids never reach the client). Other mods may adopt the same check or define their own.
-
-### 7. Hello world (minimal menu)
-
-Server (your mod), after registering `mymod:gui`:
+### 6. Hello world
 
 ```java
-// Build + send a one-button screen
 String buttons = "["
-    + "{\"id\":\"@myshop:do:ping\",\"label\":\"§aPing server\","
+    + "{\"id\":\"@myshop:do:ping\",\"label\":\"§aPing\","
     + "\"style\":\"confirm\",\"x\":20,\"y\":80,\"w\":150,\"h\":18,"
     + "\"args\":{\"screen\":\"hello\",\"page\":\"main\"}}"
     + "]";
 GuiOpenPacket open = new GuiOpenPacket(
-    "hello",                    // screenId
-    "§6My Shop",                // title
-    "main",                     // pageId
-    "[]",                       // tabsJson
-    "",                         // activeTab
-    "[\"Welcome to My Shop.\"]",// linesJson
-    buttons,
-    350, 220,
+    "hello", "§6My Shop", "main",
+    "[{\"id\":\"home\",\"label\":\"Home\"}]",
+    "home",
+    "[\"Welcome.\"]",
+    buttons, 350, 220,
     "{\"center\":true,\"margin\":6}");
 CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), open);
 ```
 
-Handle the click on the server:
-
-```java
-// GuiActionPacket handler (main thread)
-if ("@myshop:do:ping".equals(msg.actionId())) {
-    player.sendSystemMessage(Component.literal("Pong from My Shop"));
-}
-```
-
-Client (KaiPath / JLDK): register the consumer once:
-
-```java
-UltraGuiConsumerRegistry.registerClientChannel("mymod"); // → mymod:gui
-```
-
-No screen-id whitelist, no hardcoded buttons — KaiPath opens a dynamic screen and echoes
-clicks on `mymod:gui`.
-
-Copy-paste codecs: [`tools/ultra-gui-kit/server/`](../tools/ultra-gui-kit/server/).
+Client: `UltraGuiConsumerRegistry.registerClientChannel("mymod")` then send
+`GuiFeaturesPacket` with `["style","activeTab"]` once implemented.
 
 ---
 
@@ -189,52 +218,31 @@ Copy-paste codecs: [`tools/ultra-gui-kit/server/`](../tools/ultra-gui-kit/server
 | Rule | Detail |
 |------|--------|
 | Format | `<modid>:gui` |
-| Registry key | Full channel id string (`mymod:gui`) |
-| Multi-mod | Many channels may be registered; clicks return on the channel that opened the screen |
-| Protocol | `"1"` on every channel; bump requires coordinated KaiPath release |
-
-JLDK implementation target: merge `tools/ultra-gui-kit/kaipath-client/` and call
-`UltraGuiConsumerRegistry.registerClientChannel(modId)` (see
-`docs/KAIPATH_JLDK_CLIENT_BRIEF.md`). **No overlay jar is shipped.**
+| Registry key | Full channel id |
+| Multi-mod | Clicks return on the channel that opened the screen |
+| Protocol | `"1"` |
 
 ---
 
-## LegacyMechanics notes (reference implementation)
+## LegacyMechanics notes
 
-LM is one consumer of this protocol on channel `legacymechanics:gui`. Its content helpers
-(`UltraScreenSpec`, hub shim for stock KaiPath 1.3.0, startup self-tests) are **LM-only**
-and are not required for other mods.
+LM channel: `legacymechanics:gui`. Startup aborts on catalog errors or encode/decode
+round-trip failure (including **style** / **activeTab** survival and `GuiFeaturesPacket`).
 
-### Zero-config new screens (LM)
+With KaiPath **1.3.1+** dynamic-any screen ids, hub wire shim is off
+(`UltraScreenIds.KAIPATH_DYNAMIC_ANY_SCREEN_ID`).
 
-1. Add the logical id to `UltraScreenIds.PROTOCOL_IDS` and `UltraScreenIds.BUILDER_IDS`.
-2. Implement `Ultra*Screens` via **`UltraScreenSpec` only**.
-3. Wire `UltraGui.openUltra` to that builder.
-
-Automatic: hub shim for stock 1.3.0, shared encode path, bare hub action mapping, startup
-round-trip abort on failure.
-
-#### Hub wire shim (stock KaiPath 1.3.0 only)
-
-Stock 1.3.0 only registers `hub`. LM may rewrite wire `screenId` to `hub` while keeping
-title/tabs/buttons/panel. Logical system stays in `args` / `layoutJson` / `@screen:` prefixes.
-KaiPath with the kit merged needs no shim — any `screenId` opens the dynamic screen.
-
-LM logical ids today: `hub`, `difficulty`, `rival`, `spar`, `prestige`, `character`,
-`progression`, `config`, `admin`.
-
-### Startup self-tests (LM)
-
-On `LmGuiNetwork.register()`: catalog check, builder probe, 10-field encode/decode
-round-trip + verbatim `GuiActionPacket` (failures abort startup).
+Smoke: `/lm admin guitest` → reports client features → click **Ping server**.
 
 ---
 
-## KaiPath client requirements (JLDK)
+## Packaging checklist (LM jar)
 
-Stock **1.3.0** only decodes `screenId` and shows a hardcoded hub. Required client work
-(items 1–5 dynamic render + items 7–10 multi-mod) is in
-**`docs/KAIPATH_JLDK_CLIENT_BRIEF.md`**.
-
-**Implement from source:** [`tools/ultra-gui-kit/kaipath-client/`](../tools/ultra-gui-kit/kaipath-client/)
-— merge into KaiPath; do not expect a DMZServer-built KaiPath jar.
+1. Clean compile output before packaging (`build.sh` does this).
+2. Scan jar for missing/referenced classes and inner classes
+   (`audit_jar_inner_classes.py`).
+3. Scan every `@Mixin` class for non-private helper methods
+   (`audit_mixin_visibility.py` — helpers must be `private`).
+4. Version pins match: `AdaptiveDifficultyMod.VERSION` == `mods.toml` `version`
+   (== `plugin.yml` when a GUI plugin is shipped).
+5. Fail-closed audits in `build.sh` (Ultra actions, forge GUI backend, ship manifest, …).

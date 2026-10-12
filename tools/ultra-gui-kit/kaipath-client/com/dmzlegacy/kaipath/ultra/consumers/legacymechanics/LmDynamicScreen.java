@@ -16,6 +16,16 @@ import net.minecraft.network.chat.Component;
 /**
  * Renders whatever the server sends in {@link GuiOpenPacket} — title, tabs, lines, buttons.
  * No hardcoded screen/tab/button lists. Clicks go back on the bound {@code <modid>:gui} channel.
+ *
+ * <p><b>JLDK TODO (beyond 1.3.1 baseline):</b>
+ *
+ * <ul>
+ *   <li>Honor button {@code style}: {@code normal}, {@code confirm} (green), {@code danger}
+ *       (red), {@code dim} (dark gray).
+ *   <li>Honor {@link GuiOpenPacket#activeTab()} — visually distinguish the active tab.
+ *   <li>Advertise {@code ["style","activeTab"]} via {@link GuiFeaturesPacket} /
+ *       {@link UltraGuiConsumerRegistry#advertiseFeatures}.
+ * </ul>
  */
 public class LmDynamicScreen extends UltraScreen {
     private final GuiOpenPacket packet;

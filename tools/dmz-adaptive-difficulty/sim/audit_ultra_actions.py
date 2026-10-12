@@ -135,6 +135,22 @@ def main() -> int:
             errors.append("UltraGuiProtocol must define CHANNEL_PATH = \"gui\"")
         if "channel(String" not in proto_text and "channel(String modId)" not in proto_text:
             errors.append("UltraGuiProtocol must expose channel(modId) helper")
+        if "MSG_FEATURES" not in proto_text:
+            errors.append("UltraGuiProtocol must define MSG_FEATURES for GuiFeaturesPacket")
+    features_pkt = ROOT / "src/main/java/com/dbzlegacy/adaptivedifficulty/net/gui/GuiFeaturesPacket.java"
+    if not features_pkt.is_file():
+        errors.append("Missing GuiFeaturesPacket (client capability advertisement)")
+    client_feat = ROOT / "src/main/java/com/dbzlegacy/adaptivedifficulty/net/gui/UltraClientFeatures.java"
+    if not client_feat.is_file():
+        errors.append("Missing UltraClientFeatures (server-side feature gap diagnostics)")
+    else:
+        feat_text = client_feat.read_text(encoding="utf-8")
+        if "FEATURE_STYLE" not in feat_text or "FEATURE_ACTIVE_TAB" not in feat_text:
+            errors.append("UltraClientFeatures must define FEATURE_STYLE and FEATURE_ACTIVE_TAB")
+    if "roundTripStyleAndActiveTab" not in net:
+        errors.append("LmGuiNetwork must round-trip style + activeTab in self-test")
+    if "GuiFeaturesPacket" not in net:
+        errors.append("LmGuiNetwork must register GuiFeaturesPacket")
 
     ids = (ROOT / "src/main/java/com/dbzlegacy/adaptivedifficulty/gui/ultra/UltraScreenIds.java").read_text(
         encoding="utf-8"
@@ -163,10 +179,15 @@ def main() -> int:
             "center",
             "@<screen>",
             "GuiActionPacket",
+            "GuiFeaturesPacket",
             "PROTOCOL_VERSION",
             "requireValidActionId",
-            "Zero-config",
             "buttonsJson",
+            "activeTab",
+            "confirm",
+            "danger",
+            "dim",
+            "normal",
             "open:",
             "do:",
             "tab:",

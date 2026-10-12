@@ -2,6 +2,7 @@ package com.dmzlegacy.kaipath.ultra.consumers;
 
 import com.dmzlegacy.kaipath.ultra.UltraUiBridge;
 import com.dmzlegacy.kaipath.ultra.consumers.legacymechanics.GuiActionPacket;
+import com.dmzlegacy.kaipath.ultra.consumers.legacymechanics.GuiFeaturesPacket;
 import com.dmzlegacy.kaipath.ultra.consumers.legacymechanics.GuiOpenPacket;
 import com.dmzlegacy.kaipath.ultra.consumers.legacymechanics.LmScreens;
 import java.util.Map;
@@ -17,13 +18,19 @@ import net.minecraftforge.network.simple.SimpleChannel;
  * Multi-mod Ultra GUI client registry. Each server mod owns {@code <modid>:gui}; KaiPath keys
  * consumers by that channel id — never assume a single mod.
  *
- * <p>JLDK: call {@link #registerClientChannel(String)} (or the overload with a custom protocol)
- * once per partner mod from client setup. Opens always use {@link LmScreens} dynamic rendering;
- * clicks echo on the <em>same</em> channel that delivered the open packet.
+ * <p>JLDK: call {@link #registerClientChannel(String)} once per partner mod. After implementing
+ * button {@code style} and {@code activeTab} highlight, call
+ * {@link #advertiseFeatures(String, String)} with {@code ["style","activeTab"]}.
  */
 public final class UltraGuiConsumerRegistry {
     public static final String CHANNEL_PATH = "gui";
     public static final String PROTOCOL_VERSION = "1";
+
+    /**
+     * Features this client build honors. Update when style / activeTab rendering ships.
+     * Empty = 1.3.1 baseline (server treats optional features as missing).
+     */
+    public static final String ADVERTISED_FEATURES_JSON = "[]";
 
     private static final Map<String, BoundChannel> CHANNELS = new ConcurrentHashMap<>();
 
@@ -81,11 +88,19 @@ public final class UltraGuiConsumerRegistry {
                 .decoder(GuiActionPacket::decode)
                 .consumerMainThread(GuiActionPacket::handleClientNoop)
                 .add();
+        channel.messageBuilder(GuiFeaturesPacket.class, 2, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(GuiFeaturesPacket::encode)
+                .decoder(GuiFeaturesPacket::decode)
+                .consumerMainThread(GuiFeaturesPacket::handleClientNoop)
+                .add();
         CHANNELS.put(channelId, bound);
         UltraUiBridge.LOGGER.info(
-                "[kaipath] Ultra GUI consumer registered channel={} protocol={}",
+                "[kaipath] Ultra GUI consumer registered channel={} protocol={} featuresJson={}",
                 channelId,
-                proto);
+                proto,
+                ADVERTISED_FEATURES_JSON);
+        // Best-effort advertise now; also call advertiseFeatures after the server channel is present.
+        advertiseFeatures(channelId, ADVERTISED_FEATURES_JSON);
     }
 
     public static boolean isRegistered(String channelId) {
@@ -129,6 +144,28 @@ public final class UltraGuiConsumerRegistry {
                 screenId,
                 actionId);
         bound.channel.sendToServer(new GuiActionPacket(screenId, actionId, argsJson));
+    }
+
+    /**
+     * Advertise optional render features to the server. Use
+     * {@code ["style","activeTab"]} once both are implemented. Safe to call repeatedly.
+     */
+    public static void advertiseFeatures(String channelId, String featuresJson) {
+        BoundChannel bound = CHANNELS.get(channelId);
+        if (bound == null) {
+            return;
+        }
+        Minecraft mc = Minecraft.m_91087_();
+        if (mc == null || mc.m_91403_() == null) {
+            return;
+        }
+        if (!bound.channel.isRemotePresent(mc.m_91403_().m_104910_())) {
+            return;
+        }
+        String json = featuresJson == null || featuresJson.isBlank() ? "[]" : featuresJson;
+        UltraUiBridge.LOGGER.info(
+                "[kaipath] GuiFeaturesPacket → channel={} features={}", channelId, json);
+        bound.channel.sendToServer(new GuiFeaturesPacket(json));
     }
 
     private static final class BoundChannel {
