@@ -16,10 +16,10 @@ LegacyMechanics (LM).
 channel namespace or mod id. New menus are added on the **server mod** side only. Optional
 fields (`style`, `activeTab`) are **data**, not new hardcoded screens.
 
-**KaiPath 1.3.x** baseline: decodes 10 fields and renders dynamic buttons/tabs/lines, but
-typically **ignores** button `style`, packet `activeTab`, `layoutJson.titleAlign`, and
-`layoutJson.playerModel`. LM **4.6.107+** logs the gap until the client reports those
-features via `GuiFeaturesPacket`.
+**KaiPath 1.3.5** (confirmed): decodes GuiOpen fields, centers titles via
+`layoutJson.titleAlign`, and highlights `activeTab`. Still needs button `style` colors,
+`playerModel` draw, and field 11 `inputsJson` text fields. LM **4.6.108+** logs missing
+optional features via `GuiFeaturesPacket`.
 
 Implement-yourself kit: [`tools/ultra-gui-kit/`](../tools/ultra-gui-kit/).
 JLDK handoff: [`docs/KAIPATH_JLDK_CLIENT_BRIEF.md`](KAIPATH_JLDK_CLIENT_BRIEF.md).
@@ -30,17 +30,18 @@ JLDK handoff: [`docs/KAIPATH_JLDK_CLIENT_BRIEF.md`](KAIPATH_JLDK_CLIENT_BRIEF.md
 
 The client **must** render what the server sends (no hardcoded screen/tab/button lists).
 
-| Capability | Required since | Status on KaiPath 1.3.x |
-|------------|----------------|-------------------------|
-| Decode all 10 GuiOpen fields | 1.3.1 | yes |
+| Capability | Required since | Status on KaiPath **1.3.5** |
+|------------|----------------|-------------------------------|
+| Decode GuiOpen fields 1–10 | 1.3.1 | yes |
 | Dynamic title / tabs / lines / buttons | 1.3.1 | yes |
 | Verbatim GuiAction echo | 1.3.1 | yes |
 | Any `screenId` (no whitelist) | 1.3.1 | yes |
-| Honor **`layoutJson.titleAlign`** | next | **no** — titles left-align by default |
+| Honor **`layoutJson.titleAlign`** | 1.3.5 | **yes** — titles centered |
+| Honor **`activeTab`** highlight | 1.3.5 | **yes** |
 | Honor button **`style`** | next | **no** — all buttons look identical |
-| Honor **`activeTab`** highlight | next | **no** — active tab not distinguished |
 | Honor **`layoutJson.playerModel`** | next | **no** — no entity preview |
-| Send **GuiFeaturesPacket** | next | **no** — treated as 1.3.1 baseline |
+| Honor **`inputsJson`** text fields (field 11) | next | **no** — ignore trailing field |
+| Send **GuiFeaturesPacket** | next | advertise implemented features |
 
 ### Button JSON schema
 
@@ -118,11 +119,12 @@ Known optional feature ids:
 | `activeTab` | GuiOpenPacket field 5 highlight |
 | `titleAlign` | `layoutJson.titleAlign` (`center` / `left`) |
 | `playerModel` | `layoutJson.playerModel` entity preview |
+| `textInput` | GuiOpenPacket field 11 `inputsJson` text fields + `bindInput` |
 
 Example (conforming client after implementing all):
 
 ```json
-["style","activeTab","titleAlign","playerModel"]
+["style","activeTab","titleAlign","playerModel","textInput"]
 ```
 
 Send once after channel registration (client setup / first join). Extra ids are ignored.
@@ -149,7 +151,7 @@ new ResourceLocation(YOUR_MOD_ID, "gui")  // → "mymod:gui"
 
 Protocol `"1"`. Message 0 open, 1 action, 2 features (optional).
 
-### 2. GuiOpenPacket (S→C) — 10 fields
+### 2. GuiOpenPacket (S→C) — 11 fields
 
 | # | Field | Type | Notes |
 |---|--------|------|--------|
@@ -161,18 +163,37 @@ Protocol `"1"`. Message 0 open, 1 action, 2 features (optional).
 | 6 | `linesJson` | string | JSON array of body lines |
 | 7 | `buttonsJson` | string | JSON array of button objects (incl. **style**) |
 | 8 | `panelWidth` | varint | Default **350** |
-| 9 | `panelHeight` | varint | Default **300** (grows to **380** when needed) |
+| 9 | `panelHeight` | varint | Default **300** (grows toward **420** when needed) |
 | 10 | `layoutJson` | string | JSON object (panel + body/button metrics + optional `playerModel`) |
+| 11 | `inputsJson` | string | JSON array of input elements (`type=text` today); default `[]` |
 
-Missing trailing fields → defaults. Bytes after field 10 ignored.
+Missing trailing fields → defaults. Bytes after the last understood field ignored.
 
 ### 3. GuiActionPacket (C→S) — 3 fields
 
 | # | Field | Type | Notes |
 |---|--------|------|--------|
 | 1 | `screenId` | string | Echo open `screenId` verbatim |
-| 2 | `actionId` | string | Echo button/tab `id` verbatim |
-| 3 | `argsJson` | string | Echo button `args` verbatim |
+| 2 | `actionId` | string | Echo button/tab/input `id` verbatim |
+| 3 | `argsJson` | string | Echo button `args` (+ `value` when submitting a text field) |
+
+#### `inputsJson` (field 11)
+
+```json
+[{
+  "id": "@config:input:difficulty|some.path",
+  "type": "text",
+  "x": 16, "y": 200, "w": 318, "h": 18,
+  "value": "current",
+  "placeholder": "Type a value…",
+  "maxLength": 128,
+  "args": { "screen": "config", "page": "detail:…", "system": "config" }
+}]
+```
+
+Buttons that apply a field include `args.bindInput` set to that input’s `id`. On click (or
+Enter in the field), the client must set `args.value` to the typed string before sending
+`GuiActionPacket`.
 
 ### 4. Layout JSON
 

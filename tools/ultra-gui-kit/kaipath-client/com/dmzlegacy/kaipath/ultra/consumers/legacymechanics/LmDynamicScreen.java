@@ -17,17 +17,16 @@ import net.minecraft.network.chat.Component;
  * Renders whatever the server sends in {@link GuiOpenPacket} — title, tabs, lines, buttons.
  * No hardcoded screen/tab/button lists. Clicks go back on the bound {@code <modid>:gui} channel.
  *
- * <p><b>JLDK TODO (beyond 1.3.x baseline):</b>
+ * <p><b>JLDK TODO (KaiPath 1.3.5 has titleAlign + activeTab):</b>
  *
  * <ul>
- *   <li>Honor {@code layoutJson.titleAlign} ({@code center} / {@code left}) — kit parses it;
- *       ensure live KaiPath uses the centered title path.
  *   <li>Honor button {@code style}: {@code normal}, {@code confirm} (green), {@code danger}
  *       (red), {@code dim} (dark gray).
- *   <li>Honor {@link GuiOpenPacket#activeTab()} — visually distinguish the active tab.
  *   <li>Render {@code layoutJson.playerModel} (entity preview bounds are parsed; draw the
  *       local player).
- *   <li>Advertise {@code ["style","activeTab","titleAlign","playerModel"]} via
+ *   <li>Render {@link GuiOpenPacket#inputsJson()} text fields; on Enter / {@code bindInput}
+ *       button click, put typed text in {@code args.value}.
+ *   <li>Advertise {@code ["style","activeTab","titleAlign","playerModel","textInput"]} via
  *       {@link GuiFeaturesPacket} / {@link UltraGuiConsumerRegistry#advertiseFeatures}.
  * </ul>
  */

@@ -196,6 +196,37 @@ public final class UltraGuiActions {
             return;
         }
 
+        // Text field Enter / submit (GuiOpenPacket field 11). Id is input:<payload>.
+        if (action.startsWith("input:")) {
+            String payload = action.length() > 6 ? action.substring(6) : "";
+            String inputPage = stringArg(args, "page");
+            if (inputPage.isBlank()) {
+                inputPage = homePage(safeScreen);
+            }
+            if ("config".equals(safeScreen)) {
+                if (!args.has("arg") || args.get("arg").isJsonNull()) {
+                    args.addProperty("arg", payload);
+                }
+                String msg =
+                        UltraConfigScreens.handleAction(player, "set", payload, inputPage, args);
+                if (msg != null && !msg.isBlank()) {
+                    String notice = GuiNotice.noticeBody(msg);
+                    if (notice != null && !notice.isBlank()) {
+                        DmzRewards.msg(player, notice);
+                    }
+                }
+                UltraGui.open(player, safeScreen, inputPage);
+                return;
+            }
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] Ultra input: on unsupported screen={} payload={}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    safeScreen,
+                    payload);
+            DmzRewards.msg(player, UltraStyle.dangerLine("That text field is not available."));
+            return;
+        }
+
         // Hub dim tile when the player lacks Skill Check access.
         if ("do:skillcheck_denied".equals(action) || "skillcheck_denied".equals(action)) {
             DmzRewards.msg(
@@ -412,7 +443,8 @@ public final class UltraGuiActions {
                         nullToEmpty(ProgressionGuiApi.handlePrestigeDo(player, act, arg, page));
                 case "character", "saga" -> characterDo(player, act, arg, page);
                 case "progression" -> nullToEmpty(ProgressionGuiApi.handleDo(player, act, arg, page));
-                case "config" -> nullToEmpty(UltraConfigScreens.handleAction(player, act, arg, page));
+                case "config" ->
+                        nullToEmpty(UltraConfigScreens.handleAction(player, act, arg, page, args));
                 case "hub", "admin" -> nullToEmpty(MechanicsGuiApi.handleDo(player, act, arg, page));
                 case "skillcheck", "skills" -> "";
                 case "team" -> nullToEmpty(DifficultyTeamGuiApi.handleDo(player, act, arg, page));

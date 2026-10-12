@@ -22,10 +22,10 @@ import net.minecraft.network.FriendlyByteBuf;
  *   <li>panelWidth — varint (default 350)
  *   <li>panelHeight — varint (default 300; may grow toward 420 when content requires)
  *   <li>layoutJson — string (JSON object; always includes {@code titleAlign})
+ *   <li>inputsJson — string (JSON array of text fields; optional, default {@code []})
  * </ol>
  *
- * <p>Missing trailing fields use defaults. Bytes after field 10 are ignored so newer servers
- * can append fields without breaking older clients.
+ * <p>Missing trailing fields use defaults. Bytes after the last understood field are ignored.
  */
 public final class UltraGuiOpenPacket {
     private final String screenId;
@@ -38,6 +38,7 @@ public final class UltraGuiOpenPacket {
     private final int panelWidth;
     private final int panelHeight;
     private final String layoutJson;
+    private final String inputsJson;
 
     public UltraGuiOpenPacket(
             String screenId,
@@ -50,6 +51,32 @@ public final class UltraGuiOpenPacket {
             int panelWidth,
             int panelHeight,
             String layoutJson) {
+        this(
+                screenId,
+                title,
+                pageId,
+                tabsJson,
+                activeTab,
+                linesJson,
+                buttonsJson,
+                panelWidth,
+                panelHeight,
+                layoutJson,
+                "[]");
+    }
+
+    public UltraGuiOpenPacket(
+            String screenId,
+            String title,
+            String pageId,
+            String tabsJson,
+            String activeTab,
+            String linesJson,
+            String buttonsJson,
+            int panelWidth,
+            int panelHeight,
+            String layoutJson,
+            String inputsJson) {
         this.screenId = blankTo(trim(screenId, 64), "main");
         this.title = trim(title, 128);
         this.pageId = trim(pageId, 64);
@@ -60,6 +87,7 @@ public final class UltraGuiOpenPacket {
         this.panelWidth = panelWidth > 0 ? panelWidth : UltraGuiChannel.DEFAULT_PANEL_WIDTH;
         this.panelHeight = panelHeight > 0 ? panelHeight : UltraGuiChannel.DEFAULT_PANEL_HEIGHT;
         this.layoutJson = trim(layoutJson, 2048);
+        this.inputsJson = blankTo(trim(inputsJson, 4096), "[]");
     }
 
     public String screenId() {
@@ -102,6 +130,10 @@ public final class UltraGuiOpenPacket {
         return layoutJson;
     }
 
+    public String inputsJson() {
+        return inputsJson;
+    }
+
     public static void encode(UltraGuiOpenPacket msg, FriendlyByteBuf buf) {
         buf.writeUtf(msg.screenId);
         buf.writeUtf(msg.title);
@@ -113,6 +145,7 @@ public final class UltraGuiOpenPacket {
         buf.writeVarInt(msg.panelWidth);
         buf.writeVarInt(msg.panelHeight);
         buf.writeUtf(msg.layoutJson == null ? "" : msg.layoutJson);
+        buf.writeUtf(msg.inputsJson == null ? "[]" : msg.inputsJson);
     }
 
     public static UltraGuiOpenPacket decode(FriendlyByteBuf buf) {
@@ -126,6 +159,7 @@ public final class UltraGuiOpenPacket {
         int panelWidth = UltraGuiChannel.DEFAULT_PANEL_WIDTH;
         int panelHeight = UltraGuiChannel.DEFAULT_PANEL_HEIGHT;
         String layoutJson = "";
+        String inputsJson = "[]";
         if (buf.isReadable()) {
             panelWidth = buf.readVarInt();
             if (panelWidth <= 0) {
@@ -141,7 +175,9 @@ public final class UltraGuiOpenPacket {
         if (buf.isReadable()) {
             layoutJson = readUtf(buf, "");
         }
-        // Ignore any future fields beyond #10.
+        if (buf.isReadable()) {
+            inputsJson = readUtf(buf, "[]");
+        }
         return new UltraGuiOpenPacket(
                 screenId,
                 title,
@@ -152,7 +188,8 @@ public final class UltraGuiOpenPacket {
                 buttonsJson,
                 panelWidth,
                 panelHeight,
-                layoutJson);
+                layoutJson,
+                inputsJson);
     }
 
     private static String trim(String value, int max) {

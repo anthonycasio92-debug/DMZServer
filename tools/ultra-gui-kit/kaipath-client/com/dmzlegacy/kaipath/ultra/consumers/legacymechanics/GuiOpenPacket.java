@@ -7,7 +7,7 @@ import net.minecraftforge.network.NetworkEvent;
 
 /**
  * Server → client Ultra GUI open. Protocol {@link LmGuiNetwork#PROTOCOL_VERSION} field layout
- * matches LM {@code docs/KAIPATH_GUI_PROTOCOL.md} (10 fields, append-tolerant).
+ * matches LM {@code docs/KAIPATH_GUI_PROTOCOL.md} (11 fields, append-tolerant).
  */
 public final class GuiOpenPacket {
     public static final int DEFAULT_PANEL_W = 350;
@@ -24,6 +24,7 @@ public final class GuiOpenPacket {
     private final int panelWidth;
     private final int panelHeight;
     private final String layoutJson;
+    private final String inputsJson;
 
     public GuiOpenPacket(
             String screenId,
@@ -36,6 +37,32 @@ public final class GuiOpenPacket {
             int panelWidth,
             int panelHeight,
             String layoutJson) {
+        this(
+                screenId,
+                title,
+                pageId,
+                tabsJson,
+                activeTab,
+                linesJson,
+                buttonsJson,
+                panelWidth,
+                panelHeight,
+                layoutJson,
+                "[]");
+    }
+
+    public GuiOpenPacket(
+            String screenId,
+            String title,
+            String pageId,
+            String tabsJson,
+            String activeTab,
+            String linesJson,
+            String buttonsJson,
+            int panelWidth,
+            int panelHeight,
+            String layoutJson,
+            String inputsJson) {
         this.screenId = blankTo(trim(screenId, 64), "hub");
         this.title = trim(title, 128);
         this.pageId = trim(pageId, 64);
@@ -46,6 +73,7 @@ public final class GuiOpenPacket {
         this.panelWidth = panelWidth > 0 ? panelWidth : DEFAULT_PANEL_W;
         this.panelHeight = panelHeight > 0 ? panelHeight : DEFAULT_PANEL_H;
         this.layoutJson = trim(layoutJson, 2048);
+        this.inputsJson = blankTo(trim(inputsJson, 4096), "[]");
     }
 
     public static GuiOpenPacket emptyHub() {
@@ -61,7 +89,8 @@ public final class GuiOpenPacket {
                 DEFAULT_PANEL_H,
                 "{\"center\":true,\"margin\":10,\"titleAlign\":\"center\",\"lineHeight\":16,\"lineGap\":8,"
                         + "\"bodyTop\":42,\"bodyPad\":10,\"bodyMaxHeight\":140,\"scrollBody\":true,"
-                        + "\"buttonPad\":8,\"buttonGap\":6,\"buttonMinWidth\":80,\"buttonHeight\":18}");
+                        + "\"buttonPad\":8,\"buttonGap\":6,\"buttonMinWidth\":80,\"buttonHeight\":18}",
+                "[]");
     }
 
     public String screenId() {
@@ -104,6 +133,11 @@ public final class GuiOpenPacket {
         return layoutJson;
     }
 
+    /** Field 11 — text inputs (JLDK renders when {@code textInput} is advertised). */
+    public String inputsJson() {
+        return inputsJson;
+    }
+
     public static void encode(GuiOpenPacket msg, FriendlyByteBuf buf) {
         buf.m_130070_(msg.screenId);
         buf.m_130070_(msg.title);
@@ -115,11 +149,12 @@ public final class GuiOpenPacket {
         buf.m_130130_(msg.panelWidth);
         buf.m_130130_(msg.panelHeight);
         buf.m_130070_(msg.layoutJson == null ? "" : msg.layoutJson);
+        buf.m_130070_(msg.inputsJson == null ? "[]" : msg.inputsJson);
     }
 
     /**
-     * Decode all 10 fields. Missing trailing fields use defaults; extra bytes after field 10 are
-     * ignored so LM can append fields later without breaking this client.
+     * Decode fields 1–11. Missing trailing fields use defaults; extra bytes after the last
+     * read field are ignored.
      */
     public static GuiOpenPacket decode(FriendlyByteBuf buf) {
         String screenId = readUtf(buf, "hub");
@@ -132,6 +167,7 @@ public final class GuiOpenPacket {
         int panelWidth = DEFAULT_PANEL_W;
         int panelHeight = DEFAULT_PANEL_H;
         String layoutJson = "";
+        String inputsJson = "[]";
         if (buf.isReadable()) {
             panelWidth = buf.m_130242_();
             if (panelWidth <= 0) {
@@ -147,7 +183,9 @@ public final class GuiOpenPacket {
         if (buf.isReadable()) {
             layoutJson = readUtf(buf, "");
         }
-        // Ignore any future fields beyond #10.
+        if (buf.isReadable()) {
+            inputsJson = readUtf(buf, "[]");
+        }
         return new GuiOpenPacket(
                 screenId,
                 title,
@@ -158,7 +196,8 @@ public final class GuiOpenPacket {
                 buttonsJson,
                 panelWidth,
                 panelHeight,
-                layoutJson);
+                layoutJson,
+                inputsJson);
     }
 
     public static void handle(GuiOpenPacket packet, Supplier<NetworkEvent.Context> ctx) {
@@ -179,10 +218,7 @@ public final class GuiOpenPacket {
             return "";
         }
         String text = value.trim();
-        if (text.length() <= max) {
-            return text;
-        }
-        return text.substring(0, max);
+        return text.length() <= max ? text : text.substring(0, max);
     }
 
     private static String blankTo(String value, String fallback) {

@@ -84,6 +84,15 @@ public final class UltraStyle {
     /** Title alignment in layoutJson: {@code center} or {@code left}. */
     public static final String TITLE_ALIGN = "center";
 
+    /**
+     * Button {@code style} wire values (KaiPath maps these to themed colors). Prefer these
+     * constants over string literals so locked/unavailable actions always send {@link #STYLE_DIM}.
+     */
+    public static final String STYLE_NORMAL = "normal";
+    public static final String STYLE_CONFIRM = "confirm";
+    public static final String STYLE_DANGER = "danger";
+    public static final String STYLE_DIM = "dim";
+
     static {
         // Unicode escape keeps the mark out of other sources; static-init prevents folding.
         MARK = "\u00A7";

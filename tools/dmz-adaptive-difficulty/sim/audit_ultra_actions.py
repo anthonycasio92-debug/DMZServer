@@ -77,6 +77,7 @@ KNOWN_DO: dict[str, set[str]] = {
         "discard_all",
         "reload_module",
         "toggle",
+        "set",
         "step",
         "cycle",
         "undo",
@@ -159,6 +160,9 @@ def main() -> int:
         errors.append("UltraStyle body pad/min height must be 10 / 140")
     if 'TITLE_ALIGN = "center"' not in style:
         errors.append('UltraStyle TITLE_ALIGN must be "center"')
+    for const in ("STYLE_NORMAL", "STYLE_CONFIRM", "STYLE_DANGER", "STYLE_DIM"):
+        if f"{const} =" not in style:
+            errors.append(f"UltraStyle must define {const} for button wire styles")
     spec_text_full = SPEC.read_text(encoding="utf-8")
     if "playerModel" not in spec_text_full:
         errors.append("UltraScreenSpec must support optional playerModel in layoutJson")
@@ -170,6 +174,14 @@ def main() -> int:
         )
     if 'titleAlign' not in spec_text_full or "TITLE_ALIGN" not in spec_text_full:
         errors.append("UltraScreenSpec must emit layoutJson.titleAlign from UltraStyle.TITLE_ALIGN")
+    if "textField" not in spec_text_full or "inputsJson" not in PACKET.read_text(encoding="utf-8"):
+        errors.append("UltraScreenSpec/GuiOpenPacket must support textField → inputsJson (field 11)")
+    if "bindInput" not in spec_text_full:
+        errors.append("UltraScreenSpec buttons must support args.bindInput for text submit")
+    if 'STYLE_DIM' not in (ultra_hub := (ULTRA / "UltraHubScreens.java").read_text(encoding="utf-8")):
+        errors.append("UltraHubScreens must wire STYLE_DIM for unavailable system tiles")
+    if "skillcheck_denied" not in ultra_hub or "STYLE_DIM" not in ultra_hub:
+        errors.append("Hub Skill Check denied tile must send STYLE_DIM")
 
     packet = PACKET.read_text(encoding="utf-8")
     if "panelWidth" not in packet or "layoutJson" not in packet:
@@ -178,6 +190,14 @@ def main() -> int:
         errors.append('GuiOpenPacket.defaultLayoutJson must include "titleAlign":"center"')
     if "2048" not in packet:
         errors.append("GuiOpenPacket layoutJson trim limit must be 2048 (playerModel fits)")
+    if "inputsJson" not in packet:
+        errors.append("GuiOpenPacket must carry inputsJson (field 11)")
+    mech = (
+        ROOT
+        / "src/main/java/com/dbzlegacy/adaptivedifficulty/command/MechanicsCommands.java"
+    ).read_text(encoding="utf-8")
+    if "§" in mech:
+        errors.append("MechanicsCommands must not contain bare § literals — use UltraStyle")
 
     net = (ROOT / "src/main/java/com/dbzlegacy/adaptivedifficulty/net/gui/LmGuiNetwork.java").read_text(
         encoding="utf-8"
@@ -218,6 +238,7 @@ def main() -> int:
             "FEATURE_ACTIVE_TAB",
             "FEATURE_TITLE_ALIGN",
             "FEATURE_PLAYER_MODEL",
+            "FEATURE_TEXT_INPUT",
         ):
             if needle not in feat_text:
                 errors.append(f"UltraClientFeatures must define {needle}")
@@ -225,6 +246,8 @@ def main() -> int:
             errors.append(
                 "UltraClientFeatures impact/missing lists must cover titleAlign + playerModel"
             )
+        if "textInput" not in feat_text:
+            errors.append("UltraClientFeatures must cover textInput (inputsJson)")
     if "roundTripStyleAndActiveTab" not in net:
         errors.append("LmGuiNetwork must round-trip style + activeTab in self-test")
     if "GuiFeaturesPacket" not in net:

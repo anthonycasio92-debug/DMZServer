@@ -20,18 +20,18 @@ import net.minecraftforge.network.simple.SimpleChannel;
  *
  * <p>JLDK: call {@link #registerClientChannel(String)} once per partner mod. After implementing
  * optional render features, call {@link #advertiseFeatures(String, String)} with
- * {@code ["style","activeTab","titleAlign","playerModel"]}.
+ * {@code ["style","activeTab","titleAlign","playerModel","textInput"]}.
  */
 public final class UltraGuiConsumerRegistry {
     public static final String CHANNEL_PATH = "gui";
     public static final String PROTOCOL_VERSION = "1";
 
     /**
-     * Features this client build honors. Update when style / activeTab / titleAlign /
-     * playerModel rendering ships. Empty = 1.3.1 baseline (server treats optional features
-     * as missing).
+     * Features this client build honors. 1.3.5 ships titleAlign + activeTab — set this to
+     * {@code ["titleAlign","activeTab"]} until style / playerModel / textInput land, then
+     * expand. Empty = treated as baseline (server warns on gaps).
      */
-    public static final String ADVERTISED_FEATURES_JSON = "[]";
+    public static final String ADVERTISED_FEATURES_JSON = "[\"titleAlign\",\"activeTab\"]";
 
     private static final Map<String, BoundChannel> CHANNELS = new ConcurrentHashMap<>();
 
@@ -149,8 +149,8 @@ public final class UltraGuiConsumerRegistry {
 
     /**
      * Advertise optional render features to the server. Use
-     * {@code ["style","activeTab","titleAlign","playerModel"]} once implemented. Safe to call
-     * repeatedly.
+     * {@code ["style","activeTab","titleAlign","playerModel","textInput"]} once implemented.
+     * Safe to call repeatedly.
      */
     public static void advertiseFeatures(String channelId, String featuresJson) {
         BoundChannel bound = CHANNELS.get(channelId);

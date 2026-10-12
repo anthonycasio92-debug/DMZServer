@@ -26,12 +26,13 @@ import net.minecraftforge.network.NetworkEvent;
  *   <li>panel width (GUI px) — centered dialog; KaiPath must not stretch to fullscreen
  *   <li>panel height (GUI px)
  *   <li>layout JSON ({@code panelWidth}, {@code panelHeight}, {@code width}, {@code height},
- *       {@code center}, {@code margin})
+ *       {@code center}, {@code margin}, {@code titleAlign}, …)
+ *   <li>inputs JSON (array of text fields / future controls) — optional; older clients ignore
  * </ol>
  *
  * <p>KaiPath owns the client handler. Older clients that stop after field 7 still open the
- * screen but may render fullscreen until they read the panel fields. Bytes after field 10 are
- * ignored.
+ * screen but may render fullscreen until they read the panel fields. Bytes after the last
+ * understood field are ignored.
  */
 public final class GuiOpenPacket {
     private final String screenId;
@@ -44,6 +45,7 @@ public final class GuiOpenPacket {
     private final int panelWidth;
     private final int panelHeight;
     private final String layoutJson;
+    private final String inputsJson;
 
     public GuiOpenPacket(
             String screenId,
@@ -63,7 +65,8 @@ public final class GuiOpenPacket {
                 buttonsJson,
                 UltraGuiProtocol.DEFAULT_PANEL_WIDTH,
                 UltraGuiProtocol.DEFAULT_PANEL_HEIGHT,
-                "");
+                "",
+                "[]");
     }
 
     public GuiOpenPacket(
@@ -77,6 +80,32 @@ public final class GuiOpenPacket {
             int panelWidth,
             int panelHeight,
             String layoutJson) {
+        this(
+                screenId,
+                title,
+                pageId,
+                tabsJson,
+                activeTab,
+                linesJson,
+                buttonsJson,
+                panelWidth,
+                panelHeight,
+                layoutJson,
+                "[]");
+    }
+
+    public GuiOpenPacket(
+            String screenId,
+            String title,
+            String pageId,
+            String tabsJson,
+            String activeTab,
+            String linesJson,
+            String buttonsJson,
+            int panelWidth,
+            int panelHeight,
+            String layoutJson,
+            String inputsJson) {
         String id = trim(screenId, 64);
         // Empty id → "main" (protocol default). LM content often uses "hub" explicitly.
         this.screenId = id.isEmpty() ? "main" : id;
@@ -94,6 +123,7 @@ public final class GuiOpenPacket {
                         ? defaultLayoutJson(this.panelWidth, this.panelHeight)
                         : layoutJson,
                 2048);
+        this.inputsJson = blankToArray(trim(inputsJson, 4096));
     }
 
     public String screenId() {
@@ -136,7 +166,12 @@ public final class GuiOpenPacket {
         return layoutJson;
     }
 
-    /** Serialize 10 fields only — no channel / mod-id bytes. */
+    /** Field 11 — JSON array of input elements ({@code type=text} today). */
+    public String inputsJson() {
+        return inputsJson;
+    }
+
+    /** Serialize 11 fields — no channel / mod-id bytes. */
     public static void encode(GuiOpenPacket msg, FriendlyByteBuf buf) {
         buf.m_130070_(msg.screenId);
         buf.m_130070_(msg.title);
@@ -148,11 +183,12 @@ public final class GuiOpenPacket {
         buf.m_130130_(msg.panelWidth);
         buf.m_130130_(msg.panelHeight);
         buf.m_130070_(msg.layoutJson);
+        buf.m_130070_(msg.inputsJson);
     }
 
     /**
-     * Decode all 10 fields. Missing trailing fields use {@link UltraGuiProtocol} defaults;
-     * leftover bytes after field 10 are left unread (ignored by the caller).
+     * Decode fields 1–11. Missing trailing fields use {@link UltraGuiProtocol} defaults;
+     * leftover bytes after the last read field are left unread (ignored by the caller).
      */
     public static GuiOpenPacket decode(FriendlyByteBuf buf) {
         String screenId = buf.m_130277_();
@@ -165,6 +201,7 @@ public final class GuiOpenPacket {
         int panelWidth = UltraGuiProtocol.DEFAULT_PANEL_WIDTH;
         int panelHeight = UltraGuiProtocol.DEFAULT_PANEL_HEIGHT;
         String layoutJson = "";
+        String inputsJson = "[]";
         if (buf.isReadable()) {
             panelWidth = buf.m_130242_();
             if (panelWidth <= 0) {
@@ -179,6 +216,9 @@ public final class GuiOpenPacket {
             if (buf.isReadable()) {
                 layoutJson = buf.m_130277_();
             }
+            if (buf.isReadable()) {
+                inputsJson = buf.m_130277_();
+            }
         }
         return new GuiOpenPacket(
                 screenId,
@@ -190,7 +230,8 @@ public final class GuiOpenPacket {
                 buttonsJson,
                 panelWidth,
                 panelHeight,
-                layoutJson);
+                layoutJson,
+                inputsJson);
     }
 
     /** Server never opens screens; KaiPath owns the client handler. */
@@ -209,6 +250,10 @@ public final class GuiOpenPacket {
             return trimmed;
         }
         return trimmed.substring(0, max);
+    }
+
+    private static String blankToArray(String json) {
+        return json == null || json.isBlank() ? "[]" : json;
     }
 
     private static String defaultLayoutJson(int w, int h) {

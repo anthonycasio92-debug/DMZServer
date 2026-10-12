@@ -222,10 +222,27 @@ public final class UltraConfigScreens {
             }
             case LIST, MAP, GROUP -> {
                 spec.line(UltraStyle.dim("Lists and maps use the CNPC config editor for typed add/remove."))
-                        .button("page:" + listPage(module, listPageNum, path), UltraStyle.dim("Back"), "dim")
+                        .button(
+                                "page:" + listPage(module, listPageNum, path),
+                                UltraStyle.dim("Back"),
+                                UltraStyle.STYLE_DIM)
                         .rowGap();
             }
-            default -> spec.line(UltraStyle.dim("Typed text fields use the CNPC config editor."));
+            case TEXT -> {
+                String inputId = "input:" + module + "|" + encoded;
+                spec.textFieldRow(
+                                inputId,
+                                value == null ? "" : value,
+                                "Type a value…")
+                        .rowGap();
+                spec.buttonBound(
+                                "do:set:" + module + "|" + encoded,
+                                UltraStyle.confirm("Apply"),
+                                UltraStyle.STYLE_CONFIRM,
+                                inputId)
+                        .rowGap();
+            }
+            default -> spec.line(UltraStyle.dim("This field type has no Ultra editor yet."));
         }
         if (ConfigEditor.dirty(uuid, module, path)) {
             spec.buttonLeft("do:undo:" + module + "|" + encoded, UltraStyle.dim("Undo field"), "dim")
@@ -271,6 +288,15 @@ public final class UltraConfigScreens {
      * Config do-actions. Returns a status message for chat/toast.
      */
     public static String handleAction(ServerPlayer player, String action, String arg, String page) {
+        return handleAction(player, action, arg, page, null);
+    }
+
+    public static String handleAction(
+            ServerPlayer player,
+            String action,
+            String arg,
+            String page,
+            com.google.gson.JsonObject args) {
         if (player == null) {
             return UltraStyle.dangerLine("This only works in-game.");
         }
@@ -339,6 +365,20 @@ public final class UltraConfigScreens {
                 }
                 String error = ConfigEditor.stageSet(uuid, parts[0], parts[1], next);
                 yield error == null ? "" : UltraStyle.dangerLine(error);
+            }
+            case "set" -> {
+                String[] parts = splitModulePath(a);
+                if (parts == null) {
+                    yield UltraStyle.dangerLine("Missing field.");
+                }
+                String typed = argsString(args, "value");
+                if (typed == null) {
+                    yield UltraStyle.dangerLine("No value typed — KaiPath must send args.value.");
+                }
+                String error = ConfigEditor.stageSet(uuid, parts[0], parts[1], typed);
+                yield error == null
+                        ? UltraStyle.noticeLine("Staged new value.")
+                        : UltraStyle.dangerLine(error);
             }
             case "undo" -> {
                 String[] parts = splitModulePath(a);
@@ -459,5 +499,16 @@ public final class UltraConfigScreens {
             return id.isBlank() ? "difficulty" : id;
         }
         return "difficulty";
+    }
+
+    private static String argsString(com.google.gson.JsonObject args, String key) {
+        if (args == null || key == null || !args.has(key) || args.get(key).isJsonNull()) {
+            return null;
+        }
+        try {
+            return args.get(key).getAsString();
+        } catch (Throwable ignored) {
+            return null;
+        }
     }
 }

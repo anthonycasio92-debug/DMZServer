@@ -423,7 +423,7 @@ public final class MechanicsCommands {
         String msg = com.dbzlegacy.adaptivedifficulty.data.PlayerDataClear.clear(
                 source.m_81377_(), player, scope);
         LmCommandFeedback.tellLines(source, msg);
-        return msg != null && msg.startsWith("§c") ? 0 : 1;
+        return msg != null && msg.startsWith(UltraStyle.RED) ? 0 : 1;
     }
 
     private static int fusionReset(CommandSourceStack source, String player) {
@@ -437,11 +437,11 @@ public final class MechanicsCommands {
         }
         String msg = FusionCooldownReset.reset(target);
         LmCommandFeedback.tell(source, msg);
-        if (source.m_230896_() != target && msg != null && !msg.startsWith("§c")) {
+        if (source.m_230896_() != target && msg != null && !msg.startsWith(UltraStyle.RED)) {
             target.m_213846_(Component.m_237113_(
-                    "§eStaff cleared your fusion cooldown."));
+                    UltraStyle.noticeLine("Staff cleared your fusion cooldown.")));
         }
-        return msg != null && msg.startsWith("§c") ? 0 : 1;
+        return msg != null && msg.startsWith(UltraStyle.RED) ? 0 : 1;
     }
 
     private static ServerPlayer onlinePlayer(MinecraftServer server, String raw) {
@@ -470,7 +470,7 @@ public final class MechanicsCommands {
         String msg = com.dbzlegacy.adaptivedifficulty.data.PlayerDataClear.clearCharacterCooldowns(
                 source.m_81377_(), player, kind);
         LmCommandFeedback.tellLines(source, msg);
-        return msg != null && msg.startsWith("§c") ? 0 : 1;
+        return msg != null && msg.startsWith(UltraStyle.RED) ? 0 : 1;
     }
 
     private static int adminConfig(CommandSourceStack source) {
@@ -485,9 +485,12 @@ public final class MechanicsCommands {
             return 0;
         }
         boolean ok = DifficultyConfig.reload();
-        LmCommandFeedback.tell(source,
-                ok ? LmCommandMessages.reloaded("Legacy Mechanics config")
-                        : "§cConfig reload failed—check the server log. Your live settings are unchanged.");
+        LmCommandFeedback.tell(
+                source,
+                ok
+                        ? LmCommandMessages.reloaded("Legacy Mechanics config")
+                        : UltraStyle.dangerLine(
+                                "Config reload failed—check the server log. Your live settings are unchanged."));
         return ok ? 1 : 0;
     }
 
@@ -499,17 +502,17 @@ public final class MechanicsCommands {
         String msg = switch (m) {
             case "on", "true", "enable" -> {
                 SystemTelemetry.setEnabled(true);
-                yield "§aEvent log ON";
+                yield UltraStyle.confirm("Event log ON");
             }
             case "off", "false", "disable" -> {
                 SystemTelemetry.setEnabled(false);
-                yield "§eEvent log OFF";
+                yield UltraStyle.noticeLine("Event log OFF");
             }
             case "flush" -> {
                 SystemTelemetry.flushAndClose();
-                yield "§aLogs flushed.";
+                yield UltraStyle.confirm("Logs flushed.");
             }
-            default -> "§7" + SystemTelemetry.statusLine();
+            default -> UltraStyle.LABEL + SystemTelemetry.statusLine();
         };
         LmCommandFeedback.tellLines(source, msg);
         return 1;

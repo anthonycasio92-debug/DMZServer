@@ -23,16 +23,18 @@ import net.minecraft.server.level.ServerPlayer;
  *   <li>{@link #FEATURE_ACTIVE_TAB} — {@link GuiOpenPacket} field 5 {@code activeTab} highlight
  *   <li>{@link #FEATURE_TITLE_ALIGN} — {@code layoutJson.titleAlign} ({@code center}/{@code left})
  *   <li>{@link #FEATURE_PLAYER_MODEL} — {@code layoutJson.playerModel} entity preview
+ *   <li>{@link #FEATURE_TEXT_INPUT} — GuiOpenPacket field 11 {@code inputsJson} text fields
  * </ul>
  *
  * <p>Clients that never send {@link GuiFeaturesPacket} are treated as the KaiPath <b>1.3.1
- * baseline</b>: dynamic layout/buttons only (no style / activeTab / titleAlign / playerModel).
+ * baseline</b>: dynamic layout/buttons only.
  */
 public final class UltraClientFeatures {
     public static final String FEATURE_STYLE = "style";
     public static final String FEATURE_ACTIVE_TAB = "activetab";
     public static final String FEATURE_TITLE_ALIGN = "titlealign";
     public static final String FEATURE_PLAYER_MODEL = "playermodel";
+    public static final String FEATURE_TEXT_INPUT = "textinput";
 
     /** Wire / doc spellings accepted for {@link #FEATURE_ACTIVE_TAB}. */
     public static final String FEATURE_ACTIVE_TAB_DOC = "activeTab";
@@ -40,6 +42,8 @@ public final class UltraClientFeatures {
     public static final String FEATURE_TITLE_ALIGN_DOC = "titleAlign";
     /** Wire / doc spelling for {@link #FEATURE_PLAYER_MODEL}. */
     public static final String FEATURE_PLAYER_MODEL_DOC = "playerModel";
+    /** Wire / doc spelling for {@link #FEATURE_TEXT_INPUT}. */
+    public static final String FEATURE_TEXT_INPUT_DOC = "textInput";
 
     /** Optional features the LM bridge expects a conforming client to advertise. */
     public static final Set<String> EXPECTED_OPTIONAL =
@@ -47,7 +51,8 @@ public final class UltraClientFeatures {
                     FEATURE_STYLE,
                     FEATURE_ACTIVE_TAB,
                     FEATURE_TITLE_ALIGN,
-                    FEATURE_PLAYER_MODEL);
+                    FEATURE_PLAYER_MODEL,
+                    FEATURE_TEXT_INPUT);
 
     private static final Map<UUID, State> BY_PLAYER = new ConcurrentHashMap<>();
 
@@ -139,6 +144,9 @@ public final class UltraClientFeatures {
         if (state == null || !state.has(FEATURE_PLAYER_MODEL)) {
             missing.add(FEATURE_PLAYER_MODEL_DOC);
         }
+        if (state == null || !state.has(FEATURE_TEXT_INPUT)) {
+            missing.add(FEATURE_TEXT_INPUT_DOC);
+        }
         return missing;
     }
 
@@ -162,6 +170,9 @@ public final class UltraClientFeatures {
             } else if (FEATURE_PLAYER_MODEL.equals(key)) {
                 lines.add(
                         "Character playerModel preview not drawn (layoutJson.playerModel ignored)");
+            } else if (FEATURE_TEXT_INPUT.equals(key)) {
+                lines.add(
+                        "text fields ignored (GuiOpenPacket.inputsJson / bindInput not rendered)");
             }
         }
         return lines;

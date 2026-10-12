@@ -257,7 +257,8 @@ public final class UltraScreenIds {
                 || action.startsWith("tab:")
                 || action.startsWith("nav:")
                 || action.startsWith("open:")
-                || action.startsWith("page:");
+                || action.startsWith("page:")
+                || action.startsWith("input:");
     }
 
     /**
