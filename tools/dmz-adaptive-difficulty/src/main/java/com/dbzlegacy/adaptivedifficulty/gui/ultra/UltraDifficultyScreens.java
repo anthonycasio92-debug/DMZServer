@@ -88,7 +88,7 @@ public final class UltraDifficultyScreens {
                 "settings|Coin settings",
                 "stats|Combat rating");
         if (StaffAccess.isStaff(player)) {
-            UltraPickHelper.placePageButtons(spec, "admin|Server tools");
+            UltraPickHelper.placePageButtons(spec, "admin|Server tools", "eventlog|Event log");
         }
         spec.footerBackToMain();
         spec.send(player);
@@ -228,12 +228,9 @@ public final class UltraDifficultyScreens {
                 ? "free for staff"
                 : AncientCoinEconomy.formatExactCost(EndDimensionStrength.summonCopperCost());
         UltraScreenSpec spec = base("summons", "summons")
-                .line(UltraStyle.LABEL + "Select a boss, then confirm. More bosses can be added to this list.")
-                .line(UltraStyle.LABEL + "The dragon matches your difficulty. Only you can damage it.");
-        for (String line : EndDimensionStrength.summonMenuLines(player)) {
-            if (line != null && !line.isBlank()) {
-                spec.line(line);
-            }
+                .line(UltraStyle.LABEL + "Select a boss, then confirm. More bosses can be added to this list.");
+        for (String line : summonStatusLines(player, ready)) {
+            spec.line(line);
         }
         spec.labelValue("End Dragon", ready ? "Ready · " + cost : "Requirements not met")
                 .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
@@ -252,10 +249,11 @@ public final class UltraDifficultyScreens {
         UltraScreenSpec spec = base("end_dragon", "summons")
                 .line(UltraStyle.LABEL + "End Dragon")
                 .labelValue("Cost", cost)
-                .labelValue("Status", ready ? "Ready" : "Requirements not met")
-                .line(UltraStyle.LABEL + "The dragon matches your difficulty. Only you can damage it.")
-                .line(UltraStyle.LABEL + "Travel to The End, then confirm the summon.")
-                .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
+                .labelValue("Status", ready ? "Ready" : "Requirements not met");
+        for (String line : summonStatusLines(player, ready)) {
+            spec.line(line);
+        }
+        spec.setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
         if (ready) {
             spec.button("do:summon_end_dragon", UltraStyle.confirm("Confirm summon"), "confirm").rowGap();
         } else {
@@ -266,6 +264,43 @@ public final class UltraDifficultyScreens {
         spec.buttonLeft("page:summons", UltraStyle.dim("Back to summons"), "dim").rowGap();
         spec.footerBackHome();
         spec.send(player);
+    }
+
+    /** CNPC {@code summonStatusLines} — Ultra colors, same guidance. */
+    private static java.util.List<String> summonStatusLines(ServerPlayer subject, boolean canSummon) {
+        java.util.List<String> lines = new java.util.ArrayList<>();
+        if (!DifficultyConfig.get().enableEndDimensionStrength) {
+            lines.add(UltraStyle.LABEL + "End strength is turned off. Ask staff to enable it.");
+            return lines;
+        }
+        if (!DifficultyConfig.get().enableEndPlayerDragonSummon) {
+            lines.add(UltraStyle.LABEL + "Boss summoning is turned off. Ask staff to turn it on.");
+            return lines;
+        }
+        lines.add(UltraStyle.LABEL + "The dragon matches your difficulty. Only you can damage it.");
+        lines.add(
+                UltraStyle.LABEL
+                        + "You need a tier from "
+                        + UltraStyle.VALUE
+                        + "T"
+                        + EndDimensionStrength.PLAYER_SUMMON_MIN_TIER
+                        + UltraStyle.LABEL
+                        + " through "
+                        + UltraStyle.VALUE
+                        + "T"
+                        + EndDimensionStrength.PLAYER_SUMMON_MAX_TIER
+                        + UltraStyle.LABEL
+                        + ", and you must be in The End.");
+        if (!canSummon) {
+            if (!SystemGate.participates(subject)) {
+                lines.add(UltraStyle.LABEL + "Turn on personal difficulty on the Tiers tab first.");
+            } else {
+                lines.add(UltraStyle.LABEL + "Activate a tier in that range on the Tiers tab first.");
+            }
+        } else if (subject != null && !EndDimensionStrength.isTheEnd(subject.m_9236_())) {
+            lines.add(UltraStyle.LABEL + "Travel to The End, then confirm the summon.");
+        }
+        return lines;
     }
 
     private static void openTeam(ServerPlayer player) {
