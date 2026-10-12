@@ -221,7 +221,7 @@ public final class UltraConfigScreens {
                         .rowGap();
             }
             case LIST, MAP, GROUP -> {
-                spec.line(UltraStyle.dim("Lists and maps use the CNPC config editor for typed add/remove."))
+                spec.line(UltraStyle.dim("Lists and maps: edit one entry at a time in the field below."))
                         .button(
                                 "page:" + listPage(module, listPageNum, path),
                                 UltraStyle.dim("Back"),
@@ -373,7 +373,8 @@ public final class UltraConfigScreens {
                 }
                 String typed = argsString(args, "value");
                 if (typed == null) {
-                    yield UltraStyle.dangerLine("No value typed — KaiPath must send args.value.");
+                    yield UltraStyle.dangerLine(
+                            "Type a value in the field, then press Save.");
                 }
                 String error = ConfigEditor.stageSet(uuid, parts[0], parts[1], typed);
                 yield error == null

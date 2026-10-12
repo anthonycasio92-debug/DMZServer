@@ -217,8 +217,8 @@ public final class LmGuiNetwork {
                 && com.dbzlegacy.adaptivedifficulty.gui.GuiBackend.fromConfig()
                         == com.dbzlegacy.adaptivedifficulty.gui.GuiBackend.ULTRA) {
             AdaptiveDifficultyMod.LOGGER.warn(
-                    "[{}] player={} has no KaiPath ≥ {} — Ultra GuiOpenPacket will not render; "
-                            + "CNPC/chat fallbacks apply where configured",
+                    "[{}] player={} has no KaiPath ≥ {} — Ultra menus require KaiPath "
+                            + "(no CNPC fallback)",
                     AdaptiveDifficultyMod.MOD_ID,
                     safeName(player),
                     KAIPATH_MIN_VERSION);

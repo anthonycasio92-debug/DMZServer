@@ -12,16 +12,6 @@ public final class RivalMenu {
             return;
         }
         String target = page == null || page.isBlank() ? "main" : page;
-        com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcUltraPreview.leave(player);
-        GuiBackend backend = GuiBackend.fromConfig();
-        if (backend == GuiBackend.ULTRA) {
-            UltraGui.open(player, "rival", target);
-            return;
-        }
-        if (backend == GuiBackend.CNPC) {
-            com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcLmGui.open(player, "rival", target);
-            return;
-        }
-        RivalChatMenu.open(player, target);
+        UltraGui.open(player, "rival", target);
     }
 }

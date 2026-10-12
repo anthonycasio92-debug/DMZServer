@@ -2,6 +2,7 @@ package com.dmzlegacy.kaipath.ultra.consumers.legacymechanics;
 
 import com.dmzlegacy.kaipath.ultra.UltraUiBridge;
 import java.util.function.Supplier;
+import java.nio.charset.StandardCharsets;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.network.NetworkEvent;
 
@@ -139,17 +140,17 @@ public final class GuiOpenPacket {
     }
 
     public static void encode(GuiOpenPacket msg, FriendlyByteBuf buf) {
-        buf.m_130070_(msg.screenId);
-        buf.m_130070_(msg.title);
-        buf.m_130070_(msg.pageId);
-        buf.m_130070_(msg.tabsJson);
-        buf.m_130070_(msg.activeTab);
-        buf.m_130070_(msg.linesJson);
-        buf.m_130070_(msg.buttonsJson);
+        writeUtf8(buf, msg.screenId);
+        writeUtf8(buf, msg.title);
+        writeUtf8(buf, msg.pageId);
+        writeUtf8(buf, msg.tabsJson);
+        writeUtf8(buf, msg.activeTab);
+        writeUtf8(buf, msg.linesJson);
+        writeUtf8(buf, msg.buttonsJson);
         buf.m_130130_(msg.panelWidth);
         buf.m_130130_(msg.panelHeight);
-        buf.m_130070_(msg.layoutJson == null ? "" : msg.layoutJson);
-        buf.m_130070_(msg.inputsJson == null ? "[]" : msg.inputsJson);
+        writeUtf8(buf, msg.layoutJson == null ? "" : msg.layoutJson);
+        writeUtf8(buf, msg.inputsJson == null ? "[]" : msg.inputsJson);
     }
 
     /**
@@ -227,10 +228,31 @@ public final class GuiOpenPacket {
 
     private static String readUtf(FriendlyByteBuf buf, String fallback) {
         try {
-            String s = buf.m_130277_();
-            return s == null ? fallback : s;
+            String s = readUtf8(buf);
+            return s == null || s.isEmpty() ? fallback : s;
         } catch (Throwable t) {
             return fallback;
         }
+    }
+
+    /** Length-prefixed UTF-8 — never platform default charset. */
+    static void writeUtf8(FriendlyByteBuf buf, String value) {
+        String s = value == null ? "" : value;
+        byte[] utf8 = s.getBytes(StandardCharsets.UTF_8);
+        buf.m_130130_(utf8.length);
+        buf.writeBytes(utf8);
+    }
+
+    static String readUtf8(FriendlyByteBuf buf) {
+        if (buf == null || !buf.isReadable()) {
+            return "";
+        }
+        int len = buf.m_130242_();
+        if (len < 0 || len > buf.readableBytes()) {
+            return "";
+        }
+        byte[] utf8 = new byte[len];
+        buf.readBytes(utf8);
+        return new String(utf8, StandardCharsets.UTF_8);
     }
 }

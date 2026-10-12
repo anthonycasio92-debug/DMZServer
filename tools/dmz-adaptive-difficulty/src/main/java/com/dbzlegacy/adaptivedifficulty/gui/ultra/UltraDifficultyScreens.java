@@ -8,7 +8,6 @@ import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
 import com.dbzlegacy.adaptivedifficulty.data.TeamMode;
 import com.dbzlegacy.adaptivedifficulty.gui.DifficultyTeamGuiApi;
-import com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcDifficultyTierUi;
 import com.dbzlegacy.adaptivedifficulty.calc.LmOverhaulScaledCombat;
 import com.dbzlegacy.adaptivedifficulty.progression.end.EndDimensionStrength;
 import com.dbzlegacy.adaptivedifficulty.service.DifficultyActions;
@@ -145,10 +144,10 @@ public final class UltraDifficultyScreens {
         }
         UnlockTier nextLocked = UnlockTier.byId(max + 1);
         if (nextLocked != null) {
-            spec.labelValue("Next tier", "T" + nextLocked.id + " · " + UltraStyle.plain(CnpcDifficultyTierUi.humanRequirement(nextLocked)))
+            spec.labelValue("Next tier", "T" + nextLocked.id + " · " + UltraStyle.plain(UltraDifficultyTierUi.humanRequirement(nextLocked)))
                     .labelValue(
                             "Cost to activate",
-                            UltraStyle.plain(CnpcDifficultyTierUi.formatActivationCost(player, nextLocked)));
+                            UltraStyle.plain(UltraDifficultyTierUi.formatActivationCost(player, nextLocked)));
         }
         spec.setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
         for (int t = 1; t <= 7; t += 2) {
@@ -181,10 +180,10 @@ public final class UltraDifficultyScreens {
             return;
         }
         boolean unlocked = data.hasUnlockedTier(t) || t <= max;
-        boolean eligible = CnpcDifficultyTierUi.isEligible(player, ut);
-        String rawLabel = CnpcDifficultyTierUi.tierActionLabel(player, t, active, unlocked, eligible);
+        boolean eligible = UltraDifficultyTierUi.isEligible(player, ut);
+        String rawLabel = UltraDifficultyTierUi.tierActionLabel(player, t, active, unlocked, eligible);
         String label = UltraStyle.plain(rawLabel);
-        boolean enabled = CnpcDifficultyTierUi.tierButtonEnabled(t, active, unlocked, eligible);
+        boolean enabled = UltraDifficultyTierUi.tierButtonEnabled(t, active, unlocked, eligible);
         String style;
         String action;
         if (active == t) {

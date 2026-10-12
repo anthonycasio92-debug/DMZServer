@@ -1,11 +1,13 @@
 package com.dbzlegacy.adaptivedifficulty.gui;
 
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
+import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraGui;
+import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import net.minecraft.server.level.ServerPlayer;
 
-/** {@code /skills} (staff) and Skill Check CNPC entry. */
+/** {@code /skills} (staff) and Skill Check Ultra entry. */
 public final class SkillsMenu {
     private SkillsMenu() {}
 
@@ -14,7 +16,7 @@ public final class SkillsMenu {
             return;
         }
         if (!StaffAccess.isStaff(player)) {
-            DmzRewards.msg(player, "§cStaff only.");
+            DmzRewards.msg(player, UltraStyle.dangerLine("That menu is for staff only."));
             return;
         }
         com.dbzlegacy.adaptivedifficulty.progression.shop.SkillCheckService.clearSession(player);
@@ -27,7 +29,10 @@ public final class SkillsMenu {
         }
         if (!com.dbzlegacy.adaptivedifficulty.progression.shop.SkillCheckService.canUse(player)
                 && !com.dbzlegacy.adaptivedifficulty.progression.shop.SkillCheckService.inSession(player)) {
-            DmzRewards.msg(player, "§cNo permission: legacymechanics.skillcheck");
+            DmzRewards.msg(
+                    player,
+                    UltraStyle.noticeLine(
+                            "Skill Check is a donator perk — ask staff if you want access."));
             return;
         }
         openInternal(player, page, true);
@@ -40,17 +45,11 @@ public final class SkillsMenu {
         if (skillCheck && !DifficultyConfig.get().enableSkillCheck) {
             return;
         }
-        com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcUltraPreview.leave(player);
         String target = page == null || page.isBlank() ? "core" : page;
-        if (GuiBackend.fromConfig() == GuiBackend.CNPC) {
-            if (skillCheck) {
-                com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcLmGui.open(player, "skillcheck", target);
-            } else {
-                com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcLmGui.open(player, "skills", target);
-            }
-            return;
+        if (skillCheck) {
+            UltraGui.open(player, "skillcheck", target);
+        } else {
+            UltraGui.open(player, "skills", target);
         }
-        com.dbzlegacy.adaptivedifficulty.progression.shop.SkillUnlockService.open(
-                player, target, skillCheck);
     }
 }

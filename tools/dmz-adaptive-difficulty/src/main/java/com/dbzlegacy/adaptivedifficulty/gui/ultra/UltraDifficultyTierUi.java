@@ -1,4 +1,4 @@
-package com.dbzlegacy.adaptivedifficulty.gui.cnpc;
+package com.dbzlegacy.adaptivedifficulty.gui.ultra;
 
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.tier.UnlockSystem;
@@ -6,19 +6,19 @@ import com.dbzlegacy.adaptivedifficulty.tier.UnlockTier;
 import com.dbzlegacy.adaptivedifficulty.util.PaidFeatureAccess;
 import net.minecraft.server.level.ServerPlayer;
 
-/** Tier button labels and cost copy for CNPC difficulty menus. */
-public final class CnpcDifficultyTierUi {
-    private CnpcDifficultyTierUi() {}
+/** Tier button labels and cost copy for Ultra difficulty menus. */
+public final class UltraDifficultyTierUi {
+    private UltraDifficultyTierUi() {}
 
     public static String formatActivationCost(ServerPlayer player, UnlockTier tier) {
         if (tier == null || PaidFeatureAccess.bypassAncientCoinCost(player)) {
-            return CnpcUltraStyle.BODY + "free";
+            return UltraStyle.LABEL + "free";
         }
         long cost = AncientCoinEconomy.activationCost(tier, player);
         if (cost <= 0L) {
-            return CnpcUltraStyle.INFO + "—";
+            return UltraStyle.DIM + "—";
         }
-        return CnpcUltraStyle.ACCENT + AncientCoinEconomy.formatExactCost(cost);
+        return UltraStyle.VALUE + AncientCoinEconomy.formatExactCost(cost);
     }
 
     public static String humanRequirement(UnlockTier tier) {
@@ -30,28 +30,29 @@ public final class CnpcDifficultyTierUi {
                 .replace(" or Prestige ", " or prestige ");
     }
 
-    /**
-     * Button / label for tier {@code t} on the tiers page.
-     * {@code unlocked} = owned in player data; {@code activeTier} = current activation (0 = none).
-     */
     public static String tierActionLabel(
             ServerPlayer player, int t, int activeTier, boolean unlocked, boolean eligible) {
         if (t <= 0) {
-            return CnpcUltraStyle.INFO + "—";
+            return UltraStyle.DIM + "—";
         }
         if (activeTier == t) {
-            return CnpcUltraStyle.CONFIRM + "Tier " + t + " · active";
+            return UltraStyle.confirm("Tier " + t + " · active");
         }
         if (!unlocked) {
             if (eligible) {
-                return CnpcUltraStyle.CONFIRM + "Unlock T" + t + " · " + formatActivationCost(player, UnlockTier.byId(t));
+                return UltraStyle.confirm(
+                        "Unlock T" + t + " · " + UltraStyle.plain(formatActivationCost(player, UnlockTier.byId(t))));
             }
-            return CnpcUltraStyle.INFO + "Tier " + t + " · locked";
+            return UltraStyle.dim("Tier " + t + " · locked");
         }
         if (t < activeTier) {
-            return CnpcUltraStyle.BODY + "Use T" + t + " " + CnpcUltraStyle.INFO + "(free)";
+            return UltraStyle.LABEL + "Use T" + t + " " + UltraStyle.DIM + "(free)";
         }
-        return CnpcUltraStyle.INFO + "Switch T" + t + " · " + formatActivationCost(player, UnlockTier.byId(t));
+        return UltraStyle.LABEL
+                + "Switch T"
+                + t
+                + " · "
+                + UltraStyle.plain(formatActivationCost(player, UnlockTier.byId(t)));
     }
 
     public static boolean tierButtonEnabled(int t, int activeTier, boolean unlocked, boolean eligible) {

@@ -1,5 +1,6 @@
 package com.example.ultragui;
 
+import java.nio.charset.StandardCharsets;
 import net.minecraft.network.FriendlyByteBuf;
 
 /**
@@ -135,17 +136,17 @@ public final class UltraGuiOpenPacket {
     }
 
     public static void encode(UltraGuiOpenPacket msg, FriendlyByteBuf buf) {
-        buf.writeUtf(msg.screenId);
-        buf.writeUtf(msg.title);
-        buf.writeUtf(msg.pageId);
-        buf.writeUtf(msg.tabsJson);
-        buf.writeUtf(msg.activeTab);
-        buf.writeUtf(msg.linesJson);
-        buf.writeUtf(msg.buttonsJson);
+        writeUtf8(buf, msg.screenId);
+        writeUtf8(buf, msg.title);
+        writeUtf8(buf, msg.pageId);
+        writeUtf8(buf, msg.tabsJson);
+        writeUtf8(buf, msg.activeTab);
+        writeUtf8(buf, msg.linesJson);
+        writeUtf8(buf, msg.buttonsJson);
         buf.writeVarInt(msg.panelWidth);
         buf.writeVarInt(msg.panelHeight);
-        buf.writeUtf(msg.layoutJson == null ? "" : msg.layoutJson);
-        buf.writeUtf(msg.inputsJson == null ? "[]" : msg.inputsJson);
+        writeUtf8(buf, msg.layoutJson == null ? "" : msg.layoutJson);
+        writeUtf8(buf, msg.inputsJson == null ? "[]" : msg.inputsJson);
     }
 
     public static UltraGuiOpenPacket decode(FriendlyByteBuf buf) {
@@ -206,10 +207,31 @@ public final class UltraGuiOpenPacket {
 
     private static String readUtf(FriendlyByteBuf buf, String fallback) {
         try {
-            String s = buf.readUtf();
-            return s == null ? fallback : s;
+            String s = readUtf8(buf);
+            return s == null || s.isEmpty() ? fallback : s;
         } catch (Throwable t) {
             return fallback;
         }
+    }
+
+    /** Length-prefixed UTF-8 — never platform default charset. */
+    static void writeUtf8(FriendlyByteBuf buf, String value) {
+        String s = value == null ? "" : value;
+        byte[] utf8 = s.getBytes(StandardCharsets.UTF_8);
+        buf.writeVarInt(utf8.length);
+        buf.writeBytes(utf8);
+    }
+
+    static String readUtf8(FriendlyByteBuf buf) {
+        if (buf == null || !buf.isReadable()) {
+            return "";
+        }
+        int len = buf.readVarInt();
+        if (len < 0 || len > buf.readableBytes()) {
+            return "";
+        }
+        byte[] utf8 = new byte[len];
+        buf.readBytes(utf8);
+        return new String(utf8, StandardCharsets.UTF_8);
     }
 }

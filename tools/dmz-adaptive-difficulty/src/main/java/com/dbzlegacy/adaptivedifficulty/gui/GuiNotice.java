@@ -2,10 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.gui;
 
 import java.util.regex.Pattern;
 
-/**
- * Shared one-line notice styling for chat / in-menu feedback.
- * Used by Ultra and CNPC backends so Ultra does not import {@code gui.cnpc}.
- */
+/** Shared one-line notice styling for Ultra menus and chat feedback. */
 public final class GuiNotice {
     /** Yellow body prefix (section-sign + e). */
     public static final String NOTICE_BODY;

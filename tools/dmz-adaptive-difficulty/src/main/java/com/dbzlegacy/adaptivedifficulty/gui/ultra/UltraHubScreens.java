@@ -3,7 +3,6 @@ package com.dbzlegacy.adaptivedifficulty.gui.ultra;
 import com.dbzlegacy.adaptivedifficulty.gui.MechanicsGuiApi;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.SkillCheckService;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import net.minecraft.server.level.ServerPlayer;
@@ -32,19 +31,13 @@ public final class UltraHubScreens {
         if (ph == null) {
             ph = Map.of();
         }
-        List<String> status = MechanicsGuiApi.linesForPage(player, "main");
+        boolean staff = StaffAccess.isStaff(player);
         UltraScreenSpec spec = UltraScreenSpec.of("hub")
                 .title("Legacy Mechanics")
                 .page("main")
-                .activeTab("home");
-        if (status != null) {
-            for (String line : status) {
-                if (line != null && !line.isBlank()) {
-                    spec.line(line);
-                }
-            }
-        }
-        spec.setRow(80);
+                .activeTab("home")
+                .line(UltraStyle.LABEL + "Choose a system to open.")
+                .setRow(80);
         systemButton(
                 spec, ph, "difficulty", UltraStyle.confirm("Difficulty"), UltraStyle.STYLE_CONFIRM, true);
         systemButton(spec, ph, "rival", "Rival", UltraStyle.STYLE_NORMAL, false);
@@ -52,16 +45,14 @@ public final class UltraHubScreens {
         systemButton(spec, ph, "spar", "Sparring", UltraStyle.STYLE_NORMAL, true);
         systemButton(spec, ph, "prestige", "Prestige", UltraStyle.STYLE_NORMAL, false);
         spec.rowGap();
-        // Match CNPC hub: Skill Check (or staff Skills) left, Character Services right.
         boolean skillCheck = SkillCheckService.canUse(player);
-        boolean staff = StaffAccess.isStaff(player);
         if (skillCheck) {
             spec.buttonLeft(
                     "open:skillcheck", UltraStyle.confirm("Skill Check"), UltraStyle.STYLE_CONFIRM);
         } else if (staff) {
             spec.buttonLeft("open:skills", UltraStyle.confirm("Skills"), UltraStyle.STYLE_CONFIRM);
         } else {
-            // Unavailable to this player — dim style must be on the wire for KaiPath.
+            // Unavailable — dim style on the wire for KaiPath (no on/off status text).
             spec.buttonLeft(
                     "do:skillcheck_denied",
                     UltraStyle.dim("Skill Check"),
@@ -76,7 +67,6 @@ public final class UltraHubScreens {
             spec.buttonLeft("open:admin", UltraStyle.danger("Staff Admin"), UltraStyle.STYLE_DANGER);
             spec.rowGap();
         }
-        // Hub IS the main menu — do not call footerBackToMain() here.
         spec.send(player);
     }
 
@@ -100,8 +90,6 @@ public final class UltraHubScreens {
         spec.buttonLeft("open:progression", "Progression panel", UltraStyle.STYLE_NORMAL)
                 .buttonRight("open:config", "Config editor", UltraStyle.STYLE_NORMAL)
                 .rowGap();
-        // Admin is not the hub — back to hub is fine. Do not call footerBackToMain()
-        // anywhere in this class (hub main must never ship « Back to main menu).
         spec.setRow(spec.row() + UltraStyle.BTN_GAP)
                 .button(
                         "nav:hub",
@@ -114,8 +102,8 @@ public final class UltraHubScreens {
     }
 
     /**
-     * Hub system tile. When the system is off / unavailable, force {@link UltraStyle#STYLE_DIM}
-     * so KaiPath can render a muted button (not only a dim-colored label).
+     * Hub system tile. When the system is unavailable, force {@link UltraStyle#STYLE_DIM}
+     * so KaiPath can render a muted button (no on/off status text for players).
      */
     private static void systemButton(
             UltraScreenSpec spec,
@@ -130,7 +118,7 @@ public final class UltraHubScreens {
         boolean on = "difficulty".equals(system)
                 || (ph != null && "true".equalsIgnoreCase(ph.get(system)));
         String action = "open:" + ("spar".equals(system) ? "spar" : system);
-        String styled = on ? label : UltraStyle.dim(UltraStyle.plain(label) + " · off");
+        String styled = on ? label : UltraStyle.dim(UltraStyle.plain(label));
         String style = on
                 ? (onStyle == null || onStyle.isBlank() ? UltraStyle.STYLE_NORMAL : onStyle)
                 : UltraStyle.STYLE_DIM;

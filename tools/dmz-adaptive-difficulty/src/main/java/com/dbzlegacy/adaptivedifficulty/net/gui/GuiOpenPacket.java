@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.net.gui;
 
+import java.nio.charset.StandardCharsets;
 import java.util.function.Supplier;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.network.NetworkEvent;
@@ -171,33 +172,34 @@ public final class GuiOpenPacket {
         return inputsJson;
     }
 
-    /** Serialize 11 fields — no channel / mod-id bytes. */
+    /** Serialize 11 fields — no channel / mod-id bytes. JSON strings use explicit UTF-8. */
     public static void encode(GuiOpenPacket msg, FriendlyByteBuf buf) {
-        buf.m_130070_(msg.screenId);
-        buf.m_130070_(msg.title);
-        buf.m_130070_(msg.pageId);
-        buf.m_130070_(msg.tabsJson);
-        buf.m_130070_(msg.activeTab);
-        buf.m_130070_(msg.linesJson);
-        buf.m_130070_(msg.buttonsJson);
+        writeUtf8(buf, msg.screenId);
+        writeUtf8(buf, msg.title);
+        writeUtf8(buf, msg.pageId);
+        writeUtf8(buf, msg.tabsJson);
+        writeUtf8(buf, msg.activeTab);
+        writeUtf8(buf, msg.linesJson);
+        writeUtf8(buf, msg.buttonsJson);
         buf.m_130130_(msg.panelWidth);
         buf.m_130130_(msg.panelHeight);
-        buf.m_130070_(msg.layoutJson);
-        buf.m_130070_(msg.inputsJson);
+        writeUtf8(buf, msg.layoutJson);
+        writeUtf8(buf, msg.inputsJson);
     }
 
     /**
      * Decode fields 1–11. Missing trailing fields use {@link UltraGuiProtocol} defaults;
      * leftover bytes after the last read field are left unread (ignored by the caller).
+     * Strings are decoded with {@link StandardCharsets#UTF_8} (never platform default).
      */
     public static GuiOpenPacket decode(FriendlyByteBuf buf) {
-        String screenId = buf.m_130277_();
-        String title = buf.m_130277_();
-        String pageId = buf.m_130277_();
-        String tabsJson = buf.m_130277_();
-        String activeTab = buf.m_130277_();
-        String linesJson = buf.m_130277_();
-        String buttonsJson = buf.m_130277_();
+        String screenId = readUtf8(buf);
+        String title = readUtf8(buf);
+        String pageId = readUtf8(buf);
+        String tabsJson = readUtf8(buf);
+        String activeTab = readUtf8(buf);
+        String linesJson = readUtf8(buf);
+        String buttonsJson = readUtf8(buf);
         int panelWidth = UltraGuiProtocol.DEFAULT_PANEL_WIDTH;
         int panelHeight = UltraGuiProtocol.DEFAULT_PANEL_HEIGHT;
         String layoutJson = "";
@@ -214,10 +216,10 @@ public final class GuiOpenPacket {
                 }
             }
             if (buf.isReadable()) {
-                layoutJson = buf.m_130277_();
+                layoutJson = readUtf8(buf);
             }
             if (buf.isReadable()) {
-                inputsJson = buf.m_130277_();
+                inputsJson = readUtf8(buf);
             }
         }
         return new GuiOpenPacket(
@@ -232,6 +234,31 @@ public final class GuiOpenPacket {
                 panelHeight,
                 layoutJson,
                 inputsJson);
+    }
+
+    /**
+     * Length-prefixed UTF-8 string — same wire shape as {@code FriendlyByteBuf.writeUtf},
+     * but charset is always {@link StandardCharsets#UTF_8} (never the platform default).
+     */
+    static void writeUtf8(FriendlyByteBuf buf, String value) {
+        String s = value == null ? "" : value;
+        byte[] utf8 = s.getBytes(StandardCharsets.UTF_8);
+        buf.m_130130_(utf8.length);
+        buf.writeBytes(utf8);
+    }
+
+    /** Inverse of {@link #writeUtf8}; empty when the buffer ends early. */
+    static String readUtf8(FriendlyByteBuf buf) {
+        if (buf == null || !buf.isReadable()) {
+            return "";
+        }
+        int len = buf.m_130242_();
+        if (len < 0 || len > buf.readableBytes()) {
+            return "";
+        }
+        byte[] utf8 = new byte[len];
+        buf.readBytes(utf8);
+        return new String(utf8, StandardCharsets.UTF_8);
     }
 
     /** Server never opens screens; KaiPath owns the client handler. */

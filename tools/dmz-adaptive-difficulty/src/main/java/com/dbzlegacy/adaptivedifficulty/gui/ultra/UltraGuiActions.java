@@ -688,6 +688,21 @@ public final class UltraGuiActions {
             };
             case "character" -> switch (parts.action == null ? "" : parts.action) {
                 case "android_remove", "android" -> UltraStyle.PAGE_ANDROID_REMOVE;
+                case "race_confirm" -> "race";
+                case "class_confirm" -> "class";
+                case "reskin_confirm" -> "reskin";
+                case "bone_toggle",
+                        "bone_unlock",
+                        "bone_equip",
+                        "bone_unequip",
+                        "bone_race_default",
+                        "bone_preview",
+                        "bone_restore" -> {
+                    String bonePage = stringArg(args, "page");
+                    yield bonePage != null && bonePage.startsWith("bones")
+                            ? bonePage
+                            : (page != null && page.startsWith("bones") ? page : "bones:0");
+                }
                 default -> homePage(screen);
             };
             case "admin" -> "admin";

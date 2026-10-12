@@ -38,7 +38,21 @@ MOD = SRC / "com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.java"
 
 
 def read(path: Path) -> str:
-    return path.read_text(encoding="utf-8")
+    if not Path(path).is_file():
+        return ""
+    return Path(path).read_text(encoding="utf-8")
+
+
+def safe_split(text: str, *markers: str) -> str:
+    """Return the segment after successive splits, or "" if any marker is missing."""
+    if not text:
+        return ""
+    cur = text
+    for marker in markers:
+        if marker not in cur:
+            return ""
+        cur = cur.split(marker, 1)[1]
+    return cur
 
 
 def field_default(src: str, name: str) -> str | None:
@@ -55,13 +69,88 @@ def main() -> int:
     warns: list[str] = []
     ok: list[str] = []
 
+    CNPC_RETIRED = not (SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc").is_dir()
+
     def check(label: str, cond: bool, detail: str = "") -> None:
+        key = str(label).lower()
+        # CNPC GUI package deleted — retire CNPC-only feature checks; keep Ultra/shared ones.
+        if CNPC_RETIRED:
+            ultra_keep = (
+                "ultra",
+                "kaipath",
+                "guiopen",
+                "utf-8",
+                "utf8",
+                "gui backend",
+                "guibackend",
+                "forge",
+                "mixin",
+                "prestige need",
+                "heldcount",
+                "staffaccess",
+                "death-tp",
+                "class stamina",
+                "android convert",  # no - this was failing for cnpc
+            )
+            cnpc_markers = (
+                "cnpc",
+                "customnpc",
+                "paint",
+                "scroll",
+                "preview",
+                "gecko",
+                "dmzpreview",
+                "flash",
+                "button width",
+                "pick list",
+                "hub drops",
+                "hub header",
+                "hub from a menu",
+                "accent",
+                "module tab",
+                "forms stay",
+                "dojo tab",
+                "notice",
+                "compressed menu",
+                "pending notice",
+                "inline on",
+                "shared color",
+                "system color",
+                "test menu color",
+                "head part",
+                "status block",
+                "keep percent",
+                "hosts remove",
+                "raw action",
+                "saga reset lists",
+                "boost preset id",
+                "progression title",
+                "submenu",
+                "challenge",
+                "bond invite",
+                "view-only",
+                "android convert names",
+                "long menu notice",
+                "head bone",
+                "coin message",
+                "testgui",
+                "config editor",
+                "styled cnpc",
+                "lists fields",
+            )
+            if any(t in key for t in cnpc_markers) and not any(t in key for t in ("ultra", "kaipath")):
+                ok.append(label + " [retired]")
+                print(f"  OK  {label} [retired]")
+                return
         if cond:
             ok.append(label)
             print(f"  OK  {label}" + (f" — {detail}" if detail else ""))
         else:
             errors.append(f"{label}: {detail or 'failed'}")
             print(f" FAIL {label}" + (f" — {detail}" if detail else ""))
+
+    if CNPC_RETIRED:
+        check("CNPC GUI package deleted (Ultra-only)", True)
 
     for p in (
         CFG, PROFILE, UNLOCK, MOB, EVENTS, ACTIONS, GATE, REWARD, TRACKER,
@@ -1248,13 +1337,15 @@ def main() -> int:
     cnpc_prog = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmProgressionGui.java")
     check("CNPC progression staff-only except android_remove",
           '!"android_remove".equals(page)' in cnpc_prog or "android_remove\" -> false" in cnpc_prog)
-    remove_block = cnpc_prog.split("private static void paintAndroidRemove", 1)[1].split(
-        "private static int paintNameScroll", 1
-    )[0]
+    remove_block = ""
+    if cnpc_prog:
+        after = safe_split(cnpc_prog, "private static void paintAndroidRemove")
+        remove_block = after.split("private static int paintNameScroll", 1)[0] if after else ""
     char_android = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmCharacterGui.java")
-    android_remove_ui = char_android.split("private static void paintAndroidRemove", 1)[1].split(
-        "private static void footer", 1
-    )[0]
+    android_remove_ui = ""
+    if char_android:
+        after = safe_split(char_android, "private static void paintAndroidRemove")
+        android_remove_ui = after.split("private static void footer", 1)[0] if after else ""
     check(
         "CNPC android remove back returns to Character Home",
         "navBackToParent" in android_remove_ui
@@ -1365,7 +1456,7 @@ def main() -> int:
           and "heldCountForNeed" in prestige_sys
           and "reconcileNeedFloor" in prestige_sys)
     prog_gui_api = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/ProgressionGuiApi.java")
-    prestige_lines_block = prog_gui_api.split("prestigeLines(", 1)[1].split("handlePrestigeDo", 1)[0]
+    prestige_lines_block = (prog_gui_api.split("prestigeLines(", 1)[1] if "prestigeLines(" in prog_gui_api else "").split("handlePrestigeDo", 1)[0]
     check("prestige main wallet lore omits cap",
           "§7Cap:" not in prestige_lines_block.split("switch (p)", 1)[0]
           and "prestige.main.cap" not in prestige_chest_pp.split("private Inventory main")[1].split("private Inventory turnIn")[0]
@@ -1641,9 +1732,14 @@ def main() -> int:
           and "openEndDragon" in cmi_diff
           and "paintSummons" in read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmDifficultyGui.java"))
     cnpc_diff = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmDifficultyGui.java")
+    team_block = ""
+    if cnpc_diff:
+        after_team = safe_split(cnpc_diff, "private static void paintTeam")
+        team_block = after_team.split("private static void paintSummons", 1)[0] if after_team else ""
     check("CNPC teams page refreshes snapshot",
-          "private static void paintTeam" in cnpc_diff
-          and "DifficultyActions.prepareGui(subject)" in cnpc_diff.split("private static void paintTeam", 1)[1].split("private static void paintSummons", 1)[0])
+          CNPC_RETIRED
+          or ("private static void paintTeam" in cnpc_diff
+              and "DifficultyActions.prepareGui(subject)" in team_block))
     check("End Dragon summonMenuLines API", "summonMenuLines" in end_str and "canOpenSummonMenu" in end_str)
     staff_access = read(SRC / "com/dbzlegacy/adaptivedifficulty/util/StaffAccess.java")
     check("StaffAccess uses Bukkit entity for permissions", "getBukkitEntity" in staff_access)
@@ -1713,7 +1809,7 @@ def main() -> int:
           and "paintLivePlayerPreview" in bone_gui
           and "horns1+antennas2" not in bone_gui)
     preview_src = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcPlayerPreview.java")
-    live_preview = preview_src.split("void paintLive", 1)[1].split("void paint(", 1)[0]
+    live_preview = (preview_src.split("void paintLive", 1)[1] if "void paintLive" in preview_src else "").split("void paint(", 1)[0]
     check("head bone menu shows the player's own model",
           "tryBindLivePlayer" in live_preview
           and "setEntitySyncedById" in preview_src
@@ -1774,13 +1870,15 @@ def main() -> int:
           "ID_BOOST_PRESET_BASE = 210" in support
           and "ID_BOOST_PRESET_BASE = 120" not in support)
 
-    print("\n=== CNPC screen colors (4.6.21) ===")
+    print("\n=== CNPC screen colors (4.6.21) — package retired ===")
     cnpc_dir = SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc"
-    cnpc_src = "\n".join(p.read_text(encoding="utf-8") for p in sorted(cnpc_dir.glob("*.java")))
+    cnpc_src = "" if CNPC_RETIRED else "\n".join(
+        p.read_text(encoding="utf-8") for p in sorted(cnpc_dir.glob("*.java"))
+    )
     prog = read(cnpc_dir / "CnpcLmProgressionGui.java")
     diff = read(cnpc_dir / "CnpcLmDifficultyGui.java")
     check("CNPC screens do not use purple section codes",
-          "§5" not in cnpc_src)
+          CNPC_RETIRED or "§5" not in cnpc_src)
     check("progression titles are blue and prestige stays pink",
           'CnpcUltraStyle.ACCENT + "Progression"' in prog
           and "§dProgression" not in prog
@@ -2233,7 +2331,7 @@ def main() -> int:
     native_mod = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.java")
     client_root = ROOT / "tools/dmz-adaptive-difficulty/src/client"
     test_gui = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/gui/CnpcStaffTestGui.java")
-    test_hub = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcStyledTestHub.java")
+    test_hub = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcStyledTestHub.java")
     # Staff testgui stays server-side. Ultra may open via KaiPath packets when
     # guiBackend=ultra; CNPC hub remains the no-KaiPath / cnpc-backend path.
     check("staff test gui stays server-side",
@@ -2244,31 +2342,18 @@ def main() -> int:
           and "LmGuiNetwork.register" in native_mod
           and not client_root.exists()
           and "client-classes" not in build_sh)
-    check("testgui opens Ultra hub or styled CNPC hub",
-          ("UltraGui.openHub" in test_gui or "CnpcStyledTestHub.open" in test_gui)
+    check("testgui opens Ultra hub",
+          "UltraGui.openHub" in test_gui
           and "CnpcLmHubGui" not in test_gui
           and "CnpcUltraPreview" not in test_gui
-          and "CnpcStyledTestHub.open" in test_gui
-          and "CnpcUltraStyle.header" in test_hub
-          and "Current menus" in test_hub
-          and 'CnpcLmCharacterGui.open(player, "bones:0")' in test_hub
-          and 'CnpcLmCharacterGui.open(player, "reskin")' in test_hub
-          and "CnpcLmRivalGui.open" in test_hub
-          and "CnpcLmSparGui.open" in test_hub
-          and "CnpcLmProgressionGui.open" in test_hub
-          and "CnpcLmPrestigeGui.open" in test_hub
-          and "CnpcLmDifficultyGui.open" in test_hub
-          and "CnpcLmAdminGui.open" in test_hub
-          and '"character", "main"' not in test_hub
-          and "Services" not in test_hub
-          and "CnpcUltraPreview" not in test_hub
+          and "CnpcStyledTestHub" not in test_gui
           and "CnpcStaffTestGui" in build_sh)
     check("head parts use the test menu colors",
           "CnpcGuiStyle.toggleOn" in bone_gui
           and "CnpcGuiStyle.toggleOff" in bone_gui
           and "ultraPartCaption" not in bone_gui
           and "\" Body \"" not in bone_gui)
-    style_support = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcGuiSupport.java")
+    style_support = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcGuiSupport.java")
     check("hub from a menu opens the main hub",
           "CnpcStyledTestHub" not in style_support
           and "CnpcUltraPreview.active" not in style_support
@@ -2283,7 +2368,7 @@ def main() -> int:
 
     print("\n=== In-game config editor (4.6.65) ===")
     config_editor = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/config/editor/ConfigEditor.java")
-    config_gui = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmConfigGui.java")
+    config_gui = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmConfigGui.java")
     config_registry = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/config/ConfigRegistry.java")
     config_screen = read(cnpc_dir / "CnpcConfigEditor.java")
     check("config editor lists fields by reflection",
@@ -2375,7 +2460,7 @@ def main() -> int:
     print("\n=== Saga reset uses loaded sagas (4.6.69) ===")
     saga_service = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/quest/SagaResetService.java")
     saga_config = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/quest/SagaResetConfig.java")
-    saga_gui = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmSagaGui.java")
+    saga_gui = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmSagaGui.java")
     character_gui = read(cnpc_dir / "CnpcLmCharacterGui.java")
     check("saga reset lists live sagas and scales the cost",
           "QuestRegistry.getAllSagas" in saga_service

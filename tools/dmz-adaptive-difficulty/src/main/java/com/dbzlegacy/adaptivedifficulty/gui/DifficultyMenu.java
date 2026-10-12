@@ -4,7 +4,7 @@ import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraGui;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import net.minecraft.server.level.ServerPlayer;
 
-/** Player UI entrypoint for {@code /difficulty} — Ultra, CustomNPCs, then chat fallback. */
+/** Player UI entrypoint for {@code /difficulty}. */
 public final class DifficultyMenu {
     private DifficultyMenu() {}
 
@@ -13,7 +13,6 @@ public final class DifficultyMenu {
             return;
         }
         String target = page == null || page.isBlank() ? "main" : page;
-        com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcUltraPreview.leave(player);
         if ("settings".equalsIgnoreCase(target)) {
             if (!StaffAccess.isStaff(player)) {
                 target = "main";
@@ -22,16 +21,6 @@ public final class DifficultyMenu {
                 return;
             }
         }
-
-        GuiBackend backend = GuiBackend.fromConfig();
-        if (backend == GuiBackend.ULTRA) {
-            UltraGui.open(player, "difficulty", target);
-            return;
-        }
-        if (backend == GuiBackend.CNPC) {
-            com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcLmGui.open(player, "difficulty", target);
-            return;
-        }
-        DifficultyChatMenu.open(player, target);
+        UltraGui.open(player, "difficulty", target);
     }
 }
