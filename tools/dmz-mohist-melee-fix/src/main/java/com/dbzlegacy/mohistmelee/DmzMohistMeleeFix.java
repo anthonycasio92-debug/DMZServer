@@ -19,7 +19,7 @@ public final class DmzMohistMeleeFix {
 
     public DmzMohistMeleeFix() {
         LOGGER.info(
-                "[{}] v2.12.25: priceless skill mixins off, grab waits for GrabService, flow shockwaves do not break blocks",
+                "[{}] v2.12.26: no Shurui/SDU mixins; priceless skill mixins off, grab waits for GrabService, flow shockwaves do not break blocks",
                 MOD_ID
         );
         ReachRepairEvents.register();

@@ -9,7 +9,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Shurui raids (and other mods) relocate players with {@code ServerPlayer.m_8999_(ServerLevel,...)}.
+ * Some mods relocate players with {@code ServerPlayer.m_8999_(ServerLevel,...)}.
  * Same-dimension arena teleports do not fire {@code PlayerChangedDimensionEvent}, so join/dim
  * unlock never runs. Force-clear stale strike locks + repair attributes after any such teleport.
  */
