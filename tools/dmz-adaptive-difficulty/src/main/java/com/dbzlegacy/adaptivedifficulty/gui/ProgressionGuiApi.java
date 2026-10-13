@@ -41,7 +41,7 @@ public final class ProgressionGuiApi {
         if (!staff) {
             return String.join("\n",
                     "§d§lPotential Unlock",
-                    "§8????????????",
+                    "§8------------",
                     "§7Spar to raise Potential Unlock.",
                     "",
                     "§7Other actions: §f/lm §7-> Prestige - Remove Android - Skill Check");
