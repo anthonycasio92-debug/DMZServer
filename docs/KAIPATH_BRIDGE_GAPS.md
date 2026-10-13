@@ -1,26 +1,32 @@
 # Ultra bridge gap matrix (LM ↔ KaiPath)
 
-**LM 4.6.112** — what the bridge already sends vs what KaiPath must still implement.
+**LM 4.6.120** — what the bridge already sends vs what the KaiPath reference client implements.
 
 ## Cursor / LM (server protocol) — status
 
 | Gap | Status | Notes |
 |-----|--------|-------|
-| Button `style` on every button | **Done** | Wire always emits `style`. Roles: `confirm` / `danger` / `dim` / `normal`. Destructive actions use `danger`; unavailable use `dim`; positive confirms use `confirm`. |
-| Text input (`inputsJson` field 11) | **Done** | `type=text` + `args.bindInput` → `args.value` on Apply / Enter. Config TEXT, NUMBER, and ENUM detail pages use text fields. |
+| Button `style` on every button | **Done** | Wire always emits `style`. Roles: `confirm` / `danger` / `dim` / `normal`. |
+| Text input (`inputsJson` field 11) | **Done** | `type=text` + `args.bindInput` → `args.value` on Apply / Enter. Config + Difficulty Weights shop. |
 | `playerModel.parts` (cosmetics) | **Done** (4.6.111) | Schema 1: `headBones` / `form` / `extras`. See [`KAIPATH_GUI_PROTOCOL.md`](KAIPATH_GUI_PROTOCOL.md). |
-| Slider / toggle as input types | **Deferred** | Nice-to-have. Config BOOLEAN stays button toggles (`confirm`/`dim` by state). Reserved types documented below; not shipped on wire yet. |
+| Slider / toggle as input types | **Deferred** | BOOLEAN stays styled buttons; NUMBER uses text + ±. Reserved below. |
 
-## JLDK / KaiPath (client) — still needed
+## JLDK / KaiPath (client) — reference kit vs live jar
 
-| Gap | Status | Notes |
-|-----|--------|-------|
-| Button color rendering | **Missing** | Map `confirm`→green, `danger`→red, `dim`→dark gray, `normal`→default. LM already sends styles. |
-| Player model draw | **Missing** | Bounds (+ optional `parts`) are in `layoutJson.playerModel`; KaiPath parses but does not draw the entity. |
-| UTF-8 decode | **Missing on client** | LM encodes/decodes GuiOpen with explicit `StandardCharsets.UTF_8`. Mojibake (é/à) is KaiPath platform-default decode — fix on JLDK side. |
-| Text field widgets | **Reference done / live jar missing** | `kaipath-client` `LmDynamicScreen` renders field 11 + `bindInput`→`args.value`. Live `kaipath-1.3.1.jar` still lacks this — **blocker for Weight shop typed entry**. |
-| GuiFeaturesPacket advertise | **Partial** | Reference advertises `["titleAlign","activeTab","textInput"]`. Live jar still baseline until rebuilt. |
-| Slider / toggle widgets | N/A until LM ships types | Reserved; do not block text input. |
+Sources: [`tools/ultra-gui-kit/kaipath-client/`](../tools/ultra-gui-kit/kaipath-client/).
+
+| Gap | Reference kit | Live `kaipath-1.3.1.jar` | Notes |
+|-----|---------------|--------------------------|-------|
+| Button `style` colors | **Done** | Missing | `confirm`→green, `danger`→red, `dim`→gray chrome + label tint |
+| `activeTab` highlight | **Done** | Done (1.3.5+) | Chip under active tab; LM also styles tab labels |
+| `titleAlign` | **Done** | Done (1.3.5+) | Centers when `layoutJson.titleAlign=center` |
+| `playerModel` draw | **Done** | Missing | Local player in bounds; turntable when `rotate`; `parts` logged / ready for geo |
+| UTF-8 GuiOpen strings | **Done** | Use MC `readUtf` (UTF-8) | Reference uses explicit `StandardCharsets.UTF_8` length-prefix (wire-compatible) |
+| Text field widgets (field 11) | **Done** | **Missing** | EditBox from `inputsJson`; Enter / `bindInput` → `args.value` — **Weight shop blocker** |
+| GuiFeaturesPacket advertise | **Done** | Missing | `["style","activeTab","titleAlign","playerModel","textInput"]` |
+| Slider / toggle widgets | N/A | N/A | Reserved until LM ships types |
+
+**Ship path:** merge `tools/ultra-gui-kit/kaipath-client/` into KaiPath and rebuild the live jar. Until then LM Weight shop input pages show a clear “requires KaiPath update” message when `textInput` is not advertised.
 
 ## Reserved (later): `inputsJson` slider / toggle
 

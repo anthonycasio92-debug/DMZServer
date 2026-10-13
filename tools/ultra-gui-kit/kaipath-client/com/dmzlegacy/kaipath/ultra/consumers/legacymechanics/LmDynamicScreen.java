@@ -8,30 +8,25 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.LivingEntity;
 
 /**
  * Renders whatever the server sends in {@link GuiOpenPacket} — title, tabs, lines, buttons,
- * and field 11 {@code inputsJson} text fields.
- * No hardcoded screen/tab/button lists. Clicks go back on the bound {@code <modid>:gui} channel.
+ * field 11 {@code inputsJson} text fields, button {@code style} colors, and optional
+ * {@code layoutJson.playerModel}.
  *
- * <p><b>JLDK TODO (reference client has titleAlign + activeTab + textInput):</b>
- *
- * <ul>
- *   <li>Honor button {@code style}: {@code normal}, {@code confirm} (green), {@code danger}
- *       (red), {@code dim} (dark gray).
- *   <li>Render {@code layoutJson.playerModel} (entity preview bounds + optional {@code parts}
- *       schema 1: headBones / form / extras — see KAIPATH_GUI_PROTOCOL.md).
- *   <li>Advertise full
- *       {@code ["style","activeTab","titleAlign","playerModel","textInput"]} once style /
- *       playerModel land (textInput already advertised).
- * </ul>
+ * <p>No hardcoded screen/tab/button lists. Clicks go back on the bound {@code <modid>:gui}
+ * channel. Advertise via {@link UltraGuiConsumerRegistry#ADVERTISED_FEATURES_JSON}.
  */
 public class LmDynamicScreen extends UltraScreen {
     private final GuiOpenPacket packet;
@@ -57,6 +52,11 @@ public class LmDynamicScreen extends UltraScreen {
     private final Map<String, EditBox> textInputs = new LinkedHashMap<>();
     /** input id → args template from inputsJson (for Enter submit). */
     private final Map<String, JsonObject> inputArgsById = new LinkedHashMap<>();
+    /** Button chrome underlays drawn from {@code style}. */
+    private final List<StyledChrome> buttonChrome = new ArrayList<>();
+    /** Tab chrome for activeTab highlight. */
+    private final List<StyledChrome> tabChrome = new ArrayList<>();
+    private float turntableDegrees;
 
     public LmDynamicScreen(GuiOpenPacket packet) {
         this(packet, LmGuiNetwork.CHANNEL_ID);
@@ -83,19 +83,21 @@ public class LmDynamicScreen extends UltraScreen {
         bodyLines.clear();
         textInputs.clear();
         inputArgsById.clear();
+        buttonChrome.clear();
+        tabChrome.clear();
         parseLayout();
         placePanel();
 
         int cursorY = panelY + 8;
 
-        // Title
-        // Drawn in render; reserve space
+        // Title drawn in render; reserve space
         cursorY += 14;
 
-        // Tabs — dynamic from tabsJson
+        // Tabs — dynamic from tabsJson; activeTab gets a highlight chip
         JsonArray tabs = parseArray(packet.tabsJson());
         int tabX = panelX + 8;
         int tabW = Math.max(48, Math.min(90, (panelW - 16) / Math.max(1, tabs.size())));
+        String active = packet.activeTab() == null ? "" : packet.activeTab().trim();
         for (JsonElement el : tabs) {
             if (!el.isJsonObject()) {
                 continue;
@@ -106,15 +108,24 @@ public class LmDynamicScreen extends UltraScreen {
             if (id.isBlank()) {
                 continue;
             }
+            String tabSemantic = stripAtPrefix(id);
+            if (tabSemantic.startsWith("tab:")) {
+                tabSemantic = tabSemantic.substring(4);
+            }
+            boolean isActive =
+                    !active.isBlank() && active.equalsIgnoreCase(tabSemantic);
+            if (isActive) {
+                tabChrome.add(new StyledChrome(tabX, cursorY, tabW - 2, 16, "confirm"));
+            }
             String actionId = id;
-            String args = "{}";
+            JsonObject tabArgs = new JsonObject();
             addThemedButton(
                     tabX,
                     cursorY,
                     tabW - 2,
                     16,
                     stripSection(label),
-                    () -> echoClick(actionId, args));
+                    () -> echoClick(actionId, tabArgs));
             tabX += tabW;
         }
         if (tabs.size() > 0) {
@@ -132,39 +143,16 @@ public class LmDynamicScreen extends UltraScreen {
         int pad = Math.max(0, bodyPad);
         int naturalH = bodyLines.isEmpty() ? 0 : pad * 2 + bodyLines.size() * lineStep;
         int listH = scrollBody
-                ? Math.max(lineStep + pad * 2, Math.min(Math.max(bodyMaxHeight, lineStep + pad * 2), Math.max(lineStep + pad * 2, naturalH > 0 ? bodyMaxHeight : 0)))
+                ? Math.max(
+                        lineStep + pad * 2,
+                        Math.min(
+                                Math.max(bodyMaxHeight, lineStep + pad * 2),
+                                Math.max(lineStep + pad * 2, naturalH > 0 ? bodyMaxHeight : 0)))
                 : Math.max(lineStep + pad * 2, naturalH);
         if (!bodyLines.isEmpty()) {
             int listY = panelY + Math.max(cursorY - panelY, bodyTop);
-            // Vertical padding inside the scroll region: inset list content via taller viewport.
             addThemedList(panelX + 8, listY, Math.max(1, panelW - 16), listH, bodyLines);
             cursorY = listY + listH + 6;
-        }
-
-        // Optional playerModel — layout bounds + parts for client entity preview (JLDK renders).
-        if (playerModel != null) {
-            int pmX = intVal(playerModel, "x", 0);
-            int pmY = intVal(playerModel, "y", 0);
-            int pmW = Math.max(16, intVal(playerModel, "width", 64));
-            int pmH = Math.max(16, intVal(playerModel, "height", 96));
-            float pmScale = playerModel.has("scale") ? playerModel.get("scale").getAsFloat() : 1f;
-            boolean pmRotate = playerModel.has("rotate") && playerModel.get("rotate").getAsBoolean();
-            JsonObject parts =
-                    playerModel.has("parts") && playerModel.get("parts").isJsonObject()
-                            ? playerModel.getAsJsonObject("parts")
-                            : null;
-            // Bounds are absolute within the panel; JLDK draws the living entity + parts.
-            UltraUiBridge.LOGGER.debug(
-                    "[kaipath] playerModel x={} y={} w={} h={} scale={} rotate={} parts={} at={},{}",
-                    pmX,
-                    pmY,
-                    pmW,
-                    pmH,
-                    pmScale,
-                    pmRotate,
-                    parts == null ? "none" : parts.toString(),
-                    panelX + pmX,
-                    panelY + pmY);
         }
 
         // Text inputs — GuiOpenPacket field 11 inputsJson (type=text)
@@ -205,12 +193,11 @@ public class LmDynamicScreen extends UltraScreen {
             box.m_94144_(value);
             if (!placeholder.isBlank()) {
                 try {
-                    // EditBox#setHint (1.20.1+)
                     box.getClass()
                             .getMethod("m_259207_", Component.class)
                             .invoke(box, Component.m_237113_(placeholder));
                 } catch (Throwable ignored) {
-                    // hint optional — placeholder still used as narration
+                    // hint optional
                 }
             }
             m_142416_(box);
@@ -218,7 +205,7 @@ public class LmDynamicScreen extends UltraScreen {
             inputArgsById.put(id, inputArgs);
         }
 
-        // Buttons — dynamic from buttonsJson; x/y relative to panel origin
+        // Buttons — dynamic from buttonsJson; honor style chrome
         JsonArray buttons = parseArray(packet.buttonsJson());
         for (JsonElement el : buttons) {
             if (!el.isJsonObject()) {
@@ -230,27 +217,32 @@ public class LmDynamicScreen extends UltraScreen {
                 continue;
             }
             String label = str(b, "label", id);
+            String style = normalizeStyle(str(b, "style", "normal"));
             int x = intVal(b, "x", 8);
             int y = intVal(b, "y", cursorY - panelY);
             int w = Math.max(buttonMinWidth, intVal(b, "w", 150));
             int h = intVal(b, "h", 18);
-            int pad = intVal(b, "pad", buttonPad);
-            // pad reserved for themed button label inset (min width already enforced)
-            if (pad < 0) {
-                pad = buttonPad;
+            int padBtn = intVal(b, "pad", buttonPad);
+            if (padBtn < 0) {
+                padBtn = buttonPad;
             }
             JsonObject argsObj = new JsonObject();
             if (b.has("args") && b.get("args").isJsonObject()) {
                 argsObj = b.getAsJsonObject("args").deepCopy();
             }
+            int absX = panelX + x;
+            int absY = panelY + y;
+            int absW = Math.max(buttonMinWidth, w);
+            int absH = Math.max(12, h);
+            buttonChrome.add(new StyledChrome(absX, absY, absW, absH, style));
             String actionId = id;
             JsonObject args = argsObj;
             addThemedButton(
-                    panelX + x,
-                    panelY + y,
-                    Math.max(buttonMinWidth, w),
-                    Math.max(12, h),
-                    stripSection(label),
+                    absX,
+                    absY,
+                    absW,
+                    absH,
+                    styleLabel(style, stripSection(label)),
                     () -> echoClick(actionId, args));
         }
 
@@ -274,10 +266,7 @@ public class LmDynamicScreen extends UltraScreen {
             }
         }
         UltraGuiConsumerRegistry.sendAction(
-                channelId,
-                packet.screenId(),
-                actionId,
-                args.toString());
+                channelId, packet.screenId(), actionId, args.toString());
     }
 
     @Override
@@ -364,7 +353,7 @@ public class LmDynamicScreen extends UltraScreen {
             }
             if (o.has("titleAlign") && o.get("titleAlign").isJsonPrimitive()) {
                 String align = o.get("titleAlign").getAsString();
-                titleAlign = align == null ? "left" : align.trim().toLowerCase();
+                titleAlign = align == null ? "left" : align.trim().toLowerCase(Locale.ROOT);
             }
             if (o.has("bodyMaxHeight")) {
                 bodyMaxHeight = Math.max(lineHeight, o.get("bodyMaxHeight").getAsInt());
@@ -400,7 +389,6 @@ public class LmDynamicScreen extends UltraScreen {
 
     @Override
     public void m_280273_(GuiGraphics g) {
-        // Dim the world behind the dialog
         g.m_280509_(0, 0, this.f_96543_, this.f_96544_, 0xC0101010);
         UltraUiAccess.panel(g, theme(), panelX, panelY, panelW, panelH);
     }
@@ -408,6 +396,15 @@ public class LmDynamicScreen extends UltraScreen {
     @Override
     public void m_88315_(GuiGraphics g, int mouseX, int mouseY, float tick) {
         m_280273_(g);
+        // Style chrome under tabs/buttons (confirm=green, danger=red, dim=gray)
+        for (StyledChrome c : tabChrome) {
+            paintChrome(g, c);
+        }
+        for (StyledChrome c : buttonChrome) {
+            paintChrome(g, c);
+        }
+        // Player model entity preview (bounds from layoutJson.playerModel)
+        drawPlayerModel(g, mouseX, mouseY, tick);
         UltraUiAccess.themed(theme(), () -> {
             String title = stripSection(packet.title());
             int maxTitleW = Math.max(8, panelW - 16);
@@ -416,14 +413,160 @@ public class LmDynamicScreen extends UltraScreen {
             int titleX = "center".equalsIgnoreCase(titleAlign)
                     ? panelX + Math.max(8, (panelW - titleW) / 2)
                     : panelX + 8;
-            g.m_280488_(
-                    this.f_96547_,
-                    titleComp,
-                    titleX,
-                    panelY + 8,
-                    0xFFE8E8E8);
+            g.m_280488_(this.f_96547_, titleComp, titleX, panelY + 8, 0xFFE8E8E8);
             super.m_88315_(g, mouseX, mouseY, tick);
         });
+    }
+
+    private void paintChrome(GuiGraphics g, StyledChrome c) {
+        if (c == null) {
+            return;
+        }
+        int argb = styleArgb(c.style);
+        if (argb == 0) {
+            return;
+        }
+        // Soft fill + left accent bar
+        UltraUiAccess.fillRect(g, theme(), c.x, c.y, c.w, c.h, argb);
+        UltraUiAccess.fillRect(g, theme(), c.x, c.y, 3, c.h, styleAccentArgb(c.style));
+    }
+
+    private void drawPlayerModel(GuiGraphics g, int mouseX, int mouseY, float tick) {
+        if (playerModel == null) {
+            return;
+        }
+        int pmX = intVal(playerModel, "x", 0);
+        int pmY = intVal(playerModel, "y", 0);
+        int pmW = Math.max(16, intVal(playerModel, "width", 64));
+        int pmH = Math.max(16, intVal(playerModel, "height", 96));
+        float pmScale = playerModel.has("scale") ? playerModel.get("scale").getAsFloat() : 1f;
+        boolean pmRotate = playerModel.has("rotate") && playerModel.get("rotate").getAsBoolean();
+        // parts (headBones / form / extras) — apply when DMZUltra/geo helpers are present
+        JsonObject parts =
+                playerModel.has("parts") && playerModel.get("parts").isJsonObject()
+                        ? playerModel.getAsJsonObject("parts")
+                        : null;
+        if (parts != null) {
+            UltraUiBridge.LOGGER.debug("[kaipath] playerModel.parts schema={}", str(parts, "schema", "?"));
+        }
+
+        Minecraft mc = Minecraft.m_91087_();
+        if (mc == null || mc.f_91074_ == null) {
+            return;
+        }
+        LivingEntity entity = mc.f_91074_;
+        int centerX = panelX + pmX + pmW / 2;
+        int centerY = panelY + pmY + pmH;
+        int scale = Math.max(8, Math.round(30f * Math.max(0.1f, pmScale)));
+        if (pmRotate) {
+            turntableDegrees = (turntableDegrees + tick * 1.2f) % 360f;
+        }
+        float lookX = pmRotate ? (float) Math.sin(Math.toRadians(turntableDegrees)) * 40f : mouseX - centerX;
+        float lookY = pmRotate ? -20f : mouseY - (panelY + pmY + pmH / 2f);
+        if (!renderEntityPreview(g, centerX, centerY, scale, lookX, lookY, entity)) {
+            // Fallback plate so the bounds are visible even if InventoryScreen APIs move
+            UltraUiAccess.fillRect(
+                    g, theme(), panelX + pmX, panelY + pmY, pmW, pmH, 0x33000000);
+        }
+    }
+
+    /**
+     * Call InventoryScreen entity-preview helpers reflectively — SRG names differ slightly
+     * across Forge mappings; try the known 1.20.1 candidates.
+     */
+    private static boolean renderEntityPreview(
+            GuiGraphics g,
+            int x,
+            int y,
+            int scale,
+            float lookX,
+            float lookY,
+            LivingEntity entity) {
+        try {
+            Class<?> inv = Class.forName("net.minecraft.client.gui.screens.inventory.InventoryScreen");
+            // Mojmap: renderEntityInInventoryFollowsMouse(GuiGraphics, int, int, int, float, float, LivingEntity)
+            String[] names = {"m_275590_", "m_280432_", "renderEntityInInventoryFollowsMouse"};
+            for (String name : names) {
+                try {
+                    Method m =
+                            inv.getMethod(
+                                    name,
+                                    GuiGraphics.class,
+                                    int.class,
+                                    int.class,
+                                    int.class,
+                                    float.class,
+                                    float.class,
+                                    LivingEntity.class);
+                    m.invoke(null, g, x, y, scale, lookX, lookY, entity);
+                    return true;
+                } catch (NoSuchMethodException ignored) {
+                    // try next
+                }
+            }
+        } catch (Throwable t) {
+            UltraUiBridge.LOGGER.debug("[kaipath] playerModel draw failed", t);
+        }
+        return false;
+    }
+
+    private static String normalizeStyle(String style) {
+        if (style == null || style.isBlank()) {
+            return "normal";
+        }
+        String s = style.trim().toLowerCase(Locale.ROOT);
+        return switch (s) {
+            case "confirm", "danger", "dim", "normal" -> s;
+            default -> "normal";
+        };
+    }
+
+    private static int styleArgb(String style) {
+        return switch (normalizeStyle(style)) {
+            case "confirm" -> 0x4022AA44;
+            case "danger" -> 0x40CC3333;
+            case "dim" -> 0x40333333;
+            default -> 0;
+        };
+    }
+
+    private static int styleAccentArgb(String style) {
+        return switch (normalizeStyle(style)) {
+            case "confirm" -> 0xFF22AA44;
+            case "danger" -> 0xFFCC3333;
+            case "dim" -> 0xFF666666;
+            default -> 0;
+        };
+    }
+
+    /** Ensure label carries a readable style tint when the server sent a plain string. */
+    private static String styleLabel(String style, String label) {
+        if (label == null) {
+            return "";
+        }
+        if (label.indexOf('§') >= 0 || label.indexOf('\u00a7') >= 0) {
+            return label;
+        }
+        return switch (normalizeStyle(style)) {
+            case "confirm" -> "§a" + label;
+            case "danger" -> "§c" + label;
+            case "dim" -> "§8" + label;
+            default -> label;
+        };
+    }
+
+    private static String stripAtPrefix(String actionId) {
+        if (actionId == null) {
+            return "";
+        }
+        String a = actionId.trim();
+        if (a.startsWith("@")) {
+            int colon = a.indexOf(':');
+            if (colon > 1 && colon < a.length() - 1) {
+                return a.substring(colon + 1);
+            }
+        }
+        return a;
     }
 
     private static JsonArray parseArray(String json) {
@@ -460,12 +603,9 @@ public class LmDynamicScreen extends UltraScreen {
         }
     }
 
-    /** Strip Minecraft § formatting for widget labels that don't need raw codes. */
     private static String stripSection(String s) {
-        if (s == null) {
-            return "";
-        }
-        // Keep § codes — Ultra themed buttons often accept them; only null-safe.
-        return s;
+        return s == null ? "" : s;
     }
+
+    private record StyledChrome(int x, int y, int w, int h, String style) {}
 }

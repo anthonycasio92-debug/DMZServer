@@ -16,9 +16,11 @@ LegacyMechanics (LM).
 channel namespace or mod id. New menus are added on the **server mod** side only. Optional
 fields (`style`, `activeTab`) are **data**, not new hardcoded screens.
 
-**KaiPath 1.3.5** (confirmed): decodes GuiOpen fields, centers titles via
-`layoutJson.titleAlign`, and highlights `activeTab`. Still needs button `style` colors,
-`playerModel` draw, and field 11 `inputsJson` text fields. LM **4.6.108+** logs missing
+**KaiPath live 1.3.5** (confirmed): decodes GuiOpen fields 1–10, centers titles via
+`layoutJson.titleAlign`, and highlights `activeTab`. **Reference kit**
+(`tools/ultra-gui-kit/kaipath-client/`) also implements button `style`, `playerModel`
+draw, field 11 `inputsJson`, UTF-8, and full `GuiFeaturesPacket` advertise — merge into
+a new KaiPath jar to unblock Weight shop text entry. LM **4.6.108+** logs missing
 optional features via `GuiFeaturesPacket`.
 
 Implement-yourself kit: [`tools/ultra-gui-kit/`](../tools/ultra-gui-kit/).
@@ -30,20 +32,20 @@ JLDK handoff: [`docs/KAIPATH_JLDK_CLIENT_BRIEF.md`](KAIPATH_JLDK_CLIENT_BRIEF.md
 
 The client **must** render what the server sends (no hardcoded screen/tab/button lists).
 
-| Capability | Required since | Status on KaiPath **1.3.5** |
-|------------|----------------|-------------------------------|
-| Decode GuiOpen fields 1–10 | 1.3.1 | yes |
-| Dynamic title / tabs / lines / buttons | 1.3.1 | yes |
-| Verbatim GuiAction echo | 1.3.1 | yes |
-| Any `screenId` (no whitelist) | 1.3.1 | yes |
-| Honor **`layoutJson.titleAlign`** | 1.3.5 | **yes** — titles centered |
-| Honor **`activeTab`** highlight | 1.3.5 | **yes** |
-| Honor button **`style`** | next | **no** — all buttons look identical |
-| Honor **`layoutJson.playerModel`** (+ optional `parts`) | next | **no** — no entity preview / parts |
-| Honor **`inputsJson`** text fields (field 11) | next | **no** — ignore trailing field |
-| Decode GuiOpen strings as **UTF-8** | next | **fix if platform-default** — LM uses `StandardCharsets.UTF_8` |
-| Send **GuiFeaturesPacket** | next | advertise implemented features |
-| `inputsJson` `slider` / `toggle` | later | reserved — see [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md) |
+| Capability | Required since | Live **1.3.5** | Reference kit |
+|------------|----------------|----------------|---------------|
+| Decode GuiOpen fields 1–10 | 1.3.1 | yes | yes |
+| Dynamic title / tabs / lines / buttons | 1.3.1 | yes | yes |
+| Verbatim GuiAction echo | 1.3.1 | yes | yes |
+| Any `screenId` (no whitelist) | 1.3.1 | yes | yes |
+| Honor **`layoutJson.titleAlign`** | 1.3.5 | **yes** | yes |
+| Honor **`activeTab`** highlight | 1.3.5 | **yes** | yes |
+| Honor button **`style`** | next | no | **yes** |
+| Honor **`layoutJson.playerModel`** (+ optional `parts`) | next | no | **yes** (entity; parts hook) |
+| Honor **`inputsJson`** text fields (field 11) | next | no | **yes** |
+| Decode GuiOpen strings as **UTF-8** | next | MC `readUtf` | **yes** (explicit) |
+| Send **GuiFeaturesPacket** | next | no | **yes** (full set) |
+| `inputsJson` `slider` / `toggle` | later | — | reserved — see [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md) |
 
 ### Button JSON schema
 

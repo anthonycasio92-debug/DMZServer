@@ -18,20 +18,19 @@ import net.minecraftforge.network.simple.SimpleChannel;
  * Multi-mod Ultra GUI client registry. Each server mod owns {@code <modid>:gui}; KaiPath keys
  * consumers by that channel id — never assume a single mod.
  *
- * <p>JLDK: call {@link #registerClientChannel(String)} once per partner mod. After implementing
- * optional render features, call {@link #advertiseFeatures(String, String)} with
- * {@code ["style","activeTab","titleAlign","playerModel","textInput"]}.
+ * <p>JLDK: call {@link #registerClientChannel(String)} once per partner mod. Reference client
+ * advertises the full optional set via {@link #ADVERTISED_FEATURES_JSON}.
  */
 public final class UltraGuiConsumerRegistry {
     public static final String CHANNEL_PATH = "gui";
     public static final String PROTOCOL_VERSION = "1";
 
     /**
-     * Features this client build honors. Reference client: titleAlign, activeTab, textInput.
-     * Expand with {@code style} / {@code playerModel} when those render paths land.
+     * Features this reference client honors — keep in sync with
+     * {@code LmDynamicScreen} + {@code GuiOpenPacket} UTF-8 decode.
      */
     public static final String ADVERTISED_FEATURES_JSON =
-            "[\"titleAlign\",\"activeTab\",\"textInput\"]";
+            "[\"style\",\"activeTab\",\"titleAlign\",\"playerModel\",\"textInput\"]";
 
     private static final Map<String, BoundChannel> CHANNELS = new ConcurrentHashMap<>();
 
@@ -148,9 +147,8 @@ public final class UltraGuiConsumerRegistry {
     }
 
     /**
-     * Advertise optional render features to the server. Use
-     * {@code ["style","activeTab","titleAlign","playerModel","textInput"]} once implemented.
-     * Safe to call repeatedly.
+     * Advertise optional render features to the server. Reference default is
+     * {@link #ADVERTISED_FEATURES_JSON}. Safe to call repeatedly.
      */
     public static void advertiseFeatures(String channelId, String featuresJson) {
         BoundChannel bound = CHANNELS.get(channelId);
