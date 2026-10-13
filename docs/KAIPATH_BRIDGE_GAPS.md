@@ -1,17 +1,26 @@
 # Ultra bridge gap matrix (LM ↔ KaiPath)
 
-**LM 4.6.122** + **KaiPath 1.3.7** (CurseForge latest / live; no 1.3.5 was ever published).
+**LM 4.6.122** + **KaiPath 1.3.7** (CurseForge) / interim overlay **`1.3.7-lm-ultra`**.
 
-## Still missing on KaiPath 1.3.7 (live)
+## Bridge build (interim client with missing parts)
 
-| Missing part | Blocks | Where to merge |
-|--------------|--------|----------------|
-| GuiOpen **field 11** `inputsJson` | Weight shop typed entry; Config typed fields | `tools/ultra-gui-kit/kaipath-client/` → next KaiPath past 1.3.7 |
-| EditBox / `type=text` widgets | same | same |
-| `bindInput` → `args.value` | same | same |
-| `textInput` in GuiFeaturesPacket advertise | guitest `pendingNext`; LM treats as expected until next client | expand to `["style","activeTab","titleAlign","playerModel","textInput"]` |
+Stock CurseForge **1.3.7** still lacks field 11 / `textInput`. Build the overlay that merges this kit onto 1.3.7:
 
-LM 4.6.122+ already ships field 11 and logs `pendingNext=[textInput]` (info), not a broken-client warn. Shipped-on-1.3.7 features (`style` / `activeTab` / `titleAlign` / `playerModel`) warn only when absent.
+```bash
+bash tools/ultra-gui-kit/build-kaipath-overlay.sh
+# → mods/kaipath-1.3.7-lm-ultra.jar
+```
+
+| Part | Stock 1.3.7 | **1.3.7-lm-ultra** overlay |
+|------|-------------|----------------------------|
+| GuiOpen **field 11** `inputsJson` | Missing | **Done** |
+| EditBox / `type=text` + `bindInput` → `args.value` | Missing | **Done** |
+| `textInput` in GuiFeaturesPacket advertise | Missing | **Done** (`[…,"textInput"]`) |
+| Explicit UTF-8 GuiOpen helpers | MC `readUtf` | **Done** (kit helpers) |
+
+Deploy prefers `*-lm-ultra.jar` (`scripts/deploy-kaipath-live.sh`). JLDK should still merge [`kaipath-client/`](../tools/ultra-gui-kit/kaipath-client/) into the next official KaiPath so the overlay is unnecessary.
+
+LM 4.6.122+ ships field 11; with the overlay, guitest should show `pendingNext=none`. On stock 1.3.7 it stays `pendingNext=[textInput]`.
 
 Deferred (neither side): `inputsJson` `slider` / `toggle`.
 
@@ -44,9 +53,9 @@ Vendored jar: `mods/kaipath-1.3.7.jar`.
 
 ## Practical pitfalls (beyond text input)
 
-### 1. Text input on 1.3.7 fails silently on the client
+### 1. Text input on stock 1.3.7 fails silently on the client
 
-When LM sends field 11, KaiPath **1.3.7** ignores it — no crash, no EditBox. A weight shop that only relied on the text field would look broken with no way to type a value. **Mitigation on LM 4.6.122+:** Weights / Config screens show an explicit danger line when `textInput` is missing (`pendingNext`) instead of a dead blank field. Still: do not expect typed entry until a KaiPath past 1.3.7.
+When LM sends field 11, stock KaiPath **1.3.7** ignores it — no crash, no EditBox. **Mitigation:** LM 4.6.122+ shows a danger line when `textInput` is missing; **fix:** use **`kaipath-1.3.7-lm-ultra.jar`** (or a future official KaiPath that merges the kit).
 
 ### 2. UTF-8 is “wire-compatible” but still caused mojibake
 

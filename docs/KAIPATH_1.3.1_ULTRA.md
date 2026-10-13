@@ -4,7 +4,8 @@
 |------|------|
 | LM **4.6.122** | `GuiOpenPacket` (11 fields: +`inputsJson`), styles, `titleAlign`, `playerModel.parts`, Config + Weights text fields |
 | KaiPath **1.3.7** (released / vendored) | `style`, `activeTab`, `titleAlign`, `playerModel`, GuiFeaturesPacket (4 features) |
-| Still missing on 1.3.7 | Field 11 `inputsJson` / `textInput` advertise — merge from `tools/ultra-gui-kit/kaipath-client/` |
+| KaiPath **1.3.7-lm-ultra** (overlay) | Stock 1.3.7 + field 11 `inputsJson` / EditBox / `bindInput` + `textInput` advertise — `bash tools/ultra-gui-kit/build-kaipath-overlay.sh` |
+| Still missing on stock 1.3.7 | Field 11 / `textInput` — use overlay or merge kit into next official KaiPath |
 
 Note: CurseForge never published **1.3.5**; versions jumped **1.3.1 → 1.3.7**.
 

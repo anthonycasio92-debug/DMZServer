@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Upload KaiPath jar to LIVE mods/ and recycle older kaipath-*.jar copies.
 # Usage: DEPLOY_LIVE_CONFIRM=LIVE bash scripts/deploy-kaipath-live.sh
-# Optional: KAIPATH_DEPLOY_VERSION=1.3.7 (default: highest mods/kaipath-*.jar)
+# Optional: KAIPATH_DEPLOY_VERSION=1.3.7-lm-ultra (default: prefer *-lm-ultra, else newest)
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
@@ -36,6 +36,13 @@ pick_kaipath() {
     fi
     echo "KAIPATH_DEPLOY_VERSION=$KAIPATH_DEPLOY_VERSION but missing $pinned" >&2
     exit 1
+  fi
+  # Prefer Ultra overlay (field 11 / textInput) when present.
+  local ultra
+  ultra="$(ls -1 "$ROOT"/mods/kaipath-*-lm-ultra.jar 2>/dev/null | sort -V | tail -1 || true)"
+  if [[ -n "${ultra:-}" && -f "$ultra" ]]; then
+    echo "$ultra"
+    return
   fi
   ls -1 "$ROOT"/mods/kaipath-*.jar 2>/dev/null | sort -V | tail -1
 }

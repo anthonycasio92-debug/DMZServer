@@ -1,13 +1,13 @@
-# Ultra GUI — implement-yourself kit
+# Ultra GUI — implement-yourself kit + KaiPath overlay builder
 
-**No KaiPath jar is shipped from this folder.** Copy these sources into your project.
 Protocol + conformance: [`docs/KAIPATH_GUI_PROTOCOL.md`](../../docs/KAIPATH_GUI_PROTOCOL.md).
-Gap matrix: [`docs/KAIPATH_BRIDGE_GAPS.md`](../../docs/KAIPATH_BRIDGE_GAPS.md).
+Gap matrix / pitfalls: [`docs/KAIPATH_BRIDGE_GAPS.md`](../../docs/KAIPATH_BRIDGE_GAPS.md).
 
-| Who you are | What to copy |
-|-------------|--------------|
+| Who you are | What to use |
+|-------------|-------------|
 | **Server mod author** | [`server/`](server/) |
-| **KaiPath / JLDK** | [`kaipath-client/`](kaipath-client/) |
+| **KaiPath / JLDK** | [`kaipath-client/`](kaipath-client/) sources (merge into official KaiPath) |
+| **Ops / interim client** | `bash tools/ultra-gui-kit/build-kaipath-overlay.sh` → `mods/kaipath-1.3.7-lm-ultra.jar` |
 
 ---
 
@@ -22,20 +22,23 @@ Gap matrix: [`docs/KAIPATH_BRIDGE_GAPS.md`](../../docs/KAIPATH_BRIDGE_GAPS.md).
 
 ## KaiPath / JLDK
 
-**Released 1.3.7** (vendored at `mods/kaipath-1.3.7.jar`) already has:
+**Released 1.3.7** already has style / activeTab / titleAlign / playerModel + GuiFeaturesPacket (4 features).
 
-1. Button `style` chrome
-2. `activeTab` highlight
-3. `layoutJson.titleAlign`
-4. `layoutJson.playerModel` preview
-5. `GuiFeaturesPacket` advertise `["style","activeTab","titleAlign","playerModel"]`
-
-**Still merge from this kit for the next release:**
+**This kit adds (and the overlay jar ships):**
 
 1. GuiOpenPacket **field 11** `inputsJson` text fields + `bindInput` → `args.value`
-2. Add `textInput` to the advertise list
+2. `textInput` in the advertise list: `["style","activeTab","titleAlign","playerModel","textInput"]`
+3. Explicit UTF-8 GuiOpen string helpers (same wire shape as MC `writeUtf`)
 
-Weight shop typed entry stays blocked until that ships.
+Merge these sources into the next official KaiPath. Until then, build the overlay:
+
+```bash
+bash tools/ultra-gui-kit/build-kaipath-overlay.sh
+# → mods/kaipath-1.3.7-lm-ultra.jar  (Implementation-Version 1.3.7-lm-ultra)
+DEPLOY_LIVE_CONFIRM=LIVE bash scripts/deploy-kaipath-live.sh   # prefers *-lm-ultra
+```
+
+Players replace stock `kaipath-1.3.7.jar` with the overlay jar (do not run both).
 
 ---
 

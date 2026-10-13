@@ -236,7 +236,7 @@ public final class GuiOpenPacket {
     }
 
     /** Length-prefixed UTF-8 — never platform default charset. */
-    static void writeUtf8(FriendlyByteBuf buf, String value) {
+    public static void writeUtf8(FriendlyByteBuf buf, String value) {
         String s = value == null ? "" : value;
         byte[] utf8 = s.getBytes(StandardCharsets.UTF_8);
         buf.m_130130_(utf8.length);

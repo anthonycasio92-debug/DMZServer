@@ -1,12 +1,13 @@
 # JLDK brief — KaiPath Ultra GUI client conformance
 
-**Status (LM 4.6.122 + KaiPath 1.3.7):** Live/released KaiPath **1.3.7** (CurseForge) already
-honors `style`, `activeTab`, `titleAlign`, and `playerModel`, and advertises those four via
-`GuiFeaturesPacket`. **Still missing:** GuiOpen field 11 `inputsJson` text fields +
-`textInput` advertise (blocks Difficulty Weights typed entry).
+**Status (LM 4.6.122 + KaiPath 1.3.7 / `1.3.7-lm-ultra`):** Stock CurseForge **1.3.7** honors
+`style`, `activeTab`, `titleAlign`, and `playerModel`. **Missing on stock 1.3.7:** field 11
+`inputsJson` + `textInput` advertise.
 
-Reference kit under [`tools/ultra-gui-kit/kaipath-client/`](../tools/ultra-gui-kit/kaipath-client/)
-implements the remaining text-input path for the next KaiPath rebuild.
+**Interim build (includes the missing parts):**
+`bash tools/ultra-gui-kit/build-kaipath-overlay.sh` → `mods/kaipath-1.3.7-lm-ultra.jar`.
+Please merge [`kaipath-client/`](../tools/ultra-gui-kit/kaipath-client/) into the next official
+KaiPath so the overlay is not required.
 
 Full gap matrix: [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md).
 

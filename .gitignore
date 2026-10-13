@@ -32,11 +32,15 @@ tools/dmz-adaptive-difficulty-gui/build/
 /plugins/AdaptiveDifficultyGUI-*.jar
 tools/dmz-adaptive-difficulty/build/
 
-# Legacy KaiPath overlay builder leftovers (kit is tools/ultra-gui-kit — source only)
+# Legacy KaiPath overlay builder leftovers
 tools/kaipath-lm-ultra-client/build/
 tools/kaipath-lm-ultra-client/base/*.jar
 tools/kaipath-lm-ultra-client/out/
 tools/kaipath-lm-ultra-client/stubs/
+# Ultra GUI kit overlay build (sources committed; jars/stubs generated)
+tools/ultra-gui-kit/build/
+tools/ultra-gui-kit/stubs/net/
+tools/ultra-gui-kit/stubs/org/
 /mods/kaipath-*-lm-ultra.jar
 
 # LM / KaiPath build & vendored client artifacts (not source)
