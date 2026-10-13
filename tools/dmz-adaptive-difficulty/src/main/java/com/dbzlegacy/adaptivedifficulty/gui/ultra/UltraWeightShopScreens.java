@@ -26,7 +26,7 @@ import net.minecraftforge.common.util.LazyOptional;
  */
 public final class UltraWeightShopScreens {
     /** Hard cap so typed values stay sane (1 copper : 1 weight). */
-    public static final int MAX_WEIGHT_VALUE = 10_000;
+    public static final int MAX_WEIGHT_VALUE = 100_000;
 
     /** Curios slot id for {@code CurioType.WEIGHTS} ({@code data/.../curios/slots/weights.json}). */
     public static final String CURIOS_WEIGHTS_SLOT = "weights";
