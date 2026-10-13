@@ -61,8 +61,8 @@ public final class UltraCharacterScreens {
                 .page(page)
                 .activeTab(tab)
                 .tabs("home|Home", "saga|Saga Reset", "android|Android Removal")
-                // Scale 1.0 fits the panel; 1.5 (4.6.116) clipped the head at the top.
-                .playerModel(player, 248, 60, 86, 120, 1.0f, true);
+                // Scale 0.9 clears slight head clip at 1.0; 1.5 (4.6.116) overshot badly.
+                .playerModel(player, 248, 60, 86, 120, 0.9f, true);
     }
 
     /** Overview + look tools — Change Race / Class / Model / Reskin on Home. */

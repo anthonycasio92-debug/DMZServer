@@ -143,7 +143,7 @@ public final class UltraScreenSelfTest {
                             .activeTab("home")
                             .tabs("home|Home", "saga|Saga Reset", "android|Android Removal")
                             .line("self-test")
-                            .playerModel(248, 60, 86, 120, 1.0f, true)
+                            .playerModel(248, 60, 86, 120, 0.9f, true)
                             .footerBackHome();
                     case "skillcheck" -> UltraScreenSpec.of("skillcheck")
                             .title("Skill Check")
@@ -494,14 +494,9 @@ public final class UltraScreenSelfTest {
                 broken.add("character: playerModel y must be 60 (was 36 - head clipped)");
             }
             if (layout.contains("\"scale\":1.5") || layout.contains("\"scale\": 1.5")) {
-                broken.add("character: playerModel scale 1.5 overshoots panel - use 1.0");
-            } else if (!(layout.contains("\"scale\":1.0")
-                    || layout.contains("\"scale\": 1.0")
-                    || layout.contains("\"scale\":1}")
-                    || layout.contains("\"scale\":1,")
-                    || layout.contains("\"scale\": 1}")
-                    || layout.contains("\"scale\": 1,"))) {
-                broken.add("character: playerModel scale must be 1.0 (1.5 clipped the head)");
+                broken.add("character: playerModel scale 1.5 overshoots panel - use 0.9");
+            } else if (!(layout.contains("\"scale\":0.9") || layout.contains("\"scale\": 0.9"))) {
+                broken.add("character: playerModel scale must be 0.9 (1.0 still clipped the head)");
             }
         }
         for (String tablessId : TABLESS_SCREEN_IDS) {
