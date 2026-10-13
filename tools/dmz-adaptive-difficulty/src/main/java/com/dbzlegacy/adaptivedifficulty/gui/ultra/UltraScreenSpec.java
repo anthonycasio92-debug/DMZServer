@@ -240,7 +240,7 @@ public final class UltraScreenSpec {
         }
         buttons.add(new Button(
                 qualifyAction(actionId),
-                UltraStyle.buttonLabel(label),
+                UltraStyle.fitAsciiLabel(label, UltraStyle.labelMaxWidth(width)),
                 resolvedStyle,
                 x,
                 y,
@@ -575,8 +575,9 @@ public final class UltraScreenSpec {
             }
             UltraScreenIds.requireValidActionId(screenId, "tab:" + tab.id, tab.label);
             boolean active = tab.id.equalsIgnoreCase(activeTab);
-            // Plain label only - button style carries active/inactive look (no section-sign codes).
-            String label = UltraStyle.wireText(UltraStyle.plain(tab.label));
+            // Plain + pre-fit: stock KaiPath fitLabel uses a mojibaked ellipsis (A/E glyphs).
+            String label =
+                    UltraStyle.fitAsciiLabel(tab.label, UltraStyle.labelMaxWidth(tabW));
             String style = active ? UltraStyle.STYLE_CONFIRM : UltraStyle.STYLE_DIM;
             JsonObject o = new JsonObject();
             o.addProperty("id", qualifyAction("tab:" + tab.id));

@@ -71,7 +71,9 @@ public final class UltraCharacterScreens {
                 .title("Character Services")
                 .page(page)
                 .activeTab(tab)
-                .tabs("home|Home", "saga|Saga Reset", "android|Android Removal")
+                // Short labels: 3-up tabs are ~102px; "Android Removal" truncates on stock
+                // KaiPath and shows mojibaked ellipsis (weird A/E glyphs).
+                .tabs("home|Home", "saga|Saga", "android|Android")
                 // Scale 0.9 clears slight head clip at 1.0; 1.5 (4.6.116) overshot badly.
                 .playerModel(player, 248, 60, 86, 120, 0.9f, true);
     }
@@ -87,7 +89,7 @@ public final class UltraCharacterScreens {
         UltraScreenSpec spec = base(player, "main", "home")
                 .labelValue("Race", ph.getOrDefault("current_race", "-"))
                 .labelValue("Class", ph.getOrDefault("current_class", "-"))
-                .line(UltraStyle.LABEL + "Change your race, class, or look. Saga and Android have their own tabs.")
+                .line(UltraStyle.LABEL + "Race, class, and look tools. Use Saga / Android tabs above.")
                 .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
 
         if (canRace) {

@@ -192,18 +192,46 @@ public final class UltraStyle {
     }
 
     /**
+     * Conservative average glyph width (GUI px) for Minecraft's default font. Used to
+     * pre-fit labels so stock KaiPath never runs its {@code fitLabel} path — that helper
+     * appends a mojibaked ellipsis ({@code â€¦}) which shows up as stray A/E glyphs.
+     */
+    public static final int CHAR_W_EST = 6;
+
+    /**
      * Truncate for buttons. Returns plain ASCII only — KaiPath button {@code style} carries
      * color; section-sign prefixes mojibake as stray A/E glyphs on some clients.
      */
     public static String buttonLabel(String styled) {
+        return fitAsciiLabel(styled, 28 * CHAR_W_EST);
+    }
+
+    /**
+     * Plain ASCII label clipped to {@code maxWidthPx} with an ASCII {@code ...} ellipsis.
+     * Prefer this over letting the client truncate.
+     */
+    public static String fitAsciiLabel(String styled, int maxWidthPx) {
         if (styled == null) {
             return "";
         }
         String text = plain(wireText(styled));
-        if (text.length() <= 28) {
+        if (text.isEmpty()) {
+            return "";
+        }
+        int maxPx = Math.max(CHAR_W_EST, maxWidthPx);
+        int maxChars = Math.max(1, maxPx / CHAR_W_EST);
+        if (text.length() <= maxChars) {
             return text;
         }
-        return text.substring(0, 27) + "...";
+        if (maxChars <= 3) {
+            return text.substring(0, maxChars);
+        }
+        return text.substring(0, maxChars - 3) + "...";
+    }
+
+    /** Usable text width inside a button/tab of width {@code controlW} with {@link #BTN_PAD}. */
+    public static int labelMaxWidth(int controlW) {
+        return Math.max(CHAR_W_EST, controlW - BTN_PAD * 2);
     }
 
     public static String confirm(String label) {

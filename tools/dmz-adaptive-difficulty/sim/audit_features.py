@@ -2535,8 +2535,8 @@ def main() -> int:
           and "Reset saga progress" in saga_gui
           and "Reset saga progress" not in character_gui
           and "home|Home" in character_gui
-          and "saga|Saga Reset" in character_gui
-          and "android|Android Removal" in character_gui
+          and "saga|Saga" in character_gui
+          and "android|Android" in character_gui
           and "Model customization" in character_gui
           and "services|Services" not in character_gui
           and "CnpcLmSagaGui.open" in read(cnpc_dir / "CnpcLmGui.java")

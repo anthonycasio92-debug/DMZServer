@@ -141,7 +141,7 @@ public final class UltraScreenSelfTest {
                             .title("Character Services")
                             .page("main")
                             .activeTab("home")
-                            .tabs("home|Home", "saga|Saga Reset", "android|Android Removal")
+                            .tabs("home|Home", "saga|Saga", "android|Android")
                             .line("self-test")
                             .playerModel(248, 60, 86, 120, 0.9f, true)
                             .footerBackHome();
@@ -510,7 +510,8 @@ public final class UltraScreenSelfTest {
         List<GuiOpenPacket> charPkts =
                 UltraScreenSpec.captureSends(() -> probeBuilder("character"));
         if (!charPkts.isEmpty()) {
-            String layout = charPkts.get(0).layoutJson() == null ? "" : charPkts.get(0).layoutJson();
+            GuiOpenPacket charPkt = charPkts.get(0);
+            String layout = charPkt.layoutJson() == null ? "" : charPkt.layoutJson();
             if (!layout.contains("playerModel")) {
                 broken.add("character: layoutJson missing playerModel");
             }
@@ -521,6 +522,26 @@ public final class UltraScreenSelfTest {
                 broken.add("character: playerModel scale 1.5 overshoots panel - use 0.9");
             } else if (!(layout.contains("\"scale\":0.9") || layout.contains("\"scale\": 0.9"))) {
                 broken.add("character: playerModel scale must be 0.9 (1.0 still clipped the head)");
+            }
+            String buttons = charPkt.buttonsJson() == null ? "" : charPkt.buttonsJson();
+            if (!buttons.contains("\"label\":\"Android\"")
+                    || !buttons.contains("\"label\":\"Saga\"")
+                    || !buttons.contains("\"label\":\"Home\"")) {
+                broken.add("character: tab buttons must be Home/Saga/Android (short labels)");
+            }
+            if (buttons.contains("Android Removal") || buttons.contains("Saga Reset")) {
+                broken.add("character: long tab labels overflow and mojibake on KaiPath");
+            }
+            // No section-sign / mojibake leftovers in any button label.
+            if (buttons.indexOf('\u00A7') >= 0 || buttons.indexOf('\u00C2') >= 0) {
+                broken.add("character: buttonsJson still has section-sign or C2 mojibake bytes");
+            }
+            String fit = UltraStyle.fitAsciiLabel("Android Removal", UltraStyle.labelMaxWidth(102));
+            if (fit.indexOf('\u00E2') >= 0 || fit.indexOf('\u2026') >= 0) {
+                broken.add("fitAsciiLabel must use ASCII ellipsis only");
+            }
+            if (!fit.endsWith("...") || fit.length() >= "Android Removal".length()) {
+                broken.add("fitAsciiLabel must clip labels that exceed tab text budget");
             }
         }
         for (String tablessId : TABLESS_SCREEN_IDS) {

@@ -166,6 +166,14 @@ def audit() -> list[dict]:
         add("high", "UltraStyle.java", "static", "back_angle", "BACK still has leading <")
     if "wireText" not in style:
         add("high", "UltraStyle.java", "static", "no_wiretext", "missing wireText")
+    if "fitAsciiLabel" not in style:
+        add(
+            "high",
+            "UltraStyle.java",
+            "static",
+            "no_fit_ascii",
+            "missing fitAsciiLabel (KaiPath fitLabel mojibakes ellipsis)",
+        )
     spec = (ULTRA / "UltraScreenSpec.java").read_text(encoding="utf-8")
     line_fn = re.search(
         r"public UltraScreenSpec line\(String text\)\s*\{(.*?)\}", spec, re.S
@@ -178,6 +186,43 @@ def audit() -> list[dict]:
             "line_no_wire",
             "line() does not call wireText",
         )
+    if "fitAsciiLabel" not in spec:
+        add(
+            "high",
+            "UltraScreenSpec.java",
+            "tabs",
+            "tabs_no_fit",
+            "tab/button labels must use fitAsciiLabel before wire",
+        )
+
+    # Tab label budget: PANEL_W=350, 3 tabs => ~86px text (~14 chars at 6px).
+    char_w = 6
+    pad = 8
+    panel_w = 350
+    col = 16
+    gap = 6
+    for path in sorted(ULTRA.glob("Ultra*Screens.java")):
+        text = path.read_text(encoding="utf-8")
+        for m in re.finditer(r'\.tabs\(([^)]*)\)', text):
+            args = m.group(1)
+            labels = re.findall(r'"[^"|]*\|([^"]+)"', args)
+            if not labels:
+                continue
+            n = len(labels)
+            inner = panel_w - col * 2
+            tab_w = max(80, (inner - gap * max(0, n - 1)) // max(1, n))
+            text_max = max(char_w, tab_w - pad * 2)
+            max_chars = text_max // char_w
+            for lab in labels:
+                if len(lab) > max_chars:
+                    add(
+                        "high",
+                        path.name,
+                        "tabs",
+                        "tab_label_overflow",
+                        f"{lab!r} len={len(lab)} > budget {max_chars} "
+                        f"({n}-up tabs @ {panel_w}px) — KaiPath shows â€¦ mojibake",
+                    )
 
     # de-dupe
     uniq = []

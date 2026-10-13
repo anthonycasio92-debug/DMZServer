@@ -171,6 +171,15 @@ def main() -> int:
         errors.append("UltraStyle body pad/min height must be 10 / 140")
     if 'TITLE_ALIGN = "center"' not in style:
         errors.append('UltraStyle TITLE_ALIGN must be "center"')
+    if "fitAsciiLabel" not in style or "CHAR_W_EST" not in style:
+        errors.append("UltraStyle must pre-fit labels (fitAsciiLabel) so KaiPath fitLabel never runs")
+    if "fitAsciiLabel" not in (SPEC.read_text(encoding="utf-8")):
+        errors.append("UltraScreenSpec must fitAsciiLabel tab/button labels before wire")
+    char_tabs = (ULTRA / "UltraCharacterScreens.java").read_text(encoding="utf-8")
+    if "android|Android Removal" in char_tabs or "saga|Saga Reset" in char_tabs:
+        errors.append(
+            "UltraCharacterScreens tabs must stay short (Home/Saga/Android) — long labels mojibake on KaiPath"
+        )
     for const in ("STYLE_NORMAL", "STYLE_CONFIRM", "STYLE_DANGER", "STYLE_DIM"):
         if f"{const} =" not in style:
             errors.append(f"UltraStyle must define {const} for button wire styles")
