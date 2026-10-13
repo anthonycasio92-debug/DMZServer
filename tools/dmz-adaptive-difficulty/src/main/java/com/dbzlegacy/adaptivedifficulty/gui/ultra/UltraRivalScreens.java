@@ -170,9 +170,10 @@ public final class UltraRivalScreens {
     }
 
     private static void openListDetail(ServerPlayer player, String arg) {
+        String who = RivalGuiApi.displayPickerArg(player, arg);
         UltraScreenSpec spec = base("list_detail:" + arg, "home")
                 .line(UltraStyle.LABEL + "Rival profile")
-                .labelValue("Target", arg == null || arg.isBlank() ? "-" : arg)
+                .labelValue("Target", who == null || who.isBlank() ? "-" : who)
                 .notice("Removing a rival cannot be undone from this menu.")
                 .setRow(UltraStyle.CONTENT_ROW_TABS + 100);
         if (arg != null && !arg.isBlank()) {

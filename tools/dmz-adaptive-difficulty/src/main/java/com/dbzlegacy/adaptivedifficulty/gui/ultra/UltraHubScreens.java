@@ -65,7 +65,7 @@ public final class UltraHubScreens {
         tiles.add(new HubTile(
                 "character", UltraStyle.confirm("Character Services"), UltraStyle.STYLE_CONFIRM, true));
         if (staff) {
-            tiles.add(new HubTile("admin", UltraStyle.danger("Staff Admin"), UltraStyle.STYLE_DANGER, true));
+            tiles.add(new HubTile("admin", UltraStyle.LABEL + "Staff Admin", UltraStyle.STYLE_NORMAL, true));
         }
 
         placeTiles(spec, ph, tiles);

@@ -120,10 +120,10 @@ public final class UltraWeightShopScreens {
                         .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
 
         if (!UltraClientFeatures.hasTextInput(player)) {
-            spec.line(UltraStyle.danger("Typed weight entry needs KaiPath textInput."))
+            spec.line(UltraStyle.danger("Typed weight entry needs a newer KaiPath client."))
                     .line(
                             UltraStyle.DIM
-                                    + "Install KaiPath 1.3.9+ (GuiOpen field 11 / textInput). "
+                                    + "Install KaiPath 1.3.9 or newer to type weight values. "
                                     + "Until then this shop cannot take a typed value.")
                     // One Back only - parent shop list.
                     .buttonLeft("page:weights", UltraStyle.BACK, UltraStyle.STYLE_DIM)

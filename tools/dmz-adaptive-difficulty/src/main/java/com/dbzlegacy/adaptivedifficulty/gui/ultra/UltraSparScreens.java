@@ -348,8 +348,10 @@ public final class UltraSparScreens {
                     .buttonRight("page:pending", UltraStyle.dim("Cancel"), "dim")
                     .rowGap();
         } else {
-            spec.buttonLeft("do:mentor_accept:" + picker, UltraStyle.confirm("Accept"), "confirm")
-                    .buttonRight("do:mentor_decline:" + picker, UltraStyle.danger("Decline"), "danger")
+            // Stack Accept above Decline - side-by-side is a misclick invite-kill risk.
+            spec.button("do:mentor_accept:" + picker, UltraStyle.confirm("Accept"), "confirm")
+                    .rowGap();
+            spec.button("do:mentor_decline:" + picker, UltraStyle.danger("Decline"), "danger")
                     .rowGap();
             // One Back to pending list (no footerBackHome stack).
             spec.button("page:pending", UltraStyle.BACK, "dim").rowGap();
@@ -506,8 +508,9 @@ public final class UltraSparScreens {
                 .line(UltraStyle.LABEL + "Cancel to drop this war challenge.")
                 .setRow(UltraStyle.CONTENT_ROW_TABS + 100);
         String arg = pickerArg == null ? "" : pickerArg;
-        spec.buttonLeft("do:dojo_accept:" + arg, UltraStyle.confirm("Accept"), "confirm")
-                .buttonRight("do:dojo_war_cancel:" + arg, UltraStyle.danger("Cancel challenge"), "danger")
+        // Stack Accept above Cancel - side-by-side is a misclick cancel risk.
+        spec.button("do:dojo_accept:" + arg, UltraStyle.confirm("Accept"), "confirm").rowGap();
+        spec.button("do:dojo_war_cancel:" + arg, UltraStyle.danger("Cancel challenge"), "danger")
                 .rowGap();
         spec.footerBackHome();
         spec.send(player);
@@ -631,10 +634,10 @@ public final class UltraSparScreens {
             return;
         }
         UltraScreenSpec spec = base("admin", "dojo")
-                .line(UltraStyle.LABEL + "Save spar data and print status")
+                .line(UltraStyle.LABEL + "Save spar data and show status")
                 .setRow(UltraStyle.CONTENT_ROW_TABS + 80);
-        spec.buttonLeft("do:admin:save", UltraStyle.confirm("Save"), "confirm")
-                .buttonRight("do:admin:status", UltraStyle.dim("Status"), "dim")
+        spec.buttonLeft("do:admin:save", UltraStyle.confirm("Save data"), "confirm")
+                .buttonRight("do:admin:status", UltraStyle.dim("Show status"), "dim")
                 .rowGap();
         spec.footerBackHome();
         spec.send(player);

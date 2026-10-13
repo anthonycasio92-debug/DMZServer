@@ -29,10 +29,10 @@ public final class UltraDifficultyTierUi {
      */
     public static String formatActivationCost(ServerPlayer player, UnlockTier tier, int activeTier) {
         if (tier == null) {
-            return UltraStyle.LABEL + "free";
+            return UltraStyle.LABEL + "Free";
         }
         if (PaidFeatureAccess.bypassAncientCoinCost(player)) {
-            return UltraStyle.LABEL + "free";
+            return UltraStyle.LABEL + "Free";
         }
         if (activeTier > 0 && tier.id < activeTier) {
             return UltraStyle.LABEL + "Free";

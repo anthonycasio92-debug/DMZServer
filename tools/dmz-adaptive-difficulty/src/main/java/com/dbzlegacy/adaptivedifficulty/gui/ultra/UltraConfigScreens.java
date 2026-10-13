@@ -336,9 +336,10 @@ public final class UltraConfigScreens {
             }
         }
         spec.setRow(UltraStyle.CONTENT_ROW + UltraStyle.BODY_MIN_H);
-        spec.buttonLeft("do:save_all", UltraStyle.confirm("Confirm save"), "confirm")
-                .buttonRight("do:discard_all", UltraStyle.danger("Discard all"), "danger")
-                .rowGap();
+        // Stack Confirm above Discard - side-by-side is a misclick wipe risk.
+        // Primary save stays first (same muscle memory as Save all on the right elsewhere).
+        spec.button("do:save_all", UltraStyle.confirm("Confirm save"), "confirm").rowGap();
+        spec.button("do:discard_all", UltraStyle.danger("Discard all"), "danger").rowGap();
         // One Back only via footer (nav:home).
         spec.footerBackHome();
         spec.send(player);
@@ -610,7 +611,7 @@ public final class UltraConfigScreens {
      */
     private static String typedValueFromArgs(com.google.gson.JsonObject args, String op) {
         if (args == null) {
-            AdaptiveDifficultyMod.LOGGER.info(
+            AdaptiveDifficultyMod.LOGGER.debug(
                     "[{}] config {} args=null (no typed value)",
                     AdaptiveDifficultyMod.MOD_ID,
                     op);
@@ -624,7 +625,7 @@ public final class UltraConfigScreens {
             keys.append(entry.getKey());
         }
         String direct = argsString(args, "value");
-        AdaptiveDifficultyMod.LOGGER.info(
+        AdaptiveDifficultyMod.LOGGER.debug(
                 "[{}] config {} args.keys=[{}] valuePresent={} valueLen={}",
                 AdaptiveDifficultyMod.MOD_ID,
                 op,
@@ -642,7 +643,7 @@ public final class UltraConfigScreens {
                 viaBind = argsString(args, bare);
             }
             if (viaBind != null) {
-                AdaptiveDifficultyMod.LOGGER.info(
+                AdaptiveDifficultyMod.LOGGER.debug(
                         "[{}] config {} recovered typed value from bindInput key={}",
                         AdaptiveDifficultyMod.MOD_ID,
                         op,
@@ -659,7 +660,7 @@ public final class UltraConfigScreens {
             if (lower.startsWith("input:") || "text".equals(lower) || "typed".equals(lower)) {
                 String alt = argsString(args, key);
                 if (alt != null) {
-                    AdaptiveDifficultyMod.LOGGER.info(
+                    AdaptiveDifficultyMod.LOGGER.debug(
                             "[{}] config {} recovered typed value from alt key={}",
                             AdaptiveDifficultyMod.MOD_ID,
                             op,
@@ -676,7 +677,7 @@ public final class UltraConfigScreens {
         if (spec == null || UltraClientFeatures.hasTextInput(player)) {
             return;
         }
-        spec.line(UltraStyle.danger("Typed fields need KaiPath textInput (1.3.9+)."))
+        spec.line(UltraStyle.danger("Typed fields need KaiPath 1.3.9 or newer."))
                 .line(UltraStyle.DIM + "Until then use Toggle / Next value / +/- step buttons.");
     }
 }

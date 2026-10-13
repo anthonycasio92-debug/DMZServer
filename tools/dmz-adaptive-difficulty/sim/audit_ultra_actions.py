@@ -577,6 +577,64 @@ def main() -> int:
         errors.append("UltraPrestigeScreens shop hub must link page:skills / page:tiers / page:effects")
     if "do:tier:" not in prestige or "do:majin" not in prestige or "do:mutant" not in prestige:
         errors.append("UltraPrestigeScreens must wire do:tier / do:majin / do:mutant favor buys")
+    if 'labelValue("Lifetime prestiges"' not in prestige and "Lifetime prestiges" not in prestige:
+        errors.append('UltraPrestigeScreens must label wallet "Lifetime prestiges" (not Completed)')
+    if "Completed prestiges" in prestige:
+        errors.append('UltraPrestigeScreens must not use "Completed prestiges"')
+    rival = (ULTRA / "UltraRivalScreens.java").read_text(encoding="utf-8")
+    detail_m = re.search(
+        r"private static void openListDetail\b.*?^\s*private static void ",
+        rival,
+        re.S | re.M,
+    )
+    detail = detail_m.group(0) if detail_m else ""
+    if "displayPickerArg" not in detail:
+        errors.append("UltraRivalScreens.openListDetail must resolve Target via RivalGuiApi.displayPickerArg")
+    config = (ULTRA / "UltraConfigScreens.java").read_text(encoding="utf-8")
+    review_m = re.search(
+        r"private static void openReview\b.*?^\s*(?:public|private) static ",
+        config,
+        re.S | re.M,
+    )
+    review = review_m.group(0) if review_m else ""
+    if 'buttonLeft("do:save_all"' in review and 'buttonRight("do:discard_all"' in review:
+        errors.append("UltraConfigScreens.openReview must stack Confirm save / Discard all (not side-by-side)")
+    typed_m = re.search(
+        r"private static String typedValueFromArgs\b.*?^\s*(?:public|private) static ",
+        config,
+        re.S | re.M,
+    )
+    typed_block = typed_m.group(0) if typed_m else ""
+    if "LOGGER.info(" in typed_block:
+        errors.append("UltraConfigScreens.typedValueFromArgs must log at DEBUG (not INFO)")
+    if "Typed fields need KaiPath textInput" in config:
+        errors.append("UltraConfigScreens player copy must not mention protocol field textInput")
+    weight = (ULTRA / "UltraWeightShopScreens.java").read_text(encoding="utf-8")
+    if "GuiOpen field 11" in weight or "field 11 / textInput" in weight:
+        errors.append("UltraWeightShopScreens player copy must not mention GuiOpen field 11 / textInput")
+    spar = (ULTRA / "UltraSparScreens.java").read_text(encoding="utf-8")
+    mentor_m = re.search(
+        r"private static void openPendingDecide\b.*?^\s*private static void ",
+        spar,
+        re.S | re.M,
+    )
+    mentor = mentor_m.group(0) if mentor_m else ""
+    if 'buttonLeft("do:mentor_accept:' in mentor and 'buttonRight("do:mentor_decline:' in mentor:
+        errors.append("UltraSparScreens mentor Accept/Decline must stack vertically (misclick risk)")
+    dojo_m = re.search(
+        r"private static void openDojoWarDecide\b.*?^\s*private static void ",
+        spar,
+        re.S | re.M,
+    )
+    dojo = dojo_m.group(0) if dojo_m else ""
+    if 'buttonLeft("do:dojo_accept:' in dojo and 'buttonRight("do:dojo_war_cancel:' in dojo:
+        errors.append("UltraSparScreens dojo war Accept/Cancel must stack vertically (misclick risk)")
+    if "print status" in spar:
+        errors.append('UltraSparScreens admin must say "show status" not "print status"')
+    hub = (ULTRA / "UltraHubScreens.java").read_text(encoding="utf-8")
+    admin_tile = re.search(r'HubTile\("admin",[^\n]+', hub)
+    if admin_tile and "STYLE_DANGER" in admin_tile.group(0):
+        errors.append("UltraHubScreens Staff Admin tile must use normal/dim style (not danger)")
     if "TAB_ROW_Y" not in style:
         errors.append("UltraStyle must define TAB_ROW_Y for tabs under the title line")
     skill_ui = (ULTRA / "UltraSkillCheckScreens.java").read_text(encoding="utf-8")

@@ -69,7 +69,7 @@ public final class UltraPrestigeScreens {
 
     private static void paintWallet(UltraScreenSpec spec, Map<String, String> ph) {
         // Exact wording required for these three labels.
-        spec.labelValue("Completed prestiges", ph.getOrDefault("completed", "0"));
+        spec.labelValue("Lifetime prestiges", ph.getOrDefault("completed", "0"));
         spec.labelValue(
                 "Current prestige amount",
                 ph.getOrDefault("held", "0") + "/" + ph.getOrDefault("held_max", "10"));
@@ -106,7 +106,8 @@ public final class UltraPrestigeScreens {
         spec.notice("Turning in current prestige removes its stat bonus. This cannot be undone.")
                 .line(UltraStyle.danger(
                         "Exchanging prestige for favor removes the stat bonus from the exchanged prestiges."))
-                .line(UltraStyle.LABEL + "Bulk bonus: 3->4 - 6->9 - 9->15 favor")
+                .line(UltraStyle.LABEL
+                        + "Bulk bonus: exchange 3 for 4 favor, 6 for 9, or 9 for 15")
                 .setRow(140);
         spec.button("do:confirm", UltraStyle.danger("Prestige now"), UltraStyle.STYLE_DANGER).rowGap();
         int[] amounts = PrestigePointsSystem.TURN_IN_AMOUNTS;
