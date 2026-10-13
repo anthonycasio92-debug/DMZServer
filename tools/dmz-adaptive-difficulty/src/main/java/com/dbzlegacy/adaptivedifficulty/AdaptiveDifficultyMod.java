@@ -33,7 +33,7 @@ public final class AdaptiveDifficultyMod {
     /** Forge modId — lowercase; not used for NBT / GUI class lookup. */
     public static final String MOD_ID = "legacymechanics";
     /** Product line version (was DMZ Adaptive Difficulty 3.3.x). */
-    public static final String VERSION = "4.6.130";
+    public static final String VERSION = "4.6.131";
 
     private static boolean dedicatedServer() {
         try {
@@ -70,8 +70,9 @@ public final class AdaptiveDifficultyMod {
         com.dbzlegacy.adaptivedifficulty.progression.classdef.FightingClassCatalog.load();
         // Vanilla max_health 1024 / armor 30 / attack-damage 2048 would silently hard-cap scaling.
         AttributeLimits.uncapOffenseAttributes();
-        MinecraftForge.EVENT_BUS.register(new DifficultyEvents());
+        // FallDamageDiag before DifficultyEvents so HIGHEST onHurt aligns the pool first.
         MinecraftForge.EVENT_BUS.register(new FallDamageDiag());
+        MinecraftForge.EVENT_BUS.register(new DifficultyEvents());
         MinecraftForge.EVENT_BUS.register(com.dbzlegacy.adaptivedifficulty.kube.LmHotPath.INSTANCE);
         MinecraftForge.EVENT_BUS.register(com.dbzlegacy.adaptivedifficulty.kube.ScriptEvents.INSTANCE);
         com.dbzlegacy.adaptivedifficulty.kube.LmHotPath.logReady();

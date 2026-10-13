@@ -2350,23 +2350,31 @@ def main() -> int:
           and ".getBonusStats(" not in read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/progression/FusionBonusOwner.java")
           and "lm$fusionBonuses" in read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/StatsDataMixin.java"))
 
-    print("\n=== Fall damage diagnostic (4.6.42) ===")
+    print("\n=== Fall damage pool sync (4.6.131) ===")
     fall_diag = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/event/FallDamageDiag.java")
     mod_src = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.java")
-    check("fall damage log compares vanilla and DMZ health",
-          "[LM] Fall damage:" in fall_diag
-          and "DamageTypeTags.f_268549_" in fall_diag
+    fall_reg = mod_src.find("new FallDamageDiag()")
+    diff_reg = mod_src.find("new DifficultyEvents()")
+    check("fall damage aligns vanilla pool on fall and hurt (no debug spam)",
+          "DamageTypeTags.f_268549_" in fall_diag
           and "getMaxHealth()" in fall_diag
           and "m_21223_()" in fall_diag
           and "m_21233_()" in fall_diag
-          and "EventPriority.HIGHEST" in fall_diag
+          and fall_diag.count("EventPriority.HIGHEST") >= 2
+          and "alignVanillaPool(player)" in fall_diag
+          and fall_diag.count("alignVanillaPool(player)") >= 2
           and "applyHealthBonus" in fall_diag
-          and "kiNegated=" in fall_diag
-          and "dmzCurrent=not-stored" in fall_diag
           and "vanillaPoolDesynced" in fall_diag
+          and "scaledFromOldPool" in fall_diag
+          and "raiseVanillaMax" in fall_diag
+          and "System.out.println" not in fall_diag
+          and "[LM] Fall damage:" not in fall_diag
           and "setCanceled" not in fall_diag
           and "setAmount" not in fall_diag
-          and "new FallDamageDiag()" in mod_src)
+          and "new FallDamageDiag()" in mod_src
+          and fall_reg >= 0
+          and diff_reg >= 0
+          and fall_reg < diff_reg)
     check("fall damage listener class is copied into the forge jar",
           "event/FallDamageDiag.class" in build_sh)
 
