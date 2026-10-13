@@ -144,11 +144,11 @@ public final class UltraPrestigeScreens {
             spec.rowGap();
         }
         if (page > 0) {
-            spec.buttonLeft("open:prestige", UltraStyle.dim("<< Prev shop"), "dim");
+            spec.buttonLeft("open:prestige", UltraStyle.dim("Prev shop"), "dim");
         }
         if (page + 1 < pages) {
             // Reopen next page via tab home then shop - UltraGui open with shop:N
-            spec.buttonRight("tab:shop", UltraStyle.dim("Next >>"), "dim");
+            spec.buttonRight("tab:shop", UltraStyle.dim("Next shop"), "dim");
         }
         if (page > 0 || page + 1 < pages) {
             spec.rowGap();

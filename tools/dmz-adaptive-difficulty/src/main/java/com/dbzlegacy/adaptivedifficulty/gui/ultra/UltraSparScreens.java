@@ -277,7 +277,7 @@ public final class UltraSparScreens {
 
     private static void openPending(ServerPlayer player) {
         UltraScreenSpec spec = base("pending", "dojo")
-                .line(UltraStyle.LABEL + "Mentor <-> apprentice requests only");
+                .line(UltraStyle.LABEL + "Mentor / apprentice requests only");
         for (String line : SparGuiApi.pendingMentorLines(player)) {
             if (line != null && !line.isBlank()) {
                 spec.line(line);
@@ -351,8 +351,9 @@ public final class UltraSparScreens {
             spec.buttonLeft("do:mentor_accept:" + picker, UltraStyle.confirm("Accept"), "confirm")
                     .buttonRight("do:mentor_decline:" + picker, UltraStyle.danger("Decline"), "danger")
                     .rowGap();
+            // One Back to pending list (no footerBackHome stack).
+            spec.button("page:pending", UltraStyle.BACK, "dim").rowGap();
         }
-        spec.footerBackHome();
         spec.send(player);
     }
 
@@ -381,7 +382,7 @@ public final class UltraSparScreens {
                         destructive ? UltraStyle.STYLE_DANGER : UltraStyle.STYLE_CONFIRM)
                 .buttonRight("page:" + returnPage, UltraStyle.dim("Cancel"), UltraStyle.STYLE_DIM)
                 .rowGap();
-        spec.footerBackHome();
+        // Cancel is the only exit (no footerBackHome stack).
         spec.send(player);
     }
 
@@ -541,8 +542,8 @@ public final class UltraSparScreens {
         if (placed == 0) {
             spec.line(UltraStyle.dim("Nobody else is online right now - try again when other players are on."));
         }
+        // Cancel is the only exit (no footerBackHome stack).
         spec.button("page:" + back, UltraStyle.dim("Cancel"), "dim").rowGap();
-        spec.footerBackHome();
         spec.send(player);
     }
 
@@ -580,8 +581,8 @@ public final class UltraSparScreens {
         if (placed == 0) {
             spec.line(UltraStyle.dim("No apprentices to release. Take an apprentice from Training bonds first."));
         }
+        // Cancel is the only exit (no footerBackHome stack).
         spec.button("page:mentor", UltraStyle.dim("Cancel"), "dim").rowGap();
-        spec.footerBackHome();
         spec.send(player);
     }
 
@@ -619,8 +620,8 @@ public final class UltraSparScreens {
         if (placed == 0) {
             spec.line(UltraStyle.dim("No rival dojo masters are online - challenge when one is on."));
         }
+        // Cancel is the only exit (no footerBackHome stack).
         spec.button("page:dojo_war", UltraStyle.dim("Cancel"), "dim").rowGap();
-        spec.footerBackHome();
         spec.send(player);
     }
 

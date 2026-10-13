@@ -1,6 +1,6 @@
 # Ultra bridge gap matrix (LM ↔ KaiPath)
 
-**LM 4.6.128** + **KaiPath 1.3.9** (live / recommended). Official KaiPath updates are owned by the KaiPath mod developer.
+**LM 4.6.129** + **KaiPath 1.3.9** (live / recommended). Official KaiPath updates are owned by the KaiPath mod developer.
 
 ## Still missing on KaiPath 1.3.9
 
@@ -13,7 +13,7 @@ None for the Ultra Weights / Config typed-entry path. Stock **1.3.9** advertises
 | `textInput` in GuiFeaturesPacket advertise | **Done** |
 | `style` / `activeTab` / `titleAlign` / `playerModel` | **Done** (since 1.3.7) |
 
-LM 4.6.128+ treats those five as `SHIPPED_ON_RECOMMENDED`. `/lm admin guitest` should report `missingShipped=none pendingNext=none` on 1.3.9.
+LM 4.6.129+ treats those five as `SHIPPED_ON_RECOMMENDED`. `/lm admin guitest` should report `missingShipped=none pendingNext=none` on 1.3.9.
 
 Deferred (neither side): `inputsJson` `slider` / `toggle`.
 

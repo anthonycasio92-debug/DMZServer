@@ -441,6 +441,25 @@ def main() -> int:
             errors.append(
                 'UltraHubScreens openMain (of("hub")) must not add nav:hub / .footerBackToMain()'
             )
+    # Full Ultra menu UI shape audit (stacked Back / Cancel+footer / non-ASCII / unbound fields).
+    ui_audit = ROOT / "sim" / "audit_ultra_ui_menus.py"
+    if ui_audit.is_file():
+        import subprocess
+
+        r = subprocess.run(
+            [sys.executable, str(ui_audit)],
+            cwd=str(ROOT),
+            capture_output=True,
+            text=True,
+        )
+        if r.returncode != 0:
+            errors.append("audit_ultra_ui_menus.py failed (broken Ultra menu UI patterns)")
+            if r.stdout:
+                for line in r.stdout.strip().splitlines()[-12:]:
+                    errors.append("  " + line)
+    else:
+        errors.append("missing sim/audit_ultra_ui_menus.py")
+
     # Wire text must sanitize fancy punctuation (Â· / â€ mojibake) and Back must not use "<".
     style_src = (ULTRA / "UltraStyle.java").read_text(encoding="utf-8")
     if "wireText(" not in style_src:

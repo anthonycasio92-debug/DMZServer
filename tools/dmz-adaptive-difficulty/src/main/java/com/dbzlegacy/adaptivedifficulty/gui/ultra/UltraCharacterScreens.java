@@ -254,7 +254,7 @@ public final class UltraCharacterScreens {
                         UltraStyle.STYLE_CONFIRM)
                 .buttonRight("page:race:0", UltraStyle.dim("Cancel"), UltraStyle.STYLE_DIM)
                 .rowGap();
-        spec.footerBackHome();
+        // Cancel is the only exit (no footerBackHome stack).
         spec.send(player);
     }
 
@@ -325,7 +325,7 @@ public final class UltraCharacterScreens {
                         UltraStyle.STYLE_CONFIRM)
                 .buttonRight("page:class", UltraStyle.dim("Cancel"), UltraStyle.STYLE_DIM)
                 .rowGap();
-        spec.footerBackHome();
+        // Cancel is the only exit (no footerBackHome stack).
         spec.send(player);
     }
 
@@ -364,8 +364,9 @@ public final class UltraCharacterScreens {
                     .rowGap();
         } else {
             spec.line(UltraStyle.danger(UltraStyle.plain(pre)));
+            spec.button("page:reskin", UltraStyle.BACK, UltraStyle.STYLE_DIM).rowGap();
         }
-        spec.footerBackHome();
+        // Ready path: Cancel only. Locked path: one Back. No footer stack.
         spec.send(player);
     }
 
@@ -572,8 +573,7 @@ public final class UltraCharacterScreens {
             spec.send(player);
             return;
         }
-        // Ready path already has Cancel; one footer Back to Character home.
-        spec.footerBackHome();
+        // Ready path: Cancel only (no footerBackHome stack).
         spec.send(player);
     }
 

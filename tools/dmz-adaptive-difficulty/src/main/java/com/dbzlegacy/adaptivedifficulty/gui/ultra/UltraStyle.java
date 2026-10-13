@@ -138,9 +138,9 @@ public final class UltraStyle {
     }
 
     /**
-     * Sanitize text for the KaiPath Ultra wire. Keeps Minecraft {@code §} color codes
-     * (single U+00A7) but replaces fancy punctuation that mojibakes as {@code Â·} /
-     * {@code â€} / similar on clients that mishandle multi-byte UTF-8.
+     * Sanitize text for the KaiPath Ultra wire. Keeps Minecraft section-sign color codes
+     * (single U+00A7) but replaces fancy punctuation that mojibakes (middle-dot / em-dash
+     * UTF-8 misread as Latin-1) on clients that mishandle multi-byte UTF-8.
      */
     public static String wireText(String text) {
         if (text == null || text.isEmpty()) {
@@ -157,9 +157,10 @@ public final class UltraStyle {
         s = s.replace('\u2018', '\'').replace('\u2019', '\'');
         s = s.replace('\u00A0', ' ').replace('\u2500', '-');
         // Already-mojibaked sequences sometimes re-enter via GuiApi / stored strings.
-        s = s.replace("\u00E2\u20AC", "-"); // â€ prefix of em-dash/ellipsis mojibake
-        s = s.replace("\u00C2\u00B7", "-"); // Â·
-        s = s.replace("\u00C2", ""); // stray Â from UTF-8 C2 as Latin-1
+        // Already-mojibaked UTF-8-as-Latin-1 sequences (C2 A7 / E2 80 xx prefixes).
+        s = s.replace("\u00E2\u20AC", "-");
+        s = s.replace("\u00C2\u00B7", "-");
+        s = s.replace("\u00C2", "");
         StringBuilder out = new StringBuilder(s.length());
         for (int i = 0; i < s.length(); i++) {
             char c = s.charAt(i);
@@ -184,7 +185,7 @@ public final class UltraStyle {
         return wireText(NOTICE_HEAD + "Notice " + NOTICE_BODY + plain(body));
     }
 
-    /** Truncate for buttons; keep room for style codes. Always wire-safe ASCII (+ §). */
+    /** Truncate for buttons; keep room for style codes. Always wire-safe ASCII (+ mark). */
     public static String buttonLabel(String styled) {
         if (styled == null) {
             return "";

@@ -318,9 +318,9 @@ public final class UltraRivalScreens {
         } else {
             UltraPickHelper.placeNameButtons(spec, doAction, RivalGuiApi.onlinePlayerNames(player), 10);
         }
+        // Cancel is the only exit (no footerBackHome stack).
         spec.button("page:" + ("challenge".equals(tab) ? "challenge" : "actions"), UltraStyle.dim("Cancel"), "dim")
                 .rowGap();
-        spec.footerBackHome();
         spec.send(player);
     }
 
@@ -344,8 +344,8 @@ public final class UltraRivalScreens {
                 spec.rowGap();
             }
         }
+        // Cancel is the only exit (no footerBackHome stack).
         spec.button("page:pick_challenge", UltraStyle.dim("Cancel"), "dim").rowGap();
-        spec.footerBackHome();
         spec.send(player);
     }
 
