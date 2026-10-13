@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.character;
 
+import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dragonminez.common.config.ConfigManager;
 import com.dragonminez.common.config.RaceCharacterConfig;
 import com.dragonminez.common.config.RaceStatsConfig;
@@ -12,10 +13,12 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.TreeSet;
 import net.minecraftforge.fml.loading.FMLPaths;
 
 /**
@@ -23,25 +26,53 @@ import net.minecraftforge.fml.loading.FMLPaths;
  * Used so new/changed races, classes, and head bones appear without a mod rebuild.
  */
 public final class DmzContentDiscovery {
+    /** Last logged discovery signature — avoid INFO spam on every menu open. */
+    private static volatile String lastDiscoveryLogKey = "";
+    private static volatile long lastDiscoveryLogAtMs;
+
     private DmzContentDiscovery() {}
 
     public static Path racesRoot() {
         return FMLPaths.GAMEDIR.get().resolve("config").resolve("dragonminez").resolve("races");
     }
 
+    /**
+     * All known race ids (lowercase), sorted for stable menus.
+     * Union of {@link ConfigManager#getLoadedRaces()} and on-disk race folders that have
+     * {@code character.json} and/or {@code stats.json}.
+     */
     public static List<String> discoverRaceIds() {
-        LinkedHashSet<String> out = new LinkedHashSet<>();
+        LinkedHashSet<String> fromConfig = new LinkedHashSet<>();
+        LinkedHashSet<String> fromDisk = new LinkedHashSet<>();
+        List<String> skippedNoDef = new ArrayList<>();
         try {
             for (String race : ConfigManager.getLoadedRaces()) {
                 if (race != null && !race.isBlank()) {
-                    out.add(race.trim().toLowerCase(Locale.ROOT));
+                    String id = race.trim().toLowerCase(Locale.ROOT);
+                    fromConfig.add(id);
+                    AdaptiveDifficultyMod.LOGGER.debug(
+                            "[{}] discoverRaceIds: config → {}", AdaptiveDifficultyMod.MOD_ID, id);
                 }
             }
-        } catch (Throwable ignored) {
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] discoverRaceIds: ConfigManager.getLoadedRaces failed: {}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    t.toString());
         }
         Path root = racesRoot();
         if (!Files.isDirectory(root)) {
-            return List.copyOf(out);
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] discoverRaceIds: racesRoot missing or not a directory: {}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    root.toAbsolutePath());
+            List<String> onlyConfig = sortedCopy(fromConfig);
+            AdaptiveDifficultyMod.LOGGER.info(
+                    "[{}] discoverRaceIds: {} race(s) (config only, no disk scan) → {}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    onlyConfig.size(),
+                    onlyConfig);
+            return onlyConfig;
         }
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(root)) {
             for (Path raceDir : stream) {
@@ -52,13 +83,66 @@ public final class DmzContentDiscovery {
                 if (name == null || name.isBlank() || name.startsWith(".")) {
                     continue;
                 }
+                String id = name.trim().toLowerCase(Locale.ROOT);
                 if (hasRaceDefinition(raceDir)) {
-                    out.add(name.trim().toLowerCase(Locale.ROOT));
+                    fromDisk.add(id);
+                    AdaptiveDifficultyMod.LOGGER.debug(
+                            "[{}] discoverRaceIds: disk → {} ({})",
+                            AdaptiveDifficultyMod.MOD_ID,
+                            id,
+                            raceDir.toAbsolutePath());
+                } else {
+                    skippedNoDef.add(id);
+                    AdaptiveDifficultyMod.LOGGER.warn(
+                            "[{}] discoverRaceIds: skipped {} — no character.json/stats.json under {}",
+                            AdaptiveDifficultyMod.MOD_ID,
+                            id,
+                            raceDir.toAbsolutePath());
                 }
             }
-        } catch (Throwable ignored) {
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] discoverRaceIds: directory scan failed under {}: {}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    root.toAbsolutePath(),
+                    t.toString());
         }
-        return List.copyOf(out);
+        TreeSet<String> merged = new TreeSet<>();
+        merged.addAll(fromConfig);
+        merged.addAll(fromDisk);
+        List<String> out = List.copyOf(merged);
+        LinkedHashSet<String> diskOnly = new LinkedHashSet<>(fromDisk);
+        diskOnly.removeAll(fromConfig);
+        LinkedHashSet<String> configOnly = new LinkedHashSet<>(fromConfig);
+        configOnly.removeAll(fromDisk);
+        int both = fromConfig.size() - configOnly.size();
+        String summaryKey = root.toAbsolutePath() + "|" + out + "|skip=" + skippedNoDef;
+        long now = System.currentTimeMillis();
+        boolean changed = !summaryKey.equals(lastDiscoveryLogKey);
+        boolean due = now - lastDiscoveryLogAtMs > 30_000L;
+        if (changed || due) {
+            lastDiscoveryLogKey = summaryKey;
+            lastDiscoveryLogAtMs = now;
+            AdaptiveDifficultyMod.LOGGER.info(
+                    "[{}] discoverRaceIds: root={} total={} config={} disk={} both={} diskOnly={} configOnly={} skippedNoDef={} → {}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    root.toAbsolutePath(),
+                    out.size(),
+                    fromConfig.size(),
+                    fromDisk.size(),
+                    both,
+                    diskOnly,
+                    configOnly,
+                    skippedNoDef,
+                    out);
+        } else {
+            AdaptiveDifficultyMod.LOGGER.debug(
+                    "[{}] discoverRaceIds: unchanged total={} → {}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    out.size(),
+                    out);
+        }
+        return out;
     }
 
     public static boolean isKnownRace(String raceId) {
@@ -142,12 +226,20 @@ public final class DmzContentDiscovery {
             }
         } catch (Throwable ignored) {
         }
+        AdaptiveDifficultyMod.LOGGER.debug(
+                "[{}] headBonesForRace({}) → {}", AdaptiveDifficultyMod.MOD_ID, race, ordered);
         return ordered;
     }
 
     private static boolean hasRaceDefinition(Path raceDir) {
         return Files.isRegularFile(raceDir.resolve("stats.json"))
                 || Files.isRegularFile(raceDir.resolve("character.json"));
+    }
+
+    private static List<String> sortedCopy(Set<String> ids) {
+        List<String> out = new ArrayList<>(ids);
+        Collections.sort(out);
+        return List.copyOf(out);
     }
 
     private static List<String> readClassIdsFromStatsFileOrdered(String raceId) {
@@ -198,7 +290,12 @@ public final class DmzContentDiscovery {
                     }
                 }
             }
-        } catch (Throwable ignored) {
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] failed reading headBones from {}: {}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    file.toAbsolutePath(),
+                    t.toString());
         }
         return out;
     }

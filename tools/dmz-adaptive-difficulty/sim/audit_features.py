@@ -474,6 +474,24 @@ def main() -> int:
         "isAdPainted ignores bare TAG_SCALED",
         "unlockTierOf(entity) > 0" in mob and ("Spawn init stamps" in mob or "spawn-init" in mob.lower()),
     )
+    char_screens = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/ultra/UltraCharacterScreens.java")
+    check(
+        "Ultra race list is paged (no hard drop after 10)",
+        "RACES_PER_PAGE" in char_screens
+        and "page:race:" in char_screens
+        and "parseRaceListPage" in char_screens,
+    )
+    bone_svc = read(SRC / "com/dbzlegacy/adaptivedifficulty/character/CosmeticHeadBoneService.java")
+    check(
+        "native head bones use DmzContentDiscovery (disk+config)",
+        "DmzContentDiscovery.headBonesForRace(race)" in bone_svc
+        and "isNativeForRace" in bone_svc,
+    )
+    discovery = read(SRC / "com/dbzlegacy/adaptivedifficulty/character/DmzContentDiscovery.java")
+    check(
+        "discoverRaceIds logs source breakdown",
+        "discoverRaceIds: root=" in discovery and "diskOnly" in discovery,
+    )
     check(
         "landing safety net requires participates",
         "onDamageDone" in events and "SystemGate.participates(player)" in events[events.find("onDamageDone"):events.find("onDamageDone")+900],

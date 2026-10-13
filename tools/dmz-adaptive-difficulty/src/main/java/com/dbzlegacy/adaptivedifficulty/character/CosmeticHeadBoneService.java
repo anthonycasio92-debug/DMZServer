@@ -2,8 +2,6 @@ package com.dbzlegacy.adaptivedifficulty.character;
 
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
-import com.dragonminez.common.config.ConfigManager;
-import com.dragonminez.common.config.RaceCharacterConfig;
 import com.dragonminez.common.stats.character.Character;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -145,6 +143,11 @@ public final class CosmeticHeadBoneService {
                 && CharacterServicesAccess.canHeadBoneShop(player);
     }
 
+    /**
+     * True when {@code boneId} is listed on the race's DMZ headBones (disk {@code character.json}
+     * and/or ConfigManager). Disk is authoritative when ConfigManager has not loaded the race
+     * (e.g. custom {@code demon} packs that only exist under {@code config/dragonminez/races/}).
+     */
     public static boolean isNativeForRace(String raceId, String boneId) {
         if (raceId == null || boneId == null) {
             return false;
@@ -154,32 +157,21 @@ public final class CosmeticHeadBoneService {
         }
         String race = raceId.trim().toLowerCase(Locale.ROOT);
         String bone = boneId.trim().toLowerCase(Locale.ROOT);
-        try {
-            RaceCharacterConfig cfg = ConfigManager.getRaceCharacter(race);
-            if (cfg == null) {
-                return false;
+        for (String listed : DmzContentDiscovery.headBonesForRace(race)) {
+            if (listed == null || listed.isBlank()) {
+                continue;
             }
-            String[] bones = cfg.getHeadBones();
-            if (bones == null) {
-                return false;
+            String id = listed.trim().toLowerCase(Locale.ROOT);
+            if (bone.equals(id)) {
+                return true;
             }
-            for (String b : bones) {
-                if (b == null || b.isBlank()) {
-                    continue;
-                }
-                String id = b.trim().toLowerCase(Locale.ROOT);
-                if (bone.equals(id)) {
-                    return true;
-                }
-                if (id.contains("+")) {
-                    for (String piece : HeadPartPieces.fragments(id)) {
-                        if (bone.equals(piece)) {
-                            return true;
-                        }
+            if (id.contains("+")) {
+                for (String piece : HeadPartPieces.fragments(id)) {
+                    if (bone.equals(piece)) {
+                        return true;
                     }
                 }
             }
-        } catch (Throwable ignored) {
         }
         return false;
     }

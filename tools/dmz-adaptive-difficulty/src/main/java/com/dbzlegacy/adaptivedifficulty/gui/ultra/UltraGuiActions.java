@@ -688,7 +688,7 @@ public final class UltraGuiActions {
             };
             case "character" -> switch (parts.action == null ? "" : parts.action) {
                 case "android_remove", "android" -> UltraStyle.PAGE_ANDROID_REMOVE;
-                case "race_confirm" -> "race";
+                case "race_confirm" -> "race:0";
                 case "class_confirm" -> "class";
                 case "reskin_confirm" -> "reskin";
                 case "bone_toggle",

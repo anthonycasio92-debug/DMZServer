@@ -39,11 +39,14 @@ public final class UltraCharacterScreens {
             openBones(player, parseBonePage(lower));
             return;
         }
+        if (lower.startsWith("race:") || "race".equals(lower)) {
+            openRace(player, parseRaceListPage(lower));
+            return;
+        }
         switch (lower) {
             case "reset", "saga", "sagareset", "saga_reset" -> openSagaReset(player);
             case "android_remove", "android", "androidremove", "remove_android" ->
                     openAndroidRemove(player);
-            case "race" -> openRace(player);
             case "class" -> openClass(player);
             case "reskin" -> openReskin(player);
             case "reskin_confirm" -> openReskinConfirm(player);
@@ -75,9 +78,9 @@ public final class UltraCharacterScreens {
                 .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
 
         if (canRace) {
-            spec.buttonLeft("page:race", UltraStyle.confirm("Change race"), UltraStyle.STYLE_CONFIRM);
+            spec.buttonLeft("page:race:0", UltraStyle.confirm("Change race"), UltraStyle.STYLE_CONFIRM);
         } else {
-            spec.buttonLeft("page:race", UltraStyle.dim("Change race"), UltraStyle.STYLE_DIM);
+            spec.buttonLeft("page:race:0", UltraStyle.dim("Change race"), UltraStyle.STYLE_DIM);
         }
         if (canClass) {
             spec.buttonRight("page:class", UltraStyle.confirm("Change class"), UltraStyle.STYLE_CONFIRM);
@@ -106,9 +109,19 @@ public final class UltraCharacterScreens {
         spec.send(player);
     }
 
-    private static void openRace(ServerPlayer player) {
-        UltraScreenSpec spec = base(player, "race", "home")
+    /** Races per Ultra page (two columns). Hard-capping without paging hid later races. */
+    private static final int RACES_PER_PAGE = 10;
+
+    private static void openRace(ServerPlayer player, int page) {
+        List<String> cards = CharacterServicesGuiApi.raceCards(player);
+        int total = cards == null ? 0 : cards.size();
+        int pages = Math.max(1, (total + RACES_PER_PAGE - 1) / RACES_PER_PAGE);
+        int pg = Math.min(pages - 1, Math.max(0, page));
+        int from = pg * RACES_PER_PAGE;
+        int to = Math.min(total, from + RACES_PER_PAGE);
+        UltraScreenSpec spec = base(player, "race:" + pg, "home")
                 .line(UltraStyle.LABEL + "Choose the race you want to become.")
+                .labelValue("Races", total + (pages > 1 ? (" · page " + (pg + 1) + "/" + pages) : ""))
                 .notice("Race-only form ladders reset when the new race does not use them.");
         for (String line : CharacterServicesGuiApi.linesForPage(player, "race")) {
             if (line != null && !line.isBlank()) {
@@ -116,10 +129,10 @@ public final class UltraCharacterScreens {
             }
         }
         spec.setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
-        List<String> cards = CharacterServicesGuiApi.raceCards(player);
         int placed = 0;
-        for (String card : cards) {
-            if (placed >= 10 || card == null || card.isBlank()) {
+        for (int i = from; i < to; i++) {
+            String card = cards.get(i);
+            if (card == null || card.isBlank()) {
                 continue;
             }
             String[] p = card.split("\t", -1);
@@ -153,9 +166,41 @@ public final class UltraCharacterScreens {
         if (placed == 0) {
             spec.line(UltraStyle.dim("No races are available right now."));
         }
+        if (pg > 0) {
+            spec.buttonLeft(
+                    "page:race:" + (pg - 1), UltraStyle.dim("« Prev"), UltraStyle.STYLE_DIM);
+        }
+        if (pg + 1 < pages) {
+            if (pg > 0) {
+                spec.buttonRight(
+                        "page:race:" + (pg + 1), UltraStyle.LABEL + "Next »", UltraStyle.STYLE_NORMAL);
+            } else {
+                spec.buttonLeft(
+                        "page:race:" + (pg + 1), UltraStyle.LABEL + "Next »", UltraStyle.STYLE_NORMAL);
+            }
+            spec.rowGap();
+        } else if (pg > 0) {
+            spec.rowGap();
+        }
         spec.button("tab:home", UltraStyle.dim("Back"), UltraStyle.STYLE_DIM).rowGap();
         spec.footerBackHome();
         spec.send(player);
+    }
+
+    private static int parseRaceListPage(String page) {
+        if (page == null || page.isBlank() || "race".equalsIgnoreCase(page.trim())) {
+            return 0;
+        }
+        String raw = page.trim();
+        int colon = raw.indexOf(':');
+        if (colon < 0 || colon + 1 >= raw.length()) {
+            return 0;
+        }
+        try {
+            return Math.max(0, Integer.parseInt(raw.substring(colon + 1).trim()));
+        } catch (NumberFormatException ignored) {
+            return 0;
+        }
     }
 
     private static void openRaceConfirm(ServerPlayer player, String raceAndPct) {
@@ -201,7 +246,7 @@ public final class UltraCharacterScreens {
                         "do:race_confirm:" + confirmArg,
                         UltraStyle.confirm("Confirm & pay"),
                         UltraStyle.STYLE_CONFIRM)
-                .buttonRight("page:race", UltraStyle.dim("Cancel"), UltraStyle.STYLE_DIM)
+                .buttonRight("page:race:0", UltraStyle.dim("Cancel"), UltraStyle.STYLE_DIM)
                 .rowGap();
         spec.footerBackHome();
         spec.send(player);
