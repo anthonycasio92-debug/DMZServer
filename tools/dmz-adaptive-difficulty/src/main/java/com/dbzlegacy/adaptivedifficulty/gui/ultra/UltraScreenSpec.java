@@ -72,7 +72,9 @@ public final class UltraScreenSpec {
     }
 
     public UltraScreenSpec title(String title) {
-        this.title = UltraStyle.wireText(UltraStyle.header(title));
+        // Plain ASCII title - KaiPath paints the header in its own color; section-sign
+        // codes mojibake as stray A/E glyphs on some clients.
+        this.title = UltraStyle.wireText(UltraStyle.plain(title == null ? "" : title));
         return this;
     }
 
@@ -573,10 +575,8 @@ public final class UltraScreenSpec {
             }
             UltraScreenIds.requireValidActionId(screenId, "tab:" + tab.id, tab.label);
             boolean active = tab.id.equalsIgnoreCase(activeTab);
-            String label = UltraStyle.wireText(
-                    active
-                            ? UltraStyle.HEADER + UltraStyle.plain(tab.label)
-                            : UltraStyle.LABEL + UltraStyle.plain(tab.label));
+            // Plain label only - button style carries active/inactive look (no section-sign codes).
+            String label = UltraStyle.wireText(UltraStyle.plain(tab.label));
             String style = active ? UltraStyle.STYLE_CONFIRM : UltraStyle.STYLE_DIM;
             JsonObject o = new JsonObject();
             o.addProperty("id", qualifyAction("tab:" + tab.id));

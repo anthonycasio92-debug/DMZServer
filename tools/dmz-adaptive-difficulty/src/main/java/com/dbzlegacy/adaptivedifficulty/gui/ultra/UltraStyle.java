@@ -191,22 +191,19 @@ public final class UltraStyle {
         return wireText(NOTICE_HEAD + "Notice " + NOTICE_BODY + plain(body));
     }
 
-    /** Truncate for buttons; keep room for style codes. Always wire-safe ASCII (+ mark). */
+    /**
+     * Truncate for buttons. Returns plain ASCII only — KaiPath button {@code style} carries
+     * color; section-sign prefixes mojibake as stray A/E glyphs on some clients.
+     */
     public static String buttonLabel(String styled) {
         if (styled == null) {
             return "";
         }
-        String safe = wireText(styled);
-        String plain = plain(safe);
-        if (plain.length() <= 28) {
-            return safe;
+        String text = plain(wireText(styled));
+        if (text.length() <= 28) {
+            return text;
         }
-        String cut = plain.substring(0, 27) + "...";
-        int mark = safe.indexOf(plain);
-        if (mark > 0) {
-            return safe.substring(0, mark) + cut;
-        }
-        return cut;
+        return text.substring(0, 27) + "...";
     }
 
     public static String confirm(String label) {

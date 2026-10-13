@@ -40,4 +40,4 @@ bash tools/ultra-gui-kit/build-kaipath-overlay.sh
 
 ---
 
-LM server impl: `tools/dmz-adaptive-difficulty/…/net/gui/` (**4.6.132**).
+LM server impl: `tools/dmz-adaptive-difficulty/…/net/gui/` (**4.6.133**).
