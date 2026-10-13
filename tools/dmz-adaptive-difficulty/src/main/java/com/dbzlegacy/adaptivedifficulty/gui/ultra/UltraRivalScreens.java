@@ -116,8 +116,10 @@ public final class UltraRivalScreens {
                 "pick_challenge|Send challenge...",
                 "pick_spectate|Spectate...",
                 "records:history|Challenge history");
-        spec.buttonLeft("do:challenge:accept", UltraStyle.confirm("Accept challenge"), "confirm")
-                .buttonRight("do:challenge:decline", UltraStyle.danger("Decline challenge"), "danger")
+        // Stack Accept above Decline - side-by-side is a misclick invite-kill risk.
+        spec.button("do:challenge:accept", UltraStyle.confirm("Accept challenge"), "confirm")
+                .rowGap();
+        spec.button("do:challenge:decline", UltraStyle.danger("Decline challenge"), "danger")
                 .rowGap();
         spec.buttonLeft("do:challenge:cancel", UltraStyle.danger("Cancel challenge"), "danger")
                 .buttonRight("do:spectate_stop", UltraStyle.dim("Stop spectate"), "dim")
@@ -253,8 +255,10 @@ public final class UltraRivalScreens {
         List<String> incoming = RivalGuiApi.pendingIncomingDeclareArgs(player);
         UltraPickHelper.placeNameButtons(spec, "accept", incoming, 4);
         UltraPickHelper.placeNameButtons(spec, "decline", incoming, 4);
-        spec.buttonLeft("do:challenge:accept", UltraStyle.confirm("Accept challenge"), "confirm")
-                .buttonRight("do:challenge:decline", UltraStyle.danger("Decline challenge"), "danger")
+        // Stack Accept above Decline - side-by-side is a misclick invite-kill risk.
+        spec.button("do:challenge:accept", UltraStyle.confirm("Accept challenge"), "confirm")
+                .rowGap();
+        spec.button("do:challenge:decline", UltraStyle.danger("Decline challenge"), "danger")
                 .rowGap();
         spec.footerBackHome();
         spec.send(player);

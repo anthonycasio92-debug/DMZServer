@@ -163,7 +163,7 @@ public final class UltraWeightShopScreens {
         AncientCoinEconomy.migrateWalletToItems(player);
         long cost = value;
         boolean free = PaidFeatureAccess.bypassAncientCoinCost(player);
-        String costText = free ? "free for staff" : AncientCoinEconomy.formatExactCost(cost);
+        String costText = free ? "Free for staff" : AncientCoinEconomy.formatExactCost(cost);
         UltraScreenSpec spec =
                 base("weights_confirm:" + offer.id + ":" + value, "home")
                         .line(UltraStyle.LABEL + "Confirm weight purchase")
@@ -270,7 +270,7 @@ public final class UltraWeightShopScreens {
         applyWeightValue(stack, value);
         String destination = giveWeightItem(player, stack);
         openShop(player);
-        String costText = free ? "free (staff)" : AncientCoinEconomy.formatExactCost(cost);
+        String costText = free ? "Free (staff)" : AncientCoinEconomy.formatExactCost(cost);
         return UltraStyle.noticeLine(
                 "Bought "
                         + offer.label

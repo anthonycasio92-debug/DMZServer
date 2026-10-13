@@ -254,7 +254,7 @@ public final class UltraDifficultyScreens {
         boolean ready = EndDimensionStrength.canOpenSummonMenu(player);
         boolean free = PaidFeatureAccess.bypassAncientCoinCost(player);
         String cost = free
-                ? "free for staff"
+                ? "Free for staff"
                 : AncientCoinEconomy.formatExactCost(EndDimensionStrength.summonCopperCost());
         UltraScreenSpec spec = base("summons", "summons")
                 .line(UltraStyle.LABEL + "Select a boss, then confirm. More bosses can be added to this list.");
@@ -273,7 +273,7 @@ public final class UltraDifficultyScreens {
         boolean ready = EndDimensionStrength.canOpenSummonMenu(player);
         boolean free = PaidFeatureAccess.bypassAncientCoinCost(player);
         String cost = free
-                ? "free for staff"
+                ? "Free for staff"
                 : AncientCoinEconomy.formatExactCost(EndDimensionStrength.summonCopperCost());
         UltraScreenSpec spec = base("end_dragon", "summons")
                 .line(UltraStyle.LABEL + "End Dragon")

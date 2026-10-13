@@ -337,7 +337,7 @@ public final class UltraConfigScreens {
         }
         spec.setRow(UltraStyle.CONTENT_ROW + UltraStyle.BODY_MIN_H);
         // Stack Confirm above Discard - side-by-side is a misclick wipe risk.
-        // Primary save stays first (same muscle memory as Save all on the right elsewhere).
+        // Confirm first so the safe primary action is above the destructive one.
         spec.button("do:save_all", UltraStyle.confirm("Confirm save"), "confirm").rowGap();
         spec.button("do:discard_all", UltraStyle.danger("Discard all"), "danger").rowGap();
         // One Back only via footer (nav:home).

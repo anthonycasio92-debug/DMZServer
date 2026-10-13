@@ -2,7 +2,7 @@
 
 | Side | Role |
 |------|------|
-| LM **4.6.139** | `GuiOpenPacket` (11 fields: +`inputsJson`), styles, `titleAlign` forced center, `playerModel.parts`, Config + Weights text fields |
+| LM **4.6.140** | `GuiOpenPacket` (11 fields: +`inputsJson`), styles, `titleAlign` forced center, `playerModel.parts`, Config + Weights text fields |
 | KaiPath **1.3.9** (live / recommended) | `style`, `activeTab`, `titleAlign`, `playerModel`, `textInput`, GuiFeaturesPacket (5 features) |
 
 Note: CurseForge jumped **1.3.1 → 1.3.7 → 1.3.9**. Field 11 / `textInput` landed in **1.3.9**.

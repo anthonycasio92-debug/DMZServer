@@ -635,6 +635,21 @@ def main() -> int:
     admin_tile = re.search(r'HubTile\("admin",[^\n]+', hub)
     if admin_tile and "STYLE_DANGER" in admin_tile.group(0):
         errors.append("UltraHubScreens Staff Admin tile must use normal/dim style (not danger)")
+    # Rival Challenge/Actions Accept+Decline must stack (same misclick risk as spar mentor/dojo).
+    if re.search(
+        r'buttonLeft\("do:challenge:accept"[^\n]*\n[^\n]*buttonRight\("do:challenge:decline"',
+        rival,
+    ):
+        errors.append(
+            "UltraRivalScreens Accept/Decline challenge must stack vertically (not side-by-side)"
+        )
+    difficulty = (ULTRA / "UltraDifficultyScreens.java").read_text(encoding="utf-8")
+    for label, text in (
+        ("UltraDifficultyScreens", difficulty),
+        ("UltraWeightShopScreens", weight),
+    ):
+        if "free for staff" in text or "free (staff)" in text:
+            errors.append(f'{label} must capitalize staff free cost as "Free ..."')
     if "TAB_ROW_Y" not in style:
         errors.append("UltraStyle must define TAB_ROW_Y for tabs under the title line")
     skill_ui = (ULTRA / "UltraSkillCheckScreens.java").read_text(encoding="utf-8")
