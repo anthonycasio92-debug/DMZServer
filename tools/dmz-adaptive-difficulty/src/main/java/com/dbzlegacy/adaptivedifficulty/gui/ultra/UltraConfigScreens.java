@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.gui.ultra;
 
 import com.dbzlegacy.adaptivedifficulty.config.editor.ConfigEditor;
+import com.dbzlegacy.adaptivedifficulty.net.gui.UltraClientFeatures;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import java.util.List;
 import java.util.Locale;
@@ -210,6 +211,7 @@ public final class UltraConfigScreens {
             }
             case NUMBER -> {
                 // Direct typing is the critical path; ± steps stay as shortcuts.
+                noteIfTextInputMissing(spec, player);
                 String inputId = "input:" + module + "|" + encoded;
                 spec.textFieldRow(
                                 inputId,
@@ -233,6 +235,7 @@ public final class UltraConfigScreens {
                         .rowGap();
             }
             case ENUM -> {
+                noteIfTextInputMissing(spec, player);
                 String inputId = "input:" + module + "|" + encoded;
                 spec.textFieldRow(
                                 inputId,
@@ -260,6 +263,7 @@ public final class UltraConfigScreens {
                         .rowGap();
             }
             case TEXT -> {
+                noteIfTextInputMissing(spec, player);
                 String inputId = "input:" + module + "|" + encoded;
                 spec.textFieldRow(
                                 inputId,
@@ -542,5 +546,14 @@ public final class UltraConfigScreens {
         } catch (Throwable ignored) {
             return null;
         }
+    }
+
+    /** KaiPath 1.3.7 still lacks field 11 — surface that before a dead Apply button. */
+    private static void noteIfTextInputMissing(UltraScreenSpec spec, ServerPlayer player) {
+        if (spec == null || UltraClientFeatures.hasTextInput(player)) {
+            return;
+        }
+        spec.line(UltraStyle.danger("Typed fields need KaiPath textInput (past 1.3.7)."))
+                .line(UltraStyle.DIM + "Until then use Toggle / Next value / ± step buttons.");
     }
 }

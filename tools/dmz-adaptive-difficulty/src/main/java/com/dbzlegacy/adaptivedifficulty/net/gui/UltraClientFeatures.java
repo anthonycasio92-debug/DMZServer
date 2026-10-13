@@ -46,7 +46,7 @@ public final class UltraClientFeatures {
     /** Wire / doc spelling for {@link #FEATURE_TEXT_INPUT}. */
     public static final String FEATURE_TEXT_INPUT_DOC = "textInput";
 
-    /** Optional features the LM bridge expects a conforming client to advertise. */
+    /** Optional features the LM bridge expects a fully conforming client to advertise. */
     public static final Set<String> EXPECTED_OPTIONAL =
             Set.of(
                     FEATURE_STYLE,
@@ -54,6 +54,23 @@ public final class UltraClientFeatures {
                     FEATURE_TITLE_ALIGN,
                     FEATURE_PLAYER_MODEL,
                     FEATURE_TEXT_INPUT);
+
+    /**
+     * Features KaiPath <b>1.3.7</b> already advertises/honors. Missing any of these is a real
+     * client gap (wrong jar / old client).
+     */
+    public static final Set<String> SHIPPED_ON_RECOMMENDED =
+            Set.of(
+                    FEATURE_STYLE,
+                    FEATURE_ACTIVE_TAB,
+                    FEATURE_TITLE_ALIGN,
+                    FEATURE_PLAYER_MODEL);
+
+    /**
+     * Still pending on KaiPath after 1.3.7 — Weights shop + Config typed fields need this.
+     * Reference kit: {@code tools/ultra-gui-kit/kaipath-client/}.
+     */
+    public static final Set<String> PENDING_NEXT = Set.of(FEATURE_TEXT_INPUT);
 
     private static final Map<UUID, State> BY_PLAYER = new ConcurrentHashMap<>();
 
@@ -133,6 +150,14 @@ public final class UltraClientFeatures {
     /** Optional features from {@link #EXPECTED_OPTIONAL} the client does not report. */
     public static List<String> missingOptional(State state) {
         List<String> missing = new ArrayList<>();
+        missing.addAll(missingShipped(state));
+        missing.addAll(missingPending(state));
+        return missing;
+    }
+
+    /** Gaps vs KaiPath 1.3.7 shipped set — warn on login/guitest. */
+    public static List<String> missingShipped(State state) {
+        List<String> missing = new ArrayList<>();
         if (state == null || !state.has(FEATURE_STYLE)) {
             missing.add(FEATURE_STYLE);
         }
@@ -145,10 +170,20 @@ public final class UltraClientFeatures {
         if (state == null || !state.has(FEATURE_PLAYER_MODEL)) {
             missing.add(FEATURE_PLAYER_MODEL_DOC);
         }
+        return missing;
+    }
+
+    /** Gaps still expected after 1.3.7 (today: {@code textInput} only). */
+    public static List<String> missingPending(State state) {
+        List<String> missing = new ArrayList<>();
         if (state == null || !state.has(FEATURE_TEXT_INPUT)) {
             missing.add(FEATURE_TEXT_INPUT_DOC);
         }
         return missing;
+    }
+
+    public static boolean hasTextInput(ServerPlayer player) {
+        return get(player).has(FEATURE_TEXT_INPUT);
     }
 
     /** Human-readable impact lines for missing features. */
@@ -180,37 +215,49 @@ public final class UltraClientFeatures {
     }
 
     /**
-     * Log a clear warning when optional features are missing. Safe to call for baseline
-     * (never-advertised) clients — they are treated as lacking style/activeTab.
+     * Log when 1.3.7-shipped features are missing (real gap). Pending {@code textInput} is
+     * logged at info so 1.3.7 clients are not warned as broken.
      */
     public static void warnMissingOptionalFeatures(ServerPlayer player, String context) {
         if (player == null) {
             return;
         }
         State state = get(player);
-        List<String> missing = missingOptional(state);
-        if (missing.isEmpty()) {
-            return;
-        }
+        List<String> shippedGaps = missingShipped(state);
+        List<String> pending = missingPending(state);
         String version = resolveKaiPathVersion(player);
-        List<String> impacts = impactLines(missing);
-        AdaptiveDifficultyMod.LOGGER.warn(
-                "[{}] Ultra client gap player={} kaipathVersion={} context={} advertised={} "
-                        + "features={} missing={} — player will see: {}",
-                AdaptiveDifficultyMod.MOD_ID,
-                safeName(player),
-                version == null || version.isBlank() ? "<unknown>" : version,
-                context == null ? "?" : context,
-                state.advertised(),
-                state.features().isEmpty() ? "[]" : state.features(),
-                missing,
-                impacts);
+        String verLabel = version == null || version.isBlank() ? "<unknown>" : version;
+        String ctx = context == null ? "?" : context;
+        if (!shippedGaps.isEmpty()) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] Ultra client gap (pre-1.3.7 features) player={} kaipathVersion={} "
+                            + "context={} advertised={} features={} missingShipped={} — {}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    safeName(player),
+                    verLabel,
+                    ctx,
+                    state.advertised(),
+                    state.features().isEmpty() ? "[]" : state.features(),
+                    shippedGaps,
+                    impactLines(shippedGaps));
+        }
+        if (!pending.isEmpty()) {
+            AdaptiveDifficultyMod.LOGGER.info(
+                    "[{}] Ultra pending after KaiPath 1.3.7 player={} kaipathVersion={} "
+                            + "context={} pending={} — Weights/Config typed fields need textInput",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    safeName(player),
+                    verLabel,
+                    ctx,
+                    pending);
+        }
     }
 
     /** One-line summary for guitest / staff chat. */
     public static String summarizeForStaff(ServerPlayer player) {
         State state = get(player);
-        List<String> missing = missingOptional(state);
+        List<String> shippedGaps = missingShipped(state);
+        List<String> pending = missingPending(state);
         String version = resolveKaiPathVersion(player);
         StringBuilder sb = new StringBuilder();
         sb.append("features=");
@@ -222,11 +269,9 @@ public final class UltraClientFeatures {
             sb.append(state.features());
         }
         sb.append(" kaipath=").append(version == null || version.isBlank() ? "?" : version);
-        if (!missing.isEmpty()) {
-            sb.append(" missing=").append(missing);
-        } else {
-            sb.append(" missing=none");
-        }
+        sb.append(" missingShipped=")
+                .append(shippedGaps.isEmpty() ? "none" : shippedGaps);
+        sb.append(" pendingNext=").append(pending.isEmpty() ? "none" : pending);
         return sb.toString();
     }
 

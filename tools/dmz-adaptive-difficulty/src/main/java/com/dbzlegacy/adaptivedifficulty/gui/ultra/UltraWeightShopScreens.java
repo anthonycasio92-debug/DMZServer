@@ -97,13 +97,13 @@ public final class UltraWeightShopScreens {
                 .labelValue("Max value", String.valueOf(MAX_WEIGHT_VALUE))
                 .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
 
-        if (!hasTextInput(player)) {
-            spec.line(UltraStyle.danger("Text input requires a KaiPath update."))
+        if (!UltraClientFeatures.hasTextInput(player)) {
+            spec.line(UltraStyle.danger("Typed weight entry needs KaiPath textInput."))
                     .line(
                             UltraStyle.DIM
-                                    + "Your client does not advertise textInput — typed weight "
-                                    + "entry cannot work until KaiPath renders GuiOpenPacket "
-                                    + "inputsJson.")
+                                    + "KaiPath 1.3.7 has style/playerModel/titleAlign/activeTab, "
+                                    + "but not GuiOpen field 11 yet. Merge the kaipath-client "
+                                    + "kit and rebuild past 1.3.7.")
                     .buttonLeft("page:weights", UltraStyle.dim("Back to weights"), UltraStyle.STYLE_DIM)
                     .rowGap();
             spec.footerBackHome();
@@ -340,11 +340,6 @@ public final class UltraWeightShopScreens {
             return colon > 0 ? rest.substring(0, colon).trim() : rest;
         }
         return null;
-    }
-
-    private static boolean hasTextInput(ServerPlayer player) {
-        UltraClientFeatures.State state = UltraClientFeatures.get(player);
-        return state != null && state.has(UltraClientFeatures.FEATURE_TEXT_INPUT);
     }
 
     private static UltraScreenSpec base(String page, String tab) {

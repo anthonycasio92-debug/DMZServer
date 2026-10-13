@@ -1,6 +1,6 @@
 # Ultra bridge gap matrix (LM ↔ KaiPath)
 
-**LM 4.6.121** + **KaiPath 1.3.7** (CurseForge latest; no 1.3.5 was ever published).
+**LM 4.6.122** + **KaiPath 1.3.7** (CurseForge latest / live; no 1.3.5 was ever published).
 
 ## Cursor / LM (server protocol) — status
 
@@ -27,7 +27,7 @@ Vendored jar: `mods/kaipath-1.3.7.jar`.
 | GuiFeaturesPacket advertise | **Partial** | Full | 1.3.7: `["style","activeTab","titleAlign","playerModel"]` — no `textInput` |
 | Slider / toggle widgets | N/A | N/A | Reserved until LM ships types |
 
-**Only remaining Ultra gap for Weights typed entry:** merge reference `inputsJson` + `textInput` advertise into a KaiPath build past 1.3.7.
+**Only remaining Ultra gap for Weights / Config typed entry:** merge reference `inputsJson` + `textInput` advertise into a KaiPath build past 1.3.7. LM 4.6.122+ treats style/activeTab/titleAlign/playerModel as shipped on 1.3.7 and logs `textInput` as `pendingNext` (not a broken-client warning).
 
 ## Reserved (later): `inputsJson` slider / toggle
 
