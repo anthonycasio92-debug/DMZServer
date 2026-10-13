@@ -1,6 +1,6 @@
 # JLDK brief — KaiPath Ultra GUI client conformance
 
-**Status (LM 4.6.124 + KaiPath 1.3.9):** Live KaiPath **1.3.9** honors `style`, `activeTab`,
+**Status (LM 4.6.125 + KaiPath 1.3.9):** Live KaiPath **1.3.9** honors `style`, `activeTab`,
 `titleAlign`, `playerModel`, and **`textInput`** (GuiOpen field 11 / EditBox / `bindInput`).
 Weights shop typed entry is unblocked.
 
