@@ -41,6 +41,14 @@ public final class UltraDifficultyScreens {
             openTitleDetail(player, raw.substring("title_detail:".length()).trim());
             return;
         }
+        if (lower.startsWith("weights_input:")) {
+            UltraWeightShopScreens.openInput(player, raw.substring("weights_input:".length()).trim());
+            return;
+        }
+        if (lower.startsWith("weights_confirm:")) {
+            openWeightsConfirm(player, raw.substring("weights_confirm:".length()).trim());
+            return;
+        }
         switch (lower) {
             case "tiers", "buy", "tier", "purchase", "unlock", "adjust", "change", "set", "lower" ->
                     openTiers(player);
@@ -52,8 +60,28 @@ public final class UltraDifficultyScreens {
             case "stats", "statistics", "details" -> openStats(player);
             case "admin", "staff" -> openStaffAdmin(player);
             case "eventlog", "event_log", "logs", "syslog" -> openEventLog(player);
+            case "weights", "weight", "weight_shop" -> UltraWeightShopScreens.openShop(player);
             default -> openHome(player);
         }
+    }
+
+    private static void openWeightsConfirm(ServerPlayer player, String rest) {
+        if (rest == null || rest.isBlank()) {
+            UltraWeightShopScreens.openShop(player);
+            return;
+        }
+        int colon = rest.lastIndexOf(':');
+        if (colon <= 0 || colon >= rest.length() - 1) {
+            UltraWeightShopScreens.openShop(player);
+            return;
+        }
+        String typeId = rest.substring(0, colon).trim();
+        Integer value = UltraWeightShopScreens.parseWeightValue(rest.substring(colon + 1));
+        if (value == null) {
+            UltraWeightShopScreens.openShop(player);
+            return;
+        }
+        UltraWeightShopScreens.openConfirm(player, typeId, value);
     }
 
     private static UltraScreenSpec base(String page, String tab) {
@@ -85,7 +113,8 @@ public final class UltraDifficultyScreens {
                 "titles|Titles",
                 "team|Rival teams",
                 "settings|Coin settings",
-                "stats|Combat rating");
+                "stats|Combat rating",
+                "weights|Weights");
         if (StaffAccess.isStaff(player)) {
             UltraPickHelper.placePageButtons(spec, "admin|Server tools", "eventlog|Event log");
         }

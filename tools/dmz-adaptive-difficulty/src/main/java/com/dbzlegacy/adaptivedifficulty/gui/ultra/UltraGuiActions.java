@@ -218,6 +218,20 @@ public final class UltraGuiActions {
                 UltraGui.open(player, safeScreen, inputPage);
                 return;
             }
+            if ("difficulty".equals(safeScreen)
+                    && ("weight_value".equals(payload) || inputPage.startsWith("weights_input:"))) {
+                String msg = UltraWeightShopScreens.handleInputSubmit(player, inputPage, args);
+                if (msg != null && !msg.isBlank()) {
+                    String notice = GuiNotice.noticeBody(msg);
+                    if (notice != null && !notice.isBlank()) {
+                        DmzRewards.msg(player, notice);
+                    }
+                    // Validation failed — stay on the input page.
+                    UltraGui.open(player, safeScreen, inputPage);
+                }
+                // Success opens confirm inside handleInputSubmit; skip generic reopen.
+                return;
+            }
             AdaptiveDifficultyMod.LOGGER.warn(
                     "[{}] Ultra input: on unsupported screen={} payload={}",
                     AdaptiveDifficultyMod.MOD_ID,
@@ -278,8 +292,12 @@ public final class UltraGuiActions {
                 DmzRewards.msg(player, notice);
             }
         }
-        // saga_confirm opens its page inside characterDo.
-        if ("saga_confirm".equals(parts.action)) {
+        // These handlers open the next page themselves — skip generic reopen.
+        if ("saga_confirm".equals(parts.action)
+                || "weight_quote".equals(parts.action)
+                || "quote".equals(parts.action)
+                || "weight_buy".equals(parts.action)
+                || "buy_weight".equals(parts.action)) {
             return;
         }
         String reopen = reopenPage(safeScreen, parts, args);
@@ -429,6 +447,14 @@ public final class UltraGuiActions {
                             || "reloadconfig".equals(act)
                             || "syslog".equals(act)) {
                         yield nullToEmpty(MechanicsGuiApi.handleDo(player, act, arg, page));
+                    }
+                    if ("weight_quote".equals(act)
+                            || "quote".equals(act)
+                            || "weight_buy".equals(act)
+                            || "buy_weight".equals(act)) {
+                        yield nullToEmpty(
+                                UltraWeightShopScreens.handleAction(
+                                        player, act, arg, page, args));
                     }
                     DifficultyActions.Result r =
                             DifficultyActions.handleArgNoReopen(player, act, arg, page);
@@ -647,6 +673,7 @@ public final class UltraGuiActions {
                 case "toggle_coin_chat" -> "settings";
                 case "reload", "reloadconfig" -> "admin";
                 case "syslog" -> "eventlog";
+                case "weight_buy", "buy_weight" -> "weights";
                 default -> page.isBlank() ? homePage(screen) : page;
             };
             case "prestige" -> switch (parts.action == null ? "" : parts.action) {

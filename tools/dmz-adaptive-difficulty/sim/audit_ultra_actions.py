@@ -30,6 +30,8 @@ KNOWN_DO: dict[str, set[str]] = {
         "toggle_coin_chat",
         "reload",
         "syslog",
+        "weight_quote",
+        "weight_buy",
     },
     "character": {
         "reskin_confirm",
@@ -388,6 +390,7 @@ def main() -> int:
     checks = [
         ("UltraHubScreens.java", "hub", KNOWN_DO["hub"]),
         ("UltraDifficultyScreens.java", "difficulty", KNOWN_DO["difficulty"]),
+        ("UltraWeightShopScreens.java", "difficulty", KNOWN_DO["difficulty"]),
         ("UltraCharacterScreens.java", "character", KNOWN_DO["character"]),
         ("UltraPrestigeScreens.java", "prestige", KNOWN_DO["prestige"]),
         ("UltraProgressionScreens.java", "progression", KNOWN_DO["progression"]),
