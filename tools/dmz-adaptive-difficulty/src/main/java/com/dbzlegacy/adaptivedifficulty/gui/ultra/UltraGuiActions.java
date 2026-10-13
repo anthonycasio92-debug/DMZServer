@@ -716,7 +716,7 @@ public final class UltraGuiActions {
             case "character" -> switch (parts.action == null ? "" : parts.action) {
                 case "android_remove", "android" -> UltraStyle.PAGE_ANDROID_REMOVE;
                 case "race_confirm" -> "race:0";
-                case "class_confirm" -> "class";
+                case "class_confirm" -> "class:0";
                 case "reskin_confirm" -> "reskin";
                 case "bone_toggle",
                         "bone_unlock",
@@ -751,7 +751,7 @@ public final class UltraGuiActions {
         String t = tab == null ? "" : tab.toLowerCase();
         return switch (screen == null ? "" : screen) {
             case "character" -> switch (t) {
-                case "saga", "reset" -> "reset";
+                case "saga", "reset" -> "reset:0";
                 case "android", "android_remove" -> UltraStyle.PAGE_ANDROID_REMOVE;
                 default -> "main";
             };

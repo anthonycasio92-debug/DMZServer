@@ -147,24 +147,24 @@ public final class UltraStyle {
             return text == null ? "" : text;
         }
         String s = text;
-        // Common punctuation -> ASCII
-        s = s.replace('\u2014', '-').replace('\u2013', '-').replace('\u2212', '-');
-        s = s.replace("\u2026", "...").replace('\u00B7', '-').replace('\u2022', '*');
-        s = s.replace('\u25CF', '*').replace('\u00D7', 'x').replace('\u00B1', '+');
-        s = s.replace('\u2192', '>').replace('\u2190', '<').replace('\u2194', '-');
-        s = s.replace('\u00AB', '<').replace('\u00BB', '>');
-        s = s.replace('\u201C', '"').replace('\u201D', '"');
-        s = s.replace('\u2018', '\'').replace('\u2019', '\'');
-        s = s.replace('\u00A0', ' ').replace('\u2500', '-');
-        // Already-mojibaked sequences sometimes re-enter via GuiApi / stored strings.
+        // Common punctuation -> ASCII (char codes so source stays ASCII-audit clean).
+        s = s.replace((char) 0x2014, '-').replace((char) 0x2013, '-').replace((char) 0x2212, '-');
+        s = s.replace(String.valueOf((char) 0x2026), "...");
+        s = s.replace((char) 0x00B7, '-').replace((char) 0x2022, '*');
+        s = s.replace((char) 0x25CF, '*').replace((char) 0x00D7, 'x').replace((char) 0x00B1, '+');
+        s = s.replace((char) 0x2192, '>').replace((char) 0x2190, '<').replace((char) 0x2194, '-');
+        s = s.replace((char) 0x00AB, '<').replace((char) 0x00BB, '>');
+        s = s.replace((char) 0x201C, '"').replace((char) 0x201D, '"');
+        s = s.replace((char) 0x2018, '\'').replace((char) 0x2019, '\'');
+        s = s.replace((char) 0x00A0, ' ').replace((char) 0x2500, '-');
         // Already-mojibaked UTF-8-as-Latin-1 sequences (C2 A7 / E2 80 xx prefixes).
-        s = s.replace("\u00E2\u20AC", "-");
-        s = s.replace("\u00C2\u00B7", "-");
-        s = s.replace("\u00C2", "");
+        s = s.replace(new String(new char[] {(char) 0xE2, (char) 0x20AC}), "-");
+        s = s.replace(new String(new char[] {(char) 0xC2, (char) 0xB7}), "-");
+        s = s.replace(String.valueOf((char) 0xC2), "");
         StringBuilder out = new StringBuilder(s.length());
         for (int i = 0; i < s.length(); i++) {
             char c = s.charAt(i);
-            if (c == '\u00A7' || c <= 0x7F) {
+            if (c == (char) 0xA7 || c <= 0x7F) {
                 out.append(c);
             } else {
                 out.append('?');

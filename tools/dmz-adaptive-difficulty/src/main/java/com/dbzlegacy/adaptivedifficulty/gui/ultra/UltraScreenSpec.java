@@ -332,11 +332,6 @@ public final class UltraScreenSpec {
     /** Build the wire packet without sending. */
     public GuiOpenPacket toPacket() {
         int contentBottom = nextRow + UltraStyle.BTN_H + UltraStyle.PANEL_MARGIN;
-        int height = panelHeight;
-        if (contentBottom > height) {
-            height = Math.min(UltraStyle.PANEL_MAX_H, contentBottom);
-        }
-
         int bodyTop = tabs.isEmpty() ? UltraStyle.BODY_TOP : UltraStyle.BODY_TOP_TABS;
         int lineStep = UltraStyle.LINE_H + UltraStyle.LINE_GAP;
         int naturalBodyH =
@@ -346,7 +341,9 @@ public final class UltraScreenSpec {
 
         // Grow toward PANEL_MAX_H when body text needs more viewport than the default
         // BODY_MIN_H band - shift buttons down so extra height expands the body, not
-        // empty space under the footer.
+        // empty space under the footer. When there is no body copy (hub tiles), skip the
+        // BODY_MIN_H reserve and shrink the panel to the button stack so menus stay tight
+        // as tiles are added or removed.
         int buttonTop = firstButtonY;
         int buttonStackH =
                 buttonTop < 0
@@ -356,19 +353,37 @@ public final class UltraScreenSpec {
                                 contentBottom - buttonTop);
         int maxBodyAtCap =
                 Math.max(
-                        UltraStyle.BODY_MIN_H,
+                        naturalBodyH <= 0 ? 0 : UltraStyle.BODY_MIN_H,
                         UltraStyle.PANEL_MAX_H - bodyTop - buttonStackH);
-        int targetBodyH =
-                Math.max(
-                        UltraStyle.BODY_MIN_H,
-                        Math.min(Math.max(naturalBodyH, UltraStyle.BODY_MIN_H), maxBodyAtCap));
+        int targetBodyH;
+        if (naturalBodyH <= 0) {
+            targetBodyH = 0;
+        } else {
+            targetBodyH =
+                    Math.max(
+                            UltraStyle.BODY_MIN_H,
+                            Math.min(
+                                    Math.max(naturalBodyH, UltraStyle.BODY_MIN_H), maxBodyAtCap));
+        }
+        int height;
+        if (naturalBodyH <= 0) {
+            // Compact tile menus: pack to content, clamped to min/max (not stuck at PANEL_H).
+            int packed = Math.max(contentBottom, bodyTop + buttonStackH);
+            height = Math.max(
+                    UltraStyle.PANEL_MIN_H, Math.min(UltraStyle.PANEL_MAX_H, packed));
+        } else {
+            height = panelHeight;
+            if (contentBottom > height) {
+                height = Math.min(UltraStyle.PANEL_MAX_H, contentBottom);
+            }
+        }
         int targetHeight = bodyTop + targetBodyH + buttonStackH;
         if (targetHeight > height) {
             height = Math.min(UltraStyle.PANEL_MAX_H, targetHeight);
         }
 
         int buttonShift = 0;
-        if (buttonTop >= 0) {
+        if (buttonTop >= 0 && targetBodyH > 0) {
             int currentBodyRoom = Math.max(0, buttonTop - UltraStyle.BTN_GAP - bodyTop);
             if (targetBodyH > currentBodyRoom) {
                 int need = targetBodyH - currentBodyRoom;
@@ -392,10 +407,15 @@ public final class UltraScreenSpec {
                         : Math.min(
                                 effectiveButtonTop - UltraStyle.BTN_GAP,
                                 height - UltraStyle.PANEL_MARGIN);
-        int bodyMaxH =
-                Math.max(
-                        UltraStyle.BODY_MIN_H,
-                        Math.max(lineStep + UltraStyle.BODY_PAD * 2, bodyBottom - bodyTop));
+        int bodyMaxH;
+        if (naturalBodyH <= 0) {
+            bodyMaxH = Math.max(0, bodyBottom - bodyTop);
+        } else {
+            bodyMaxH =
+                    Math.max(
+                            UltraStyle.BODY_MIN_H,
+                            Math.max(lineStep + UltraStyle.BODY_PAD * 2, bodyBottom - bodyTop));
+        }
         boolean scrollBody =
                 naturalBodyH > bodyMaxH || contentBottom + buttonShift > UltraStyle.PANEL_MAX_H;
 
