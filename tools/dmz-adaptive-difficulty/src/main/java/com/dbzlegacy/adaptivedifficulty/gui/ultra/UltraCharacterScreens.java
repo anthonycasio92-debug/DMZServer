@@ -66,7 +66,7 @@ public final class UltraCharacterScreens {
     }
 
     private static UltraScreenSpec base(ServerPlayer player, String page, String tab) {
-        // y=60 sits below the tab strip (CONTENT_ROW_TABS=58); y=36 clipped the head.
+        // y=60 sits below the tab button row (TAB_ROW_Y + BTN_H); y=36 clipped the head.
         return UltraScreenSpec.of("character")
                 .title("Character Services")
                 .page(page)

@@ -76,14 +76,20 @@ public final class UltraStyle {
     public static final int BODY_PAD = 10;
     /** Y where the body/scroll region starts under a title-only header. */
     public static final int BODY_TOP = 42;
-    /** Y where the body starts when a tab strip is present. */
-    public static final int BODY_TOP_TABS = 60;
+    /**
+     * Tab button row Y (panel-relative), under the Ultra title/header line — same band as
+     * hub tiles ({@link #CONTENT_ROW}), not KaiPath's default tab strip that sits in the
+     * title chrome.
+     */
+    public static final int TAB_ROW_Y = 28;
+    /** Y where the body starts when a tab button row is present. */
+    public static final int BODY_TOP_TABS = TAB_ROW_Y + BTN_H + BTN_GAP;
     /** Minimum body scroll region height so lines stay readable. */
     public static final int BODY_MIN_H = 140;
-    /** Default content row after title (no tabs). */
+    /** Default content row after title (no tabs) — hub home tiles. */
     public static final int CONTENT_ROW = 40;
-    /** Default content row after title + tabs. */
-    public static final int CONTENT_ROW_TABS = 58;
+    /** Default content row after title + tab button row. */
+    public static final int CONTENT_ROW_TABS = TAB_ROW_Y + BTN_H + BTN_GAP;
     /** Title alignment in layoutJson: {@code center} or {@code left}. */
     public static final String TITLE_ALIGN = "center";
 

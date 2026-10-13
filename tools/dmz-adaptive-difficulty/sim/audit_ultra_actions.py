@@ -524,20 +524,30 @@ def main() -> int:
         elif "nav:refresh" in m.group(1) or "Refresh" in m.group(1):
             errors.append(f"UltraScreenSpec.{method} must not include Refresh / nav:refresh")
 
-    # Startup self-test must allow empty tabsJson for intentional tab-less screens.
+    # Tabs are hub-style buttons under the title line; tabsJson stays empty for every screen.
     self_test_path = ULTRA / "UltraScreenSelfTest.java"
     self_test = self_test_path.read_text(encoding="utf-8")
     if "TABLESS_SCREEN_IDS" not in self_test or "isTablessScreen" not in self_test:
         errors.append(
             "UltraScreenSelfTest must define TABLESS_SCREEN_IDS / isTablessScreen "
-            "(skillcheck + skills are single-screen, empty tabsJson is valid)"
+            "(skillcheck + skills must not call .tabs())"
         )
     else:
         for sid in ("skillcheck", "skills"):
             if f'"{sid}"' not in self_test.split("TABLESS_SCREEN_IDS", 1)[1].split(";", 1)[0]:
                 errors.append(f"UltraScreenSelfTest.TABLESS_SCREEN_IDS missing {sid}")
-    if "allowEmptyTabs" not in self_test:
-        errors.append("UltraScreenSelfTest.validatePacket must allow empty tabs for tab-less screens")
+    if "tabsJson must be empty" not in self_test and "tabs are buttons under the title" not in self_test:
+        errors.append(
+            "UltraScreenSelfTest.validatePacket must require empty tabsJson "
+            "(tabs render as buttons under the title line)"
+        )
+    if "appendTabButtons" not in spec_text_full or "tabsUnderTitle" not in spec_text_full:
+        errors.append(
+            "UltraScreenSpec must emit tabsUnderTitle + appendTabButtons "
+            "(hub-like tabs under the header line)"
+        )
+    if "TAB_ROW_Y" not in style:
+        errors.append("UltraStyle must define TAB_ROW_Y for tabs under the title line")
     skill_ui = (ULTRA / "UltraSkillCheckScreens.java").read_text(encoding="utf-8")
     if ".tabs(" in skill_ui:
         errors.append("UltraSkillCheckScreens must not call .tabs() (no tab bar)")

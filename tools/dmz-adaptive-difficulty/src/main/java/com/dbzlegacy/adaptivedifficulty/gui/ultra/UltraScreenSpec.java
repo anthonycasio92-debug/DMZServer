@@ -172,7 +172,7 @@ public final class UltraScreenSpec {
                 tabs.add(new Tab(pair.substring(0, bar), pair.substring(bar + 1)));
             }
         }
-        // Content starts below title + tab strip when tabs are present.
+        // Content starts below title + tab button row (under the header line).
         if (!tabs.isEmpty() && nextRow < UltraStyle.CONTENT_ROW_TABS) {
             nextRow = UltraStyle.CONTENT_ROW_TABS;
         }
@@ -419,23 +419,9 @@ public final class UltraScreenSpec {
         boolean scrollBody =
                 naturalBodyH > bodyMaxH || contentBottom + buttonShift > UltraStyle.PANEL_MAX_H;
 
+        // Empty tabsJson: stock KaiPath draws its tab strip inside the title chrome.
+        // We place tabs as normal buttons under the header line (hub-like) instead.
         JsonArray tabArr = new JsonArray();
-        for (Tab tab : tabs) {
-            if (tab == null || tab.id == null) {
-                continue;
-            }
-            UltraScreenIds.requireValidActionId(screenId, "tab:" + tab.id, tab.label);
-            JsonObject o = new JsonObject();
-            o.addProperty("id", qualifyAction("tab:" + tab.id));
-            boolean active = tab.id.equalsIgnoreCase(activeTab);
-            o.addProperty(
-                    "label",
-                    UltraStyle.wireText(
-                            active
-                                    ? UltraStyle.HEADER + UltraStyle.plain(tab.label)
-                                    : UltraStyle.LABEL + UltraStyle.plain(tab.label)));
-            tabArr.add(o);
-        }
         JsonArray lineArr = new JsonArray();
         for (String line : lines) {
             if (line != null) {
@@ -443,6 +429,7 @@ public final class UltraScreenSpec {
             }
         }
         JsonArray btnArr = new JsonArray();
+        appendTabButtons(btnArr);
         for (Button b : buttons) {
             if (b == null) {
                 continue;
@@ -500,6 +487,7 @@ public final class UltraScreenSpec {
         layout.addProperty("margin", panelMargin);
         // Always present - KaiPath must center titles when value is "center" (not left-default).
         layout.addProperty("titleAlign", UltraStyle.TITLE_ALIGN);
+        layout.addProperty("tabsUnderTitle", !tabs.isEmpty());
         // Shared body / button metrics - every screen benefits.
         layout.addProperty("lineHeight", UltraStyle.LINE_H);
         layout.addProperty("lineGap", UltraStyle.LINE_GAP);
@@ -552,6 +540,61 @@ public final class UltraScreenSpec {
             return;
         }
         LmGuiNetwork.sendOpen(player, packet);
+    }
+
+    /**
+     * Hub-style tab row under the title/header line. Not counted in {@link #firstButtonY}
+     * so body packing still sits below content buttons, not the tab chrome.
+     */
+    private void appendTabButtons(JsonArray btnArr) {
+        if (btnArr == null || tabs.isEmpty()) {
+            return;
+        }
+        int count = 0;
+        for (Tab tab : tabs) {
+            if (tab != null && tab.id != null && !tab.id.isBlank()) {
+                count++;
+            }
+        }
+        if (count == 0) {
+            return;
+        }
+        int gap = UltraStyle.BTN_GAP;
+        int inner = Math.max(1, panelWidth - UltraStyle.COL_L * 2);
+        int tabW = Math.max(UltraStyle.BTN_MIN_W, (inner - gap * Math.max(0, count - 1)) / count);
+        if (tabW * count + gap * Math.max(0, count - 1) > inner) {
+            tabW = Math.max(40, (inner - gap * Math.max(0, count - 1)) / count);
+        }
+        int x = UltraStyle.COL_L;
+        int y = UltraStyle.TAB_ROW_Y;
+        for (Tab tab : tabs) {
+            if (tab == null || tab.id == null || tab.id.isBlank()) {
+                continue;
+            }
+            UltraScreenIds.requireValidActionId(screenId, "tab:" + tab.id, tab.label);
+            boolean active = tab.id.equalsIgnoreCase(activeTab);
+            String label = UltraStyle.wireText(
+                    active
+                            ? UltraStyle.HEADER + UltraStyle.plain(tab.label)
+                            : UltraStyle.LABEL + UltraStyle.plain(tab.label));
+            String style = active ? UltraStyle.STYLE_CONFIRM : UltraStyle.STYLE_DIM;
+            JsonObject o = new JsonObject();
+            o.addProperty("id", qualifyAction("tab:" + tab.id));
+            o.addProperty("label", label);
+            o.addProperty("style", style);
+            o.addProperty("x", x);
+            o.addProperty("y", y);
+            o.addProperty("w", tabW);
+            o.addProperty("h", UltraStyle.BTN_H);
+            o.addProperty("pad", UltraStyle.BTN_PAD);
+            JsonObject args = new JsonObject();
+            args.addProperty("screen", screenId);
+            args.addProperty(UltraScreenIds.META_SYSTEM, screenId);
+            args.addProperty("page", pageId);
+            o.add("args", args);
+            btnArr.add(o);
+            x += tabW + gap;
+        }
     }
 
     /** Prefix {@code @screenId:} unless the action is already qualified. */

@@ -90,8 +90,10 @@ public class LmDynamicScreen extends UltraScreen {
 
         int cursorY = panelY + 8;
 
-        // Title drawn in render; reserve space
+        // Title drawn in render; reserve space under title + header rule
         cursorY += 14;
+        // Match LM tabsUnderTitle: sit under the title line (hub-like), not in the title band
+        cursorY += 6;
 
         // Tabs — dynamic from tabsJson; activeTab gets a highlight chip
         JsonArray tabs = parseArray(packet.tabsJson());

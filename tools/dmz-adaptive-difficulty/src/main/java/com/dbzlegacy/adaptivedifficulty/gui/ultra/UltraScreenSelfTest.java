@@ -198,15 +198,14 @@ public final class UltraScreenSelfTest {
         if (pkt.title() == null || pkt.title().isBlank()) {
             return "empty title";
         }
-        // Skill Check / Skills are intentionally tab-less (single screen). Empty tabsJson is valid.
-        boolean allowEmptyTabs =
-                isTablessScreen(expectedId) || isTablessScreen(pkt.screenId());
-        String tabsErr = requireJsonArray("tabsJson", pkt.tabsJson(), allowEmptyTabs);
+        // Tabs render as hub-style buttons under the title line; tabsJson stays empty for all
+        // screens so stock KaiPath does not draw its title-chrome tab strip.
+        String tabsErr = requireJsonArray("tabsJson", pkt.tabsJson(), true);
         if (tabsErr != null) {
             return tabsErr;
         }
-        if (allowEmptyTabs && hasTabBarEntries(pkt.tabsJson())) {
-            return "tabsJson must be empty for tab-less screen " + pkt.screenId();
+        if (hasTabBarEntries(pkt.tabsJson())) {
+            return "tabsJson must be empty (tabs are buttons under the title line)";
         }
         String linesErr = requireJsonArray("linesJson", pkt.linesJson(), true);
         if (linesErr != null) {
@@ -287,7 +286,7 @@ public final class UltraScreenSelfTest {
 
     /**
      * Tab navigation: builders keep the logical screenId; after hub shim the wire id is hub
-     * while tabsJson / button args still name the logical system. Never CNPC.
+     * while tab buttons / button args still name the logical system. Never CNPC.
      */
     public static void verifyTabStaysOnScreen() {
         List<String> issues = new ArrayList<>();
@@ -302,7 +301,7 @@ public final class UltraScreenSelfTest {
                                         .activeTab("home")
                                         .tabs("home|Home", "other|Other")
                                         .line("tab-probe")
-                                        .button("tab:other", "Other", "normal")
+                                        .button("do:probe", "Probe", "normal")
                                         .send(null);
                             });
             if (packets.isEmpty()) {
@@ -313,8 +312,17 @@ public final class UltraScreenSelfTest {
             if (!screen.equalsIgnoreCase(logical.screenId())) {
                 issues.add(screen + ": logical screenId=" + logical.screenId());
             }
-            if (logical.tabsJson() == null || !logical.tabsJson().contains("tab:")) {
-                issues.add(screen + ": tabsJson missing tab: actions");
+            if (hasTabBarEntries(logical.tabsJson())) {
+                issues.add(screen + ": tabsJson must stay empty (tabs are buttons)");
+            }
+            if (logical.buttonsJson() == null || !logical.buttonsJson().contains("tab:")) {
+                issues.add(screen + ": buttonsJson missing tab: actions under title");
+            }
+            if (logical.layoutJson() == null || !logical.layoutJson().contains("tabsUnderTitle")) {
+                issues.add(screen + ": layoutJson missing tabsUnderTitle");
+            }
+            if (logical.layoutJson() == null || !logical.layoutJson().contains("\"titleAlign\":\"center\"")) {
+                issues.add(screen + ": layoutJson titleAlign must be center");
             }
             if (logical.buttonsJson() == null || !logical.buttonsJson().contains("\"screen\":\"" + screen + "\"")) {
                 issues.add(screen + ": buttonsJson missing args.screen metadata");
