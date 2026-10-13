@@ -17,6 +17,7 @@ Production is the **Kinetic live** panel server. The old **test server** (`node.
   - **Refresh local consolidated base after deploy:** `bash scripts/pull-lm-base-jar.sh` or `bash scripts/refresh-lm-consolidated-base.sh`.
 - Cap JSON (no jar): `DEPLOY_LIVE_CONFIRM=LIVE bash scripts/deploy-lm-cap-config.sh` (`LevelingRevamp.json` 100k/150k + remove KubeJS cap shims).
 - **Melee fix (Noea grab off, etc.):** `DEPLOY_LIVE_CONFIRM=LIVE bash scripts/deploy-melee-fix-live.sh` — uploads newest `mods/dmz_mohist_melee_fix-*.jar` and recycles older names in `mods/`.
+- **KaiPath (official jar only):** `DEPLOY_LIVE_CONFIRM=LIVE bash scripts/deploy-kaipath-live.sh` — uploads newest stock `mods/kaipath-*.jar` (skips `*-lm-ultra`; or pin `KAIPATH_DEPLOY_VERSION=1.3.7`) and recycles older `kaipath*.jar` in live `mods/`. Feature work (field 11 / `textInput`) is owned by the KaiPath mod developer — do not deploy overlay jars for that. Restart after upload.
 - Other mods: upload to `mods/` manually; move replaced jars to `recycle_bin/`.
 - **Start** the server after any Forge mixin jar change (`LegacyMechanics`, `dmz_mohist_melee_fix`, …).
 - Credentials (pick one):

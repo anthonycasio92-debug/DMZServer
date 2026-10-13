@@ -1,5 +1,6 @@
 package com.example.ultragui;
 
+import java.nio.charset.StandardCharsets;
 import net.minecraft.network.FriendlyByteBuf;
 
 /**
@@ -20,12 +21,12 @@ import net.minecraft.network.FriendlyByteBuf;
  *   <li>linesJson — string (JSON array of body lines)
  *   <li>buttonsJson — string (JSON array of button objects)
  *   <li>panelWidth — varint (default 350)
- *   <li>panelHeight — varint (default 220)
- *   <li>layoutJson — string (JSON object)
+ *   <li>panelHeight — varint (default 300; may grow toward 420 when content requires)
+ *   <li>layoutJson — string (JSON object; always includes {@code titleAlign})
+ *   <li>inputsJson — string (JSON array of text fields; optional, default {@code []})
  * </ol>
  *
- * <p>Missing trailing fields use defaults. Bytes after field 10 are ignored so newer servers
- * can append fields without breaking older clients.
+ * <p>Missing trailing fields use defaults. Bytes after the last understood field are ignored.
  */
 public final class UltraGuiOpenPacket {
     private final String screenId;
@@ -38,6 +39,7 @@ public final class UltraGuiOpenPacket {
     private final int panelWidth;
     private final int panelHeight;
     private final String layoutJson;
+    private final String inputsJson;
 
     public UltraGuiOpenPacket(
             String screenId,
@@ -50,6 +52,32 @@ public final class UltraGuiOpenPacket {
             int panelWidth,
             int panelHeight,
             String layoutJson) {
+        this(
+                screenId,
+                title,
+                pageId,
+                tabsJson,
+                activeTab,
+                linesJson,
+                buttonsJson,
+                panelWidth,
+                panelHeight,
+                layoutJson,
+                "[]");
+    }
+
+    public UltraGuiOpenPacket(
+            String screenId,
+            String title,
+            String pageId,
+            String tabsJson,
+            String activeTab,
+            String linesJson,
+            String buttonsJson,
+            int panelWidth,
+            int panelHeight,
+            String layoutJson,
+            String inputsJson) {
         this.screenId = blankTo(trim(screenId, 64), "main");
         this.title = trim(title, 128);
         this.pageId = trim(pageId, 64);
@@ -59,7 +87,8 @@ public final class UltraGuiOpenPacket {
         this.buttonsJson = blankTo(trim(buttonsJson, 8192), "[]");
         this.panelWidth = panelWidth > 0 ? panelWidth : UltraGuiChannel.DEFAULT_PANEL_WIDTH;
         this.panelHeight = panelHeight > 0 ? panelHeight : UltraGuiChannel.DEFAULT_PANEL_HEIGHT;
-        this.layoutJson = trim(layoutJson, 1024);
+        this.layoutJson = trim(layoutJson, 2048);
+        this.inputsJson = blankTo(trim(inputsJson, 4096), "[]");
     }
 
     public String screenId() {
@@ -102,17 +131,22 @@ public final class UltraGuiOpenPacket {
         return layoutJson;
     }
 
+    public String inputsJson() {
+        return inputsJson;
+    }
+
     public static void encode(UltraGuiOpenPacket msg, FriendlyByteBuf buf) {
-        buf.writeUtf(msg.screenId);
-        buf.writeUtf(msg.title);
-        buf.writeUtf(msg.pageId);
-        buf.writeUtf(msg.tabsJson);
-        buf.writeUtf(msg.activeTab);
-        buf.writeUtf(msg.linesJson);
-        buf.writeUtf(msg.buttonsJson);
+        writeUtf8(buf, msg.screenId);
+        writeUtf8(buf, msg.title);
+        writeUtf8(buf, msg.pageId);
+        writeUtf8(buf, msg.tabsJson);
+        writeUtf8(buf, msg.activeTab);
+        writeUtf8(buf, msg.linesJson);
+        writeUtf8(buf, msg.buttonsJson);
         buf.writeVarInt(msg.panelWidth);
         buf.writeVarInt(msg.panelHeight);
-        buf.writeUtf(msg.layoutJson == null ? "" : msg.layoutJson);
+        writeUtf8(buf, msg.layoutJson == null ? "" : msg.layoutJson);
+        writeUtf8(buf, msg.inputsJson == null ? "[]" : msg.inputsJson);
     }
 
     public static UltraGuiOpenPacket decode(FriendlyByteBuf buf) {
@@ -126,6 +160,7 @@ public final class UltraGuiOpenPacket {
         int panelWidth = UltraGuiChannel.DEFAULT_PANEL_WIDTH;
         int panelHeight = UltraGuiChannel.DEFAULT_PANEL_HEIGHT;
         String layoutJson = "";
+        String inputsJson = "[]";
         if (buf.isReadable()) {
             panelWidth = buf.readVarInt();
             if (panelWidth <= 0) {
@@ -141,7 +176,9 @@ public final class UltraGuiOpenPacket {
         if (buf.isReadable()) {
             layoutJson = readUtf(buf, "");
         }
-        // Ignore any future fields beyond #10.
+        if (buf.isReadable()) {
+            inputsJson = readUtf(buf, "[]");
+        }
         return new UltraGuiOpenPacket(
                 screenId,
                 title,
@@ -152,7 +189,8 @@ public final class UltraGuiOpenPacket {
                 buttonsJson,
                 panelWidth,
                 panelHeight,
-                layoutJson);
+                layoutJson,
+                inputsJson);
     }
 
     private static String trim(String value, int max) {
@@ -169,10 +207,31 @@ public final class UltraGuiOpenPacket {
 
     private static String readUtf(FriendlyByteBuf buf, String fallback) {
         try {
-            String s = buf.readUtf();
-            return s == null ? fallback : s;
+            String s = readUtf8(buf);
+            return s == null || s.isEmpty() ? fallback : s;
         } catch (Throwable t) {
             return fallback;
         }
+    }
+
+    /** Length-prefixed UTF-8 — never platform default charset. */
+    static void writeUtf8(FriendlyByteBuf buf, String value) {
+        String s = value == null ? "" : value;
+        byte[] utf8 = s.getBytes(StandardCharsets.UTF_8);
+        buf.writeVarInt(utf8.length);
+        buf.writeBytes(utf8);
+    }
+
+    static String readUtf8(FriendlyByteBuf buf) {
+        if (buf == null || !buf.isReadable()) {
+            return "";
+        }
+        int len = buf.readVarInt();
+        if (len < 0 || len > buf.readableBytes()) {
+            return "";
+        }
+        byte[] utf8 = new byte[len];
+        buf.readBytes(utf8);
+        return new String(utf8, StandardCharsets.UTF_8);
     }
 }

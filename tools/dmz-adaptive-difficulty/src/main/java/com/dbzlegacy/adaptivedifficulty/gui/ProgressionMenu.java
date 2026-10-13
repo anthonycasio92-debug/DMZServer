@@ -2,6 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.gui;
 
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraGui;
+import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import net.minecraft.server.level.ServerPlayer;
@@ -15,10 +16,9 @@ public final class ProgressionMenu {
             return;
         }
         String target = page == null || page.isBlank() ? "main" : page;
-        com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcUltraPreview.leave(player);
         boolean androidRemove = isAndroidRemovePage(target);
         if (!androidRemove && !StaffAccess.isStaff(player)) {
-            DmzRewards.msg(player, "§cStaff only.");
+            DmzRewards.msg(player, UltraStyle.dangerLine("That menu is for staff only."));
             return;
         }
         if (!DifficultyConfig.get().enableProgression && !androidRemove) {
@@ -26,28 +26,11 @@ public final class ProgressionMenu {
             return;
         }
 
-        GuiBackend backend = GuiBackend.fromConfig();
-        if (backend == GuiBackend.ULTRA) {
-            if (androidRemove) {
-                UltraGui.open(player, "character", "android_remove");
-            } else {
-                UltraGui.open(player, "progression", target);
-            }
-            return;
-        }
-        if (backend == GuiBackend.CNPC) {
-            if (androidRemove) {
-                com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcLmGui.open(player, "android_remove", "main");
-            } else {
-                com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcLmGui.open(player, "progression", target);
-            }
-            return;
-        }
         if (androidRemove) {
-            DmzRewards.msg(player, "§cAndroid remove needs CNPC or Ultra GUI (guiBackend=cnpc|ultra).");
-            return;
+            UltraGui.open(player, "character", "android_remove");
+        } else {
+            UltraGui.open(player, "progression", target);
         }
-        ProgressionChatMenu.open(player, target);
     }
 
     private static boolean isAndroidRemovePage(String page) {

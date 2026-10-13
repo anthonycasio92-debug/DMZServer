@@ -361,7 +361,7 @@ public final class DifficultyConfig {
      * {@code chat} = text-only. Retired {@code cmi}/{@code chest} values migrate to ultra on load.
      */
     public String guiBackend = "ultra";
-    /** Staff {@code /lm admin testgui} — CustomNPCs panel listing all LM systems (experimental). */
+    /** Staff {@code /lm admin testgui} — opens the Ultra hub (experimental flag). */
     public boolean enableStaffCnpcTestGui = true;
     /**
      * If the Minecraft world is on Peaceful (no hostile spawns), restore it on server start.
@@ -1329,7 +1329,8 @@ public final class DifficultyConfig {
             // Canonicalize aliases so Forge + Bukkit agree.
             cfg.guiBackend = switch (before.toLowerCase()) {
                 case "ultra", "kaipath", "dmzultra", "native" -> "ultra";
-                case "cnpc", "customnpcs", "customnpc", "noppes" -> "cnpc";
+                // CNPC retired — coerce to ultra (KaiPath required).
+                case "cnpc", "customnpcs", "customnpc", "noppes" -> "ultra";
                 case "cmi", "cmilib", "cmigui", "deluxemenus", "deluxe", "dm" -> "cmi";
                 case "chest", "bukkit", "inventory", "gui" -> "chest";
                 case "chat" -> "chat";

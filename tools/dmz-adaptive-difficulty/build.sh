@@ -161,13 +161,9 @@ merge_onto_base_jar() {
   tmp="$(mktemp -d)"
   merge="$(mktemp -d)"
   unzip -q "$base" -d "$merge"
-  # Overlay selected compiled packages (CNPC GUI work) — everything else stays from live base jar.
+  # CNPC GUI package retired — strip any stale classes from the base jar.
   local rel
-  if [[ -d "$OUT/com/dbzlegacy/adaptivedifficulty/gui/cnpc" ]]; then
-    rm -rf "$merge/com/dbzlegacy/adaptivedifficulty/gui/cnpc"
-    mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/gui/cnpc"
-    cp -a "$OUT/com/dbzlegacy/adaptivedifficulty/gui/cnpc/." "$merge/com/dbzlegacy/adaptivedifficulty/gui/cnpc/"
-  fi
+  rm -rf "$merge/com/dbzlegacy/adaptivedifficulty/gui/cnpc"
   # Ultra / KaiPath bridge — server packet builders + legacymechanics:gui channel.
   if [[ -d "$OUT/com/dbzlegacy/adaptivedifficulty/gui/ultra" ]]; then
     rm -rf "$merge/com/dbzlegacy/adaptivedifficulty/gui/ultra"
@@ -180,7 +176,8 @@ merge_onto_base_jar() {
     cp -a "$OUT/com/dbzlegacy/adaptivedifficulty/net/gui/." "$merge/com/dbzlegacy/adaptivedifficulty/net/gui/"
   fi
   for class in GuiBackend DifficultyMenu RivalMenu SparMenu PrestigeMenu CharacterServicesMenu \
-      ProgressionMenu MechanicsMenu SkillsMenu; do
+      ProgressionMenu MechanicsMenu SkillsMenu ForgeInspectGui CnpcStaffTestGui CnpcGuiOpener \
+      GuiNotice CharacterServicesGuiApi; do
     if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/gui/${class}.class" ]]; then
       mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/gui"
       cp "$OUT/com/dbzlegacy/adaptivedifficulty/gui/${class}.class" \
@@ -503,7 +500,7 @@ merge_onto_base_jar() {
 }
 
 if [[ -f "$BASE_JAR" ]]; then
-  echo "Merging compiled CNPC overlay onto base: $(basename "$BASE_JAR")"
+  echo "Merging compiled Ultra overlay onto base: $(basename "$BASE_JAR")"
   merge_onto_base_jar "$BASE_JAR" "$JAR"
 else
   echo "WARN: Base jar missing ($BASE_JAR) — full compile jar (no live ki/stamina base)" >&2
@@ -597,8 +594,10 @@ python3 "$HERE_SIM/audit_mixin_visibility.py"
 python3 "$HERE_SIM/audit_overhaul_scale_delegation.py"
 python3 "$HERE_SIM/audit_cnpc_gui_style.py"
 python3 "$HERE_SIM/audit_forge_gui_backend.py"
+python3 "$HERE_SIM/audit_ultra_spar_card_split.py"
 python3 "$HERE_SIM/audit_ultra_actions.py"
 python3 "$HERE_SIM/audit_ultra_style_codes.py" "$JAR"
+python3 "$HERE_SIM/audit_no_section_sign.py"
 python3 "$HERE_SIM/audit_scaling_sync.py"
 python3 "$HERE_SIM/audit_features.py"
 python3 "$HERE_SIM/audit_command_humanization.py"

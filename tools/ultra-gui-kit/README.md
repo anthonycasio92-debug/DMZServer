@@ -1,12 +1,14 @@
-# Ultra GUI — implement-yourself kit
+# Ultra GUI — implement-yourself kit (for KaiPath / JLDK)
 
-**No KaiPath jar is shipped.** Copy these sources into your project.
 Protocol + conformance: [`docs/KAIPATH_GUI_PROTOCOL.md`](../../docs/KAIPATH_GUI_PROTOCOL.md).
+Gap matrix / pitfalls: [`docs/KAIPATH_BRIDGE_GAPS.md`](../../docs/KAIPATH_BRIDGE_GAPS.md).
 
-| Who you are | What to copy |
-|-------------|--------------|
+| Who you are | What to use |
+|-------------|-------------|
 | **Server mod author** | [`server/`](server/) |
-| **KaiPath / JLDK** | [`kaipath-client/`](kaipath-client/) |
+| **KaiPath / JLDK** | [`kaipath-client/`](kaipath-client/) — merge into the next official KaiPath release |
+
+**LegacyMechanics does not ship or deploy KaiPath updates.** The KaiPath mod developer owns the official jar. This kit is the handoff for what to merge.
 
 ---
 
@@ -15,25 +17,27 @@ Protocol + conformance: [`docs/KAIPATH_GUI_PROTOCOL.md`](../../docs/KAIPATH_GUI_
 1. Copy `server/*.java`; rename package.
 2. Register `<modId>:gui` protocol `"1"`:
    - msg 0 = open, msg 1 = action, msg 2 = features (optional C→S)
-3. Send opens with `style` + `activeTab`; handle clicks verbatim.
+3. Send opens with `style` + `activeTab` (+ `inputsJson` / `playerModel` when needed); handle clicks verbatim.
 
 ---
 
-## KaiPath / JLDK
+## KaiPath / JLDK — merge into next official release
 
-Merge `kaipath-client/` into KaiPath.
+**Released 1.3.7** already has style / activeTab / titleAlign / playerModel + GuiFeaturesPacket (4 features).
 
-**1.3.1 baseline (done):** 10-field decode, dynamic UI, any screenId, verbatim actions.
+**Still merge from this kit:**
 
-**Next (conformance gap LM already detects):**
+1. GuiOpenPacket **field 11** `inputsJson` text fields + `bindInput` → `args.value`
+2. `textInput` in the advertise list: `["style","activeTab","titleAlign","playerModel","textInput"]`
+3. Explicit UTF-8 GuiOpen string helpers (same wire shape as MC `writeUtf`)
 
-1. Honor button `style`: `normal` / `confirm` (green) / `danger` (red) / `dim` (dark gray).
-2. Honor `activeTab` — highlight the active tab.
-3. Set `UltraGuiConsumerRegistry.ADVERTISED_FEATURES_JSON = "[\"style\",\"activeTab\"]"` and
-   call `advertiseFeatures` when the server channel is present.
+Optional local compile check (does **not** replace the official KaiPath release process):
 
-Until then LM logs warnings and `/lm admin guitest` reports missing features.
+```bash
+bash tools/ultra-gui-kit/build-kaipath-overlay.sh
+# → mods/kaipath-1.3.7-lm-ultra.jar  (dev-only smoke artifact)
+```
 
 ---
 
-LM server impl: `tools/dmz-adaptive-difficulty/…/net/gui/` (**4.6.105**).
+LM server impl: `tools/dmz-adaptive-difficulty/…/net/gui/` (**4.6.122**).

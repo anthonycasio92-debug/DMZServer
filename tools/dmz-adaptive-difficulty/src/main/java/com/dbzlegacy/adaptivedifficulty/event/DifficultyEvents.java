@@ -395,7 +395,6 @@ public final class DifficultyEvents {
                 com.dbzlegacy.adaptivedifficulty.net.gui.LmGuiNetwork.clearClientSession(player);
             } catch (Throwable ignored) {
             }
-            com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcUltraPreview.leave(player);
             com.dbzlegacy.adaptivedifficulty.progression.tp.DeathTpPenalty.onLogout(player);
             // Flush player AD data only — do NOT clear active tier on disconnect.
             DifficultyCache.save(player);

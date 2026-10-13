@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.gui.ultra;
 
 import com.dbzlegacy.adaptivedifficulty.config.editor.ConfigEditor;
+import com.dbzlegacy.adaptivedifficulty.net.gui.UltraClientFeatures;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import java.util.List;
 import java.util.Locale;
@@ -209,23 +210,74 @@ public final class UltraConfigScreens {
                         .rowGap();
             }
             case NUMBER -> {
-                spec.buttonLeft("do:step:" + module + "|" + encoded + "|-1", UltraStyle.dim("−"), "dim")
-                        .buttonRight("do:step:" + module + "|" + encoded + "|1", UltraStyle.dim("+"), "dim")
+                // Direct typing is the critical path; ± steps stay as shortcuts.
+                noteIfTextInputMissing(spec, player);
+                String inputId = "input:" + module + "|" + encoded;
+                spec.textFieldRow(
+                                inputId,
+                                value == null ? "" : value,
+                                "Type a number…")
+                        .rowGap();
+                spec.buttonBound(
+                                "do:set:" + module + "|" + encoded,
+                                UltraStyle.confirm("Apply"),
+                                UltraStyle.STYLE_CONFIRM,
+                                inputId)
+                        .rowGap();
+                spec.buttonLeft(
+                                "do:step:" + module + "|" + encoded + "|-1",
+                                UltraStyle.dim("−"),
+                                UltraStyle.STYLE_DIM)
+                        .buttonRight(
+                                "do:step:" + module + "|" + encoded + "|1",
+                                UltraStyle.dim("+"),
+                                UltraStyle.STYLE_DIM)
                         .rowGap();
             }
             case ENUM -> {
+                noteIfTextInputMissing(spec, player);
+                String inputId = "input:" + module + "|" + encoded;
+                spec.textFieldRow(
+                                inputId,
+                                value == null ? "" : value,
+                                "Type an option…")
+                        .rowGap();
+                spec.buttonBound(
+                                "do:set:" + module + "|" + encoded,
+                                UltraStyle.confirm("Apply"),
+                                UltraStyle.STYLE_CONFIRM,
+                                inputId)
+                        .rowGap();
                 spec.buttonLeft(
                                 "do:cycle:" + module + "|" + encoded,
                                 UltraStyle.confirm("Next value"),
-                                "confirm")
+                                UltraStyle.STYLE_CONFIRM)
                         .rowGap();
             }
             case LIST, MAP, GROUP -> {
-                spec.line(UltraStyle.dim("Lists and maps use the CNPC config editor for typed add/remove."))
-                        .button("page:" + listPage(module, listPageNum, path), UltraStyle.dim("Back"), "dim")
+                spec.line(UltraStyle.dim("Lists and maps: edit one entry at a time in the field below."))
+                        .button(
+                                "page:" + listPage(module, listPageNum, path),
+                                UltraStyle.dim("Back"),
+                                UltraStyle.STYLE_DIM)
                         .rowGap();
             }
-            default -> spec.line(UltraStyle.dim("Typed text fields use the CNPC config editor."));
+            case TEXT -> {
+                noteIfTextInputMissing(spec, player);
+                String inputId = "input:" + module + "|" + encoded;
+                spec.textFieldRow(
+                                inputId,
+                                value == null ? "" : value,
+                                "Type a value…")
+                        .rowGap();
+                spec.buttonBound(
+                                "do:set:" + module + "|" + encoded,
+                                UltraStyle.confirm("Apply"),
+                                UltraStyle.STYLE_CONFIRM,
+                                inputId)
+                        .rowGap();
+            }
+            default -> spec.line(UltraStyle.dim("This field type has no Ultra editor yet."));
         }
         if (ConfigEditor.dirty(uuid, module, path)) {
             spec.buttonLeft("do:undo:" + module + "|" + encoded, UltraStyle.dim("Undo field"), "dim")
@@ -271,6 +323,15 @@ public final class UltraConfigScreens {
      * Config do-actions. Returns a status message for chat/toast.
      */
     public static String handleAction(ServerPlayer player, String action, String arg, String page) {
+        return handleAction(player, action, arg, page, null);
+    }
+
+    public static String handleAction(
+            ServerPlayer player,
+            String action,
+            String arg,
+            String page,
+            com.google.gson.JsonObject args) {
         if (player == null) {
             return UltraStyle.dangerLine("This only works in-game.");
         }
@@ -339,6 +400,21 @@ public final class UltraConfigScreens {
                 }
                 String error = ConfigEditor.stageSet(uuid, parts[0], parts[1], next);
                 yield error == null ? "" : UltraStyle.dangerLine(error);
+            }
+            case "set" -> {
+                String[] parts = splitModulePath(a);
+                if (parts == null) {
+                    yield UltraStyle.dangerLine("Missing field.");
+                }
+                String typed = argsString(args, "value");
+                if (typed == null) {
+                    yield UltraStyle.dangerLine(
+                            "Type a value in the field, then press Save.");
+                }
+                String error = ConfigEditor.stageSet(uuid, parts[0], parts[1], typed);
+                yield error == null
+                        ? UltraStyle.noticeLine("Staged new value.")
+                        : UltraStyle.dangerLine(error);
             }
             case "undo" -> {
                 String[] parts = splitModulePath(a);
@@ -459,5 +535,25 @@ public final class UltraConfigScreens {
             return id.isBlank() ? "difficulty" : id;
         }
         return "difficulty";
+    }
+
+    private static String argsString(com.google.gson.JsonObject args, String key) {
+        if (args == null || key == null || !args.has(key) || args.get(key).isJsonNull()) {
+            return null;
+        }
+        try {
+            return args.get(key).getAsString();
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    /** KaiPath 1.3.7 still lacks field 11 — surface that before a dead Apply button. */
+    private static void noteIfTextInputMissing(UltraScreenSpec spec, ServerPlayer player) {
+        if (spec == null || UltraClientFeatures.hasTextInput(player)) {
+            return;
+        }
+        spec.line(UltraStyle.danger("Typed fields need KaiPath textInput (past 1.3.7)."))
+                .line(UltraStyle.DIM + "Until then use Toggle / Next value / ± step buttons.");
     }
 }

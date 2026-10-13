@@ -9,6 +9,7 @@ import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.gui.GuiClickConfirm;
 import com.dbzlegacy.adaptivedifficulty.gui.ProgressionGuiApi;
 import com.dbzlegacy.adaptivedifficulty.gui.ProgressionMenu;
+import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle;
 import com.dbzlegacy.adaptivedifficulty.util.PaidFeatureAccess;
 import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
 import com.dbzlegacy.adaptivedifficulty.data.TeamMode;
@@ -248,8 +249,9 @@ public final class DifficultyActions {
             String titlePage = page == null || page.isBlank() ? "titles" : page;
             if (!GuiClickConfirm.confirmed(player.m_20148_(), "clear-title")) {
                 openGui(player, titlePage);
-                return Result.ok("§eUnequip your title? §7You can re-equip it any time. "
-                        + "§eClick again within 10 seconds.");
+                return Result.ok(UltraStyle.YELLOW + "Unequip your title? " + UltraStyle.LABEL
+                        + "You can re-equip it any time. "
+                        + UltraStyle.YELLOW + "Click again within 10 seconds.");
             }
             TitleSystem.clear(player);
             openGui(player, titlePage);
@@ -294,8 +296,10 @@ public final class DifficultyActions {
                 || "zero".equals(act) || "clear".equals(act))) {
             openGui(player, page == null || page.isBlank() ? "main" : page);
             String hint = ACT_TEAM.equals(act)
-                    ? "§cTurn on personal difficulty on the main Difficulty page first, then pick a team mode."
-                    : "§cTurn on personal difficulty on the main Difficulty page first, then pick a tier.";
+                    ? UltraStyle.danger(
+                            "Turn on personal difficulty on the main Difficulty page first, then pick a team mode.")
+                    : UltraStyle.danger(
+                            "Turn on personal difficulty on the main Difficulty page first, then pick a tier.");
             return Result.fail(hint);
         }
 
@@ -423,11 +427,11 @@ public final class DifficultyActions {
             toggleArg = "";
         }
         String msg = ProgressionGuiApi.toggleStaffFreeAncientCoinCosts(player, toggleArg);
-        if (msg.startsWith("§c")) {
-            return Result.fail(msg.replace("§c", ""));
+        if (msg.startsWith(UltraStyle.DANGER)) {
+            return Result.fail(UltraStyle.plain(msg));
         }
         ProgressionMenu.open(player, "economy");
-        return Result.ok(msg.replaceAll("§.", ""));
+        return Result.ok(UltraStyle.plain(msg));
     }
 
     private static Result summonEndDragon(ServerPlayer player, String page) {
@@ -450,7 +454,9 @@ public final class DifficultyActions {
         }
         if (!TitleSystem.has(player, title)) {
             openGui(player, page);
-            return Result.fail("Title locked: " + title.display + " §8(" + title.requirementTip() + ")");
+            return Result.fail(
+                    "Title locked: " + title.display + " " + UltraStyle.DIM + "("
+                            + title.requirementTip() + ")");
         }
         if (title.id.equals(TitleSystem.activeId(player))) {
             TitleSystem.clear(player);
@@ -518,22 +524,28 @@ public final class DifficultyActions {
             return Result.ok("Already on " + tier.display + " (T" + tier.id + ").");
         }
 
-        // Lowering / lateral via buy menu is free (still must be eligible).
-        if (tier.id < current) {
+        // Direction-aware cost: downgrade (weaker tier) is always 0.
+        long cost = AncientCoinEconomy.activationCost(tier, player, current);
+        boolean staffFree = PaidFeatureAccess.bypassAncientCoinCost(player);
+        boolean downgrade = current > 0 && tier.id < current;
+        long charge = (staffFree || downgrade) ? 0L : cost;
+        String costText = downgrade
+                ? "Free"
+                : (staffFree ? "free (staff)" : AncientCoinEconomy.formatExactCost(cost));
+
+        if (downgrade) {
             if (!GuiClickConfirm.confirmed(player.m_20148_(), "diff-tier:" + tier.id)) {
                 openGui(player, returnPage);
-                return Result.ok("§eSwitch to §f" + tier.display
-                        + " §e(free)? Click again within 10 seconds.");
+                return Result.ok(
+                        UltraStyle.YELLOW + "Downgrade to " + UltraStyle.VALUE + tier.display
+                                + UltraStyle.YELLOW + " (Tier " + tier.id
+                                + ") — Free? Click again within 10 seconds.");
             }
             applyTier(data, player, tier);
             openGui(player, returnPage);
-            return Result.ok("Lowered to " + tier.display + " (T" + tier.id + ") — free.");
+            return Result.ok("Downgraded to " + tier.display + " (T" + tier.id + ") — Free.");
         }
 
-        long cost = AncientCoinEconomy.activationCost(tier, player);
-        boolean free = PaidFeatureAccess.bypassAncientCoinCost(player);
-        long charge = free ? 0L : cost;
-        String costText = free ? "free (staff)" : AncientCoinEconomy.formatExactCost(cost);
         if (!canPersist(player)) {
             openGui(player, returnPage);
             return Result.fail("Could not save difficulty data — purchase cancelled (try relogging).");
@@ -544,8 +556,10 @@ public final class DifficultyActions {
         }
         if (!GuiClickConfirm.confirmed(player.m_20148_(), "diff-tier:" + tier.id)) {
             openGui(player, returnPage);
-            return Result.ok("§eBuy §f" + tier.display + " §efor §6" + costText
-                    + "§e? Click again within 10 seconds.");
+            return Result.ok(
+                    UltraStyle.YELLOW + "Buy " + UltraStyle.VALUE + tier.display
+                            + UltraStyle.YELLOW + " for " + UltraStyle.GOLD + costText
+                            + UltraStyle.YELLOW + "? Click again within 10 seconds.");
         }
         if (charge > 0L && !AncientCoinEconomy.charge(player, charge)) {
             openGui(player, returnPage);
@@ -591,7 +605,7 @@ public final class DifficultyActions {
         }
         applyTier(data, player, tier);
         openGui(player, returnPage);
-        return Result.ok("Lowered to " + tier.display + " (T" + tier.id + ") — free.");
+        return Result.ok("Downgraded to " + tier.display + " (T" + tier.id + ") — Free.");
     }
 
     private static void applyTier(PlayerDifficultyData data, ServerPlayer player, UnlockTier tier) {
@@ -633,8 +647,10 @@ public final class DifficultyActions {
     private static Result resetActive(ServerPlayer player, String page) {
         if (!GuiClickConfirm.confirmed(player.m_20148_(), "clear-active-tier")) {
             openGui(player, page);
-            return Result.ok("§eClear active tier? §7Team mode resets to Personal. "
-                    + "Unlocks and Ancient Coins kept. §eClick again within 10 seconds.");
+            return Result.ok(
+                    UltraStyle.YELLOW + "Clear active tier? " + UltraStyle.LABEL
+                            + "Team mode resets to Personal. Unlocks and Ancient Coins kept. "
+                            + UltraStyle.YELLOW + "Click again within 10 seconds.");
         }
         PlayerDifficultyData data = DifficultyCache.data(player);
         data.resetTemporary();
@@ -681,7 +697,7 @@ public final class DifficultyActions {
                 return;
             }
             player.m_213846_(net.minecraft.network.chat.Component.m_237113_(
-                    (ok ? "§a" : "§c") + message));
+                    (ok ? UltraStyle.CONFIRM : UltraStyle.DANGER) + message));
         }
 
         public static Result ok(String message) {

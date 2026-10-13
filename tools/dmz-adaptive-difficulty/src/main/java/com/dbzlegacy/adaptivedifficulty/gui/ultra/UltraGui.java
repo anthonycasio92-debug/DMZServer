@@ -1,30 +1,25 @@
 package com.dbzlegacy.adaptivedifficulty.gui.ultra;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
-import com.dbzlegacy.adaptivedifficulty.gui.GuiBackend;
-import com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcLmGui;
 import com.dbzlegacy.adaptivedifficulty.net.gui.LmGuiNetwork;
+import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import java.util.Locale;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Ultra / KaiPath entry. When the client has KaiPath and {@code guiBackend=ultra}, every
- * system opens via {@code Ultra*Screens} → {@code GuiOpenPacket}. CNPC is used only when
- * Ultra cannot run (missing KaiPath / non-ultra backend) — never as a submenu fallback.
+ * Ultra / KaiPath entry. Every system opens via {@code Ultra*Screens} → {@code GuiOpenPacket}.
+ * Players without KaiPath get an install message — there is no CNPC fallback.
  */
 public final class UltraGui {
     private UltraGui() {}
 
     public static boolean preferUltra(ServerPlayer player) {
-        if (player == null) {
-            return false;
-        }
-        return GuiBackend.fromConfig() == GuiBackend.ULTRA && LmGuiNetwork.clientHasKaiPath(player);
+        return player != null && LmGuiNetwork.clientHasKaiPath(player);
     }
 
     /**
-     * Open a system page on Ultra ({@code GuiOpenPacket}), or CNPC only when Ultra is
-     * unavailable for this player.
+     * Open a system page on Ultra ({@code GuiOpenPacket}). If KaiPath is missing, tell the
+     * player to install it and return without opening another GUI backend.
      */
     public static void open(ServerPlayer player, String system, String page) {
         if (player == null) {
@@ -35,13 +30,15 @@ public final class UltraGui {
 
         if (!preferUltra(player)) {
             AdaptiveDifficultyMod.LOGGER.info(
-                    "[{}] Ultra → CNPC fallback (KaiPath missing or guiBackend≠ultra) "
-                            + "player={} system={} page={}",
+                    "[{}] Ultra refused (KaiPath missing) player={} system={} page={}",
                     AdaptiveDifficultyMod.MOD_ID,
                     safeName(player),
                     logical,
                     pg);
-            CnpcLmGui.open(player, system, page);
+            DmzRewards.msg(
+                    player,
+                    UltraStyle.dangerLine(
+                            "Install KaiPath (DMZ Legacy client mod) to open Legacy Mechanics menus."));
             return;
         }
 

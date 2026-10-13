@@ -596,8 +596,35 @@ public final class AncientCoinEconomy {
         return tier == null ? 0L : normalizeCost(tier.activationCost());
     }
 
+    /**
+     * Level-scaled activation cost for {@code tier}. Prefer
+     * {@link #activationCost(UnlockTier, ServerPlayer, int)} when the player's current
+     * active tier is known — downgrades are always free.
+     */
     public static long activationCost(UnlockTier tier, ServerPlayer player) {
+        int current = 0;
+        if (player != null) {
+            try {
+                current = DifficultyCache.data(player).getActiveTier();
+            } catch (Throwable ignored) {
+            }
+        }
+        return activationCost(tier, player, current);
+    }
+
+    /**
+     * Direction-aware tier change cost.
+     * <ul>
+     *   <li>Downgrade ({@code tier.id < currentActiveTier}) → {@code 0} (free)
+     *   <li>Same tier / no active tier / upgrade → normal level-scaled cost
+     * </ul>
+     */
+    public static long activationCost(UnlockTier tier, ServerPlayer player, int currentActiveTier) {
         if (tier == null) {
+            return 0L;
+        }
+        // Choosing a weaker tier never costs Ancient Coins.
+        if (currentActiveTier > 0 && tier.id < currentActiveTier) {
             return 0L;
         }
         // Form-stable level only — transforming must not change buy prices.
@@ -606,8 +633,7 @@ public final class AncientCoinEconomy {
         }
         long fallback = 0L;
         try {
-            fallback = com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache
-                    .data(player).getHighestDmzLevel();
+            fallback = DifficultyCache.data(player).getHighestDmzLevel();
         } catch (Throwable ignored) {
         }
         int level = com.dbzlegacy.adaptivedifficulty.calc.DmzProgression

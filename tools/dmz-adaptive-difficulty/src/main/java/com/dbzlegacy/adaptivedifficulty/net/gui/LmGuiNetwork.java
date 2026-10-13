@@ -3,6 +3,7 @@ package com.dbzlegacy.adaptivedifficulty.net.gui;
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraScreenIds;
 import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraScreenSelfTest;
+import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.lang.reflect.Field;
@@ -50,6 +51,12 @@ public final class LmGuiNetwork {
 
     /** First KaiPath release with dynamic Ultra GUI (10 fields + multi-mod registry). */
     public static final String KAIPATH_DYNAMIC_UI_VERSION = "1.3.1";
+
+    /**
+     * Current recommended/released KaiPath for Ultra (CurseForge). Ships style, activeTab,
+     * titleAlign, playerModel + GuiFeaturesPacket. Still lacks field 11 {@code textInput}.
+     */
+    public static final String KAIPATH_RECOMMENDED_VERSION = "1.3.7";
 
     /**
      * Optional channel: clients without KaiPath omit it. Accept missing so those players
@@ -216,8 +223,8 @@ public final class LmGuiNetwork {
                 && com.dbzlegacy.adaptivedifficulty.gui.GuiBackend.fromConfig()
                         == com.dbzlegacy.adaptivedifficulty.gui.GuiBackend.ULTRA) {
             AdaptiveDifficultyMod.LOGGER.warn(
-                    "[{}] player={} has no KaiPath ≥ {} — Ultra GuiOpenPacket will not render; "
-                            + "CNPC/chat fallbacks apply where configured",
+                    "[{}] player={} has no KaiPath ≥ {} — Ultra menus require KaiPath "
+                            + "(no CNPC fallback)",
                     AdaptiveDifficultyMod.MOD_ID,
                     safeName(player),
                     KAIPATH_MIN_VERSION);
@@ -274,12 +281,14 @@ public final class LmGuiNetwork {
         runPacketRoundTripSelfTest();
         AdaptiveDifficultyMod.LOGGER.info(
                 "[{}] Ultra GUI bridge ready channel={} protocol={} — KaiPath {}+ dynamic UI "
-                        + "(any screenId; no hub shim). Client renders what the server sends; "
-                        + "optional features style/activeTab via GuiFeaturesPacket.",
+                        + "(any screenId; no hub shim). Recommended KaiPath {}; "
+                        + "optional features via GuiFeaturesPacket "
+                        + "(style/activeTab/titleAlign/playerModel; textInput still pending).",
                 AdaptiveDifficultyMod.MOD_ID,
                 UltraGuiProtocol.channelId(CHANNEL_NAMESPACE),
                 PROTOCOL_VERSION,
-                KAIPATH_DYNAMIC_UI_VERSION);
+                KAIPATH_DYNAMIC_UI_VERSION,
+                KAIPATH_RECOMMENDED_VERSION);
     }
 
     private static GuiOpenPacket decodeOpenLogged(net.minecraft.network.FriendlyByteBuf buf) {
@@ -442,10 +451,11 @@ public final class LmGuiNetwork {
                         .activeTab("tiers")
                         .tabs("tiers|Tiers", "info|Info")
                         .line("style-activeTab probe")
-                        .button("do:ok", "Confirm", "confirm")
-                        .button("do:bad", "Danger", "danger")
-                        .button("do:off", "Dim", "dim")
-                        .button("do:plain", "Normal", "normal")
+                        .button("do:ok", "Confirm", UltraStyle.STYLE_CONFIRM)
+                        .button("do:bad", "Danger", UltraStyle.STYLE_DANGER)
+                        .button("do:off", "Dim", UltraStyle.STYLE_DIM)
+                        .button("do:plain", "Normal", UltraStyle.STYLE_NORMAL)
+                        .textField("input:probe", "hello", "type…", 16, 220, 200, 18, 32)
                         .toPacket();
         if (!"tiers".equals(open.activeTab())) {
             return "style/activeTab probe: activeTab not set on builder packet";
@@ -455,6 +465,10 @@ public final class LmGuiNetwork {
             if (!buttons.contains("\"style\":\"" + style + "\"")) {
                 return "style/activeTab probe: buttonsJson missing style=" + style;
             }
+        }
+        String inputs = open.inputsJson() == null ? "" : open.inputsJson();
+        if (!inputs.contains("\"type\":\"text\"") || !inputs.contains("input:probe")) {
+            return "style/activeTab probe: inputsJson missing text field";
         }
         String mismatch = roundTripOpenFields(open);
         if (mismatch != null) {
@@ -514,6 +528,9 @@ public final class LmGuiNetwork {
         }
         if (!java.util.Objects.equals(open.layoutJson(), back.layoutJson())) {
             return "layoutJson mismatch";
+        }
+        if (!java.util.Objects.equals(open.inputsJson(), back.inputsJson())) {
+            return "inputsJson mismatch";
         }
         return null;
     }
@@ -575,7 +592,8 @@ public final class LmGuiNetwork {
                 packet.buttonsJson(),
                 packet.panelWidth(),
                 packet.panelHeight(),
-                layout);
+                layout,
+                packet.inputsJson());
     }
 
     static String withLogicalSystem(String layoutJson, String logical) {

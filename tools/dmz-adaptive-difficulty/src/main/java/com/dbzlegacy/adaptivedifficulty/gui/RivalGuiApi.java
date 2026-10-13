@@ -443,7 +443,7 @@ public final class RivalGuiApi {
         if (!name.isBlank()) {
             return "§f" + name;
         }
-        return com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcGuiSupport.humanizePickerArg(arg);
+        return com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraText.humanizePickerArg(arg);
     }
 
     /** Action token for {@code /rival do} from a {@link RivalSystem#currentRivalCards} row. */

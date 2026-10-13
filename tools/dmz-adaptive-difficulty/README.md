@@ -28,6 +28,13 @@ Do not return to `2.3.x` patch numbers — they sort above `2.4.0` in file lists
 Keep Forge `AdaptiveDifficultyMod.VERSION` = GUI `plugin.yml` version (both jars identical).  
 Do not rename the package, `DifficultyCache` / `DifficultyActions` / snapshot fields, or Bukkit `openMenu*` / `openChestMenu*` entrypoints.
 
+**Standing rule — no raw section-sign (`§`) in player-facing Java.**  
+All colors go through `UltraStyle` constants/helpers (`CONFIRM`, `DANGER`, `DIM`, `confirm()`, …).  
+`UltraStyle.java` is the only class allowed to own the mark (`\u00A7`).  
+`DifficultyChatMenu` / `DifficultyActions` / `gui/ultra/**` are fail-closed via
+`sim/audit_no_section_sign.py` (also run from `build.sh`). Do not reintroduce bare `§`
+when touching chat or action messages.
+
 ## Model
 
 | System | Behavior |

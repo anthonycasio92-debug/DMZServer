@@ -82,7 +82,7 @@ public final class UltraPrestigeScreens {
                         "Exchanging prestige for favor removes the stat bonus from the exchanged prestiges."))
                 .line(UltraStyle.LABEL + "Bulk bonus: 3→4 · 6→9 · 9→15 favor")
                 .setRow(140);
-        spec.button("do:confirm", UltraStyle.confirm("Prestige now"), "confirm").rowGap();
+        spec.button("do:confirm", UltraStyle.danger("Prestige now"), UltraStyle.STYLE_DANGER).rowGap();
         int[] amounts = PrestigePointsSystem.TURN_IN_AMOUNTS;
         for (int i = 0; i < amounts.length; i += 2) {
             int a = amounts[i];

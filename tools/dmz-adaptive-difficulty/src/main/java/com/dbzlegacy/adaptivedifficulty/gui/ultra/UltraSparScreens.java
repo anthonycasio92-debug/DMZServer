@@ -15,6 +15,21 @@ import net.minecraft.server.level.ServerPlayer;
 public final class UltraSparScreens {
     private UltraSparScreens() {}
 
+    /**
+     * Spar card rows from {@link SparGuiApi} / SparringSystem are tab-encoded
+     * ({@code uuid\tname\tIN|OUT\t...}). Splitting on {@code |} left the whole row as the
+     * picker arg, so mentor Accept failed {@code matchesInviteFrom}.
+     */
+    static String[] splitCard(String card) {
+        if (card == null || card.isBlank()) {
+            return new String[0];
+        }
+        if (card.indexOf('\t') >= 0) {
+            return card.split("\t", -1);
+        }
+        return card.split("\\|", -1);
+    }
+
     public static void open(ServerPlayer player, String page) {
         if (player == null) {
             return;
@@ -276,7 +291,7 @@ public final class UltraSparScreens {
                 if (placed >= 8 || card == null || card.isBlank()) {
                     continue;
                 }
-                String[] parts = card.split("\\|", -1);
+                String[] parts = splitCard(card);
                 String arg = parts.length > 0 ? parts[0].trim() : "";
                 String label = parts.length > 1 && !parts[1].isBlank() ? parts[1].trim() : arg;
                 String dir = parts.length > 2 ? parts[2].trim() : "IN";
@@ -359,11 +374,23 @@ public final class UltraSparScreens {
                 .labelValue("Target", who == null || who.isBlank() ? "—" : who)
                 .line(UltraStyle.LABEL + copy[1])
                 .setRow(UltraStyle.CONTENT_ROW_TABS + 100);
-        spec.buttonLeft("do:" + action + ":" + targetArg, UltraStyle.confirm("Confirm"), "confirm")
-                .buttonRight("page:" + returnPage, UltraStyle.dim("Cancel"), "dim")
+        boolean destructive = isDestructiveConfirm(action);
+        spec.buttonLeft(
+                        "do:" + action + ":" + targetArg,
+                        destructive ? UltraStyle.danger("Confirm") : UltraStyle.confirm("Confirm"),
+                        destructive ? UltraStyle.STYLE_DANGER : UltraStyle.STYLE_CONFIRM)
+                .buttonRight("page:" + returnPage, UltraStyle.dim("Cancel"), UltraStyle.STYLE_DIM)
                 .rowGap();
         spec.footerBackHome();
         spec.send(player);
+    }
+
+    /** Leave / release / decline are irreversible or dismissive — wire danger, not confirm. */
+    private static boolean isDestructiveConfirm(String action) {
+        return switch (action == null ? "" : action) {
+            case "mentor", "mentor_release", "mentor_decline" -> true;
+            default -> false;
+        };
     }
 
     private static String[] confirmCopy(String action) {
@@ -431,7 +458,7 @@ public final class UltraSparScreens {
                 if (card == null || card.isBlank()) {
                     continue;
                 }
-                String[] parts = card.split("\\|", -1);
+                String[] parts = splitCard(card);
                 String label = parts.length > 1 && !parts[1].isBlank() ? parts[1].trim() : parts[0];
                 if (label != null && !label.isBlank()) {
                     spec.line(UltraStyle.LABEL + label);
@@ -445,7 +472,7 @@ public final class UltraSparScreens {
                 if (placed >= 8 || card == null || card.isBlank()) {
                     continue;
                 }
-                String[] parts = card.split("\\|", -1);
+                String[] parts = splitCard(card);
                 String arg = parts.length > 0 ? parts[0].trim() : "";
                 String label = parts.length > 1 && !parts[1].isBlank() ? parts[1].trim() : arg;
                 if (arg.isBlank()) {
@@ -531,7 +558,7 @@ public final class UltraSparScreens {
                 if (placed >= 8 || card == null || card.isBlank()) {
                     continue;
                 }
-                String[] parts = card.split("\\|", -1);
+                String[] parts = splitCard(card);
                 String arg = parts.length > 0 ? parts[0].trim() : "";
                 String label = parts.length > 1 && !parts[1].isBlank() ? parts[1].trim() : arg;
                 if (arg.isBlank()) {
@@ -570,7 +597,7 @@ public final class UltraSparScreens {
                 if (placed >= 8 || card == null || card.isBlank()) {
                     continue;
                 }
-                String[] parts = card.split("\\|", -1);
+                String[] parts = splitCard(card);
                 String arg = parts.length > 0 ? parts[0].trim() : "";
                 String label = parts.length > 1 && !parts[1].isBlank() ? parts[1].trim() : arg;
                 if (arg.isBlank()) {

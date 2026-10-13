@@ -12,17 +12,6 @@ public final class MechanicsMenu {
             return;
         }
         String target = page == null || page.isBlank() ? "main" : page;
-        com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcUltraPreview.leave(player);
-
-        GuiBackend backend = GuiBackend.fromConfig();
-        if (backend == GuiBackend.ULTRA) {
-            UltraGui.openHub(player, target);
-            return;
-        }
-        if (backend == GuiBackend.CNPC) {
-            com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcLmGui.openHub(player, target);
-            return;
-        }
-        MechanicsChatMenu.open(player, target);
+        UltraGui.openHub(player, target);
     }
 }

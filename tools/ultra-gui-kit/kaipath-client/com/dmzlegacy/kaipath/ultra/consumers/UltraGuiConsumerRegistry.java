@@ -18,19 +18,22 @@ import net.minecraftforge.network.simple.SimpleChannel;
  * Multi-mod Ultra GUI client registry. Each server mod owns {@code <modid>:gui}; KaiPath keys
  * consumers by that channel id — never assume a single mod.
  *
- * <p>JLDK: call {@link #registerClientChannel(String)} once per partner mod. After implementing
- * button {@code style} and {@code activeTab} highlight, call
- * {@link #advertiseFeatures(String, String)} with {@code ["style","activeTab"]}.
+ * <p>JLDK: call {@link #registerClientChannel(String)} once per partner mod. Reference client
+ * advertises the full optional set via {@link #ADVERTISED_FEATURES_JSON}.
  */
 public final class UltraGuiConsumerRegistry {
     public static final String CHANNEL_PATH = "gui";
     public static final String PROTOCOL_VERSION = "1";
 
     /**
-     * Features this client build honors. Update when style / activeTab rendering ships.
-     * Empty = 1.3.1 baseline (server treats optional features as missing).
+     * Features this reference client honors — keep in sync with
+     * {@code LmDynamicScreen} + {@code GuiOpenPacket} UTF-8 decode.
+     *
+     * <p>Released KaiPath <b>1.3.7</b> advertises the same list <em>without</em>
+     * {@code textInput}; this kit adds field 11 widgets + that advertise flag.
      */
-    public static final String ADVERTISED_FEATURES_JSON = "[]";
+    public static final String ADVERTISED_FEATURES_JSON =
+            "[\"style\",\"activeTab\",\"titleAlign\",\"playerModel\",\"textInput\"]";
 
     private static final Map<String, BoundChannel> CHANNELS = new ConcurrentHashMap<>();
 
@@ -147,8 +150,8 @@ public final class UltraGuiConsumerRegistry {
     }
 
     /**
-     * Advertise optional render features to the server. Use
-     * {@code ["style","activeTab"]} once both are implemented. Safe to call repeatedly.
+     * Advertise optional render features to the server. Reference default is
+     * {@link #ADVERTISED_FEATURES_JSON}. Safe to call repeatedly.
      */
     public static void advertiseFeatures(String channelId, String featuresJson) {
         BoundChannel bound = CHANNELS.get(channelId);

@@ -776,47 +776,81 @@ public final class ForgeBridge {
     }
 
     /**
-     * Canonical Forge {@code guiBackend}: {@code cnpc|cmi|chest|chat|auto}.
-     * Aliases ({@code bukkit}, {@code cmilib}, legacy deluxe, …) are normalized here
-     * so Bukkit open paths match Forge {@code GuiBackend.fromConfig()}.
+     * Canonical Forge {@code guiBackend}. CNPC / chat / CMI / chest are retired — always
+     * normalize to {@code ultra} so Bukkit never tries to load deleted {@code gui.cnpc}.
      */
     public static String guiBackend() {
         try {
             ensureResolved();
+            // Prefer Forge GuiBackend.fromConfig() (always ULTRA; coerces retired values).
+            try {
+                Object backend = loadClass(
+                                "com.dbzlegacy.adaptivedifficulty.gui.GuiBackend", preferredLoader())
+                        .getMethod("fromConfig")
+                        .invoke(null);
+                if (backend != null) {
+                    String name = String.valueOf(backend).trim().toLowerCase(Locale.ROOT);
+                    if ("ultra".equals(name) || "cnpc".equals(name) || "chat".equals(name)) {
+                        return "ultra";
+                    }
+                }
+            } catch (Throwable ignored) {
+                // Fall through to raw field / defaults.
+            }
             Object cfg = loadClass("com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig", preferredLoader())
                     .getMethod("get").invoke(null);
             Object raw = cfg.getClass().getField("guiBackend").get(cfg);
             if (raw == null) {
-                return "cnpc";
+                return "ultra";
             }
             String v = String.valueOf(raw).trim().toLowerCase(Locale.ROOT);
             if (v.isEmpty()) {
-                return "cnpc";
+                return "ultra";
             }
             return switch (v) {
-                case "cnpc", "customnpcs", "customnpc", "noppes" -> "cnpc";
-                case "cmi", "cmilib", "cmigui", "deluxemenus", "deluxe", "dm" -> "cmi";
-                case "chest", "bukkit", "inventory", "gui" -> "chest";
-                case "chat" -> "chat";
-                case "auto" -> "auto";
-                default -> "auto";
+                case "ultra", "kaipath", "dmzultra", "native" -> "ultra";
+                // Retired backends — Ultra only (gui.cnpc package deleted in 4.6.115+).
+                case "cnpc", "customnpcs", "customnpc", "noppes",
+                        "cmi", "cmilib", "cmigui", "deluxemenus", "deluxe", "dm",
+                        "chest", "bukkit", "inventory", "gui",
+                        "chat", "auto" -> "ultra";
+                default -> "ultra";
             };
         } catch (Throwable t) {
-            return "cnpc";
+            return "ultra";
         }
     }
 
-    /** Open Legacy Mechanics CustomNPCs UI (Forge-only, no chest/CMI). */
+    /**
+     * @deprecated CNPC menus were removed; redirects to {@link #openUltraLm}.
+     */
+    @Deprecated
     public static boolean openCnpcLm(Player player, String system, String page) {
+        return openUltraLm(player, system, page);
+    }
+
+    /** Open Legacy Mechanics Ultra / KaiPath UI (Forge {@code UltraGui}). */
+    public static boolean openUltraLm(Player player, String system, String page) {
         Object nms = nmsPlayer(player);
         if (nms == null) {
             resolveError = "Could not reach LegacyMechanics Forge player.";
             return false;
         }
         try {
-            Class<?> gui = loadClass("com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcLmGui", nms.getClass().getClassLoader());
-            String sys = system == null || system.isBlank() ? "hub" : system;
+            Class<?> gui = loadClass(
+                    "com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraGui",
+                    nms.getClass().getClassLoader());
+            String sys = system == null || system.isBlank() ? "hub" : system.trim();
             String pg = page == null || page.isBlank() ? "main" : page;
+            // Legacy CNPC system id for Android Removal → Character Services android page.
+            if ("android_remove".equalsIgnoreCase(sys)
+                    || "androidremove".equalsIgnoreCase(sys)
+                    || "android".equalsIgnoreCase(sys)) {
+                sys = "character";
+                if (page == null || page.isBlank() || "main".equalsIgnoreCase(page)) {
+                    pg = "android_remove";
+                }
+            }
             gui.getMethod("open", nms.getClass(), String.class, String.class).invoke(null, nms, sys, pg);
             return true;
         } catch (Throwable t) {

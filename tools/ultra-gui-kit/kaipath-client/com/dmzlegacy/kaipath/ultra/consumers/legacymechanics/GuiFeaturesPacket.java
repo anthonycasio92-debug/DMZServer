@@ -5,8 +5,9 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.network.NetworkEvent;
 
 /**
- * Client → server feature advertisement (message 2). JLDK: send
- * {@code ["style","activeTab"]} after implementing those renderers.
+ * Client → server feature advertisement (message 2). Advertise the full set via
+ * {@link com.dmzlegacy.kaipath.ultra.consumers.UltraGuiConsumerRegistry#ADVERTISED_FEATURES_JSON}
+ * (includes {@code textInput} when field 11 widgets are present).
  */
 public final class GuiFeaturesPacket {
     private final String featuresJson;

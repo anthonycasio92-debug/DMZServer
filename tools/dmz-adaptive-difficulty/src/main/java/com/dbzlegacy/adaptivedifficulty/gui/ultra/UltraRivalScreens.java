@@ -261,12 +261,23 @@ public final class UltraRivalScreens {
 
     private static void openSettings(ServerPlayer player) {
         Map<String, String> ph = RivalGuiApi.placeholders(player);
+        boolean tpOn = "true".equalsIgnoreCase(ph.getOrDefault("tpMsg", ph.getOrDefault("tp_msg", "false")));
+        boolean instinctOn = "true".equalsIgnoreCase(ph.getOrDefault("instinct", "false"));
         UltraScreenSpec spec = base("settings", "actions")
                 .line(UltraStyle.LABEL + "Rival chat and instinct toggles.")
-                .labelValue("TP", ph.getOrDefault("tpmsg", "—"))
+                .labelValue("TP chat", tpOn ? "ON" : "OFF")
+                .labelValue("Instinct", instinctOn ? "ON" : "OFF")
                 .setRow(UltraStyle.CONTENT_ROW_TABS + 80);
-        spec.buttonLeft("do:tpmsg:toggle", UltraStyle.confirm("TP"), "normal")
-                .buttonRight("do:instinct", "Toggle instinct", "normal")
+        spec.buttonLeft(
+                        "do:tpmsg:toggle",
+                        tpOn ? UltraStyle.confirm("TP chat · ON") : UltraStyle.dim("TP chat · OFF"),
+                        tpOn ? UltraStyle.STYLE_CONFIRM : UltraStyle.STYLE_DIM)
+                .buttonRight(
+                        "do:instinct",
+                        instinctOn
+                                ? UltraStyle.confirm("Instinct · ON")
+                                : UltraStyle.dim("Instinct · OFF"),
+                        instinctOn ? UltraStyle.STYLE_CONFIRM : UltraStyle.STYLE_DIM)
                 .rowGap();
         spec.footerBackHome();
         spec.send(player);

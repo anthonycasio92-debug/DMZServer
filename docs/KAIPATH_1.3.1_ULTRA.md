@@ -1,16 +1,13 @@
-# KaiPath 1.3.1 + LegacyMechanics 4.6.105
+# KaiPath Ultra + LegacyMechanics
 
-Live clients run **kaipath-1.3.1.jar** with:
+| Side | Role |
+|------|------|
+| LM **4.6.122** | `GuiOpenPacket` (11 fields: +`inputsJson`), styles, `titleAlign`, `playerModel.parts`, Config + Weights text fields |
+| KaiPath **1.3.7** (released / vendored / live) | `style`, `activeTab`, `titleAlign`, `playerModel`, GuiFeaturesPacket (4 features) |
+| Still missing on 1.3.7 (JLDK owns) | Field 11 / `textInput` — merge `tools/ultra-gui-kit/kaipath-client/` into next official KaiPath |
 
-- 10-field `GuiOpenPacket` decode
-- `LmDynamicScreen` (title / tabs / lines / buttons from JSON)
-- `UltraGuiConsumerRegistry` (`legacymechanics:gui`)
-- Verbatim `GuiActionPacket` echo
+Note: CurseForge never published **1.3.5**; versions jumped **1.3.1 → 1.3.7**.
 
-LM **4.6.105** pairs with that client:
-
-- `guiBackend=ultra` (default)
-- `UltraScreenIds.KAIPATH_DYNAMIC_ANY_SCREEN_ID=true` → no hub wire shim
-- Logical `screenId`s on the wire (`difficulty`, `rival`, …)
-
-Smoke: `/lm admin guitest` → click **Ping server** → server log `GuiActionPacket ←`.
+See [`KAIPATH_GUI_PROTOCOL.md`](KAIPATH_GUI_PROTOCOL.md),
+[`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md), and
+[`KAIPATH_JLDK_CLIENT_BRIEF.md`](KAIPATH_JLDK_CLIENT_BRIEF.md).

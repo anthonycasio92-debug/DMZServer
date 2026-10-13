@@ -35,6 +35,7 @@ public final class UltraScreenSpec {
     private final List<Tab> tabs = new ArrayList<>();
     private final List<String> lines = new ArrayList<>();
     private final List<Button> buttons = new ArrayList<>();
+    private final List<Input> inputs = new ArrayList<>();
     /** Compact title + tab row; content starts immediately below. */
     private int nextRow = UltraStyle.CONTENT_ROW;
     private int panelWidth = UltraStyle.PANEL_W;
@@ -108,14 +109,45 @@ public final class UltraScreenSpec {
      */
     public UltraScreenSpec playerModel(
             int x, int y, int width, int height, float scale, boolean rotate) {
+        return playerModel(x, y, width, height, scale, rotate, null);
+    }
+
+    /**
+     * Player model preview with an optional {@code parts} snapshot (head bones, form identity,
+     * extras). See {@link PlayerModelParts} and {@code docs/KAIPATH_GUI_PROTOCOL.md}.
+     */
+    public UltraScreenSpec playerModel(
+            int x,
+            int y,
+            int width,
+            int height,
+            float scale,
+            boolean rotate,
+            JsonObject parts) {
         this.playerModel = new PlayerModel(
                 x,
                 y,
                 Math.max(16, width),
                 Math.max(16, height),
                 scale <= 0f ? 1f : scale,
-                rotate);
+                rotate,
+                parts);
         return this;
+    }
+
+    /**
+     * Bounds plus a live {@link PlayerModelParts#snapshot} for {@code player} (Character
+     * Services).
+     */
+    public UltraScreenSpec playerModel(
+            ServerPlayer player,
+            int x,
+            int y,
+            int width,
+            int height,
+            float scale,
+            boolean rotate) {
+        return playerModel(x, y, width, height, scale, rotate, PlayerModelParts.snapshot(player));
     }
 
     /** Clear any previously set player model (default: off). */
@@ -176,11 +208,32 @@ public final class UltraScreenSpec {
 
     public UltraScreenSpec button(
             String actionId, String label, String style, int x, int y, int w) {
+        return button(actionId, label, style, x, y, w, null);
+    }
+
+    /**
+     * Button that asks KaiPath to copy a text field's current value into {@code args.value}
+     * before sending {@link com.dbzlegacy.adaptivedifficulty.net.gui.GuiActionPacket}.
+     * {@code bindInputId} is the same id passed to {@link #textField}.
+     */
+    public UltraScreenSpec buttonBound(
+            String actionId, String label, String style, String bindInputId) {
+        return button(
+                actionId, label, style, UltraStyle.COL_L, nextRow, UltraStyle.BTN_W, bindInputId);
+    }
+
+    public UltraScreenSpec button(
+            String actionId, String label, String style, int x, int y, int w, String bindInputId) {
         UltraScreenIds.requireValidActionId(screenId, actionId, label);
         int width = Math.max(UltraStyle.BTN_MIN_W, w);
         String resolvedStyle = normalizeStyle(style);
         if (firstButtonY < 0 || y < firstButtonY) {
             firstButtonY = y;
+        }
+        String bind = null;
+        if (bindInputId != null && !bindInputId.isBlank()) {
+            UltraScreenIds.requireValidActionId(screenId, bindInputId, "bindInput");
+            bind = qualifyAction(bindInputId);
         }
         buttons.add(new Button(
                 qualifyAction(actionId),
@@ -190,7 +243,8 @@ public final class UltraScreenSpec {
                 y,
                 width,
                 UltraStyle.BTN_H,
-                UltraStyle.BTN_PAD));
+                UltraStyle.BTN_PAD,
+                bind));
         return this;
     }
 
@@ -210,18 +264,74 @@ public final class UltraScreenSpec {
 
     /** Home tab footer: back to main menu (no Refresh — pages reopen via actions/tabs). */
     public UltraScreenSpec footerBackToMain() {
-        return button("nav:hub", UltraStyle.BACK_TO_MAIN, "dim", UltraStyle.COL_L, nextRow, UltraStyle.BTN_W);
+        return button(
+                "nav:hub",
+                UltraStyle.BACK_TO_MAIN,
+                UltraStyle.STYLE_DIM,
+                UltraStyle.COL_L,
+                nextRow,
+                UltraStyle.BTN_W);
     }
 
     /** Sub-page footer: back to system home (no Refresh). */
     public UltraScreenSpec footerBackHome() {
-        return button("nav:home", UltraStyle.BACK, "dim", UltraStyle.COL_L, nextRow, UltraStyle.BTN_W);
+        return button(
+                "nav:home", UltraStyle.BACK, UltraStyle.STYLE_DIM, UltraStyle.COL_L, nextRow, UltraStyle.BTN_W);
+    }
+
+    /**
+     * Editable text field (GuiOpenPacket field 11 {@code inputsJson}). KaiPath <b>1.3.7</b>
+     * still does not render or advertise {@code textInput}; clients that do advertise it
+     * render the field. Older / current clients ignore trailing field 11.
+     *
+     * <p>Pair with a button whose {@code args.bindInput} matches {@code inputId} so the client
+     * copies the typed value into {@code args.value} on click / Enter.
+     */
+    public UltraScreenSpec textField(
+            String inputId,
+            String value,
+            String placeholder,
+            int x,
+            int y,
+            int w,
+            int h,
+            int maxLength) {
+        UltraScreenIds.requireValidActionId(screenId, inputId, "text");
+        if (firstButtonY < 0 || y < firstButtonY) {
+            // Treat inputs like interactive rows for body/button packing.
+            firstButtonY = y;
+        }
+        inputs.add(
+                new Input(
+                        qualifyAction(inputId),
+                        "text",
+                        value == null ? "" : value,
+                        placeholder == null ? "" : placeholder,
+                        x,
+                        y,
+                        Math.max(40, w),
+                        Math.max(14, h),
+                        Math.max(1, Math.min(256, maxLength <= 0 ? 64 : maxLength))));
+        return this;
+    }
+
+    /** Full-width text field on the current row (left column). */
+    public UltraScreenSpec textFieldRow(String inputId, String value, String placeholder) {
+        return textField(
+                inputId,
+                value,
+                placeholder,
+                UltraStyle.COL_L,
+                nextRow,
+                UltraStyle.PANEL_W - UltraStyle.COL_L * 2,
+                UltraStyle.BTN_H,
+                128);
     }
 
     /** Build the wire packet without sending. */
     public GuiOpenPacket toPacket() {
-        int height = panelHeight;
         int contentBottom = nextRow + UltraStyle.BTN_H + UltraStyle.PANEL_MARGIN;
+        int height = panelHeight;
         if (contentBottom > height) {
             height = Math.min(UltraStyle.PANEL_MAX_H, contentBottom);
         }
@@ -232,13 +342,61 @@ public final class UltraScreenSpec {
                 lines.isEmpty()
                         ? 0
                         : UltraStyle.BODY_PAD * 2 + lines.size() * lineStep;
+
+        // Grow toward PANEL_MAX_H when body text needs more viewport than the default
+        // BODY_MIN_H band — shift buttons down so extra height expands the body, not
+        // empty space under the footer.
+        int buttonTop = firstButtonY;
+        int buttonStackH =
+                buttonTop < 0
+                        ? UltraStyle.PANEL_MARGIN
+                        : Math.max(
+                                UltraStyle.BTN_H + UltraStyle.PANEL_MARGIN,
+                                contentBottom - buttonTop);
+        int maxBodyAtCap =
+                Math.max(
+                        UltraStyle.BODY_MIN_H,
+                        UltraStyle.PANEL_MAX_H - bodyTop - buttonStackH);
+        int targetBodyH =
+                Math.max(
+                        UltraStyle.BODY_MIN_H,
+                        Math.min(Math.max(naturalBodyH, UltraStyle.BODY_MIN_H), maxBodyAtCap));
+        int targetHeight = bodyTop + targetBodyH + buttonStackH;
+        if (targetHeight > height) {
+            height = Math.min(UltraStyle.PANEL_MAX_H, targetHeight);
+        }
+
+        int buttonShift = 0;
+        if (buttonTop >= 0) {
+            int currentBodyRoom = Math.max(0, buttonTop - UltraStyle.BTN_GAP - bodyTop);
+            if (targetBodyH > currentBodyRoom) {
+                int need = targetBodyH - currentBodyRoom;
+                int slack = Math.max(0, height - contentBottom);
+                buttonShift = Math.min(need, slack);
+                // If still short of targetBodyH, grow panel once more (capped) then shift.
+                if (buttonShift < need && height < UltraStyle.PANEL_MAX_H) {
+                    int grow = Math.min(need - buttonShift, UltraStyle.PANEL_MAX_H - height);
+                    height += grow;
+                    slack = Math.max(0, height - contentBottom);
+                    buttonShift = Math.min(need, slack);
+                }
+            }
+        }
+
         // Body region sits under title/tabs and above the first button row (or panel bottom).
-        int bodyBottom = firstButtonY < 0
-                ? height - UltraStyle.PANEL_MARGIN
-                : Math.min(firstButtonY - UltraStyle.BTN_GAP, height - UltraStyle.PANEL_MARGIN);
-        int bodyMaxH = Math.max(
-                UltraStyle.BODY_MIN_H, Math.max(lineStep + UltraStyle.BODY_PAD * 2, bodyBottom - bodyTop));
-        boolean scrollBody = naturalBodyH > bodyMaxH || contentBottom > UltraStyle.PANEL_MAX_H;
+        int effectiveButtonTop = buttonTop < 0 ? -1 : buttonTop + buttonShift;
+        int bodyBottom =
+                effectiveButtonTop < 0
+                        ? height - UltraStyle.PANEL_MARGIN
+                        : Math.min(
+                                effectiveButtonTop - UltraStyle.BTN_GAP,
+                                height - UltraStyle.PANEL_MARGIN);
+        int bodyMaxH =
+                Math.max(
+                        UltraStyle.BODY_MIN_H,
+                        Math.max(lineStep + UltraStyle.BODY_PAD * 2, bodyBottom - bodyTop));
+        boolean scrollBody =
+                naturalBodyH > bodyMaxH || contentBottom + buttonShift > UltraStyle.PANEL_MAX_H;
 
         JsonArray tabArr = new JsonArray();
         for (Tab tab : tabs) {
@@ -272,7 +430,7 @@ public final class UltraScreenSpec {
             o.addProperty("label", b.label);
             o.addProperty("style", b.style);
             o.addProperty("x", b.x);
-            o.addProperty("y", b.y);
+            o.addProperty("y", b.y + buttonShift);
             o.addProperty("w", b.w);
             o.addProperty("h", b.h);
             o.addProperty("pad", b.pad);
@@ -281,8 +439,33 @@ public final class UltraScreenSpec {
             args.addProperty("screen", screenId);
             args.addProperty(UltraScreenIds.META_SYSTEM, screenId);
             args.addProperty("page", pageId);
+            if (b.bindInput != null && !b.bindInput.isBlank()) {
+                args.addProperty("bindInput", b.bindInput);
+            }
             o.add("args", args);
             btnArr.add(o);
+        }
+        JsonArray inputArr = new JsonArray();
+        for (Input in : inputs) {
+            if (in == null || in.id == null || in.id.isBlank()) {
+                continue;
+            }
+            JsonObject o = new JsonObject();
+            o.addProperty("id", in.id);
+            o.addProperty("type", in.type);
+            o.addProperty("x", in.x);
+            o.addProperty("y", in.y + buttonShift);
+            o.addProperty("w", in.w);
+            o.addProperty("h", in.h);
+            o.addProperty("value", in.value);
+            o.addProperty("placeholder", in.placeholder);
+            o.addProperty("maxLength", in.maxLength);
+            JsonObject args = new JsonObject();
+            args.addProperty("screen", screenId);
+            args.addProperty(UltraScreenIds.META_SYSTEM, screenId);
+            args.addProperty("page", pageId);
+            o.add("args", args);
+            inputArr.add(o);
         }
         JsonObject layout = new JsonObject();
         layout.addProperty("panelWidth", panelWidth);
@@ -291,6 +474,7 @@ public final class UltraScreenSpec {
         layout.addProperty("height", height);
         layout.addProperty("center", centerPanel);
         layout.addProperty("margin", panelMargin);
+        // Always present — KaiPath must center titles when value is "center" (not left-default).
         layout.addProperty("titleAlign", UltraStyle.TITLE_ALIGN);
         // Shared body / button metrics — every screen benefits.
         layout.addProperty("lineHeight", UltraStyle.LINE_H);
@@ -314,6 +498,9 @@ public final class UltraScreenSpec {
             pm.addProperty("height", playerModel.height);
             pm.addProperty("scale", playerModel.scale);
             pm.addProperty("rotate", playerModel.rotate);
+            if (playerModel.parts != null && !playerModel.parts.entrySet().isEmpty()) {
+                pm.add("parts", playerModel.parts);
+            }
             layout.add("playerModel", pm);
         }
         return new GuiOpenPacket(
@@ -326,7 +513,8 @@ public final class UltraScreenSpec {
                 GSON.toJson(btnArr),
                 panelWidth,
                 height,
-                GSON.toJson(layout));
+                GSON.toJson(layout),
+                GSON.toJson(inputArr));
     }
 
     public void send(ServerPlayer player) {
@@ -356,19 +544,42 @@ public final class UltraScreenSpec {
 
     private static String normalizeStyle(String style) {
         if (style == null || style.isBlank()) {
-            return "normal";
+            return UltraStyle.STYLE_NORMAL;
         }
         String s = style.trim().toLowerCase();
         return switch (s) {
-            case "confirm", "danger", "dim", "normal" -> s;
-            default -> "normal";
+            case "confirm" -> UltraStyle.STYLE_CONFIRM;
+            case "danger" -> UltraStyle.STYLE_DANGER;
+            case "dim" -> UltraStyle.STYLE_DIM;
+            case "normal" -> UltraStyle.STYLE_NORMAL;
+            default -> UltraStyle.STYLE_NORMAL;
         };
     }
 
     private record Tab(String id, String label) {}
 
     private record Button(
-            String actionId, String label, String style, int x, int y, int w, int h, int pad) {}
+            String actionId,
+            String label,
+            String style,
+            int x,
+            int y,
+            int w,
+            int h,
+            int pad,
+            String bindInput) {}
 
-    private record PlayerModel(int x, int y, int width, int height, float scale, boolean rotate) {}
+    private record Input(
+            String id,
+            String type,
+            String value,
+            String placeholder,
+            int x,
+            int y,
+            int w,
+            int h,
+            int maxLength) {}
+
+    private record PlayerModel(
+            int x, int y, int width, int height, float scale, boolean rotate, JsonObject parts) {}
 }

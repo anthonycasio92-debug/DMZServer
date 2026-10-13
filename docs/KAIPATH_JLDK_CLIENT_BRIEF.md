@@ -1,14 +1,19 @@
 # JLDK brief — KaiPath Ultra GUI client conformance
 
-**Status:** KaiPath **1.3.1** ships the dynamic Ultra consumer (10-field decode,
-`LmDynamicScreen`, multi-mod registry). LM **4.6.105+** still sends button **`style`** and
-packet **`activeTab`** that 1.3.1 ignores — implement those next and advertise via
-`GuiFeaturesPacket`.
+**Status (LM 4.6.122 + KaiPath 1.3.7):** Stock CurseForge **1.3.7** honors
+`style`, `activeTab`, `titleAlign`, and `playerModel`. **Missing on 1.3.7:** field 11
+`inputsJson` + `textInput` advertise.
+
+**Please merge** [`kaipath-client/`](../tools/ultra-gui-kit/kaipath-client/) into the next official
+KaiPath release. LegacyMechanics does not update or redeploy KaiPath for these features.
+
+Full gap matrix: [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md).
 
 | Kit | Path |
 |-----|------|
 | Protocol + conformance contract | [`docs/KAIPATH_GUI_PROTOCOL.md`](KAIPATH_GUI_PROTOCOL.md) |
-| KaiPath client sources | [`tools/ultra-gui-kit/kaipath-client/`](../tools/ultra-gui-kit/kaipath-client/) |
+| Bridge gap matrix | [`docs/KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md) |
+| KaiPath client sources (reference) | [`tools/ultra-gui-kit/kaipath-client/`](../tools/ultra-gui-kit/kaipath-client/) |
 | Server codecs (any mod) | [`tools/ultra-gui-kit/server/`](../tools/ultra-gui-kit/server/) |
 
 ---
@@ -16,36 +21,53 @@ packet **`activeTab`** that 1.3.1 ignores — implement those next and advertise
 ## Governing rule
 
 The client renders what the server sends — **no hardcoded screen/tab/button/action lists**.
-`style` and `activeTab` are **packet data**, not new screens.
 
-## Gap vs LM today (1.3.1)
+## Confirmed on KaiPath 1.3.7 (released)
 
-| Feature | Server sends | 1.3.1 client |
-|---------|--------------|--------------|
-| Button `style` (`normal`/`confirm`/`danger`/`dim`) | yes | ignored — all buttons identical |
-| `activeTab` (GuiOpenPacket field 5) | yes | ignored — no tab highlight |
-| `GuiFeaturesPacket` msg 2 | accepted | not sent → treated as baseline |
+| Feature | Notes |
+|---------|-------|
+| Decode GuiOpen fields 1–10 | yes |
+| Dynamic title / tabs / lines / buttons | yes |
+| Button `style` | yes — `UltraUiAccess.ButtonStyle` |
+| `layoutJson.titleAlign` = `center` | yes |
+| `activeTab` highlight | yes |
+| `playerModel` entity preview | yes — `LmDynamicScreen$Preview` |
+| GuiFeaturesPacket | yes — `["style","activeTab","titleAlign","playerModel"]` |
+| Verbatim GuiAction echo | yes |
+| Any `screenId` | yes |
 
-LM logs a warning naming the player, KaiPath version, missing features, and player-visible
-impact. `/lm admin guitest` prints the feature summary.
+## Still needed (next KaiPath after 1.3.7)
 
-## Required next work
+| Feature | Where | Client TODO |
+|---------|-------|-------------|
+| Text fields | GuiOpenPacket **field 11** `inputsJson` | Render `type=text`; on Enter / `args.bindInput` click, send `args.value` |
+| Advertise `textInput` | GuiFeaturesPacket | Expand to `["style","activeTab","titleAlign","playerModel","textInput"]` |
 
-1. **Button styles** — map `style` to green / red / dim / normal themed buttons.
-2. **activeTab** — highlight the tab whose key matches `GuiOpenPacket.activeTab()`.
-3. **Advertise** — after channel register (when remote present):
+## Advertise (after textInput lands)
 
 ```java
 UltraGuiConsumerRegistry.advertiseFeatures(
     "legacymechanics:gui",
-    "[\"style\",\"activeTab\"]");
+    "[\"style\",\"activeTab\",\"titleAlign\",\"playerModel\",\"textInput\"]");
 ```
 
-Set `UltraGuiConsumerRegistry.ADVERTISED_FEATURES_JSON` accordingly in the kit.
+## Text input contract (LM 4.6.108+)
 
-4. Keep encoding/decoding tolerant (defaults; ignore trailing fields).
+Config + Difficulty Weights send field 11. 1.3.7 ignores the trailing field. See reference
+`LmDynamicScreen` for the EditBox + `bindInput` implementation to merge.
 
-## Already done in 1.3.1
+## Merge checklist (JLDK) — textInput only
 
-Decode 10 fields; dynamic UI; verbatim action echo; any `screenId`; multi-mod
-`UltraGuiConsumerRegistry`.
+1. Add `inputsJson` as GuiOpen field 11 (append-tolerant decode).
+2. Render `type=text` EditBoxes; Enter / `bindInput` → `args.value`.
+3. Add `textInput` to `ADVERTISED_FEATURES_JSON`.
+4. Ship KaiPath past **1.3.7**; confirm `/lm admin guitest` reports no missing optional features.
+
+## Deferred (not blocking)
+
+- `inputsJson` types `slider` / `toggle` — reserved in [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md).
+- Full DMZUltra geo application of `playerModel.parts` beyond the entity preview 1.3.7 already draws.
+
+## Practical pitfalls
+
+See [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md) § Practical pitfalls — silent field-11 ignore on 1.3.7, UTF-8 mojibake, partial `playerModel.parts`, limited feature-hide degradation, deferred slider/toggle. Text input is the only hard Weights blocker; the rest are watch-outs.

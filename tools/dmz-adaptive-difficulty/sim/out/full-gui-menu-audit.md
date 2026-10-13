@@ -1,24 +1,15 @@
-# Full GUI menu audit
+# Full GUI menu audit (Ultra-only)
 
-- **OK checks:** 124
-- **Errors:** 0
-- **Warnings:** 0
+| System | Ultra |
+| --- | --- |
+| hub | UltraHubScreens.java |
+| difficulty | UltraDifficultyScreens.java |
+| rival | UltraRivalScreens.java |
+| spar | UltraSparScreens.java |
+| prestige | UltraPrestigeScreens.java |
+| progression | UltraProgressionScreens.java |
+| skillcheck | UltraSkillCheckScreens.java |
+| character | UltraCharacterScreens.java |
+| config | UltraConfigScreens.java |
 
-## Menus covered
-
-| System | CNPC | Chest | CMI |
-|--------|------|-------|-----|
-| hub | CnpcLmHubGui | HubChestGui | CmiHubGui |
-| difficulty | CnpcLmDifficultyGui | DifficultyChestGui | CmiDifficultyGui |
-| rival | CnpcLmRivalGui | RivalChestGui | CmiRivalGui |
-| spar | CnpcLmSparGui | SparChestGui | CmiSparGui |
-| prestige | CnpcLmPrestigeGui | PrestigeChestGui | CmiPrestigeGui |
-| progression | CnpcLmProgressionGui | ProgressionChestGui | CmiProgressionGui |
-| skills | CnpcLmSkillCheckGui | SkillsChestGui | CmiSkillsGui |
-| character | CnpcLmCharacterGui | CharacterServicesChestGui | — |
-| logs | CnpcLmLogsGui | — | — |
-| admin | CnpcLmAdminGui | — | — |
-
-## Result
-
-**PASS** — all blocking menu/system checks passed.
+CNPC / chest / CMI backends removed.

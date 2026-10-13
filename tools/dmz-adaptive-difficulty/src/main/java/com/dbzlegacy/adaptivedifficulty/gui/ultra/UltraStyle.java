@@ -21,6 +21,9 @@ public final class UltraStyle {
     public static final String RED;
     public static final String DARK_GRAY;
     public static final String YELLOW;
+    public static final String AQUA;
+    public static final String LIGHT_PURPLE;
+    public static final String DARK_GREEN;
 
     public static final String HEADER;
     public static final String LABEL;
@@ -52,15 +55,16 @@ public final class UltraStyle {
     public static final int BTN_W = 150;
 
     /**
-     * Compact Ultra centered dialog (not fullscreen). Defaults 350×260; may grow to
-     * {@link #PANEL_MAX_H} when content requires it. Body text scrolls rather than
-     * compressing when content exceeds the panel.
+     * Compact Ultra centered dialog (not fullscreen). Defaults 350×300; grows toward
+     * {@link #PANEL_MAX_H} when body text or buttons need more room. Body text scrolls
+     * rather than compressing when content still exceeds the grown panel.
      */
     public static final int PANEL_W = 350;
     public static final int PANEL_H = 300;
     public static final int PANEL_MIN_W = 300;
     public static final int PANEL_MIN_H = 220;
-    public static final int PANEL_MAX_H = 380;
+    /** Upper bound for content-driven panel growth (dense menus, e.g. Difficulty lines). */
+    public static final int PANEL_MAX_H = 420;
     /** Gap between panel edge and screen edge when centered. */
     public static final int PANEL_MARGIN = 10;
 
@@ -83,6 +87,15 @@ public final class UltraStyle {
     /** Title alignment in layoutJson: {@code center} or {@code left}. */
     public static final String TITLE_ALIGN = "center";
 
+    /**
+     * Button {@code style} wire values (KaiPath maps these to themed colors). Prefer these
+     * constants over string literals so locked/unavailable actions always send {@link #STYLE_DIM}.
+     */
+    public static final String STYLE_NORMAL = "normal";
+    public static final String STYLE_CONFIRM = "confirm";
+    public static final String STYLE_DANGER = "danger";
+    public static final String STYLE_DIM = "dim";
+
     static {
         // Unicode escape keeps the mark out of other sources; static-init prevents folding.
         MARK = "\u00A7";
@@ -95,6 +108,9 @@ public final class UltraStyle {
         RED = MARK + "c";
         DARK_GRAY = MARK + "8";
         YELLOW = MARK + "e";
+        AQUA = MARK + "b";
+        LIGHT_PURPLE = MARK + "d";
+        DARK_GREEN = MARK + "2";
         HEADER = GOLD + BOLD;
         LABEL = GRAY;
         VALUE = WHITE;
@@ -103,11 +119,12 @@ public final class UltraStyle {
         DIM = DARK_GRAY;
         NOTICE_HEAD = HEADER;
         NOTICE_BODY = YELLOW;
-        SEP = "\u00B7";
-        TIMES = "\u00D7";
+        // ASCII-only separators: KaiPath/JLDK still mojibakes multi-byte punctuation.
+        SEP = "|";
+        TIMES = "x";
         PAGE_ANDROID_REMOVE = "android_remove";
-        BACK = LABEL + "\u00AB Back";
-        BACK_TO_MAIN = LABEL + "\u00AB Back to main menu";
+        BACK = LABEL + "< Back";
+        BACK_TO_MAIN = LABEL + "< Back to main menu";
     }
 
     private UltraStyle() {}
@@ -140,7 +157,7 @@ public final class UltraStyle {
         if (plain.length() <= 28) {
             return styled;
         }
-        String cut = plain.substring(0, 27) + "\u2026";
+        String cut = plain.substring(0, 27) + "...";
         int mark = styled.indexOf(plain);
         if (mark > 0) {
             return styled.substring(0, mark) + cut;
@@ -173,5 +190,17 @@ public final class UltraStyle {
     /** Boost preset caption, e.g. {@code 1.25× · 30m}. */
     public static String boostPreset(String mult, String minutes) {
         return plain(mult) + TIMES + " " + SEP + " " + plain(minutes) + "m";
+    }
+
+    /**
+     * Apply a single-letter Minecraft color code (e.g. {@code "a"}, {@code "e"}) from
+     * APIs like {@code DifficultySnapshot.stateColorCode()}. Prefer named constants when
+     * the color is known at the call site.
+     */
+    public static String color(String codeLetter, String text) {
+        String letter = codeLetter == null || codeLetter.isBlank()
+                ? "f"
+                : codeLetter.trim().substring(0, 1);
+        return MARK + letter + plain(text);
     }
 }

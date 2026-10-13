@@ -30,10 +30,20 @@ KNOWN_DO: dict[str, set[str]] = {
         "toggle_coin_chat",
         "reload",
         "syslog",
+        "weight_quote",
+        "weight_buy",
     },
     "character": {
         "reskin_confirm",
+        "race_confirm",
+        "class_confirm",
         "bone_race_default",
+        "bone_toggle",
+        "bone_unlock",
+        "bone_equip",
+        "bone_unequip",
+        "bone_preview",
+        "bone_restore",
         "saga_confirm",
         "saga_reset",
         "android_remove",
@@ -77,6 +87,7 @@ KNOWN_DO: dict[str, set[str]] = {
         "discard_all",
         "reload_module",
         "toggle",
+        "set",
         "step",
         "cycle",
         "undo",
@@ -151,22 +162,81 @@ def main() -> int:
         errors.append("UltraStyle button height/gap must be 18 / 6")
     if "BTN_PAD = 8" not in style or "BTN_MIN_W = 80" not in style:
         errors.append("UltraStyle button pad/min width must be 8 / 80")
-    if "PANEL_MARGIN = 10" not in style or "PANEL_MAX_H = 380" not in style:
-        errors.append("UltraStyle panel margin/max must be 10 / 380")
+    if "PANEL_MARGIN = 10" not in style or "PANEL_MAX_H = 420" not in style:
+        errors.append("UltraStyle panel margin/max must be 10 / 420")
     if "LINE_H = 16" not in style or "LINE_GAP = 8" not in style:
         errors.append("UltraStyle body line height/gap must be 16 / 8")
     if "BODY_PAD = 10" not in style or "BODY_MIN_H = 140" not in style:
         errors.append("UltraStyle body pad/min height must be 10 / 140")
     if 'TITLE_ALIGN = "center"' not in style:
         errors.append('UltraStyle TITLE_ALIGN must be "center"')
-    if "playerModel" not in SPEC.read_text(encoding="utf-8"):
+    for const in ("STYLE_NORMAL", "STYLE_CONFIRM", "STYLE_DANGER", "STYLE_DIM"):
+        if f"{const} =" not in style:
+            errors.append(f"UltraStyle must define {const} for button wire styles")
+    spec_text_full = SPEC.read_text(encoding="utf-8")
+    if "playerModel" not in spec_text_full:
         errors.append("UltraScreenSpec must support optional playerModel in layoutJson")
-    if "scrollBody" not in SPEC.read_text(encoding="utf-8"):
+    parts_helper = ULTRA / "PlayerModelParts.java"
+    char_screens = (ULTRA / "UltraCharacterScreens.java").read_text(encoding="utf-8")
+    if not parts_helper.is_file():
+        errors.append("PlayerModelParts helper must exist for playerModel.parts snapshots")
+    else:
+        parts_text = parts_helper.read_text(encoding="utf-8")
+        if "SCHEMA = 1" not in parts_text or "headBones" not in parts_text:
+            errors.append("PlayerModelParts schema 1 must serialize headBones (+ form/extras)")
+        if 'addProperty("parts"' not in spec_text_full and 'pm.add("parts"' not in spec_text_full:
+            errors.append("UltraScreenSpec must emit optional playerModel.parts")
+    if "playerModel(player, 248, 60," not in char_screens and ".playerModel(player, 248, 60," not in char_screens:
+        # allow either chained form
+        if "248, 60, 86, 120" not in char_screens:
+            errors.append(
+                "UltraCharacterScreens playerModel y must be 60 (below tab strip; 36 clips head)"
+            )
+    if "scrollBody" not in spec_text_full:
         errors.append("UltraScreenSpec must emit scrollBody in layoutJson")
+    if "buttonShift" not in spec_text_full or "targetBodyH" not in spec_text_full:
+        errors.append(
+            "UltraScreenSpec must grow panel toward PANEL_MAX_H and shift buttons for dense body text"
+        )
+    if 'titleAlign' not in spec_text_full or "TITLE_ALIGN" not in spec_text_full:
+        errors.append("UltraScreenSpec must emit layoutJson.titleAlign from UltraStyle.TITLE_ALIGN")
+    if "textField" not in spec_text_full or "inputsJson" not in PACKET.read_text(encoding="utf-8"):
+        errors.append("UltraScreenSpec/GuiOpenPacket must support textField → inputsJson (field 11)")
+    if "bindInput" not in spec_text_full:
+        errors.append("UltraScreenSpec buttons must support args.bindInput for text submit")
+    config_screens = (ULTRA / "UltraConfigScreens.java").read_text(encoding="utf-8")
+    number_block = config_screens.split("case NUMBER")[1].split("case ENUM")[0] if "case NUMBER" in config_screens else ""
+    enum_block = config_screens.split("case ENUM")[1].split("case LIST")[0] if "case ENUM" in config_screens else ""
+    if "textFieldRow" not in number_block:
+        errors.append("UltraConfigScreens NUMBER detail must offer textFieldRow (typed value), not only ± steps")
+    if "textFieldRow" not in enum_block:
+        errors.append("UltraConfigScreens ENUM detail must offer textFieldRow + Apply")
+    bridge_gaps = ROOT.parent.parent / "docs" / "KAIPATH_BRIDGE_GAPS.md"
+    if not bridge_gaps.is_file():
+        # ROOT = .../tools/dmz-adaptive-difficulty
+        bridge_gaps = Path(__file__).resolve().parents[3] / "docs" / "KAIPATH_BRIDGE_GAPS.md"
+    if not bridge_gaps.is_file():
+        errors.append("docs/KAIPATH_BRIDGE_GAPS.md must document LM vs KaiPath gap matrix")
+    if 'STYLE_DIM' not in (ultra_hub := (ULTRA / "UltraHubScreens.java").read_text(encoding="utf-8")):
+        errors.append("UltraHubScreens must wire STYLE_DIM for unavailable system tiles")
+    if "skillcheck_denied" not in ultra_hub or "STYLE_DIM" not in ultra_hub:
+        errors.append("Hub Skill Check denied tile must send STYLE_DIM")
 
     packet = PACKET.read_text(encoding="utf-8")
     if "panelWidth" not in packet or "layoutJson" not in packet:
         errors.append("GuiOpenPacket must carry panelWidth/panelHeight/layoutJson")
+    if 'titleAlign\\":\\"center' not in packet and 'titleAlign":"center' not in packet:
+        errors.append('GuiOpenPacket.defaultLayoutJson must include "titleAlign":"center"')
+    if "2048" not in packet:
+        errors.append("GuiOpenPacket layoutJson trim limit must be 2048 (playerModel fits)")
+    if "inputsJson" not in packet:
+        errors.append("GuiOpenPacket must carry inputsJson (field 11)")
+    mech = (
+        ROOT
+        / "src/main/java/com/dbzlegacy/adaptivedifficulty/command/MechanicsCommands.java"
+    ).read_text(encoding="utf-8")
+    if "§" in mech:
+        errors.append("MechanicsCommands must not contain bare § literals — use UltraStyle")
 
     net = (ROOT / "src/main/java/com/dbzlegacy/adaptivedifficulty/net/gui/LmGuiNetwork.java").read_text(
         encoding="utf-8"
@@ -202,8 +272,21 @@ def main() -> int:
         errors.append("Missing UltraClientFeatures (server-side feature gap diagnostics)")
     else:
         feat_text = client_feat.read_text(encoding="utf-8")
-        if "FEATURE_STYLE" not in feat_text or "FEATURE_ACTIVE_TAB" not in feat_text:
-            errors.append("UltraClientFeatures must define FEATURE_STYLE and FEATURE_ACTIVE_TAB")
+        for needle in (
+            "FEATURE_STYLE",
+            "FEATURE_ACTIVE_TAB",
+            "FEATURE_TITLE_ALIGN",
+            "FEATURE_PLAYER_MODEL",
+            "FEATURE_TEXT_INPUT",
+        ):
+            if needle not in feat_text:
+                errors.append(f"UltraClientFeatures must define {needle}")
+        if "titleAlign" not in feat_text or "playerModel" not in feat_text:
+            errors.append(
+                "UltraClientFeatures impact/missing lists must cover titleAlign + playerModel"
+            )
+        if "textInput" not in feat_text:
+            errors.append("UltraClientFeatures must cover textInput (inputsJson)")
     if "roundTripStyleAndActiveTab" not in net:
         errors.append("LmGuiNetwork must round-trip style + activeTab in self-test")
     if "GuiFeaturesPacket" not in net:
@@ -307,6 +390,7 @@ def main() -> int:
     checks = [
         ("UltraHubScreens.java", "hub", KNOWN_DO["hub"]),
         ("UltraDifficultyScreens.java", "difficulty", KNOWN_DO["difficulty"]),
+        ("UltraWeightShopScreens.java", "difficulty", KNOWN_DO["difficulty"]),
         ("UltraCharacterScreens.java", "character", KNOWN_DO["character"]),
         ("UltraPrestigeScreens.java", "prestige", KNOWN_DO["prestige"]),
         ("UltraProgressionScreens.java", "progression", KNOWN_DO["progression"]),
@@ -356,6 +440,24 @@ def main() -> int:
             errors.append(f"UltraScreenSpec.{method} not found")
         elif "nav:refresh" in m.group(1) or "Refresh" in m.group(1):
             errors.append(f"UltraScreenSpec.{method} must not include Refresh / nav:refresh")
+
+    # Startup self-test must allow empty tabsJson for intentional tab-less screens.
+    self_test_path = ULTRA / "UltraScreenSelfTest.java"
+    self_test = self_test_path.read_text(encoding="utf-8")
+    if "TABLESS_SCREEN_IDS" not in self_test or "isTablessScreen" not in self_test:
+        errors.append(
+            "UltraScreenSelfTest must define TABLESS_SCREEN_IDS / isTablessScreen "
+            "(skillcheck + skills are single-screen, empty tabsJson is valid)"
+        )
+    else:
+        for sid in ("skillcheck", "skills"):
+            if f'"{sid}"' not in self_test.split("TABLESS_SCREEN_IDS", 1)[1].split(";", 1)[0]:
+                errors.append(f"UltraScreenSelfTest.TABLESS_SCREEN_IDS missing {sid}")
+    if "allowEmptyTabs" not in self_test:
+        errors.append("UltraScreenSelfTest.validatePacket must allow empty tabs for tab-less screens")
+    skill_ui = (ULTRA / "UltraSkillCheckScreens.java").read_text(encoding="utf-8")
+    if ".tabs(" in skill_ui:
+        errors.append("UltraSkillCheckScreens must not call .tabs() (no tab bar)")
 
     print("=== Ultra action / panel audit ===")
     for e in errors:

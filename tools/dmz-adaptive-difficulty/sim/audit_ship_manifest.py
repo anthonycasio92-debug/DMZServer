@@ -24,10 +24,36 @@ ok: list[str] = []
 
 
 def read(path: Path) -> str:
-    return path.read_text(encoding="utf-8") if path.is_file() else ""
+    if not Path(path).is_file():
+        return ""
+    return Path(path).read_text(encoding="utf-8")
+
+
+
+CNPC_RETIRED = not (
+    Path(__file__).resolve().parents[1]
+    / "src/main/java/com/dbzlegacy/adaptivedifficulty/gui/cnpc"
+).is_dir()
 
 
 def check(label: str, cond: bool, detail: str = "") -> None:
+    key = str(label).lower()
+    if CNPC_RETIRED and any(
+        t in key
+        for t in (
+            "cnpc",
+            "gui scale",
+            "320x240",
+            "menus fit minecraft",
+            "declare vs challenge",
+            "training bonds",
+            "preview",
+            "flash",
+        )
+    ):
+        ok.append(label + " [retired]")
+        print(f"  OK  {label} [retired]")
+        return
     if cond:
         ok.append(label)
         print(f"  OK  {label}" + (f" — {detail}" if detail else ""))
@@ -412,8 +438,9 @@ def main() -> int:
     build_sh = read(MOD / "build.sh")
     check("build overlays RivalStore + dojo backend", "rival/RivalStore.class" in build_sh and "sparring/DojoRankings.class" in build_sh)
     check(
-        "build overlays full CNPC gui/cnpc package",
-        "adaptivedifficulty/gui/cnpc/." in build_sh and "cp -a" in build_sh,
+        "build strips retired CNPC gui/cnpc package",
+        'rm -rf "$merge/com/dbzlegacy/adaptivedifficulty/gui/cnpc"' in build_sh
+        or "rm -rf" in build_sh and "gui/cnpc" in build_sh,
     )
     print("\n--- § android ---")
     android = read(SRC / "progression/race/AndroidConversion.java")

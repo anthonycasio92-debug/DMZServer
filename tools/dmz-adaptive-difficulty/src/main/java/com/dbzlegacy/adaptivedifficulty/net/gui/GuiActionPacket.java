@@ -10,7 +10,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
 
 /**
- * Client → server. KaiPath button / tab press. Server runs the same logic as CNPC handlers.
+ * Client → server. KaiPath button / tab press. Server runs Ultra screen handlers.
  * No client-only classes are referenced here.
  *
  * <p><b>Mod-agnostic wire codec</b> — encode/decode never validate or rewrite action ids.
@@ -31,7 +31,8 @@ public final class GuiActionPacket {
     public GuiActionPacket(String screenId, String actionId, String argsJson) {
         this.screenId = GuiOpenPacket.trim(screenId, 64);
         this.actionId = GuiOpenPacket.trim(actionId, ACTION_ID_MAX);
-        this.argsJson = GuiOpenPacket.trim(argsJson == null ? "{}" : argsJson, 512);
+        // 2048 — typed text-field values from inputsJson bindInput / Enter submit.
+        this.argsJson = GuiOpenPacket.trim(argsJson == null ? "{}" : argsJson, 2048);
     }
 
     public String screenId() {
@@ -47,13 +48,16 @@ public final class GuiActionPacket {
     }
 
     public static void encode(GuiActionPacket msg, FriendlyByteBuf buf) {
-        buf.m_130070_(msg.screenId);
-        buf.m_130070_(msg.actionId);
-        buf.m_130070_(msg.argsJson);
+        GuiOpenPacket.writeUtf8(buf, msg.screenId);
+        GuiOpenPacket.writeUtf8(buf, msg.actionId);
+        GuiOpenPacket.writeUtf8(buf, msg.argsJson);
     }
 
     public static GuiActionPacket decode(FriendlyByteBuf buf) {
-        return new GuiActionPacket(buf.m_130277_(), buf.m_130277_(), buf.m_130277_());
+        return new GuiActionPacket(
+                GuiOpenPacket.readUtf8(buf),
+                GuiOpenPacket.readUtf8(buf),
+                GuiOpenPacket.readUtf8(buf));
     }
 
     /**

@@ -16,11 +16,16 @@ LegacyMechanics (LM).
 channel namespace or mod id. New menus are added on the **server mod** side only. Optional
 fields (`style`, `activeTab`) are **data**, not new hardcoded screens.
 
-**KaiPath 1.3.1** baseline: decodes 10 fields and renders dynamic buttons/tabs/lines, but
-**ignores** button `style` and packet `activeTab`. LM 4.6.105+ advertises the gap in logs
-until the client reports those features via `GuiFeaturesPacket`.
+**KaiPath 1.3.7** (CurseForge latest / vendored): decodes GuiOpen fields 1–10, honors
+button `style`, `layoutJson.titleAlign`, `activeTab`, and `playerModel`, and advertises
+those four via `GuiFeaturesPacket`. **Still missing:** field 11 `inputsJson` /
+`textInput` — reference kit
+(`tools/ultra-gui-kit/kaipath-client/`) has the merge; ship a rebuild past 1.3.7 to
+unblock Weight shop text entry. LM **4.6.108+** logs missing optional features via
+`GuiFeaturesPacket`. (CurseForge never published 1.3.5; jump was 1.3.1 → 1.3.7.)
 
 Implement-yourself kit: [`tools/ultra-gui-kit/`](../tools/ultra-gui-kit/).
+JLDK handoff: [`docs/KAIPATH_JLDK_CLIENT_BRIEF.md`](KAIPATH_JLDK_CLIENT_BRIEF.md).
 
 ---
 
@@ -28,15 +33,20 @@ Implement-yourself kit: [`tools/ultra-gui-kit/`](../tools/ultra-gui-kit/).
 
 The client **must** render what the server sends (no hardcoded screen/tab/button lists).
 
-| Capability | Required since | Status on KaiPath 1.3.1 |
-|------------|----------------|-------------------------|
-| Decode all 10 GuiOpen fields | 1.3.1 | yes |
-| Dynamic title / tabs / lines / buttons | 1.3.1 | yes |
-| Verbatim GuiAction echo | 1.3.1 | yes |
-| Any `screenId` (no whitelist) | 1.3.1 | yes |
-| Honor button **`style`** | next | **no** — all buttons look identical |
-| Honor **`activeTab`** highlight | next | **no** — active tab not distinguished |
-| Send **GuiFeaturesPacket** | next | **no** — treated as 1.3.1 baseline |
+| Capability | Required since | **1.3.7** released | Reference kit |
+|------------|----------------|--------------------|---------------|
+| Decode GuiOpen fields 1–10 | 1.3.1 | yes | yes |
+| Dynamic title / tabs / lines / buttons | 1.3.1 | yes | yes |
+| Verbatim GuiAction echo | 1.3.1 | yes | yes |
+| Any `screenId` (no whitelist) | 1.3.1 | yes | yes |
+| Honor **`layoutJson.titleAlign`** | 1.3.1+ | **yes** | yes |
+| Honor **`activeTab`** highlight | 1.3.1+ | **yes** | yes |
+| Honor button **`style`** | 1.3.7 | **yes** | yes |
+| Honor **`layoutJson.playerModel`** (+ optional `parts`) | 1.3.7 | **yes** (entity) | yes (+ parts hook) |
+| Honor **`inputsJson`** text fields (field 11) | next | **no** | **yes** |
+| Decode GuiOpen strings as **UTF-8** | 1.3.1 | MC `readUtf` | **yes** (explicit) |
+| Send **GuiFeaturesPacket** | 1.3.7 | **yes** (4 features) | **yes** (+ `textInput`) |
+| `inputsJson` `slider` / `toggle` | later | — | reserved — see [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md) |
 
 ### Button JSON schema
 
@@ -112,17 +122,20 @@ Known optional feature ids:
 |----|--------------------------|
 | `style` | Button `style` values above |
 | `activeTab` | GuiOpenPacket field 5 highlight |
+| `titleAlign` | `layoutJson.titleAlign` (`center` / `left`) |
+| `playerModel` | `layoutJson.playerModel` entity preview |
+| `textInput` | GuiOpenPacket field 11 `inputsJson` text fields + `bindInput` |
 
-Example (conforming client after implementing both):
+Example (conforming client after implementing all):
 
 ```json
-["style","activeTab"]
+["style","activeTab","titleAlign","playerModel","textInput"]
 ```
 
 Send once after channel registration (client setup / first join). Extra ids are ignored.
 Extra wire fields after #1 are ignored.
 
-LM logs a **warning** when a player’s feature set lacks `style` or `activeTab`, naming:
+LM logs a **warning** when a player’s feature set lacks expected optionals, naming:
 
 - player
 - KaiPath version if known
@@ -143,7 +156,7 @@ new ResourceLocation(YOUR_MOD_ID, "gui")  // → "mymod:gui"
 
 Protocol `"1"`. Message 0 open, 1 action, 2 features (optional).
 
-### 2. GuiOpenPacket (S→C) — 10 fields
+### 2. GuiOpenPacket (S→C) — 11 fields
 
 | # | Field | Type | Notes |
 |---|--------|------|--------|
@@ -155,18 +168,47 @@ Protocol `"1"`. Message 0 open, 1 action, 2 features (optional).
 | 6 | `linesJson` | string | JSON array of body lines |
 | 7 | `buttonsJson` | string | JSON array of button objects (incl. **style**) |
 | 8 | `panelWidth` | varint | Default **350** |
-| 9 | `panelHeight` | varint | Default **300** (grows to **380** when needed) |
+| 9 | `panelHeight` | varint | Default **300** (grows toward **420** when needed) |
 | 10 | `layoutJson` | string | JSON object (panel + body/button metrics + optional `playerModel`) |
+| 11 | `inputsJson` | string | JSON array of input elements (`type=text` today); default `[]` |
 
-Missing trailing fields → defaults. Bytes after field 10 ignored.
+Missing trailing fields → defaults. Bytes after the last understood field ignored.
 
 ### 3. GuiActionPacket (C→S) — 3 fields
 
 | # | Field | Type | Notes |
 |---|--------|------|--------|
 | 1 | `screenId` | string | Echo open `screenId` verbatim |
-| 2 | `actionId` | string | Echo button/tab `id` verbatim |
-| 3 | `argsJson` | string | Echo button `args` verbatim |
+| 2 | `actionId` | string | Echo button/tab/input `id` verbatim |
+| 3 | `argsJson` | string | Echo button `args` (+ `value` when submitting a text field) |
+
+#### `inputsJson` (field 11)
+
+```json
+[{
+  "id": "@config:input:difficulty|some.path",
+  "type": "text",
+  "x": 16, "y": 200, "w": 318, "h": 18,
+  "value": "current",
+  "placeholder": "Type a value…",
+  "maxLength": 128,
+  "args": { "screen": "config", "page": "detail:…", "system": "config" }
+}]
+```
+
+| `type` | Status | Notes |
+|--------|--------|-------|
+| `text` | **Shipped** (LM 4.6.108+) | Config TEXT / NUMBER / ENUM detail editors |
+| `toggle` | Reserved | Not on wire yet — BOOLEAN uses styled buttons |
+| `slider` | Reserved | Not on wire yet — see [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md) |
+
+Buttons that apply a field include `args.bindInput` set to that input’s `id`. On click (or
+Enter in the field), the client must set `args.value` to the typed string before sending
+`GuiActionPacket`.
+
+**UTF-8:** All GuiOpen string fields (title, lines, labels, placeholders, …) are encoded and
+decoded by LM with explicit `StandardCharsets.UTF_8`. Clients must decode the same way;
+platform-default charset causes mojibake on accents (é/à).
 
 ### 4. Layout JSON
 
@@ -191,11 +233,27 @@ Missing trailing fields → defaults. Bytes after field 10 ignored.
   "buttonHeight": 18,
   "playerModel": {
     "x": 248,
-    "y": 36,
+    "y": 60,
     "width": 86,
     "height": 120,
     "scale": 1.0,
-    "rotate": true
+    "rotate": true,
+    "parts": {
+      "schema": 1,
+      "subject": "local",
+      "headBones": {
+        "token": "hair+ears1+horns2",
+        "pieces": ["hair", "ears1", "horns2"]
+      },
+      "form": {
+        "race": "saiyan",
+        "group": "super_saiyan",
+        "form": "ssj",
+        "stackGroup": "",
+        "stackForm": ""
+      },
+      "extras": []
+    }
   }
 }
 ```
@@ -207,12 +265,12 @@ honor `margin`. Button `x`/`y` are panel-relative.
 
 | Field | Meaning |
 |-------|---------|
-| `titleAlign` | `center` or `left` — hub/system titles sit at the top of the panel |
+| `titleAlign` | **`center`** (LM default) or `left` — **must** position the title; do not assume left |
 | `lineHeight` | Body line height in GUI pixels (do **not** squeeze below this) |
 | `lineGap` | Extra gap between body lines |
 | `bodyTop` | Panel-relative Y where the body/scroll region starts |
 | `bodyPad` | Vertical padding inside the body scroll region |
-| `bodyMaxHeight` | Vertical room for body text inside the panel |
+| `bodyMaxHeight` | Vertical room for body text inside the panel (grows with `panelHeight`) |
 | `scrollBody` | When `true`, long body content **scrolls** instead of compressing |
 | `buttonPad` | Horizontal padding inside buttons (default **8**) |
 | `buttonGap` | Vertical gap between button rows |
@@ -230,10 +288,64 @@ pages scroll rather than squeezing buttons.
 | `width`, `height` | number | Bounds for the preview |
 | `scale` | number | Entity scale (default `1.0`) |
 | `rotate` | boolean | Slow turntable when `true` |
+| `parts` | object | Optional cosmetics snapshot — see below |
 
 **Backward compatible:** clients that do not know `playerModel` ignore it; the rest of the
-layout still works. JLDK implements the entity rendering; the server only declares position
-and size. Screen builders opt in per screen (LM Character Services uses it; others default off).
+layout still works. JLDK implements the entity rendering; the server declares position, size,
+and (when present) equipped custom parts. Screen builders opt in per screen (LM Character
+Services uses it; others default off).
+
+##### `playerModel.parts` (optional, schema 1)
+
+LM sends this so the client can draw **custom body pieces** on top of / instead of a bare
+Steve preview — DMZ head bones today, DMZUltra form accessories next. Omit the whole
+`parts` object when nothing is equipped / unavailable. Clients that only honor bounds still
+work; unknown sub-fields are ignored.
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `schema` | number | yes | **`1`** for this document. Bump only on breaking shape changes. |
+| `subject` | string | yes | Who to draw. LM Character Services always sends **`local`** (the viewing player). Future: `uuid:<player-uuid>` for inspect. |
+| `headBones` | object | no | Equipped DMZ `activeHeadBone` cosmetics. Omit when empty. |
+| `headBones.token` | string | yes* | Authoritative DMZ token (`+`-joined). Same string DMZ stores on the character. |
+| `headBones.pieces` | string[] | yes* | Atomic bone ids split from the token (stable shop order when known). Prefer this list when iterating geo bones. |
+| `form` | object | no | Worn transformation identity so the client can attach **DMZUltra FormParts** (client-side catalog keyed by form). Omit when fully base. |
+| `form.race` | string | no | Race id (lowercase), e.g. `saiyan`. |
+| `form.group` | string | no | Active form group. |
+| `form.form` | string | no | Active form name. |
+| `form.stackGroup` | string | no | Stack form group (empty when none). |
+| `form.stackForm` | string | no | Stack form name (empty when none). |
+| `extras` | array | no | Open extension list. Each entry is `{ "kind": string, "id": string, … }`. Unknown `kind` values **must** be ignored. LM currently sends `[]`. |
+
+\* When `headBones` is present, both `token` and `pieces` are required. `pieces` may be empty
+only if `token` is empty (do not send `headBones` in that case).
+
+**Client render contract (JLDK):**
+
+1. Draw the subject player entity inside `x/y/width/height` at `scale`, with turntable when
+   `rotate` is true.
+2. If `parts.headBones` is present, apply those geo bones the same way DMZ applies
+   `activeHeadBone` (split `token` on `+`, or iterate `pieces`).
+3. If `parts.form` is present, resolve DMZUltra FormParts for that race/group/form (and
+   stack, when set) and draw them with the preview.
+4. Iterate `parts.extras`; skip unknown `kind`s.
+5. If `parts` is missing entirely, draw the local player with whatever the client already
+   knows from entity sync (no server cosmetics hint).
+
+**`extras` entry shape (forward-compatible):**
+
+```json
+{ "kind": "dmzultra.formPart", "id": "example_accessory", "meta": {} }
+```
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `kind` | string | Namespaced role (`dmz.headBone` is redundant with `headBones`; prefer the typed object). |
+| `id` | string | Piece id within that kind. |
+| `meta` | object | Optional opaque bag (tint, slot, …). Ignore unknown keys. |
+
+LM server helper: `PlayerModelParts.snapshot(ServerPlayer)` → Gson object attached under
+`playerModel.parts`.
 
 ### 5. Action verb contract (recommended)
 
@@ -264,7 +376,8 @@ CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), open);
 ```
 
 Client: `UltraGuiConsumerRegistry.registerClientChannel("mymod")` then send
-`GuiFeaturesPacket` with `["style","activeTab"]` once implemented.
+`GuiFeaturesPacket` with `["style","activeTab","titleAlign","playerModel"]` once
+implemented.
 
 ---
 
