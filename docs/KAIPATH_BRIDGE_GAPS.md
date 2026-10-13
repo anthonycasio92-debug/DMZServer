@@ -1,19 +1,19 @@
 # Ultra bridge gap matrix (LM ↔ KaiPath)
 
-**LM 4.6.122** + **KaiPath 1.3.7** (CurseForge / live). Official KaiPath updates are owned by the KaiPath mod developer — LM does not ship or deploy KaiPath feature jars.
+**LM 4.6.123** + **KaiPath 1.3.9** (live / recommended). Official KaiPath updates are owned by the KaiPath mod developer.
 
-## Still missing on KaiPath 1.3.7 (for JLDK)
+## Still missing on KaiPath 1.3.9
 
-Stock CurseForge **1.3.7** still lacks field 11 / `textInput`. Merge [`tools/ultra-gui-kit/kaipath-client/`](../tools/ultra-gui-kit/kaipath-client/) into the next official KaiPath release:
+None for the Ultra Weights / Config typed-entry path. Stock **1.3.9** advertises and honors:
 
-| Part | Stock 1.3.7 | Reference kit |
-|------|-------------|-----------------|
-| GuiOpen **field 11** `inputsJson` | Missing | **Done** |
-| EditBox / `type=text` + `bindInput` → `args.value` | Missing | **Done** |
-| `textInput` in GuiFeaturesPacket advertise | Missing | **Done** (`[…,"textInput"]`) |
-| Explicit UTF-8 GuiOpen helpers | MC `readUtf` | **Done** (kit helpers) |
+| Part | Status |
+|------|--------|
+| GuiOpen **field 11** `inputsJson` | **Done** |
+| EditBox / `type=text` + `bindInput` → `args.value` | **Done** |
+| `textInput` in GuiFeaturesPacket advertise | **Done** |
+| `style` / `activeTab` / `titleAlign` / `playerModel` | **Done** (since 1.3.7) |
 
-LM 4.6.122+ already ships field 11 and logs `pendingNext=[textInput]` on stock 1.3.7 (info, not a broken-client warn). After the official KaiPath merge, guitest should show `pendingNext=none`.
+LM 4.6.123+ treats those five as `SHIPPED_ON_RECOMMENDED`. `/lm admin guitest` should report `missingShipped=none pendingNext=none` on 1.3.9.
 
 Deferred (neither side): `inputsJson` `slider` / `toggle`.
 
@@ -26,51 +26,45 @@ Deferred (neither side): `inputsJson` `slider` / `toggle`.
 | `playerModel.parts` (cosmetics) | **Done** (4.6.111) | Schema 1: `headBones` / `form` / `extras`. See [`KAIPATH_GUI_PROTOCOL.md`](KAIPATH_GUI_PROTOCOL.md). |
 | Slider / toggle as input types | **Deferred** | BOOLEAN stays styled buttons; NUMBER uses text + ±. Reserved below. |
 
-## JLDK / KaiPath (client) — 1.3.7 vs reference kit
+## JLDK / KaiPath (client) — 1.3.9
 
-Sources: [`tools/ultra-gui-kit/kaipath-client/`](../tools/ultra-gui-kit/kaipath-client/).
-Vendored jar: `mods/kaipath-1.3.7.jar`.
+Vendored / live jar: `mods/kaipath-1.3.9.jar`. Reference kit remains at [`tools/ultra-gui-kit/kaipath-client/`](../tools/ultra-gui-kit/kaipath-client/) for protocol parity.
 
-| Gap | KaiPath **1.3.7** (released) | Reference kit | Notes |
-|-----|------------------------------|---------------|-------|
-| Button `style` colors | **Done** | Done | `UltraUiAccess.ButtonStyle` CONFIRM/DANGER/DIM/SELECTED |
-| `activeTab` highlight | **Done** | Done | |
-| `titleAlign` | **Done** | Done | |
-| `playerModel` draw | **Done** | Done | `LmDynamicScreen$Preview` + InventoryScreen |
-| UTF-8 GuiOpen strings | MC `readUtf` | Explicit UTF-8 helpers | Wire-compatible; still saw `â€` mojibake — LM uses ASCII dashes |
-| Text field widgets (field 11) | **Missing** | **Done** | No `inputsJson` / EditBox / `bindInput` — **Weight shop blocker** |
-| GuiFeaturesPacket advertise | **Partial** | Full | 1.3.7: `["style","activeTab","titleAlign","playerModel"]` — no `textInput` |
-| Slider / toggle widgets | N/A | N/A | Reserved until LM ships types |
+| Gap | KaiPath **1.3.9** | Notes |
+|-----|-------------------|-------|
+| Button `style` colors | **Done** | |
+| `activeTab` highlight | **Done** | |
+| `titleAlign` | **Done** | |
+| `playerModel` draw | **Done** | |
+| Text field widgets (field 11) | **Done** | Unblocks Weight shop |
+| GuiFeaturesPacket advertise | **Full** | `["style","activeTab","titleAlign","playerModel","textInput"]` |
+| Slider / toggle widgets | N/A | Reserved until LM ships types |
 
-**Only hard blocker for Weights / Config typed entry:** merge reference `inputsJson` + `textInput` advertise into a KaiPath build past 1.3.7. LM 4.6.122+ treats style/activeTab/titleAlign/playerModel as shipped on 1.3.7 and logs `textInput` as `pendingNext` (not a broken-client warning). Everything below is “works but watch out.”
+## Practical pitfalls (watch-outs)
 
-## Practical pitfalls (beyond text input)
+### 1. Older clients without textInput
 
-### 1. Text input on stock 1.3.7 fails silently on the client
+Pre-1.3.9 KaiPath ignores field 11. LM Weights / Config pages show an explicit danger line when `textInput` is missing — do not leave a silent dead field.
 
-When LM sends field 11, stock KaiPath **1.3.7** ignores it — no crash, no EditBox. **Mitigation:** LM 4.6.122+ shows a danger line when `textInput` is missing; **fix:** next official KaiPath merges the kit (JLDK).
+### 2. UTF-8 mojibake
 
-### 2. UTF-8 is “wire-compatible” but still caused mojibake
+Fancy punctuation can still show as `â€` on some clients. LM Ultra copy prefers ASCII dashes.
 
-Docs call MC `readUtf` and LM’s explicit UTF-8 helpers compatible, but live screenshots showed `â€` garbage on en-dashes / fancy punctuation. Workaround since **4.6.116:** ASCII dashes / plain punctuation in Ultra copy. Any new special characters can break again until JLDK fixes decode properly on the client.
+### 3. Player model custom parts
 
-### 3. Player model custom parts may not fully render
+`playerModel.parts` schema v1 is LM-side; verify all part types render on the client preview.
 
-1.3.7 draws `playerModel`, but schema v1 `playerModel.parts` (`headBones` / `form` / `extras`) is LM-side. Unclear whether 1.3.7 renders every custom head/form part or mostly the base entity preview. Demon horns appeared in at least one screenshot — verify all part types before relying on cosmetics.
+### 4. Limited graceful degradation
 
-### 4. Limited graceful degradation for missing features
-
-Older KaiPath (or no KaiPath) still hits install / broken-menu paths more than per-widget hide. `GuiFeaturesPacket` negotiation exists; LM uses it for staff `guitest` + login gap logs and for Weights/Config textInput copy, but does **not** yet hide every optional chrome (styles, tabs, preview) feature-by-feature when the client omits it. Expect degraded look, not a tailored subset UI.
+`GuiFeaturesPacket` drives guitest / gap logs and Weights/Config copy; LM does not yet hide every optional chrome feature-by-feature.
 
 ### 5. Slider / toggle types are deferred
 
-Booleans stay styled buttons; numbers stay text + ± steppers. Both sides need work before `inputsJson` can carry real `slider` / `toggle` types.
+Booleans stay styled buttons; numbers stay text + ± steppers.
 
 ## Reserved (later): `inputsJson` slider / toggle
 
 Not implemented on either side. When added, prefer extending field 11 rather than a new packet field.
-
-Until then, BOOLEAN uses styled toggle **buttons**; NUMBER uses **text** + ± step buttons.
 
 ## Docs
 

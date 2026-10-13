@@ -27,8 +27,8 @@ import net.minecraft.server.level.ServerPlayer;
  * </ul>
  *
  * <p>Clients that never send {@link GuiFeaturesPacket} are treated as the KaiPath <b>1.3.1
- * baseline</b>: dynamic layout/buttons only. KaiPath <b>1.3.7</b> advertises
- * style/activeTab/titleAlign/playerModel (still not {@link #FEATURE_TEXT_INPUT}).
+ * baseline</b>: dynamic layout/buttons only. KaiPath <b>1.3.9</b> advertises
+ * style/activeTab/titleAlign/playerModel/{@link #FEATURE_TEXT_INPUT}.
  */
 public final class UltraClientFeatures {
     public static final String FEATURE_STYLE = "style";
@@ -56,7 +56,7 @@ public final class UltraClientFeatures {
                     FEATURE_TEXT_INPUT);
 
     /**
-     * Features KaiPath <b>1.3.7</b> already advertises/honors. Missing any of these is a real
+     * Features KaiPath <b>1.3.9</b> already advertises/honors. Missing any of these is a real
      * client gap (wrong jar / old client).
      */
     public static final Set<String> SHIPPED_ON_RECOMMENDED =
@@ -64,13 +64,11 @@ public final class UltraClientFeatures {
                     FEATURE_STYLE,
                     FEATURE_ACTIVE_TAB,
                     FEATURE_TITLE_ALIGN,
-                    FEATURE_PLAYER_MODEL);
+                    FEATURE_PLAYER_MODEL,
+                    FEATURE_TEXT_INPUT);
 
-    /**
-     * Still pending on KaiPath after 1.3.7 — Weights shop + Config typed fields need this.
-     * Reference kit: {@code tools/ultra-gui-kit/kaipath-client/}.
-     */
-    public static final Set<String> PENDING_NEXT = Set.of(FEATURE_TEXT_INPUT);
+    /** Reserved for optional features not yet on the recommended KaiPath. Empty as of 1.3.9. */
+    public static final Set<String> PENDING_NEXT = Set.of();
 
     private static final Map<UUID, State> BY_PLAYER = new ConcurrentHashMap<>();
 
@@ -155,7 +153,7 @@ public final class UltraClientFeatures {
         return missing;
     }
 
-    /** Gaps vs KaiPath 1.3.7 shipped set — warn on login/guitest. */
+    /** Gaps vs KaiPath 1.3.9 shipped set — warn on login/guitest. */
     public static List<String> missingShipped(State state) {
         List<String> missing = new ArrayList<>();
         if (state == null || !state.has(FEATURE_STYLE)) {
@@ -170,16 +168,38 @@ public final class UltraClientFeatures {
         if (state == null || !state.has(FEATURE_PLAYER_MODEL)) {
             missing.add(FEATURE_PLAYER_MODEL_DOC);
         }
-        return missing;
-    }
-
-    /** Gaps still expected after 1.3.7 (today: {@code textInput} only). */
-    public static List<String> missingPending(State state) {
-        List<String> missing = new ArrayList<>();
         if (state == null || !state.has(FEATURE_TEXT_INPUT)) {
             missing.add(FEATURE_TEXT_INPUT_DOC);
         }
         return missing;
+    }
+
+    /** Gaps still expected after the recommended KaiPath (none as of 1.3.9). */
+    public static List<String> missingPending(State state) {
+        List<String> missing = new ArrayList<>();
+        for (String feature : PENDING_NEXT) {
+            if (state == null || !state.has(feature)) {
+                missing.add(docSpelling(feature));
+            }
+        }
+        return missing;
+    }
+
+    private static String docSpelling(String feature) {
+        String key = normalize(feature);
+        if (FEATURE_ACTIVE_TAB.equals(key)) {
+            return FEATURE_ACTIVE_TAB_DOC;
+        }
+        if (FEATURE_TITLE_ALIGN.equals(key)) {
+            return FEATURE_TITLE_ALIGN_DOC;
+        }
+        if (FEATURE_PLAYER_MODEL.equals(key)) {
+            return FEATURE_PLAYER_MODEL_DOC;
+        }
+        if (FEATURE_TEXT_INPUT.equals(key)) {
+            return FEATURE_TEXT_INPUT_DOC;
+        }
+        return feature == null ? "" : feature;
     }
 
     public static boolean hasTextInput(ServerPlayer player) {
@@ -215,8 +235,8 @@ public final class UltraClientFeatures {
     }
 
     /**
-     * Log when 1.3.7-shipped features are missing (real gap). Pending {@code textInput} is
-     * logged at info so 1.3.7 clients are not warned as broken.
+     * Log when 1.3.9-shipped features are missing (real gap). {@link #PENDING_NEXT} gaps (none
+     * today) log at info so older clients are not warned as broken for reserved work.
      */
     public static void warnMissingOptionalFeatures(ServerPlayer player, String context) {
         if (player == null) {
@@ -230,7 +250,7 @@ public final class UltraClientFeatures {
         String ctx = context == null ? "?" : context;
         if (!shippedGaps.isEmpty()) {
             AdaptiveDifficultyMod.LOGGER.warn(
-                    "[{}] Ultra client gap (pre-1.3.7 features) player={} kaipathVersion={} "
+                    "[{}] Ultra client gap (pre-1.3.9 features) player={} kaipathVersion={} "
                             + "context={} advertised={} features={} missingShipped={} — {}",
                     AdaptiveDifficultyMod.MOD_ID,
                     safeName(player),
@@ -243,8 +263,8 @@ public final class UltraClientFeatures {
         }
         if (!pending.isEmpty()) {
             AdaptiveDifficultyMod.LOGGER.info(
-                    "[{}] Ultra pending after KaiPath 1.3.7 player={} kaipathVersion={} "
-                            + "context={} pending={} — Weights/Config typed fields need textInput",
+                    "[{}] Ultra pending after KaiPath 1.3.9 player={} kaipathVersion={} "
+                            + "context={} pending={}",
                     AdaptiveDifficultyMod.MOD_ID,
                     safeName(player),
                     verLabel,

@@ -280,9 +280,9 @@ public final class UltraScreenSpec {
     }
 
     /**
-     * Editable text field (GuiOpenPacket field 11 {@code inputsJson}). KaiPath <b>1.3.7</b>
-     * still does not render or advertise {@code textInput}; clients that do advertise it
-     * render the field. Older / current clients ignore trailing field 11.
+     * Editable text field (GuiOpenPacket field 11 {@code inputsJson}). KaiPath <b>1.3.9+</b>
+     * advertises {@code textInput} and renders EditBox widgets. Older clients ignore trailing
+     * field 11 — pair shop pages with {@link UltraClientFeatures#hasTextInput}.
      *
      * <p>Pair with a button whose {@code args.bindInput} matches {@code inputId} so the client
      * copies the typed value into {@code args.value} on click / Enter.

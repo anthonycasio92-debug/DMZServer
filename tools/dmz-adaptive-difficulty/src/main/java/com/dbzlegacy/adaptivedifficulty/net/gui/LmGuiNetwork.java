@@ -56,7 +56,7 @@ public final class LmGuiNetwork {
      * Current recommended/released KaiPath for Ultra (CurseForge). Ships style, activeTab,
      * titleAlign, playerModel + GuiFeaturesPacket. Still lacks field 11 {@code textInput}.
      */
-    public static final String KAIPATH_RECOMMENDED_VERSION = "1.3.7";
+    public static final String KAIPATH_RECOMMENDED_VERSION = "1.3.9";
 
     /**
      * Optional channel: clients without KaiPath omit it. Accept missing so those players

@@ -548,12 +548,12 @@ public final class UltraConfigScreens {
         }
     }
 
-    /** KaiPath 1.3.7 still lacks field 11 — surface that before a dead Apply button. */
+    /** Older KaiPath without field 11 — surface that before a dead Apply button. */
     private static void noteIfTextInputMissing(UltraScreenSpec spec, ServerPlayer player) {
         if (spec == null || UltraClientFeatures.hasTextInput(player)) {
             return;
         }
-        spec.line(UltraStyle.danger("Typed fields need KaiPath textInput (past 1.3.7)."))
+        spec.line(UltraStyle.danger("Typed fields need KaiPath textInput (1.3.9+)."))
                 .line(UltraStyle.DIM + "Until then use Toggle / Next value / ± step buttons.");
     }
 }
