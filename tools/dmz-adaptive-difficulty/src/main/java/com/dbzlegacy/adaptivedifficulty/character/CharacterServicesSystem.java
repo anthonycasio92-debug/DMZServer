@@ -160,7 +160,7 @@ public final class CharacterServicesSystem {
         List<String> lines = new ArrayList<>();
         TransferableStats now = captureStats(player);
         if (now == null) {
-            lines.add("§7We could not read your stats yet — try again in a moment.");
+            lines.add("§7We could not read your stats yet - try again in a moment.");
             return lines;
         }
         TransferableStats kept = now.scaled(preservationPercent);
@@ -287,18 +287,18 @@ public final class CharacterServicesSystem {
                 cd = CharacterServicesConfig.get().reskin.cooldownMs;
             }
             default -> {
-                return "§7—";
+                return "§7-";
             }
         }
         long left = last + cd - now;
         if (left <= 0L) {
             return "§aReady to use";
         }
-        return "§7On cooldown — ready in §f" + formatDuration(left);
+        return "§7On cooldown - ready in §f" + formatDuration(left);
     }
 
     private static String statLine(String label, int before, int after) {
-        return "§7" + label + " §f" + format(before) + " §8→ §f" + format(after);
+        return "§7" + label + " §f" + format(before) + " §8-> §f" + format(after);
     }
 
     public static String executeRaceChange(ServerPlayer player, String targetRace, int preservationPercent) {
@@ -448,14 +448,14 @@ public final class CharacterServicesSystem {
             String paid = cost > 0L ? " §7Paid §f" + formatCost(cost) + "§7." : "";
             if (fullWipe) {
                 return "§aOpening character setup for §f" + titleCase(raceId)
-                        + "§a. §7Pick your class and appearance — free full wipe."
+                        + "§a. §7Pick your class and appearance - free full wipe."
                         + " §7Purchased model pieces stay unlocked."
                         + paid;
             }
             if (openedFreeClassPicker) {
                 return "§aRace changed to §f" + titleCase(raceId)
                         + "§a. Eligible stats preserved at §f" + preservationPercent + "%§a."
-                        + " §7Your old class is not available on this race — §fchoose a new class§7"
+                        + " §7Your old class is not available on this race - §fchoose a new class§7"
                         + " in the editor (§fno extra cost§7)."
                         + (cfg.raceChange.keepSkillsOnRaceChange
                                 ? " §7Ki skills and shared form progress kept."

@@ -61,7 +61,8 @@ public final class UltraCharacterScreens {
                 .page(page)
                 .activeTab(tab)
                 .tabs("home|Home", "saga|Saga Reset", "android|Android Removal")
-                .playerModel(player, 248, 60, 86, 120, 1.0f, true);
+                // Scale 1.5 fills the 86x120 preview better; y=60 clears the tab strip.
+                .playerModel(player, 248, 60, 86, 120, 1.5f, true);
     }
 
     /** Overview + look tools — Change Race / Class / Model / Reskin on Home. */
@@ -72,8 +73,8 @@ public final class UltraCharacterScreens {
         boolean canReskin = "true".equals(ph.get("can_reskin"));
         boolean canBones = "true".equals(ph.get("can_head_bones"));
         UltraScreenSpec spec = base(player, "main", "home")
-                .labelValue("Race", ph.getOrDefault("current_race", "—"))
-                .labelValue("Class", ph.getOrDefault("current_class", "—"))
+                .labelValue("Race", ph.getOrDefault("current_race", "-"))
+                .labelValue("Class", ph.getOrDefault("current_class", "-"))
                 .line(UltraStyle.LABEL + "Change your race, class, or look. Saga and Android have their own tabs.")
                 .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
 
@@ -168,21 +169,21 @@ public final class UltraCharacterScreens {
         }
         if (pg > 0) {
             spec.buttonLeft(
-                    "page:race:" + (pg - 1), UltraStyle.dim("« Prev"), UltraStyle.STYLE_DIM);
+                    "page:race:" + (pg - 1), UltraStyle.dim("< Prev"), UltraStyle.STYLE_DIM);
         }
         if (pg + 1 < pages) {
             if (pg > 0) {
                 spec.buttonRight(
-                        "page:race:" + (pg + 1), UltraStyle.LABEL + "Next »", UltraStyle.STYLE_NORMAL);
+                        "page:race:" + (pg + 1), UltraStyle.LABEL + "Next >", UltraStyle.STYLE_NORMAL);
             } else {
                 spec.buttonLeft(
-                        "page:race:" + (pg + 1), UltraStyle.LABEL + "Next »", UltraStyle.STYLE_NORMAL);
+                        "page:race:" + (pg + 1), UltraStyle.LABEL + "Next >", UltraStyle.STYLE_NORMAL);
             }
             spec.rowGap();
         } else if (pg > 0) {
             spec.rowGap();
         }
-        spec.button("tab:home", UltraStyle.dim("Back"), UltraStyle.STYLE_DIM).rowGap();
+        // footerBackHome only — a second tab:home Back stacked a duplicate button.
         spec.footerBackHome();
         spec.send(player);
     }
@@ -264,7 +265,7 @@ public final class UltraCharacterScreens {
         List<String> cards = CharacterServicesGuiApi.classCards(player);
         int placed = 0;
         for (String card : cards) {
-            if (placed >= 10 || card == null || card.isBlank()) {
+            if (card == null || card.isBlank()) {
                 continue;
             }
             String[] p = card.split("\t", -1);
@@ -298,7 +299,7 @@ public final class UltraCharacterScreens {
         if (placed == 0) {
             spec.line(UltraStyle.dim("No classes are available for your race."));
         }
-        spec.button("tab:home", UltraStyle.dim("Back"), UltraStyle.STYLE_DIM).rowGap();
+        // footerBackHome only — avoid duplicate Back with tab:home.
         spec.footerBackHome();
         spec.send(player);
     }
@@ -354,11 +355,10 @@ public final class UltraCharacterScreens {
                             "do:reskin_confirm",
                             UltraStyle.confirm("Confirm & pay"),
                             UltraStyle.STYLE_CONFIRM)
-                    .buttonRight("tab:home", UltraStyle.dim("Cancel"), UltraStyle.STYLE_DIM)
+                    .buttonRight("page:reskin", UltraStyle.dim("Cancel"), UltraStyle.STYLE_DIM)
                     .rowGap();
         } else {
             spec.line(UltraStyle.danger(UltraStyle.plain(pre)));
-            spec.button("tab:home", UltraStyle.dim("Back"), UltraStyle.STYLE_DIM).rowGap();
         }
         spec.footerBackHome();
         spec.send(player);
@@ -434,15 +434,15 @@ public final class UltraCharacterScreens {
                 .rowGap();
         if (pg > 0) {
             spec.buttonLeft(
-                    "page:bones:" + (pg - 1), UltraStyle.dim("« Head"), UltraStyle.STYLE_DIM);
+                    "page:bones:" + (pg - 1), UltraStyle.dim("< Head"), UltraStyle.STYLE_DIM);
         }
         if (pg + 1 < pages) {
             if (pg > 0) {
                 spec.buttonRight(
-                        "page:bones:" + (pg + 1), UltraStyle.LABEL + "Horns »", UltraStyle.STYLE_NORMAL);
+                        "page:bones:" + (pg + 1), UltraStyle.LABEL + "Horns >", UltraStyle.STYLE_NORMAL);
             } else {
                 spec.buttonLeft(
-                        "page:bones:" + (pg + 1), UltraStyle.LABEL + "Horns »", UltraStyle.STYLE_NORMAL);
+                        "page:bones:" + (pg + 1), UltraStyle.LABEL + "Horns >", UltraStyle.STYLE_NORMAL);
             }
             spec.rowGap();
         } else if (pg > 0) {

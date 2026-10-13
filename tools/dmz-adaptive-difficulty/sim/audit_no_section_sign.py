@@ -10,6 +10,8 @@ Enforced on:
   - gui/ultra/** (except UltraStyle.java) — already the Ultra path
   - DifficultyChatMenu.java / DifficultyActions.java — previously
     reintroduced § on feature branches; must stay at zero forever
+  - DifficultyTeamGuiApi.java — reachable from Ultra via UltraGuiActions /
+    UltraDifficultyScreens; colors must go through UltraStyle
 """
 from __future__ import annotations
 
@@ -24,6 +26,7 @@ ULTRA = SRC / "gui" / "ultra"
 MUST_STAY_CLEAN = [
     SRC / "gui" / "DifficultyChatMenu.java",
     SRC / "service" / "DifficultyActions.java",
+    SRC / "gui" / "DifficultyTeamGuiApi.java",
 ]
 ALLOW_MARK = {(ULTRA / "UltraStyle.java").resolve()}
 
@@ -69,8 +72,8 @@ def main() -> int:
         print(f"\n{len(errors)} error(s) — standing rule: all colors via UltraStyle")
         return 1
     print(
-        "  OK  DifficultyChatMenu + DifficultyActions + gui/ultra: zero bare § "
-        "(UltraStyle owns the mark)"
+        "  OK  DifficultyChatMenu + DifficultyActions + DifficultyTeamGuiApi "
+        "+ gui/ultra: zero bare § (UltraStyle owns the mark)"
     )
     return 0
 

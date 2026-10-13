@@ -143,7 +143,7 @@ public final class UltraScreenSelfTest {
                             .activeTab("home")
                             .tabs("home|Home", "saga|Saga Reset", "android|Android Removal")
                             .line("self-test")
-                            .playerModel(248, 60, 86, 120, 1.0f, true)
+                            .playerModel(248, 60, 86, 120, 1.5f, true)
                             .footerBackHome();
                     case "skillcheck" -> UltraScreenSpec.of("skillcheck")
                             .title("Skill Check")
@@ -491,7 +491,10 @@ public final class UltraScreenSelfTest {
                 broken.add("character: layoutJson missing playerModel");
             }
             if (!layout.contains("\"y\":60") && !layout.contains("\"y\": 60")) {
-                broken.add("character: playerModel y must be 60 (was 36 — head clipped)");
+                broken.add("character: playerModel y must be 60 (was 36 - head clipped)");
+            }
+            if (!layout.contains("\"scale\":1.5") && !layout.contains("\"scale\": 1.5")) {
+                broken.add("character: playerModel scale must be 1.5 (1.0 rendered too small)");
             }
         }
         for (String tablessId : TABLESS_SCREEN_IDS) {
