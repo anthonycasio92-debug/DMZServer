@@ -177,10 +177,10 @@ public final class UltraRivalScreens {
                 .setRow(UltraStyle.CONTENT_ROW_TABS + 100);
         if (arg != null && !arg.isBlank()) {
             spec.buttonLeft("do:remove:" + arg, UltraStyle.danger("Remove rival"), "danger")
-                    .buttonRight("page:list", UltraStyle.dim("Back to list"), "dim")
                     .rowGap();
         }
-        spec.footerBackHome();
+        // One Back only - rival list (no footerBackHome stack).
+        spec.button("page:list", UltraStyle.BACK, "dim").rowGap();
         spec.send(player);
     }
 

@@ -318,8 +318,8 @@ public final class UltraSparScreens {
             spec.line(UltraStyle.dim(
                     "No bond invites waiting. Send one from Training bonds, or wait for someone to invite you."));
         }
-        spec.button("page:mentor", UltraStyle.dim("Back to bonds"), "dim").rowGap();
-        spec.footerBackHome();
+        // One Back only - training bonds (no footerBackHome stack).
+        spec.button("page:mentor", UltraStyle.BACK, "dim").rowGap();
         spec.send(player);
     }
 
@@ -491,8 +491,8 @@ public final class UltraSparScreens {
         if (placed % 2 == 1) {
             spec.rowGap();
         }
-        spec.button("page:dojo_war", UltraStyle.dim("Back to wars"), "dim").rowGap();
-        spec.footerBackHome();
+        // One Back only - wars (no footerBackHome stack).
+        spec.button("page:dojo_war", UltraStyle.BACK, "dim").rowGap();
         spec.send(player);
     }
 

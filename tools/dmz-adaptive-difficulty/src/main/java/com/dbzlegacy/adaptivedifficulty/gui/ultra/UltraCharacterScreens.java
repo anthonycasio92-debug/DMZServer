@@ -567,8 +567,12 @@ public final class UltraCharacterScreens {
                                     ? SagaResetService.NOTHING_TO_RESET
                                     : SagaResetService.RESET_OFF;
             spec.line(UltraStyle.danger(why));
-            spec.button("tab:saga", UltraStyle.dim("Back to saga list"), UltraStyle.STYLE_DIM).rowGap();
+            // One Back only - saga list (no footerBackHome stack).
+            spec.button("tab:saga", UltraStyle.BACK, UltraStyle.STYLE_DIM).rowGap();
+            spec.send(player);
+            return;
         }
+        // Ready path already has Cancel; one footer Back to Character home.
         spec.footerBackHome();
         spec.send(player);
     }

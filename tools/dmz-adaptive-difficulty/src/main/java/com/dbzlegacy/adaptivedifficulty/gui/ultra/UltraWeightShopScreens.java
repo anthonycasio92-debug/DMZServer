@@ -28,6 +28,9 @@ public final class UltraWeightShopScreens {
     /** Hard cap so typed values stay sane (1 copper : 1 weight). */
     public static final int MAX_WEIGHT_VALUE = 100_000;
 
+    /** Digits needed to type {@link #MAX_WEIGHT_VALUE} (was hard-capped at 4 / 9999). */
+    public static final int MAX_WEIGHT_DIGITS = String.valueOf(MAX_WEIGHT_VALUE).length();
+
     /** Curios slot id for {@code CurioType.WEIGHTS} ({@code data/.../curios/slots/weights.json}). */
     public static final String CURIOS_WEIGHTS_SLOT = "weights";
 
@@ -91,7 +94,7 @@ public final class UltraWeightShopScreens {
                             UltraStyle.STYLE_CONFIRM)
                     .rowGap();
         }
-        spec.buttonLeft("page:main", UltraStyle.dim("Back"), UltraStyle.STYLE_DIM).rowGap();
+        // One Back only (nav:home). Do not also add page:main Back.
         spec.footerBackHome();
         spec.send(player);
     }
@@ -122,16 +125,23 @@ public final class UltraWeightShopScreens {
                             UltraStyle.DIM
                                     + "Install KaiPath 1.3.9+ (GuiOpen field 11 / textInput). "
                                     + "Until then this shop cannot take a typed value.")
-                    .buttonLeft(
-                            "page:weights", UltraStyle.dim("Back to weights"), UltraStyle.STYLE_DIM)
+                    // One Back only - parent shop list.
+                    .buttonLeft("page:weights", UltraStyle.BACK, UltraStyle.STYLE_DIM)
                     .rowGap();
-            spec.footerBackHome();
             spec.send(player);
             return;
         }
 
         spec.line(UltraStyle.LABEL + "Type how much weight value you want (1-" + MAX_WEIGHT_VALUE + ").")
-                .textFieldRow(INPUT_ID, "", "e.g. 50")
+                .textField(
+                        INPUT_ID,
+                        "",
+                        "e.g. 50000",
+                        UltraStyle.COL_L,
+                        spec.row(),
+                        UltraStyle.PANEL_W - UltraStyle.COL_L * 2,
+                        UltraStyle.BTN_H,
+                        MAX_WEIGHT_DIGITS)
                 .rowGap();
         spec.buttonBound(
                         "do:weight_quote:" + offer.id,
@@ -139,9 +149,8 @@ public final class UltraWeightShopScreens {
                         UltraStyle.STYLE_CONFIRM,
                         INPUT_ID)
                 .rowGap();
-        spec.buttonLeft("page:weights", UltraStyle.dim("Back to weights"), UltraStyle.STYLE_DIM)
-                .rowGap();
-        spec.footerBackHome();
+        // One Back only - parent shop list (no footerBackHome stack).
+        spec.buttonLeft("page:weights", UltraStyle.BACK, UltraStyle.STYLE_DIM).rowGap();
         spec.send(player);
     }
 
@@ -187,9 +196,8 @@ public final class UltraWeightShopScreens {
                             UltraStyle.STYLE_DIM)
                     .rowGap();
         }
-        spec.buttonLeft("page:weights", UltraStyle.dim("Back to weights"), UltraStyle.STYLE_DIM)
-                .rowGap();
-        spec.footerBackHome();
+        // One Back only - parent shop list (no footerBackHome stack).
+        spec.buttonLeft("page:weights", UltraStyle.BACK, UltraStyle.STYLE_DIM).rowGap();
         spec.send(player);
     }
 
@@ -390,7 +398,7 @@ public final class UltraWeightShopScreens {
                 return null;
             }
         }
-        if (s.length() > 4) {
+        if (s.length() > MAX_WEIGHT_DIGITS) {
             return null;
         }
         try {

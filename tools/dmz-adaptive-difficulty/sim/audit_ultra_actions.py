@@ -441,6 +441,44 @@ def main() -> int:
             errors.append(
                 'UltraHubScreens openMain (of("hub")) must not add nav:hub / .footerBackToMain()'
             )
+    # Weight shop must accept up to MAX_WEIGHT_VALUE digits (not a stale 4-digit / 9999 cap).
+    weight_shop = (ULTRA / "UltraWeightShopScreens.java").read_text(encoding="utf-8")
+    if "MAX_WEIGHT_VALUE = 100_000" not in weight_shop and "MAX_WEIGHT_VALUE = 100000" not in weight_shop:
+        errors.append("UltraWeightShopScreens.MAX_WEIGHT_VALUE must be 100000")
+    if "s.length() > 4" in weight_shop or "length() > 4" in weight_shop:
+        errors.append("UltraWeightShopScreens.parseWeightValue must not hard-cap at 4 digits (9999)")
+    if "MAX_WEIGHT_DIGITS" not in weight_shop:
+        errors.append("UltraWeightShopScreens must define MAX_WEIGHT_DIGITS from MAX_WEIGHT_VALUE")
+    # No stacked Back: same open* method must not call footerBackHome and also label a Back button.
+    for path in sorted(ULTRA.glob("Ultra*Screens.java")):
+        src = path.read_text(encoding="utf-8")
+        for m in re.finditer(
+            r"(?:private|public|static)\s+[^{;]+?\b(open\w*)\s*\([^)]*\)\s*\{",
+            src,
+        ):
+            name = m.group(1)
+            i = src.find("{", m.end() - 1)
+            depth = 0
+            end = i
+            for j in range(i, len(src)):
+                if src[j] == "{":
+                    depth += 1
+                elif src[j] == "}":
+                    depth -= 1
+                    if depth == 0:
+                        end = j + 1
+                        break
+            body = src[m.start() : end]
+            if "footerBackHome()" not in body and "footerBackToMain()" not in body:
+                continue
+            if re.search(r'(?:dim|confirm|danger)\(\s*"[^"]*[Bb]ack[^"]*"\s*\)', body):
+                errors.append(
+                    f"{path.name}.{name}: Back-labeled button stacked with footerBackHome/ToMain"
+                )
+            # True duplicate: page:main Back next to footerBackHome (same destination often).
+            if 'dim("Back")' in body or "dim(\"Back\")" in body:
+                errors.append(f"{path.name}.{name}: dim(\"Back\") with footer - keep one Back")
+
     # Footers must not ship a Refresh button.
     spec_text = SPEC.read_text(encoding="utf-8")
     for method in ("footerBackToMain", "footerBackHome"):

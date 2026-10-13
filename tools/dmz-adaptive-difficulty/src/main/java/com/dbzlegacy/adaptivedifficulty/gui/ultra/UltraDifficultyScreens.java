@@ -290,8 +290,8 @@ public final class UltraDifficultyScreens {
                     .button("do:summon_end_dragon", UltraStyle.dim("Confirm summon - locked"), "dim")
                     .rowGap();
         }
-        spec.buttonLeft("page:summons", UltraStyle.dim("Back to summons"), "dim").rowGap();
-        spec.footerBackHome();
+        // One Back only - parent summons list (no footerBackHome stack).
+        spec.buttonLeft("page:summons", UltraStyle.BACK, "dim").rowGap();
         spec.send(player);
     }
 
@@ -448,8 +448,8 @@ public final class UltraDifficultyScreens {
         if (title == null) {
             spec.line(UltraStyle.dim("Couldn't find that - try refreshing the list."))
                     .setRow(UltraStyle.CONTENT_ROW_TABS + 80);
-            spec.button("page:titles", UltraStyle.dim("Back to titles"), "dim").rowGap();
-            spec.footerBackHome();
+            // One Back only - titles list.
+            spec.button("page:titles", UltraStyle.BACK, "dim").rowGap();
             spec.send(player);
             return;
         }
@@ -469,17 +469,15 @@ public final class UltraDifficultyScreens {
                 .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
         if (earned && !equipped) {
             spec.buttonLeft("do:equip_title:" + title.id, UltraStyle.confirm("Equip this title"), "confirm")
-                    .buttonRight("page:titles", UltraStyle.dim("Back"), "dim")
                     .rowGap();
         } else if (earned) {
             spec.buttonLeft("do:equip_title:" + title.id, UltraStyle.confirm("Already equipped"), "confirm")
-                    .buttonRight("page:titles", UltraStyle.dim("Back"), "dim")
                     .rowGap();
         } else {
             spec.line(UltraStyle.dim("Equip unlocks after you earn the title."));
-            spec.button("page:titles", UltraStyle.dim("Back to titles"), "dim").rowGap();
         }
-        spec.footerBackHome();
+        // One Back only - titles list (no footerBackHome stack).
+        spec.button("page:titles", UltraStyle.BACK, "dim").rowGap();
         spec.send(player);
     }
 
@@ -607,8 +605,8 @@ public final class UltraDifficultyScreens {
         spec.buttonLeft("do:syslog:off", UltraStyle.danger("Turn OFF"), "danger")
                 .buttonRight("do:syslog:flush", UltraStyle.dim("Flush"), "dim")
                 .rowGap();
-        spec.button("page:admin", UltraStyle.dim("Back to server tools"), "dim").rowGap();
-        spec.footerBackHome();
+        // One Back only - server tools (no footerBackHome stack).
+        spec.button("page:admin", UltraStyle.BACK, "dim").rowGap();
         spec.send(player);
     }
 
