@@ -68,3 +68,7 @@ Config + Difficulty Weights send field 11. 1.3.7 ignores the trailing field. See
 
 - `inputsJson` types `slider` / `toggle` — reserved in [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md).
 - Full DMZUltra geo application of `playerModel.parts` beyond the entity preview 1.3.7 already draws.
+
+## Practical pitfalls
+
+See [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md) § Practical pitfalls — silent field-11 ignore on 1.3.7, UTF-8 mojibake, partial `playerModel.parts`, limited feature-hide degradation, deferred slider/toggle. Text input is the only hard Weights blocker; the rest are watch-outs.

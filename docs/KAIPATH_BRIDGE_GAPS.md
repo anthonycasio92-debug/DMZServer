@@ -35,12 +35,34 @@ Vendored jar: `mods/kaipath-1.3.7.jar`.
 | `activeTab` highlight | **Done** | Done | |
 | `titleAlign` | **Done** | Done | |
 | `playerModel` draw | **Done** | Done | `LmDynamicScreen$Preview` + InventoryScreen |
-| UTF-8 GuiOpen strings | MC `readUtf` | Explicit UTF-8 helpers | Wire-compatible |
+| UTF-8 GuiOpen strings | MC `readUtf` | Explicit UTF-8 helpers | Wire-compatible; still saw `â€` mojibake — LM uses ASCII dashes |
 | Text field widgets (field 11) | **Missing** | **Done** | No `inputsJson` / EditBox / `bindInput` — **Weight shop blocker** |
 | GuiFeaturesPacket advertise | **Partial** | Full | 1.3.7: `["style","activeTab","titleAlign","playerModel"]` — no `textInput` |
 | Slider / toggle widgets | N/A | N/A | Reserved until LM ships types |
 
-**Only remaining Ultra gap for Weights / Config typed entry:** merge reference `inputsJson` + `textInput` advertise into a KaiPath build past 1.3.7. LM 4.6.122+ treats style/activeTab/titleAlign/playerModel as shipped on 1.3.7 and logs `textInput` as `pendingNext` (not a broken-client warning).
+**Only hard blocker for Weights / Config typed entry:** merge reference `inputsJson` + `textInput` advertise into a KaiPath build past 1.3.7. LM 4.6.122+ treats style/activeTab/titleAlign/playerModel as shipped on 1.3.7 and logs `textInput` as `pendingNext` (not a broken-client warning). Everything below is “works but watch out.”
+
+## Practical pitfalls (beyond text input)
+
+### 1. Text input on 1.3.7 fails silently on the client
+
+When LM sends field 11, KaiPath **1.3.7** ignores it — no crash, no EditBox. A weight shop that only relied on the text field would look broken with no way to type a value. **Mitigation on LM 4.6.122+:** Weights / Config screens show an explicit danger line when `textInput` is missing (`pendingNext`) instead of a dead blank field. Still: do not expect typed entry until a KaiPath past 1.3.7.
+
+### 2. UTF-8 is “wire-compatible” but still caused mojibake
+
+Docs call MC `readUtf` and LM’s explicit UTF-8 helpers compatible, but live screenshots showed `â€` garbage on en-dashes / fancy punctuation. Workaround since **4.6.116:** ASCII dashes / plain punctuation in Ultra copy. Any new special characters can break again until JLDK fixes decode properly on the client.
+
+### 3. Player model custom parts may not fully render
+
+1.3.7 draws `playerModel`, but schema v1 `playerModel.parts` (`headBones` / `form` / `extras`) is LM-side. Unclear whether 1.3.7 renders every custom head/form part or mostly the base entity preview. Demon horns appeared in at least one screenshot — verify all part types before relying on cosmetics.
+
+### 4. Limited graceful degradation for missing features
+
+Older KaiPath (or no KaiPath) still hits install / broken-menu paths more than per-widget hide. `GuiFeaturesPacket` negotiation exists; LM uses it for staff `guitest` + login gap logs and for Weights/Config textInput copy, but does **not** yet hide every optional chrome (styles, tabs, preview) feature-by-feature when the client omits it. Expect degraded look, not a tailored subset UI.
+
+### 5. Slider / toggle types are deferred
+
+Booleans stay styled buttons; numbers stay text + ± steppers. Both sides need work before `inputsJson` can carry real `slider` / `toggle` types.
 
 ## Reserved (later): `inputsJson` slider / toggle
 
