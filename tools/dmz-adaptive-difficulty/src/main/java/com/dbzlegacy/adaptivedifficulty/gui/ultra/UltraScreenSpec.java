@@ -72,7 +72,7 @@ public final class UltraScreenSpec {
     }
 
     public UltraScreenSpec title(String title) {
-        this.title = UltraStyle.header(title);
+        this.title = UltraStyle.wireText(UltraStyle.header(title));
         return this;
     }
 
@@ -181,7 +181,8 @@ public final class UltraScreenSpec {
 
     public UltraScreenSpec line(String text) {
         if (text != null && !text.isBlank()) {
-            lines.add(text);
+            // Strip fancy punctuation / mojibake at the wire boundary.
+            lines.add(UltraStyle.wireText(text));
         }
         return this;
     }
@@ -409,9 +410,10 @@ public final class UltraScreenSpec {
             boolean active = tab.id.equalsIgnoreCase(activeTab);
             o.addProperty(
                     "label",
-                    active
-                            ? UltraStyle.HEADER + UltraStyle.plain(tab.label)
-                            : UltraStyle.LABEL + UltraStyle.plain(tab.label));
+                    UltraStyle.wireText(
+                            active
+                                    ? UltraStyle.HEADER + UltraStyle.plain(tab.label)
+                                    : UltraStyle.LABEL + UltraStyle.plain(tab.label)));
             tabArr.add(o);
         }
         JsonArray lineArr = new JsonArray();
@@ -457,8 +459,10 @@ public final class UltraScreenSpec {
             o.addProperty("y", in.y + buttonShift);
             o.addProperty("w", in.w);
             o.addProperty("h", in.h);
-            o.addProperty("value", in.value);
-            o.addProperty("placeholder", in.placeholder);
+            o.addProperty("value", UltraStyle.wireText(in.value == null ? "" : in.value));
+            o.addProperty(
+                    "placeholder",
+                    UltraStyle.wireText(in.placeholder == null ? "" : in.placeholder));
             o.addProperty("maxLength", in.maxLength);
             JsonObject args = new JsonObject();
             args.addProperty("screen", screenId);

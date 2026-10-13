@@ -441,6 +441,18 @@ def main() -> int:
             errors.append(
                 'UltraHubScreens openMain (of("hub")) must not add nav:hub / .footerBackToMain()'
             )
+    # Wire text must sanitize fancy punctuation (Â· / â€ mojibake) and Back must not use "<".
+    style_src = (ULTRA / "UltraStyle.java").read_text(encoding="utf-8")
+    if "wireText(" not in style_src:
+        errors.append("UltraStyle.wireText must sanitize Ultra wire copy to ASCII (+ section-sign)")
+    if 'BACK = LABEL + "< Back"' in style_src or 'BACK = LABEL + "<Back"' in style_src:
+        errors.append('UltraStyle.BACK must not use a leading "<" (renders as garbage on some clients)')
+    if 'BACK = LABEL + "Back"' not in style_src:
+        errors.append('UltraStyle.BACK should be LABEL + "Back"')
+    spec_src = (ULTRA / "UltraScreenSpec.java").read_text(encoding="utf-8")
+    if "UltraStyle.wireText" not in spec_src:
+        errors.append("UltraScreenSpec must run UltraStyle.wireText on lines/titles before send")
+
     # Weight shop must accept up to MAX_WEIGHT_VALUE digits (not a stale 4-digit / 9999 cap).
     weight_shop = (ULTRA / "UltraWeightShopScreens.java").read_text(encoding="utf-8")
     if "MAX_WEIGHT_VALUE = 100_000" not in weight_shop and "MAX_WEIGHT_VALUE = 100000" not in weight_shop:

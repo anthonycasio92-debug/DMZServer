@@ -123,8 +123,9 @@ public final class UltraStyle {
         SEP = "|";
         TIMES = "x";
         PAGE_ANDROID_REMOVE = "android_remove";
-        BACK = LABEL + "< Back";
-        BACK_TO_MAIN = LABEL + "< Back to main menu";
+        // No leading "<" - some clients render it as garbage next to color codes.
+        BACK = LABEL + "Back";
+        BACK_TO_MAIN = LABEL + "Back to main menu";
     }
 
     private UltraStyle() {}
@@ -136,60 +137,96 @@ public final class UltraStyle {
         return text.replaceAll(MARK + ".", "").trim();
     }
 
+    /**
+     * Sanitize text for the KaiPath Ultra wire. Keeps Minecraft {@code §} color codes
+     * (single U+00A7) but replaces fancy punctuation that mojibakes as {@code Â·} /
+     * {@code â€} / similar on clients that mishandle multi-byte UTF-8.
+     */
+    public static String wireText(String text) {
+        if (text == null || text.isEmpty()) {
+            return text == null ? "" : text;
+        }
+        String s = text;
+        // Common punctuation -> ASCII
+        s = s.replace('\u2014', '-').replace('\u2013', '-').replace('\u2212', '-');
+        s = s.replace("\u2026", "...").replace('\u00B7', '-').replace('\u2022', '*');
+        s = s.replace('\u25CF', '*').replace('\u00D7', 'x').replace('\u00B1', '+');
+        s = s.replace('\u2192', '>').replace('\u2190', '<').replace('\u2194', '-');
+        s = s.replace('\u00AB', '<').replace('\u00BB', '>');
+        s = s.replace('\u201C', '"').replace('\u201D', '"');
+        s = s.replace('\u2018', '\'').replace('\u2019', '\'');
+        s = s.replace('\u00A0', ' ').replace('\u2500', '-');
+        // Already-mojibaked sequences sometimes re-enter via GuiApi / stored strings.
+        s = s.replace("\u00E2\u20AC", "-"); // â€ prefix of em-dash/ellipsis mojibake
+        s = s.replace("\u00C2\u00B7", "-"); // Â·
+        s = s.replace("\u00C2", ""); // stray Â from UTF-8 C2 as Latin-1
+        StringBuilder out = new StringBuilder(s.length());
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c == '\u00A7' || c <= 0x7F) {
+                out.append(c);
+            } else {
+                out.append('?');
+            }
+        }
+        return out.toString();
+    }
+
     public static String header(String title) {
-        return HEADER + plain(title);
+        return wireText(HEADER + plain(title));
     }
 
     public static String labelValue(String label, String value) {
-        return LABEL + plain(label) + " " + VALUE + plain(value);
+        return wireText(LABEL + plain(label) + " " + VALUE + plain(value));
     }
 
     public static String notice(String body) {
-        return NOTICE_HEAD + "Notice " + NOTICE_BODY + plain(body);
+        return wireText(NOTICE_HEAD + "Notice " + NOTICE_BODY + plain(body));
     }
 
-    /** Truncate for buttons; keep room for style codes. */
+    /** Truncate for buttons; keep room for style codes. Always wire-safe ASCII (+ §). */
     public static String buttonLabel(String styled) {
         if (styled == null) {
             return "";
         }
-        String plain = plain(styled);
+        String safe = wireText(styled);
+        String plain = plain(safe);
         if (plain.length() <= 28) {
-            return styled;
+            return safe;
         }
         String cut = plain.substring(0, 27) + "...";
-        int mark = styled.indexOf(plain);
+        int mark = safe.indexOf(plain);
         if (mark > 0) {
-            return styled.substring(0, mark) + cut;
+            return safe.substring(0, mark) + cut;
         }
         return cut;
     }
 
     public static String confirm(String label) {
-        return CONFIRM + plain(label);
+        return wireText(CONFIRM + plain(label));
     }
 
     public static String danger(String label) {
-        return DANGER + plain(label);
+        return wireText(DANGER + plain(label));
     }
 
     public static String dim(String label) {
-        return DIM + plain(label);
+        return wireText(DIM + plain(label));
     }
 
     /** Chat/status line with yellow notice body. */
     public static String noticeLine(String body) {
-        return NOTICE_BODY + plain(body);
+        return wireText(NOTICE_BODY + plain(body));
     }
 
     /** Chat/status line with danger red. */
     public static String dangerLine(String body) {
-        return DANGER + plain(body);
+        return wireText(DANGER + plain(body));
     }
 
     /** Boost preset caption, e.g. {@code 1.25x - 30m}. */
     public static String boostPreset(String mult, String minutes) {
-        return plain(mult) + TIMES + " " + SEP + " " + plain(minutes) + "m";
+        return wireText(plain(mult) + TIMES + " " + SEP + " " + plain(minutes) + "m");
     }
 
     /**
@@ -201,6 +238,6 @@ public final class UltraStyle {
         String letter = codeLetter == null || codeLetter.isBlank()
                 ? "f"
                 : codeLetter.trim().substring(0, 1);
-        return MARK + letter + plain(text);
+        return wireText(MARK + letter + plain(text));
     }
 }

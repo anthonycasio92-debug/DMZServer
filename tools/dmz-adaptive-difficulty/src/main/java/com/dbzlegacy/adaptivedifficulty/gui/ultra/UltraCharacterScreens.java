@@ -174,15 +174,15 @@ public final class UltraCharacterScreens {
         }
         if (pg > 0) {
             spec.buttonLeft(
-                    "page:race:" + (pg - 1), UltraStyle.dim("< Prev"), UltraStyle.STYLE_DIM);
+                    "page:race:" + (pg - 1), UltraStyle.dim("Prev"), UltraStyle.STYLE_DIM);
         }
         if (pg + 1 < pages) {
             if (pg > 0) {
                 spec.buttonRight(
-                        "page:race:" + (pg + 1), UltraStyle.LABEL + "Next >", UltraStyle.STYLE_NORMAL);
+                        "page:race:" + (pg + 1), UltraStyle.LABEL + "Next", UltraStyle.STYLE_NORMAL);
             } else {
                 spec.buttonLeft(
-                        "page:race:" + (pg + 1), UltraStyle.LABEL + "Next >", UltraStyle.STYLE_NORMAL);
+                        "page:race:" + (pg + 1), UltraStyle.LABEL + "Next", UltraStyle.STYLE_NORMAL);
             }
             spec.rowGap();
         } else if (pg > 0) {
@@ -449,15 +449,15 @@ public final class UltraCharacterScreens {
                 .rowGap();
         if (pg > 0) {
             spec.buttonLeft(
-                    "page:bones:" + (pg - 1), UltraStyle.dim("< Head"), UltraStyle.STYLE_DIM);
+                    "page:bones:" + (pg - 1), UltraStyle.dim("Prev head"), UltraStyle.STYLE_DIM);
         }
         if (pg + 1 < pages) {
             if (pg > 0) {
                 spec.buttonRight(
-                        "page:bones:" + (pg + 1), UltraStyle.LABEL + "Horns >", UltraStyle.STYLE_NORMAL);
+                        "page:bones:" + (pg + 1), UltraStyle.LABEL + "Next horns", UltraStyle.STYLE_NORMAL);
             } else {
                 spec.buttonLeft(
-                        "page:bones:" + (pg + 1), UltraStyle.LABEL + "Horns >", UltraStyle.STYLE_NORMAL);
+                        "page:bones:" + (pg + 1), UltraStyle.LABEL + "Next horns", UltraStyle.STYLE_NORMAL);
             }
             spec.rowGap();
         } else if (pg > 0) {
