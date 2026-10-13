@@ -6,7 +6,7 @@ import java.util.Locale;
 import java.util.Map;
 import net.minecraft.server.level.ServerPlayer;
 
-/** Prestige system — Home / Prestige (turn-in) / Shop. */
+/** Prestige system - Home / Prestige (turn-in) / Shop. */
 public final class UltraPrestigeScreens {
     private UltraPrestigeScreens() {}
 
@@ -65,7 +65,7 @@ public final class UltraPrestigeScreens {
                 spec.line(UltraStyle.danger("You need a higher level first."));
             }
         }
-        // Overview only — Prestige turn-in and Shop live on their tabs.
+        // Overview only - Prestige turn-in and Shop live on their tabs.
         spec.line(UltraStyle.LABEL + "Open the Prestige tab to turn in, or Shop to spend favor.")
                 .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
         spec.footerBackToMain();
@@ -80,7 +80,7 @@ public final class UltraPrestigeScreens {
         spec.notice("Turning in current prestige removes its stat bonus. This cannot be undone.")
                 .line(UltraStyle.danger(
                         "Exchanging prestige for favor removes the stat bonus from the exchanged prestiges."))
-                .line(UltraStyle.LABEL + "Bulk bonus: 3→4 · 6→9 · 9→15 favor")
+                .line(UltraStyle.LABEL + "Bulk bonus: 3->4 - 6->9 - 9->15 favor")
                 .setRow(140);
         spec.button("do:confirm", UltraStyle.danger("Prestige now"), UltraStyle.STYLE_DANGER).rowGap();
         int[] amounts = PrestigePointsSystem.TURN_IN_AMOUNTS;
@@ -89,14 +89,14 @@ public final class UltraPrestigeScreens {
             String gainA = ph.getOrDefault("turnin_" + a + "_points", "0");
             String labelA = held >= a
                     ? UltraStyle.confirm("Exchange " + a + " (+" + gainA + " favor)")
-                    : UltraStyle.dim("Exchange " + a + " · need " + a);
+                    : UltraStyle.dim("Exchange " + a + " - need " + a);
             spec.buttonLeft("do:turnin:" + a, labelA, held >= a ? "confirm" : "dim");
             if (i + 1 < amounts.length) {
                 int b = amounts[i + 1];
                 String gainB = ph.getOrDefault("turnin_" + b + "_points", "0");
                 String labelB = held >= b
                         ? UltraStyle.confirm("Exchange " + b + " (+" + gainB + " favor)")
-                        : UltraStyle.dim("Exchange " + b + " · need " + b);
+                        : UltraStyle.dim("Exchange " + b + " - need " + b);
                 spec.buttonRight("do:turnin:" + b, labelB, held >= b ? "confirm" : "dim");
             }
             spec.rowGap();
@@ -112,7 +112,7 @@ public final class UltraPrestigeScreens {
         int pageSize = Math.max(1, parseInt(ph.get("shop_page_size"), 6));
         UltraScreenSpec spec = base(page > 0 ? "shop:" + page : "shop", "shop");
         paintWallet(spec, ph);
-        spec.line(UltraStyle.LABEL + "Permanent skill levels · survive prestige")
+        spec.line(UltraStyle.LABEL + "Permanent skill levels - survive prestige")
                 .labelValue("Shop page", (page + 1) + "/" + pages)
                 .setRow(120);
         String[] ids = shopSkillIds(ph);
@@ -124,18 +124,18 @@ public final class UltraPrestigeScreens {
             int bought = parseInt(ph.get("skill_" + id), 0);
             int max = parseInt(ph.get("skill_" + id + "_max"), 0);
             String cost = ph.getOrDefault("skill_" + id + "_cost", "?");
-            String caption = label + " " + bought + "/" + (max > 0 ? max : "?") + " · " + cost;
+            String caption = label + " " + bought + "/" + (max > 0 ? max : "?") + " - " + cost;
             boolean maxed = max > 0 && bought >= max;
             String action = "do:skill:" + id;
             if (placed % 2 == 0) {
                 spec.buttonLeft(
                         action,
-                        maxed ? UltraStyle.dim(caption + " · max") : UltraStyle.confirm(caption),
+                        maxed ? UltraStyle.dim(caption + " - max") : UltraStyle.confirm(caption),
                         maxed ? "dim" : "confirm");
             } else {
                 spec.buttonRight(
                         action,
-                        maxed ? UltraStyle.dim(caption + " · max") : UltraStyle.confirm(caption),
+                        maxed ? UltraStyle.dim(caption + " - max") : UltraStyle.confirm(caption),
                         maxed ? "dim" : "confirm");
                 spec.rowGap();
             }
@@ -144,11 +144,11 @@ public final class UltraPrestigeScreens {
             spec.rowGap();
         }
         if (page > 0) {
-            spec.buttonLeft("open:prestige", UltraStyle.dim("« Prev shop"), "dim");
+            spec.buttonLeft("open:prestige", UltraStyle.dim("<< Prev shop"), "dim");
         }
         if (page + 1 < pages) {
-            // Reopen next page via tab home then shop — UltraGui open with shop:N
-            spec.buttonRight("tab:shop", UltraStyle.dim("Next »"), "dim");
+            // Reopen next page via tab home then shop - UltraGui open with shop:N
+            spec.buttonRight("tab:shop", UltraStyle.dim("Next >>"), "dim");
         }
         if (page > 0 || page + 1 < pages) {
             spec.rowGap();

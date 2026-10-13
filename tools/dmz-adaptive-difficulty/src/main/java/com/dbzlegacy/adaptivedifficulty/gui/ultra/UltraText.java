@@ -22,7 +22,7 @@ public final class UltraText {
 
     private UltraText() {}
 
-    /** Player-facing label for pick lists ({@code uuid:…} → stored name). */
+    /** Player-facing label for pick lists ({@code uuid:...} -> stored name). */
     public static String humanizePickerArg(String arg) {
         if (arg == null || arg.isBlank()) {
             return UltraStyle.DIM + "(entry)";
@@ -86,7 +86,7 @@ public final class UltraText {
             return UltraStyle.LABEL + safeChat(resolved);
         }
         if (u.length() > 8) {
-            return UltraStyle.LABEL + "Player " + UltraStyle.DIM + u.substring(0, 8) + "…";
+            return UltraStyle.LABEL + "Player " + UltraStyle.DIM + u.substring(0, 8) + "...";
         }
         return UltraStyle.LABEL + "Player " + UltraStyle.DIM + u;
     }

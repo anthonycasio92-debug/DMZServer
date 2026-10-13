@@ -163,8 +163,8 @@ public final class RivalGuiApi {
 
     public static List<String> challengeLines(ServerPlayer player) {
         List<String> lines = new ArrayList<>();
-        lines.add("§8── §cChallenge §8──");
-        lines.add("§7Send a challenge · respond on §eChallenge requests");
+        lines.add("§8?? §cChallenge §8??");
+        lines.add("§7Send a challenge - respond on §eChallenge requests");
         if (player != null && RivalChallengeManager.get().isInChallenge(player.m_20148_())) {
             lines.add("§eChallenge active");
         } else {
@@ -205,11 +205,11 @@ public final class RivalGuiApi {
             boolean online = p.length > 4 && "1".equals(p[4]);
             String mins = p.length > 5 ? p[5] : "?";
             if ("IN".equalsIgnoreCase(dir)) {
-                lines.add("§a◀ §f" + name + " §8· §f" + mins + " min"
-                        + (online ? " §a●" : " §8○"));
+                lines.add("§a? §f" + name + " §8- §f" + mins + " min"
+                        + (online ? " §a*" : " §8?"));
             } else {
-                lines.add("§6▶ §f" + name + " §8· §f" + mins + " min"
-                        + (online ? " §a●" : " §8○"));
+                lines.add("§6? §f" + name + " §8- §f" + mins + " min"
+                        + (online ? " §a*" : " §8?"));
             }
         }
         return lines;
@@ -526,12 +526,12 @@ public final class RivalGuiApi {
             case "pending", "invites", "pendinginvites" -> RivalSystem.pendingInviteLines(player);
             case "actions" -> List.of(
                     "§6§lRival actions",
-                    "§7Declare invites — tap a name to accept, decline, or withdraw",
+                    "§7Declare invites - tap a name to accept, decline, or withdraw",
                     "§7Declare a rivalry, mark a silent rival, or remove someone from your list",
                     "§7How rivalries work:",
                     "§71. §fDeclare §7someone as your rival (or mark them §fSilent§7)",
                     "§72. §fThey accept §7your invite",
-                    "§73. §fYou're now Mutual §7— bonuses activate"
+                    "§73. §fYou're now Mutual §7- bonuses activate"
             );
             case "stats", "statistics" -> statsLines(player);
             case "challenge", "challenges" -> challengeLines(player);
@@ -539,8 +539,8 @@ public final class RivalGuiApi {
             case "top", "leaderboard" -> topLines(player);
             case "progress" -> List.of(
                     "§b§lRival Progress",
-                    "§7Season · Quests · Achievements",
-                    "§7Hall of Fame · Journal · Title",
+                    "§7Season - Quests - Achievements",
+                    "§7Hall of Fame - Journal - Title",
                     "§8Open a page from the Progress menu"
             );
             case "season" -> seasonLines(player);
@@ -550,13 +550,13 @@ public final class RivalGuiApi {
             case "journal" -> journalLines(player);
             case "title", "titles" -> titleLines(player);
             case "help" -> List.of(
-                    "§6§l/rival §8— Rival System",
-                    "§7Prefer §e/lm §7→ Rival from the hub",
-                    "§7GUI: List · Challenge · Top · Progress",
+                    "§6§l/rival §8- Rival System",
+                    "§7Prefer §e/lm §7-> Rival from the hub",
+                    "§7GUI: List - Challenge - Top - Progress",
                     "§e/rival <player> §7silent rival",
                     "§e/rival declare|accept|decline|remove <player>",
                     "§e/rival challenge send <player> [minutes]",
-                    "§7GUI: pick rival → choose 1–10 minutes",
+                    "§7GUI: pick rival -> choose 1-10 minutes",
                     "§e/rival spectate [player]|stop",
                     "§e/rival admin save|refresh|status (staff)"
             );
@@ -591,7 +591,7 @@ public final class RivalGuiApi {
      */
     public static String handleDo(ServerPlayer player, String action, String arg, String page) {
         if (player == null) {
-            return "§cThis only works in-game — console can't open this menu.";
+            return "§cThis only works in-game - console can't open this menu.";
         }
         String act = action == null ? "" : action.toLowerCase(Locale.ROOT).trim();
         String a = arg == null ? "" : arg.trim();
@@ -751,10 +751,10 @@ public final class RivalGuiApi {
                     + "§8" + RivalProgression.path();
         }
         return "§6§l/rival admin\n"
-                + "§e/rival admin save §7— save rivalry and progress data to disk\n"
-                + "§e/rival admin refresh|reload §7— reload stores from disk\n"
-                + "§e/rival admin status §7— enabled + path summary\n"
-                + "§e/rival admin open [page] §7— open rival GUI\n"
+                + "§e/rival admin save §7- save rivalry and progress data to disk\n"
+                + "§e/rival admin refresh|reload §7- reload stores from disk\n"
+                + "§e/rival admin status §7- enabled + path summary\n"
+                + "§e/rival admin open [page] §7- open rival GUI\n"
                 + "§8GUI buttons run these directly.";
     }
 
@@ -773,9 +773,9 @@ public final class RivalGuiApi {
         String draws = p.length > 7 ? p[7] : "0";
         boolean online = p.length > 10 && "1".equals(p[10]);
         List<String> lines = new ArrayList<>();
-        lines.add("§f" + name + (online ? " §a● online" : " §8○ offline"));
-        lines.add("§7Status §f" + status + "  §8·  §7Tier §6" + tier);
-        lines.add("§7RP §f" + rp + "  §8·  §7W/L/D §f" + wins + "/" + losses + "/" + draws);
+        lines.add("§f" + name + (online ? " §a* online" : " §8? offline"));
+        lines.add("§7Status §f" + status + "  §8-  §7Tier §6" + tier);
+        lines.add("§7RP §f" + rp + "  §8-  §7W/L/D §f" + wins + "/" + losses + "/" + draws);
         if (p.length > 8) {
             lines.add("§7Challenge deaths §fyou " + p[8] + " §8/ them " + (p.length > 9 ? p[9] : "0"));
         }
@@ -794,14 +794,14 @@ public final class RivalGuiApi {
         boolean online = p.length > 4 && "1".equals(p[4]);
         boolean mutual = p.length > 5 && "mutual".equalsIgnoreCase(p[5]);
         List<String> lines = new ArrayList<>();
-        lines.add("§f" + name + (online ? " §a●" : " §8○"));
+        lines.add("§f" + name + (online ? " §a*" : " §8?"));
         if ("IN".equalsIgnoreCase(dir)) {
             if (mutual) {
                 lines.add("§eIncoming mutual confirm");
-                lines.add("§7You both picked Silent — Accept to go Mutual.");
+                lines.add("§7You both picked Silent - Accept to go Mutual.");
             } else {
                 lines.add("§aIncoming declare");
-                lines.add("§7Accept to become Mutual · Decline to ignore.");
+                lines.add("§7Accept to become Mutual - Decline to ignore.");
             }
         } else {
             lines.add("§6Outgoing declare");
@@ -837,11 +837,11 @@ public final class RivalGuiApi {
             String[] p = card == null ? new String[0] : card.split("\t", -1);
             String name = p.length > 1 && p[1] != null && !p[1].isBlank() ? p[1].trim() : "?";
             if (pendingInviteCardOutgoing(card)) {
-                out[i] = "§6▶ §f" + name;
+                out[i] = "§6? §f" + name;
             } else if (pendingInviteCardMutualConfirm(card)) {
-                out[i] = "§e◀ §f" + name + " §8· mutual";
+                out[i] = "§e? §f" + name + " §8- mutual";
             } else {
-                out[i] = "§a◀ §f" + name;
+                out[i] = "§a? §f" + name;
             }
         }
         return out;
@@ -865,15 +865,15 @@ public final class RivalGuiApi {
         boolean online = p.length > 4 && "1".equals(p[4]);
         String mins = p.length > 5 ? p[5] : "?";
         List<String> lines = new ArrayList<>();
-        lines.add("§f" + name + (online ? " §a● online" : " §8○ offline"));
+        lines.add("§f" + name + (online ? " §a* online" : " §8? offline"));
         if ("IN".equalsIgnoreCase(dir)) {
             lines.add("§aIncoming challenge");
             lines.add("§7Length §f" + mins + " min");
-            lines.add("§7Accept to start countdown · Decline to refuse.");
+            lines.add("§7Accept to start countdown - Decline to refuse.");
         } else {
             lines.add("§6Outgoing challenge");
             lines.add("§7Length §f" + mins + " min");
-            lines.add("§7Waiting for them · Cancel to withdraw.");
+            lines.add("§7Waiting for them - Cancel to withdraw.");
         }
         if (p.length > 3) {
             long exp = 0L;
@@ -919,9 +919,9 @@ public final class RivalGuiApi {
             String name = p.length > 1 && p[1] != null && !p[1].isBlank() ? p[1].trim() : "?";
             String mins = p.length > 5 ? p[5] : "?";
             if (pendingChallengeCardOutgoing(card)) {
-                out[i] = "§6▶ §f" + name + " §8· " + mins + "m";
+                out[i] = "§6? §f" + name + " §8- " + mins + "m";
             } else {
-                out[i] = "§c◀ §f" + name + " §8· " + mins + "m";
+                out[i] = "§c? §f" + name + " §8- " + mins + "m";
             }
         }
         return out;

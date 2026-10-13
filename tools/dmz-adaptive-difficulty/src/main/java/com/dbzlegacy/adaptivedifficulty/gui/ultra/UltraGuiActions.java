@@ -65,7 +65,7 @@ public final class UltraGuiActions {
                 action,
                 args);
 
-        // Trust boundary: hiding staff buttons is not enough — reject forged packets here.
+        // Trust boundary: hiding staff buttons is not enough - reject forged packets here.
         if (rejectStaffGated(player, screen, action, actionId)) {
             return;
         }
@@ -111,7 +111,7 @@ public final class UltraGuiActions {
         }
         String safeScreen = screen == null || screen.isBlank() ? "hub" : screen;
 
-        // Defense in depth — same gate as dispatch() (covers any future call sites).
+        // Defense in depth - same gate as dispatch() (covers any future call sites).
         if (rejectStaffGated(player, safeScreen, action, rawActionId)) {
             return;
         }
@@ -122,7 +122,7 @@ public final class UltraGuiActions {
             String openTarget = bareHubOpenTarget(action);
             if (openTarget != null) {
                 AdaptiveDifficultyMod.LOGGER.debug(
-                        "[{}] Ultra bare hub action rawActionId={} → open:{}",
+                        "[{}] Ultra bare hub action rawActionId={} -> open:{}",
                         AdaptiveDifficultyMod.MOD_ID,
                         rawActionId,
                         openTarget);
@@ -141,10 +141,10 @@ public final class UltraGuiActions {
                         rawActionId);
                 return;
             }
-            // Same screenId, updated page — never CNPC, never a different system.
+            // Same screenId, updated page - never CNPC, never a different system.
             String page = tabPage(safeScreen, tab);
             AdaptiveDifficultyMod.LOGGER.debug(
-                    "[{}] Ultra tab: screen={} tab={} → page={}",
+                    "[{}] Ultra tab: screen={} tab={} -> page={}",
                     AdaptiveDifficultyMod.MOD_ID,
                     safeScreen,
                     tab,
@@ -226,7 +226,7 @@ public final class UltraGuiActions {
                     if (notice != null && !notice.isBlank()) {
                         DmzRewards.msg(player, notice);
                     }
-                    // Validation failed — stay on the input page.
+                    // Validation failed - stay on the input page.
                     UltraGui.open(player, safeScreen, inputPage);
                 }
                 // Success opens confirm inside handleInputSubmit; skip generic reopen.
@@ -246,7 +246,7 @@ public final class UltraGuiActions {
             DmzRewards.msg(
                     player,
                     UltraStyle.noticeLine(
-                            "Skill Check is a donator perk — ask staff if you want access."));
+                            "Skill Check is a donator perk - ask staff if you want access."));
             UltraGui.openHub(player, "main");
             return;
         }
@@ -278,7 +278,7 @@ public final class UltraGuiActions {
                     UltraStyle.dangerLine("That menu action is not available."));
             return;
         }
-        // Prefer arg encoded in the action id (do:action:arg…); fall back to argsJson.
+        // Prefer arg encoded in the action id (do:action:arg...); fall back to argsJson.
         if (parts.arg != null && !parts.arg.isBlank()) {
             args.addProperty("arg", parts.arg);
         } else if (!args.has("arg") || args.get("arg") == null || args.get("arg").isJsonNull()) {
@@ -292,7 +292,7 @@ public final class UltraGuiActions {
                 DmzRewards.msg(player, notice);
             }
         }
-        // These handlers open the next page themselves — skip generic reopen.
+        // These handlers open the next page themselves - skip generic reopen.
         if ("saga_confirm".equals(parts.action)
                 || "weight_quote".equals(parts.action)
                 || "quote".equals(parts.action)
@@ -375,7 +375,7 @@ public final class UltraGuiActions {
                     "migratecnpc",
                     "cnpcmigrate",
                     "guitest_ack",
-                    // Staff convert only — android_remove stays player-facing.
+                    // Staff convert only - android_remove stays player-facing.
                     "android" -> true;
             default -> false;
         };
@@ -533,7 +533,7 @@ public final class UltraGuiActions {
             return UltraStyle.dangerLine("That menu action is not available.");
         }
         String act = action.toLowerCase(Locale.ROOT).trim();
-        // Staff convert only — Removal stays available to players.
+        // Staff convert only - Removal stays available to players.
         if ("android".equals(act)) {
             if (!StaffAccess.isStaff(player)) {
                 AdaptiveDifficultyMod.LOGGER.warn(
@@ -582,7 +582,7 @@ public final class UltraGuiActions {
     /**
      * Parses {@code do:action}, {@code do:action:arg}, or {@code do:action:arg:more}.
      * Everything after the first colon following the action name is the arg
-     * (so {@code do:boost:1.25:30} → action {@code boost}, arg {@code 1.25:30}).
+     * (so {@code do:boost:1.25:30} -> action {@code boost}, arg {@code 1.25:30}).
      */
     static DoParts parseDo(String action) {
         String raw = stripDo(action);
@@ -612,7 +612,7 @@ public final class UltraGuiActions {
      *   <li>{@code args.system} / {@code args.screen} (logical metadata from button args)
      *   <li>packet {@code screenId} (may be {@code hub} when KaiPath shim is active)
      * </ol>
-     * Bare hub tile names ({@code character} → {@code open:character}) still work when the
+     * Bare hub tile names ({@code character} -> {@code open:character}) still work when the
      * resolved screen is hub.
      */
     static Qualified qualify(String screenId, String actionId, JsonObject args) {
@@ -635,7 +635,7 @@ public final class UltraGuiActions {
             screen = stringArg(args, "screen");
         }
         if (screen.isBlank() && screenId != null && !screenId.isBlank()) {
-            // Wire hub with no metadata → real hub. Otherwise treat packet id as logical.
+            // Wire hub with no metadata -> real hub. Otherwise treat packet id as logical.
             screen = screenId.trim();
         }
         if (screen.isBlank()) {

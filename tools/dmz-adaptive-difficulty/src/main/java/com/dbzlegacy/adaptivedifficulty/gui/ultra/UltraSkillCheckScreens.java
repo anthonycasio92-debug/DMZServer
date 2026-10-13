@@ -9,7 +9,7 @@ import java.util.Locale;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Skill Check (donator) and Skills (staff) — Ultra port of {@code CnpcLmSkillCheckGui}.
+ * Skill Check (donator) and Skills (staff) - Ultra port of {@code CnpcLmSkillCheckGui}.
  *
  * <p>Single screen (no tab bar). Human labels only.
  */
@@ -66,9 +66,9 @@ public final class UltraSkillCheckScreens {
             }
         }
         if (staffAdmin) {
-            spec.line(UltraStyle.DIM + "Staff: /skills · Donators: /skillcheck");
+            spec.line(UltraStyle.DIM + "Staff: /skills - Donators: /skillcheck");
         }
-        // No tabs — body starts under the title; buttons sit below the scroll region.
+        // No tabs - body starts under the title; buttons sit below the scroll region.
         spec.setRow(Math.max(UltraStyle.CONTENT_ROW + UltraStyle.BODY_MIN_H, 200));
         spec.footerBackToMain();
         spec.send(player);

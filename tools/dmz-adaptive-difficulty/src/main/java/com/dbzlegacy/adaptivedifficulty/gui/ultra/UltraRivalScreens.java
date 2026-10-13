@@ -8,7 +8,7 @@ import java.util.Map;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Rival system — CNPC parity via page: navigation and arg-bearing do: buttons.
+ * Rival system - CNPC parity via page: navigation and arg-bearing do: buttons.
  * Tabs: Home / Actions / Challenge. Sub-pages for list, records, pickers, requests.
  */
 public final class UltraRivalScreens {
@@ -62,7 +62,7 @@ public final class UltraRivalScreens {
         Map<String, String> ph = RivalGuiApi.placeholders(player);
         UltraScreenSpec spec = base("home", "home")
                 .labelValue("RP", ph.getOrDefault("rp", "0"))
-                .labelValue("Tier", ph.getOrDefault("tier", "—"))
+                .labelValue("Tier", ph.getOrDefault("tier", "-"))
                 .labelValue("Wins", ph.getOrDefault("wins", "0"))
                 .labelValue("Losses", ph.getOrDefault("losses", "0"))
                 .labelValue(
@@ -113,8 +113,8 @@ public final class UltraRivalScreens {
         spec.setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
         UltraPickHelper.placePageButtons(
                 spec,
-                "pick_challenge|Send challenge…",
-                "pick_spectate|Spectate…",
+                "pick_challenge|Send challenge...",
+                "pick_spectate|Spectate...",
                 "records:history|Challenge history");
         spec.buttonLeft("do:challenge:accept", UltraStyle.confirm("Accept challenge"), "confirm")
                 .buttonRight("do:challenge:decline", UltraStyle.danger("Decline challenge"), "danger")
@@ -147,7 +147,7 @@ public final class UltraRivalScreens {
                 // Prefer a human name from the arg when it looks like name/uuid.
                 String shown = arg.contains(":") ? arg.substring(arg.lastIndexOf(':') + 1) : arg;
                 if (shown.length() > 16) {
-                    shown = shown.substring(0, 15) + "\u2026";
+                    shown = shown.substring(0, 15) + "...";
                 }
                 label = UltraStyle.confirm(shown);
                 if (placed % 2 == 0) {
@@ -172,7 +172,7 @@ public final class UltraRivalScreens {
     private static void openListDetail(ServerPlayer player, String arg) {
         UltraScreenSpec spec = base("list_detail:" + arg, "home")
                 .line(UltraStyle.LABEL + "Rival profile")
-                .labelValue("Target", arg == null || arg.isBlank() ? "—" : arg)
+                .labelValue("Target", arg == null || arg.isBlank() ? "-" : arg)
                 .notice("Removing a rival cannot be undone from this menu.")
                 .setRow(UltraStyle.CONTENT_ROW_TABS + 100);
         if (arg != null && !arg.isBlank()) {
@@ -199,7 +199,7 @@ public final class UltraRivalScreens {
     private static void openRecords(ServerPlayer player, String sub) {
         String tab = sub == null || sub.isBlank() ? "history" : sub.toLowerCase(Locale.ROOT);
         UltraScreenSpec spec = base("records:" + tab, "home")
-                .line(UltraStyle.LABEL + "Records · " + tab);
+                .line(UltraStyle.LABEL + "Records - " + tab);
         List<String> lines = switch (tab) {
             case "stats" -> RivalGuiApi.statsLines(player);
             case "season" -> RivalGuiApi.seasonLines(player);
@@ -270,13 +270,13 @@ public final class UltraRivalScreens {
                 .setRow(UltraStyle.CONTENT_ROW_TABS + 80);
         spec.buttonLeft(
                         "do:tpmsg:toggle",
-                        tpOn ? UltraStyle.confirm("TP chat · ON") : UltraStyle.dim("TP chat · OFF"),
+                        tpOn ? UltraStyle.confirm("TP chat - ON") : UltraStyle.dim("TP chat - OFF"),
                         tpOn ? UltraStyle.STYLE_CONFIRM : UltraStyle.STYLE_DIM)
                 .buttonRight(
                         "do:instinct",
                         instinctOn
-                                ? UltraStyle.confirm("Instinct · ON")
-                                : UltraStyle.dim("Instinct · OFF"),
+                                ? UltraStyle.confirm("Instinct - ON")
+                                : UltraStyle.dim("Instinct - OFF"),
                         instinctOn ? UltraStyle.STYLE_CONFIRM : UltraStyle.STYLE_DIM)
                 .rowGap();
         spec.footerBackHome();
@@ -327,7 +327,7 @@ public final class UltraRivalScreens {
     private static void openChallengeTime(ServerPlayer player, String target) {
         UltraScreenSpec spec = base("challenge_time:" + target, "challenge")
                 .line(UltraStyle.LABEL + "Challenge length")
-                .labelValue("Rival", target == null || target.isBlank() ? "—" : target)
+                .labelValue("Rival", target == null || target.isBlank() ? "-" : target)
                 .setRow(UltraStyle.CONTENT_ROW_TABS + 80);
         if (target != null && !target.isBlank()) {
             for (int min = 1; min <= 10; min += 2) {

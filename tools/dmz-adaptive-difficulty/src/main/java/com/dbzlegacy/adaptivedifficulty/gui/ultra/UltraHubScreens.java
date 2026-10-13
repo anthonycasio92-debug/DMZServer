@@ -7,7 +7,7 @@ import java.util.Locale;
 import java.util.Map;
 import net.minecraft.server.level.ServerPlayer;
 
-/** Legacy Mechanics hub — system entry points and staff admin. */
+/** Legacy Mechanics hub - system entry points and staff admin. */
 public final class UltraHubScreens {
     private UltraHubScreens() {}
 
@@ -52,7 +52,7 @@ public final class UltraHubScreens {
         } else if (staff) {
             spec.buttonLeft("open:skills", UltraStyle.confirm("Skills"), UltraStyle.STYLE_CONFIRM);
         } else {
-            // Unavailable — dim style on the wire for KaiPath (no on/off status text).
+            // Unavailable - dim style on the wire for KaiPath (no on/off status text).
             spec.buttonLeft(
                     "do:skillcheck_denied",
                     UltraStyle.dim("Skill Check"),

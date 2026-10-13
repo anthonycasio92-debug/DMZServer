@@ -1,16 +1,19 @@
 package com.dbzlegacy.adaptivedifficulty.gui.ultra;
 
+import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.config.editor.ConfigEditor;
 import com.dbzlegacy.adaptivedifficulty.net.gui.UltraClientFeatures;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
+import com.google.gson.JsonElement;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Staff config editor — Ultra dialog parity with {@code CnpcConfigEditor}:
- * module list → field pages → detail toggles / steps / enum cycle → Save all.
+ * Staff config editor - Ultra dialog parity with {@code CnpcConfigEditor}:
+ * module list -> field pages -> detail toggles / steps / enum cycle -> Save all.
  * Edits stay in memory until Save all; rival/spar record files stay closed.
  */
 public final class UltraConfigScreens {
@@ -64,7 +67,7 @@ public final class UltraConfigScreens {
             }
             String label = link.open()
                     ? link.label() + " (" + link.fields() + ")"
-                    : UltraStyle.dim(link.label() + " · closed");
+                    : UltraStyle.dim(link.label() + " - closed");
             String action = link.open()
                     ? "page:" + listPage(link.id(), 0, "")
                     : "do:open_module:" + link.id();
@@ -107,15 +110,15 @@ public final class UltraConfigScreens {
         int from = current * PAGE_SIZE;
         int to = Math.min(fields.size(), from + PAGE_SIZE);
         UltraScreenSpec spec = UltraScreenSpec.of("config")
-                .title("Config · " + tab.label())
+                .title("Config - " + tab.label())
                 .page(listPage(module, current, path))
                 .activeTab("home")
                 .labelValue("Module", tab.label())
-                .labelValue("File", tab.fileName() == null ? "—" : tab.fileName())
+                .labelValue("File", tab.fileName() == null ? "-" : tab.fileName())
                 .labelValue("Unsaved (all)", String.valueOf(ConfigEditor.dirtyCount(uuid)))
                 .labelValue("Page", (current + 1) + "/" + pages);
         if (!tab.editable()) {
-            spec.line(UltraStyle.dim("This module is closed — player records are not edited here."));
+            spec.line(UltraStyle.dim("This module is closed - player records are not edited here."));
         }
         for (int i = from; i < to; i++) {
             ConfigEditor.Entry entry = fields.get(i);
@@ -125,7 +128,7 @@ public final class UltraConfigScreens {
             boolean dirty = ConfigEditor.dirty(uuid, module, entry.path());
             String value = ConfigEditor.shownValue(uuid, module, entry.path());
             String name = ConfigEditor.displayName(leaf(entry.path()));
-            String mark = dirty ? "● " : "";
+            String mark = dirty ? "* " : "";
             spec.line(UltraStyle.LABEL + mark + name + " " + UltraStyle.VALUE + shortVal(value));
         }
         if (from >= to) {
@@ -161,7 +164,7 @@ public final class UltraConfigScreens {
         spec.buttonLeft("do:reload_module:" + module, UltraStyle.confirm("Reload module"), "confirm")
                 .buttonRight("do:save_all", UltraStyle.confirm("Save all"), "confirm")
                 .rowGap();
-        spec.buttonLeft("nav:home", UltraStyle.dim("Module list"), "dim").rowGap();
+        // One Back only via footer (nav:home).
         spec.footerBackHome();
         spec.send(player);
     }
@@ -181,7 +184,7 @@ public final class UltraConfigScreens {
         String value = ConfigEditor.shownValue(uuid, module, path);
         String raw = ConfigEditor.effectiveRaw(uuid, module, path);
         UltraScreenSpec spec = UltraScreenSpec.of("config")
-                .title("Config · " + name)
+                .title("Config - " + name)
                 .page(detailPage(module, listPageNum, path))
                 .activeTab("home")
                 .labelValue("Field", name)
@@ -205,18 +208,18 @@ public final class UltraConfigScreens {
                 boolean on = "ON".equalsIgnoreCase(value) || "true".equalsIgnoreCase(raw);
                 spec.buttonLeft(
                                 "do:toggle:" + module + "|" + encoded,
-                                on ? UltraStyle.confirm("Toggle · ON") : UltraStyle.dim("Toggle · OFF"),
+                                on ? UltraStyle.confirm("Toggle - ON") : UltraStyle.dim("Toggle - OFF"),
                                 on ? "confirm" : "dim")
                         .rowGap();
             }
             case NUMBER -> {
-                // Direct typing is the critical path; ± steps stay as shortcuts.
+                // Direct typing is the critical path; +/- steps stay as shortcuts.
                 noteIfTextInputMissing(spec, player);
                 String inputId = "input:" + module + "|" + encoded;
                 spec.textFieldRow(
                                 inputId,
                                 value == null ? "" : value,
-                                "Type a number…")
+                                "Type a number...")
                         .rowGap();
                 spec.buttonBound(
                                 "do:set:" + module + "|" + encoded,
@@ -226,7 +229,7 @@ public final class UltraConfigScreens {
                         .rowGap();
                 spec.buttonLeft(
                                 "do:step:" + module + "|" + encoded + "|-1",
-                                UltraStyle.dim("−"),
+                                UltraStyle.dim("-"),
                                 UltraStyle.STYLE_DIM)
                         .buttonRight(
                                 "do:step:" + module + "|" + encoded + "|1",
@@ -240,7 +243,7 @@ public final class UltraConfigScreens {
                 spec.textFieldRow(
                                 inputId,
                                 value == null ? "" : value,
-                                "Type an option…")
+                                "Type an option...")
                         .rowGap();
                 spec.buttonBound(
                                 "do:set:" + module + "|" + encoded,
@@ -255,10 +258,29 @@ public final class UltraConfigScreens {
                         .rowGap();
             }
             case LIST, MAP, GROUP -> {
-                spec.line(UltraStyle.dim("Lists and maps: edit one entry at a time in the field below."))
-                        .button(
+                ConfigEditor.AddMode addMode = ConfigEditor.addMode(module, path);
+                if (addMode != ConfigEditor.AddMode.NONE) {
+                    noteIfTextInputMissing(spec, player);
+                    String inputId = "input:" + module + "|" + encoded;
+                    String placeholder = addMode == ConfigEditor.AddMode.KEY_AND_VALUE
+                            ? "Type key=value..."
+                            : "Type a new entry...";
+                    spec.line(UltraStyle.dim("Lists and maps: add one entry at a time in the field below."))
+                            .textFieldRow(inputId, "", placeholder)
+                            .rowGap();
+                    spec.buttonBound(
+                                    "do:add:" + module + "|" + encoded,
+                                    UltraStyle.confirm("Apply"),
+                                    UltraStyle.STYLE_CONFIRM,
+                                    inputId)
+                            .rowGap();
+                } else {
+                    spec.line(UltraStyle.dim("Open entries to edit settings in this group."));
+                }
+                // Browse children (detail keeps one parent-list Back below).
+                spec.buttonLeft(
                                 "page:" + listPage(module, listPageNum, path),
-                                UltraStyle.dim("Back"),
+                                UltraStyle.dim("Entries"),
                                 UltraStyle.STYLE_DIM)
                         .rowGap();
             }
@@ -268,7 +290,7 @@ public final class UltraConfigScreens {
                 spec.textFieldRow(
                                 inputId,
                                 value == null ? "" : value,
-                                "Type a value…")
+                                "Type a value...")
                         .rowGap();
                 spec.buttonBound(
                                 "do:set:" + module + "|" + encoded,
@@ -283,17 +305,20 @@ public final class UltraConfigScreens {
             spec.buttonLeft("do:undo:" + module + "|" + encoded, UltraStyle.dim("Undo field"), "dim")
                     .rowGap();
         }
-        spec.buttonLeft("page:" + listPage(module, listPageNum, ConfigEditor.parentPath(path)), UltraStyle.dim("Back"), "dim")
+        // One Back only (parent field list). No second footer Back.
+        spec.buttonLeft(
+                        "page:" + listPage(module, listPageNum, ConfigEditor.parentPath(path)),
+                        UltraStyle.BACK,
+                        UltraStyle.STYLE_DIM)
                 .buttonRight("do:save_all", UltraStyle.confirm("Save all"), "confirm")
                 .rowGap();
-        spec.footerBackHome();
         spec.send(player);
     }
 
     private static void openReview(ServerPlayer player) {
         List<ConfigEditor.PendingChange> pending = ConfigEditor.pendingChanges(player.m_20148_());
         UltraScreenSpec spec = UltraScreenSpec.of("config")
-                .title("Config · Review")
+                .title("Config - Review")
                 .page("review")
                 .activeTab("home")
                 .labelValue("Pending", String.valueOf(pending == null ? 0 : pending.size()));
@@ -306,7 +331,7 @@ public final class UltraConfigScreens {
                     continue;
                 }
                 spec.line(UltraStyle.LABEL + change.name() + " " + UltraStyle.DIM + change.before()
-                        + " → " + UltraStyle.VALUE + change.after());
+                        + " -> " + UltraStyle.VALUE + change.after());
                 shown++;
             }
         }
@@ -314,7 +339,7 @@ public final class UltraConfigScreens {
         spec.buttonLeft("do:save_all", UltraStyle.confirm("Confirm save"), "confirm")
                 .buttonRight("do:discard_all", UltraStyle.danger("Discard all"), "danger")
                 .rowGap();
-        spec.button("nav:home", UltraStyle.dim("Module list"), "dim").rowGap();
+        // One Back only via footer (nav:home).
         spec.footerBackHome();
         spec.send(player);
     }
@@ -406,14 +431,44 @@ public final class UltraConfigScreens {
                 if (parts == null) {
                     yield UltraStyle.dangerLine("Missing field.");
                 }
-                String typed = argsString(args, "value");
+                String typed = typedValueFromArgs(args, "set");
                 if (typed == null) {
                     yield UltraStyle.dangerLine(
-                            "Type a value in the field, then press Save.");
+                            "Type a value in the field, then press Apply.");
                 }
                 String error = ConfigEditor.stageSet(uuid, parts[0], parts[1], typed);
                 yield error == null
                         ? UltraStyle.noticeLine("Staged new value.")
+                        : UltraStyle.dangerLine(error);
+            }
+            case "add" -> {
+                String[] parts = splitModulePath(a);
+                if (parts == null) {
+                    yield UltraStyle.dangerLine("Missing field.");
+                }
+                String typed = typedValueFromArgs(args, "add");
+                if (typed == null || typed.isBlank()) {
+                    yield UltraStyle.dangerLine(
+                            "Type a value in the field, then press Apply.");
+                }
+                String key = "";
+                String raw = typed.trim();
+                if (ConfigEditor.addMode(parts[0], parts[1]) == ConfigEditor.AddMode.KEY_AND_VALUE) {
+                    int sep = raw.indexOf('=');
+                    if (sep < 0) {
+                        sep = raw.indexOf(':');
+                    }
+                    if (sep > 0) {
+                        key = raw.substring(0, sep).trim();
+                        raw = raw.substring(sep + 1).trim();
+                    } else {
+                        key = raw;
+                        raw = "";
+                    }
+                }
+                String error = ConfigEditor.stageAdd(uuid, parts[0], parts[1], key, raw);
+                yield error == null
+                        ? UltraStyle.noticeLine("Staged new entry.")
                         : UltraStyle.dangerLine(error);
             }
             case "undo" -> {
@@ -517,10 +572,10 @@ public final class UltraConfigScreens {
 
     private static String shortVal(String value) {
         if (value == null || value.isBlank()) {
-            return "—";
+            return "-";
         }
         String plain = UltraStyle.plain(value);
-        return plain.length() <= 24 ? plain : plain.substring(0, 23) + "\u2026";
+        return plain.length() <= 24 ? plain : plain.substring(0, 23) + "...";
     }
 
     private static String moduleFromPage(String page) {
@@ -548,12 +603,80 @@ public final class UltraConfigScreens {
         }
     }
 
-    /** Older KaiPath without field 11 — surface that before a dead Apply button. */
+    /**
+     * KaiPath 1.3.9 copies the bound EditBox into {@code args.value} when a buttonBound
+     * fires. Log every key so a client/key mismatch is obvious in server logs, and fall
+     * back to {@code bindInput} / {@code input:*} keys if {@code value} is absent.
+     */
+    private static String typedValueFromArgs(com.google.gson.JsonObject args, String op) {
+        if (args == null) {
+            AdaptiveDifficultyMod.LOGGER.info(
+                    "[{}] config {} args=null (no typed value)",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    op);
+            return null;
+        }
+        StringBuilder keys = new StringBuilder();
+        for (Map.Entry<String, JsonElement> entry : args.entrySet()) {
+            if (keys.length() > 0) {
+                keys.append(',');
+            }
+            keys.append(entry.getKey());
+        }
+        String direct = argsString(args, "value");
+        AdaptiveDifficultyMod.LOGGER.info(
+                "[{}] config {} args.keys=[{}] valuePresent={} valueLen={}",
+                AdaptiveDifficultyMod.MOD_ID,
+                op,
+                keys,
+                direct != null,
+                direct == null ? -1 : direct.length());
+        if (direct != null) {
+            return direct;
+        }
+        String bind = argsString(args, "bindInput");
+        if (bind != null && !bind.isBlank()) {
+            String viaBind = argsString(args, bind);
+            if (viaBind == null) {
+                String bare = bind.contains(":") ? bind.substring(bind.indexOf(':') + 1) : bind;
+                viaBind = argsString(args, bare);
+            }
+            if (viaBind != null) {
+                AdaptiveDifficultyMod.LOGGER.info(
+                        "[{}] config {} recovered typed value from bindInput key={}",
+                        AdaptiveDifficultyMod.MOD_ID,
+                        op,
+                        bind);
+                return viaBind;
+            }
+        }
+        for (Map.Entry<String, JsonElement> entry : args.entrySet()) {
+            String key = entry.getKey();
+            if (key == null) {
+                continue;
+            }
+            String lower = key.toLowerCase(Locale.ROOT);
+            if (lower.startsWith("input:") || "text".equals(lower) || "typed".equals(lower)) {
+                String alt = argsString(args, key);
+                if (alt != null) {
+                    AdaptiveDifficultyMod.LOGGER.info(
+                            "[{}] config {} recovered typed value from alt key={}",
+                            AdaptiveDifficultyMod.MOD_ID,
+                            op,
+                            key);
+                    return alt;
+                }
+            }
+        }
+        return null;
+    }
+
+    /** Older KaiPath without field 11 - surface that before a dead Apply button. */
     private static void noteIfTextInputMissing(UltraScreenSpec spec, ServerPlayer player) {
         if (spec == null || UltraClientFeatures.hasTextInput(player)) {
             return;
         }
         spec.line(UltraStyle.danger("Typed fields need KaiPath textInput (1.3.9+)."))
-                .line(UltraStyle.DIM + "Until then use Toggle / Next value / ± step buttons.");
+                .line(UltraStyle.DIM + "Until then use Toggle / Next value / +/- step buttons.");
     }
 }

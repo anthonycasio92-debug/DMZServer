@@ -17,7 +17,7 @@ import java.util.Set;
 public final class UltraScreenSelfTest {
     /**
      * Single-screen menus with no tab bar. Empty {@code tabsJson} ({@code []} / blank) is
-     * correct for these — do not treat as a structural failure.
+     * correct for these - do not treat as a structural failure.
      */
     static final Set<String> TABLESS_SCREEN_IDS = Set.of("skillcheck", "skills");
 
@@ -443,12 +443,12 @@ public final class UltraScreenSelfTest {
             String target = action.startsWith("open:") ? action.substring(5) : action;
             String logical = UltraScreenIds.normalizeLogical(target);
             if (!want.equals(logical)) {
-                broken.add(from + " " + action + " → normalize=" + logical + " (want " + want + ")");
+                broken.add(from + " " + action + " -> normalize=" + logical + " (want " + want + ")");
                 continue;
             }
             if (!UltraScreenIds.BUILDER_IDS.contains(logical)
                     && !UltraScreenIds.PROTOCOL_IDS.contains(logical)) {
-                broken.add(from + " " + action + " → " + logical + " not in BUILDER/PROTOCOL ids");
+                broken.add(from + " " + action + " -> " + logical + " not in BUILDER/PROTOCOL ids");
             }
         }
         // Structural: hub probe must emit skillcheck + character opens, not nav:hub back.
@@ -465,7 +465,7 @@ public final class UltraScreenSelfTest {
                 broken.add("hub: missing open:character button");
             }
             if (buttons.contains("nav:hub")) {
-                broken.add("hub: still has nav:hub (Back to main menu) — remove footerBackToMain");
+                broken.add("hub: still has nav:hub (Back to main menu) - remove footerBackToMain");
             }
             if (buttons.contains("nav:refresh") || buttons.contains("Refresh")) {
                 broken.add("hub: must not show Refresh");
@@ -555,7 +555,7 @@ public final class UltraScreenSelfTest {
             }
             if (issues.isEmpty()) {
                 AdaptiveDifficultyMod.LOGGER.info(
-                        "[{}] Ultra hub shim self-check OK (KaiPath dynamic-any — no tunneling)",
+                        "[{}] Ultra hub shim self-check OK (KaiPath dynamic-any - no tunneling)",
                         AdaptiveDifficultyMod.MOD_ID);
             } else {
                 AdaptiveDifficultyMod.LOGGER.warn(

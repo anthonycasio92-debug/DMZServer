@@ -5,7 +5,7 @@ package com.dbzlegacy.adaptivedifficulty.gui.ultra;
  *
  * <p>Marks are initialized in a static block (not compile-time constant expressions) so
  * {@code UltraStyle.LABEL + "text"} does not fold the section-sign into caller classfiles.
- * Screen builders must use these constants — never bare section-sign literals.
+ * Screen builders must use these constants - never bare section-sign literals.
  */
 public final class UltraStyle {
     /** Single section-sign mark. Owned only by this class. */
@@ -55,7 +55,7 @@ public final class UltraStyle {
     public static final int BTN_W = 150;
 
     /**
-     * Compact Ultra centered dialog (not fullscreen). Defaults 350×300; grows toward
+     * Compact Ultra centered dialog (not fullscreen). Defaults 350x300; grows toward
      * {@link #PANEL_MAX_H} when body text or buttons need more room. Body text scrolls
      * rather than compressing when content still exceeds the grown panel.
      */
@@ -187,7 +187,7 @@ public final class UltraStyle {
         return DANGER + plain(body);
     }
 
-    /** Boost preset caption, e.g. {@code 1.25× · 30m}. */
+    /** Boost preset caption, e.g. {@code 1.25x - 30m}. */
     public static String boostPreset(String mult, String minutes) {
         return plain(mult) + TIMES + " " + SEP + " " + plain(minutes) + "m";
     }

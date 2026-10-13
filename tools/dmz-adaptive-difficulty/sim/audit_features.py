@@ -253,7 +253,7 @@ def main() -> int:
         "tier.id < currentActiveTier" in coins_src
         and "activationCost(UnlockTier tier, ServerPlayer player, int currentActiveTier)" in coins_src
         and "Downgrade to Tier" in tier_ui
-        and "— Free" in tier_ui
+        and "- Free" in tier_ui
         and has(actions, "activationCost(tier, player, current)", "downgrade", "charge = (staffFree || downgrade)"),
     )
     diff_chat_tiers = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/DifficultyChatMenu.java")

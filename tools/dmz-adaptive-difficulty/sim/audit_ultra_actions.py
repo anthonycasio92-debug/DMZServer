@@ -88,6 +88,7 @@ KNOWN_DO: dict[str, set[str]] = {
         "reload_module",
         "toggle",
         "set",
+        "add",
         "step",
         "cycle",
         "undo",
@@ -207,10 +208,23 @@ def main() -> int:
     config_screens = (ULTRA / "UltraConfigScreens.java").read_text(encoding="utf-8")
     number_block = config_screens.split("case NUMBER")[1].split("case ENUM")[0] if "case NUMBER" in config_screens else ""
     enum_block = config_screens.split("case ENUM")[1].split("case LIST")[0] if "case ENUM" in config_screens else ""
+    list_block = (
+        config_screens.split("case LIST, MAP, GROUP")[1].split("case TEXT")[0]
+        if "case LIST, MAP, GROUP" in config_screens
+        else ""
+    )
     if "textFieldRow" not in number_block:
-        errors.append("UltraConfigScreens NUMBER detail must offer textFieldRow (typed value), not only ± steps")
+        errors.append("UltraConfigScreens NUMBER detail must offer textFieldRow (typed value), not only +/- steps")
     if "textFieldRow" not in enum_block:
         errors.append("UltraConfigScreens ENUM detail must offer textFieldRow + Apply")
+    if "textFieldRow" not in list_block or "do:add:" not in list_block or "buttonBound" not in list_block:
+        errors.append(
+            "UltraConfigScreens LIST/MAP/GROUP detail must offer textFieldRow + buttonBound Apply (do:add)"
+        )
+    if 'dim("Back")' in list_block:
+        errors.append("UltraConfigScreens LIST/MAP/GROUP must not stack a Back button (use Entries + one Back)")
+    if "typedValueFromArgs" not in config_screens:
+        errors.append("UltraConfigScreens set/add must log and resolve typed args via typedValueFromArgs")
     bridge_gaps = ROOT.parent.parent / "docs" / "KAIPATH_BRIDGE_GAPS.md"
     if not bridge_gaps.is_file():
         # ROOT = .../tools/dmz-adaptive-difficulty

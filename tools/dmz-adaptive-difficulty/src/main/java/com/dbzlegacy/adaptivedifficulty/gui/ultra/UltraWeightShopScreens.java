@@ -17,7 +17,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.common.util.LazyOptional;
 
 /**
- * Difficulty → Weights shop. Players pick a DMZ weight type, type a weight value (1 copper per
+ * Difficulty -> Weights shop. Players pick a DMZ weight type, type a weight value (1 copper per
  * point), confirm, then receive the item with {@code WeightValue} NBT via
  * {@code WeightItem.setWeight(stack, value)} (reflection; falls back to direct NBT).
  *
@@ -74,7 +74,7 @@ public final class UltraWeightShopScreens {
         AncientCoinEconomy.migrateWalletToItems(player);
         UltraScreenSpec spec =
                 base("weights", "home")
-                        .line(UltraStyle.LABEL + "Training weights — 1 ancient copper per weight value.")
+                        .line(UltraStyle.LABEL + "Training weights - 1 ancient copper per weight value.")
                         .labelValue(
                                 "Copper",
                                 String.valueOf(
@@ -178,7 +178,7 @@ public final class UltraWeightShopScreens {
         } else {
             spec.button(
                             "do:weight_buy:" + offer.id + ":" + value,
-                            UltraStyle.confirm("Buy · " + costText),
+                            UltraStyle.confirm("Buy - " + costText),
                             UltraStyle.STYLE_CONFIRM)
                     .rowGap();
             spec.buttonLeft(
@@ -266,18 +266,18 @@ public final class UltraWeightShopScreens {
         return UltraStyle.noticeLine(
                 "Bought "
                         + offer.label
-                        + " · weight "
+                        + " - weight "
                         + value
-                        + " · "
+                        + " - "
                         + costText
-                        + " · "
+                        + " - "
                         + destination
                         + ".");
     }
 
     /**
      * Prefer an empty Curios {@code weights} slot (CurioType.WEIGHTS), else player inventory, else
-     * drop at feet — same fallback ladder as DMZ {@code WeightCommand}, plus curios when free.
+     * drop at feet - same fallback ladder as DMZ {@code WeightCommand}, plus curios when free.
      */
     static String giveWeightItem(ServerPlayer player, ItemStack stack) {
         ItemStack copy = stack.m_41777_();
@@ -291,7 +291,7 @@ public final class UltraWeightShopScreens {
         return "dropped (inventory full)";
     }
 
-    /** Reflection into Curios API — LM does not compile against curios. */
+    /** Reflection into Curios API - LM does not compile against curios. */
     private static boolean tryEquipWeightsCurio(ServerPlayer player, ItemStack stack) {
         if (player == null || stack == null || stack.m_41619_()) {
             return false;
@@ -345,7 +345,7 @@ public final class UltraWeightShopScreens {
             return equipped.get();
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.debug(
-                    "[{}] Curios weights equip skipped — {}",
+                    "[{}] Curios weights equip skipped - {}",
                     AdaptiveDifficultyMod.MOD_ID,
                     t.toString());
             return false;
@@ -367,7 +367,7 @@ public final class UltraWeightShopScreens {
             return;
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.debug(
-                    "[{}] WeightItem.setWeight unavailable — writing WeightValue NBT directly",
+                    "[{}] WeightItem.setWeight unavailable - writing WeightValue NBT directly",
                     AdaptiveDifficultyMod.MOD_ID,
                     t);
         }
@@ -383,7 +383,7 @@ public final class UltraWeightShopScreens {
         if (s.isEmpty()) {
             return null;
         }
-        // Digits only — reject signs, decimals, separators.
+        // Digits only - reject signs, decimals, separators.
         for (int i = 0; i < s.length(); i++) {
             char c = s.charAt(i);
             if (c < '0' || c > '9') {

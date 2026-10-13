@@ -118,7 +118,7 @@ public final class SparGuiApi {
         out.put("dojo_name", dojoKey == null ? "" : DojoRankings.dojoDisplayName(dojoKey));
         out.put("dojo_master", DojoRankings.isDojoMaster(player) ? "true" : "false");
         int dojoRank = dojoKey == null ? 0 : DojoRankings.dojoRank(dojoKey, "rp");
-        out.put("dojo_rank", dojoRank <= 0 ? "—" : String.valueOf(dojoRank));
+        out.put("dojo_rank", dojoRank <= 0 ? "-" : String.valueOf(dojoRank));
         SparStore.DojoEntry dojoEntry = dojoKey == null ? null : SparStore.get().dojoSeason == null
                 || SparStore.get().dojoSeason.leaderboard == null
                 ? null
@@ -211,7 +211,7 @@ public final class SparGuiApi {
 
     public static List<String> mentorLines(ServerPlayer player) {
         List<String> lines = new ArrayList<>();
-        lines.add("§8── §bTraining bonds §8──");
+        lines.add("§8?? §bTraining bonds §8??");
         if (player == null || !DifficultyConfig.get().enableSparringSystem) {
             lines.add("§cSparring system is disabled.");
             return lines;
@@ -237,22 +237,22 @@ public final class SparGuiApi {
             if (hasMentor) {
                 lines.add("§7Spar mentor §a+"
                         + Math.round(SparCombat.MENTOR_SPAR_BONUS_PCT * 100)
-                        + "% §8· peers +"
+                        + "% §8- peers +"
                         + Math.round(SparCombat.DOJO_PEER_SPAR_BONUS_PCT * 100) + "%");
             }
             lines.add("§7Streak §f" + bond.streakCurrent + " §8best §f" + bond.streakBest);
         } else {
             lines.add("§7Invite apprentices or ask a mentor below");
-            lines.add("§8Dojo: up to §f" + SparringSystem.MAX_APPRENTICES + " §8apprentices · one master");
-            lines.add("§8Invite lasts §f1 hour §8· peers spar +"
+            lines.add("§8Dojo: up to §f" + SparringSystem.MAX_APPRENTICES + " §8apprentices - one master");
+            lines.add("§8Invite lasts §f1 hour §8- peers spar +"
                     + Math.round(SparCombat.DOJO_PEER_SPAR_BONUS_PCT * 100) + "% TP");
             lines.add(SparringSystem.bondStatus(player));
         }
         int pending = SparringSystem.pendingMentorInviteCount(player);
         if (pending > 0) {
-            lines.add("§ePending invites §f" + pending + " §8— open Bond invites (§f1h§8)");
+            lines.add("§ePending invites §f" + pending + " §8- open Bond invites (§f1h§8)");
         } else {
-            lines.add("§8Recruit apprentice · Request a master · Bond invites · Release · Dojo home");
+            lines.add("§8Recruit apprentice - Request a master - Bond invites - Release - Dojo home");
         }
         return lines;
     }
@@ -306,7 +306,7 @@ public final class SparGuiApi {
         if (cards.isEmpty()) {
             lines.add("§7No pending mentor invites.");
             lines.add("§8Outgoing: you invited someone.");
-            lines.add("§8Incoming: they invited you — Accept or Decline.");
+            lines.add("§8Incoming: they invited you - Accept or Decline.");
             return lines;
         }
         lines.add("§e§lPending Mentor Invites");
@@ -321,11 +321,11 @@ public final class SparGuiApi {
             String kind = p.length > 5 ? p[5] : "";
             String role = "mentor".equalsIgnoreCase(kind) ? "Mentor" : "Apprentice";
             if ("IN".equals(dir)) {
-                lines.add("§a◀ Incoming §f" + name + (online ? " §a●" : " §8○")
-                        + " §8→ you as " + role);
+                lines.add("§a? Incoming §f" + name + (online ? " §a*" : " §8?")
+                        + " §8-> you as " + role);
             } else {
-                lines.add("§6▶ Outgoing §f" + name + (online ? " §a●" : " §8○")
-                        + " §8→ them as " + role);
+                lines.add("§6? Outgoing §f" + name + (online ? " §a*" : " §8?")
+                        + " §8-> them as " + role);
             }
         }
         return lines;
@@ -369,8 +369,8 @@ public final class SparGuiApi {
             case "mentor", "actions", "dojo", "roster", "apprentices" -> mentorLines(player);
             case "pending", "invites", "pendinginvites" -> pendingMentorLines(player);
             case "help" -> List.of(
-                    "§6§l/spar §8— Sparring TP",
-                    "§7Mentor bonds: GUI → Training bonds",
+                    "§6§l/spar §8- Sparring TP",
+                    "§7Mentor bonds: GUI -> Training bonds",
                     "§e/spar stats|end|top [category]",
                     "§8Commands still work for staff / scripts"
             );
@@ -381,16 +381,16 @@ public final class SparGuiApi {
                     lore.add("§aSession ACTIVE §8with §f" + blank(ph.get("partner"), "?")
                             + "  §7TP §f" + ph.getOrDefault("session_tp", "0"));
                     if ("true".equalsIgnoreCase(ph.get("perfect"))) {
-                        lore.add("§6Perfect spar §7— hits are close enough for the training bonus.");
+                        lore.add("§6Perfect spar §7- hits are close enough for the training bonus.");
                     }
                 } else {
-                    lore.add("§7No sparring session right now — hit each other within 30 blocks to start one.");
+                    lore.add("§7No sparring session right now - hit each other within 30 blocks to start one.");
                 }
                 if ("true".equalsIgnoreCase(ph.get("mentor_bonded"))) {
                     String role = ph.getOrDefault("mentor_role", "?");
                     if ("both".equalsIgnoreCase(role)) {
                         lore.add("§bMentor §f" + blank(ph.get("mentor_name"), "?")
-                                + " §8· §bApprentice §f" + blank(ph.get("apprentice_name"), "?")
+                                + " §8- §bApprentice §f" + blank(ph.get("apprentice_name"), "?")
                                 + "  §7streak §f" + ph.getOrDefault("streak", "0"));
                     } else if ("mentor".equalsIgnoreCase(role)) {
                         lore.add("§bMentoring §f" + blank(ph.get("apprentice_name"), "?")
@@ -416,7 +416,7 @@ public final class SparGuiApi {
      */
     public static String handleDo(ServerPlayer player, String action, String arg, String page) {
         if (player == null) {
-            return "§cThis only works in-game — console can't open this menu.";
+            return "§cThis only works in-game - console can't open this menu.";
         }
         String act = action == null ? "" : action.toLowerCase(Locale.ROOT).trim();
         String a = arg == null ? "" : arg.trim();
@@ -512,7 +512,7 @@ public final class SparGuiApi {
                         who = who.substring(1).trim();
                     }
                 } else if (!a.isBlank() && a.contains(" ")) {
-                    // "release uuid:…" already handled above; leftover arg after release
+                    // "release uuid:..." already handled above; leftover arg after release
                     who = "";
                 }
                 // Prefer explicit arg after the subcommand token when present in `a`
@@ -667,8 +667,8 @@ public final class SparGuiApi {
             return SparringSystem.resetMentorCd(player, target);
         }
         return "§6§l/spar admin\n"
-                + "§e/spar admin save §7— save sparring data to disk\n"
-                + "§e/spar admin status §7— enabled + path\n"
+                + "§e/spar admin save §7- save sparring data to disk\n"
+                + "§e/spar admin status §7- enabled + path\n"
                 + "§7Clear mentor cooldown\n"
                 + "§8/spar admin mentor resetcd [player]\n"
                 + "§8GUI buttons call these directly (no Forge perm-level gate).";

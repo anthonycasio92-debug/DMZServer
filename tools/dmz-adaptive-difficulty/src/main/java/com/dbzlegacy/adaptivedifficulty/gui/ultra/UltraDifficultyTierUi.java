@@ -46,7 +46,7 @@ public final class UltraDifficultyTierUi {
 
     public static String humanRequirement(UnlockTier tier) {
         if (tier == null) {
-            return "—";
+            return "-";
         }
         return tier.requirementTip()
                 .replace("DMZ ", "Level ")
@@ -56,34 +56,34 @@ public final class UltraDifficultyTierUi {
     public static String tierActionLabel(
             ServerPlayer player, int t, int activeTier, boolean unlocked, boolean eligible) {
         if (t <= 0) {
-            return UltraStyle.DIM + "—";
+            return UltraStyle.DIM + "-";
         }
         if (activeTier == t) {
-            return UltraStyle.confirm("Tier " + t + " · active");
+            return UltraStyle.confirm("Tier " + t + " - active");
         }
-        // Downgrade first — never show a coin cost for a weaker tier.
+        // Downgrade first - never show a coin cost for a weaker tier.
         if (activeTier > 0 && t < activeTier) {
             if (unlocked || eligible) {
-                return UltraStyle.confirm("Downgrade to Tier " + t + " — Free");
+                return UltraStyle.confirm("Downgrade to Tier " + t + " - Free");
             }
-            return UltraStyle.dim("Tier " + t + " · locked");
+            return UltraStyle.dim("Tier " + t + " - locked");
         }
         if (!unlocked) {
             if (eligible) {
                 return UltraStyle.confirm(
                         "Unlock T"
                                 + t
-                                + " · "
+                                + " - "
                                 + UltraStyle.plain(
                                         formatActivationCost(
                                                 player, UnlockTier.byId(t), activeTier)));
             }
-            return UltraStyle.dim("Tier " + t + " · locked");
+            return UltraStyle.dim("Tier " + t + " - locked");
         }
         return UltraStyle.LABEL
                 + "Switch T"
                 + t
-                + " · "
+                + " - "
                 + UltraStyle.plain(formatActivationCost(player, UnlockTier.byId(t), activeTier));
     }
 

@@ -12,13 +12,13 @@ import net.minecraft.server.level.ServerPlayer;
 /**
  * Builds a GuiOpenPacket payload for KaiPath.
  *
- * <p>Panel defaults are the compact Ultra dialog ({@link UltraStyle#PANEL_W}×{@link
+ * <p>Panel defaults are the compact Ultra dialog ({@link UltraStyle#PANEL_W}x{@link
  * UltraStyle#PANEL_H}), centered with a screen margin. Button action ids are qualified as
  * {@code @&lt;screenId&gt;:&lt;action&gt;} so KaiPath can omit or mishandle {@code screenId} and
  * the server still routes correctly.
  *
  * <p>Layout JSON includes shared body/button metrics ({@code lineHeight}, {@code lineGap},
- * {@code bodyMaxHeight}, {@code scrollBody}, {@code buttonPad}, …) so every screen benefits.
+ * {@code bodyMaxHeight}, {@code scrollBody}, {@code buttonPad}, ...) so every screen benefits.
  * Optional {@link #playerModel} declares a client-rendered entity preview (JLDK implements
  * rendering; unknown clients ignore the field).
  */
@@ -262,7 +262,7 @@ public final class UltraScreenSpec {
         return nextRow;
     }
 
-    /** Home tab footer: back to main menu (no Refresh — pages reopen via actions/tabs). */
+    /** Home tab footer: back to main menu (no Refresh - pages reopen via actions/tabs). */
     public UltraScreenSpec footerBackToMain() {
         return button(
                 "nav:hub",
@@ -282,7 +282,7 @@ public final class UltraScreenSpec {
     /**
      * Editable text field (GuiOpenPacket field 11 {@code inputsJson}). KaiPath <b>1.3.9+</b>
      * advertises {@code textInput} and renders EditBox widgets. Older clients ignore trailing
-     * field 11 — pair shop pages with {@link UltraClientFeatures#hasTextInput}.
+     * field 11 - pair shop pages with {@link UltraClientFeatures#hasTextInput}.
      *
      * <p>Pair with a button whose {@code args.bindInput} matches {@code inputId} so the client
      * copies the typed value into {@code args.value} on click / Enter.
@@ -344,7 +344,7 @@ public final class UltraScreenSpec {
                         : UltraStyle.BODY_PAD * 2 + lines.size() * lineStep;
 
         // Grow toward PANEL_MAX_H when body text needs more viewport than the default
-        // BODY_MIN_H band — shift buttons down so extra height expands the body, not
+        // BODY_MIN_H band - shift buttons down so extra height expands the body, not
         // empty space under the footer.
         int buttonTop = firstButtonY;
         int buttonStackH =
@@ -435,7 +435,7 @@ public final class UltraScreenSpec {
             o.addProperty("h", b.h);
             o.addProperty("pad", b.pad);
             JsonObject args = new JsonObject();
-            // Logical system — echoed by KaiPath into GuiActionPacket even when wire screenId is hub.
+            // Logical system - echoed by KaiPath into GuiActionPacket even when wire screenId is hub.
             args.addProperty("screen", screenId);
             args.addProperty(UltraScreenIds.META_SYSTEM, screenId);
             args.addProperty("page", pageId);
@@ -474,9 +474,9 @@ public final class UltraScreenSpec {
         layout.addProperty("height", height);
         layout.addProperty("center", centerPanel);
         layout.addProperty("margin", panelMargin);
-        // Always present — KaiPath must center titles when value is "center" (not left-default).
+        // Always present - KaiPath must center titles when value is "center" (not left-default).
         layout.addProperty("titleAlign", UltraStyle.TITLE_ALIGN);
-        // Shared body / button metrics — every screen benefits.
+        // Shared body / button metrics - every screen benefits.
         layout.addProperty("lineHeight", UltraStyle.LINE_H);
         layout.addProperty("lineGap", UltraStyle.LINE_GAP);
         layout.addProperty("bodyTop", bodyTop);

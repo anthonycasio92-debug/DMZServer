@@ -47,7 +47,7 @@ public final class MechanicsGuiApi {
         boolean skillCheck = player != null && SkillCheckService.canUse(player);
         return switch (p) {
             case "help" -> List.of(
-                    "§7Legacy Mechanics — use the menu or §f/lm §7if chat is enabled"
+                    "§7Legacy Mechanics - use the menu or §f/lm §7if chat is enabled"
             );
             case "logs", "syslog" -> {
                 if (player == null || !StaffAccess.isStaff(player)) {
@@ -58,7 +58,7 @@ public final class MechanicsGuiApi {
                 lines.add("§7Event log §f" + (on ? "ON" : "OFF"));
                 lines.add("§8" + SystemTelemetry.statusLine());
                 lines.add("§7Folder §f" + SystemTelemetry.telemetryDir());
-                lines.add("§8Buttons: on · off · flush");
+                lines.add("§8Buttons: on - off - flush");
                 lines.add("§8/lm admin syslog on|off|status|flush");
                 yield lines;
             }
@@ -67,16 +67,16 @@ public final class MechanicsGuiApi {
                 List<String> lore = new ArrayList<>();
                 lore.add("§7Systems on this server:");
                 lore.add("§7Rival §f" + onOff(ph.get("rival"))
-                        + " §8· §7Spar §f" + onOff(ph.get("spar"))
-                        + " §8· §7Prestige §f" + onOff(ph.get("prestige")));
+                        + " §8- §7Spar §f" + onOff(ph.get("spar"))
+                        + " §8- §7Prestige §f" + onOff(ph.get("prestige")));
                 if (staff) {
                     lore.add("§7Progression §f" + onOff(ph.get("progression"))
-                            + " §8· §7Skills §f" + onOff(ph.get("skills"))
-                            + " §8· §7Event log §f" + onOff(ph.get("syslog")));
+                            + " §8- §7Skills §f" + onOff(ph.get("skills"))
+                            + " §8- §7Event log §f" + onOff(ph.get("syslog")));
                 } else if (skillCheck) {
-                    lore.add("§7Skill Check is unlocked for you — open it from the hub.");
+                    lore.add("§7Skill Check is unlocked for you - open it from the hub.");
                 } else {
-                    lore.add("§8Skill Check is a donator perk — ask staff if interested.");
+                    lore.add("§8Skill Check is a donator perk - ask staff if interested.");
                 }
                 yield lore;
             }
@@ -89,7 +89,7 @@ public final class MechanicsGuiApi {
      */
     public static String handleDo(ServerPlayer player, String action, String arg, String page) {
         if (player == null) {
-            return "§cThis only works in-game — console can't open this menu.";
+            return "§cThis only works in-game - console can't open this menu.";
         }
         String act = action == null ? "" : action.toLowerCase(Locale.ROOT).trim();
         String a = arg == null ? "" : arg.trim();

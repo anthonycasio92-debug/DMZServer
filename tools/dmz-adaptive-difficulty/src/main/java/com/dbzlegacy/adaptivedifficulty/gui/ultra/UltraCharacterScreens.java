@@ -13,7 +13,7 @@ import java.util.Locale;
 import java.util.Map;
 import net.minecraft.server.level.ServerPlayer;
 
-/** Character Services — Home / Saga Reset / Android Removal (+ race, class, model pages). */
+/** Character Services - Home / Saga Reset / Android Removal (+ race, class, model pages). */
 public final class UltraCharacterScreens {
     private UltraCharacterScreens() {}
 
@@ -65,7 +65,7 @@ public final class UltraCharacterScreens {
                 .playerModel(player, 248, 60, 86, 120, 0.9f, true);
     }
 
-    /** Overview + look tools — Change Race / Class / Model / Reskin on Home. */
+    /** Overview + look tools - Change Race / Class / Model / Reskin on Home. */
     private static void openHome(ServerPlayer player) {
         Map<String, String> ph = CharacterServicesGuiApi.placeholders(player);
         boolean canRace = "true".equals(ph.get("can_race_change"));
@@ -188,7 +188,7 @@ public final class UltraCharacterScreens {
         } else if (pg > 0) {
             spec.rowGap();
         }
-        // footerBackHome only — a second tab:home Back stacked a duplicate button.
+        // footerBackHome only - a second tab:home Back stacked a duplicate button.
         spec.footerBackHome();
         spec.send(player);
     }
@@ -304,7 +304,7 @@ public final class UltraCharacterScreens {
         if (placed == 0) {
             spec.line(UltraStyle.dim("No classes are available for your race."));
         }
-        // footerBackHome only — avoid duplicate Back with tab:home.
+        // footerBackHome only - avoid duplicate Back with tab:home.
         spec.footerBackHome();
         spec.send(player);
     }

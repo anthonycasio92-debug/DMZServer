@@ -15,8 +15,8 @@ import java.util.TreeSet;
  *   <li>Add the logical id to {@link #PROTOCOL_IDS} and {@link #BUILDER_IDS}.
  *   <li>Hub shim tunnels any id not in {@link #KAIPATH_REGISTERED_IDS} automatically.
  *   <li>Bare hub clicks resolve via {@link #bareOpenTarget(String)} for every protocol id
- *       (plus {@link #BARE_ALIASES}) — no per-system {@code switch} required.
- *   <li>All packets go through {@link UltraScreenSpec} → {@link
+ *       (plus {@link #BARE_ALIASES}) - no per-system {@code switch} required.
+ *   <li>All packets go through {@link UltraScreenSpec} -> {@link
  *       com.dbzlegacy.adaptivedifficulty.net.gui.LmGuiNetwork#sendOpen}.
  * </ol>
  *
@@ -63,7 +63,7 @@ public final class UltraScreenIds {
             "admin");
 
     /**
-     * Every {@code UltraScreenSpec.of("…")} id used by Ultra*Screens builders.
+     * Every {@code UltraScreenSpec.of("...")} id used by Ultra*Screens builders.
      * Keep in sync with {@code UltraHubScreens}, {@code UltraDifficultyScreens}, etc.
      * New entries are auto-tunneled (shim) and auto-mapped for bare hub actions.
      */
@@ -81,7 +81,7 @@ public final class UltraScreenIds {
             "config");
 
     /**
-     * Extra bare hub click aliases → canonical {@link #PROTOCOL_IDS} / {@link #BUILDER_IDS}.
+     * Extra bare hub click aliases -> canonical {@link #PROTOCOL_IDS} / {@link #BUILDER_IDS}.
      * Canonical ids map to themselves via {@link #bareOpenTarget(String)}.
      */
     public static final Map<String, String> BARE_ALIASES = Map.ofEntries(
@@ -215,7 +215,7 @@ public final class UltraScreenIds {
         if (!unknown.isEmpty()) {
             errors++;
             AdaptiveDifficultyMod.LOGGER.error(
-                    "[{}] Ultra screen builders use ids not in protocol list: {} — "
+                    "[{}] Ultra screen builders use ids not in protocol list: {} - "
                             + "add them to UltraScreenIds.PROTOCOL_IDS and docs/KAIPATH_GUI_PROTOCOL.md",
                     AdaptiveDifficultyMod.MOD_ID,
                     unknown);
@@ -307,7 +307,7 @@ public final class UltraScreenIds {
                         + safeLabel(buttonLabel)
                         + " actionId="
                         + raw
-                        + " — use a bare name (e.g. character) or open:/do:/tab:/nav:/page: prefix");
+                        + " - use a bare name (e.g. character) or open:/do:/tab:/nav:/page: prefix");
     }
 
     private static String safeLabel(String label) {
