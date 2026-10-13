@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.noea;
 
+import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dragonminez.common.stats.StatsData;
 import net.minecraft.world.entity.player.Player;
 
@@ -17,7 +18,8 @@ public final class AbsorptionWipeHelper {
         try {
             String name = player.m_7755_().getString();
             String where = via == null || via.isEmpty() ? "" : " via " + via;
-            System.out.println("[LM] wipeAbsorption firing for " + name + where);
+            AdaptiveDifficultyMod.LOGGER.debug(
+                    "[{}] wipeAbsorption firing for {}{}", AdaptiveDifficultyMod.MOD_ID, name, where);
         } catch (Throwable ignored) {
         }
         try {
@@ -26,7 +28,8 @@ public final class AbsorptionWipeHelper {
             try {
                 AbsorptionClearLog.failure(t);
             } catch (Throwable ignored) {
-                t.printStackTrace();
+                AdaptiveDifficultyMod.LOGGER.warn(
+                        "[{}] wipeAbsorption failed", AdaptiveDifficultyMod.MOD_ID, t);
             }
         }
     }
@@ -38,7 +41,8 @@ public final class AbsorptionWipeHelper {
             try {
                 AbsorptionClearLog.failure(t);
             } catch (Throwable ignored) {
-                t.printStackTrace();
+                AdaptiveDifficultyMod.LOGGER.warn(
+                        "[{}] wipeIfRaceChanges failed", AdaptiveDifficultyMod.MOD_ID, t);
             }
         }
     }

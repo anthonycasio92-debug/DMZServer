@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.event;
 
+import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.server.events.players.StatsEvents;
@@ -38,7 +39,7 @@ public final class FallDamageDiag {
             }
             alignVanillaPool(player);
         } catch (Throwable t) {
-            t.printStackTrace();
+            AdaptiveDifficultyMod.LOGGER.warn("[{}] FallDamageDiag.onFall failed", AdaptiveDifficultyMod.MOD_ID, t);
         }
     }
 
@@ -57,7 +58,7 @@ public final class FallDamageDiag {
             }
             alignVanillaPool(player);
         } catch (Throwable t) {
-            t.printStackTrace();
+            AdaptiveDifficultyMod.LOGGER.warn("[{}] FallDamageDiag.onHurt failed", AdaptiveDifficultyMod.MOD_ID, t);
         }
     }
 

@@ -407,7 +407,6 @@ merge_onto_base_jar() {
         MeleeStatsResetPlayerBlockMixin \
         DendeResetAbsorptionWipeMixin \
         CreateCharacterAbsorptionWipeMixin \
-        FusionUnfuseBonusClearMixin \
         FusionBonusReadGateMixin \
         LegacyMechanicsMixinPlugin; do
       if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/mixin/${mixin_cls}.class" ]]; then

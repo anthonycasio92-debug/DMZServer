@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.noea;
 
+import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import com.dragonminez.common.network.NetworkHandler;
@@ -47,7 +48,8 @@ public final class GodKiWipeHelper {
             name = "?";
         }
         String where = via == null || via.isEmpty() ? "" : " via " + via;
-        System.out.println("[LM] wipeGodKi firing for " + name + where);
+        AdaptiveDifficultyMod.LOGGER.debug(
+                "[{}] wipeGodKi firing for {}{}", AdaptiveDifficultyMod.MOD_ID, name, where);
         try {
             String ledger = removePersistent(player, LEDGER_KEY);
             String enhancement = removePersistent(player, ENHANCEMENT_KEY);
@@ -58,17 +60,21 @@ public final class GodKiWipeHelper {
             if ((skill >= 0 || form || mastery || history) && player instanceof ServerPlayer serverPlayer) {
                 NetworkHandler.sendToTrackingEntityAndSelf(new StatsSyncS2C(serverPlayer), serverPlayer);
             }
-            System.out.println("[LM] wipeGodKi complete ledger=" + ledger
-                    + " enhancement=" + enhancement
-                    + " skill=" + skill
-                    + " form=" + form
-                    + " mastery=" + mastery
-                    + " history=" + history);
+            AdaptiveDifficultyMod.LOGGER.debug(
+                    "[{}] wipeGodKi complete ledger={} enhancement={} skill={} form={} mastery={} history={}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    ledger,
+                    enhancement,
+                    skill,
+                    form,
+                    mastery,
+                    history);
         } catch (Throwable t) {
             try {
                 AbsorptionClearLog.failure(t);
             } catch (Throwable ignored) {
-                t.printStackTrace();
+                AdaptiveDifficultyMod.LOGGER.warn(
+                        "[{}] wipeGodKi failed", AdaptiveDifficultyMod.MOD_ID, t);
             }
         }
     }
@@ -96,7 +102,8 @@ public final class GodKiWipeHelper {
             try {
                 AbsorptionClearLog.failure(t);
             } catch (Throwable ignored) {
-                t.printStackTrace();
+                AdaptiveDifficultyMod.LOGGER.warn(
+                        "[{}] wipeGodKi ifRaceChanges failed", AdaptiveDifficultyMod.MOD_ID, t);
             }
         }
     }

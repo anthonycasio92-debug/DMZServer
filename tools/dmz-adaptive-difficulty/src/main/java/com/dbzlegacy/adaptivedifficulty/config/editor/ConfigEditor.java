@@ -23,7 +23,6 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -32,6 +31,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 /**
@@ -44,9 +44,9 @@ public final class ConfigEditor {
     /** Scroll lines stay under the CNPC 64-character trim. */
     private static final int LINE_MAX = 60;
     private static final int LIST_CAP = 200;
-    private static final Set<Path> BACKED_THIS_SESSION = new HashSet<>();
-    private static final Map<UUID, Proposal> PENDING = new HashMap<>();
-    private static final Map<UUID, Session> SESSIONS = new HashMap<>();
+    private static final Set<Path> BACKED_THIS_SESSION = ConcurrentHashMap.newKeySet();
+    private static final Map<UUID, Proposal> PENDING = new ConcurrentHashMap<>();
+    private static final Map<UUID, Session> SESSIONS = new ConcurrentHashMap<>();
     private static final DateTimeFormatter AUDIT_WHEN =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(ZoneId.systemDefault());
 

@@ -2104,7 +2104,9 @@ def main() -> int:
           and "MeleeStatsResetPlayerBlockMixin" in mixin_plugin
           and "meleeResetCommandsPresent()" in mixin_plugin
           and "Class.forName" not in mixin_plugin.split("meleeResetCommandsPresent()", 1)[-1].split("absorptionServicePresent", 1)[0]
-          and "t.printStackTrace()" in read(
+          and "AdaptiveDifficultyMod.LOGGER" in read(
+              ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/noea/AbsorptionWipeHelper.java")
+          and "System.out.println" not in read(
               ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/noea/AbsorptionWipeHelper.java")
           and "\"StatsCommand.resetStats\"" in reset_block
           and "DmzStatsResetAbsorptionWipeMixin" not in mixins_json)
@@ -2146,14 +2148,16 @@ def main() -> int:
           and "current - absorbed + scaledBonus" in absorb_gate
           and "package com.dbzlegacy.adaptivedifficulty.noea;" in absorb_store
           and "data.absorptionMelee = 0" in absorb_store
-          and "[LM] clear() called for " in absorb_store
-          and "[LM] ABORT: data is null, cannot wipe" in absorb_store
-          and "[LM] readback melee=" in absorb_store
-          and "[LM] wipe FAILED: " in absorb_store
+          and "AdaptiveDifficultyMod.LOGGER" in absorb_store
+          and "System.out.println" not in absorb_store
+          and "printStackTrace" not in absorb_store
           and "data.absorptionKi = 0" in absorb_store
           and "data.absorptionPower = 0" in absorb_store
           and "MajinAbsorptionStore.clear(player)" in absorb_helper
-          and "[LM] wipeAbsorption firing for " in absorb_helper
+          and "wipeAbsorption firing" in absorb_helper
+          and "AdaptiveDifficultyMod.LOGGER" in absorb_helper
+          and "System.out.println" not in absorb_helper
+          and "printStackTrace" not in absorb_helper
           and "AbsorptionWipeHelper.wipe(player, null)" in absorb_reset
           and "initializeWithRaceAndClass" in absorb_reset
           and "wipeIfRaceChanges" in absorb_reset
@@ -2161,6 +2165,8 @@ def main() -> int:
           and 'method = "resetStats"' in absorb_cmd
           and "\"StatsCommand.resetStats\"" in absorb_cmd
           and "AbsorptionWipeHelper" in absorb_cmd
+          and "AdaptiveDifficultyMod.LOGGER" in absorb_cmd
+          and "printStackTrace" not in absorb_cmd
           and "require = 0" in absorb_cmd
           and 'method = "resetSelf"' in absorb_melee
           and "require = 0" in absorb_melee
@@ -2172,9 +2178,10 @@ def main() -> int:
           and "isHasCreatedCharacter" in absorb_create
           and "AbsorptionWipeHelper.wipe(player, \"CreateCharacterC2S\")" in absorb_create
           and "\"CharacterServicesSystem.executeRaceChange\"" in absorb_services
-          and "[LM] clear() threw: " in absorb_log
+          and "AdaptiveDifficultyMod.LOGGER" in absorb_log
+          and "System.out.println" not in absorb_log
+          and "printStackTrace" not in absorb_log
           and "AbsorptionClearLog.failure" in absorb_helper
-          and "t.printStackTrace()" in absorb_helper
           and "AbsorptionClearLog.failure" in absorb_store
           and "StatsDataGuardsMixin" in mixins_json
           and "StatsDataResetPrestigeSyncMixin" not in mixins_json
@@ -2198,7 +2205,10 @@ def main() -> int:
           and "GodKiWipeHelper.wipe(player, \"NPCActionC2S.handleDende\")" in absorb_dende
           and "GodKiWipeHelper.wipe(player, \"CreateCharacterC2S\")" in absorb_create
           and "GodKiWipeHelper.wipe(player, \"CharacterServicesSystem.executeRaceChange\")" in absorb_services
-          and "GodKiWipeHelper" in build_sh)
+          and "GodKiWipeHelper" in build_sh
+          and "AdaptiveDifficultyMod.LOGGER" in god_ki
+          and "System.out.println" not in god_ki
+          and "printStackTrace" not in god_ki)
 
     print("\n=== CNPC notice color (4.6.41) ===")
     notice = read(cnpc_dir / "CnpcMenuFeedback.java")
@@ -2312,28 +2322,13 @@ def main() -> int:
     check("fusion reset class is copied into the forge jar",
           "FusionCooldownReset" in read(ROOT / "tools/dmz-adaptive-difficulty/build.sh"))
 
-    print("\n=== Fusion unfuse bonus clear (4.6.56) ===")
-    fusion_clear = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/FusionUnfuseBonusClearMixin.java")
+    print("\n=== Fusion unfuse bonus clear retired (read-gate only) ===")
     fusion_mixins = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/resources/legacymechanics.mixins.json")
-    mixin_plugin = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/LegacyMechanicsMixinPlugin.java")
-    check("unfuse clears FusionBonus at the tail of endFusion",
-          "Dragon Mine Z bug workaround" in fusion_clear
-          and 'FUSION_BONUS = "FusionBonus"' in fusion_clear
-          and 'method = "endFusion"' in fusion_clear
-          and '@At("TAIL")' in fusion_clear
-          and '@At("HEAD")' in fusion_clear
-          and "require = 0" in fusion_clear
-          and "removeAllBonuses" in fusion_clear
-          and "fusionZenkaiNames" in fusion_clear
-          and "Zenkai_" in fusion_clear
-          and '"FusionUnfuseBonusClearMixin"' in fusion_mixins
-          and "FusionUnfuseBonusClearMixin" in build_sh)
-    check("unfuse mixin names FusionLogic and is not gated at config time",
-          '@Mixin(targets = "com.dragonminez.server.util.FusionLogic", remap = false)' in fusion_clear
-          and "FusionLogic.class" not in fusion_clear
-          and "import com.dragonminez.server.util.FusionLogic" not in fusion_clear
-          and "FusionUnfuseBonusClearMixin" not in mixin_plugin
-          and "FusionLogic" not in mixin_plugin)
+    fusion_clear_path = ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/FusionUnfuseBonusClearMixin.java"
+    check("FusionUnfuseBonusClearMixin removed (read-gate replaced unfuse cleanup)",
+          not fusion_clear_path.is_file()
+          and '"FusionUnfuseBonusClearMixin"' not in fusion_mixins
+          and "FusionUnfuseBonusClearMixin" not in build_sh)
     fusion_gate = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/FusionBonusReadGateMixin.java")
     check("fusion bonus is ignored on read when the player is not fused",
           "status.isFused()" in read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/progression/FusionBonusOwner.java")
@@ -2368,6 +2363,8 @@ def main() -> int:
           and "scaledFromOldPool" in fall_diag
           and "raiseVanillaMax" in fall_diag
           and "System.out.println" not in fall_diag
+          and "printStackTrace" not in fall_diag
+          and "AdaptiveDifficultyMod.LOGGER" in fall_diag
           and "[LM] Fall damage:" not in fall_diag
           and "setCanceled" not in fall_diag
           and "setAmount" not in fall_diag
@@ -2424,6 +2421,11 @@ def main() -> int:
     config_gui = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmConfigGui.java")
     config_registry = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/config/ConfigRegistry.java")
     config_screen = read(cnpc_dir / "CnpcConfigEditor.java")
+    check("config editor static maps are concurrency-safe",
+          "ConcurrentHashMap.newKeySet()" in config_editor
+          and "PENDING = new ConcurrentHashMap<>()" in config_editor
+          and "SESSIONS = new ConcurrentHashMap<>()" in config_editor
+          and "BACKED_THIS_SESSION = ConcurrentHashMap.newKeySet()" in config_editor)
     check("config editor lists fields by reflection",
           "getFields()" in config_editor
           and "adminPermission" in config_editor
