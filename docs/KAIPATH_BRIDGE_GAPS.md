@@ -2,6 +2,19 @@
 
 **LM 4.6.122** + **KaiPath 1.3.7** (CurseForge latest / live; no 1.3.5 was ever published).
 
+## Still missing on KaiPath 1.3.7 (live)
+
+| Missing part | Blocks | Where to merge |
+|--------------|--------|----------------|
+| GuiOpen **field 11** `inputsJson` | Weight shop typed entry; Config typed fields | `tools/ultra-gui-kit/kaipath-client/` → next KaiPath past 1.3.7 |
+| EditBox / `type=text` widgets | same | same |
+| `bindInput` → `args.value` | same | same |
+| `textInput` in GuiFeaturesPacket advertise | guitest `pendingNext`; LM treats as expected until next client | expand to `["style","activeTab","titleAlign","playerModel","textInput"]` |
+
+LM 4.6.122+ already ships field 11 and logs `pendingNext=[textInput]` (info), not a broken-client warn. Shipped-on-1.3.7 features (`style` / `activeTab` / `titleAlign` / `playerModel`) warn only when absent.
+
+Deferred (neither side): `inputsJson` `slider` / `toggle`.
+
 ## Cursor / LM (server protocol) — status
 
 | Gap | Status | Notes |

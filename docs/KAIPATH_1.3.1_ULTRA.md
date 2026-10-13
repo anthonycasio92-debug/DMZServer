@@ -2,7 +2,7 @@
 
 | Side | Role |
 |------|------|
-| LM **4.6.121** | `GuiOpenPacket` (11 fields: +`inputsJson`), styles, `titleAlign`, `playerModel.parts`, Config + Weights text fields |
+| LM **4.6.122** | `GuiOpenPacket` (11 fields: +`inputsJson`), styles, `titleAlign`, `playerModel.parts`, Config + Weights text fields |
 | KaiPath **1.3.7** (released / vendored) | `style`, `activeTab`, `titleAlign`, `playerModel`, GuiFeaturesPacket (4 features) |
 | Still missing on 1.3.7 | Field 11 `inputsJson` / `textInput` advertise — merge from `tools/ultra-gui-kit/kaipath-client/` |
 

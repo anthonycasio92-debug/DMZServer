@@ -1,6 +1,6 @@
 # JLDK brief — KaiPath Ultra GUI client conformance
 
-**Status (LM 4.6.121 + KaiPath 1.3.7):** Live/released KaiPath **1.3.7** (CurseForge) already
+**Status (LM 4.6.122 + KaiPath 1.3.7):** Live/released KaiPath **1.3.7** (CurseForge) already
 honors `style`, `activeTab`, `titleAlign`, and `playerModel`, and advertises those four via
 `GuiFeaturesPacket`. **Still missing:** GuiOpen field 11 `inputsJson` text fields +
 `textInput` advertise (blocks Difficulty Weights typed entry).

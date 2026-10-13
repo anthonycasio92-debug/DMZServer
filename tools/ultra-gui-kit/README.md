@@ -39,4 +39,4 @@ Weight shop typed entry stays blocked until that ships.
 
 ---
 
-LM server impl: `tools/dmz-adaptive-difficulty/…/net/gui/` (**4.6.121**).
+LM server impl: `tools/dmz-adaptive-difficulty/…/net/gui/` (**4.6.122**).
