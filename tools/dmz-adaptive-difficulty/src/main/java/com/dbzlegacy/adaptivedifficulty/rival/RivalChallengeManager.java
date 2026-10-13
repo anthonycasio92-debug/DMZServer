@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.rival;
 
+import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
@@ -198,6 +199,16 @@ public final class RivalChallengeManager {
 
     public String acceptChallenge(ServerPlayer player, String counterpartyPicker) {
         ChallengeRequest req = resolveIncomingRequest(player, counterpartyPicker);
+        AdaptiveDifficultyMod.LOGGER.info(
+                "[{}] rivalAcceptChallenge player={} picker={} requestFound={} from={} to={} expiresAt={} reqId={}",
+                AdaptiveDifficultyMod.MOD_ID,
+                player == null ? "?" : player.m_7755_().getString(),
+                counterpartyPicker,
+                req != null,
+                req == null ? null : req.fromName,
+                req == null ? null : req.toName,
+                req == null ? -1L : req.expiresAt,
+                req == null ? null : req.id);
         if (req == null) {
             return counterpartyPicker != null && !counterpartyPicker.isBlank()
                     ? "§cNo pending challenge from that player."
@@ -206,6 +217,11 @@ public final class RivalChallengeManager {
         MinecraftServer server = player.m_20194_();
         ServerPlayer challenger = server == null ? null : server.m_6846_().m_11259_(req.from);
         if (challenger == null) {
+            AdaptiveDifficultyMod.LOGGER.info(
+                    "[{}] rivalAcceptChallenge challenger offline player={} fromUuid={}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    player.m_7755_().getString(),
+                    req.from);
             dropRequest(req.id);
             return "§cThe challenger went offline.";
         }

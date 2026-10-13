@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.sparring;
 
+import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import com.dbzlegacy.adaptivedifficulty.util.LmChat;
 import java.util.ArrayList;
@@ -955,11 +956,26 @@ public final class DojoRankings {
             return "§cPlayers only.";
         }
         if (!isDojoMaster(master)) {
+            AdaptiveDifficultyMod.LOGGER.info(
+                    "[{}] dojoAcceptWar rejected: not dojo master player={}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    master.m_7755_().getString());
             return "§cOnly dojo masters can accept war.";
         }
         String key = master.m_20148_().toString().toLowerCase(Locale.ROOT);
         SparStore.DojoChallenge c = SparStore.get().dojoChallenges.get(key);
-        if (c == null || c.expiresAt <= System.currentTimeMillis()) {
+        long now = System.currentTimeMillis();
+        AdaptiveDifficultyMod.LOGGER.info(
+                "[{}] dojoAcceptWar player={} key={} pendingFound={} expiresAt={} now={} active={} from={}",
+                AdaptiveDifficultyMod.MOD_ID,
+                master.m_7755_().getString(),
+                key,
+                c != null,
+                c == null ? -1L : c.expiresAt,
+                now,
+                c != null && c.active,
+                c == null ? null : c.fromDojoName);
+        if (c == null || c.expiresAt <= now) {
             return "§cNo pending dojo war challenge.";
         }
         c.active = true;

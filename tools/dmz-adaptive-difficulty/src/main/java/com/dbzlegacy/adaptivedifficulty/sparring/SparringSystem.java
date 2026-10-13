@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.sparring;
 
+import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.calc.LmOverhaulScaledCombat;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
@@ -1418,18 +1419,49 @@ public final class SparringSystem {
     }
 
     public static String mentorAccept(ServerPlayer player, String fromArg) {
-        SparStore.BondInvite invite = SparStore.get().invites.get(player.m_20148_().toString());
-        if (invite == null || System.currentTimeMillis() > invite.expiresAt) {
-            SparStore.get().invites.remove(player.m_20148_().toString());
+        String me = player == null ? "?" : player.m_20148_().toString();
+        SparStore.BondInvite invite = SparStore.get().invites.get(me);
+        long now = System.currentTimeMillis();
+        boolean found = invite != null;
+        boolean expired = invite != null && now > invite.expiresAt;
+        boolean match =
+                fromArg == null || fromArg.isBlank() || matchesInviteFrom(invite, fromArg);
+        AdaptiveDifficultyMod.LOGGER.info(
+                "[{}] mentorAccept player={} fromArg={} inviteFound={} expired={} match={} "
+                        + "inviteFromUuid={} inviteFromName={} inviteKind={} expiresInMs={}",
+                AdaptiveDifficultyMod.MOD_ID,
+                player == null ? "?" : player.m_7755_().getString(),
+                fromArg,
+                found,
+                expired,
+                match,
+                invite == null ? null : invite.fromUuid,
+                invite == null ? null : invite.fromName,
+                invite == null ? null : invite.kind,
+                invite == null ? -1L : (invite.expiresAt - now));
+        if (invite == null || now > invite.expiresAt) {
+            SparStore.get().invites.remove(me);
             SparStore.get().markDirty();
             return "§cNo pending invite.";
         }
-        if (fromArg != null && !fromArg.isBlank() && !matchesInviteFrom(invite, fromArg)) {
+        if (fromArg != null && !fromArg.isBlank() && !match) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] mentorAccept picker mismatch player={} fromArg={} inviteFromUuid={} inviteFromName={}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    player.m_7755_().getString(),
+                    fromArg,
+                    invite.fromUuid,
+                    invite.fromName);
             return "§cThat invite is not pending for you.";
         }
         MinecraftServer server = player.m_20194_();
         ServerPlayer other = resolveInviter(server, invite);
         if (other == null) {
+            AdaptiveDifficultyMod.LOGGER.info(
+                    "[{}] mentorAccept inviter offline player={} fromUuid={}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    player.m_7755_().getString(),
+                    invite.fromUuid);
             return "§cInviter is no longer online.";
         }
         ServerPlayer mentor;
