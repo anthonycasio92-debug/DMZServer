@@ -1,10 +1,11 @@
 # JLDK brief — KaiPath Ultra GUI client conformance
 
-**Status (LM 4.6.120 + reference `kaipath-client`):** LM sends styles, text inputs,
-titleAlign, activeTab, and `playerModel` (+ optional `parts`). The **reference kit** under
+**Status (LM 4.6.120 + live KaiPath 1.3.5 + reference `kaipath-client`):** LM sends styles,
+text inputs, titleAlign, activeTab, and `playerModel` (+ optional `parts`). Live **1.3.5**
+already centers titles and highlights `activeTab`. The **reference kit** under
 [`tools/ultra-gui-kit/kaipath-client/`](../tools/ultra-gui-kit/kaipath-client/) implements the
-full optional set and advertises it. **Live `kaipath-1.3.1.jar` still needs a rebuild** that
-merges this kit (especially `textInput` for the Difficulty Weights shop).
+rest of the optional set — merge into 1.3.5 and rebuild (especially `textInput` for the
+Difficulty Weights shop).
 
 Full gap matrix: [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md).
 
@@ -78,7 +79,7 @@ as `actionId` with `args.value` set.
 2. Ensure `GuiOpenPacket` has **11 fields** including `inputsJson` and UTF-8 helpers.
 3. Ensure `LmDynamicScreen` renders styles, text fields, and `playerModel`.
 4. Keep `ADVERTISED_FEATURES_JSON` as the full five-feature array.
-5. Rebuild and ship a KaiPath jar newer than 1.3.1; confirm `/lm admin guitest` reports no missing optional features.
+5. Rebuild and ship a KaiPath jar past **1.3.5** with this kit; confirm `/lm admin guitest` reports no missing optional features.
 
 ## Deferred (not blocking)
 

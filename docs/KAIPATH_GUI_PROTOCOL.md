@@ -20,8 +20,8 @@ fields (`style`, `activeTab`) are **data**, not new hardcoded screens.
 `layoutJson.titleAlign`, and highlights `activeTab`. **Reference kit**
 (`tools/ultra-gui-kit/kaipath-client/`) also implements button `style`, `playerModel`
 draw, field 11 `inputsJson`, UTF-8, and full `GuiFeaturesPacket` advertise — merge into
-a new KaiPath jar to unblock Weight shop text entry. LM **4.6.108+** logs missing
-optional features via `GuiFeaturesPacket`.
+**1.3.5** and ship a rebuild to unblock Weight shop text entry. LM **4.6.108+** logs
+missing optional features via `GuiFeaturesPacket`.
 
 Implement-yourself kit: [`tools/ultra-gui-kit/`](../tools/ultra-gui-kit/).
 JLDK handoff: [`docs/KAIPATH_JLDK_CLIENT_BRIEF.md`](KAIPATH_JLDK_CLIENT_BRIEF.md).

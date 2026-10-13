@@ -15,18 +15,18 @@
 
 Sources: [`tools/ultra-gui-kit/kaipath-client/`](../tools/ultra-gui-kit/kaipath-client/).
 
-| Gap | Reference kit | Live `kaipath-1.3.1.jar` | Notes |
-|-----|---------------|--------------------------|-------|
+| Gap | Reference kit | Live KaiPath **1.3.5** | Notes |
+|-----|---------------|------------------------|-------|
 | Button `style` colors | **Done** | Missing | `confirm`→green, `danger`→red, `dim`→gray chrome + label tint |
-| `activeTab` highlight | **Done** | Done (1.3.5+) | Chip under active tab; LM also styles tab labels |
-| `titleAlign` | **Done** | Done (1.3.5+) | Centers when `layoutJson.titleAlign=center` |
+| `activeTab` highlight | **Done** | **Done** | Chip under active tab; LM also styles tab labels |
+| `titleAlign` | **Done** | **Done** | Centers when `layoutJson.titleAlign=center` |
 | `playerModel` draw | **Done** | Missing | Local player in bounds; turntable when `rotate`; `parts` logged / ready for geo |
 | UTF-8 GuiOpen strings | **Done** | Use MC `readUtf` (UTF-8) | Reference uses explicit `StandardCharsets.UTF_8` length-prefix (wire-compatible) |
 | Text field widgets (field 11) | **Done** | **Missing** | EditBox from `inputsJson`; Enter / `bindInput` → `args.value` — **Weight shop blocker** |
 | GuiFeaturesPacket advertise | **Done** | Missing | `["style","activeTab","titleAlign","playerModel","textInput"]` |
 | Slider / toggle widgets | N/A | N/A | Reserved until LM ships types |
 
-**Ship path:** merge `tools/ultra-gui-kit/kaipath-client/` into KaiPath and rebuild the live jar. Until then LM Weight shop input pages show a clear “requires KaiPath update” message when `textInput` is not advertised.
+**Ship path:** merge `tools/ultra-gui-kit/kaipath-client/` into KaiPath **1.3.5** and ship a rebuild (e.g. 1.3.6+). Until then LM Weight shop input pages show a clear “requires KaiPath update” message when `textInput` is not advertised.
 
 ## Reserved (later): `inputsJson` slider / toggle
 

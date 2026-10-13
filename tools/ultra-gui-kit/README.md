@@ -34,8 +34,9 @@ Merge `kaipath-client/` into KaiPath and rebuild.
 6. Explicit UTF-8 string codec
 7. `ADVERTISED_FEATURES_JSON = ["style","activeTab","titleAlign","playerModel","textInput"]`
 
-**Live jar note:** `mods/kaipath-1.3.1.jar` is behind this kit (no field 11 / no textInput
-advertise). Weight shop typed entry stays blocked until a rebuilt KaiPath ships.
+**Live jar note:** production runs KaiPath **1.3.5** (titleAlign + activeTab). It is still
+behind this kit for `style`, `playerModel`, field 11 `inputsJson`, and `textInput`
+advertise. Weight shop typed entry stays blocked until a rebuild past 1.3.5 ships.
 
 ---
 
