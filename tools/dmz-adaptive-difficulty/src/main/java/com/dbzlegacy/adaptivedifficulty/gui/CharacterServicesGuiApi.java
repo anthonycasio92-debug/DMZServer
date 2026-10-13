@@ -58,8 +58,13 @@ public final class CharacterServicesGuiApi {
                         : "false");
         out.put("can_reskin",
                 cfg.enabled && cfg.reskin.enabled && CharacterServicesAccess.canReskin(player) ? "true" : "false");
+        boolean formModelBlocked = CosmeticHeadBoneService.isFormModelRace(player);
+        out.put("head_bones_form_model_blocked", formModelBlocked ? "true" : "false");
         out.put("can_head_bones",
-                cfg.enabled && cfg.headBoneShop.enabled && CharacterServicesAccess.canHeadBoneShop(player)
+                cfg.enabled
+                                && cfg.headBoneShop.enabled
+                                && CharacterServicesAccess.canHeadBoneShop(player)
+                                && !formModelBlocked
                         ? "true"
                         : "false");
         LmOverhaulScaledCombat.putPlaceholders(out, player);
@@ -188,7 +193,7 @@ public final class CharacterServicesGuiApi {
             lines.add("§7Keeping §f" + pct + "% §7of eligible stats:");
             lines.addAll(CharacterServicesSystem.statPreviewLines(player, pct));
             lines.add(costLine(player, CharacterServicesSystem.raceAmountDue(player, pct)));
-            lines.add("§8Pay-up OK · change returned");
+            lines.add("§8Pay-up OK | change returned");
             lines.add("§cStaff cannot auto-revert this for you.");
             return lines;
         }
@@ -196,12 +201,12 @@ public final class CharacterServicesGuiApi {
             String cls = p.substring("class_confirm:".length());
             lines.add("§7New class: §f" + FightingClassLabels.display(cls));
             lines.add(costLine(player, CharacterServicesSystem.classAmountDue(player)));
-            lines.add("§8Pay-up OK · change returned");
+            lines.add("§8Pay-up OK | change returned");
             lines.add("§8Class skills and progression will reset.");
             return lines;
         }
         lines.add("§7Rebuild your character without starting from zero.");
-        lines.add("§7Race · class · reskin · model customization.");
+        lines.add("§7Race | class | reskin | model customization.");
         return lines;
     }
 

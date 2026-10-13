@@ -119,11 +119,12 @@ public final class UltraStyle {
         DIM = DARK_GRAY;
         NOTICE_HEAD = HEADER;
         NOTICE_BODY = YELLOW;
-        SEP = "\u00B7";
-        TIMES = "\u00D7";
+        // ASCII-only separators: KaiPath/JLDK still mojibakes multi-byte punctuation.
+        SEP = "|";
+        TIMES = "x";
         PAGE_ANDROID_REMOVE = "android_remove";
-        BACK = LABEL + "\u00AB Back";
-        BACK_TO_MAIN = LABEL + "\u00AB Back to main menu";
+        BACK = LABEL + "< Back";
+        BACK_TO_MAIN = LABEL + "< Back to main menu";
     }
 
     private UltraStyle() {}
@@ -156,7 +157,7 @@ public final class UltraStyle {
         if (plain.length() <= 28) {
             return styled;
         }
-        String cut = plain.substring(0, 27) + "\u2026";
+        String cut = plain.substring(0, 27) + "...";
         int mark = styled.indexOf(plain);
         if (mark > 0) {
             return styled.substring(0, mark) + cut;

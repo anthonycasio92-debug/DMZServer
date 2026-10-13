@@ -61,8 +61,8 @@ public final class UltraCharacterScreens {
                 .page(page)
                 .activeTab(tab)
                 .tabs("home|Home", "saga|Saga Reset", "android|Android Removal")
-                // Scale 1.5 fills the 86x120 preview better; y=60 clears the tab strip.
-                .playerModel(player, 248, 60, 86, 120, 1.5f, true);
+                // Scale 1.0 fits the panel; 1.5 (4.6.116) clipped the head at the top.
+                .playerModel(player, 248, 60, 86, 120, 1.0f, true);
     }
 
     /** Overview + look tools — Change Race / Class / Model / Reskin on Home. */
@@ -72,6 +72,7 @@ public final class UltraCharacterScreens {
         boolean canClass = "true".equals(ph.get("can_class_change"));
         boolean canReskin = "true".equals(ph.get("can_reskin"));
         boolean canBones = "true".equals(ph.get("can_head_bones"));
+        boolean monkeyFormModel = "true".equals(ph.get("head_bones_form_model_blocked"));
         UltraScreenSpec spec = base(player, "main", "home")
                 .labelValue("Race", ph.getOrDefault("current_race", "-"))
                 .labelValue("Class", ph.getOrDefault("current_class", "-"))
@@ -105,6 +106,10 @@ public final class UltraCharacterScreens {
             spec.buttonRight("page:reskin", UltraStyle.dim("Reskin"), UltraStyle.STYLE_DIM);
         }
         spec.rowGap();
+        if (monkeyFormModel) {
+            spec.line(UltraStyle.DIM
+                    + "Not available for Monkey - this race uses a form model.");
+        }
 
         spec.footerBackToMain();
         spec.send(player);
@@ -122,7 +127,7 @@ public final class UltraCharacterScreens {
         int to = Math.min(total, from + RACES_PER_PAGE);
         UltraScreenSpec spec = base(player, "race:" + pg, "home")
                 .line(UltraStyle.LABEL + "Choose the race you want to become.")
-                .labelValue("Races", total + (pages > 1 ? (" · page " + (pg + 1) + "/" + pages) : ""))
+                .labelValue("Races", total + (pages > 1 ? (" | page " + (pg + 1) + "/" + pages) : ""))
                 .notice("Race-only form ladders reset when the new race does not use them.");
         for (String line : CharacterServicesGuiApi.linesForPage(player, "race")) {
             if (line != null && !line.isBlank()) {
@@ -147,7 +152,7 @@ public final class UltraCharacterScreens {
             String label;
             String style;
             if (current) {
-                label = UltraStyle.dim(name + " · current");
+                label = UltraStyle.dim(name + " | current");
                 style = UltraStyle.STYLE_DIM;
             } else {
                 label = UltraStyle.confirm(name);
@@ -279,7 +284,7 @@ public final class UltraCharacterScreens {
             String label;
             String style;
             if (current) {
-                label = UltraStyle.dim(name + " · current");
+                label = UltraStyle.dim(name + " | current");
                 style = UltraStyle.STYLE_DIM;
             } else {
                 label = UltraStyle.confirm(name);
@@ -365,6 +370,16 @@ public final class UltraCharacterScreens {
     }
 
     private static void openBones(ServerPlayer player, int page) {
+        if (CosmeticHeadBoneService.isFormModelRace(player)) {
+            UltraScreenSpec spec = base(player, "bones:0", "home")
+                    .line(UltraStyle.LABEL + "Model customization")
+                    .line(UltraStyle.DIM
+                            + "Not available for Monkey - this race uses a form model.")
+                    .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
+            spec.footerBackHome();
+            spec.send(player);
+            return;
+        }
         int pages = Math.max(1, CosmeticHeadBoneService.pageCount());
         int pg = Math.min(pages - 1, Math.max(0, page));
         String worn = CosmeticHeadBoneService.wornLabel(CosmeticHeadBoneService.activeBone(player));
@@ -375,7 +390,7 @@ public final class UltraCharacterScreens {
         UltraScreenSpec spec = base(player, "bones:" + pg, "home")
                 .line(UltraStyle.LABEL
                         + HeadPartPieces.pageTitle(pg)
-                        + " · On "
+                        + " | On "
                         + UltraStyle.VALUE
                         + worn);
         for (String line : CharacterServicesGuiApi.linesForPage(player, "bones:" + pg)) {
@@ -401,11 +416,11 @@ public final class UltraCharacterScreens {
             String label;
             String style;
             if ("E".equals(state)) {
-                label = UltraStyle.confirm(name + " · on");
+                label = UltraStyle.confirm(name + " | on");
                 style = UltraStyle.STYLE_CONFIRM;
             } else if ("L".equals(state)) {
                 String cost = p.length > 3 ? p[3].trim() : "";
-                label = UltraStyle.dim(name + (cost.isBlank() ? " · locked" : " · " + cost));
+                label = UltraStyle.dim(name + (cost.isBlank() ? " | locked" : " | " + cost));
                 style = UltraStyle.STYLE_DIM;
                 action = "do:bone_unlock:" + id;
             } else {
@@ -503,7 +518,7 @@ public final class UltraCharacterScreens {
                 label = UltraStyle.confirm("Reset " + offer.name());
                 style = UltraStyle.STYLE_CONFIRM;
             } else {
-                label = UltraStyle.dim(offer.name() + " · " + offer.statusLabel());
+                label = UltraStyle.dim(offer.name() + " | " + offer.statusLabel());
                 style = UltraStyle.STYLE_DIM;
             }
             if (placed % 2 == 0) {

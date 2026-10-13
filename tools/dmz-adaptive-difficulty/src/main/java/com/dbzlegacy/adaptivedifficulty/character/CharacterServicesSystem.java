@@ -237,10 +237,10 @@ public final class CharacterServicesSystem {
         long pay = reskinCost(player);
         int lvl = DmzProgression.tierScalingDmzLevel(player);
         if (pay <= base) {
-            return "§8Scales with DMZ level (§f" + lvl + "§8) · currently at base price";
+            return "§8Scales with DMZ level (§f" + lvl + "§8) | currently at base price";
         }
-        return "§8Scales with DMZ level (§f" + lvl + "§8) · list base §f"
-                + formatCost(base) + " §8→ you pay §f" + formatCost(pay);
+        return "§8Scales with DMZ level (§f" + lvl + "§8) | list base §f"
+                + formatCost(base) + " §8-> you pay §f" + formatCost(pay);
     }
 
     /** Level-scaled copper, snapped to payable Ancient Coin denominations (same as AD tier buys). */
@@ -424,7 +424,7 @@ public final class CharacterServicesSystem {
                             && !priorClassBeforeRaceChange.isBlank()
                             && !mappedClass.equalsIgnoreCase(priorClassBeforeRaceChange)) {
                         AdaptiveDifficultyMod.LOGGER.info(
-                                "[{}] race change remapped fighting class {} → {} for race {}",
+                                "[{}] race change remapped fighting class {} -> {} for race {}",
                                 AdaptiveDifficultyMod.MOD_ID,
                                 priorClassBeforeRaceChange,
                                 mappedClass,

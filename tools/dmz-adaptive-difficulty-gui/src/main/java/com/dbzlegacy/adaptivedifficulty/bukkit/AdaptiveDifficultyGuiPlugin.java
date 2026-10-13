@@ -264,22 +264,23 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         AdminInspectSessions.clear(player.getUniqueId());
         ForgeBridge.prepareDifficultyGui(player);
         String backend = ForgeBridge.guiBackend();
+        // Ultra-only: retired cnpc/chat/chest values are coerced to ultra in ForgeBridge.
+        if ("ultra".equals(backend) || "cnpc".equals(backend)) {
+            openUltraMenu(player, "difficulty", page);
+            return;
+        }
         if ("chat".equals(backend)) {
             if (!ForgeBridge.openChatMenu(player, page)) {
                 player.sendMessage("§cChat difficulty menu unavailable (is the Forge mod loaded?).");
             }
             return;
         }
-        if ("cnpc".equals(backend)) {
-            openCnpcMenu(player, "difficulty", page);
-            return;
-        }
         if ("chest".equals(backend)) {
             chestGui.open(player, page);
             return;
         }
-        // cmi / auto / unknown → CMI then chest
-        openInventory(player, page);
+        // Legacy cmi / auto → Ultra (no CNPC ClassNotFoundException path).
+        openUltraMenu(player, "difficulty", page);
     }
 
     private void openInventory(Player player, String page) {
@@ -380,8 +381,8 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             }
             return;
         }
-        if ("cnpc".equals(backend)) {
-            openCnpcMenu(player, "rival", page);
+        if ("ultra".equals(backend) || "cnpc".equals(backend)) {
+            openUltraMenu(player, "rival", page);
             return;
         }
         if ("chest".equals(backend)) {
@@ -463,8 +464,8 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             }
             return;
         }
-        if ("cnpc".equals(backend)) {
-            openCnpcMenu(player, "spar", page);
+        if ("ultra".equals(backend) || "cnpc".equals(backend)) {
+            openUltraMenu(player, "spar", page);
             return;
         }
         if ("chest".equals(backend)) {
@@ -524,8 +525,8 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             }
             return;
         }
-        if ("cnpc".equals(backend)) {
-            openCnpcMenu(player, "hub", page);
+        if ("ultra".equals(backend) || "cnpc".equals(backend)) {
+            openUltraMenu(player, "hub", page);
             return;
         }
         if ("chest".equals(backend)) {
@@ -535,12 +536,18 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         openHubInventory(player, page);
     }
 
-    /** Forge CustomNPCs UI — no chest/CMI inventory bridge. */
-    private void openCnpcMenu(Player player, String system, String page) {
-        if (!ForgeBridge.openCnpcLm(player, system, page)) {
+    /** Forge Ultra / KaiPath UI (replaces deleted CNPC menus). */
+    private void openUltraMenu(Player player, String system, String page) {
+        if (!ForgeBridge.openUltraLm(player, system, page)) {
             String err = ForgeBridge.lastError();
             player.sendMessage("§cLM menu failed" + (err == null || err.isBlank() ? "." : ": " + err));
         }
+    }
+
+    /** @deprecated Use {@link #openUltraMenu}; kept so any leftover call sites still hit Ultra. */
+    @Deprecated
+    private void openCnpcMenu(Player player, String system, String page) {
+        openUltraMenu(player, system, page);
     }
 
     // ── Progression ────────────────────────────────────────────────────
@@ -582,12 +589,12 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         // Player-facing Android remove: inventory only (chat progression menu is staff-gated).
         if (isAndroidRemovePage(p)) {
             String androidBackend = ForgeBridge.guiBackend();
-            if ("cnpc".equals(androidBackend)) {
-                openCnpcMenu(player, "android_remove", "main");
+            if ("ultra".equals(androidBackend) || "cnpc".equals(androidBackend)) {
+                openUltraMenu(player, "android_remove", "main");
             } else if ("chest".equals(androidBackend)) {
                 progressionChestGui.open(player, "android_remove");
             } else {
-                openProgressionInventory(player, "android_remove");
+                openUltraMenu(player, "android_remove", "main");
             }
             return;
         }
@@ -598,8 +605,8 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             }
             return;
         }
-        if ("cnpc".equals(backend)) {
-            openCnpcMenu(player, "progression", p);
+        if ("ultra".equals(backend) || "cnpc".equals(backend)) {
+            openUltraMenu(player, "progression", p);
             return;
         }
         if ("chest".equals(backend)) {
@@ -660,8 +667,8 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             openPrestigeInventory(player, page);
             return;
         }
-        if ("cnpc".equals(backend)) {
-            openCnpcMenu(player, "prestige", page);
+        if ("ultra".equals(backend) || "cnpc".equals(backend)) {
+            openUltraMenu(player, "prestige", page);
             return;
         }
         if ("chest".equals(backend)) {
@@ -704,8 +711,8 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             return;
         }
         String backend = ForgeBridge.guiBackend();
-        if ("cnpc".equals(backend)) {
-            openCnpcMenu(player, "character", page);
+        if ("ultra".equals(backend) || "cnpc".equals(backend)) {
+            openUltraMenu(player, "character", page);
             return;
         }
         if ("chest".equals(backend)) {
@@ -776,9 +783,9 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             openSkillsInventory(player, page, skillCheckMode);
             return;
         }
-        if ("cnpc".equals(backend)) {
+        if ("ultra".equals(backend) || "cnpc".equals(backend)) {
             String sys = skillCheckMode ? "skillcheck" : "skills";
-            openCnpcMenu(player, sys, page);
+            openUltraMenu(player, sys, page);
             return;
         }
         if ("chest".equals(backend)) {

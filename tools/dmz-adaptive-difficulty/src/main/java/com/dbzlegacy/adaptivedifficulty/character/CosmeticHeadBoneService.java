@@ -140,7 +140,20 @@ public final class CosmeticHeadBoneService {
     public static boolean canUse(ServerPlayer player) {
         return shopEnabled()
                 && CharacterServicesAccess.canUseServices(player)
-                && CharacterServicesAccess.canHeadBoneShop(player);
+                && CharacterServicesAccess.canHeadBoneShop(player)
+                && !isFormModelRace(player);
+    }
+
+    /**
+     * Races whose look is owned by a form model (not DMZ headBones). Head-part shop does not
+     * apply correctly — hide/grey Model customization for these players.
+     */
+    public static boolean isFormModelRace(ServerPlayer player) {
+        if (player == null) {
+            return false;
+        }
+        String race = DmzProgression.race(player);
+        return "monkey".equalsIgnoreCase(race);
     }
 
     /**

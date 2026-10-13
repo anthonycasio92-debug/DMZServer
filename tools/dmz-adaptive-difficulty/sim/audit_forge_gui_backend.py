@@ -115,6 +115,25 @@ def main() -> int:
     if "§" in mechanics:
         errors.append("MechanicsCommands.java: remaining section-sign literals (use UltraStyle)")
 
+    # Bukkit ForgeBridge must not loadClass deleted gui.cnpc (CNFE for players).
+    bukkit_bridge = (
+        ROOT.parent.parent
+        / "tools/dmz-adaptive-difficulty-gui/src/main/java/com/dbzlegacy/adaptivedifficulty/bukkit/ForgeBridge.java"
+    )
+    if not bukkit_bridge.is_file():
+        bukkit_bridge = (
+            ROOT.parent
+            / "dmz-adaptive-difficulty-gui/src/main/java/com/dbzlegacy/adaptivedifficulty/bukkit/ForgeBridge.java"
+        )
+    if bukkit_bridge.is_file():
+        btext = bukkit_bridge.read_text(encoding="utf-8")
+        if "gui.cnpc.CnpcLmGui" in btext:
+            errors.append("ForgeBridge.java: must not loadClass gui.cnpc.CnpcLmGui")
+        if "gui.ultra.UltraGui" not in btext:
+            errors.append("ForgeBridge.java: must open UltraGui for menus")
+        if 'return "cnpc"' in btext:
+            errors.append('ForgeBridge.guiBackend must not return "cnpc"')
+
     for name in ("DifficultyMenu", "RivalMenu", "SparMenu", "PrestigeMenu", "CharacterServicesMenu"):
         path = GUI / f"{name}.java"
         if not path.is_file():
