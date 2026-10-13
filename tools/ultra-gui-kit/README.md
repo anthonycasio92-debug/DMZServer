@@ -22,22 +22,21 @@ Gap matrix: [`docs/KAIPATH_BRIDGE_GAPS.md`](../../docs/KAIPATH_BRIDGE_GAPS.md).
 
 ## KaiPath / JLDK
 
-Merge `kaipath-client/` into KaiPath and rebuild.
+**Released 1.3.7** (vendored at `mods/kaipath-1.3.7.jar`) already has:
 
-**Reference kit (current — merge this):**
-
-1. Button `style` chrome (`confirm` / `danger` / `dim` / `normal`)
-2. `activeTab` highlight chip
+1. Button `style` chrome
+2. `activeTab` highlight
 3. `layoutJson.titleAlign`
-4. `layoutJson.playerModel` local-player preview (+ turntable)
-5. GuiOpenPacket **field 11** `inputsJson` text fields + `bindInput` → `args.value`
-6. Explicit UTF-8 string codec
-7. `ADVERTISED_FEATURES_JSON = ["style","activeTab","titleAlign","playerModel","textInput"]`
+4. `layoutJson.playerModel` preview
+5. `GuiFeaturesPacket` advertise `["style","activeTab","titleAlign","playerModel"]`
 
-**Live jar note:** production runs KaiPath **1.3.5** (titleAlign + activeTab). It is still
-behind this kit for `style`, `playerModel`, field 11 `inputsJson`, and `textInput`
-advertise. Weight shop typed entry stays blocked until a rebuild past 1.3.5 ships.
+**Still merge from this kit for the next release:**
+
+1. GuiOpenPacket **field 11** `inputsJson` text fields + `bindInput` → `args.value`
+2. Add `textInput` to the advertise list
+
+Weight shop typed entry stays blocked until that ships.
 
 ---
 
-LM server impl: `tools/dmz-adaptive-difficulty/…/net/gui/` (**4.6.120**).
+LM server impl: `tools/dmz-adaptive-difficulty/…/net/gui/` (**4.6.121**).

@@ -53,6 +53,12 @@ public final class LmGuiNetwork {
     public static final String KAIPATH_DYNAMIC_UI_VERSION = "1.3.1";
 
     /**
+     * Current recommended/released KaiPath for Ultra (CurseForge). Ships style, activeTab,
+     * titleAlign, playerModel + GuiFeaturesPacket. Still lacks field 11 {@code textInput}.
+     */
+    public static final String KAIPATH_RECOMMENDED_VERSION = "1.3.7";
+
+    /**
      * Optional channel: clients without KaiPath omit it. Accept missing so those players
      * still join; UltraGui then falls back to CustomNPCs for them.
      */
@@ -275,12 +281,14 @@ public final class LmGuiNetwork {
         runPacketRoundTripSelfTest();
         AdaptiveDifficultyMod.LOGGER.info(
                 "[{}] Ultra GUI bridge ready channel={} protocol={} — KaiPath {}+ dynamic UI "
-                        + "(any screenId; no hub shim). Client renders what the server sends; "
-                        + "optional features style/activeTab via GuiFeaturesPacket.",
+                        + "(any screenId; no hub shim). Recommended KaiPath {}; "
+                        + "optional features via GuiFeaturesPacket "
+                        + "(style/activeTab/titleAlign/playerModel; textInput still pending).",
                 AdaptiveDifficultyMod.MOD_ID,
                 UltraGuiProtocol.channelId(CHANNEL_NAMESPACE),
                 PROTOCOL_VERSION,
-                KAIPATH_DYNAMIC_UI_VERSION);
+                KAIPATH_DYNAMIC_UI_VERSION,
+                KAIPATH_RECOMMENDED_VERSION);
     }
 
     private static GuiOpenPacket decodeOpenLogged(net.minecraft.network.FriendlyByteBuf buf) {

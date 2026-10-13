@@ -28,6 +28,9 @@ public final class UltraGuiConsumerRegistry {
     /**
      * Features this reference client honors — keep in sync with
      * {@code LmDynamicScreen} + {@code GuiOpenPacket} UTF-8 decode.
+     *
+     * <p>Released KaiPath <b>1.3.7</b> advertises the same list <em>without</em>
+     * {@code textInput}; this kit adds field 11 widgets + that advertise flag.
      */
     public static final String ADVERTISED_FEATURES_JSON =
             "[\"style\",\"activeTab\",\"titleAlign\",\"playerModel\",\"textInput\"]";

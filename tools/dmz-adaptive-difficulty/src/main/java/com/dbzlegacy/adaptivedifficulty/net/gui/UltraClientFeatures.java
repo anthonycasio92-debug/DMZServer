@@ -27,7 +27,8 @@ import net.minecraft.server.level.ServerPlayer;
  * </ul>
  *
  * <p>Clients that never send {@link GuiFeaturesPacket} are treated as the KaiPath <b>1.3.1
- * baseline</b>: dynamic layout/buttons only.
+ * baseline</b>: dynamic layout/buttons only. KaiPath <b>1.3.7</b> advertises
+ * style/activeTab/titleAlign/playerModel (still not {@link #FEATURE_TEXT_INPUT}).
  */
 public final class UltraClientFeatures {
     public static final String FEATURE_STYLE = "style";
