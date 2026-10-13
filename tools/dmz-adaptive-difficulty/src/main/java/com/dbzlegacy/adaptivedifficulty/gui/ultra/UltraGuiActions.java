@@ -678,7 +678,16 @@ public final class UltraGuiActions {
             };
             case "prestige" -> switch (parts.action == null ? "" : parts.action) {
                 case "confirm", "turnin", "turn_in", "redeem" -> "turnin";
-                case "skill", "buy_skill", "skillup" -> "shop";
+                case "skill", "buy_skill", "skillup" -> {
+                    String skillPage = stringArg(args, "page");
+                    yield skillPage != null && skillPage.startsWith("skills")
+                            ? skillPage
+                            : "skills";
+                }
+                case "tier", "buy_tier", "unlock_tier" -> "tiers";
+                case "majin", "buy_majin", "mutant", "buy_mutant",
+                        "unmajin", "unbuy_majin", "remove_majin",
+                        "unmutant", "unbuy_mutant", "remove_mutant" -> "effects";
                 default -> homePage(screen);
             };
             case "progression" -> switch (parts.action == null ? "" : parts.action) {

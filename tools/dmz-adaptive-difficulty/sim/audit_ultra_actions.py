@@ -49,7 +49,16 @@ KNOWN_DO: dict[str, set[str]] = {
         "android_remove",
         "android",
     },
-    "prestige": {"confirm", "turnin", "skill"},
+    "prestige": {
+        "confirm",
+        "turnin",
+        "skill",
+        "tier",
+        "majin",
+        "mutant",
+        "unmajin",
+        "unmutant",
+    },
     "progression": {"boost", "toggle_staff_free_coins"},
     "rival": {
         "tpmsg",
@@ -561,6 +570,13 @@ def main() -> int:
             "UltraScreenSpec must emit tabsUnderTitle + appendTabButtons "
             "(hub-like tabs under the header line)"
         )
+    prestige = (ULTRA / "UltraPrestigeScreens.java").read_text(encoding="utf-8")
+    if "openShopHub" not in prestige or "openTiers" not in prestige or "openEffects" not in prestige:
+        errors.append("UltraPrestigeScreens must expose shop hub + Skills/Tiers/Effects submenus")
+    if "page:skills" not in prestige or "page:tiers" not in prestige or "page:effects" not in prestige:
+        errors.append("UltraPrestigeScreens shop hub must link page:skills / page:tiers / page:effects")
+    if "do:tier:" not in prestige or "do:majin" not in prestige or "do:mutant" not in prestige:
+        errors.append("UltraPrestigeScreens must wire do:tier / do:majin / do:mutant favor buys")
     if "TAB_ROW_Y" not in style:
         errors.append("UltraStyle must define TAB_ROW_Y for tabs under the title line")
     skill_ui = (ULTRA / "UltraSkillCheckScreens.java").read_text(encoding="utf-8")

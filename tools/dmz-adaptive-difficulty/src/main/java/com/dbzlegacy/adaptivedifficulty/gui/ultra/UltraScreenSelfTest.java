@@ -132,9 +132,12 @@ public final class UltraScreenSelfTest {
                             .footerBackHome();
                     case "prestige" -> UltraScreenSpec.of("prestige")
                             .title("Prestige")
-                            .page("main")
-                            .activeTab("home")
-                            .tabs("home|Home", "turnin|Turn-in", "shop|Shop")
+                            .page("shop")
+                            .activeTab("shop")
+                            .tabs("home|Home", "prestige|Prestige", "shop|Shop")
+                            .button("page:skills", "Skill shop", "confirm")
+                            .button("page:tiers", "Difficulty tiers", "confirm")
+                            .button("page:effects", "Effects", "confirm")
                             .line("self-test")
                             .footerBackHome();
                     case "character" -> UltraScreenSpec.of("character")
