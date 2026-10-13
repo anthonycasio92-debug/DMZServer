@@ -1,5 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.net.gui;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import java.nio.charset.StandardCharsets;
 import java.util.function.Supplier;
 import net.minecraft.network.FriendlyByteBuf;
@@ -36,6 +38,12 @@ import net.minecraftforge.network.NetworkEvent;
  * understood field are ignored.
  */
 public final class GuiOpenPacket {
+    /**
+     * Max layoutJson chars on the wire. Must stay valid JSON — hard truncation makes KaiPath
+     * drop the object and default {@code titleAlign} to left.
+     */
+    public static final int LAYOUT_JSON_MAX = 4096;
+
     private final String screenId;
     private final String title;
     private final String pageId;
@@ -118,12 +126,14 @@ public final class GuiOpenPacket {
         this.buttonsJson = trim(buttonsJson, 8192);
         this.panelWidth = panelWidth > 0 ? panelWidth : UltraGuiProtocol.DEFAULT_PANEL_WIDTH;
         this.panelHeight = panelHeight > 0 ? panelHeight : UltraGuiProtocol.DEFAULT_PANEL_HEIGHT;
-        // 2048: full layout metrics + optional playerModel must not truncate mid-JSON.
-        this.layoutJson = trim(
-                layoutJson == null || layoutJson.isBlank()
-                        ? defaultLayoutJson(this.panelWidth, this.panelHeight)
-                        : layoutJson,
-                2048);
+        // Keep valid JSON and always force titleAlign=center (KaiPath left-defaults otherwise).
+        this.layoutJson =
+                sanitizeLayoutJson(
+                        layoutJson == null || layoutJson.isBlank()
+                                ? defaultLayoutJson(this.panelWidth, this.panelHeight)
+                                : layoutJson,
+                        this.panelWidth,
+                        this.panelHeight);
         this.inputsJson = blankToArray(trim(inputsJson, 4096));
     }
 
@@ -281,6 +291,44 @@ public final class GuiOpenPacket {
 
     private static String blankToArray(String json) {
         return json == null || json.isBlank() ? "[]" : json;
+    }
+
+    /**
+     * Ensures layoutJson stays parseable and always carries {@code titleAlign=center}. When the
+     * payload is oversized, drop optional {@code playerModel.parts} then {@code playerModel}
+     * rather than cutting mid-JSON (which left-aligns titles on stock KaiPath).
+     */
+    public static String sanitizeLayoutJson(String layoutJson, int w, int h) {
+        String fallback = defaultLayoutJson(w, h);
+        if (layoutJson == null || layoutJson.isBlank()) {
+            return fallback;
+        }
+        try {
+            JsonObject o = JsonParser.parseString(layoutJson).getAsJsonObject();
+            o.addProperty("titleAlign", "center");
+            String out = o.toString();
+            if (out.length() <= LAYOUT_JSON_MAX) {
+                return out;
+            }
+            if (o.has("playerModel") && o.get("playerModel").isJsonObject()) {
+                JsonObject pm = o.getAsJsonObject("playerModel");
+                if (pm.has("parts")) {
+                    pm.remove("parts");
+                    out = o.toString();
+                    if (out.length() <= LAYOUT_JSON_MAX) {
+                        return out;
+                    }
+                }
+                o.remove("playerModel");
+                out = o.toString();
+                if (out.length() <= LAYOUT_JSON_MAX) {
+                    return out;
+                }
+            }
+            return fallback;
+        } catch (Throwable ignored) {
+            return fallback;
+        }
     }
 
     private static String defaultLayoutJson(int w, int h) {

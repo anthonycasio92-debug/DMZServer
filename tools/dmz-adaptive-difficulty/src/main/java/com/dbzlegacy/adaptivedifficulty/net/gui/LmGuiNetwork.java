@@ -607,6 +607,8 @@ public final class LmGuiNetwork {
             }
             o.addProperty(UltraScreenIds.META_SYSTEM, system);
             o.addProperty("screen", system);
+            // Stock KaiPath defaults titleAlign to left when the key is missing — always force.
+            o.addProperty("titleAlign", UltraStyle.TITLE_ALIGN);
             return o.toString();
         } catch (Throwable ignored) {
             return "{\"system\":\""
@@ -615,7 +617,7 @@ public final class LmGuiNetwork {
                     + system
                     + "\",\"center\":true,\"margin\":"
                     + UltraGuiProtocol.DEFAULT_MARGIN
-                    + "}";
+                    + ",\"titleAlign\":\"center\"}";
         }
     }
 

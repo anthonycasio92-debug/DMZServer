@@ -335,6 +335,9 @@ public final class UltraScreenSelfTest {
             if (UltraScreenIds.needsHubShim(screen) && !"hub".equalsIgnoreCase(wire.screenId())) {
                 issues.add(screen + ": wire screenId=" + wire.screenId() + " (expected hub)");
             }
+            if (wire.layoutJson() == null || !wire.layoutJson().contains("\"titleAlign\":\"center\"")) {
+                issues.add(screen + ": wire layoutJson titleAlign must stay center after hub shim");
+            }
             if (wire.title() == null || !wire.title().equals(logical.title())) {
                 issues.add(screen + ": shim altered title");
             }
@@ -487,9 +490,22 @@ public final class UltraScreenSelfTest {
                 broken.add("hub: layoutJson missing buttonPad");
             }
             if (hubPkts.get(0).layoutJson() == null
-                    || !hubPkts.get(0).layoutJson().contains("titleAlign")) {
-                broken.add("hub: layoutJson missing titleAlign");
+                    || !hubPkts.get(0).layoutJson().contains("\"titleAlign\":\"center\"")) {
+                broken.add("hub: layoutJson missing titleAlign=center");
             }
+        }
+        // layoutJson must stay valid + title-centered even when callers omit titleAlign or oversize.
+        String forced =
+                GuiOpenPacket.sanitizeLayoutJson(
+                        "{\"center\":true,\"margin\":10,\"panelWidth\":320,\"panelHeight\":200}",
+                        320,
+                        200);
+        if (forced == null || !forced.contains("\"titleAlign\":\"center\"")) {
+            broken.add("sanitizeLayoutJson must force titleAlign=center");
+        }
+        String recovered = GuiOpenPacket.sanitizeLayoutJson("{not-json", 320, 200);
+        if (recovered == null || !recovered.contains("\"titleAlign\":\"center\"")) {
+            broken.add("sanitizeLayoutJson invalid JSON must fall back with titleAlign=center");
         }
         List<GuiOpenPacket> charPkts =
                 UltraScreenSpec.captureSends(() -> probeBuilder("character"));
@@ -588,6 +604,9 @@ public final class UltraScreenSelfTest {
             }
             if (wire.layoutJson() == null || !wire.layoutJson().contains(logical)) {
                 issues.add(logical + ": layoutJson missing system metadata");
+            }
+            if (wire.layoutJson() == null || !wire.layoutJson().contains("\"titleAlign\":\"center\"")) {
+                issues.add(logical + ": layoutJson titleAlign must be center after hub shim");
             }
             if (wire.buttonsJson() == null || !wire.buttonsJson().contains("\"screen\":\"" + logical + "\"")) {
                 issues.add(logical + ": buttons lost args.screen");

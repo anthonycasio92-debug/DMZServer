@@ -241,8 +241,10 @@ def main() -> int:
         errors.append("GuiOpenPacket must carry panelWidth/panelHeight/layoutJson")
     if 'titleAlign\\":\\"center' not in packet and 'titleAlign":"center' not in packet:
         errors.append('GuiOpenPacket.defaultLayoutJson must include "titleAlign":"center"')
-    if "2048" not in packet:
-        errors.append("GuiOpenPacket layoutJson trim limit must be 2048 (playerModel fits)")
+    if "sanitizeLayoutJson" not in packet:
+        errors.append("GuiOpenPacket must sanitize layoutJson (force titleAlign, never mid-JSON trim)")
+    if "LAYOUT_JSON_MAX = 4096" not in packet and "LAYOUT_JSON_MAX=4096" not in packet:
+        errors.append("GuiOpenPacket LAYOUT_JSON_MAX must be 4096")
     if "inputsJson" not in packet:
         errors.append("GuiOpenPacket must carry inputsJson (field 11)")
     mech = (
@@ -255,6 +257,10 @@ def main() -> int:
     net = (ROOT / "src/main/java/com/dbzlegacy/adaptivedifficulty/net/gui/LmGuiNetwork.java").read_text(
         encoding="utf-8"
     )
+    if 'o.addProperty("titleAlign", UltraStyle.TITLE_ALIGN)' not in net:
+        errors.append("LmGuiNetwork.withLogicalSystem must force layoutJson.titleAlign=center")
+    if 'titleAlign\\":\\"center' not in net and '"titleAlign":"center"' not in net:
+        errors.append("LmGuiNetwork.withLogicalSystem catch fallback must include titleAlign=center")
     if "validatePanelBounds" not in net:
         errors.append("LmGuiNetwork must validate outgoing panelWidth/panelHeight")
     if "panelWidth <= 0" not in net and "w <= 0" not in net:
