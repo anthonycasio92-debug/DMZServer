@@ -1,26 +1,19 @@
 # Ultra bridge gap matrix (LM ↔ KaiPath)
 
-**LM 4.6.122** + **KaiPath 1.3.7** (CurseForge) / interim overlay **`1.3.7-lm-ultra`**.
+**LM 4.6.122** + **KaiPath 1.3.7** (CurseForge / live). Official KaiPath updates are owned by the KaiPath mod developer — LM does not ship or deploy KaiPath feature jars.
 
-## Bridge build (interim client with missing parts)
+## Still missing on KaiPath 1.3.7 (for JLDK)
 
-Stock CurseForge **1.3.7** still lacks field 11 / `textInput`. Build the overlay that merges this kit onto 1.3.7:
+Stock CurseForge **1.3.7** still lacks field 11 / `textInput`. Merge [`tools/ultra-gui-kit/kaipath-client/`](../tools/ultra-gui-kit/kaipath-client/) into the next official KaiPath release:
 
-```bash
-bash tools/ultra-gui-kit/build-kaipath-overlay.sh
-# → mods/kaipath-1.3.7-lm-ultra.jar
-```
-
-| Part | Stock 1.3.7 | **1.3.7-lm-ultra** overlay |
-|------|-------------|----------------------------|
+| Part | Stock 1.3.7 | Reference kit |
+|------|-------------|-----------------|
 | GuiOpen **field 11** `inputsJson` | Missing | **Done** |
 | EditBox / `type=text` + `bindInput` → `args.value` | Missing | **Done** |
 | `textInput` in GuiFeaturesPacket advertise | Missing | **Done** (`[…,"textInput"]`) |
 | Explicit UTF-8 GuiOpen helpers | MC `readUtf` | **Done** (kit helpers) |
 
-Deploy prefers `*-lm-ultra.jar` (`scripts/deploy-kaipath-live.sh`). JLDK should still merge [`kaipath-client/`](../tools/ultra-gui-kit/kaipath-client/) into the next official KaiPath so the overlay is unnecessary.
-
-LM 4.6.122+ ships field 11; with the overlay, guitest should show `pendingNext=none`. On stock 1.3.7 it stays `pendingNext=[textInput]`.
+LM 4.6.122+ already ships field 11 and logs `pendingNext=[textInput]` on stock 1.3.7 (info, not a broken-client warn). After the official KaiPath merge, guitest should show `pendingNext=none`.
 
 Deferred (neither side): `inputsJson` `slider` / `toggle`.
 
@@ -55,7 +48,7 @@ Vendored jar: `mods/kaipath-1.3.7.jar`.
 
 ### 1. Text input on stock 1.3.7 fails silently on the client
 
-When LM sends field 11, stock KaiPath **1.3.7** ignores it — no crash, no EditBox. **Mitigation:** LM 4.6.122+ shows a danger line when `textInput` is missing; **fix:** use **`kaipath-1.3.7-lm-ultra.jar`** (or a future official KaiPath that merges the kit).
+When LM sends field 11, stock KaiPath **1.3.7** ignores it — no crash, no EditBox. **Mitigation:** LM 4.6.122+ shows a danger line when `textInput` is missing; **fix:** next official KaiPath merges the kit (JLDK).
 
 ### 2. UTF-8 is “wire-compatible” but still caused mojibake
 

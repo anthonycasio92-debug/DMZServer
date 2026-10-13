@@ -1,4 +1,4 @@
-# Ultra GUI — implement-yourself kit + KaiPath overlay builder
+# Ultra GUI — implement-yourself kit (for KaiPath / JLDK)
 
 Protocol + conformance: [`docs/KAIPATH_GUI_PROTOCOL.md`](../../docs/KAIPATH_GUI_PROTOCOL.md).
 Gap matrix / pitfalls: [`docs/KAIPATH_BRIDGE_GAPS.md`](../../docs/KAIPATH_BRIDGE_GAPS.md).
@@ -6,8 +6,9 @@ Gap matrix / pitfalls: [`docs/KAIPATH_BRIDGE_GAPS.md`](../../docs/KAIPATH_BRIDGE
 | Who you are | What to use |
 |-------------|-------------|
 | **Server mod author** | [`server/`](server/) |
-| **KaiPath / JLDK** | [`kaipath-client/`](kaipath-client/) sources (merge into official KaiPath) |
-| **Ops / interim client** | `bash tools/ultra-gui-kit/build-kaipath-overlay.sh` → `mods/kaipath-1.3.7-lm-ultra.jar` |
+| **KaiPath / JLDK** | [`kaipath-client/`](kaipath-client/) — merge into the next official KaiPath release |
+
+**LegacyMechanics does not ship or deploy KaiPath updates.** The KaiPath mod developer owns the official jar. This kit is the handoff for what to merge.
 
 ---
 
@@ -20,25 +21,22 @@ Gap matrix / pitfalls: [`docs/KAIPATH_BRIDGE_GAPS.md`](../../docs/KAIPATH_BRIDGE
 
 ---
 
-## KaiPath / JLDK
+## KaiPath / JLDK — merge into next official release
 
 **Released 1.3.7** already has style / activeTab / titleAlign / playerModel + GuiFeaturesPacket (4 features).
 
-**This kit adds (and the overlay jar ships):**
+**Still merge from this kit:**
 
 1. GuiOpenPacket **field 11** `inputsJson` text fields + `bindInput` → `args.value`
 2. `textInput` in the advertise list: `["style","activeTab","titleAlign","playerModel","textInput"]`
 3. Explicit UTF-8 GuiOpen string helpers (same wire shape as MC `writeUtf`)
 
-Merge these sources into the next official KaiPath. Until then, build the overlay:
+Optional local compile check (does **not** replace the official KaiPath release process):
 
 ```bash
 bash tools/ultra-gui-kit/build-kaipath-overlay.sh
-# → mods/kaipath-1.3.7-lm-ultra.jar  (Implementation-Version 1.3.7-lm-ultra)
-DEPLOY_LIVE_CONFIRM=LIVE bash scripts/deploy-kaipath-live.sh   # prefers *-lm-ultra
+# → mods/kaipath-1.3.7-lm-ultra.jar  (dev-only smoke artifact)
 ```
-
-Players replace stock `kaipath-1.3.7.jar` with the overlay jar (do not run both).
 
 ---
 

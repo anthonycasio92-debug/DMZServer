@@ -1,13 +1,11 @@
 # JLDK brief — KaiPath Ultra GUI client conformance
 
-**Status (LM 4.6.122 + KaiPath 1.3.7 / `1.3.7-lm-ultra`):** Stock CurseForge **1.3.7** honors
-`style`, `activeTab`, `titleAlign`, and `playerModel`. **Missing on stock 1.3.7:** field 11
+**Status (LM 4.6.122 + KaiPath 1.3.7):** Stock CurseForge **1.3.7** honors
+`style`, `activeTab`, `titleAlign`, and `playerModel`. **Missing on 1.3.7:** field 11
 `inputsJson` + `textInput` advertise.
 
-**Interim build (includes the missing parts):**
-`bash tools/ultra-gui-kit/build-kaipath-overlay.sh` → `mods/kaipath-1.3.7-lm-ultra.jar`.
-Please merge [`kaipath-client/`](../tools/ultra-gui-kit/kaipath-client/) into the next official
-KaiPath so the overlay is not required.
+**Please merge** [`kaipath-client/`](../tools/ultra-gui-kit/kaipath-client/) into the next official
+KaiPath release. LegacyMechanics does not update or redeploy KaiPath for these features.
 
 Full gap matrix: [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md).
 

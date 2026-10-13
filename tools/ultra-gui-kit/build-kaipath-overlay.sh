@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# Overlay tools/ultra-gui-kit/kaipath-client onto a released KaiPath jar.
+# Dev-only smoke: overlay tools/ultra-gui-kit/kaipath-client onto a released KaiPath jar.
 # Adds GuiOpen field 11 (inputsJson / EditBox / bindInput) + textInput advertise.
+# Official KaiPath releases are owned by the KaiPath mod developer — do NOT deploy this
+# overlay to live; merge kaipath-client/ into the next official jar instead.
 #
 # Usage:
 #   bash tools/ultra-gui-kit/build-kaipath-overlay.sh
