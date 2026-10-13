@@ -9,25 +9,28 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Component;
 
 /**
- * Renders whatever the server sends in {@link GuiOpenPacket} — title, tabs, lines, buttons.
+ * Renders whatever the server sends in {@link GuiOpenPacket} — title, tabs, lines, buttons,
+ * and field 11 {@code inputsJson} text fields.
  * No hardcoded screen/tab/button lists. Clicks go back on the bound {@code <modid>:gui} channel.
  *
- * <p><b>JLDK TODO (KaiPath 1.3.5 has titleAlign + activeTab):</b>
+ * <p><b>JLDK TODO (reference client has titleAlign + activeTab + textInput):</b>
  *
  * <ul>
  *   <li>Honor button {@code style}: {@code normal}, {@code confirm} (green), {@code danger}
  *       (red), {@code dim} (dark gray).
  *   <li>Render {@code layoutJson.playerModel} (entity preview bounds + optional {@code parts}
  *       schema 1: headBones / form / extras — see KAIPATH_GUI_PROTOCOL.md).
- *   <li>Render {@link GuiOpenPacket#inputsJson()} text fields; on Enter / {@code bindInput}
- *       button click, put typed text in {@code args.value}.
- *   <li>Advertise {@code ["style","activeTab","titleAlign","playerModel","textInput"]} via
- *       {@link GuiFeaturesPacket} / {@link UltraGuiConsumerRegistry#advertiseFeatures}.
+ *   <li>Advertise full
+ *       {@code ["style","activeTab","titleAlign","playerModel","textInput"]} once style /
+ *       playerModel land (textInput already advertised).
  * </ul>
  */
 public class LmDynamicScreen extends UltraScreen {
@@ -50,6 +53,10 @@ public class LmDynamicScreen extends UltraScreen {
     private String titleAlign = "left";
     private JsonObject playerModel;
     private final List<String> bodyLines = new ArrayList<>();
+    /** input id → live EditBox (for bindInput / Enter → args.value). */
+    private final Map<String, EditBox> textInputs = new LinkedHashMap<>();
+    /** input id → args template from inputsJson (for Enter submit). */
+    private final Map<String, JsonObject> inputArgsById = new LinkedHashMap<>();
 
     public LmDynamicScreen(GuiOpenPacket packet) {
         this(packet, LmGuiNetwork.CHANNEL_ID);
@@ -74,6 +81,8 @@ public class LmDynamicScreen extends UltraScreen {
     protected void m_7856_() {
         m_169413_();
         bodyLines.clear();
+        textInputs.clear();
+        inputArgsById.clear();
         parseLayout();
         placePanel();
 
@@ -158,6 +167,57 @@ public class LmDynamicScreen extends UltraScreen {
                     panelY + pmY);
         }
 
+        // Text inputs — GuiOpenPacket field 11 inputsJson (type=text)
+        JsonArray inputs = parseArray(packet.inputsJson());
+        for (JsonElement el : inputs) {
+            if (!el.isJsonObject()) {
+                continue;
+            }
+            JsonObject in = el.getAsJsonObject();
+            String id = str(in, "id", "");
+            if (id.isBlank()) {
+                continue;
+            }
+            String type = str(in, "type", "text");
+            if (!"text".equalsIgnoreCase(type)) {
+                continue;
+            }
+            int x = intVal(in, "x", 8);
+            int y = intVal(in, "y", cursorY - panelY);
+            int w = Math.max(40, intVal(in, "w", panelW - 16));
+            int h = Math.max(14, intVal(in, "h", 18));
+            int maxLen = Math.max(1, Math.min(256, intVal(in, "maxLength", 64)));
+            String value = str(in, "value", "");
+            String placeholder = str(in, "placeholder", "");
+            JsonObject inputArgs =
+                    in.has("args") && in.get("args").isJsonObject()
+                            ? in.getAsJsonObject("args")
+                            : new JsonObject();
+            EditBox box =
+                    new EditBox(
+                            this.f_96547_,
+                            panelX + x,
+                            panelY + y,
+                            w,
+                            h,
+                            Component.m_237113_(placeholder.isBlank() ? id : placeholder));
+            box.m_94199_(maxLen);
+            box.m_94144_(value);
+            if (!placeholder.isBlank()) {
+                try {
+                    // EditBox#setHint (1.20.1+)
+                    box.getClass()
+                            .getMethod("m_259207_", Component.class)
+                            .invoke(box, Component.m_237113_(placeholder));
+                } catch (Throwable ignored) {
+                    // hint optional — placeholder still used as narration
+                }
+            }
+            m_142416_(box);
+            textInputs.put(id, box);
+            inputArgsById.put(id, inputArgs);
+        }
+
         // Buttons — dynamic from buttonsJson; x/y relative to panel origin
         JsonArray buttons = parseArray(packet.buttonsJson());
         for (JsonElement el : buttons) {
@@ -179,12 +239,12 @@ public class LmDynamicScreen extends UltraScreen {
             if (pad < 0) {
                 pad = buttonPad;
             }
-            String argsJson = "{}";
+            JsonObject argsObj = new JsonObject();
             if (b.has("args") && b.get("args").isJsonObject()) {
-                argsJson = b.get("args").toString();
+                argsObj = b.getAsJsonObject("args").deepCopy();
             }
             String actionId = id;
-            String args = argsJson;
+            JsonObject args = argsObj;
             addThemedButton(
                     panelX + x,
                     panelY + y,
@@ -204,13 +264,41 @@ public class LmDynamicScreen extends UltraScreen {
                 this::m_7379_);
     }
 
-    private void echoClick(String actionId, String argsJson) {
-        // Verbatim echo on the same channel that opened this screen — never strip actionId
+    private void echoClick(String actionId, JsonObject argsObj) {
+        JsonObject args = argsObj == null ? new JsonObject() : argsObj.deepCopy();
+        String bind = str(args, "bindInput", "");
+        if (!bind.isBlank()) {
+            EditBox box = textInputs.get(bind);
+            if (box != null) {
+                args.addProperty("value", box.m_94155_() == null ? "" : box.m_94155_());
+            }
+        }
         UltraGuiConsumerRegistry.sendAction(
                 channelId,
                 packet.screenId(),
                 actionId,
-                argsJson == null ? "{}" : argsJson);
+                args.toString());
+    }
+
+    @Override
+    public boolean m_7933_(int keyCode, int scanCode, int modifiers) {
+        // Enter in a focused text field → submit as input:<id> with args.value
+        if (keyCode == 257 || keyCode == 335) { // Enter / Numpad Enter
+            for (Map.Entry<String, EditBox> e : textInputs.entrySet()) {
+                EditBox box = e.getValue();
+                if (box != null && box.m_93696_()) {
+                    JsonObject args =
+                            inputArgsById
+                                    .getOrDefault(e.getKey(), new JsonObject())
+                                    .deepCopy();
+                    args.addProperty("value", box.m_94155_() == null ? "" : box.m_94155_());
+                    UltraGuiConsumerRegistry.sendAction(
+                            channelId, packet.screenId(), e.getKey(), args.toString());
+                    return true;
+                }
+            }
+        }
+        return super.m_7933_(keyCode, scanCode, modifiers);
     }
 
     private void parseLayout() {

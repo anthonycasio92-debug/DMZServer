@@ -27,11 +27,11 @@ public final class UltraGuiConsumerRegistry {
     public static final String PROTOCOL_VERSION = "1";
 
     /**
-     * Features this client build honors. 1.3.5 ships titleAlign + activeTab — set this to
-     * {@code ["titleAlign","activeTab"]} until style / playerModel / textInput land, then
-     * expand. Empty = treated as baseline (server warns on gaps).
+     * Features this client build honors. Reference client: titleAlign, activeTab, textInput.
+     * Expand with {@code style} / {@code playerModel} when those render paths land.
      */
-    public static final String ADVERTISED_FEATURES_JSON = "[\"titleAlign\",\"activeTab\"]";
+    public static final String ADVERTISED_FEATURES_JSON =
+            "[\"titleAlign\",\"activeTab\",\"textInput\"]";
 
     private static final Map<String, BoundChannel> CHANNELS = new ConcurrentHashMap<>();
 
