@@ -2238,6 +2238,21 @@ def main() -> int:
           and "AdaptiveDifficultyMod.LOGGER" in god_ki
           and "System.out.println" not in god_ki
           and "printStackTrace" not in god_ki)
+    racial_wipe = read(
+        ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/character/RacialBonusWipeHelper.java"
+    )
+    check("racial BonusStats splits wipe on race leave",
+          "Zenkai_" in racial_wipe
+          and "Assimilation_" in racial_wipe
+          and "Absorption_" in racial_wipe
+          and "clearBonusSplit" in racial_wipe
+          and "setRacialSkillCount(0)" in racial_wipe
+          and "wipeLeavingRace" in racial_wipe
+          and "RacialBonusWipeHelper.wipeLeavingRace" in absorb_services
+          and "RacialBonusWipeHelper.wipeIfRaceChanges" in absorb_reset
+          and "RacialBonusWipeHelper" in build_sh
+          and 'saiyan".equals(from)' in racial_wipe
+          and '!"saiyan".equals(to)' in racial_wipe)
 
     print("\n=== CNPC notice color (4.6.41) ===")
     notice = read(cnpc_dir / "CnpcMenuFeedback.java")
