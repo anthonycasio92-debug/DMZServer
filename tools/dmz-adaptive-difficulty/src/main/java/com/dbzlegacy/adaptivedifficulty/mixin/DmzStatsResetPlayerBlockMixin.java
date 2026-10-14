@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.mixin;
 
+import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.noea.GodKiWipeHelper;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import com.dragonminez.server.commands.StatsCommand;
@@ -71,7 +72,10 @@ public abstract class DmzStatsResetPlayerBlockMixin {
                     DmzStatsResetPlayerBlockMixin.class.getClassLoader());
             helper.getMethod("wipe", Player.class, String.class).invoke(null, player, via);
         } catch (Throwable t) {
-            t.printStackTrace();
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] wipeAbsorption via StatsCommand.resetStats failed",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    t);
         }
     }
 }

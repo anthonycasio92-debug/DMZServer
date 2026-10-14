@@ -12,13 +12,13 @@ import net.minecraft.server.level.ServerPlayer;
 /**
  * Builds a GuiOpenPacket payload for KaiPath.
  *
- * <p>Panel defaults are the compact Ultra dialog ({@link UltraStyle#PANEL_W}×{@link
+ * <p>Panel defaults are the compact Ultra dialog ({@link UltraStyle#PANEL_W}x{@link
  * UltraStyle#PANEL_H}), centered with a screen margin. Button action ids are qualified as
  * {@code @&lt;screenId&gt;:&lt;action&gt;} so KaiPath can omit or mishandle {@code screenId} and
  * the server still routes correctly.
  *
  * <p>Layout JSON includes shared body/button metrics ({@code lineHeight}, {@code lineGap},
- * {@code bodyMaxHeight}, {@code scrollBody}, {@code buttonPad}, …) so every screen benefits.
+ * {@code bodyMaxHeight}, {@code scrollBody}, {@code buttonPad}, ...) so every screen benefits.
  * Optional {@link #playerModel} declares a client-rendered entity preview (JLDK implements
  * rendering; unknown clients ignore the field).
  */
@@ -72,7 +72,9 @@ public final class UltraScreenSpec {
     }
 
     public UltraScreenSpec title(String title) {
-        this.title = UltraStyle.header(title);
+        // Plain ASCII title - KaiPath paints the header in its own color; section-sign
+        // codes mojibake as stray A/E glyphs on some clients.
+        this.title = UltraStyle.wireText(UltraStyle.plain(title == null ? "" : title));
         return this;
     }
 
@@ -156,6 +158,11 @@ public final class UltraScreenSpec {
         return this;
     }
 
+    /**
+     * Tab row entries as {@code id|Label} or {@code id|Label|style}.
+     * Optional style: {@code danger}/{@code staff} for staff-only tabs (always red);
+     * otherwise active tabs are confirm (yellow) and inactive tabs are dim (dark).
+     */
     public UltraScreenSpec tabs(String... idLabelPairs) {
         tabs.clear();
         if (idLabelPairs == null) {
@@ -165,14 +172,18 @@ public final class UltraScreenSpec {
             if (pair == null || pair.isBlank()) {
                 continue;
             }
-            int bar = pair.indexOf('|');
-            if (bar <= 0) {
-                tabs.add(new Tab(pair, pair));
-            } else {
-                tabs.add(new Tab(pair.substring(0, bar), pair.substring(bar + 1)));
+            String[] parts = pair.split("\\|", -1);
+            String id = parts[0] == null ? "" : parts[0].trim();
+            if (id.isBlank()) {
+                continue;
             }
+            String label = parts.length > 1 && parts[1] != null && !parts[1].isBlank()
+                    ? parts[1].trim()
+                    : id;
+            String styleHint = parts.length > 2 && parts[2] != null ? parts[2].trim() : "";
+            tabs.add(new Tab(id, label, styleHint));
         }
-        // Content starts below title + tab strip when tabs are present.
+        // Content starts below title + tab button row (under the header line).
         if (!tabs.isEmpty() && nextRow < UltraStyle.CONTENT_ROW_TABS) {
             nextRow = UltraStyle.CONTENT_ROW_TABS;
         }
@@ -181,7 +192,8 @@ public final class UltraScreenSpec {
 
     public UltraScreenSpec line(String text) {
         if (text != null && !text.isBlank()) {
-            lines.add(text);
+            // Strip fancy punctuation / mojibake at the wire boundary.
+            lines.add(UltraStyle.wireText(text));
         }
         return this;
     }
@@ -224,6 +236,23 @@ public final class UltraScreenSpec {
 
     public UltraScreenSpec button(
             String actionId, String label, String style, int x, int y, int w, String bindInputId) {
+        return button(actionId, label, style, x, y, w, bindInputId, null);
+    }
+
+    /**
+     * Same as {@link #button(String, String, String, int, int, int, String)} with an optional
+     * single-letter {@code accent} (Minecraft color code) for KaiPath to tint the control.
+     * Labels stay plain ASCII — do not embed section-sign in {@code label}.
+     */
+    public UltraScreenSpec button(
+            String actionId,
+            String label,
+            String style,
+            int x,
+            int y,
+            int w,
+            String bindInputId,
+            String accent) {
         UltraScreenIds.requireValidActionId(screenId, actionId, label);
         int width = Math.max(UltraStyle.BTN_MIN_W, w);
         String resolvedStyle = normalizeStyle(style);
@@ -237,15 +266,29 @@ public final class UltraScreenSpec {
         }
         buttons.add(new Button(
                 qualifyAction(actionId),
-                UltraStyle.buttonLabel(label),
+                UltraStyle.fitAsciiLabel(label, UltraStyle.labelMaxWidth(width)),
                 resolvedStyle,
                 x,
                 y,
                 width,
                 UltraStyle.BTN_H,
                 UltraStyle.BTN_PAD,
-                bind));
+                bind,
+                normalizeAccent(accent)));
         return this;
+    }
+
+    /** Full-width button with optional accent letter. */
+    public UltraScreenSpec button(String actionId, String label, String style, String accent) {
+        return button(actionId, label, style, UltraStyle.COL_L, nextRow, UltraStyle.BTN_W, null, accent);
+    }
+
+    public UltraScreenSpec buttonLeft(String actionId, String label, String style, String accent) {
+        return button(actionId, label, style, UltraStyle.COL_L, nextRow, UltraStyle.BTN_W, null, accent);
+    }
+
+    public UltraScreenSpec buttonRight(String actionId, String label, String style, String accent) {
+        return button(actionId, label, style, UltraStyle.COL_R, nextRow, UltraStyle.BTN_W, null, accent);
     }
 
     public UltraScreenSpec rowGap() {
@@ -262,7 +305,7 @@ public final class UltraScreenSpec {
         return nextRow;
     }
 
-    /** Home tab footer: back to main menu (no Refresh — pages reopen via actions/tabs). */
+    /** Home tab footer: back to main menu (no Refresh - pages reopen via actions/tabs). */
     public UltraScreenSpec footerBackToMain() {
         return button(
                 "nav:hub",
@@ -280,9 +323,9 @@ public final class UltraScreenSpec {
     }
 
     /**
-     * Editable text field (GuiOpenPacket field 11 {@code inputsJson}). KaiPath <b>1.3.7</b>
-     * still does not render or advertise {@code textInput}; clients that do advertise it
-     * render the field. Older / current clients ignore trailing field 11.
+     * Editable text field (GuiOpenPacket field 11 {@code inputsJson}). KaiPath <b>1.3.9+</b>
+     * advertises {@code textInput} and renders EditBox widgets. Older clients ignore trailing
+     * field 11 - pair shop pages with {@link UltraClientFeatures#hasTextInput}.
      *
      * <p>Pair with a button whose {@code args.bindInput} matches {@code inputId} so the client
      * copies the typed value into {@code args.value} on click / Enter.
@@ -331,11 +374,6 @@ public final class UltraScreenSpec {
     /** Build the wire packet without sending. */
     public GuiOpenPacket toPacket() {
         int contentBottom = nextRow + UltraStyle.BTN_H + UltraStyle.PANEL_MARGIN;
-        int height = panelHeight;
-        if (contentBottom > height) {
-            height = Math.min(UltraStyle.PANEL_MAX_H, contentBottom);
-        }
-
         int bodyTop = tabs.isEmpty() ? UltraStyle.BODY_TOP : UltraStyle.BODY_TOP_TABS;
         int lineStep = UltraStyle.LINE_H + UltraStyle.LINE_GAP;
         int naturalBodyH =
@@ -344,8 +382,10 @@ public final class UltraScreenSpec {
                         : UltraStyle.BODY_PAD * 2 + lines.size() * lineStep;
 
         // Grow toward PANEL_MAX_H when body text needs more viewport than the default
-        // BODY_MIN_H band — shift buttons down so extra height expands the body, not
-        // empty space under the footer.
+        // BODY_MIN_H band - shift buttons down so extra height expands the body, not
+        // empty space under the footer. When there is no body copy (hub tiles), skip the
+        // BODY_MIN_H reserve and shrink the panel to the button stack so menus stay tight
+        // as tiles are added or removed.
         int buttonTop = firstButtonY;
         int buttonStackH =
                 buttonTop < 0
@@ -355,19 +395,38 @@ public final class UltraScreenSpec {
                                 contentBottom - buttonTop);
         int maxBodyAtCap =
                 Math.max(
-                        UltraStyle.BODY_MIN_H,
+                        naturalBodyH <= 0 ? 0 : UltraStyle.BODY_MIN_H,
                         UltraStyle.PANEL_MAX_H - bodyTop - buttonStackH);
-        int targetBodyH =
-                Math.max(
-                        UltraStyle.BODY_MIN_H,
-                        Math.min(Math.max(naturalBodyH, UltraStyle.BODY_MIN_H), maxBodyAtCap));
+        int targetBodyH;
+        if (naturalBodyH <= 0) {
+            targetBodyH = 0;
+        } else {
+            targetBodyH =
+                    Math.max(
+                            UltraStyle.BODY_MIN_H,
+                            Math.min(
+                                    Math.max(naturalBodyH, UltraStyle.BODY_MIN_H), maxBodyAtCap));
+        }
+        int height;
+        if (naturalBodyH <= 0) {
+            // Compact tile menus (hub): pack to content; lower floor than PANEL_MIN_H so
+            // few tile rows are not padded with a hollow band under the last row.
+            int packed = Math.max(contentBottom, bodyTop + buttonStackH);
+            height = Math.max(
+                    UltraStyle.PANEL_COMPACT_MIN_H, Math.min(UltraStyle.PANEL_MAX_H, packed));
+        } else {
+            height = panelHeight;
+            if (contentBottom > height) {
+                height = Math.min(UltraStyle.PANEL_MAX_H, contentBottom);
+            }
+        }
         int targetHeight = bodyTop + targetBodyH + buttonStackH;
         if (targetHeight > height) {
             height = Math.min(UltraStyle.PANEL_MAX_H, targetHeight);
         }
 
         int buttonShift = 0;
-        if (buttonTop >= 0) {
+        if (buttonTop >= 0 && targetBodyH > 0) {
             int currentBodyRoom = Math.max(0, buttonTop - UltraStyle.BTN_GAP - bodyTop);
             if (targetBodyH > currentBodyRoom) {
                 int need = targetBodyH - currentBodyRoom;
@@ -391,29 +450,21 @@ public final class UltraScreenSpec {
                         : Math.min(
                                 effectiveButtonTop - UltraStyle.BTN_GAP,
                                 height - UltraStyle.PANEL_MARGIN);
-        int bodyMaxH =
-                Math.max(
-                        UltraStyle.BODY_MIN_H,
-                        Math.max(lineStep + UltraStyle.BODY_PAD * 2, bodyBottom - bodyTop));
+        int bodyMaxH;
+        if (naturalBodyH <= 0) {
+            bodyMaxH = Math.max(0, bodyBottom - bodyTop);
+        } else {
+            bodyMaxH =
+                    Math.max(
+                            UltraStyle.BODY_MIN_H,
+                            Math.max(lineStep + UltraStyle.BODY_PAD * 2, bodyBottom - bodyTop));
+        }
         boolean scrollBody =
                 naturalBodyH > bodyMaxH || contentBottom + buttonShift > UltraStyle.PANEL_MAX_H;
 
+        // Empty tabsJson: stock KaiPath draws its tab strip inside the title chrome.
+        // We place tabs as normal buttons under the header line (hub-like) instead.
         JsonArray tabArr = new JsonArray();
-        for (Tab tab : tabs) {
-            if (tab == null || tab.id == null) {
-                continue;
-            }
-            UltraScreenIds.requireValidActionId(screenId, "tab:" + tab.id, tab.label);
-            JsonObject o = new JsonObject();
-            o.addProperty("id", qualifyAction("tab:" + tab.id));
-            boolean active = tab.id.equalsIgnoreCase(activeTab);
-            o.addProperty(
-                    "label",
-                    active
-                            ? UltraStyle.HEADER + UltraStyle.plain(tab.label)
-                            : UltraStyle.LABEL + UltraStyle.plain(tab.label));
-            tabArr.add(o);
-        }
         JsonArray lineArr = new JsonArray();
         for (String line : lines) {
             if (line != null) {
@@ -421,6 +472,7 @@ public final class UltraScreenSpec {
             }
         }
         JsonArray btnArr = new JsonArray();
+        appendTabButtons(btnArr);
         for (Button b : buttons) {
             if (b == null) {
                 continue;
@@ -429,13 +481,16 @@ public final class UltraScreenSpec {
             o.addProperty("id", b.actionId);
             o.addProperty("label", b.label);
             o.addProperty("style", b.style);
+            if (b.accent != null && !b.accent.isBlank()) {
+                o.addProperty("accent", b.accent);
+            }
             o.addProperty("x", b.x);
             o.addProperty("y", b.y + buttonShift);
             o.addProperty("w", b.w);
             o.addProperty("h", b.h);
             o.addProperty("pad", b.pad);
             JsonObject args = new JsonObject();
-            // Logical system — echoed by KaiPath into GuiActionPacket even when wire screenId is hub.
+            // Logical system - echoed by KaiPath into GuiActionPacket even when wire screenId is hub.
             args.addProperty("screen", screenId);
             args.addProperty(UltraScreenIds.META_SYSTEM, screenId);
             args.addProperty("page", pageId);
@@ -457,8 +512,10 @@ public final class UltraScreenSpec {
             o.addProperty("y", in.y + buttonShift);
             o.addProperty("w", in.w);
             o.addProperty("h", in.h);
-            o.addProperty("value", in.value);
-            o.addProperty("placeholder", in.placeholder);
+            o.addProperty("value", UltraStyle.wireText(in.value == null ? "" : in.value));
+            o.addProperty(
+                    "placeholder",
+                    UltraStyle.wireText(in.placeholder == null ? "" : in.placeholder));
             o.addProperty("maxLength", in.maxLength);
             JsonObject args = new JsonObject();
             args.addProperty("screen", screenId);
@@ -474,9 +531,20 @@ public final class UltraScreenSpec {
         layout.addProperty("height", height);
         layout.addProperty("center", centerPanel);
         layout.addProperty("margin", panelMargin);
-        // Always present — KaiPath must center titles when value is "center" (not left-default).
+        // Always present - KaiPath must center titles when value is "center" (not left-default).
         layout.addProperty("titleAlign", UltraStyle.TITLE_ALIGN);
-        // Shared body / button metrics — every screen benefits.
+        boolean underTitleTabs = !tabs.isEmpty();
+        layout.addProperty("tabsUnderTitle", underTitleTabs);
+        // Client chrome (title + yellow divider) must end at/above this Y; tab row sits at/after it.
+        layout.addProperty(
+                "headerBottom",
+                underTitleTabs ? UltraStyle.HEADER_BOTTOM_TABS : UltraStyle.HEADER_BOTTOM);
+        String accentCode = UltraStyle.systemAccentCode(screenId);
+        if (accentCode != null && !accentCode.isBlank()) {
+            // Single-letter color for title chrome + activeTab highlight (plain ASCII titles).
+            layout.addProperty("accent", accentCode);
+        }
+        // Shared body / button metrics - every screen benefits.
         layout.addProperty("lineHeight", UltraStyle.LINE_H);
         layout.addProperty("lineGap", UltraStyle.LINE_GAP);
         layout.addProperty("bodyTop", bodyTop);
@@ -530,6 +598,66 @@ public final class UltraScreenSpec {
         LmGuiNetwork.sendOpen(player, packet);
     }
 
+    /**
+     * Hub-style tab row under the title/header line. Not counted in {@link #firstButtonY}
+     * so body packing still sits below content buttons, not the tab chrome.
+     */
+    private void appendTabButtons(JsonArray btnArr) {
+        if (btnArr == null || tabs.isEmpty()) {
+            return;
+        }
+        int count = 0;
+        for (Tab tab : tabs) {
+            if (tab != null && tab.id != null && !tab.id.isBlank()) {
+                count++;
+            }
+        }
+        if (count == 0) {
+            return;
+        }
+        int gap = UltraStyle.BTN_GAP;
+        int inner = Math.max(1, panelWidth - UltraStyle.COL_L * 2);
+        int tabW = Math.max(UltraStyle.BTN_MIN_W, (inner - gap * Math.max(0, count - 1)) / count);
+        if (tabW * count + gap * Math.max(0, count - 1) > inner) {
+            tabW = Math.max(40, (inner - gap * Math.max(0, count - 1)) / count);
+        }
+        int x = UltraStyle.COL_L;
+        int y = UltraStyle.TAB_ROW_Y;
+        for (Tab tab : tabs) {
+            if (tab == null || tab.id == null || tab.id.isBlank()) {
+                continue;
+            }
+            UltraScreenIds.requireValidActionId(screenId, "tab:" + tab.id, tab.label);
+            boolean active = tab.id.equalsIgnoreCase(activeTab);
+            // Plain + pre-fit: stock KaiPath fitLabel uses a mojibaked ellipsis (A/E glyphs).
+            String label =
+                    UltraStyle.fitAsciiLabel(tab.label, UltraStyle.labelMaxWidth(tabW));
+            // Inactive=dim. Active/staff=normal + accent (KaiPath paints highlight from accent /
+            // activeTab — not shared yellow confirm).
+            String style = tabStyle(tab, active);
+            JsonObject o = new JsonObject();
+            o.addProperty("id", qualifyAction("tab:" + tab.id));
+            o.addProperty("label", label);
+            o.addProperty("style", style);
+            String tabAccent = tabAccentCode(tab, active);
+            if (tabAccent != null && !tabAccent.isBlank()) {
+                o.addProperty("accent", tabAccent);
+            }
+            o.addProperty("x", x);
+            o.addProperty("y", y);
+            o.addProperty("w", tabW);
+            o.addProperty("h", UltraStyle.BTN_H);
+            o.addProperty("pad", UltraStyle.BTN_PAD);
+            JsonObject args = new JsonObject();
+            args.addProperty("screen", screenId);
+            args.addProperty(UltraScreenIds.META_SYSTEM, screenId);
+            args.addProperty("page", pageId);
+            o.add("args", args);
+            btnArr.add(o);
+            x += tabW + gap;
+        }
+    }
+
     /** Prefix {@code @screenId:} unless the action is already qualified. */
     String qualifyAction(String actionId) {
         if (actionId == null || actionId.isBlank()) {
@@ -556,7 +684,52 @@ public final class UltraScreenSpec {
         };
     }
 
-    private record Tab(String id, String label) {}
+    /**
+     * Inactive tabs stay dim (dark). Active and staff tabs use normal — highlight comes from
+     * {@code accent} + {@code activeTab}, not shared confirm yellow.
+     */
+    private static String tabStyle(Tab tab, boolean active) {
+        if (tab != null && tab.staffOnly()) {
+            return UltraStyle.STYLE_NORMAL;
+        }
+        return active ? UltraStyle.STYLE_NORMAL : UltraStyle.STYLE_DIM;
+    }
+
+    private String tabAccentCode(Tab tab, boolean active) {
+        if (tab != null && tab.staffOnly()) {
+            return "4";
+        }
+        if (!active) {
+            return "";
+        }
+        return UltraStyle.systemAccentCode(screenId);
+    }
+
+    private static String normalizeAccent(String accent) {
+        if (accent == null || accent.isBlank()) {
+            return "";
+        }
+        String a = accent.trim();
+        if (!a.isEmpty() && a.charAt(0) == '\u00A7' && a.length() >= 2) {
+            a = a.substring(1);
+        }
+        return a.substring(0, 1).toLowerCase();
+    }
+
+    /**
+     * @param styleHint optional {@code danger}/{@code staff} (or blank). Ids {@code admin}/
+     *     {@code staff} are treated as staff-only even without a hint.
+     */
+    private record Tab(String id, String label, String styleHint) {
+        boolean staffOnly() {
+            String hint = styleHint == null ? "" : styleHint.trim().toLowerCase();
+            if ("danger".equals(hint) || "staff".equals(hint)) {
+                return true;
+            }
+            String tid = id == null ? "" : id.trim().toLowerCase();
+            return "admin".equals(tid) || "staff".equals(tid);
+        }
+    }
 
     private record Button(
             String actionId,
@@ -567,7 +740,8 @@ public final class UltraScreenSpec {
             int w,
             int h,
             int pad,
-            String bindInput) {}
+            String bindInput,
+            String accent) {}
 
     private record Input(
             String id,

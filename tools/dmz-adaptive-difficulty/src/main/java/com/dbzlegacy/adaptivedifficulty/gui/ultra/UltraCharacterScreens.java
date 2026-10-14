@@ -13,7 +13,7 @@ import java.util.Locale;
 import java.util.Map;
 import net.minecraft.server.level.ServerPlayer;
 
-/** Character Services — Home / Saga Reset / Android Removal (+ race, class, model pages). */
+/** Character Services - Home / Saga Reset / Android Removal (+ race, class, model pages). */
 public final class UltraCharacterScreens {
     private UltraCharacterScreens() {}
 
@@ -43,11 +43,22 @@ public final class UltraCharacterScreens {
             openRace(player, parseRaceListPage(lower));
             return;
         }
+        if (lower.startsWith("class:") || "class".equals(lower)) {
+            openClass(player, parseListPage(lower, "class"));
+            return;
+        }
+        if (lower.startsWith("reset:")
+                || lower.startsWith("saga:")
+                || "reset".equals(lower)
+                || "saga".equals(lower)
+                || "sagareset".equals(lower)
+                || "saga_reset".equals(lower)) {
+            openSagaReset(player, parseListPage(lower, "reset", "saga", "sagareset", "saga_reset"));
+            return;
+        }
         switch (lower) {
-            case "reset", "saga", "sagareset", "saga_reset" -> openSagaReset(player);
             case "android_remove", "android", "androidremove", "remove_android" ->
                     openAndroidRemove(player);
-            case "class" -> openClass(player);
             case "reskin" -> openReskin(player);
             case "reskin_confirm" -> openReskinConfirm(player);
             default -> openHome(player);
@@ -55,17 +66,19 @@ public final class UltraCharacterScreens {
     }
 
     private static UltraScreenSpec base(ServerPlayer player, String page, String tab) {
-        // y=60 sits below the tab strip (CONTENT_ROW_TABS=58); y=36 clipped the head.
+        // y=60 sits below the tab button row (TAB_ROW_Y + BTN_H); y=36 clipped the head.
         return UltraScreenSpec.of("character")
                 .title("Character Services")
                 .page(page)
                 .activeTab(tab)
-                .tabs("home|Home", "saga|Saga Reset", "android|Android Removal")
+                // Short labels: 3-up tabs are ~102px; "Android Removal" truncates on stock
+                // KaiPath and shows mojibaked ellipsis (weird A/E glyphs).
+                .tabs("home|Home", "saga|Saga", "android|Android")
                 // Scale 0.9 clears slight head clip at 1.0; 1.5 (4.6.116) overshot badly.
                 .playerModel(player, 248, 60, 86, 120, 0.9f, true);
     }
 
-    /** Overview + look tools — Change Race / Class / Model / Reskin on Home. */
+    /** Overview + look tools - Change Race / Class / Model / Reskin on Home. */
     private static void openHome(ServerPlayer player) {
         Map<String, String> ph = CharacterServicesGuiApi.placeholders(player);
         boolean canRace = "true".equals(ph.get("can_race_change"));
@@ -76,7 +89,7 @@ public final class UltraCharacterScreens {
         UltraScreenSpec spec = base(player, "main", "home")
                 .labelValue("Race", ph.getOrDefault("current_race", "-"))
                 .labelValue("Class", ph.getOrDefault("current_class", "-"))
-                .line(UltraStyle.LABEL + "Change your race, class, or look. Saga and Android have their own tabs.")
+                .line(UltraStyle.LABEL + "Race, class, and look tools. Use Saga / Android tabs above.")
                 .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
 
         if (canRace) {
@@ -85,9 +98,9 @@ public final class UltraCharacterScreens {
             spec.buttonLeft("page:race:0", UltraStyle.dim("Change race"), UltraStyle.STYLE_DIM);
         }
         if (canClass) {
-            spec.buttonRight("page:class", UltraStyle.confirm("Change class"), UltraStyle.STYLE_CONFIRM);
+            spec.buttonRight("page:class:0", UltraStyle.confirm("Change class"), UltraStyle.STYLE_CONFIRM);
         } else {
-            spec.buttonRight("page:class", UltraStyle.dim("Change class"), UltraStyle.STYLE_DIM);
+            spec.buttonRight("page:class:0", UltraStyle.dim("Change class"), UltraStyle.STYLE_DIM);
         }
         spec.rowGap();
 
@@ -117,6 +130,8 @@ public final class UltraCharacterScreens {
 
     /** Races per Ultra page (two columns). Hard-capping without paging hid later races. */
     private static final int RACES_PER_PAGE = 10;
+    /** Saga reset / class pickers: two-up rows; page so discovery growth never truncates. */
+    private static final int DISCOVERY_PER_PAGE = 8;
 
     private static void openRace(ServerPlayer player, int page) {
         List<String> cards = CharacterServicesGuiApi.raceCards(player);
@@ -174,30 +189,43 @@ public final class UltraCharacterScreens {
         }
         if (pg > 0) {
             spec.buttonLeft(
-                    "page:race:" + (pg - 1), UltraStyle.dim("< Prev"), UltraStyle.STYLE_DIM);
+                    "page:race:" + (pg - 1), UltraStyle.dim("Prev"), UltraStyle.STYLE_DIM);
         }
         if (pg + 1 < pages) {
             if (pg > 0) {
                 spec.buttonRight(
-                        "page:race:" + (pg + 1), UltraStyle.LABEL + "Next >", UltraStyle.STYLE_NORMAL);
+                        "page:race:" + (pg + 1), UltraStyle.LABEL + "Next", UltraStyle.STYLE_NORMAL);
             } else {
                 spec.buttonLeft(
-                        "page:race:" + (pg + 1), UltraStyle.LABEL + "Next >", UltraStyle.STYLE_NORMAL);
+                        "page:race:" + (pg + 1), UltraStyle.LABEL + "Next", UltraStyle.STYLE_NORMAL);
             }
             spec.rowGap();
         } else if (pg > 0) {
             spec.rowGap();
         }
-        // footerBackHome only — a second tab:home Back stacked a duplicate button.
+        // footerBackHome only - a second tab:home Back stacked a duplicate button.
         spec.footerBackHome();
         spec.send(player);
     }
 
     private static int parseRaceListPage(String page) {
-        if (page == null || page.isBlank() || "race".equalsIgnoreCase(page.trim())) {
+        return parseListPage(page, "race");
+    }
+
+    /** Parse {@code prefix} or {@code prefix:N} page index (0-based). */
+    private static int parseListPage(String page, String... prefixes) {
+        if (page == null || page.isBlank()) {
             return 0;
         }
         String raw = page.trim();
+        String lower = raw.toLowerCase(Locale.ROOT);
+        if (prefixes != null) {
+            for (String prefix : prefixes) {
+                if (prefix != null && lower.equals(prefix.toLowerCase(Locale.ROOT))) {
+                    return 0;
+                }
+            }
+        }
         int colon = raw.indexOf(':');
         if (colon < 0 || colon + 1 >= raw.length()) {
             return 0;
@@ -254,22 +282,31 @@ public final class UltraCharacterScreens {
                         UltraStyle.STYLE_CONFIRM)
                 .buttonRight("page:race:0", UltraStyle.dim("Cancel"), UltraStyle.STYLE_DIM)
                 .rowGap();
-        spec.footerBackHome();
+        // Cancel is the only exit (no footerBackHome stack).
         spec.send(player);
     }
 
-    private static void openClass(ServerPlayer player) {
-        UltraScreenSpec spec = base(player, "class", "home")
-                .line(UltraStyle.LABEL + "Pick a new fighting class for your current race.");
+    private static void openClass(ServerPlayer player, int page) {
+        List<String> cards = CharacterServicesGuiApi.classCards(player);
+        int total = cards == null ? 0 : cards.size();
+        int pages = Math.max(1, (total + DISCOVERY_PER_PAGE - 1) / DISCOVERY_PER_PAGE);
+        int pg = Math.min(pages - 1, Math.max(0, page));
+        int from = pg * DISCOVERY_PER_PAGE;
+        int to = Math.min(total, from + DISCOVERY_PER_PAGE);
+        UltraScreenSpec spec = base(player, "class:" + pg, "home")
+                .line(UltraStyle.LABEL + "Pick a new fighting class for your current race.")
+                .labelValue(
+                        "Classes",
+                        total + (pages > 1 ? (" | page " + (pg + 1) + "/" + pages) : ""));
         for (String line : CharacterServicesGuiApi.linesForPage(player, "class")) {
             if (line != null && !line.isBlank()) {
                 spec.line(UltraStyle.LABEL + UltraStyle.plain(line));
             }
         }
         spec.setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
-        List<String> cards = CharacterServicesGuiApi.classCards(player);
         int placed = 0;
-        for (String card : cards) {
+        for (int i = from; i < to; i++) {
+            String card = cards.get(i);
             if (card == null || card.isBlank()) {
                 continue;
             }
@@ -304,7 +341,22 @@ public final class UltraCharacterScreens {
         if (placed == 0) {
             spec.line(UltraStyle.dim("No classes are available for your race."));
         }
-        // footerBackHome only — avoid duplicate Back with tab:home.
+        if (pg > 0) {
+            spec.buttonLeft("page:class:" + (pg - 1), UltraStyle.dim("Prev"), UltraStyle.STYLE_DIM);
+        }
+        if (pg + 1 < pages) {
+            if (pg > 0) {
+                spec.buttonRight(
+                        "page:class:" + (pg + 1), UltraStyle.LABEL + "Next", UltraStyle.STYLE_NORMAL);
+            } else {
+                spec.buttonLeft(
+                        "page:class:" + (pg + 1), UltraStyle.LABEL + "Next", UltraStyle.STYLE_NORMAL);
+            }
+            spec.rowGap();
+        } else if (pg > 0) {
+            spec.rowGap();
+        }
+        // footerBackHome only - avoid duplicate Back with tab:home.
         spec.footerBackHome();
         spec.send(player);
     }
@@ -323,9 +375,9 @@ public final class UltraCharacterScreens {
                         "do:class_confirm:" + id,
                         UltraStyle.confirm("Confirm & pay"),
                         UltraStyle.STYLE_CONFIRM)
-                .buttonRight("page:class", UltraStyle.dim("Cancel"), UltraStyle.STYLE_DIM)
+                .buttonRight("page:class:0", UltraStyle.dim("Cancel"), UltraStyle.STYLE_DIM)
                 .rowGap();
-        spec.footerBackHome();
+        // Cancel is the only exit (no footerBackHome stack).
         spec.send(player);
     }
 
@@ -364,8 +416,9 @@ public final class UltraCharacterScreens {
                     .rowGap();
         } else {
             spec.line(UltraStyle.danger(UltraStyle.plain(pre)));
+            spec.button("page:reskin", UltraStyle.backTo("Reskin"), UltraStyle.STYLE_DIM).rowGap();
         }
-        spec.footerBackHome();
+        // Ready path: Cancel only. Locked path: named Reskin exit. No footer stack.
         spec.send(player);
     }
 
@@ -449,15 +502,15 @@ public final class UltraCharacterScreens {
                 .rowGap();
         if (pg > 0) {
             spec.buttonLeft(
-                    "page:bones:" + (pg - 1), UltraStyle.dim("< Head"), UltraStyle.STYLE_DIM);
+                    "page:bones:" + (pg - 1), UltraStyle.dim("Prev head"), UltraStyle.STYLE_DIM);
         }
         if (pg + 1 < pages) {
             if (pg > 0) {
                 spec.buttonRight(
-                        "page:bones:" + (pg + 1), UltraStyle.LABEL + "Horns >", UltraStyle.STYLE_NORMAL);
+                        "page:bones:" + (pg + 1), UltraStyle.LABEL + "Next horns", UltraStyle.STYLE_NORMAL);
             } else {
                 spec.buttonLeft(
-                        "page:bones:" + (pg + 1), UltraStyle.LABEL + "Horns >", UltraStyle.STYLE_NORMAL);
+                        "page:bones:" + (pg + 1), UltraStyle.LABEL + "Next horns", UltraStyle.STYLE_NORMAL);
             }
             spec.rowGap();
         } else if (pg > 0) {
@@ -481,9 +534,18 @@ public final class UltraCharacterScreens {
         return 0;
     }
 
-    private static void openSagaReset(ServerPlayer player) {
-        UltraScreenSpec spec = base(player, "reset", "saga")
+    private static void openSagaReset(ServerPlayer player, int page) {
+        List<Offer> offers = SagaResetService.offers(player);
+        int total = offers == null ? 0 : offers.size();
+        int pages = Math.max(1, (total + DISCOVERY_PER_PAGE - 1) / DISCOVERY_PER_PAGE);
+        int pg = Math.min(pages - 1, Math.max(0, page));
+        int from = pg * DISCOVERY_PER_PAGE;
+        int to = Math.min(total, from + DISCOVERY_PER_PAGE);
+        UltraScreenSpec spec = base(player, "reset:" + pg, "saga")
                 .line(UltraStyle.LABEL + "Pay Ancient Coins to replay one saga.")
+                .labelValue(
+                        "Sagas",
+                        total + (pages > 1 ? (" | page " + (pg + 1) + "/" + pages) : ""))
                 .notice("Resetting clears that saga's progress. This cannot be undone.");
         if (!SagaResetConfig.get().enabled) {
             spec.line(UltraStyle.danger(SagaResetService.RESET_OFF))
@@ -492,23 +554,22 @@ public final class UltraCharacterScreens {
             spec.send(player);
             return;
         }
-        List<Offer> offers = SagaResetService.offers(player);
-        if (offers.isEmpty()) {
+        if (total == 0) {
             spec.line(UltraStyle.dim("No sagas are loaded."));
         } else {
-            int shown = 0;
-            for (Offer offer : offers) {
-                if (shown >= 10) {
-                    break;
+            for (int i = from; i < to; i++) {
+                Offer offer = offers.get(i);
+                if (offer == null) {
+                    continue;
                 }
                 spec.line(UltraStyle.LABEL + offer.name() + " " + UltraStyle.VALUE + offer.rowDetail());
-                shown++;
             }
         }
         spec.setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
         int placed = 0;
-        for (Offer offer : offers) {
-            if (placed >= 8 || offer == null || offer.id() == null || offer.id().isBlank()) {
+        for (int i = from; i < to; i++) {
+            Offer offer = offers.get(i);
+            if (offer == null || offer.id() == null || offer.id().isBlank()) {
                 continue;
             }
             String action = "page:saga_confirm:" + offer.id();
@@ -534,6 +595,21 @@ public final class UltraCharacterScreens {
         }
         if (placed == 0) {
             spec.line(UltraStyle.dim("Nothing to reset until you play a saga."));
+        }
+        if (pg > 0) {
+            spec.buttonLeft("page:reset:" + (pg - 1), UltraStyle.dim("Prev"), UltraStyle.STYLE_DIM);
+        }
+        if (pg + 1 < pages) {
+            if (pg > 0) {
+                spec.buttonRight(
+                        "page:reset:" + (pg + 1), UltraStyle.LABEL + "Next", UltraStyle.STYLE_NORMAL);
+            } else {
+                spec.buttonLeft(
+                        "page:reset:" + (pg + 1), UltraStyle.LABEL + "Next", UltraStyle.STYLE_NORMAL);
+            }
+            spec.rowGap();
+        } else if (pg > 0) {
+            spec.rowGap();
         }
         spec.footerBackHome();
         spec.send(player);
@@ -567,9 +643,12 @@ public final class UltraCharacterScreens {
                                     ? SagaResetService.NOTHING_TO_RESET
                                     : SagaResetService.RESET_OFF;
             spec.line(UltraStyle.danger(why));
-            spec.button("tab:saga", UltraStyle.dim("Back to saga list"), UltraStyle.STYLE_DIM).rowGap();
+            // Named destination - saga list (no footerBackHome stack).
+            spec.button("tab:saga", UltraStyle.backTo("Saga list"), UltraStyle.STYLE_DIM).rowGap();
+            spec.send(player);
+            return;
         }
-        spec.footerBackHome();
+        // Ready path: Cancel only (no footerBackHome stack).
         spec.send(player);
     }
 

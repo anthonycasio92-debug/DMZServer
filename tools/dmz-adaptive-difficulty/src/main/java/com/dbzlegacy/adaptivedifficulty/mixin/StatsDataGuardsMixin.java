@@ -2,6 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.mixin;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
+import com.dbzlegacy.adaptivedifficulty.character.RacialBonusWipeHelper;
 import com.dbzlegacy.adaptivedifficulty.noea.AbsorptionWipeHelper;
 import com.dbzlegacy.adaptivedifficulty.noea.GodKiWipeHelper;
 import com.dbzlegacy.adaptivedifficulty.progression.DmzResourcePoolClamp;
@@ -239,5 +240,6 @@ public abstract class StatsDataGuardsMixin {
     ) {
         AbsorptionWipeHelper.wipeIfRaceChanges((StatsData) (Object) this, race);
         GodKiWipeHelper.wipeIfRaceChanges((StatsData) (Object) this, race);
+        RacialBonusWipeHelper.wipeIfRaceChanges((StatsData) (Object) this, race);
     }
 }

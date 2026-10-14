@@ -221,6 +221,9 @@ platform-default charset causes mojibake on accents (é/à).
   "center": true,
   "margin": 10,
   "titleAlign": "center",
+  "tabsUnderTitle": true,
+  "headerBottom": 28,
+  "accent": "c",
   "lineHeight": 16,
   "lineGap": 8,
   "bodyTop": 42,
@@ -266,6 +269,9 @@ honor `margin`. Button `x`/`y` are panel-relative.
 | Field | Meaning |
 |-------|---------|
 | `titleAlign` | **`center`** (LM default) or `left` — **must** position the title; do not assume left |
+| `tabsUnderTitle` | When `true`, LM placed tab controls as regular buttons under the header (not KaiPath's native title-chrome tab strip). Honor `headerBottom`. |
+| `headerBottom` | **Panel-relative Y where client header chrome must end.** Title text + yellow divider stay **strictly above** this line. When `tabsUnderTitle` is true, LM places the tab row at this Y (default **28**); when false, default **42** (`bodyTop`). This is the geometry contract that keeps tabs under the yellow divider. |
+| `accent` | Optional single-letter Minecraft color code (`c`, `5`, `6`, `b`, `a`, `e`, `4`, …) for **system accent**. Paint the title (and `activeTab` highlight) with this color. Do **not** expect section-sign in the title string — titles stay plain ASCII to avoid mojibake. Omit or ignore when blank. |
 | `lineHeight` | Body line height in GUI pixels (do **not** squeeze below this) |
 | `lineGap` | Extra gap between body lines |
 | `bodyTop` | Panel-relative Y where the body/scroll region starts |
@@ -277,8 +283,14 @@ honor `margin`. Button `x`/`y` are panel-relative.
 | `buttonMinWidth` | Minimum button width (**80**) — never shrink for long labels |
 | `buttonHeight` | Standard button height |
 
-Buttons also carry per-button `pad` (same default). Overlong labels truncate with `…`;
-pages scroll rather than squeezing buttons.
+Buttons also carry per-button `pad` (same default) and optional per-button **`accent`**
+(same single-letter codes as `layoutJson.accent`) for hub tiles / staff controls. Labels
+stay plain ASCII; the client tints from `accent`. Overlong labels truncate with ASCII
+`...`; pages scroll rather than squeezing buttons.
+
+**System accent map (LM):** Difficulty `c` · Rival `5` · Sparring `6` · Prestige `b` ·
+Character `a` · Skill Check `e` · Staff Admin `4`. Main hub omits `accent` (shared gold
+title chrome).
 
 #### `playerModel` (optional, client-rendered)
 

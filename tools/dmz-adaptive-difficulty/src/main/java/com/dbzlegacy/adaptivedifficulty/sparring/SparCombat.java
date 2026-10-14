@@ -7,8 +7,9 @@ import com.dbzlegacy.adaptivedifficulty.progression.race.AndroidConversion;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalChallengeManager;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
-import com.dbzlegacy.adaptivedifficulty.util.LmChat;
+import com.dbzlegacy.adaptivedifficulty.util.ScreenNotify;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
+import net.minecraft.ChatFormatting;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.Status;
 import com.dragonminez.server.util.GravityLogic;
@@ -57,6 +58,11 @@ public final class SparCombat {
     public static final float MAX_STREAK_MULTIPLIER = 1.25f;
     public static final long MOMENTUM_DURATION_MS = 10_000L;
     public static final boolean SHOW_MOMENTUM_MESSAGES = true;
+    /** Extra ScreenNotify anti-spam on top of the 2s TP burst batch window. */
+    private static final long TP_SUBTITLE_CD_MS = 1_500L;
+    private static final String TP_SUBTITLE_CD_KEY = "lm.spar.tp.subtitle";
+    /** Keep staff TP subtitles short enough to read mid-fight. */
+    private static final int TP_SUBTITLE_MAX_CHARS = 64;
 
     private static final int[] MOMENTUM_THRESHOLDS = {5, 10, 15, 20, 30, 40};
     private static final float[] MOMENTUM_MULTIPLIERS = {1.05f, 1.10f, 1.20f, 1.35f, 1.50f, 2.00f};
@@ -795,31 +801,63 @@ public final class SparCombat {
             return;
         }
         String label = burstLabel(rt, pendingMelee, pendingKi, pendingClash);
-        String base = LmChat.tp("Spar", DmzRewards.formatWhole(pending), label);
-        // Players: clean +TP (label). Staff: bonus tags + stack + session.
+        // Players: clean +TP (label). Staff: short mom/combo + m/k/c + session (subtitle space).
+        String subtitle;
         if (!StaffAccess.isStaff(player)) {
-            DmzRewards.msg(player, base);
-            return;
-        }
-        TrainingValues a = liveValues(player);
-        TrainingValues b = null;
-        if (rt.partner != null && player.m_20194_() != null) {
-            ServerPlayer partner = player.m_20194_().m_6846_().m_11259_(rt.partner);
-            if (partner != null) {
-                b = liveValues(partner);
+            subtitle = "+" + DmzRewards.formatWhole(pending) + " TP (" + label + ")";
+        } else {
+            TrainingValues a = liveValues(player);
+            TrainingValues b = null;
+            if (rt.partner != null && player.m_20194_() != null) {
+                ServerPlayer partner = player.m_20194_().m_6846_().m_11259_(rt.partner);
+                if (partner != null) {
+                    b = liveValues(partner);
+                }
             }
+            subtitle = staffTpSubtitle(rt, pending, label, pendingMelee, pendingKi, pendingClash, a, b);
         }
-        StringBuilder detail = new StringBuilder(base);
-        detail.append(activeBonusTags(player, rt, a, b));
-        detail.append(staffStackTags(player, rt, a, b));
+        ScreenNotify.subtitleOnly(
+                player, subtitle, ChatFormatting.GREEN, TP_SUBTITLE_CD_KEY, TP_SUBTITLE_CD_MS);
+    }
+
+    /** Compact staff TP line — full stack tags are too long for subtitles. */
+    private static String staffTpSubtitle(
+            SparPlayerRuntime rt,
+            int pending,
+            String label,
+            int pendingMelee,
+            int pendingKi,
+            int pendingClash,
+            TrainingValues a,
+            TrainingValues b
+    ) {
+        StringBuilder sb = new StringBuilder();
+        sb.append('+').append(DmzRewards.formatWhole(pending)).append(" TP (").append(label).append(')');
+        if (rt != null && rt.combo > 1) {
+            sb.append(" c").append(rt.combo);
+        }
+        float mom = momentumMultiplier(rt);
+        if (mom > 1.001f) {
+            sb.append(" momx").append(formatMult(mom));
+        }
         if (pendingMelee > 0 || pendingKi > 0 || pendingClash > 0) {
-            detail.append(" §8m/k/c §f")
-                    .append(pendingMelee).append('/')
-                    .append(pendingKi).append('/')
+            sb.append(' ')
+                    .append(pendingMelee)
+                    .append('/')
+                    .append(pendingKi)
+                    .append('/')
                     .append(pendingClash);
         }
-        detail.append(" §7· session §f").append(DmzRewards.formatWhole(rt.sessionTp));
-        DmzRewards.msg(player, detail.toString());
+        sb.append(" sess ").append(DmzRewards.formatWhole(rt == null ? 0 : rt.sessionTp));
+        // Keep live values referenced so staff still computes parity in debug paths.
+        if (a != null && b != null && isPerfect(a, b)) {
+            sb.append(" *");
+        }
+        String out = sb.toString();
+        if (out.length() <= TP_SUBTITLE_MAX_CHARS) {
+            return out;
+        }
+        return out.substring(0, TP_SUBTITLE_MAX_CHARS - 3) + "...";
     }
 
     public static void updateMomentum(ServerPlayer player, SparPlayerRuntime rt) {
@@ -839,8 +877,12 @@ public final class SparCombat {
         rt.sessionMaxMom = Math.max(rt.sessionMaxMom, tier);
         if (SHOW_MOMENTUM_MESSAGES && player != null && tier > oldTier && tier > 0) {
             float mult = MOMENTUM_MULTIPLIERS[Math.min(tier, MOMENTUM_MULTIPLIERS.length) - 1];
-            DmzRewards.msg(player, LmChat.note("Spar", "§eMomentum " + tier
-                    + " §8(§fx" + formatMult(mult) + " §8TP)"));
+            ScreenNotify.subtitleOnly(
+                    player,
+                    "Momentum " + tier + " (x" + formatMult(mult) + " TP)",
+                    ChatFormatting.YELLOW,
+                    "lm.spar.momentum.subtitle",
+                    1_000L);
         }
     }
 

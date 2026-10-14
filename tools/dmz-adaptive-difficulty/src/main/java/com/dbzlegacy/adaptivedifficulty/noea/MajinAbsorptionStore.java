@@ -2,6 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.noea;
 
 import com.butterjaffa.noeabosses.MajinAbsorptionService;
 import com.butterjaffa.noeabosses.V090Data;
+import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.Character;
 import net.minecraft.server.level.ServerPlayer;
@@ -28,40 +29,45 @@ public final class MajinAbsorptionStore {
             }
         }
         try {
-            System.out.println("[LM] clear() called for " + name);
+            AdaptiveDifficultyMod.LOGGER.debug(
+                    "[{}] MajinAbsorptionStore.clear() for {}", AdaptiveDifficultyMod.MOD_ID, name);
             if (player == null) {
-                System.out.println("[LM] ABORT: player is null, cannot wipe");
+                AdaptiveDifficultyMod.LOGGER.warn(
+                        "[{}] MajinAbsorptionStore.clear aborted: player is null",
+                        AdaptiveDifficultyMod.MOD_ID);
                 return;
             }
             V090Data data = MajinAbsorptionService.data(player);
-            System.out.println("[LM] data object: " + (data == null
-                    ? "NULL"
-                    : "present, melee=" + data.absorptionMelee
-                            + " ki=" + data.absorptionKi
-                            + " power=" + data.absorptionPower
-                            + " id=" + System.identityHashCode(data)));
             if (data == null) {
-                System.out.println("[LM] ABORT: data is null, cannot wipe");
+                AdaptiveDifficultyMod.LOGGER.warn(
+                        "[{}] MajinAbsorptionStore.clear aborted: data is null for {}",
+                        AdaptiveDifficultyMod.MOD_ID,
+                        name);
                 return;
             }
+            AdaptiveDifficultyMod.LOGGER.debug(
+                    "[{}] MajinAbsorptionStore data melee={} ki={} power={}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    data.absorptionMelee,
+                    data.absorptionKi,
+                    data.absorptionPower);
             data.absorptionMelee = 0;
             data.absorptionKi = 0;
             data.absorptionPower = 0;
-            System.out.println("[LM] fields zeroed, calling save...");
             V090Data.save(player, data);
-            System.out.println("[LM] save complete, calling sync...");
             if (player instanceof ServerPlayer serverPlayer) {
                 MajinAbsorptionService.sync(serverPlayer);
             }
             V090Data again = MajinAbsorptionService.data(player);
-            System.out.println("[LM] readback melee=" + (again == null ? "NULL" : again.absorptionMelee)
-                    + " ki=" + (again == null ? "NULL" : again.absorptionKi)
-                    + " power=" + (again == null ? "NULL" : again.absorptionPower)
-                    + " id=" + (again == null ? "NULL" : System.identityHashCode(again)));
-            System.out.println("[LM] wipe complete");
+            AdaptiveDifficultyMod.LOGGER.debug(
+                    "[{}] MajinAbsorptionStore wipe complete readback melee={} ki={} power={}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    again == null ? "NULL" : again.absorptionMelee,
+                    again == null ? "NULL" : again.absorptionKi,
+                    again == null ? "NULL" : again.absorptionPower);
         } catch (Throwable t) {
-            System.out.println("[LM] wipe FAILED: " + t);
-            t.printStackTrace();
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] MajinAbsorptionStore.clear failed for {}", AdaptiveDifficultyMod.MOD_ID, name, t);
         }
     }
 
@@ -88,7 +94,10 @@ public final class MajinAbsorptionStore {
             try {
                 AbsorptionClearLog.failure(t);
             } catch (Throwable ignored) {
-                t.printStackTrace();
+                AdaptiveDifficultyMod.LOGGER.warn(
+                        "[{}] MajinAbsorptionStore.clearIfRaceChanges failed",
+                        AdaptiveDifficultyMod.MOD_ID,
+                        t);
             }
         }
     }

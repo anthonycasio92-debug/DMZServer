@@ -253,7 +253,7 @@ def main() -> int:
         "tier.id < currentActiveTier" in coins_src
         and "activationCost(UnlockTier tier, ServerPlayer player, int currentActiveTier)" in coins_src
         and "Downgrade to Tier" in tier_ui
-        and "— Free" in tier_ui
+        and "- Free" in tier_ui
         and has(actions, "activationCost(tier, player, current)", "downgrade", "charge = (staffFree || downgrade)"),
     )
     diff_chat_tiers = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/DifficultyChatMenu.java")
@@ -796,6 +796,29 @@ def main() -> int:
     check("acceptReplace Mutual slot pick",
           "acceptReplace" in rival_sys and "needsMutualReplacePick" in rival_sys
           and "pendingMutualAcceptUuid" in read(SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalPlayerRecord.java"))
+    accept_replace_fn = (
+        rival_sys.split("public static String acceptReplace", 1)[1]
+        .split("public static boolean needsMutualReplacePick", 1)[0]
+        if "public static String acceptReplace" in rival_sys
+        else ""
+    )
+    cancel_replace_fn = (
+        rival_sys.split("public static String cancelMutualReplace", 1)[1]
+        .split("public static String pendingMutualAcceptName", 1)[0]
+        if "public static String cancelMutualReplace" in rival_sys
+        else ""
+    )
+    check(
+        "acceptReplace/cancelMutualReplace use UltraStyle (no bare §)",
+        "UltraStyle.dangerLine" in accept_replace_fn
+        and "UltraStyle.GREEN" in accept_replace_fn
+        and "UltraStyle.WHITE" in accept_replace_fn
+        and "UltraStyle.DARK_GRAY" in accept_replace_fn
+        and "UltraStyle.YELLOW" in cancel_replace_fn
+        and "UltraStyle.dangerLine" in cancel_replace_fn
+        and "§" not in accept_replace_fn
+        and "§" not in cancel_replace_fn,
+    )
     check("GUI pick_replace_mutual page",
           "pick_replace_mutual" in rival_chest and "pick_replace_mutual" in cmi_rival)
     check("rival list status order helper", "rivalListOrder" in rival_sys and "statusListRank" in rival_sys)
@@ -1071,14 +1094,26 @@ def main() -> int:
         "public static void updateMomentum", 1)[0] if "public static void flushTpMessage" in spar_c147 else ""
     check("flushTpMessage staff gate",
           "StaffAccess.isStaff(player)" in flush_fn)
-    check("player TP line is simple +TP (label)",
-          'DmzRewards.msg(player, base)' in flush_fn
-          and "activeBonusTags" not in flush_fn.split("if (!StaffAccess.isStaff(player))", 1)[0]
-          if "if (!StaffAccess.isStaff(player))" in flush_fn else False)
-    check("staff TP line has bonus + stack + session",
-          "activeBonusTags" in flush_fn and "staffStackTags" in flush_fn
-          and "session" in flush_fn and "m/k/c" in flush_fn)
-    check("staffStackTags API", "staffStackTags(" in spar_c147 and "burstLabel(" in spar_c147)
+    player_half = (
+        flush_fn.split("if (!StaffAccess.isStaff(player))", 1)[0]
+        if "if (!StaffAccess.isStaff(player))" in flush_fn
+        else ""
+    )
+    check("player TP line is simple +TP (label) subtitle",
+          "ScreenNotify.subtitleOnly" in flush_fn
+          and "formatWhole(pending)" in flush_fn
+          and "activeBonusTags" not in player_half)
+    check("staff TP subtitle is trimmed (no full stack tags)",
+          "staffTpSubtitle" in flush_fn
+          and "staffStackTags" not in flush_fn
+          and "sess" in flush_fn
+          and "TP_SUBTITLE_MAX_CHARS" in spar_c147)
+    check("staffStackTags API still exists for other callers",
+          "staffStackTags(" in spar_c147 and "burstLabel(" in spar_c147)
+    check("momentum notice is subtitle",
+          "ScreenNotify.subtitleOnly" in spar_c147
+          and "Momentum " in spar_c147
+          and 'LmChat.note("Spar"' not in spar_c147)
 
     print("\n=== Mentor Actions GUI (2.3.146) ===")
     spar_chest146 = read(gui_root / "SparChestGui.java")
@@ -1180,7 +1215,10 @@ def main() -> int:
     check("LmChat TAG_ALIASES", "TAG_ALIASES" in lmchat and 'systemName' in lmchat)
     check("LmChat ok/fail/tp helpers", 'ok(String' in lmchat and 'fail(String' in lmchat and 'tp(String' in lmchat)
     check("LmChat open-tip normalize", "normalizeOpenTip" in lmchat)
-    check("awardTp uses LmChat.tp", "LmChat.tp(resolveTpSystem" in rewards)
+    check("awardTp TP notice is subtitle",
+          "ScreenNotify.subtitleOnly" in rewards
+          and "lm.tp.grant.subtitle" in rewards
+          and "LmChat.tp(resolveTpSystem" not in rewards)
     check("GuiChat mirrors aliases", "TAG_ALIASES" in guichat and "normalizeOpenTip" in guichat)
     check("Mentor invite uses LmChat.tip", 'LmChat.tip("/spar"' in spar_sys)
     check("Perfect Training tagged", 'LmChat.tagged("Spar"' in spar_sys and "Perfect Training" in spar_sys)
@@ -1534,6 +1572,20 @@ def main() -> int:
     check("LM tips use action bar",
           "ScreenNotify.actionBar" in lm_tips
           and "void actionBar" in read(SRC / "com/dbzlegacy/adaptivedifficulty/util/ScreenNotify.java"))
+    screen_notify = read(SRC / "com/dbzlegacy/adaptivedifficulty/util/ScreenNotify.java")
+    potential_src = read(
+        SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/PotentialProgression.java"
+    )
+    check("ScreenNotify.subtitleOnly exists",
+          "void subtitleOnly" in screen_notify
+          and "ClientboundSetSubtitleTextPacket" in screen_notify
+          and 'ClientboundSetTitleTextPacket(Component.m_237113_(""))' in screen_notify)
+    check("Potential notices are subtitles not chat",
+          "ScreenNotify.subtitleOnly" in potential_src
+          and "potentialSubtitle" in potential_src
+          and 'DmzRewards.msg(player, LmChat.note("Potential"' not in potential_src
+          and 'DmzRewards.msg(player, LmChat.fail("Potential"' not in potential_src
+          and 'DmzRewards.msg(player, LmChat.info("Potential"' not in potential_src)
     check("LM tips LP frequent groups",
           "lmTipFrequentGroups" in lm_tips
           and "getPrimaryGroup" in lm_tips
@@ -2104,7 +2156,9 @@ def main() -> int:
           and "MeleeStatsResetPlayerBlockMixin" in mixin_plugin
           and "meleeResetCommandsPresent()" in mixin_plugin
           and "Class.forName" not in mixin_plugin.split("meleeResetCommandsPresent()", 1)[-1].split("absorptionServicePresent", 1)[0]
-          and "t.printStackTrace()" in read(
+          and "AdaptiveDifficultyMod.LOGGER" in read(
+              ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/noea/AbsorptionWipeHelper.java")
+          and "System.out.println" not in read(
               ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/noea/AbsorptionWipeHelper.java")
           and "\"StatsCommand.resetStats\"" in reset_block
           and "DmzStatsResetAbsorptionWipeMixin" not in mixins_json)
@@ -2146,14 +2200,16 @@ def main() -> int:
           and "current - absorbed + scaledBonus" in absorb_gate
           and "package com.dbzlegacy.adaptivedifficulty.noea;" in absorb_store
           and "data.absorptionMelee = 0" in absorb_store
-          and "[LM] clear() called for " in absorb_store
-          and "[LM] ABORT: data is null, cannot wipe" in absorb_store
-          and "[LM] readback melee=" in absorb_store
-          and "[LM] wipe FAILED: " in absorb_store
+          and "AdaptiveDifficultyMod.LOGGER" in absorb_store
+          and "System.out.println" not in absorb_store
+          and "printStackTrace" not in absorb_store
           and "data.absorptionKi = 0" in absorb_store
           and "data.absorptionPower = 0" in absorb_store
           and "MajinAbsorptionStore.clear(player)" in absorb_helper
-          and "[LM] wipeAbsorption firing for " in absorb_helper
+          and "wipeAbsorption firing" in absorb_helper
+          and "AdaptiveDifficultyMod.LOGGER" in absorb_helper
+          and "System.out.println" not in absorb_helper
+          and "printStackTrace" not in absorb_helper
           and "AbsorptionWipeHelper.wipe(player, null)" in absorb_reset
           and "initializeWithRaceAndClass" in absorb_reset
           and "wipeIfRaceChanges" in absorb_reset
@@ -2161,6 +2217,8 @@ def main() -> int:
           and 'method = "resetStats"' in absorb_cmd
           and "\"StatsCommand.resetStats\"" in absorb_cmd
           and "AbsorptionWipeHelper" in absorb_cmd
+          and "AdaptiveDifficultyMod.LOGGER" in absorb_cmd
+          and "printStackTrace" not in absorb_cmd
           and "require = 0" in absorb_cmd
           and 'method = "resetSelf"' in absorb_melee
           and "require = 0" in absorb_melee
@@ -2172,9 +2230,10 @@ def main() -> int:
           and "isHasCreatedCharacter" in absorb_create
           and "AbsorptionWipeHelper.wipe(player, \"CreateCharacterC2S\")" in absorb_create
           and "\"CharacterServicesSystem.executeRaceChange\"" in absorb_services
-          and "[LM] clear() threw: " in absorb_log
+          and "AdaptiveDifficultyMod.LOGGER" in absorb_log
+          and "System.out.println" not in absorb_log
+          and "printStackTrace" not in absorb_log
           and "AbsorptionClearLog.failure" in absorb_helper
-          and "t.printStackTrace()" in absorb_helper
           and "AbsorptionClearLog.failure" in absorb_store
           and "StatsDataGuardsMixin" in mixins_json
           and "StatsDataResetPrestigeSyncMixin" not in mixins_json
@@ -2198,7 +2257,25 @@ def main() -> int:
           and "GodKiWipeHelper.wipe(player, \"NPCActionC2S.handleDende\")" in absorb_dende
           and "GodKiWipeHelper.wipe(player, \"CreateCharacterC2S\")" in absorb_create
           and "GodKiWipeHelper.wipe(player, \"CharacterServicesSystem.executeRaceChange\")" in absorb_services
-          and "GodKiWipeHelper" in build_sh)
+          and "GodKiWipeHelper" in build_sh
+          and "AdaptiveDifficultyMod.LOGGER" in god_ki
+          and "System.out.println" not in god_ki
+          and "printStackTrace" not in god_ki)
+    racial_wipe = read(
+        ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/character/RacialBonusWipeHelper.java"
+    )
+    check("racial BonusStats splits wipe on race leave",
+          "Zenkai_" in racial_wipe
+          and "Assimilation_" in racial_wipe
+          and "Absorption_" in racial_wipe
+          and "clearBonusSplit" in racial_wipe
+          and "setRacialSkillCount(0)" in racial_wipe
+          and "wipeLeavingRace" in racial_wipe
+          and "RacialBonusWipeHelper.wipeLeavingRace" in absorb_services
+          and "RacialBonusWipeHelper.wipeIfRaceChanges" in absorb_reset
+          and "RacialBonusWipeHelper" in build_sh
+          and 'saiyan".equals(from)' in racial_wipe
+          and '!"saiyan".equals(to)' in racial_wipe)
 
     print("\n=== CNPC notice color (4.6.41) ===")
     notice = read(cnpc_dir / "CnpcMenuFeedback.java")
@@ -2312,28 +2389,13 @@ def main() -> int:
     check("fusion reset class is copied into the forge jar",
           "FusionCooldownReset" in read(ROOT / "tools/dmz-adaptive-difficulty/build.sh"))
 
-    print("\n=== Fusion unfuse bonus clear (4.6.56) ===")
-    fusion_clear = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/FusionUnfuseBonusClearMixin.java")
+    print("\n=== Fusion unfuse bonus clear retired (read-gate only) ===")
     fusion_mixins = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/resources/legacymechanics.mixins.json")
-    mixin_plugin = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/LegacyMechanicsMixinPlugin.java")
-    check("unfuse clears FusionBonus at the tail of endFusion",
-          "Dragon Mine Z bug workaround" in fusion_clear
-          and 'FUSION_BONUS = "FusionBonus"' in fusion_clear
-          and 'method = "endFusion"' in fusion_clear
-          and '@At("TAIL")' in fusion_clear
-          and '@At("HEAD")' in fusion_clear
-          and "require = 0" in fusion_clear
-          and "removeAllBonuses" in fusion_clear
-          and "fusionZenkaiNames" in fusion_clear
-          and "Zenkai_" in fusion_clear
-          and '"FusionUnfuseBonusClearMixin"' in fusion_mixins
-          and "FusionUnfuseBonusClearMixin" in build_sh)
-    check("unfuse mixin names FusionLogic and is not gated at config time",
-          '@Mixin(targets = "com.dragonminez.server.util.FusionLogic", remap = false)' in fusion_clear
-          and "FusionLogic.class" not in fusion_clear
-          and "import com.dragonminez.server.util.FusionLogic" not in fusion_clear
-          and "FusionUnfuseBonusClearMixin" not in mixin_plugin
-          and "FusionLogic" not in mixin_plugin)
+    fusion_clear_path = ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/FusionUnfuseBonusClearMixin.java"
+    check("FusionUnfuseBonusClearMixin removed (read-gate replaced unfuse cleanup)",
+          not fusion_clear_path.is_file()
+          and '"FusionUnfuseBonusClearMixin"' not in fusion_mixins
+          and "FusionUnfuseBonusClearMixin" not in build_sh)
     fusion_gate = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/FusionBonusReadGateMixin.java")
     check("fusion bonus is ignored on read when the player is not fused",
           "status.isFused()" in read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/progression/FusionBonusOwner.java")
@@ -2350,23 +2412,33 @@ def main() -> int:
           and ".getBonusStats(" not in read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/progression/FusionBonusOwner.java")
           and "lm$fusionBonuses" in read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/StatsDataMixin.java"))
 
-    print("\n=== Fall damage diagnostic (4.6.42) ===")
+    print("\n=== Fall damage pool sync (4.6.131) ===")
     fall_diag = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/event/FallDamageDiag.java")
     mod_src = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.java")
-    check("fall damage log compares vanilla and DMZ health",
-          "[LM] Fall damage:" in fall_diag
-          and "DamageTypeTags.f_268549_" in fall_diag
+    fall_reg = mod_src.find("new FallDamageDiag()")
+    diff_reg = mod_src.find("new DifficultyEvents()")
+    check("fall damage aligns vanilla pool on fall and hurt (no debug spam)",
+          "DamageTypeTags.f_268549_" in fall_diag
           and "getMaxHealth()" in fall_diag
           and "m_21223_()" in fall_diag
           and "m_21233_()" in fall_diag
-          and "EventPriority.HIGHEST" in fall_diag
+          and fall_diag.count("EventPriority.HIGHEST") >= 2
+          and "alignVanillaPool(player)" in fall_diag
+          and fall_diag.count("alignVanillaPool(player)") >= 2
           and "applyHealthBonus" in fall_diag
-          and "kiNegated=" in fall_diag
-          and "dmzCurrent=not-stored" in fall_diag
           and "vanillaPoolDesynced" in fall_diag
+          and "scaledFromOldPool" in fall_diag
+          and "raiseVanillaMax" in fall_diag
+          and "System.out.println" not in fall_diag
+          and "printStackTrace" not in fall_diag
+          and "AdaptiveDifficultyMod.LOGGER" in fall_diag
+          and "[LM] Fall damage:" not in fall_diag
           and "setCanceled" not in fall_diag
           and "setAmount" not in fall_diag
-          and "new FallDamageDiag()" in mod_src)
+          and "new FallDamageDiag()" in mod_src
+          and fall_reg >= 0
+          and diff_reg >= 0
+          and fall_reg < diff_reg)
     check("fall damage listener class is copied into the forge jar",
           "event/FallDamageDiag.class" in build_sh)
 
@@ -2416,6 +2488,11 @@ def main() -> int:
     config_gui = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmConfigGui.java")
     config_registry = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/config/ConfigRegistry.java")
     config_screen = read(cnpc_dir / "CnpcConfigEditor.java")
+    check("config editor static maps are concurrency-safe",
+          "ConcurrentHashMap.newKeySet()" in config_editor
+          and "PENDING = new ConcurrentHashMap<>()" in config_editor
+          and "SESSIONS = new ConcurrentHashMap<>()" in config_editor
+          and "BACKED_THIS_SESSION = ConcurrentHashMap.newKeySet()" in config_editor)
     check("config editor lists fields by reflection",
           "getFields()" in config_editor
           and "adminPermission" in config_editor
@@ -2527,8 +2604,8 @@ def main() -> int:
           and "Reset saga progress" in saga_gui
           and "Reset saga progress" not in character_gui
           and "home|Home" in character_gui
-          and "saga|Saga Reset" in character_gui
-          and "android|Android Removal" in character_gui
+          and "saga|Saga" in character_gui
+          and "android|Android" in character_gui
           and "Model customization" in character_gui
           and "services|Services" not in character_gui
           and "CnpcLmSagaGui.open" in read(cnpc_dir / "CnpcLmGui.java")

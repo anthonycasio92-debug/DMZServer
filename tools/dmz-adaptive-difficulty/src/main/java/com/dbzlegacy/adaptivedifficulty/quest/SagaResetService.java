@@ -65,12 +65,12 @@ public final class SagaResetService {
         public String rowDetail() {
             String price = SagaResetService.costText(cost);
             if (status == Status.NOT_STARTED) {
-                return price + " · Not started · Nothing to reset until you play it";
+                return price + " - Not started - Nothing to reset until you play it";
             }
             if (status == Status.LOCKED) {
-                return price + " · Locked until earlier story quests unlock it";
+                return price + " - Locked until earlier story quests unlock it";
             }
-            return price + " · " + statusLabel();
+            return price + " - " + statusLabel();
         }
     }
 

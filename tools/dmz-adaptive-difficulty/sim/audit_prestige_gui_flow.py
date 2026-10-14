@@ -53,6 +53,20 @@ def main() -> None:
     ultra = read(SRC / "gui/ultra/UltraPrestigeScreens.java")
     ok("Ultra prestige screens exist", "class UltraPrestigeScreens" in ultra)
     ok("CNPC prestige package removed", not (SRC / "gui/cnpc").is_dir())
+    ok("shop hub with Skills / Tiers / Effects",
+       "openShopHub" in ultra
+       and "page:skills" in ultra
+       and "page:tiers" in ultra
+       and "page:effects" in ultra)
+    ok("favor buys for tiers and effects",
+       "do:tier:" in ultra and "do:majin" in ultra and "do:mutant" in ultra)
+    actions = read(SRC / "gui/ultra/UltraGuiActions.java")
+    # reopenPage prestige arm (not dispatch / tab mapping) keeps buyers on tiers/effects.
+    ok("reopen stays on tiers/effects after buy",
+       'case "tier", "buy_tier", "unlock_tier" -> "tiers"' in actions
+       and ('"unmutant", "unbuy_mutant", "remove_mutant" -> "effects"' in actions
+            or '-> "effects"' in actions)
+       and "buy_majin" in actions)
 
     print("\n=== Summary ===")
     if errors:

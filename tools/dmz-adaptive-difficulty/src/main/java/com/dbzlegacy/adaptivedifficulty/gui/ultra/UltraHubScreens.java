@@ -3,13 +3,27 @@ package com.dbzlegacy.adaptivedifficulty.gui.ultra;
 import com.dbzlegacy.adaptivedifficulty.gui.MechanicsGuiApi;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.SkillCheckService;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import net.minecraft.server.level.ServerPlayer;
 
-/** Legacy Mechanics hub — system entry points and staff admin. */
+/**
+ * Legacy Mechanics hub - system entry points and staff admin.
+ *
+ * <p>Tiles are collected into a list then packed two-up so adding or gating systems
+ * automatically grows or shrinks the panel (no fixed empty body band / choose prompt).
+ * Hub tiles use {@link UltraStyle#STYLE_NORMAL} (dark) plus a per-system {@code accent}
+ * letter for KaiPath to tint. Confirm/yellow is reserved for selected actions inside
+ * system menus — never on the hub landing. Staff Admin uses accent {@code 4} (dark red),
+ * not {@link UltraStyle#STYLE_DANGER} (action danger is for destructive buttons).
+ */
 public final class UltraHubScreens {
     private UltraHubScreens() {}
+
+    /** One hub system tile. {@code alwaysOn} skips the placeholder availability check. */
+    private record HubTile(String system, String label, String onStyle, boolean alwaysOn) {}
 
     public static void open(ServerPlayer player, String page) {
         if (player == null) {
@@ -35,38 +49,30 @@ public final class UltraHubScreens {
         UltraScreenSpec spec = UltraScreenSpec.of("hub")
                 .title("Legacy Mechanics")
                 .page("main")
-                .activeTab("home")
-                .line(UltraStyle.LABEL + "Choose a system to open.")
-                .setRow(80);
-        systemButton(
-                spec, ph, "difficulty", UltraStyle.confirm("Difficulty"), UltraStyle.STYLE_CONFIRM, true);
-        systemButton(spec, ph, "rival", "Rival", UltraStyle.STYLE_NORMAL, false);
-        spec.rowGap();
-        systemButton(spec, ph, "spar", "Sparring", UltraStyle.STYLE_NORMAL, true);
-        systemButton(spec, ph, "prestige", "Prestige", UltraStyle.STYLE_NORMAL, false);
-        spec.rowGap();
+                .activeTab("home");
+
+        // Hub tiles: normal (dark) + per-system accent. Nothing is "selected" on the hub.
+        List<HubTile> tiles = new ArrayList<>();
+        tiles.add(new HubTile("difficulty", "Difficulty", UltraStyle.STYLE_NORMAL, true));
+        tiles.add(new HubTile("rival", "Rival", UltraStyle.STYLE_NORMAL, false));
+        tiles.add(new HubTile("spar", "Sparring", UltraStyle.STYLE_NORMAL, false));
+        tiles.add(new HubTile("prestige", "Prestige", UltraStyle.STYLE_NORMAL, false));
+
         boolean skillCheck = SkillCheckService.canUse(player);
         if (skillCheck) {
-            spec.buttonLeft(
-                    "open:skillcheck", UltraStyle.confirm("Skill Check"), UltraStyle.STYLE_CONFIRM);
+            tiles.add(new HubTile("skillcheck", "Skill Check", UltraStyle.STYLE_NORMAL, true));
         } else if (staff) {
-            spec.buttonLeft("open:skills", UltraStyle.confirm("Skills"), UltraStyle.STYLE_CONFIRM);
+            tiles.add(new HubTile("skills", "Skills", UltraStyle.STYLE_NORMAL, true));
         } else {
-            // Unavailable — dim style on the wire for KaiPath (no on/off status text).
-            spec.buttonLeft(
-                    "do:skillcheck_denied",
-                    UltraStyle.dim("Skill Check"),
-                    UltraStyle.STYLE_DIM);
+            // Dim locked tile - still occupies a slot so layout stays predictable.
+            tiles.add(new HubTile("skillcheck_denied", "Skill Check", UltraStyle.STYLE_DIM, true));
         }
-        spec.buttonRight(
-                "open:character",
-                UltraStyle.confirm("Character Services"),
-                UltraStyle.STYLE_CONFIRM);
-        spec.rowGap();
+        tiles.add(new HubTile("character", "Character Services", UltraStyle.STYLE_NORMAL, true));
         if (staff) {
-            spec.buttonLeft("open:admin", UltraStyle.danger("Staff Admin"), UltraStyle.STYLE_DANGER);
-            spec.rowGap();
+            tiles.add(new HubTile("admin", "Staff Admin", UltraStyle.STYLE_NORMAL, true));
         }
+
+        placeTiles(spec, ph, tiles);
         spec.send(player);
     }
 
@@ -84,7 +90,7 @@ public final class UltraHubScreens {
                 .activeTab("home")
                 .line(UltraStyle.LABEL + "Reload, config editor, progression tools")
                 .line(UltraStyle.DIM + "Full commands: /lm admin help")
-                .setRow(80);
+                .setRow(UltraStyle.CONTENT_ROW + UltraStyle.BODY_MIN_H);
         spec.button("do:reload", UltraStyle.confirm("Reload LM config"), UltraStyle.STYLE_CONFIRM)
                 .rowGap();
         spec.buttonLeft("open:progression", "Progression panel", UltraStyle.STYLE_NORMAL)
@@ -102,30 +108,63 @@ public final class UltraHubScreens {
     }
 
     /**
-     * Hub system tile. When the system is unavailable, force {@link UltraStyle#STYLE_DIM}
-     * so KaiPath can render a muted button (no on/off status text for players).
+     * Pack hub tiles two-up. Panel height follows {@link UltraScreenSpec} content packing
+     * (compact min height when there is no body copy), so more systems just add rows.
      */
-    private static void systemButton(
-            UltraScreenSpec spec,
-            Map<String, String> ph,
-            String system,
-            String label,
-            String onStyle,
-            boolean left) {
-        if (spec == null || system == null) {
+    private static void placeTiles(UltraScreenSpec spec, Map<String, String> ph, List<HubTile> tiles) {
+        if (spec == null || tiles == null || tiles.isEmpty()) {
             return;
         }
-        boolean on = "difficulty".equals(system)
-                || (ph != null && "true".equalsIgnoreCase(ph.get(system)));
-        String action = "open:" + ("spar".equals(system) ? "spar" : system);
-        String styled = on ? label : UltraStyle.dim(UltraStyle.plain(label));
-        String style = on
-                ? (onStyle == null || onStyle.isBlank() ? UltraStyle.STYLE_NORMAL : onStyle)
-                : UltraStyle.STYLE_DIM;
-        if (left) {
-            spec.buttonLeft(action, styled, style);
-        } else {
-            spec.buttonRight(action, styled, style);
+        int placed = 0;
+        for (HubTile tile : tiles) {
+            if (tile == null || tile.system == null || tile.system.isBlank()) {
+                continue;
+            }
+            boolean left = placed % 2 == 0;
+            placeTile(spec, ph, tile, left);
+            placed++;
+            if (!left) {
+                spec.rowGap();
+            }
         }
+        if (placed % 2 == 1) {
+            spec.rowGap();
+        }
+    }
+
+    private static void placeTile(
+            UltraScreenSpec spec, Map<String, String> ph, HubTile tile, boolean left) {
+        String system = tile.system();
+        boolean on = tile.alwaysOn()
+                || "difficulty".equals(system)
+                || (ph != null && "true".equalsIgnoreCase(ph.get(system)));
+        String action = actionFor(system);
+        String styled = on ? tile.label() : UltraStyle.dim(UltraStyle.plain(tile.label()));
+        String style = on
+                ? (tile.onStyle() == null || tile.onStyle().isBlank()
+                        ? UltraStyle.STYLE_NORMAL
+                        : tile.onStyle())
+                : UltraStyle.STYLE_DIM;
+        String accent = UltraStyle.hubTileAccentCode(system);
+        if (left) {
+            spec.buttonLeft(action, styled, style, accent);
+        } else {
+            spec.buttonRight(action, styled, style, accent);
+        }
+    }
+
+    private static String actionFor(String system) {
+        if (system == null || system.isBlank()) {
+            return "open:hub";
+        }
+        return switch (system) {
+            case "spar" -> "open:spar";
+            case "skillcheck" -> "open:skillcheck";
+            case "skills" -> "open:skills";
+            case "skillcheck_denied" -> "do:skillcheck_denied";
+            case "admin" -> "open:admin";
+            case "character" -> "open:character";
+            default -> "open:" + system;
+        };
     }
 }

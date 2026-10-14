@@ -49,14 +49,27 @@ KNOWN_DO: dict[str, set[str]] = {
         "android_remove",
         "android",
     },
-    "prestige": {"confirm", "turnin", "skill"},
+    "prestige": {
+        "confirm",
+        "turnin",
+        "skill",
+        "tier",
+        "majin",
+        "mutant",
+        "unmajin",
+        "unmutant",
+    },
     "progression": {"boost", "toggle_staff_free_coins"},
     "rival": {
         "tpmsg",
         "instinct",
         "accept_replace",
+        "cancel_mutual_replace",
         "admin",
         "challenge",
+        "challenge_accept",
+        "challenge_decline",
+        "challenge_cancel",
         "challenge_send",
         "spectate",
         "spectate_stop",
@@ -88,6 +101,7 @@ KNOWN_DO: dict[str, set[str]] = {
         "reload_module",
         "toggle",
         "set",
+        "add",
         "step",
         "cycle",
         "undo",
@@ -170,6 +184,15 @@ def main() -> int:
         errors.append("UltraStyle body pad/min height must be 10 / 140")
     if 'TITLE_ALIGN = "center"' not in style:
         errors.append('UltraStyle TITLE_ALIGN must be "center"')
+    if "fitAsciiLabel" not in style or "CHAR_W_EST" not in style:
+        errors.append("UltraStyle must pre-fit labels (fitAsciiLabel) so KaiPath fitLabel never runs")
+    if "fitAsciiLabel" not in (SPEC.read_text(encoding="utf-8")):
+        errors.append("UltraScreenSpec must fitAsciiLabel tab/button labels before wire")
+    char_tabs = (ULTRA / "UltraCharacterScreens.java").read_text(encoding="utf-8")
+    if "android|Android Removal" in char_tabs or "saga|Saga Reset" in char_tabs:
+        errors.append(
+            "UltraCharacterScreens tabs must stay short (Home/Saga/Android) — long labels mojibake on KaiPath"
+        )
     for const in ("STYLE_NORMAL", "STYLE_CONFIRM", "STYLE_DANGER", "STYLE_DIM"):
         if f"{const} =" not in style:
             errors.append(f"UltraStyle must define {const} for button wire styles")
@@ -207,10 +230,23 @@ def main() -> int:
     config_screens = (ULTRA / "UltraConfigScreens.java").read_text(encoding="utf-8")
     number_block = config_screens.split("case NUMBER")[1].split("case ENUM")[0] if "case NUMBER" in config_screens else ""
     enum_block = config_screens.split("case ENUM")[1].split("case LIST")[0] if "case ENUM" in config_screens else ""
+    list_block = (
+        config_screens.split("case LIST, MAP, GROUP")[1].split("case TEXT")[0]
+        if "case LIST, MAP, GROUP" in config_screens
+        else ""
+    )
     if "textFieldRow" not in number_block:
-        errors.append("UltraConfigScreens NUMBER detail must offer textFieldRow (typed value), not only ± steps")
+        errors.append("UltraConfigScreens NUMBER detail must offer textFieldRow (typed value), not only +/- steps")
     if "textFieldRow" not in enum_block:
         errors.append("UltraConfigScreens ENUM detail must offer textFieldRow + Apply")
+    if "textFieldRow" not in list_block or "do:add:" not in list_block or "buttonBound" not in list_block:
+        errors.append(
+            "UltraConfigScreens LIST/MAP/GROUP detail must offer textFieldRow + buttonBound Apply (do:add)"
+        )
+    if 'dim("Back")' in list_block:
+        errors.append("UltraConfigScreens LIST/MAP/GROUP must not stack a Back button (use Entries + one Back)")
+    if "typedValueFromArgs" not in config_screens:
+        errors.append("UltraConfigScreens set/add must log and resolve typed args via typedValueFromArgs")
     bridge_gaps = ROOT.parent.parent / "docs" / "KAIPATH_BRIDGE_GAPS.md"
     if not bridge_gaps.is_file():
         # ROOT = .../tools/dmz-adaptive-difficulty
@@ -227,8 +263,10 @@ def main() -> int:
         errors.append("GuiOpenPacket must carry panelWidth/panelHeight/layoutJson")
     if 'titleAlign\\":\\"center' not in packet and 'titleAlign":"center' not in packet:
         errors.append('GuiOpenPacket.defaultLayoutJson must include "titleAlign":"center"')
-    if "2048" not in packet:
-        errors.append("GuiOpenPacket layoutJson trim limit must be 2048 (playerModel fits)")
+    if "sanitizeLayoutJson" not in packet:
+        errors.append("GuiOpenPacket must sanitize layoutJson (force titleAlign, never mid-JSON trim)")
+    if "LAYOUT_JSON_MAX = 4096" not in packet and "LAYOUT_JSON_MAX=4096" not in packet:
+        errors.append("GuiOpenPacket LAYOUT_JSON_MAX must be 4096")
     if "inputsJson" not in packet:
         errors.append("GuiOpenPacket must carry inputsJson (field 11)")
     mech = (
@@ -241,6 +279,10 @@ def main() -> int:
     net = (ROOT / "src/main/java/com/dbzlegacy/adaptivedifficulty/net/gui/LmGuiNetwork.java").read_text(
         encoding="utf-8"
     )
+    if 'o.addProperty("titleAlign", UltraStyle.TITLE_ALIGN)' not in net:
+        errors.append("LmGuiNetwork.withLogicalSystem must force layoutJson.titleAlign=center")
+    if 'titleAlign\\":\\"center' not in net and '"titleAlign":"center"' not in net:
+        errors.append("LmGuiNetwork.withLogicalSystem catch fallback must include titleAlign=center")
     if "validatePanelBounds" not in net:
         errors.append("LmGuiNetwork must validate outgoing panelWidth/panelHeight")
     if "panelWidth <= 0" not in net and "w <= 0" not in net:
@@ -278,6 +320,8 @@ def main() -> int:
             "FEATURE_TITLE_ALIGN",
             "FEATURE_PLAYER_MODEL",
             "FEATURE_TEXT_INPUT",
+            "FEATURE_HEADER_BOTTOM",
+            "FEATURE_ACCENT",
         ):
             if needle not in feat_text:
                 errors.append(f"UltraClientFeatures must define {needle}")
@@ -287,6 +331,26 @@ def main() -> int:
             )
         if "textInput" not in feat_text:
             errors.append("UltraClientFeatures must cover textInput (inputsJson)")
+        if "FEATURE_HEADER_BOTTOM" not in feat_text or "FEATURE_ACCENT" not in feat_text:
+            errors.append("UltraClientFeatures must define headerBottom + accent pending features")
+        if "PENDING_NEXT" not in feat_text or "FEATURE_HEADER_BOTTOM" not in feat_text:
+            errors.append("UltraClientFeatures.PENDING_NEXT must track headerBottom + accent")
+        # PENDING_NEXT must be non-empty while KaiPath 1.3.9 lacks these.
+        if "PENDING_NEXT =\n            Set.of()" in feat_text or "PENDING_NEXT = Set.of()" in feat_text:
+            errors.append(
+                "UltraClientFeatures.PENDING_NEXT must list headerBottom + accent "
+                "(not empty while LM emits them)"
+            )
+        if "FEATURE_HEADER_BOTTOM" not in feat_text.split("PENDING_NEXT", 1)[-1].split(
+            "private static final Map", 1
+        )[0]:
+            errors.append("PENDING_NEXT must include FEATURE_HEADER_BOTTOM")
+        if "FEATURE_ACCENT" not in feat_text.split("PENDING_NEXT", 1)[-1].split(
+            "private static final Map", 1
+        )[0]:
+            errors.append("PENDING_NEXT must include FEATURE_ACCENT")
+        if "headerBottom" not in feat_text or 'FEATURE_ACCENT_DOC = "accent"' not in feat_text:
+            errors.append("UltraClientFeatures must expose headerBottom/accent doc spellings")
     if "roundTripStyleAndActiveTab" not in net:
         errors.append("LmGuiNetwork must round-trip style + activeTab in self-test")
     if "GuiFeaturesPacket" not in net:
@@ -427,6 +491,83 @@ def main() -> int:
             errors.append(
                 'UltraHubScreens openMain (of("hub")) must not add nav:hub / .footerBackToMain()'
             )
+    # Full Ultra menu UI shape audit (stacked Back / Cancel+footer / non-ASCII / unbound fields).
+    ui_audit = ROOT / "sim" / "audit_ultra_ui_menus.py"
+    if ui_audit.is_file():
+        import subprocess
+
+        r = subprocess.run(
+            [sys.executable, str(ui_audit)],
+            cwd=str(ROOT),
+            capture_output=True,
+            text=True,
+        )
+        if r.returncode != 0:
+            errors.append("audit_ultra_ui_menus.py failed (broken Ultra menu UI patterns)")
+            if r.stdout:
+                for line in r.stdout.strip().splitlines()[-12:]:
+                    errors.append("  " + line)
+    else:
+        errors.append("missing sim/audit_ultra_ui_menus.py")
+
+    # Wire text must sanitize fancy punctuation (Â· / â€ mojibake) and Back must not use "<".
+    style_src = (ULTRA / "UltraStyle.java").read_text(encoding="utf-8")
+    if "wireText(" not in style_src:
+        errors.append("UltraStyle.wireText must sanitize Ultra wire copy to ASCII (+ section-sign)")
+    if 'BACK = LABEL + "< Back"' in style_src or 'BACK = LABEL + "<Back"' in style_src:
+        errors.append('UltraStyle.BACK must not use a leading "<" (renders as garbage on some clients)')
+    if 'BACK = LABEL + "Back"' not in style_src:
+        errors.append('UltraStyle.BACK should be LABEL + "Back"')
+    spec_src = (ULTRA / "UltraScreenSpec.java").read_text(encoding="utf-8")
+    if "UltraStyle.wireText" not in spec_src:
+        errors.append("UltraScreenSpec must run UltraStyle.wireText on lines/titles before send")
+
+    # Weight shop must accept up to MAX_WEIGHT_VALUE digits (not a stale 4-digit / 9999 cap).
+    weight_shop = (ULTRA / "UltraWeightShopScreens.java").read_text(encoding="utf-8")
+    if "MAX_WEIGHT_VALUE = 100_000" not in weight_shop and "MAX_WEIGHT_VALUE = 100000" not in weight_shop:
+        errors.append("UltraWeightShopScreens.MAX_WEIGHT_VALUE must be 100000")
+    if "s.length() > 4" in weight_shop or "length() > 4" in weight_shop:
+        errors.append("UltraWeightShopScreens.parseWeightValue must not hard-cap at 4 digits (9999)")
+    if "MAX_WEIGHT_DIGITS" not in weight_shop:
+        errors.append("UltraWeightShopScreens must define MAX_WEIGHT_DIGITS from MAX_WEIGHT_VALUE")
+    # Dual-back OK when contextual names a destination; forbid generic "Back" + footer.
+    for path in sorted(ULTRA.glob("Ultra*Screens.java")):
+        src = path.read_text(encoding="utf-8")
+        for m in re.finditer(
+            r"(?:private|public|static)\s+[^{;]+?\b(open\w*)\s*\([^)]*\)\s*\{",
+            src,
+        ):
+            name = m.group(1)
+            i = src.find("{", m.end() - 1)
+            depth = 0
+            end = i
+            for j in range(i, len(src)):
+                if src[j] == "{":
+                    depth += 1
+                elif src[j] == "}":
+                    depth -= 1
+                    if depth == 0:
+                        end = j + 1
+                        break
+            body = src[m.start() : end]
+            if "footerBackHome()" not in body and "footerBackToMain()" not in body:
+                continue
+            # Generic exact "Back" next to footer = same-feeling duplicate.
+            if re.search(r'(?:dim|confirm|danger)\(\s*"Back"\s*\)', body):
+                errors.append(
+                    f'{path.name}.{name}: dim/confirm("Back") with footer - name the destination '
+                    "or drop the contextual Back"
+                )
+            if "UltraStyle.BACK" in body and "UltraStyle.backTo(" not in body:
+                # BACK const + footer without a named backTo nearby is a duplicate hub exit.
+                errors.append(
+                    f"{path.name}.{name}: UltraStyle.BACK + footerBack* - use UltraStyle.backTo("
+                    '"Destination") for contextual exits'
+                )
+            # True duplicate: page:main Back next to footerBackHome (same destination often).
+            if 'dim("Back")' in body or "dim(\"Back\")" in body:
+                errors.append(f"{path.name}.{name}: dim(\"Back\") with footer - keep one Back")
+
     # Footers must not ship a Refresh button.
     spec_text = SPEC.read_text(encoding="utf-8")
     for method in ("footerBackToMain", "footerBackHome"):
@@ -441,20 +582,254 @@ def main() -> int:
         elif "nav:refresh" in m.group(1) or "Refresh" in m.group(1):
             errors.append(f"UltraScreenSpec.{method} must not include Refresh / nav:refresh")
 
-    # Startup self-test must allow empty tabsJson for intentional tab-less screens.
+    # Tabs are hub-style buttons under the title line; tabsJson stays empty for every screen.
     self_test_path = ULTRA / "UltraScreenSelfTest.java"
     self_test = self_test_path.read_text(encoding="utf-8")
     if "TABLESS_SCREEN_IDS" not in self_test or "isTablessScreen" not in self_test:
         errors.append(
             "UltraScreenSelfTest must define TABLESS_SCREEN_IDS / isTablessScreen "
-            "(skillcheck + skills are single-screen, empty tabsJson is valid)"
+            "(skillcheck + skills must not call .tabs())"
         )
     else:
         for sid in ("skillcheck", "skills"):
             if f'"{sid}"' not in self_test.split("TABLESS_SCREEN_IDS", 1)[1].split(";", 1)[0]:
                 errors.append(f"UltraScreenSelfTest.TABLESS_SCREEN_IDS missing {sid}")
-    if "allowEmptyTabs" not in self_test:
-        errors.append("UltraScreenSelfTest.validatePacket must allow empty tabs for tab-less screens")
+    if "tabsJson must be empty" not in self_test and "tabs are buttons under the title" not in self_test:
+        errors.append(
+            "UltraScreenSelfTest.validatePacket must require empty tabsJson "
+            "(tabs render as buttons under the title line)"
+        )
+    if "appendTabButtons" not in spec_text_full or "tabsUnderTitle" not in spec_text_full:
+        errors.append(
+            "UltraScreenSpec must emit tabsUnderTitle + appendTabButtons "
+            "(hub-like tabs under the header line)"
+        )
+    prestige = (ULTRA / "UltraPrestigeScreens.java").read_text(encoding="utf-8")
+    if "openShopHub" not in prestige or "openTiers" not in prestige or "openEffects" not in prestige:
+        errors.append("UltraPrestigeScreens must expose shop hub + Skills/Tiers/Effects submenus")
+    if "page:skills" not in prestige or "page:tiers" not in prestige or "page:effects" not in prestige:
+        errors.append("UltraPrestigeScreens shop hub must link page:skills / page:tiers / page:effects")
+    if "skills_p" not in prestige or "skillsPageId" not in prestige:
+        errors.append("UltraPrestigeScreens skill shop must paginate via skills_pN page ids")
+    if 'buttonLeft("open:prestige"' in prestige or 'buttonRight("tab:shop"' in prestige:
+        errors.append(
+            "UltraPrestigeScreens must not use open:prestige / tab:shop for skill-shop Prev/Next "
+            "(those reopen Home / page 0)"
+        )
+    if re.search(r'"page:skills:\d+"', prestige):
+        errors.append(
+            "UltraPrestigeScreens must not emit page:skills:N buttons "
+            "(use page:skills_pN - nested colons are fragile)"
+        )
+    if "do:tier:" not in prestige or "do:majin" not in prestige or "do:mutant" not in prestige:
+        errors.append("UltraPrestigeScreens must wire do:tier / do:majin / do:mutant favor buys")
+    if 'labelValue("Lifetime prestiges"' not in prestige and "Lifetime prestiges" not in prestige:
+        errors.append('UltraPrestigeScreens must label wallet "Lifetime prestiges" (not Completed)')
+    if "Completed prestiges" in prestige:
+        errors.append('UltraPrestigeScreens must not use "Completed prestiges"')
+    difficulty_titles = (ULTRA / "UltraDifficultyScreens.java").read_text(encoding="utf-8")
+    if "titles_p" not in difficulty_titles or "TITLES_PER_PAGE" not in difficulty_titles:
+        errors.append("UltraDifficultyScreens must paginate titles via titles_pN (no hard 10-cap drop)")
+    if re.search(r"placed\s*>=\s*10", difficulty_titles):
+        errors.append("UltraDifficultyScreens must not hard-drop titles after placed >= 10")
+    # openShop historically stacked "page:main" Back + footer (same destination).
+    shop_m = re.search(
+        r"static void openShop\b.*?^\s*static void ",
+        weight_shop,
+        re.S | re.M,
+    )
+    shop_body = shop_m.group(0) if shop_m else ""
+    if '"page:main"' in shop_body and "footerBackHome()" in shop_body:
+        errors.append(
+            "UltraWeightShopScreens.openShop must not stack page:main Back with footerBackHome"
+        )
+    rival = (ULTRA / "UltraRivalScreens.java").read_text(encoding="utf-8")
+    if 'confirm("Reload")' in rival and 'confirm("Reload data")' not in rival:
+        errors.append('UltraRivalScreens staff admin must label refresh "Reload data"')
+    # Challenge Accept/Decline only via placePerChallengeButtons on Challenge tab.
+    home_m = re.search(
+        r"private static void openHome\b.*?^\s*private static void ",
+        rival,
+        re.S | re.M,
+    )
+    actions_m = re.search(
+        r"private static void openActions\b.*?^\s*private static void ",
+        rival,
+        re.S | re.M,
+    )
+    home_body = home_m.group(0) if home_m else ""
+    actions_body = actions_m.group(0) if actions_m else ""
+    if "challenge_accept" in home_body or "challenge_decline" in home_body:
+        errors.append("UltraRivalScreens.openHome must not duplicate challenge Accept/Decline")
+    if "challenge_accept" in actions_body or "challenge_decline" in actions_body:
+        errors.append("UltraRivalScreens.openActions must not duplicate challenge Accept/Decline")
+    if "placePerChallengeButtons" not in rival or "challenge_accept" not in rival:
+        errors.append("UltraRivalScreens must keep per-challenge Accept on Challenge via placePerChallengeButtons")
+    detail_m = re.search(
+        r"private static void openListDetail\b.*?^\s*private static void ",
+        rival,
+        re.S | re.M,
+    )
+    detail = detail_m.group(0) if detail_m else ""
+    if "displayPickerArg" not in detail:
+        errors.append("UltraRivalScreens.openListDetail must resolve Target via RivalGuiApi.displayPickerArg")
+    list_m = re.search(
+        r"private static void openList\b.*?^\s*private static void ",
+        rival,
+        re.S | re.M,
+    )
+    list_block = list_m.group(0) if list_m else ""
+    if "displayPickerArg" not in list_block:
+        errors.append("UltraRivalScreens.openList must resolve button labels via RivalGuiApi.displayPickerArg")
+    if "lastIndexOf(':')" in list_block or "substring(arg.lastIndexOf" in list_block:
+        errors.append("UltraRivalScreens.openList must not substring uuid: args for button labels")
+    replace_m = re.search(
+        r"private static void openReplacePick\b.*?^\s*private static void ",
+        rival,
+        re.S | re.M,
+    )
+    replace_block = replace_m.group(0) if replace_m else ""
+    if "labeledArgs" not in replace_block and (
+        "displayPickerArg" not in replace_block or '+ "|"' not in replace_block
+    ):
+        errors.append(
+            "UltraRivalScreens.openReplacePick must resolve Mutual names via labeledArgs/displayPickerArg"
+        )
+    if "replace_confirm:" not in replace_block and "replace_confirm:" not in rival:
+        errors.append("UltraRivalScreens mutual drop must go through replace_confirm before accept_replace")
+    if 'placeNameButtons(spec, "accept_replace", RivalGuiApi.currentRivalArgs' in rival:
+        errors.append(
+            "UltraRivalScreens.openReplacePick must not pass raw currentRivalArgs to placeNameButtons"
+        )
+    if 'placeNameButtons(spec, "accept", incoming' in rival or 'placeNameButtons(spec, "decline", incoming' in rival:
+        errors.append(
+            "UltraRivalScreens.openRequests must label incoming declares via displayPickerArg "
+            "(not raw placeNameButtons)"
+        )
+    if "onlinePlayerNames" in rival and "onlinePlayerArgs" not in rival:
+        errors.append("UltraRivalScreens player pickers must use onlinePlayerArgs (UUID), not names only")
+    if "PICK_PER_PAGE" not in rival and "pick_declare:" not in rival:
+        errors.append("UltraRivalScreens player pickers must paginate (pick_*:N)")
+    if 'do:challenge:accept"' in rival or "do:challenge:accept\"" in rival:
+        # Generic challenge accept without a counterparty is ambiguous when multiple pending.
+        if "challenge_accept:" not in rival:
+            errors.append("UltraRivalScreens must use per-challenge do:challenge_accept:uuid (not generic)")
+    if "do:challenge:accept" in rival and "challenge_accept:" not in rival:
+        errors.append("UltraRivalScreens must wire per-challenge Accept via challenge_accept")
+    if "hasIncomingDeclareFrom" not in rival:
+        errors.append("UltraRivalScreens declare picker must Offer Accept when they already declared you")
+    if "Accept their declare" not in rival or "accept_confirm:" not in rival:
+        errors.append(
+            "UltraRivalScreens must confirm Accept their declare (not silent Declare→Accept)"
+        )
+    if "Silent (private)" not in rival and "Tiers: Silent" not in rival:
+        errors.append("UltraRivalScreens Home must explain Silent/Declared/Mutual/Nemesis tiers")
+    if "cancel_mutual_replace" not in rival or "replace_confirm:" not in rival:
+        errors.append("UltraRivalScreens mutual swap needs Decline instead + replace_confirm step")
+    if "demote" not in rival.lower() or "Mutual to Declared" not in rival:
+        errors.append("UltraRivalScreens replace confirm must warn Mutual→Declared demotion")
+    if "needsMutualReplacePick" not in (ULTRA / "UltraGuiActions.java").read_text(encoding="utf-8"):
+        errors.append("UltraGuiActions must reopen pick_replace_mutual after Accept hits the slot cap")
+    config = (ULTRA / "UltraConfigScreens.java").read_text(encoding="utf-8")
+    review_m = re.search(
+        r"private static void openReview\b.*?^\s*(?:public|private) static ",
+        config,
+        re.S | re.M,
+    )
+    review = review_m.group(0) if review_m else ""
+    if 'buttonLeft("do:save_all"' in review and 'buttonRight("do:discard_all"' in review:
+        errors.append("UltraConfigScreens.openReview must stack Confirm save / Discard all (not side-by-side)")
+    typed_m = re.search(
+        r"private static String typedValueFromArgs\b.*?^\s*(?:public|private) static ",
+        config,
+        re.S | re.M,
+    )
+    typed_block = typed_m.group(0) if typed_m else ""
+    if "LOGGER.info(" in typed_block:
+        errors.append("UltraConfigScreens.typedValueFromArgs must log at DEBUG (not INFO)")
+    if "Typed fields need KaiPath textInput" in config:
+        errors.append("UltraConfigScreens player copy must not mention protocol field textInput")
+    weight = (ULTRA / "UltraWeightShopScreens.java").read_text(encoding="utf-8")
+    if "GuiOpen field 11" in weight or "field 11 / textInput" in weight:
+        errors.append("UltraWeightShopScreens player copy must not mention GuiOpen field 11 / textInput")
+    spar = (ULTRA / "UltraSparScreens.java").read_text(encoding="utf-8")
+    mentor_m = re.search(
+        r"private static void openPendingDecide\b.*?^\s*private static void ",
+        spar,
+        re.S | re.M,
+    )
+    mentor = mentor_m.group(0) if mentor_m else ""
+    if 'buttonLeft("do:mentor_accept:' in mentor and 'buttonRight("do:mentor_decline:' in mentor:
+        errors.append("UltraSparScreens mentor Accept/Decline must stack vertically (misclick risk)")
+    dojo_m = re.search(
+        r"private static void openDojoWarDecide\b.*?^\s*private static void ",
+        spar,
+        re.S | re.M,
+    )
+    dojo = dojo_m.group(0) if dojo_m else ""
+    if 'buttonLeft("do:dojo_accept:' in dojo and 'buttonRight("do:dojo_war_cancel:' in dojo:
+        errors.append("UltraSparScreens dojo war Accept/Cancel must stack vertically (misclick risk)")
+    if "print status" in spar:
+        errors.append('UltraSparScreens admin must say "show status" not "print status"')
+    hub = (ULTRA / "UltraHubScreens.java").read_text(encoding="utf-8")
+    admin_tile = re.search(r'new HubTile\(\s*"admin"[\s\S]*?true\)', hub)
+    if not admin_tile or "STYLE_NORMAL" not in admin_tile.group(0):
+        errors.append("UltraHubScreens Staff Admin tile must use STYLE_NORMAL + accent (not danger)")
+    if "hubTileAccentCode" not in hub:
+        errors.append("UltraHubScreens must send hubTileAccentCode on tiles")
+    # Hub: yellow/confirm means selected — nothing is selected on the hub.
+    open_main = hub.split("private static void openMain", 1)[-1].split(
+        "private static void openAdmin", 1
+    )[0]
+    for system in ("difficulty", "skillcheck", "skills", "character", "rival", "spar", "prestige", "admin"):
+        tile = re.search(rf'new HubTile\(\s*"{system}"[\s\S]*?true\)', open_main)
+        if not tile:
+            tile = re.search(rf'new HubTile\(\s*"{system}"[\s\S]*?false\)', open_main)
+        if tile and "STYLE_CONFIRM" in tile.group(0):
+            errors.append(
+                f'UltraHubScreens "{system}" tile must not use STYLE_CONFIRM on the hub'
+            )
+        if tile and "STYLE_DANGER" in tile.group(0):
+            errors.append(
+                f'UltraHubScreens "{system}" tile must not use STYLE_DANGER (use accent)'
+            )
+    # headerBottom + accent protocol fields; tab styles use accent not shared yellow.
+    spec_src = (ULTRA / "UltraScreenSpec.java").read_text(encoding="utf-8")
+    if '"headerBottom"' not in spec_src and "headerBottom" not in spec_src:
+        errors.append("UltraScreenSpec must emit layoutJson.headerBottom")
+    if "HEADER_BOTTOM" not in style or "HEADER_BOTTOM_TABS" not in style:
+        errors.append("UltraStyle must define HEADER_BOTTOM / HEADER_BOTTOM_TABS")
+    if "PANEL_COMPACT_MIN_H" not in style:
+        errors.append("UltraStyle must define PANEL_COMPACT_MIN_H for hub packing")
+    if "systemAccentCode" not in style or "ACCENT_DIFFICULTY" not in style:
+        errors.append("UltraStyle must define per-system accent constants + systemAccentCode")
+    if "tabStyle(" not in spec_src or "staffOnly()" not in spec_src:
+        errors.append("UltraScreenSpec must style tabs via tabStyle/staffOnly")
+    if 'addProperty("accent"' not in spec_src and 'o.addProperty("accent"' not in spec_src:
+        errors.append("UltraScreenSpec must emit layoutJson.accent and/or button accent")
+    if DOC.is_file():
+        proto = DOC.read_text(encoding="utf-8")
+        if "headerBottom" not in proto or "tabsUnderTitle" not in proto:
+            errors.append("KAIPATH_GUI_PROTOCOL.md §4 must document headerBottom + tabsUnderTitle")
+        if "`accent`" not in proto and "button `accent`" not in proto:
+            errors.append("KAIPATH_GUI_PROTOCOL.md §4 must document accent")
+    # Rival Challenge/Actions Accept+Decline must stack (same misclick risk as spar mentor/dojo).
+    if re.search(
+        r'buttonLeft\("do:challenge:accept"[^\n]*\n[^\n]*buttonRight\("do:challenge:decline"',
+        rival,
+    ):
+        errors.append(
+            "UltraRivalScreens Accept/Decline challenge must stack vertically (not side-by-side)"
+        )
+    difficulty = (ULTRA / "UltraDifficultyScreens.java").read_text(encoding="utf-8")
+    for label, text in (
+        ("UltraDifficultyScreens", difficulty),
+        ("UltraWeightShopScreens", weight),
+    ):
+        if "free for staff" in text or "free (staff)" in text:
+            errors.append(f'{label} must capitalize staff free cost as "Free ..."')
+    if "TAB_ROW_Y" not in style:
+        errors.append("UltraStyle must define TAB_ROW_Y for tabs under the title line")
     skill_ui = (ULTRA / "UltraSkillCheckScreens.java").read_text(encoding="utf-8")
     if ".tabs(" in skill_ui:
         errors.append("UltraSkillCheckScreens must not call .tabs() (no tab bar)")

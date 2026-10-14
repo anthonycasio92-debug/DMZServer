@@ -1,78 +1,109 @@
 # Ultra bridge gap matrix (LM ↔ KaiPath)
 
-**LM 4.6.122** + **KaiPath 1.3.7** (CurseForge / live). Official KaiPath updates are owned by the KaiPath mod developer — LM does not ship or deploy KaiPath feature jars.
+**LM 4.6.151** + **KaiPath 1.3.9** (live / recommended). Official KaiPath updates are owned by the KaiPath mod developer.
 
-## Still missing on KaiPath 1.3.7 (for JLDK)
+## Open bridge gaps (only these)
 
-Stock CurseForge **1.3.7** still lacks field 11 / `textInput`. Merge [`tools/ultra-gui-kit/kaipath-client/`](../tools/ultra-gui-kit/kaipath-client/) into the next official KaiPath release:
+| Gap | Owner | LM status | KaiPath 1.3.9 | Notes |
+|-----|-------|-----------|----------------|-------|
+| **`layoutJson.headerBottom`** | Cursor + JLDK | **Emits** (4.6.149+) | **Missing** | Keep title + yellow divider **strictly above** this panel-relative Y. With `tabsUnderTitle=true`, tab row sits at this Y (default **28**). Spec: [`KAIPATH_GUI_PROTOCOL.md`](KAIPATH_GUI_PROTOCOL.md) §4. |
+| **`layoutJson.accent` + button/tab `accent`** | Cursor + JLDK | **Emits** (4.6.149+) | **Missing** | Single-letter color codes. Paint title + `activeTab` highlight from `layoutJson.accent`; hub tiles / staff controls from per-button `accent`. Titles/labels stay plain ASCII. |
+| **Title vertical centering** | **JLDK-only** | N/A (no field) | **Missing** | Center title text in the header band between the gear icons. No protocol change. |
 
-| Part | Stock 1.3.7 | Reference kit |
-|------|-------------|-----------------|
-| GuiOpen **field 11** `inputsJson` | Missing | **Done** |
-| EditBox / `type=text` + `bindInput` → `args.value` | Missing | **Done** |
-| `textInput` in GuiFeaturesPacket advertise | Missing | **Done** (`[…,"textInput"]`) |
-| Explicit UTF-8 GuiOpen helpers | MC `readUtf` | **Done** (kit helpers) |
+`/lm admin guitest` on KaiPath **1.3.9** should report:
 
-LM 4.6.122+ already ships field 11 and logs `pendingNext=[textInput]` on stock 1.3.7 (info, not a broken-client warn). After the official KaiPath merge, guitest should show `pendingNext=none`.
+```text
+missingShipped=none pendingNext=[headerBottom, accent]
+```
 
-Deferred (neither side): `inputsJson` `slider` / `toggle`.
+(`UltraClientFeatures.PENDING_NEXT` tracks the two advertise-able gaps. Title centering is docs-only.)
 
-## Cursor / LM (server protocol) — status
+## Closed on both sides (not gaps)
 
-| Gap | Status | Notes |
-|-----|--------|-------|
-| Button `style` on every button | **Done** | Wire always emits `style`. Roles: `confirm` / `danger` / `dim` / `normal`. |
-| Text input (`inputsJson` field 11) | **Done** | `type=text` + `args.bindInput` → `args.value`. Config + Difficulty Weights shop. |
-| `playerModel.parts` (cosmetics) | **Done** (4.6.111) | Schema 1: `headBones` / `form` / `extras`. See [`KAIPATH_GUI_PROTOCOL.md`](KAIPATH_GUI_PROTOCOL.md). |
-| Slider / toggle as input types | **Deferred** | BOOLEAN stays styled buttons; NUMBER uses text + ±. Reserved below. |
+| Part | Status |
+|------|--------|
+| GuiOpen fields 1–11 (`inputsJson`) | **Done** |
+| Button `style` (`confirm` / `danger` / `dim` / `normal`) | **Done** (1.3.7+) |
+| `activeTab` highlight | **Done** (shared yellow until `accent` ships) |
+| `layoutJson.titleAlign` | **Done** |
+| `layoutJson.playerModel` (+ `parts` schema 1) | **Done** |
+| `textInput` / EditBox / `bindInput` → `args.value` | **Done** (1.3.9) |
+| GuiFeaturesPacket advertise (5 features) | **Done** on 1.3.9 |
 
-## JLDK / KaiPath (client) — 1.3.7 vs reference kit
+## Not bridge gaps (LM-only, already shipped)
 
-Sources: [`tools/ultra-gui-kit/kaipath-client/`](../tools/ultra-gui-kit/kaipath-client/).
-Vendored jar: `mods/kaipath-1.3.7.jar`.
+| Item | Notes |
+|------|-------|
+| Hub tile styles | All `normal` + per-system `accent` letter; Staff Admin accent `4` (not `STYLE_DANGER`) |
+| Hub compact floor | `PANEL_COMPACT_MIN_H=150` for tile-only menus |
+| Active-tab style | LM sends `style=normal` + `accent` (not shared `confirm` yellow) |
+| Main hub title gold | Hub omits `layoutJson.accent` (shared chrome) |
 
-| Gap | KaiPath **1.3.7** (released) | Reference kit | Notes |
-|-----|------------------------------|---------------|-------|
-| Button `style` colors | **Done** | Done | `UltraUiAccess.ButtonStyle` CONFIRM/DANGER/DIM/SELECTED |
-| `activeTab` highlight | **Done** | Done | |
-| `titleAlign` | **Done** | Done | |
-| `playerModel` draw | **Done** | Done | `LmDynamicScreen$Preview` + InventoryScreen |
-| UTF-8 GuiOpen strings | MC `readUtf` | Explicit UTF-8 helpers | Wire-compatible; still saw `â€` mojibake — LM uses ASCII dashes |
-| Text field widgets (field 11) | **Missing** | **Done** | No `inputsJson` / EditBox / `bindInput` — **Weight shop blocker** |
-| GuiFeaturesPacket advertise | **Partial** | Full | 1.3.7: `["style","activeTab","titleAlign","playerModel"]` — no `textInput` |
-| Slider / toggle widgets | N/A | N/A | Reserved until LM ships types |
+## Cursor / LM (server) checklist
 
-**Only hard blocker for Weights / Config typed entry:** merge reference `inputsJson` + `textInput` advertise into a KaiPath build past 1.3.7. LM 4.6.122+ treats style/activeTab/titleAlign/playerModel as shipped on 1.3.7 and logs `textInput` as `pendingNext` (not a broken-client warning). Everything below is “works but watch out.”
+| Item | Status |
+|------|--------|
+| Emit `style` on every button | **Done** |
+| Emit `inputsJson` field 11 | **Done** |
+| Emit `playerModel.parts` schema 1 | **Done** |
+| Emit `layoutJson.headerBottom` | **Done** (4.6.149) |
+| Emit `layoutJson.accent` / button `accent` | **Done** (4.6.149) |
+| Track pending in `UltraClientFeatures.PENDING_NEXT` | **Done** (4.6.151) — `headerBottom`, `accent` |
+| `inputsJson` `slider` / `toggle` | **Deferred** |
 
-## Practical pitfalls (beyond text input)
+## JLDK / KaiPath (client) checklist
 
-### 1. Text input on stock 1.3.7 fails silently on the client
+Vendored / live jar: `mods/kaipath-1.3.9.jar`. Reference kit: [`tools/ultra-gui-kit/kaipath-client/`](../tools/ultra-gui-kit/kaipath-client/).
 
-When LM sends field 11, stock KaiPath **1.3.7** ignores it — no crash, no EditBox. **Mitigation:** LM 4.6.122+ shows a danger line when `textInput` is missing; **fix:** next official KaiPath merges the kit (JLDK).
+| Item | 1.3.9 | Next KaiPath |
+|------|-------|---------------|
+| Button `style` | **Done** | — |
+| `activeTab` | **Done** (yellow) | Tint from `accent` |
+| `titleAlign` | **Done** | — |
+| `playerModel` | **Done** | — |
+| `textInput` | **Done** | — |
+| Advertise 5 features | **Done** | Add `headerBottom`, `accent` |
+| Honor `headerBottom` | **Needed** | Title+divider above Y |
+| Honor `accent` | **Needed** | Title / activeTab / hub tint |
+| Title vertical center | **Needed** | No new field |
+| `slider` / `toggle` widgets | N/A | When LM ships types |
 
-### 2. UTF-8 is “wire-compatible” but still caused mojibake
+### Advertise when headerBottom + accent ship
 
-Docs call MC `readUtf` and LM’s explicit UTF-8 helpers compatible, but live screenshots showed `â€` garbage on en-dashes / fancy punctuation. Workaround since **4.6.116:** ASCII dashes / plain punctuation in Ultra copy. Any new special characters can break again until JLDK fixes decode properly on the client.
+```java
+UltraGuiConsumerRegistry.advertiseFeatures(
+    "legacymechanics:gui",
+    "[\"style\",\"activeTab\",\"titleAlign\",\"playerModel\",\"textInput\",\"headerBottom\",\"accent\"]");
+```
 
-### 3. Player model custom parts may not fully render
+## Practical pitfalls
 
-1.3.7 draws `playerModel`, but schema v1 `playerModel.parts` (`headBones` / `form` / `extras`) is LM-side. Unclear whether 1.3.7 renders every custom head/form part or mostly the base entity preview. Demon horns appeared in at least one screenshot — verify all part types before relying on cosmetics.
+### 1. Older clients without textInput
 
-### 4. Limited graceful degradation for missing features
+Pre-1.3.9 KaiPath ignores field 11. LM Weights / Config pages show an explicit danger line when `textInput` is missing.
 
-Older KaiPath (or no KaiPath) still hits install / broken-menu paths more than per-widget hide. `GuiFeaturesPacket` negotiation exists; LM uses it for staff `guitest` + login gap logs and for Weights/Config textInput copy, but does **not** yet hide every optional chrome (styles, tabs, preview) feature-by-feature when the client omits it. Expect degraded look, not a tailored subset UI.
+### 2. UTF-8 mojibake / tab ellipsis
+
+LM Ultra copy prefers ASCII. Pre-fit labels with ASCII `...` so stock KaiPath `fitLabel` never appends mojibaked ellipsis. JLDK: change client `fitLabel` to ASCII `...`.
+
+### 3. Player model custom parts
+
+`playerModel.parts` schema v1 is LM-side; verify part types render on the client preview.
+
+### 4. Pending vs shipped diagnostics
+
+Missing `SHIPPED_ON_RECOMMENDED` → warn (wrong/old jar). Missing `PENDING_NEXT` → info (`pendingNext=` in guitest). Do not treat 1.3.9 as broken for headerBottom/accent until a newer KaiPath advertises them.
 
 ### 5. Slider / toggle types are deferred
 
-Booleans stay styled buttons; numbers stay text + ± steppers. Both sides need work before `inputsJson` can carry real `slider` / `toggle` types.
+Booleans stay styled buttons; numbers stay text + ± steppers.
 
 ## Reserved (later): `inputsJson` slider / toggle
 
-Not implemented on either side. When added, prefer extending field 11 rather than a new packet field.
-
-Until then, BOOLEAN uses styled toggle **buttons**; NUMBER uses **text** + ± step buttons.
+Not implemented on either side. Prefer extending field 11 when added.
 
 ## Docs
 
 - Protocol: [`KAIPATH_GUI_PROTOCOL.md`](KAIPATH_GUI_PROTOCOL.md)
 - JLDK handoff: [`KAIPATH_JLDK_CLIENT_BRIEF.md`](KAIPATH_JLDK_CLIENT_BRIEF.md)
+- Overview: [`KAIPATH_1.3.1_ULTRA.md`](KAIPATH_1.3.1_ULTRA.md)

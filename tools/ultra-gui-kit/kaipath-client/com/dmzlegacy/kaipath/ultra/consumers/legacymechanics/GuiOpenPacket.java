@@ -73,7 +73,7 @@ public final class GuiOpenPacket {
         this.buttonsJson = blankTo(trim(buttonsJson, 8192), "[]");
         this.panelWidth = panelWidth > 0 ? panelWidth : DEFAULT_PANEL_W;
         this.panelHeight = panelHeight > 0 ? panelHeight : DEFAULT_PANEL_H;
-        this.layoutJson = trim(layoutJson, 2048);
+        this.layoutJson = trim(layoutJson, 4096);
         this.inputsJson = blankTo(trim(inputsJson, 4096), "[]");
     }
 

@@ -6,7 +6,7 @@ import java.util.Locale;
 import java.util.Map;
 import net.minecraft.server.level.ServerPlayer;
 
-/** Staff progression panel — Home / Boosts / Coins. */
+/** Staff progression panel - Home / Boosts / Coins. */
 public final class UltraProgressionScreens {
     private UltraProgressionScreens() {}
 
@@ -35,7 +35,7 @@ public final class UltraProgressionScreens {
                 .tabs("home|Home", "boosts|Boosts", "coins|Coins");
     }
 
-    /** Overview only — Boosts and Coins live on their tabs. */
+    /** Overview only - Boosts and Coins live on their tabs. */
     private static void openHome(ServerPlayer player) {
         UltraScreenSpec spec = base("main", "home")
                 .line(UltraStyle.LABEL + "Training boosts, Ancient Coins, and staff tools")

@@ -1,8 +1,8 @@
 package com.dbzlegacy.adaptivedifficulty.event;
 
+import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dragonminez.common.stats.StatsData;
-import com.dragonminez.common.stats.character.Resources;
 import com.dragonminez.server.events.players.StatsEvents;
 import java.util.UUID;
 import net.minecraft.server.level.ServerPlayer;
@@ -16,12 +16,13 @@ import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 /**
- * Logs a tall fall, and when vanilla max health is far below DMZ max health,
- * restores that pool before DMZ's fall handler and ki negation run.
+ * When vanilla max health is far below DMZ max health, restores that pool before
+ * DMZ's fall handler and ki negation run.
  *
- * <p>StatsData does not store a current health. The number fall damage
- * subtracts is the entity health. This does not cancel the event or change
- * the damage amount.
+ * <p>LivingHurtEvent for fall can fire without a preceding LivingFallEvent (ender
+ * pearl / chorus / other teleport falls), so {@link #onHurt} also aligns the pool
+ * at {@link EventPriority#HIGHEST}. This does not cancel the event or change the
+ * damage amount.
  */
 public final class FallDamageDiag {
     public FallDamageDiag() {}
@@ -36,14 +37,17 @@ public final class FallDamageDiag {
             if (event.getDistance() < 3.0f) {
                 return;
             }
-            boolean synced = alignVanillaPool(player);
-            print(player, "fall", event.getDistance(), -1.0f, event.isCanceled(), "pending", synced);
+            alignVanillaPool(player);
         } catch (Throwable t) {
-            t.printStackTrace();
+            AdaptiveDifficultyMod.LOGGER.warn("[{}] FallDamageDiag.onFall failed", AdaptiveDifficultyMod.MOD_ID, t);
         }
     }
 
-    @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
+    /**
+     * Sync before other HIGHEST hurt listeners (register this class before
+     * {@link DifficultyEvents}). Covers fall damage with no LivingFallEvent.
+     */
+    @SubscribeEvent(priority = EventPriority.HIGHEST, receiveCanceled = true)
     public void onHurt(LivingHurtEvent event) {
         try {
             if (!(event.getEntity() instanceof ServerPlayer player) || player.m_9236_().f_46443_) {
@@ -52,11 +56,9 @@ public final class FallDamageDiag {
             if (event.getSource() == null || !event.getSource().m_269533_(DamageTypeTags.f_268549_)) {
                 return;
             }
-            boolean kiNegated = event.isCanceled();
-            print(player, "hurt", player.f_19789_, event.getAmount(), event.isCanceled(),
-                    Boolean.toString(kiNegated), false);
+            alignVanillaPool(player);
         } catch (Throwable t) {
-            t.printStackTrace();
+            AdaptiveDifficultyMod.LOGGER.warn("[{}] FallDamageDiag.onHurt failed", AdaptiveDifficultyMod.MOD_ID, t);
         }
     }
 
@@ -89,6 +91,11 @@ public final class FallDamageDiag {
     private static boolean alignVanillaPool(ServerPlayer player) {
         StatsData data = DmzProgression.stats(player);
         if (data == null) {
+            // Stats not loaded yet - best-effort apply so a later hurt/fall can finish.
+            try {
+                StatsEvents.applyHealthBonus(player);
+            } catch (Throwable ignored) {
+            }
             return false;
         }
         float dmzMax = data.getMaxHealth();
@@ -130,49 +137,5 @@ public final class FallDamageDiag {
                 "DMZ Health Bonus",
                 addition,
                 AttributeModifier.Operation.ADDITION));
-    }
-
-    private static void print(
-            ServerPlayer player,
-            String phase,
-            float fallDistance,
-            float damage,
-            boolean canceled,
-            String kiNegated,
-            boolean synced) {
-        double vanillaHp = player.m_21223_();
-        double vanillaMax = player.m_21233_();
-        double dmzMax = Double.NaN;
-        double energy = Double.NaN;
-        boolean initialized = false;
-        StatsData data = DmzProgression.stats(player);
-        if (data != null) {
-            dmzMax = data.getMaxHealth();
-            initialized = data.hasInitializedHealth();
-            Resources resources = data.getResources();
-            if (resources != null) {
-                energy = resources.getCurrentEnergy();
-            }
-        }
-        double attrBase = Double.NaN;
-        double attrValue = Double.NaN;
-        AttributeInstance attr = player.m_21051_(Attributes.f_22276_);
-        if (attr != null) {
-            attrBase = attr.m_22115_();
-            attrValue = attr.m_22135_();
-        }
-        String name = player.m_7755_() == null ? "?" : player.m_7755_().getString();
-        System.out.println("[LM] Fall damage: phase=" + phase
-                + " player=" + name
-                + " vanilla=" + vanillaHp + "/" + vanillaMax
-                + " dmzCurrent=not-stored dmzMax=" + dmzMax
-                + " attr=" + attrBase + "/" + attrValue
-                + " fallDistance=" + fallDistance
-                + " damage=" + damage
-                + " canceled=" + canceled
-                + " kiNegated=" + kiNegated
-                + " synced=" + synced
-                + " energy=" + energy
-                + " initialized=" + initialized);
     }
 }

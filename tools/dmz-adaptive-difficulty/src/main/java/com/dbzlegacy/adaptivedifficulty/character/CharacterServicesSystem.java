@@ -371,6 +371,13 @@ public final class CharacterServicesSystem {
             AbsorptionWipeHelper.wipe(player, "CharacterServicesSystem.executeRaceChange");
             GodKiWipeHelper.wipe(player, "CharacterServicesSystem.executeRaceChange");
             clearForms(ch, player);
+            // Strip Zenkai_/Assimilation_/Absorption_ BonusStats splits earned on the old race.
+            RacialBonusWipeHelper.wipeLeavingRace(
+                    player,
+                    data,
+                    currentRace,
+                    raceId,
+                    "CharacterServicesSystem.executeRaceChange");
             String priorHeadBone = CosmeticHeadBoneService.activeBone(player);
             String priorClassBeforeRaceChange = "";
             boolean openedFreeClassPicker = false;

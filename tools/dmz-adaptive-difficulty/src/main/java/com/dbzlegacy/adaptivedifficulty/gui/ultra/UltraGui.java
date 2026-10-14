@@ -7,8 +7,8 @@ import java.util.Locale;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Ultra / KaiPath entry. Every system opens via {@code Ultra*Screens} → {@code GuiOpenPacket}.
- * Players without KaiPath get an install message — there is no CNPC fallback.
+ * Ultra / KaiPath entry. Every system opens via {@code Ultra*Screens} -> {@code GuiOpenPacket}.
+ * Players without KaiPath get an install message - there is no CNPC fallback.
  */
 public final class UltraGui {
     private UltraGui() {}
@@ -45,7 +45,7 @@ public final class UltraGui {
         openUltra(player, logical, pg);
     }
 
-    /** Ultra primary path: always an {@code Ultra*Screens} builder → {@code GuiOpenPacket}. */
+    /** Ultra primary path: always an {@code Ultra*Screens} builder -> {@code GuiOpenPacket}. */
     static void openUltra(ServerPlayer player, String logical, String page) {
         if (player == null) {
             return;
@@ -73,7 +73,7 @@ public final class UltraGui {
                 case "config" -> UltraConfigScreens.open(player, pg);
                 default -> {
                     AdaptiveDifficultyMod.LOGGER.warn(
-                            "[{}] Ultra unknown logical screenId=\"{}\" page=\"{}\" — opening hub",
+                            "[{}] Ultra unknown logical screenId=\"{}\" page=\"{}\" - opening hub",
                             AdaptiveDifficultyMod.MOD_ID,
                             id,
                             pg);

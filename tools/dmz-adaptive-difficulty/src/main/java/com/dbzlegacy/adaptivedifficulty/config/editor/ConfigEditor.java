@@ -23,7 +23,6 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -32,6 +31,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 /**
@@ -44,9 +44,9 @@ public final class ConfigEditor {
     /** Scroll lines stay under the CNPC 64-character trim. */
     private static final int LINE_MAX = 60;
     private static final int LIST_CAP = 200;
-    private static final Set<Path> BACKED_THIS_SESSION = new HashSet<>();
-    private static final Map<UUID, Proposal> PENDING = new HashMap<>();
-    private static final Map<UUID, Session> SESSIONS = new HashMap<>();
+    private static final Set<Path> BACKED_THIS_SESSION = ConcurrentHashMap.newKeySet();
+    private static final Map<UUID, Proposal> PENDING = new ConcurrentHashMap<>();
+    private static final Map<UUID, Session> SESSIONS = new ConcurrentHashMap<>();
     private static final DateTimeFormatter AUDIT_WHEN =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(ZoneId.systemDefault());
 
@@ -219,7 +219,7 @@ public final class ConfigEditor {
             StringBuilder names = new StringBuilder();
             for (Object constant : constants) {
                 if (names.length() > 80) {
-                    names.append(" …");
+                    names.append(" ...");
                     break;
                 }
                 if (names.length() > 0) {
@@ -460,7 +460,7 @@ public final class ConfigEditor {
                 return ChangePreview.bad("That setting can't be edited here.");
             }
             String before = located.value == null ? "empty" : String.valueOf(located.value);
-            return ChangePreview.ok(displayName(leafName(path)) + ": " + before + " → " + next);
+            return ChangePreview.ok(displayName(leafName(path)) + ": " + before + " -> " + next);
         } catch (NumberFormatException e) {
             return ChangePreview.bad("That needs to be a number.");
         } catch (IllegalArgumentException e) {
@@ -1040,13 +1040,13 @@ public final class ConfigEditor {
         Kind kind = kindOf(moduleId, path);
         String shown = current == null || current.isBlank() ? "empty" : current.trim();
         if (shown.length() > 32) {
-            shown = shown.substring(0, 31) + "…";
+            shown = shown.substring(0, 31) + "...";
         }
         String leaf = leafName(path).toLowerCase(Locale.ROOT);
         if (leaf.contains("chance") && kind == Kind.NUMBER) {
             String odds = oddsPhrase(current);
             String line = "Chance (0-1) that a mob drops " + dropSubject(name) + ". Currently " + shown;
-            return odds.isEmpty() ? line + "." : line + " — " + odds + ".";
+            return odds.isEmpty() ? line + "." : line + " - " + odds + ".";
         }
         return switch (kind) {
             case BOOLEAN -> "Turns " + name + " on or off. Currently " + (truth(shown) ? "on" : "off") + ".";
@@ -1083,7 +1083,7 @@ public final class ConfigEditor {
         }
         String text = String.valueOf(value).replace('\n', ' ');
         if (text.length() > 40) {
-            return text.substring(0, 39) + "…";
+            return text.substring(0, 39) + "...";
         }
         return text;
     }
@@ -1153,7 +1153,7 @@ public final class ConfigEditor {
         }
         for (Object constant : constants) {
             if (names.size() >= 8) {
-                names.add("…");
+                names.add("...");
                 break;
             }
             names.add(constant.toString());
@@ -1782,12 +1782,12 @@ public final class ConfigEditor {
     private static String line(String name, String summary) {
         String label = displayName(name);
         String detail = summary == null ? "" : summary;
-        String text = "§f" + label + " §8· §7" + detail;
+        String text = "§f" + label + " §8- §7" + detail;
         if (text.length() <= LINE_MAX) {
             return text;
         }
         int keep = Math.max(8, LINE_MAX - 1);
-        return text.substring(0, keep) + "…";
+        return text.substring(0, keep) + "...";
     }
 
     private static String summary(Object value, Kind kind) {
@@ -1814,7 +1814,7 @@ public final class ConfigEditor {
         }
         String text = String.valueOf(value).replace('\n', ' ');
         if (text.length() > 18) {
-            return text.substring(0, 17) + "…";
+            return text.substring(0, 17) + "...";
         }
         return text;
     }

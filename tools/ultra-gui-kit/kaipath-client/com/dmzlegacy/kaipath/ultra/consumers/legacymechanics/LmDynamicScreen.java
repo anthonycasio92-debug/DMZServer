@@ -45,7 +45,7 @@ public class LmDynamicScreen extends UltraScreen {
     private boolean scrollBody = true;
     private int buttonPad = 8;
     private int buttonMinWidth = 80;
-    private String titleAlign = "left";
+    private String titleAlign = "center";
     private JsonObject playerModel;
     private final List<String> bodyLines = new ArrayList<>();
     /** input id → live EditBox (for bindInput / Enter → args.value). */
@@ -90,8 +90,10 @@ public class LmDynamicScreen extends UltraScreen {
 
         int cursorY = panelY + 8;
 
-        // Title drawn in render; reserve space
+        // Title drawn in render; reserve space under title + header rule
         cursorY += 14;
+        // Match LM tabsUnderTitle: sit under the title line (hub-like), not in the title band
+        cursorY += 6;
 
         // Tabs — dynamic from tabsJson; activeTab gets a highlight chip
         JsonArray tabs = parseArray(packet.tabsJson());
@@ -301,7 +303,7 @@ public class LmDynamicScreen extends UltraScreen {
         scrollBody = true;
         buttonPad = 8;
         buttonMinWidth = 80;
-        titleAlign = "left";
+        titleAlign = "center";
         playerModel = null;
         panelW = packet.panelWidth() > 0 ? packet.panelWidth() : GuiOpenPacket.DEFAULT_PANEL_W;
         panelH = packet.panelHeight() > 0 ? packet.panelHeight() : GuiOpenPacket.DEFAULT_PANEL_H;
@@ -353,7 +355,7 @@ public class LmDynamicScreen extends UltraScreen {
             }
             if (o.has("titleAlign") && o.get("titleAlign").isJsonPrimitive()) {
                 String align = o.get("titleAlign").getAsString();
-                titleAlign = align == null ? "left" : align.trim().toLowerCase(Locale.ROOT);
+                titleAlign = align == null ? "center" : align.trim().toLowerCase(Locale.ROOT);
             }
             if (o.has("bodyMaxHeight")) {
                 bodyMaxHeight = Math.max(lineHeight, o.get("bodyMaxHeight").getAsInt());

@@ -8,21 +8,31 @@ import com.dbzlegacy.adaptivedifficulty.util.PaidFeatureAccess;
 import com.google.gson.JsonObject;
 import java.lang.reflect.Method;
 import java.util.Locale;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.common.util.LazyOptional;
 
 /**
- * Difficulty → Weights shop. Players pick a DMZ weight type, type a weight value (1 copper per
+ * Difficulty -> Weights shop. Players pick a DMZ weight type, type a weight value (1 copper per
  * point), confirm, then receive the item with {@code WeightValue} NBT via
  * {@code WeightItem.setWeight(stack, value)} (reflection; falls back to direct NBT).
  *
  * <p>Requires KaiPath {@code textInput} (GuiOpenPacket field 11). Clients without it see a clear
- * blocker message on the input page.
+ * blocker message on the input page (KaiPath 1.3.9+ advertises it).
  */
 public final class UltraWeightShopScreens {
     /** Hard cap so typed values stay sane (1 copper : 1 weight). */
-    public static final int MAX_WEIGHT_VALUE = 10_000;
+    public static final int MAX_WEIGHT_VALUE = 100_000;
+
+    /** Digits needed to type {@link #MAX_WEIGHT_VALUE} (was hard-capped at 4 / 9999). */
+    public static final int MAX_WEIGHT_DIGITS = String.valueOf(MAX_WEIGHT_VALUE).length();
+
+    /** Curios slot id for {@code CurioType.WEIGHTS} ({@code data/.../curios/slots/weights.json}). */
+    public static final String CURIOS_WEIGHTS_SLOT = "weights";
 
     public static final String INPUT_ID = "input:weight_value";
 
@@ -65,12 +75,18 @@ public final class UltraWeightShopScreens {
 
     static void openShop(ServerPlayer player) {
         AncientCoinEconomy.migrateWalletToItems(player);
-        UltraScreenSpec spec = base("weights", "home")
-                .line(UltraStyle.LABEL + "Training weights — 1 ancient copper per weight value.")
-                .labelValue("Ancient Coins", AncientCoinEconomy.inventoryBreakdown(player))
-                .labelValue("Max value", String.valueOf(MAX_WEIGHT_VALUE))
-                .line(UltraStyle.DIM + "Pick a type, type the weight value, then confirm.")
-                .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
+        UltraScreenSpec spec =
+                base("weights", "home")
+                        .line(UltraStyle.LABEL + "Training weights - 1 ancient copper per weight value.")
+                        .labelValue(
+                                "Copper",
+                                String.valueOf(
+                                        AncientCoinEconomy.countOf(
+                                                player, AncientCoinEconomy.CoinKind.COPPER)))
+                        .labelValue("Ancient Coins", AncientCoinEconomy.inventoryBreakdown(player))
+                        .labelValue("Max value", String.valueOf(MAX_WEIGHT_VALUE))
+                        .line(UltraStyle.DIM + "Pick a type, type the weight value, then confirm.")
+                        .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
         for (WeightOffer offer : WeightOffer.values()) {
             spec.button(
                             "page:weights_input:" + offer.id,
@@ -78,7 +94,7 @@ public final class UltraWeightShopScreens {
                             UltraStyle.STYLE_CONFIRM)
                     .rowGap();
         }
-        spec.buttonLeft("page:main", UltraStyle.dim("Back"), UltraStyle.STYLE_DIM).rowGap();
+        // Footer hub Back only - do not stack a second page:main Back (same destination).
         spec.footerBackHome();
         spec.send(player);
     }
@@ -90,37 +106,45 @@ public final class UltraWeightShopScreens {
             return;
         }
         AncientCoinEconomy.migrateWalletToItems(player);
-        UltraScreenSpec spec = base("weights_input:" + offer.id, "home")
-                .line(UltraStyle.LABEL + offer.label)
-                .labelValue("Ancient Coins", AncientCoinEconomy.inventoryBreakdown(player))
-                .labelValue("Price", "1 copper per weight value")
-                .labelValue("Max value", String.valueOf(MAX_WEIGHT_VALUE))
-                .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
+        UltraScreenSpec spec =
+                base("weights_input:" + offer.id, "home")
+                        .line(UltraStyle.LABEL + offer.label)
+                        .labelValue(
+                                "Copper",
+                                String.valueOf(
+                                        AncientCoinEconomy.countOf(
+                                                player, AncientCoinEconomy.CoinKind.COPPER)))
+                        .labelValue("Ancient Coins", AncientCoinEconomy.inventoryBreakdown(player))
+                        .labelValue("Price", "1 copper per weight value")
+                        .labelValue("Max value", String.valueOf(MAX_WEIGHT_VALUE))
+                        .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
 
         if (!UltraClientFeatures.hasTextInput(player)) {
-            spec.line(UltraStyle.danger("Typed weight entry needs KaiPath textInput."))
+            spec.line(UltraStyle.danger("Typed weight entry needs a newer KaiPath client."))
                     .line(
                             UltraStyle.DIM
-                                    + "KaiPath 1.3.7 has style/playerModel/titleAlign/activeTab, "
-                                    + "but not GuiOpen field 11 yet. Merge the kaipath-client "
-                                    + "kit and rebuild past 1.3.7.")
-                    .buttonLeft("page:weights", UltraStyle.dim("Back to weights"), UltraStyle.STYLE_DIM)
+                                    + "Install KaiPath 1.3.9 or newer to type weight values. "
+                                    + "Until then this shop cannot take a typed value.")
+                    // Named destination - parent shop list (no footerBackHome stack).
+                    .buttonLeft(
+                            "page:weights",
+                            UltraStyle.backTo("Weights shop"),
+                            UltraStyle.STYLE_DIM)
                     .rowGap();
-            spec.footerBackHome();
             spec.send(player);
             return;
         }
 
-        spec.line(UltraStyle.LABEL + "Type how much weight value you want (numbers only).")
+        spec.line(UltraStyle.LABEL + "Type how much weight value you want (1-" + MAX_WEIGHT_VALUE + ").")
                 .textField(
                         INPUT_ID,
                         "",
-                        "e.g. 100",
+                        "e.g. 50000",
                         UltraStyle.COL_L,
                         spec.row(),
                         UltraStyle.PANEL_W - UltraStyle.COL_L * 2,
                         UltraStyle.BTN_H,
-                        5)
+                        MAX_WEIGHT_DIGITS)
                 .rowGap();
         spec.buttonBound(
                         "do:weight_quote:" + offer.id,
@@ -128,9 +152,9 @@ public final class UltraWeightShopScreens {
                         UltraStyle.STYLE_CONFIRM,
                         INPUT_ID)
                 .rowGap();
-        spec.buttonLeft("page:weights", UltraStyle.dim("Back to weights"), UltraStyle.STYLE_DIM)
+        // Named destination - parent shop list (no footerBackHome stack).
+        spec.buttonLeft("page:weights", UltraStyle.backTo("Weights shop"), UltraStyle.STYLE_DIM)
                 .rowGap();
-        spec.footerBackHome();
         spec.send(player);
     }
 
@@ -143,14 +167,20 @@ public final class UltraWeightShopScreens {
         AncientCoinEconomy.migrateWalletToItems(player);
         long cost = value;
         boolean free = PaidFeatureAccess.bypassAncientCoinCost(player);
-        String costText = free ? "free for staff" : AncientCoinEconomy.formatExactCost(cost);
-        UltraScreenSpec spec = base("weights_confirm:" + offer.id + ":" + value, "home")
-                .line(UltraStyle.LABEL + "Confirm weight purchase")
-                .labelValue("Type", offer.label)
-                .labelValue("Weight value", String.valueOf(value))
-                .labelValue("Cost", costText)
-                .labelValue("Ancient Coins", AncientCoinEconomy.inventoryBreakdown(player))
-                .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
+        String costText = free ? "Free for staff" : AncientCoinEconomy.formatExactCost(cost);
+        UltraScreenSpec spec =
+                base("weights_confirm:" + offer.id + ":" + value, "home")
+                        .line(UltraStyle.LABEL + "Confirm weight purchase")
+                        .labelValue("Type", offer.label)
+                        .labelValue("Weight value", String.valueOf(value))
+                        .labelValue("Cost", costText)
+                        .labelValue(
+                                "Copper",
+                                String.valueOf(
+                                        AncientCoinEconomy.countOf(
+                                                player, AncientCoinEconomy.CoinKind.COPPER)))
+                        .labelValue("Ancient Coins", AncientCoinEconomy.inventoryBreakdown(player))
+                        .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
         if (!free && !AncientCoinEconomy.canAfford(player, cost)) {
             spec.line(UltraStyle.danger(AncientCoinEconomy.missingText(player, cost)))
                     .button(
@@ -161,7 +191,7 @@ public final class UltraWeightShopScreens {
         } else {
             spec.button(
                             "do:weight_buy:" + offer.id + ":" + value,
-                            UltraStyle.confirm("Buy · " + costText),
+                            UltraStyle.confirm("Buy - " + costText),
                             UltraStyle.STYLE_CONFIRM)
                     .rowGap();
             spec.buttonLeft(
@@ -170,9 +200,9 @@ public final class UltraWeightShopScreens {
                             UltraStyle.STYLE_DIM)
                     .rowGap();
         }
-        spec.buttonLeft("page:weights", UltraStyle.dim("Back to weights"), UltraStyle.STYLE_DIM)
+        // Named destination - parent shop list (no footerBackHome stack).
+        spec.buttonLeft("page:weights", UltraStyle.backTo("Weights shop"), UltraStyle.STYLE_DIM)
                 .rowGap();
-        spec.footerBackHome();
         spec.send(player);
     }
 
@@ -243,17 +273,95 @@ public final class UltraWeightShopScreens {
             return UltraStyle.dangerLine(AncientCoinEconomy.missingText(player, charge));
         }
         applyWeightValue(stack, value);
-        giveOrDrop(player, stack);
+        String destination = giveWeightItem(player, stack);
         openShop(player);
-        String costText = free ? "free (staff)" : AncientCoinEconomy.formatExactCost(cost);
+        String costText = free ? "Free (staff)" : AncientCoinEconomy.formatExactCost(cost);
         return UltraStyle.noticeLine(
-                "Bought " + offer.label + " · weight " + value + " · " + costText + ".");
+                "Bought "
+                        + offer.label
+                        + " - weight "
+                        + value
+                        + " - "
+                        + costText
+                        + " - "
+                        + destination
+                        + ".");
     }
 
-    private static void giveOrDrop(ServerPlayer player, ItemStack stack) {
+    /**
+     * Prefer an empty Curios {@code weights} slot (CurioType.WEIGHTS), else player inventory, else
+     * drop at feet - same fallback ladder as DMZ {@code WeightCommand}, plus curios when free.
+     */
+    static String giveWeightItem(ServerPlayer player, ItemStack stack) {
         ItemStack copy = stack.m_41777_();
-        if (!player.m_150109_().m_36054_(copy)) {
-            player.m_36176_(copy, false);
+        if (tryEquipWeightsCurio(player, copy)) {
+            return "equipped in weights slot";
+        }
+        if (player.m_150109_().m_36054_(copy)) {
+            return "added to inventory";
+        }
+        player.m_36176_(copy, false);
+        return "dropped (inventory full)";
+    }
+
+    /** Reflection into Curios API - LM does not compile against curios. */
+    private static boolean tryEquipWeightsCurio(ServerPlayer player, ItemStack stack) {
+        if (player == null || stack == null || stack.m_41619_()) {
+            return false;
+        }
+        try {
+            Class<?> api = Class.forName("top.theillusivec4.curios.api.CuriosApi");
+            Method getInv = api.getMethod("getCuriosInventory", LivingEntity.class);
+            Object raw = getInv.invoke(null, player);
+            if (!(raw instanceof LazyOptional<?> lazy)) {
+                return false;
+            }
+            AtomicBoolean equipped = new AtomicBoolean(false);
+            lazy.ifPresent(
+                    handler -> {
+                        try {
+                            Method getStacksHandler =
+                                    handler.getClass().getMethod("getStacksHandler", String.class);
+                            Object stacksOpt =
+                                    getStacksHandler.invoke(handler, CURIOS_WEIGHTS_SLOT);
+                            if (!(stacksOpt instanceof Optional<?> slotOpt) || slotOpt.isEmpty()) {
+                                return;
+                            }
+                            Object stacksHandler = slotOpt.get();
+                            Method getStacks = stacksHandler.getClass().getMethod("getStacks");
+                            Object dynamic = getStacks.invoke(stacksHandler);
+                            Method getSlots = dynamic.getClass().getMethod("getSlots");
+                            Method getStackInSlot =
+                                    dynamic.getClass().getMethod("getStackInSlot", int.class);
+                            int slots = ((Number) getSlots.invoke(dynamic)).intValue();
+                            Method setEquipped =
+                                    handler.getClass()
+                                            .getMethod(
+                                                    "setEquippedCurio",
+                                                    String.class,
+                                                    int.class,
+                                                    ItemStack.class);
+                            for (int i = 0; i < slots; i++) {
+                                ItemStack existing =
+                                        (ItemStack) getStackInSlot.invoke(dynamic, i);
+                                if (existing == null || existing.m_41619_()) {
+                                    setEquipped.invoke(
+                                            handler, CURIOS_WEIGHTS_SLOT, i, stack.m_41777_());
+                                    equipped.set(true);
+                                    return;
+                                }
+                            }
+                        } catch (Throwable ignored) {
+                            // fall through to inventory
+                        }
+                    });
+            return equipped.get();
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.debug(
+                    "[{}] Curios weights equip skipped - {}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    t.toString());
+            return false;
         }
     }
 
@@ -272,7 +380,7 @@ public final class UltraWeightShopScreens {
             return;
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.debug(
-                    "[{}] WeightItem.setWeight unavailable — writing WeightValue NBT directly",
+                    "[{}] WeightItem.setWeight unavailable - writing WeightValue NBT directly",
                     AdaptiveDifficultyMod.MOD_ID,
                     t);
         }
@@ -288,14 +396,14 @@ public final class UltraWeightShopScreens {
         if (s.isEmpty()) {
             return null;
         }
-        // Digits only — reject signs, decimals, separators.
+        // Digits only - reject signs, decimals, separators.
         for (int i = 0; i < s.length(); i++) {
             char c = s.charAt(i);
             if (c < '0' || c > '9') {
                 return null;
             }
         }
-        if (s.length() > 6) {
+        if (s.length() > MAX_WEIGHT_DIGITS) {
             return null;
         }
         try {

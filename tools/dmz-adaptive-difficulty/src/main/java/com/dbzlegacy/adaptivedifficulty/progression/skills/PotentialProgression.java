@@ -6,13 +6,14 @@ import com.dbzlegacy.adaptivedifficulty.progression.ProgressionConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionData;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
-import com.dbzlegacy.adaptivedifficulty.util.LmChat;
+import com.dbzlegacy.adaptivedifficulty.util.ScreenNotify;
 import com.dragonminez.common.init.entities.ki.AbstractKiProjectile;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.Status;
 import com.dragonminez.common.stats.skills.Skills;
 import com.dragonminez.server.util.GravityLogic;
 import java.util.Map;
+import net.minecraft.ChatFormatting;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
@@ -151,22 +152,31 @@ public final class PotentialProgression {
         DmzSkillUtil.setLevel(skills, SKILL, next);
         int confirmed = DmzSkillUtil.level(skills, SKILL);
         if (confirmed < next) {
-            DmzRewards.msg(player, LmChat.fail("Potential", "Level-up failed."));
-            DmzRewards.msg(player, LmChat.info("Potential",
-                    "DMZ still reports Potential level §f" + confirmed + "§7."));
-            DmzRewards.msg(player, LmChat.info("Potential",
-                    "Progress remains at §f" + required + "/" + required + "§7."));
+            potentialSubtitle(player, "Level-up failed.", ChatFormatting.RED, 0L);
+            potentialSubtitle(
+                    player,
+                    "DMZ still reports Potential level " + confirmed + ".",
+                    ChatFormatting.GRAY,
+                    0L);
+            potentialSubtitle(
+                    player,
+                    "Progress remains at " + required + "/" + required + ".",
+                    ChatFormatting.GRAY,
+                    0L);
             return;
         }
         ProgressionData.storedPut(player, "potentialunlock_last_known_level", confirmed);
         DmzSkillUtil.sync(player);
-        DmzRewards.msg(player, LmChat.note("Potential", "Increased to level " + confirmed + "."));
+        potentialSubtitle(player, "Increased to level " + confirmed + ".", ChatFormatting.YELLOW, 0L);
         giveMentorLevelUpTp(player, playerData, other, otherData);
         if (confirmed == NATURAL_CAP) {
-            DmzRewards.msg(player, LmChat.note("Potential", "§eYou have reached level 10."));
+            potentialSubtitle(player, "You have reached level 10.", ChatFormatting.YELLOW, 0L);
             if (!hasPiccoloUnlock(player)) {
-                DmzRewards.msg(player, LmChat.tip("/skillcheck",
-                        "Beat Piccolo in the skill saga to keep raising Potential toward 30."));
+                potentialSubtitle(
+                        player,
+                        "Tip · /skillcheck Beat Piccolo in the skill saga to keep raising Potential toward 30.",
+                        ChatFormatting.YELLOW,
+                        0L);
             }
         }
         SystemTelemetry.log("progression", "potential_level", player, other,
@@ -187,8 +197,11 @@ public final class PotentialProgression {
             ProgressionData.storedRemove(player, "potential_last_move_z");
             ProgressionData.storedRemove(player, "potential_movement_valid_until");
             ProgressionData.storedPut(player, "potentialunlock_last_known_level", current);
-            DmzRewards.msg(player, LmChat.note("Potential",
-                    "§eProgress requirements were reset because your Potential level was lowered."));
+            potentialSubtitle(
+                    player,
+                    "Progress requirements were reset because your Potential level was lowered.",
+                    ChatFormatting.YELLOW,
+                    0L);
             return;
         }
         if (current > last || !hasKey) {
@@ -233,9 +246,11 @@ public final class PotentialProgression {
             return;
         }
         ProgressionData.tempPut(player, "potential_move_warning_cooldown", now + MOVE_WARN_CD_MS);
-        DmzRewards.msg(player, LmChat.note("Potential",
-                "§eMove at least §f" + (int) MIN_MOVE
-                        + " blocks§e to keep gaining Potential progress."));
+        potentialSubtitle(
+                player,
+                "Move at least " + (int) MIN_MOVE + " blocks to keep gaining Potential progress.",
+                ChatFormatting.YELLOW,
+                0L);
     }
 
     /**
@@ -247,8 +262,11 @@ public final class PotentialProgression {
         int streak = (int) ProgressionData.storedGetLong(player, "potentialunlock_same_method_streak", 0L);
         if (method != null && method.equals(last)) {
             if (streak >= MAX_SAME_STREAK) {
-                DmzRewards.msg(player, LmChat.note("Potential",
-                        "§eSwitch training methods to continue progressing."));
+                potentialSubtitle(
+                        player,
+                        "Switch training methods to continue progressing.",
+                        ChatFormatting.YELLOW,
+                        0L);
                 return false;
             }
             streak++;
@@ -330,8 +348,11 @@ public final class PotentialProgression {
             long next = ProgressionData.tempGetLong(other, "potential_mentor_tp_message_cooldown", 0L);
             if (now >= next) {
                 ProgressionData.tempPut(other, "potential_mentor_tp_message_cooldown", now + MENTOR_TP_MSG_CD_MS);
-                DmzRewards.msg(other, LmChat.note("Potential",
-                        "§eYou are gaining TP for helping train a lower-level player."));
+                potentialSubtitle(
+                        other,
+                        "You are gaining TP for helping train a lower-level player.",
+                        ChatFormatting.YELLOW,
+                        0L);
             }
         } catch (Throwable ignored) {
         }
@@ -363,9 +384,12 @@ public final class PotentialProgression {
             return;
         }
         ProgressionData.tempPut(player, "potential_softcap_message_cooldown", now + CAP_MSG_CD_MS);
-        DmzRewards.msg(player, LmChat.note("Potential", "§ePotential is soft-capped at level 10."));
-        DmzRewards.msg(player, LmChat.tip("/skillcheck",
-                "Beat Piccolo in the skill saga to keep raising it toward 30."));
+        potentialSubtitle(player, "Potential is soft-capped at level 10.", ChatFormatting.YELLOW, 0L);
+        potentialSubtitle(
+                player,
+                "Tip · /skillcheck Beat Piccolo in the skill saga to keep raising it toward 30.",
+                ChatFormatting.YELLOW,
+                0L);
     }
 
     /** True once Piccolo skill-saga unlock is earned (or Potential already past 10). */
@@ -419,10 +443,28 @@ public final class PotentialProgression {
         }
         ProgressionData.storedPutBool(player, PICCOLO_UNLOCK_KEY, true);
         if (announce) {
-            DmzRewards.msg(player, LmChat.ok("Potential",
-                    "Piccolo falls — your Potential can grow past 10 toward 30."));
+            potentialSubtitle(
+                    player,
+                    "Piccolo falls - your Potential can grow past 10 toward 30.",
+                    ChatFormatting.GREEN,
+                    0L);
         }
         return true;
+    }
+
+    /** Potential notices are subtitles only (no chat). */
+    private static void potentialSubtitle(
+            ServerPlayer player, String body, ChatFormatting color, long cooldownMs
+    ) {
+        if (player == null || body == null || body.isBlank()) {
+            return;
+        }
+        ScreenNotify.subtitleOnly(
+                player,
+                body,
+                color,
+                cooldownMs > 0L ? "lm.potential.subtitle" : "",
+                cooldownMs);
     }
 
     /** Killer defeated a Piccolo master / saga foe — unlock Potential soft-cap. */

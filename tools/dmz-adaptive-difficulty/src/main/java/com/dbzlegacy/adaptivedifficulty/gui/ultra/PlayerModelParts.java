@@ -13,7 +13,7 @@ import net.minecraft.server.level.ServerPlayer;
 /**
  * Builds the optional {@code layoutJson.playerModel.parts} snapshot for KaiPath / JLDK.
  *
- * <p>Schema {@code 1} — see {@code docs/KAIPATH_GUI_PROTOCOL.md}. The client draws the local
+ * <p>Schema {@code 1} - see {@code docs/KAIPATH_GUI_PROTOCOL.md}. The client draws the local
  * player in the declared bounds and uses this object for custom body pieces (DMZ head bones,
  * worn form identity for DMZUltra FormParts, and an open {@code extras} array).
  */
@@ -47,7 +47,7 @@ public final class PlayerModelParts {
             parts.add("form", form);
             any = true;
         }
-        // Open extension slot — always present so clients can iterate without null checks.
+        // Open extension slot - always present so clients can iterate without null checks.
         parts.add("extras", new JsonArray());
         return any ? parts : null;
     }
