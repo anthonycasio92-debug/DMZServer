@@ -357,7 +357,7 @@ KaiPath 1.3.13 computes these locally — **do not send** them from the server:
 | `contentBottom` | Client band above pinned footer (1.3.17+) | **No** — derived from `footer:true` / `fixedFooter`, not a server wire field |
 | `contentScroll` | Mouse-wheel offset inside the content band | **No** — client scroll state |
 
-LM already emits the geometry contract as `headerBottom`, `bodyTop`, `bodyMaxHeight`, `scrollBody`, and button `footer:true`. Adopting `contentTop`/`contentBottom`/`contentScroll` as wire fields would fight packing and duplicate the footer pin. The open gap remains KaiPath honoring `footer:true` so its content band sits above the pinned footer.
+LM already emits the geometry contract as `headerBottom`, `bodyTop`, `bodyMaxHeight`, `scrollBody`, and button `footer:true`. Adopting `contentTop`/`contentBottom`/`contentScroll` as wire fields would fight packing and duplicate the footer pin. KaiPath **1.3.17** honors `footer:true` / `fixedFooter` so the content band sits above the pinned footer.
 
 Buttons also carry per-button `pad` (same default) and optional per-button **`accent`**
 (same single-letter codes as `layoutJson.accent`) for hub tiles / staff controls. Labels
