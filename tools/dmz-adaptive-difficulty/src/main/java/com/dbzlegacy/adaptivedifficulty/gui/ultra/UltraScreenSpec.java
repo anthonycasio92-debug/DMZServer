@@ -762,8 +762,7 @@ public final class UltraScreenSpec {
             o.addProperty("w", tabW);
             o.addProperty("h", UltraStyle.BTN_H);
             o.addProperty("pad", UltraStyle.BTN_PAD);
-            o.addProperty("sound", UltraStyle.SOUND_CONFIRM);
-            o.addProperty("buttonSkin", UltraStyle.BUTTON_SKIN);
+            // No sound/buttonSkin — buttonSkin forces KaiPath skinned (flat) chrome.
             JsonObject args = new JsonObject();
             args.addProperty("screen", screenId);
             args.addProperty(UltraScreenIds.META_SYSTEM, screenId);
@@ -859,12 +858,7 @@ public final class UltraScreenSpec {
         if (b.footer) {
             o.addProperty("footer", true);
         }
-        if (b.sound != null && !b.sound.isBlank()) {
-            o.addProperty("sound", b.sound);
-        }
-        if (b.buttonSkin != null && !b.buttonSkin.isBlank()) {
-            o.addProperty("buttonSkin", b.buttonSkin);
-        }
+        // No sound/buttonSkin — matches 4.6.148 wire shape; buttonSkin triggers flat skinned paint.
         JsonObject args = new JsonObject();
         // Logical system - echoed by KaiPath into GuiActionPacket even when wire screenId is hub.
         args.addProperty("screen", screenId);
