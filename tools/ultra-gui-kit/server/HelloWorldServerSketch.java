@@ -32,24 +32,26 @@ package com.example.ultragui;
  *
  * // KaiPath client: UltraGuiPartners.register("myshop");
  *
- * // Open — plain ASCII; palette/sound/skin/frame/paged_book are mod-agnostic wire fields
+ * // Open — plain ASCII; prefer fail-open chrome tokens (no DMZUltra required)
  * String buttons = "["
  *     + "{\"id\":\"@myshop:do:ping\",\"label\":\"Ping\",\"style\":\"confirm\","
- *     + "\"palette\":\"gold\",\"sound\":\"dmzultra:ui_confirm\","
- *     + "\"buttonSkin\":\"dmzultra:arena\",\"x\":20,\"y\":40,\"w\":150,\"h\":18,"
- *     + "\"args\":{\"screen\":\"hello\",\"page\":\"main\"}}"
+ *     + "\"palette\":\"gold\",\"sound\":\"minecraft:ui.button.click\","
+ *     + "\"buttonSkin\":\"legacymechanics:button\",\"x\":20,\"y\":40,\"w\":150,\"h\":18,"
+ *     + "\"args\":{\"screen\":\"hello\",\"page\":\"main\"}},"
+ *     + "{\"id\":\"@myshop:nav:hub\",\"label\":\"Main menu\",\"style\":\"dim\","
+ *     + "\"x\":174,\"y\":272,\"w\":150,\"h\":18,\"footer\":true}"
  *     + "]";
  * String inputs = "["
  *     + "{\"id\":\"@myshop:book:guide\",\"type\":\"paged_book\",\"x\":8,\"y\":70,"
- *     + "\"w\":220,\"h\":120,\"sound\":\"dmzultra:scene_tick\",\"pages\":["
+ *     + "\"w\":220,\"h\":120,\"sound\":\"minecraft:ui.button.click\",\"pages\":["
  *     + "{\"title\":\"Welcome\",\"lines\":[\"Page one.\"]},"
  *     + "{\"title\":\"Tips\",\"lines\":[\"Page two.\"]}]}"
  *     + "]";
  * String layout = "{"
  *     + "\"center\":true,\"margin\":10,\"titleAlign\":\"center\","
- *     + "\"headerBottom\":42,\"palette\":\"gold\",\"frame\":\"dmzultra:card\","
+ *     + "\"headerBottom\":42,\"palette\":\"gold\",\"frame\":\"legacymechanics:panel\","
  *     + "\"playerModel\":{\"x\":248,\"y\":60,\"width\":86,\"height\":120,"
- *     + "\"scale\":1.0,\"rotate\":true,\"portraitFrame\":\"dmzultra:portrait\"}"
+ *     + "\"scale\":1.0,\"rotate\":true,\"portraitFrame\":\"legacymechanics:portrait\"}"
  *     + "}";
  * UltraGuiOpenPacket open = new UltraGuiOpenPacket(
  *     "hello", "My Shop", "main", "[]", "", "[\"Welcome.\"]",

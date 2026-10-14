@@ -4,8 +4,7 @@
 playerModel / textInput / headerBottom / accent / palette / sound / buttonSkin / frame /
 paged_book. LM emits button **`footer:true`** and **`portraitFrame`**.
 
-**Open gaps for next KaiPath:** honor + advertise `fixedFooter`; advertise `portraitFrame`
-(already paints); confirm title vertical centering in the gear-icon band.
+**Open gaps for next KaiPath:** merge kit `fixedFooter` ([`UltraBridgeFooter`](../tools/ultra-gui-kit/kaipath-client/com/dmzlegacy/kaipath/ultra/consumers/legacymechanics/UltraBridgeFooter.java) + [`FIXED_FOOTER.md`](../tools/ultra-gui-kit/kaipath-client/com/dmzlegacy/kaipath/ultra/consumers/legacymechanics/FIXED_FOOTER.md)); advertise `portraitFrame` + `fixedFooter` (kit already does); confirm title vertical centering in the gear-icon band.
 
 Full matrix + pitfalls: [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md).
 
@@ -43,19 +42,20 @@ The client renders what the server sends — **no hardcoded screen/tab/button/ac
 
 ## Open gaps (do these next)
 
-### 1. Button `footer:true` / `fixedFooter` — **blocking**
+### 1. Button `footer:true` / `fixedFooter` — **blocking** (kit fix ready)
 
 LM pins dual footer controls with `"footer": true` on Back + Main menu (or contextual Back).
-**Keep those buttons in fixed chrome** so they do not scroll with the body. Today
-`contentBottom = panelY + panelH - 28` ignores `footer` — raise the content band above the
-footer height when any `footer:true` button is present.
+**Keep those buttons in fixed chrome** (not in `scrollWidgets`) so they do not scroll with the
+body. Live `contentBottom = panelY + panelH - 28` ignores `footer` — raise the content band via
+`UltraBridgeFooter.contentBottomAbs`. Merge notes:
+[`FIXED_FOOTER.md`](../tools/ultra-gui-kit/kaipath-client/com/dmzlegacy/kaipath/ultra/consumers/legacymechanics/FIXED_FOOTER.md).
 
 Advertise: `"fixedFooter"`.
 
 ### 2. Advertise `portraitFrame`
 
 Already painted when `playerModel.portraitFrame` is a valid `ns:path`. Add `"portraitFrame"`
-to GuiFeatures so guitest stops treating it as unsupported.
+to GuiFeatures so guitest stops treating it as unsupported. Kit advertise already includes it.
 
 ### 3. Title vertical centering — confirm
 

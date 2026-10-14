@@ -167,8 +167,8 @@ Known optional feature ids:
 | `buttonSkin` | Button `buttonSkin` chrome |
 | `frame` | `layoutJson.frame` panel chrome |
 | `pagedBook` | Advertise spelling (camelCase) for `inputsJson` **`type=paged_book`** (snake_case on the wire) |
-| `portraitFrame` | `playerModel.portraitFrame` enable token (**honored on 1.3.13, not advertised yet**) |
-| `fixedFooter` | Button `footer:true` pinned chrome (**pending** on KaiPath 1.3.13) |
+| `portraitFrame` | `playerModel.portraitFrame` enable token (**honored on 1.3.13, not advertised yet**; kit advertises) |
+| `fixedFooter` | Button `footer:true` pinned chrome (**pending** on live 1.3.13; kit: `UltraBridgeFooter` + `FIXED_FOOTER.md`) |
 
 Example (KaiPath 1.3.13 live advertise — missing `portraitFrame` / `fixedFooter`):
 

@@ -24,11 +24,16 @@ import net.minecraft.world.entity.LivingEntity;
  * Renders whatever the server sends in {@link GuiOpenPacket} — title, tabs, lines, buttons,
  * field 11 {@code inputsJson} (text + {@code paged_book}), button {@code style} /
  * {@code palette} / {@code accent} / {@code sound} / {@code buttonSkin},
- * {@code layoutJson.headerBottom} / {@code frame}, and optional {@code layoutJson.playerModel}.
+ * {@code layoutJson.headerBottom} / {@code frame}, optional {@code layoutJson.playerModel},
+ * and button {@code footer:true} ({@code fixedFooter}).
  *
  * <p>No hardcoded screen/tab/button lists. Works for <b>any</b> partner mod — clicks echo on
  * the bound {@code <modid>:gui} channel that opened the screen. Advertise via
  * {@link UltraGuiConsumerRegistry#ADVERTISED_FEATURES_JSON}.
+ *
+ * <p>JLDK merge note: official KaiPath 1.3.13 uses a scroll-clipped content band with a hard-coded
+ * {@code panelH - 28} bottom. Port {@link UltraBridgeFooter} into that path — see
+ * {@code FIXED_FOOTER.md}.
  */
 public class LmDynamicScreen extends UltraScreen {
     /** Default {@code headerBottom} when under-title tabs are present. */
@@ -164,6 +169,13 @@ public class LmDynamicScreen extends UltraScreen {
             cursorY += 20;
         }
 
+        // fixedFooter — reserve pinned band; body/content must end above it
+        JsonArray buttons = parseArray(packet.buttonsJson());
+        int footerReserve =
+                UltraBridgeFooter.footerReservePx(buttons, 18, Math.max(0, margin));
+        int contentBottom =
+                UltraBridgeFooter.contentBottomAbs(panelY, panelH, footerReserve);
+
         // Body lines — honor layoutJson lineHeight/lineGap/bodyMaxHeight; scroll, don't squeeze
         JsonArray lines = parseArray(packet.linesJson());
         for (JsonElement el : lines) {
@@ -183,6 +195,9 @@ public class LmDynamicScreen extends UltraScreen {
                 : Math.max(lineStep + pad * 2, naturalH);
         if (!bodyLines.isEmpty()) {
             int listY = panelY + Math.max(cursorY - panelY, bodyTop);
+            // Cap list against pinned footer band (live 1.3.13 hard-coded panelH-28; we raise it).
+            int maxListH = Math.max(lineStep, contentBottom - listY);
+            listH = Math.min(listH, maxListH);
             addThemedList(panelX + 8, listY, Math.max(1, panelW - 16), listH, bodyLines);
             cursorY = listY + listH + 6;
         }
@@ -210,6 +225,10 @@ public class LmDynamicScreen extends UltraScreen {
             int y = intVal(in, "y", cursorY - panelY);
             int w = Math.max(40, intVal(in, "w", panelW - 16));
             int h = Math.max(14, intVal(in, "h", 18));
+            // Keep text fields out of the pinned footer band
+            if (panelY + y + h > contentBottom) {
+                y = Math.max(0, contentBottom - panelY - h);
+            }
             int maxLen = Math.max(1, Math.min(256, intVal(in, "maxLength", 64)));
             String value = str(in, "value", "");
             String placeholder = str(in, "placeholder", "");
@@ -241,8 +260,7 @@ public class LmDynamicScreen extends UltraScreen {
             inputArgsById.put(id, inputArgs);
         }
 
-        // Buttons — dynamic from buttonsJson; honor style / palette / accent / sound / skin
-        JsonArray buttons = parseArray(packet.buttonsJson());
+        // Buttons — body rows use packet Y; footer:true pins into the reserved band
         for (JsonElement el : buttons) {
             if (!el.isJsonObject()) {
                 continue;
@@ -258,10 +276,13 @@ public class LmDynamicScreen extends UltraScreen {
             String palette = UltraBridgeChrome.normalizePalette(str(b, "palette", ""));
             String sound = str(b, "sound", "");
             String skin = UltraBridgeChrome.buttonSkinId(b);
+            boolean footer = UltraBridgeFooter.isFooter(b);
             int x = intVal(b, "x", 8);
-            int y = intVal(b, "y", cursorY - panelY);
+            int h = Math.max(12, intVal(b, "h", 18));
+            int y = footer
+                    ? UltraBridgeFooter.pinFooterY(panelH, footerReserve, h)
+                    : intVal(b, "y", cursorY - panelY);
             int w = Math.max(buttonMinWidth, intVal(b, "w", 150));
-            int h = intVal(b, "h", 18);
             int padBtn = intVal(b, "pad", buttonPad);
             if (padBtn < 0) {
                 padBtn = buttonPad;
@@ -273,7 +294,7 @@ public class LmDynamicScreen extends UltraScreen {
             int absX = panelX + x;
             int absY = panelY + y;
             int absW = Math.max(buttonMinWidth, w);
-            int absH = Math.max(12, h);
+            int absH = h;
             String semantic = stripAtPrefix(id);
             if (semantic.startsWith("tab:")) {
                 semantic = semantic.substring(4);
@@ -301,9 +322,12 @@ public class LmDynamicScreen extends UltraScreen {
                     absH,
                     styleLabel(style, accent, stripSection(label)),
                     () -> echoClick(actionId, args, clickSound));
+            if (!footer) {
+                cursorY = Math.max(cursorY, absY + absH + 6);
+            }
         }
 
-        // Always offer Close so a sparse packet cannot trap the player
+        // Always offer Close so a sparse packet cannot trap the player (stays in footer band)
         addThemedButton(
                 panelX + panelW - 68,
                 panelY + panelH - 22,

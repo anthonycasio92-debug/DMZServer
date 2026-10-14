@@ -131,11 +131,47 @@ public final class GuiOpenPacketRoundTripTest {
                     "buttonSkin",
                     "frame",
                     "pagedBook",
+                    "portraitFrame",
+                    "fixedFooter",
                     "combined.forms.v1"
                 }) {
             if (!UltraGuiConsumerRegistry.ADVERTISED_FEATURES_JSON.contains(feat)) {
                 fail("missing advertise feature: " + feat);
             }
+        }
+
+        // fixedFooter layout helpers (pure JSON — no Screen init)
+        com.google.gson.JsonArray noFooter = com.google.gson.JsonParser.parseString(
+                        "[{\"id\":\"a\",\"y\":40,\"h\":18}]")
+                .getAsJsonArray();
+        if (UltraBridgeFooter.footerReservePx(noFooter, 18, 10)
+                != UltraBridgeFooter.DEFAULT_CLOSE_BAND_PX) {
+            fail("no footer:true should keep default close band 28");
+        }
+        com.google.gson.JsonArray dualFooter =
+                com.google.gson.JsonParser.parseString(
+                                "["
+                                        + "{\"id\":\"@x:nav:home\",\"h\":18,\"footer\":true},"
+                                        + "{\"id\":\"@x:nav:hub\",\"h\":18,\"footer\":true}"
+                                        + "]")
+                        .getAsJsonArray();
+        int reserve = UltraBridgeFooter.footerReservePx(dualFooter, 18, 10);
+        if (reserve != 28) {
+            fail("dual footer reserve expected 28 got " + reserve);
+        }
+        int pinY = UltraBridgeFooter.pinFooterY(300, reserve, 18);
+        if (pinY < 270 || pinY > 282) {
+            fail("pinFooterY out of band: " + pinY);
+        }
+        int bottom = UltraBridgeFooter.contentBottomAbs(10, 300, reserve);
+        if (bottom != 10 + 300 - reserve) {
+            fail("contentBottomAbs expected " + (10 + 300 - reserve) + " got " + bottom);
+        }
+        if (!UltraBridgeFooter.isFooter(dualFooter.get(0).getAsJsonObject())) {
+            fail("isFooter should be true");
+        }
+        if (UltraBridgeFooter.isFooter(noFooter.get(0).getAsJsonObject())) {
+            fail("isFooter should be false without footer field");
         }
 
         // Multi-mod partners: LM is one entry; list must stay open for other mods

@@ -1,6 +1,6 @@
 {
   "channel": "myshop:gui",
-  "note": "Zero partner-mod imports. Exercises every proposed chrome field for JLDK verification.",
+  "note": "Zero partner-mod imports. Exercises chrome + fixedFooter. Prefer fail-open enable tokens (minecraft: / legacymechanics:) so DMZUltra is not required — see KAIPATH_BRIDGE_GAPS pitfalls.",
   "open": {
     "screenId": "hello",
     "title": "My Shop",
@@ -14,8 +14,8 @@
         "label": "Ping",
         "style": "confirm",
         "palette": "gold",
-        "sound": "dmzultra:ui_confirm",
-        "buttonSkin": "dmzultra:arena",
+        "sound": "minecraft:ui.button.click",
+        "buttonSkin": "legacymechanics:button",
         "x": 20,
         "y": 40,
         "w": 150,
@@ -28,20 +28,34 @@
         "label": "Reset",
         "style": "danger",
         "palette": "dark_red",
-        "sound": "dmzultra:ui_confirm",
-        "buttonSkin": {
-          "id": "dmzultra:arena",
-          "normal": "dmzultra:gui/arena/button",
-          "hover": "dmzultra:gui/arena/button",
-          "pressed": "dmzultra:gui/arena/button",
-          "disabled": "dmzultra:gui/arena/button"
-        },
+        "sound": "minecraft:ui.button.click",
+        "buttonSkin": "legacymechanics:button",
         "x": 180,
         "y": 40,
         "w": 150,
         "h": 18,
         "pad": 8,
         "args": { "screen": "hello", "page": "main" }
+      },
+      {
+        "id": "@myshop:nav:home",
+        "label": "Back to Home",
+        "style": "dim",
+        "x": 16,
+        "y": 272,
+        "w": 150,
+        "h": 18,
+        "footer": true
+      },
+      {
+        "id": "@myshop:nav:hub",
+        "label": "Main menu",
+        "style": "dim",
+        "x": 174,
+        "y": 272,
+        "w": 150,
+        "h": 18,
+        "footer": true
       }
     ],
     "panelWidth": 350,
@@ -53,12 +67,7 @@
       "tabsUnderTitle": false,
       "headerBottom": 42,
       "palette": "gold",
-      "frame": {
-        "id": "dmzultra:card",
-        "card": "dmzultra:gui/arena/card_frame",
-        "panel": "dmzultra:gui/arena/panel_tile",
-        "header": "dmzultra:gui/arena/header"
-      },
+      "frame": "legacymechanics:panel",
       "lineHeight": 16,
       "lineGap": 8,
       "bodyTop": 48,
@@ -76,7 +85,7 @@
         "height": 120,
         "scale": 1.0,
         "rotate": true,
-        "portraitFrame": "dmzultra:portrait"
+        "portraitFrame": "legacymechanics:portrait"
       }
     },
     "inputsJson": [
@@ -88,7 +97,7 @@
         "w": 220,
         "h": 120,
         "page": 0,
-        "sound": "dmzultra:scene_tick",
+        "sound": "minecraft:ui.button.click",
         "pages": [
           { "title": "Welcome", "lines": ["Page one of the guide."] },
           { "title": "Tips", "lines": ["Page two.", "Use prev/next."] }
@@ -108,6 +117,8 @@
     "sound",
     "buttonSkin",
     "frame",
-    "pagedBook"
+    "pagedBook",
+    "portraitFrame",
+    "fixedFooter"
   ]
 }

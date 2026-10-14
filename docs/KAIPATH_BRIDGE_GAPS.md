@@ -2,7 +2,7 @@
 
 **LM 4.6.154** (live) + **KaiPath 1.3.13** (live / recommended). Official KaiPath updates are owned by the KaiPath mod developer.
 
-**At a glance — KaiPath next:** (1) honor `footer:true` + advertise `fixedFooter`, (2) advertise `portraitFrame`, (3) read § Pitfalls before release. JLDK one-pager: [`KAIPATH_JLDK_CLIENT_BRIEF.md`](KAIPATH_JLDK_CLIENT_BRIEF.md).
+**At a glance — KaiPath next:** (1) merge kit `fixedFooter` (`UltraBridgeFooter` + [`FIXED_FOOTER.md`](../tools/ultra-gui-kit/kaipath-client/com/dmzlegacy/kaipath/ultra/consumers/legacymechanics/FIXED_FOOTER.md)), (2) advertise `portraitFrame` + `fixedFooter`, (3) read § Pitfalls before release. JLDK one-pager: [`KAIPATH_JLDK_CLIENT_BRIEF.md`](KAIPATH_JLDK_CLIENT_BRIEF.md).
 
 Pulled live jar: `mods/kaipath-1.3.13.jar`. Advertise set:
 
@@ -15,8 +15,8 @@ palette, sound, buttonSkin, frame, pagedBook, combined.forms.v1
 
 | Gap | Owner | LM status | KaiPath 1.3.13 | Notes |
 |-----|-------|-----------|-----------------|-------|
-| **`button footer:true` / `fixedFooter`** | **JLDK** | **Emits** (4.6.152+) | **Missing** | Pin Back + Main menu (or contextual Back) in fixed chrome so they do not scroll with body. Today client `contentBottom = panelY + panelH - 28` and ignores `footer`. Advertise: `fixedFooter`. Spec: [`KAIPATH_GUI_PROTOCOL.md`](KAIPATH_GUI_PROTOCOL.md). |
-| **Advertise `portraitFrame`** | **JLDK** | **Emits** when `playerModel` present | Honors but **not advertised** | Guitest/diagnostics treat missing advertise as unsupported even though paint works. Add `"portraitFrame"` to GuiFeatures. |
+| **`button footer:true` / `fixedFooter`** | **JLDK** | **Emits** (4.6.152+) | **Missing on live** | Pin Back + Main menu in fixed chrome (out of `scrollWidgets`). Live `contentBottom = panelY + panelH - 28` ignores `footer`. **Kit fix ready:** `UltraBridgeFooter` + `FIXED_FOOTER.md`. Advertise: `fixedFooter`. |
+| **Advertise `portraitFrame`** | **JLDK** | **Emits** when `playerModel` present | Honors but **not advertised** | Guitest treats missing advertise as unsupported even though paint works. **Kit already advertises** `portraitFrame`. |
 | **Title vertical centering** | **JLDK-only** | N/A (no field) | Partial | 1.3.13 already centers vertically in the header band via `(headerBottom - 2 - 9) / 2`. Confirm gear-icon band alignment on all themes. |
 
 `/lm admin guitest` on KaiPath **1.3.13** + LM **4.6.154**:
@@ -27,10 +27,10 @@ missingShipped=none pendingNext=[fixedFooter]
 
 ## KaiPath handoff checklist (do these)
 
-1. **Honor `footer:true`** — buttons with `"footer": true` stay pinned at the panel bottom; scrollable body/`contentBottom` ends above that band. Advertise `fixedFooter`.
-2. **Advertise `portraitFrame`** alongside existing chrome features (already painted when present).
+1. **Merge kit `fixedFooter`** — copy [`UltraBridgeFooter`](../tools/ultra-gui-kit/kaipath-client/com/dmzlegacy/kaipath/ultra/consumers/legacymechanics/UltraBridgeFooter.java) + apply [`FIXED_FOOTER.md`](../tools/ultra-gui-kit/kaipath-client/com/dmzlegacy/kaipath/ultra/consumers/legacymechanics/FIXED_FOOTER.md) to the live scroll-clipped `LmDynamicScreen`. Footer buttons stay out of `scrollWidgets`; `contentBottom` uses footer band height (not hard-coded `panelH - 28`).
+2. **Advertise `portraitFrame` + `fixedFooter`** (kit `ADVERTISED_FEATURES_JSON` already has both).
 3. Keep advertise camelCase **`pagedBook`**; wire widget type stays snake_case **`paged_book`**.
-4. When implementing fixedFooter, set `contentBottom` from footer band height (not hard-coded `panelH - 28`).
+4. Re-read § Pitfalls before cutting the release.
 
 ### Advertise when fixedFooter + portraitFrame ship
 
@@ -160,9 +160,9 @@ Vendored / live jar: `mods/kaipath-1.3.13.jar`. Reference kit: [`tools/ultra-gui
 | `headerBottom` | **Done** | — |
 | `accent` / palette chrome | **Done** | — |
 | `sound` / `buttonSkin` / `frame` / `paged_book` | **Done** | — |
-| Advertise shipped set | **Done** | Add `fixedFooter`, `portraitFrame` |
-| Honor `footer:true` / `fixedFooter` | **Needed** | Pin footer; raise content band |
-| Advertise `portraitFrame` | **Needed** | Already paints |
+| Advertise shipped set | **Done** | Add `fixedFooter`, `portraitFrame` (kit ready) |
+| Honor `footer:true` / `fixedFooter` | **Needed on live** | Kit: `UltraBridgeFooter` + `FIXED_FOOTER.md` |
+| Advertise `portraitFrame` | **Needed on live** | Already paints; kit advertises |
 | Title vertical center | Confirm | Gear-band alignment |
 | `slider` / `toggle` widgets | N/A | When LM ships types |
 
