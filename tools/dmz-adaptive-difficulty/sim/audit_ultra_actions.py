@@ -322,6 +322,7 @@ def main() -> int:
             "FEATURE_TEXT_INPUT",
             "FEATURE_HEADER_BOTTOM",
             "FEATURE_ACCENT",
+            "FEATURE_FIXED_FOOTER",
         ):
             if needle not in feat_text:
                 errors.append(f"UltraClientFeatures must define {needle}")
@@ -332,25 +333,46 @@ def main() -> int:
         if "textInput" not in feat_text:
             errors.append("UltraClientFeatures must cover textInput (inputsJson)")
         if "FEATURE_HEADER_BOTTOM" not in feat_text or "FEATURE_ACCENT" not in feat_text:
-            errors.append("UltraClientFeatures must define headerBottom + accent pending features")
-        if "PENDING_NEXT" not in feat_text or "FEATURE_HEADER_BOTTOM" not in feat_text:
-            errors.append("UltraClientFeatures.PENDING_NEXT must track headerBottom + accent")
-        # PENDING_NEXT must be non-empty while KaiPath 1.3.9 lacks these.
+            errors.append("UltraClientFeatures must define headerBottom + accent shipped features")
+        if "SHIPPED_ON_RECOMMENDED" not in feat_text:
+            errors.append("UltraClientFeatures must define SHIPPED_ON_RECOMMENDED")
+        shipped_block = feat_text.split("SHIPPED_ON_RECOMMENDED", 1)[-1].split(
+            "PENDING_NEXT", 1
+        )[0]
+        if "FEATURE_HEADER_BOTTOM" not in shipped_block or "FEATURE_ACCENT" not in shipped_block:
+            errors.append(
+                "SHIPPED_ON_RECOMMENDED must include FEATURE_HEADER_BOTTOM + FEATURE_ACCENT "
+                "(KaiPath 1.3.13)"
+            )
+        if "PENDING_NEXT" not in feat_text or "FEATURE_FIXED_FOOTER" not in feat_text:
+            errors.append("UltraClientFeatures.PENDING_NEXT must track fixedFooter")
+        # PENDING_NEXT must be non-empty while KaiPath 1.3.13 lacks fixedFooter.
         if "PENDING_NEXT =\n            Set.of()" in feat_text or "PENDING_NEXT = Set.of()" in feat_text:
             errors.append(
-                "UltraClientFeatures.PENDING_NEXT must list headerBottom + accent "
-                "(not empty while LM emits them)"
+                "UltraClientFeatures.PENDING_NEXT must list fixedFooter "
+                "(not empty while LM emits footer:true)"
             )
-        if "FEATURE_HEADER_BOTTOM" not in feat_text.split("PENDING_NEXT", 1)[-1].split(
-            "private static final Map", 1
-        )[0]:
-            errors.append("PENDING_NEXT must include FEATURE_HEADER_BOTTOM")
-        if "FEATURE_ACCENT" not in feat_text.split("PENDING_NEXT", 1)[-1].split(
-            "private static final Map", 1
-        )[0]:
-            errors.append("PENDING_NEXT must include FEATURE_ACCENT")
+        pending_decl = "public static final Set<String> PENDING_NEXT"
+        if pending_decl not in feat_text:
+            errors.append("UltraClientFeatures must declare public PENDING_NEXT set")
+            pending_block = ""
+        else:
+            pending_block = feat_text.split(pending_decl, 1)[-1].split(
+                "private static final Map", 1
+            )[0]
+        if pending_block and "FEATURE_FIXED_FOOTER" not in pending_block:
+            errors.append("PENDING_NEXT must include FEATURE_FIXED_FOOTER")
+        if pending_block and (
+            "FEATURE_HEADER_BOTTOM" in pending_block or "FEATURE_ACCENT" in pending_block
+        ):
+            errors.append(
+                "PENDING_NEXT must not include headerBottom/accent "
+                "(shipped on KaiPath 1.3.13)"
+            )
         if "headerBottom" not in feat_text or 'FEATURE_ACCENT_DOC = "accent"' not in feat_text:
             errors.append("UltraClientFeatures must expose headerBottom/accent doc spellings")
+        if "fixedFooter" not in feat_text:
+            errors.append("UltraClientFeatures must expose fixedFooter doc spelling")
     if "roundTripStyleAndActiveTab" not in net:
         errors.append("LmGuiNetwork must round-trip style + activeTab in self-test")
     if "GuiFeaturesPacket" not in net:
@@ -518,9 +540,19 @@ def main() -> int:
         errors.append('UltraStyle.BACK must not use a leading "<" (renders as garbage on some clients)')
     if 'BACK = LABEL + "Back"' not in style_src:
         errors.append('UltraStyle.BACK should be LABEL + "Back"')
+    if 'MAIN_MENU = LABEL + "Main menu"' not in style_src:
+        errors.append('UltraStyle.MAIN_MENU should be LABEL + "Main menu"')
+    if 'LABEL + "Back to "' not in style_src:
+        errors.append('UltraStyle.backTo must prefix "Back to " on destination names')
     spec_src = (ULTRA / "UltraScreenSpec.java").read_text(encoding="utf-8")
     if "UltraStyle.wireText" not in spec_src:
         errors.append("UltraScreenSpec must run UltraStyle.wireText on lines/titles before send")
+    if 'addProperty("footer", true)' not in spec_src and 'o.addProperty("footer", true)' not in spec_src:
+        errors.append("UltraScreenSpec must emit button footer:true for pinned footer rows")
+    if "footerBack(String" not in spec_src and "footerBack(String backActionId" not in spec_src:
+        errors.append("UltraScreenSpec must expose footerBack(actionId, destination)")
+    if "footerBackHome(String" not in spec_src:
+        errors.append("UltraScreenSpec.footerBackHome must take a destination name")
 
     # Weight shop must accept up to MAX_WEIGHT_VALUE digits (not a stale 4-digit / 9999 cap).
     weight_shop = (ULTRA / "UltraWeightShopScreens.java").read_text(encoding="utf-8")
@@ -530,14 +562,19 @@ def main() -> int:
         errors.append("UltraWeightShopScreens.parseWeightValue must not hard-cap at 4 digits (9999)")
     if "MAX_WEIGHT_DIGITS" not in weight_shop:
         errors.append("UltraWeightShopScreens must define MAX_WEIGHT_DIGITS from MAX_WEIGHT_VALUE")
-    # Dual-back OK when contextual names a destination; forbid generic "Back" + footer.
+    # Every open* that sends must pin a footer; forbid generic "Back" / Cancel-as-back duplicates.
+    footer_call = re.compile(r"footerBack(?:Home|ToMain)?\s*\(")
     for path in sorted(ULTRA.glob("Ultra*Screens.java")):
+        if path.name == "UltraHubScreens.java":
+            continue
         src = path.read_text(encoding="utf-8")
         for m in re.finditer(
             r"(?:private|public|static)\s+[^{;]+?\b(open\w*)\s*\([^)]*\)\s*\{",
             src,
         ):
             name = m.group(1)
+            if name == "open":
+                continue
             i = src.find("{", m.end() - 1)
             depth = 0
             end = i
@@ -550,7 +587,13 @@ def main() -> int:
                         end = j + 1
                         break
             body = src[m.start() : end]
-            if "footerBackHome()" not in body and "footerBackToMain()" not in body:
+            if "send(player)" not in body:
+                continue
+            if not footer_call.search(body):
+                errors.append(
+                    f"{path.name}.{name}: must call footerBackToMain / footerBackHome(dest) / "
+                    "footerBack(action, dest) so every page has a pinned way back"
+                )
                 continue
             # Generic exact "Back" next to footer = same-feeling duplicate.
             if re.search(r'(?:dim|confirm|danger)\(\s*"Back"\s*\)', body):
@@ -558,25 +601,29 @@ def main() -> int:
                     f'{path.name}.{name}: dim/confirm("Back") with footer - name the destination '
                     "or drop the contextual Back"
                 )
-            if "UltraStyle.BACK" in body and "UltraStyle.backTo(" not in body:
-                # BACK const + footer without a named backTo nearby is a duplicate hub exit.
+            if re.search(r'dim\(\s*"Cancel"\s*\)', body):
                 errors.append(
-                    f"{path.name}.{name}: UltraStyle.BACK + footerBack* - use UltraStyle.backTo("
-                    '"Destination") for contextual exits'
+                    f'{path.name}.{name}: dim("Cancel") with footer - use footerBack for exits '
+                    "(keep danger Cancel only when it is a distinct action)"
                 )
-            # True duplicate: page:main Back next to footerBackHome (same destination often).
-            if 'dim("Back")' in body or "dim(\"Back\")" in body:
+            # True duplicate: page:main Back next to footer.
+            if 'dim("Back")' in body or 'dim("Back")' in body:
                 errors.append(f"{path.name}.{name}: dim(\"Back\") with footer - keep one Back")
 
     # Footers must not ship a Refresh button.
     spec_text = SPEC.read_text(encoding="utf-8")
-    for method in ("footerBackToMain", "footerBackHome"):
-        # Crude extract: method body until next public method
-        m = re.search(
-            rf"public UltraScreenSpec {method}\(\)\s*\{{(.*?)\n    \}}",
-            spec_text,
-            re.S,
-        )
+    for method, pattern in (
+        ("footerBackToMain", r"public UltraScreenSpec footerBackToMain\(\)\s*\{(.*?)\n    \}"),
+        (
+            "footerBackHome",
+            r"public UltraScreenSpec footerBackHome\(String destination\)\s*\{(.*?)\n    \}",
+        ),
+        (
+            "footerBack",
+            r"public UltraScreenSpec footerBack\(String backActionId, String destination\)\s*\{(.*?)\n    \}",
+        ),
+    ):
+        m = re.search(pattern, spec_text, re.S)
         if m is None:
             errors.append(f"UltraScreenSpec.{method} not found")
         elif "nav:refresh" in m.group(1) or "Refresh" in m.group(1):
@@ -627,6 +674,38 @@ def main() -> int:
         errors.append('UltraPrestigeScreens must label wallet "Lifetime prestiges" (not Completed)')
     if "Completed prestiges" in prestige:
         errors.append('UltraPrestigeScreens must not use "Completed prestiges"')
+    if "PrestigeUniverseRoleWarn" not in prestige:
+        errors.append(
+            "UltraPrestigeScreens must warn GoD / Supreme Kai via PrestigeUniverseRoleWarn "
+            "before Prestige now"
+        )
+    role_warn = (
+        ROOT
+        / "src/main/java/com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigeUniverseRoleWarn.java"
+    ).read_text(encoding="utf-8")
+    if "DestroyerRoleService" not in role_warn or '"DESTROYER"' not in role_warn:
+        errors.append(
+            "PrestigeUniverseRoleWarn must reflect Noea DestroyerRoleService and match DESTROYER"
+        )
+    if "KaiApi" not in role_warn or "isSupremeKai" not in role_warn:
+        errors.append("PrestigeUniverseRoleWarn must reflect KaiApi.isSupremeKai")
+    if "GOD_OF_DESTRUCTION" not in role_warn or "SUPREME_KAI" not in role_warn:
+        errors.append("PrestigeUniverseRoleWarn must expose GoD + Supreme Kai warning copy")
+    prestige_sys = (
+        ROOT
+        / "src/main/java/com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigeSystem.java"
+    ).read_text(encoding="utf-8")
+    reply_confirm_body = prestige_sys.split("private static String replyConfirm", 1)[-1].split(
+        "private static String replyCap", 1
+    )[0]
+    if "PrestigeUniverseRoleWarn" not in reply_confirm_body:
+        errors.append("PrestigeSystem.replyConfirm must include PrestigeUniverseRoleWarn lines")
+    build_sh = (ROOT / "build.sh").read_text(encoding="utf-8")
+    if "progression/shop/PrestigeUniverseRoleWarn.class" not in build_sh:
+        errors.append(
+            "build.sh must merge PrestigeUniverseRoleWarn.class "
+            "(next to PrestigeSystem) or prestige confirm NoClassDefFoundErrors"
+        )
     difficulty_titles = (ULTRA / "UltraDifficultyScreens.java").read_text(encoding="utf-8")
     if "titles_p" not in difficulty_titles or "TITLES_PER_PAGE" not in difficulty_titles:
         errors.append("UltraDifficultyScreens must paginate titles via titles_pN (no hard 10-cap drop)")
@@ -639,10 +718,12 @@ def main() -> int:
         re.S | re.M,
     )
     shop_body = shop_m.group(0) if shop_m else ""
-    if '"page:main"' in shop_body and "footerBackHome()" in shop_body:
+    if '"page:main"' in shop_body and "footerBack" in shop_body:
         errors.append(
-            "UltraWeightShopScreens.openShop must not stack page:main Back with footerBackHome"
+            "UltraWeightShopScreens.openShop must not stack page:main Back with footerBack*"
         )
+    if "footerBackToMain()" not in shop_body:
+        errors.append("UltraWeightShopScreens.openShop must use footerBackToMain (weights tab home)")
     rival = (ULTRA / "UltraRivalScreens.java").read_text(encoding="utf-8")
     if 'confirm("Reload")' in rival and 'confirm("Reload data")' not in rival:
         errors.append('UltraRivalScreens staff admin must label refresh "Reload data"')

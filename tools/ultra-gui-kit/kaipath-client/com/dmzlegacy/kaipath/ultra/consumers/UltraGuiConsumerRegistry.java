@@ -33,7 +33,7 @@ public final class UltraGuiConsumerRegistry {
      * {@code textInput}; this kit adds field 11 widgets + that advertise flag.
      */
     public static final String ADVERTISED_FEATURES_JSON =
-            "[\"style\",\"activeTab\",\"titleAlign\",\"playerModel\",\"textInput\"]";
+            "[\"style\",\"activeTab\",\"titleAlign\",\"playerModel\",\"textInput\",\"fixedFooter\"]";
 
     private static final Map<String, BoundChannel> CHANNELS = new ConcurrentHashMap<>();
 

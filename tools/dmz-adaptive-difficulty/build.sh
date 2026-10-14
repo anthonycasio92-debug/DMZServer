@@ -239,6 +239,15 @@ merge_onto_base_jar() {
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigeSystem\$"*.class \
       "$merge/com/dbzlegacy/adaptivedifficulty/progression/shop/" 2>/dev/null || true
   fi
+  # Role-warn helper used by PrestigeSystem.replyConfirm + UltraPrestigeScreens — must ship
+  # from src or the first prestige confirm throws NoClassDefFoundError.
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigeUniverseRoleWarn.class" ]]; then
+    mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/progression/shop"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigeUniverseRoleWarn.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigeUniverseRoleWarn.class"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigeUniverseRoleWarn\$"*.class \
+      "$merge/com/dbzlegacy/adaptivedifficulty/progression/shop/" 2>/dev/null || true
+  fi
   if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigePointsSystem.class" ]]; then
     mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/progression/shop"
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigePointsSystem.class" \

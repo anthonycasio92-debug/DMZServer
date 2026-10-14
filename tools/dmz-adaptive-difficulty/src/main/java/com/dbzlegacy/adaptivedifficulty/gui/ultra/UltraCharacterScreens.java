@@ -204,7 +204,7 @@ public final class UltraCharacterScreens {
             spec.rowGap();
         }
         // footerBackHome only - a second tab:home Back stacked a duplicate button.
-        spec.footerBackHome();
+        spec.footerBackHome("Character Home");
         spec.send(player);
     }
 
@@ -276,13 +276,12 @@ public final class UltraCharacterScreens {
         if (placed % 2 == 1) {
             spec.rowGap();
         }
-        spec.buttonLeft(
+        spec.button(
                         "do:race_confirm:" + confirmArg,
                         UltraStyle.confirm("Confirm & pay"),
                         UltraStyle.STYLE_CONFIRM)
-                .buttonRight("page:race:0", UltraStyle.dim("Cancel"), UltraStyle.STYLE_DIM)
                 .rowGap();
-        // Cancel is the only exit (no footerBackHome stack).
+        spec.footerBack("page:race:0", "Race list");
         spec.send(player);
     }
 
@@ -357,7 +356,7 @@ public final class UltraCharacterScreens {
             spec.rowGap();
         }
         // footerBackHome only - avoid duplicate Back with tab:home.
-        spec.footerBackHome();
+        spec.footerBackHome("Character Home");
         spec.send(player);
     }
 
@@ -371,13 +370,12 @@ public final class UltraCharacterScreens {
             }
         }
         spec.setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
-        spec.buttonLeft(
+        spec.button(
                         "do:class_confirm:" + id,
                         UltraStyle.confirm("Confirm & pay"),
                         UltraStyle.STYLE_CONFIRM)
-                .buttonRight("page:class:0", UltraStyle.dim("Cancel"), UltraStyle.STYLE_DIM)
                 .rowGap();
-        // Cancel is the only exit (no footerBackHome stack).
+        spec.footerBack("page:class:0", "Class list");
         spec.send(player);
     }
 
@@ -392,7 +390,7 @@ public final class UltraCharacterScreens {
         spec.setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
         spec.button("page:reskin_confirm", UltraStyle.confirm("Review cost & continue"), UltraStyle.STYLE_CONFIRM)
                 .rowGap();
-        spec.footerBackHome();
+        spec.footerBackHome("Character Home");
         spec.send(player);
     }
 
@@ -408,17 +406,15 @@ public final class UltraCharacterScreens {
         boolean ready = pre == null || pre.isBlank();
         spec.setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
         if (ready) {
-            spec.buttonLeft(
+            spec.button(
                             "do:reskin_confirm",
                             UltraStyle.confirm("Confirm & pay"),
                             UltraStyle.STYLE_CONFIRM)
-                    .buttonRight("page:reskin", UltraStyle.dim("Cancel"), UltraStyle.STYLE_DIM)
                     .rowGap();
         } else {
             spec.line(UltraStyle.danger(UltraStyle.plain(pre)));
-            spec.button("page:reskin", UltraStyle.backTo("Reskin"), UltraStyle.STYLE_DIM).rowGap();
         }
-        // Ready path: Cancel only. Locked path: named Reskin exit. No footer stack.
+        spec.footerBack("page:reskin", "Reskin");
         spec.send(player);
     }
 
@@ -429,7 +425,7 @@ public final class UltraCharacterScreens {
                     .line(UltraStyle.DIM
                             + "Not available for Monkey - this race uses a form model.")
                     .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
-            spec.footerBackHome();
+            spec.footerBackHome("Character Home");
             spec.send(player);
             return;
         }
@@ -516,7 +512,7 @@ public final class UltraCharacterScreens {
         } else if (pg > 0) {
             spec.rowGap();
         }
-        spec.footerBackHome();
+        spec.footerBackHome("Character Home");
         spec.send(player);
     }
 
@@ -550,7 +546,7 @@ public final class UltraCharacterScreens {
         if (!SagaResetConfig.get().enabled) {
             spec.line(UltraStyle.danger(SagaResetService.RESET_OFF))
                     .setRow(UltraStyle.CONTENT_ROW_TABS + 80);
-            spec.footerBackHome();
+            spec.footerBackHome("Character Home");
             spec.send(player);
             return;
         }
@@ -611,7 +607,7 @@ public final class UltraCharacterScreens {
         } else if (pg > 0) {
             spec.rowGap();
         }
-        spec.footerBackHome();
+        spec.footerBackHome("Character Home");
         spec.send(player);
     }
 
@@ -628,11 +624,10 @@ public final class UltraCharacterScreens {
                 && offer.id() != null
                 && !offer.id().isBlank();
         if (ready) {
-            spec.buttonLeft(
+            spec.button(
                             "do:saga_reset:" + offer.id(),
                             UltraStyle.danger("Confirm reset"),
                             UltraStyle.STYLE_DANGER)
-                    .buttonRight("tab:saga", UltraStyle.dim("Cancel"), UltraStyle.STYLE_DIM)
                     .rowGap();
         } else {
             String why = offer == null
@@ -643,12 +638,8 @@ public final class UltraCharacterScreens {
                                     ? SagaResetService.NOTHING_TO_RESET
                                     : SagaResetService.RESET_OFF;
             spec.line(UltraStyle.danger(why));
-            // Named destination - saga list (no footerBackHome stack).
-            spec.button("tab:saga", UltraStyle.backTo("Saga list"), UltraStyle.STYLE_DIM).rowGap();
-            spec.send(player);
-            return;
         }
-        // Ready path: Cancel only (no footerBackHome stack).
+        spec.footerBack("tab:saga", "Saga list");
         spec.send(player);
     }
 
@@ -666,7 +657,7 @@ public final class UltraCharacterScreens {
             spec.button("do:android", UltraStyle.confirm("Convert to Android"), UltraStyle.STYLE_CONFIRM)
                     .rowGap();
         }
-        spec.footerBackHome();
+        spec.footerBackHome("Character Home");
         spec.send(player);
     }
 }

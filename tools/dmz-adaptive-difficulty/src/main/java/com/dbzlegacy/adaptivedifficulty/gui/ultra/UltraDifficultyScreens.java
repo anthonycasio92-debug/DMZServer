@@ -166,7 +166,7 @@ public final class UltraDifficultyScreens {
                     .setRow(UltraStyle.CONTENT_ROW_TABS + 90);
             spec.buttonLeft("do:toggle_personal", UltraStyle.confirm("Turn personal ON"), "confirm")
                     .rowGap();
-            spec.footerBackHome();
+            spec.footerBackHome("Difficulty Home");
             spec.send(player);
             return;
         }
@@ -209,7 +209,7 @@ public final class UltraDifficultyScreens {
                                 : UltraStyle.dim("Personal difficulty - OFF"),
                         data.isPersonalEnabled() ? "confirm" : "dim")
                 .rowGap();
-        spec.footerBackHome();
+        spec.footerBackHome("Difficulty Home");
         spec.send(player);
     }
 
@@ -262,7 +262,7 @@ public final class UltraDifficultyScreens {
             spec.buttonLeft("do:toggle_personal", UltraStyle.confirm("Turn personal ON"), "confirm")
                     .rowGap();
         }
-        spec.footerBackHome();
+        spec.footerBackHome("Difficulty Home");
         spec.send(player);
     }
 
@@ -281,7 +281,7 @@ public final class UltraDifficultyScreens {
                 .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
         spec.buttonLeft("page:end_dragon", UltraStyle.confirm("Summon End Dragon"), "confirm")
                 .rowGap();
-        spec.footerBackHome();
+        spec.footerBackHome("Difficulty Home");
         spec.send(player);
     }
 
@@ -306,8 +306,7 @@ public final class UltraDifficultyScreens {
                     .button("do:summon_end_dragon", UltraStyle.dim("Confirm summon - locked"), "dim")
                     .rowGap();
         }
-        // Named destination - summons list (no footerBackHome stack).
-        spec.buttonLeft("page:summons", UltraStyle.backTo("Summons"), "dim").rowGap();
+        spec.footerBack("page:summons", "Summons");
         spec.send(player);
     }
 
@@ -412,7 +411,7 @@ public final class UltraDifficultyScreens {
                                 : UltraStyle.dim("Personal difficulty - OFF"),
                         data.isPersonalEnabled() ? "confirm" : "dim")
                 .rowGap();
-        spec.footerBackHome();
+        spec.footerBackHome("Difficulty Home");
         spec.send(player);
     }
 
@@ -483,7 +482,7 @@ public final class UltraDifficultyScreens {
                         sense ? "confirm" : "dim")
                 .buttonRight("do:clear_title", UltraStyle.danger("Unequip title"), "danger")
                 .rowGap();
-        spec.footerBackHome();
+        spec.footerBackHome("Difficulty Home");
         spec.send(player);
     }
 
@@ -493,8 +492,7 @@ public final class UltraDifficultyScreens {
         if (title == null) {
             spec.line(UltraStyle.dim("Couldn't find that - try refreshing the list."))
                     .setRow(UltraStyle.CONTENT_ROW_TABS + 80);
-            // Named destination - titles list (no footerBackHome stack).
-            spec.button("page:titles_p0", UltraStyle.backTo("Titles"), "dim").rowGap();
+            spec.footerBack("page:titles_p0", "Titles");
             spec.send(player);
             return;
         }
@@ -521,8 +519,7 @@ public final class UltraDifficultyScreens {
         } else {
             spec.line(UltraStyle.dim("Equip unlocks after you earn the title."));
         }
-        // Named destination - titles list (no footerBackHome stack).
-        spec.button("page:titles_p0", UltraStyle.backTo("Titles"), "dim").rowGap();
+        spec.footerBack("page:titles_p0", "Titles");
         spec.send(player);
     }
 
@@ -566,7 +563,7 @@ public final class UltraDifficultyScreens {
         if (StaffAccess.isStaff(player)) {
             spec.buttonLeft("page:stats", UltraStyle.dim("Staff details"), "dim").rowGap();
         }
-        spec.footerBackHome();
+        spec.footerBackHome("Difficulty Home");
         spec.send(player);
     }
 
@@ -612,7 +609,7 @@ public final class UltraDifficultyScreens {
                 .labelValue("Top stats", blank(profile.topStatsLabel()))
                 .labelValue("Ancient Coins", AncientCoinEconomy.inventoryBreakdown(player))
                 .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
-        spec.footerBackHome();
+        spec.footerBackHome("Difficulty Home");
         spec.send(player);
     }
 
@@ -631,7 +628,7 @@ public final class UltraDifficultyScreens {
         spec.buttonLeft("open:admin", UltraStyle.danger("LM Staff Admin"), "danger")
                 .buttonRight("page:eventlog", UltraStyle.dim("Event log"), "dim")
                 .rowGap();
-        spec.footerBackHome();
+        spec.footerBackHome("Difficulty Home");
         spec.send(player);
     }
 
@@ -650,8 +647,7 @@ public final class UltraDifficultyScreens {
         spec.buttonLeft("do:syslog:off", UltraStyle.danger("Turn OFF"), "danger")
                 .buttonRight("do:syslog:flush", UltraStyle.dim("Flush"), "dim")
                 .rowGap();
-        // Named destination - staff admin (no footerBackHome stack).
-        spec.button("page:admin", UltraStyle.backTo("Staff Admin"), "dim").rowGap();
+        spec.footerBack("page:admin", "Staff Admin");
         spec.send(player);
     }
 

@@ -58,6 +58,8 @@ public final class UltraStyle {
 
     public static final String BACK;
     public static final String BACK_TO_MAIN;
+    /** Right-side footer exit to the Ultra hub (never say "Hub"). */
+    public static final String MAIN_MENU;
     public static final int BTN_MIN_W = 80;
     /** Horizontal padding inside buttons (client honors via layoutJson / button pad). */
     public static final int BTN_PAD = 8;
@@ -131,6 +133,32 @@ public final class UltraStyle {
     public static final String STYLE_DANGER = "danger";
     public static final String STYLE_DIM = "dim";
 
+    /**
+     * Button click sound (KaiPath {@code sound} wire — registered SoundEvent RL).
+     *
+     * <p>Uses vanilla {@code minecraft:ui.button.click} so click feedback works when the
+     * player has KaiPath but not DMZUltra. KaiPath looks the id up in
+     * {@code BuiltInRegistries.SOUND_EVENT} and no-ops if missing — it never crashes.
+     */
+    public static final String SOUND_CONFIRM = "minecraft:ui.button.click";
+    /**
+     * Button chrome skin enable token. KaiPath 1.3.13 only checks that the string is a
+     * valid {@code ns:path}; it does <b>not</b> load a texture from that RL. A non-empty
+     * value flips {@code ChromeButton} into tinted outline paint. Namespace is LM's own
+     * so absence of DMZUltra cannot be misread as a missing asset.
+     */
+    public static final String BUTTON_SKIN = "legacymechanics:button";
+    /**
+     * Panel frame enable token ({@code layoutJson.frame}). Same valid-RL → boolean rule as
+     * {@link #BUTTON_SKIN}; draws a tinted border via {@code GuiGraphics}, no texture bind.
+     */
+    public static final String PANEL_FRAME = "legacymechanics:panel";
+    /**
+     * Player-model portrait frame enable token ({@code playerModel.portraitFrame}). Same
+     * enable rule as {@link #PANEL_FRAME}.
+     */
+    public static final String PORTRAIT_FRAME = "legacymechanics:portrait";
+
     static {
         // Unicode escape keeps the mark out of other sources; static-init prevents folding.
         MARK = "\u00A7";
@@ -170,20 +198,26 @@ public final class UltraStyle {
         // No leading "<" - some clients render it as garbage next to color codes.
         BACK = LABEL + "Back";
         BACK_TO_MAIN = LABEL + "Back to main menu";
+        MAIN_MENU = LABEL + "Main menu";
     }
 
     private UltraStyle() {}
 
     /**
-     * Contextual back that names its destination (e.g. "Weights shop", "Rival list").
-     * Use beside {@link UltraScreenSpec#footerBackHome()} when both exits are intentional —
-     * footer stays generic hub Back; this names the specific parent page.
+     * Contextual back label that names its destination (e.g. {@code Back to Rival Home}).
+     * Prefer {@link UltraScreenSpec#footerBackHome(String)} / {@link UltraScreenSpec#footerBack}
+     * so the control lives in the pinned footer, not the scrollable body.
      */
     public static String backTo(String destination) {
         if (destination == null || destination.isBlank()) {
             return BACK;
         }
-        return LABEL + destination.trim();
+        String dest = destination.trim();
+        // Avoid "Back to Back to ..." if a caller already prefixed.
+        if (dest.regionMatches(true, 0, "Back to ", 0, 8)) {
+            return LABEL + dest;
+        }
+        return LABEL + "Back to " + dest;
     }
 
     public static String plain(String text) {

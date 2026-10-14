@@ -63,42 +63,24 @@ def audit() -> list[dict]:
     for path in sorted(ULTRA.glob("Ultra*Screens.java")):
         text = path.read_text(encoding="utf-8")
         for name, body in methods_of(text):
-            has_footer = "footerBackHome()" in body or "footerBackToMain()" in body
+            has_footer = bool(re.search(r"footerBack(?:Home|ToMain)?\s*\(", body))
             # Dual-back policy: named destinations OK with footer; generic "Back" is not.
             generic_back_labels = re.findall(
                 r'(?:dim|confirm|danger)\(\s*"(Back)"\s*\)', body
             )
             if has_footer and generic_back_labels:
-                if not any(
-                    mutually_exclusive(body, lab, "footerBackHome()")
-                    or mutually_exclusive(body, lab, "footerBackToMain()")
-                    for lab in generic_back_labels
-                ):
-                    add(
-                        "high",
-                        path.name,
-                        name,
-                        "stacked_back",
-                        f"footerBack* + generic Back label(s): {generic_back_labels}",
-                    )
-            if (
-                has_footer
-                and "UltraStyle.BACK" in body
-                and "UltraStyle.backTo(" not in body
-                and not mutually_exclusive(body, "UltraStyle.BACK", "footerBackHome()")
-            ):
                 add(
                     "high",
                     path.name,
                     name,
-                    "stacked_back_const",
-                    "UltraStyle.BACK button + footerBackHome() (use backTo for contextual exits)",
+                    "stacked_back",
+                    f"footerBack* + generic Back label(s): {generic_back_labels}",
                 )
 
             # multi_footer only if both calls can run without return between
             footers = [
                 m.start()
-                for m in re.finditer(r"footerBack(?:Home|ToMain)\(\)", body)
+                for m in re.finditer(r"footerBack(?:Home|ToMain)?\s*\(", body)
             ]
             if len(footers) > 1:
                 between = body[footers[0] : footers[-1]]
@@ -112,14 +94,13 @@ def audit() -> list[dict]:
                     )
 
             if has_footer and re.search(r'dim\(\s*"Cancel"\s*\)', body):
-                if not mutually_exclusive(body, 'dim("Cancel")', "footerBackHome()"):
-                    add(
-                        "high",
-                        path.name,
-                        name,
-                        "cancel_plus_footer",
-                        "Cancel + footerBackHome (two exit controls)",
-                    )
+                add(
+                    "high",
+                    path.name,
+                    name,
+                    "cancel_plus_footer",
+                    "Cancel + footerBack* (two exit controls) - use footer for navigation exits",
+                )
 
             for m in re.finditer(
                 r'(?:dim|confirm|danger)\(\s*"([^"]*[<>«»][^"]*)"\s*\)', body

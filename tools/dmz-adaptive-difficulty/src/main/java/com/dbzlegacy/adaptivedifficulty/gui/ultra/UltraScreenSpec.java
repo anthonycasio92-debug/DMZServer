@@ -45,6 +45,8 @@ public final class UltraScreenSpec {
     private PlayerModel playerModel;
     /** Lowest button top Y seen so far; used to size the body scroll region. */
     private int firstButtonY = -1;
+    /** Pinned footer buttons ({@code footer:true}) — placed at panel bottom in {@link #toPacket}. */
+    private final List<Button> footerButtons = new ArrayList<>();
 
     private UltraScreenSpec(String screenId) {
         this.screenId = screenId == null || screenId.isBlank() ? "hub" : screenId.trim();
@@ -274,7 +276,10 @@ public final class UltraScreenSpec {
                 UltraStyle.BTN_H,
                 UltraStyle.BTN_PAD,
                 bind,
-                normalizeAccent(accent)));
+                normalizeAccent(accent),
+                false,
+                UltraStyle.SOUND_CONFIRM,
+                UltraStyle.BUTTON_SKIN));
         return this;
     }
 
@@ -305,21 +310,77 @@ public final class UltraScreenSpec {
         return nextRow;
     }
 
-    /** Home tab footer: back to main menu (no Refresh - pages reopen via actions/tabs). */
+    /**
+     * System-home footer: left {@code Back to main menu} ({@code nav:hub}). Pinned at the
+     * panel bottom ({@code footer:true}) — not in the scrollable body.
+     */
     public UltraScreenSpec footerBackToMain() {
-        return button(
+        return placeFooter(
                 "nav:hub",
                 UltraStyle.BACK_TO_MAIN,
-                UltraStyle.STYLE_DIM,
-                UltraStyle.COL_L,
-                nextRow,
-                UltraStyle.BTN_W);
+                null,
+                null);
     }
 
-    /** Sub-page footer: back to system home (no Refresh). */
+    /**
+     * Sub-page footer: left {@code Back to {destination}} ({@code nav:home}) + right
+     * {@code Main menu} ({@code nav:hub}). Both pinned ({@code footer:true}).
+     *
+     * @param destination plain words naming where left goes (e.g. {@code Rival Home}, {@code Shop})
+     */
+    public UltraScreenSpec footerBackHome(String destination) {
+        return placeFooter(
+                "nav:home",
+                UltraStyle.backTo(destination),
+                "nav:hub",
+                UltraStyle.MAIN_MENU);
+    }
+
+    /**
+     * Nested footer: left {@code Back to {destination}} ({@code backActionId}) + right
+     * {@code Main menu}. Use when the parent is not the system home tab.
+     */
+    public UltraScreenSpec footerBack(String backActionId, String destination) {
+        String action =
+                backActionId == null || backActionId.isBlank() ? "nav:home" : backActionId.trim();
+        return placeFooter(action, UltraStyle.backTo(destination), "nav:hub", UltraStyle.MAIN_MENU);
+    }
+
+    /**
+     * @deprecated use {@link #footerBackHome(String)} so the label names the destination.
+     */
+    @Deprecated
     public UltraScreenSpec footerBackHome() {
-        return button(
-                "nav:home", UltraStyle.BACK, UltraStyle.STYLE_DIM, UltraStyle.COL_L, nextRow, UltraStyle.BTN_W);
+        return footerBackHome("Home");
+    }
+
+    private UltraScreenSpec placeFooter(
+            String leftActionId, String leftLabel, String rightActionId, String rightLabel) {
+        // Footer Y is resolved in toPacket against final panel height; placeholder 0.
+        addFooterButton(leftActionId, leftLabel, UltraStyle.COL_L);
+        if (rightActionId != null && !rightActionId.isBlank()) {
+            addFooterButton(rightActionId, rightLabel, UltraStyle.COL_R);
+        }
+        return this;
+    }
+
+    private void addFooterButton(String actionId, String label, int x) {
+        UltraScreenIds.requireValidActionId(screenId, actionId, label);
+        footerButtons.add(
+                new Button(
+                        qualifyAction(actionId),
+                        UltraStyle.fitAsciiLabel(label, UltraStyle.labelMaxWidth(UltraStyle.BTN_W)),
+                        UltraStyle.STYLE_DIM,
+                        x,
+                        0,
+                        UltraStyle.BTN_W,
+                        UltraStyle.BTN_H,
+                        UltraStyle.BTN_PAD,
+                        null,
+                        "",
+                        true,
+                        UltraStyle.SOUND_CONFIRM,
+                        UltraStyle.BUTTON_SKIN));
     }
 
     /**
@@ -354,7 +415,38 @@ public final class UltraScreenSpec {
                         y,
                         Math.max(40, w),
                         Math.max(14, h),
-                        Math.max(1, Math.min(256, maxLength <= 0 ? 64 : maxLength))));
+                        Math.max(1, Math.min(256, maxLength <= 0 ? 64 : maxLength)),
+                        null,
+                        0));
+        return this;
+    }
+
+    /**
+     * Multi-page book widget ({@code inputsJson} {@code type=paged_book}). Advertise id is
+     * camelCase {@code pagedBook}; wire type is snake_case {@code paged_book}.
+     *
+     * <p>Each page is {@code { "title": "...", "lines": ["...", ...] }}.
+     */
+    public UltraScreenSpec pagedBook(
+            String inputId, int x, int y, int w, int h, JsonArray pages, int startPage) {
+        UltraScreenIds.requireValidActionId(screenId, inputId, "paged_book");
+        if (firstButtonY < 0 || y < firstButtonY) {
+            firstButtonY = y;
+        }
+        JsonArray copy = pages == null ? new JsonArray() : pages.deepCopy();
+        inputs.add(
+                new Input(
+                        qualifyAction(inputId),
+                        "paged_book",
+                        "",
+                        "",
+                        x,
+                        y,
+                        Math.max(80, w),
+                        Math.max(40, h),
+                        0,
+                        copy,
+                        Math.max(0, startPage)));
         return this;
     }
 
@@ -373,7 +465,16 @@ public final class UltraScreenSpec {
 
     /** Build the wire packet without sending. */
     public GuiOpenPacket toPacket() {
-        int contentBottom = nextRow + UltraStyle.BTN_H + UltraStyle.PANEL_MARGIN;
+        // Pinned footer band (left/right Back + Main menu) reserved under scrollable body.
+        int footerReserve =
+                footerButtons.isEmpty()
+                        ? 0
+                        : UltraStyle.BTN_H + UltraStyle.BTN_GAP + UltraStyle.PANEL_MARGIN;
+        int contentBottom =
+                nextRow
+                        + (buttons.isEmpty() ? 0 : UltraStyle.BTN_H)
+                        + UltraStyle.PANEL_MARGIN
+                        + footerReserve;
         int bodyTop = tabs.isEmpty() ? UltraStyle.BODY_TOP : UltraStyle.BODY_TOP_TABS;
         int lineStep = UltraStyle.LINE_H + UltraStyle.LINE_GAP;
         int naturalBodyH =
@@ -389,9 +490,9 @@ public final class UltraScreenSpec {
         int buttonTop = firstButtonY;
         int buttonStackH =
                 buttonTop < 0
-                        ? UltraStyle.PANEL_MARGIN
+                        ? UltraStyle.PANEL_MARGIN + footerReserve
                         : Math.max(
-                                UltraStyle.BTN_H + UltraStyle.PANEL_MARGIN,
+                                UltraStyle.BTN_H + UltraStyle.PANEL_MARGIN + footerReserve,
                                 contentBottom - buttonTop);
         int maxBodyAtCap =
                 Math.max(
@@ -442,14 +543,16 @@ public final class UltraScreenSpec {
             }
         }
 
-        // Body region sits under title/tabs and above the first button row (or panel bottom).
+        // Body region sits under title/tabs and above the first button row (or footer band).
         int effectiveButtonTop = buttonTop < 0 ? -1 : buttonTop + buttonShift;
+        int bodyFloor =
+                footerReserve > 0
+                        ? height - footerReserve
+                        : height - UltraStyle.PANEL_MARGIN;
         int bodyBottom =
                 effectiveButtonTop < 0
-                        ? height - UltraStyle.PANEL_MARGIN
-                        : Math.min(
-                                effectiveButtonTop - UltraStyle.BTN_GAP,
-                                height - UltraStyle.PANEL_MARGIN);
+                        ? bodyFloor
+                        : Math.min(effectiveButtonTop - UltraStyle.BTN_GAP, bodyFloor);
         int bodyMaxH;
         if (naturalBodyH <= 0) {
             bodyMaxH = Math.max(0, bodyBottom - bodyTop);
@@ -474,31 +577,32 @@ public final class UltraScreenSpec {
         JsonArray btnArr = new JsonArray();
         appendTabButtons(btnArr);
         for (Button b : buttons) {
+            appendButtonJson(btnArr, b, buttonShift, height);
+        }
+        // Pinned footer last — client honors footer:true at panel bottom.
+        int footerY = Math.max(UltraStyle.CONTENT_ROW, height - UltraStyle.PANEL_MARGIN - UltraStyle.BTN_H);
+        for (Button b : footerButtons) {
             if (b == null) {
                 continue;
             }
-            JsonObject o = new JsonObject();
-            o.addProperty("id", b.actionId);
-            o.addProperty("label", b.label);
-            o.addProperty("style", b.style);
-            if (b.accent != null && !b.accent.isBlank()) {
-                o.addProperty("accent", b.accent);
-            }
-            o.addProperty("x", b.x);
-            o.addProperty("y", b.y + buttonShift);
-            o.addProperty("w", b.w);
-            o.addProperty("h", b.h);
-            o.addProperty("pad", b.pad);
-            JsonObject args = new JsonObject();
-            // Logical system - echoed by KaiPath into GuiActionPacket even when wire screenId is hub.
-            args.addProperty("screen", screenId);
-            args.addProperty(UltraScreenIds.META_SYSTEM, screenId);
-            args.addProperty("page", pageId);
-            if (b.bindInput != null && !b.bindInput.isBlank()) {
-                args.addProperty("bindInput", b.bindInput);
-            }
-            o.add("args", args);
-            btnArr.add(o);
+            appendButtonJson(
+                    btnArr,
+                    new Button(
+                            b.actionId,
+                            b.label,
+                            b.style,
+                            b.x,
+                            footerY,
+                            b.w,
+                            b.h,
+                            b.pad,
+                            b.bindInput,
+                            b.accent,
+                            true,
+                            b.sound,
+                            b.buttonSkin),
+                    0,
+                    height);
         }
         JsonArray inputArr = new JsonArray();
         for (Input in : inputs) {
@@ -512,11 +616,16 @@ public final class UltraScreenSpec {
             o.addProperty("y", in.y + buttonShift);
             o.addProperty("w", in.w);
             o.addProperty("h", in.h);
-            o.addProperty("value", UltraStyle.wireText(in.value == null ? "" : in.value));
-            o.addProperty(
-                    "placeholder",
-                    UltraStyle.wireText(in.placeholder == null ? "" : in.placeholder));
-            o.addProperty("maxLength", in.maxLength);
+            if ("paged_book".equalsIgnoreCase(in.type)) {
+                o.add("pages", in.pages == null ? new JsonArray() : in.pages);
+                o.addProperty("page", Math.max(0, in.page));
+            } else {
+                o.addProperty("value", UltraStyle.wireText(in.value == null ? "" : in.value));
+                o.addProperty(
+                        "placeholder",
+                        UltraStyle.wireText(in.placeholder == null ? "" : in.placeholder));
+                o.addProperty("maxLength", in.maxLength);
+            }
             JsonObject args = new JsonObject();
             args.addProperty("screen", screenId);
             args.addProperty(UltraScreenIds.META_SYSTEM, screenId);
@@ -544,6 +653,8 @@ public final class UltraScreenSpec {
             // Single-letter color for title chrome + activeTab highlight (plain ASCII titles).
             layout.addProperty("accent", accentCode);
         }
+        // Non-empty valid RL enables framed panel chrome (KaiPath 1.3.13+).
+        layout.addProperty("frame", UltraStyle.PANEL_FRAME);
         // Shared body / button metrics - every screen benefits.
         layout.addProperty("lineHeight", UltraStyle.LINE_H);
         layout.addProperty("lineGap", UltraStyle.LINE_GAP);
@@ -569,6 +680,8 @@ public final class UltraScreenSpec {
             if (playerModel.parts != null && !playerModel.parts.entrySet().isEmpty()) {
                 pm.add("parts", playerModel.parts);
             }
+            // Enable portrait chrome when the client honors portraitFrame (1.3.13+).
+            pm.addProperty("portraitFrame", UltraStyle.PORTRAIT_FRAME);
             layout.add("playerModel", pm);
         }
         return new GuiOpenPacket(
@@ -648,6 +761,8 @@ public final class UltraScreenSpec {
             o.addProperty("w", tabW);
             o.addProperty("h", UltraStyle.BTN_H);
             o.addProperty("pad", UltraStyle.BTN_PAD);
+            o.addProperty("sound", UltraStyle.SOUND_CONFIRM);
+            o.addProperty("buttonSkin", UltraStyle.BUTTON_SKIN);
             JsonObject args = new JsonObject();
             args.addProperty("screen", screenId);
             args.addProperty(UltraScreenIds.META_SYSTEM, screenId);
@@ -731,6 +846,48 @@ public final class UltraScreenSpec {
         }
     }
 
+    private void appendButtonJson(JsonArray btnArr, Button b, int buttonShift, int panelH) {
+        if (btnArr == null || b == null) {
+            return;
+        }
+        JsonObject o = new JsonObject();
+        o.addProperty("id", b.actionId);
+        o.addProperty("label", b.label);
+        o.addProperty("style", b.style);
+        if (b.accent != null && !b.accent.isBlank()) {
+            o.addProperty("accent", b.accent);
+        }
+        o.addProperty("x", b.x);
+        int y = b.footer ? b.y : b.y + buttonShift;
+        // Footer pins to panel bottom even if packing shifted body rows.
+        if (b.footer) {
+            y = Math.max(UltraStyle.CONTENT_ROW, panelH - UltraStyle.PANEL_MARGIN - UltraStyle.BTN_H);
+        }
+        o.addProperty("y", y);
+        o.addProperty("w", b.w);
+        o.addProperty("h", b.h);
+        o.addProperty("pad", b.pad);
+        if (b.footer) {
+            o.addProperty("footer", true);
+        }
+        if (b.sound != null && !b.sound.isBlank()) {
+            o.addProperty("sound", b.sound);
+        }
+        if (b.buttonSkin != null && !b.buttonSkin.isBlank()) {
+            o.addProperty("buttonSkin", b.buttonSkin);
+        }
+        JsonObject args = new JsonObject();
+        // Logical system - echoed by KaiPath into GuiActionPacket even when wire screenId is hub.
+        args.addProperty("screen", screenId);
+        args.addProperty(UltraScreenIds.META_SYSTEM, screenId);
+        args.addProperty("page", pageId);
+        if (b.bindInput != null && !b.bindInput.isBlank()) {
+            args.addProperty("bindInput", b.bindInput);
+        }
+        o.add("args", args);
+        btnArr.add(o);
+    }
+
     private record Button(
             String actionId,
             String label,
@@ -741,7 +898,10 @@ public final class UltraScreenSpec {
             int h,
             int pad,
             String bindInput,
-            String accent) {}
+            String accent,
+            boolean footer,
+            String sound,
+            String buttonSkin) {}
 
     private record Input(
             String id,
@@ -752,7 +912,9 @@ public final class UltraScreenSpec {
             int y,
             int w,
             int h,
-            int maxLength) {}
+            int maxLength,
+            JsonArray pages,
+            int page) {}
 
     private record PlayerModel(
             int x, int y, int width, int height, float scale, boolean rotate, JsonObject parts) {}

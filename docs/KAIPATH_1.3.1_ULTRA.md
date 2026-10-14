@@ -2,13 +2,13 @@
 
 | Side | Role |
 |------|------|
-| LM **4.6.151** | `GuiOpenPacket` (11 fields), styles, `titleAlign`, `playerModel.parts`, text fields, **`headerBottom`**, **`accent`** |
-| KaiPath **1.3.9** (live / recommended) | `style`, `activeTab`, `titleAlign`, `playerModel`, `textInput` (5 GuiFeatures) |
-| **Pending on KaiPath** | Honor + advertise `headerBottom`, `accent`; title vertical centering (no field) |
+| LM **4.6.154** | `GuiOpenPacket` (11 fields), styles, `titleAlign`, `playerModel.parts`, text fields, **`headerBottom`**, **`accent`**, button **`footer:true`**, chrome emit (sound/skin/frame/`paged_book`) |
+| KaiPath **1.3.13** (live / recommended) | `style`, `activeTab`, `titleAlign`, `playerModel`, `textInput`, `headerBottom`, `accent`, palette/sound/buttonSkin/frame/pagedBook |
+| **Pending on KaiPath** | Honor + advertise `fixedFooter`; title vertical centering (no field) |
 
-Note: CurseForge jumped **1.3.1 → 1.3.7 → 1.3.9**. Field 11 / `textInput` landed in **1.3.9**.
+Note: CurseForge / live jumped **1.3.1 → 1.3.7 → 1.3.9 → 1.3.13**. Field 11 / `textInput` landed in **1.3.9**. Chrome (`headerBottom` / `accent` / palette…) landed by **1.3.13**.
 
-Guitest on 1.3.9: `missingShipped=none pendingNext=[headerBottom, accent]`.
+Guitest on 1.3.13: `missingShipped=none pendingNext=[fixedFooter]`.
 
 See [`KAIPATH_GUI_PROTOCOL.md`](KAIPATH_GUI_PROTOCOL.md),
 [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md), and

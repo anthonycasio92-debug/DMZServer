@@ -94,8 +94,7 @@ public final class UltraWeightShopScreens {
                             UltraStyle.STYLE_CONFIRM)
                     .rowGap();
         }
-        // Footer hub Back only - do not stack a second page:main Back (same destination).
-        spec.footerBackHome();
+        spec.footerBackToMain();
         spec.send(player);
     }
 
@@ -124,13 +123,8 @@ public final class UltraWeightShopScreens {
                     .line(
                             UltraStyle.DIM
                                     + "Install KaiPath 1.3.9 or newer to type weight values. "
-                                    + "Until then this shop cannot take a typed value.")
-                    // Named destination - parent shop list (no footerBackHome stack).
-                    .buttonLeft(
-                            "page:weights",
-                            UltraStyle.backTo("Weights shop"),
-                            UltraStyle.STYLE_DIM)
-                    .rowGap();
+                                    + "Until then this shop cannot take a typed value.");
+            spec.footerBack("page:weights", "Weights shop");
             spec.send(player);
             return;
         }
@@ -152,9 +146,7 @@ public final class UltraWeightShopScreens {
                         UltraStyle.STYLE_CONFIRM,
                         INPUT_ID)
                 .rowGap();
-        // Named destination - parent shop list (no footerBackHome stack).
-        spec.buttonLeft("page:weights", UltraStyle.backTo("Weights shop"), UltraStyle.STYLE_DIM)
-                .rowGap();
+        spec.footerBack("page:weights", "Weights shop");
         spec.send(player);
     }
 
@@ -200,9 +192,7 @@ public final class UltraWeightShopScreens {
                             UltraStyle.STYLE_DIM)
                     .rowGap();
         }
-        // Named destination - parent shop list (no footerBackHome stack).
-        spec.buttonLeft("page:weights", UltraStyle.backTo("Weights shop"), UltraStyle.STYLE_DIM)
-                .rowGap();
+        spec.footerBack("page:weights", "Weights shop");
         spec.send(player);
     }
 

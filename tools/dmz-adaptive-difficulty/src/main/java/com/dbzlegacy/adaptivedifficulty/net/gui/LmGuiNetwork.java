@@ -53,10 +53,11 @@ public final class LmGuiNetwork {
     public static final String KAIPATH_DYNAMIC_UI_VERSION = "1.3.1";
 
     /**
-     * Current recommended/released KaiPath for Ultra (CurseForge). Ships style, activeTab,
-     * titleAlign, playerModel + GuiFeaturesPacket. Still lacks field 11 {@code textInput}.
+     * Current recommended/released KaiPath for Ultra (live). Ships style, activeTab,
+     * titleAlign, playerModel, textInput, headerBottom, accent (+ palette/sound/buttonSkin/
+     * frame/pagedBook). Still lacks button {@code footer:true} / {@code fixedFooter}.
      */
-    public static final String KAIPATH_RECOMMENDED_VERSION = "1.3.9";
+    public static final String KAIPATH_RECOMMENDED_VERSION = "1.3.13";
 
     /**
      * Optional channel: clients without KaiPath omit it. Accept missing so those players

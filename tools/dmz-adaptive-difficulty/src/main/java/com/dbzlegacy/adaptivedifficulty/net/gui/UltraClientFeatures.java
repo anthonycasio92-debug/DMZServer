@@ -26,13 +26,15 @@ import net.minecraft.server.level.ServerPlayer;
  *   <li>{@link #FEATURE_TEXT_INPUT} — GuiOpenPacket field 11 {@code inputsJson} text fields
  *   <li>{@link #FEATURE_HEADER_BOTTOM} — {@code layoutJson.headerBottom} (title+divider above tabs)
  *   <li>{@link #FEATURE_ACCENT} — {@code layoutJson.accent} + button/tab {@code accent}
+ *   <li>{@link #FEATURE_FIXED_FOOTER} — button {@code footer:true} pinned chrome
  * </ul>
  *
  * <p>Clients that never send {@link GuiFeaturesPacket} are treated as the KaiPath <b>1.3.1
- * baseline</b>: dynamic layout/buttons only. KaiPath <b>1.3.9</b> advertises
- * style/activeTab/titleAlign/playerModel/{@link #FEATURE_TEXT_INPUT}. LM already emits
- * {@link #FEATURE_HEADER_BOTTOM} and {@link #FEATURE_ACCENT}; those sit in
- * {@link #PENDING_NEXT} until KaiPath advertises/honors them.
+ * baseline</b>: dynamic layout/buttons only. KaiPath <b>1.3.13</b> (recommended) advertises
+ * style/activeTab/titleAlign/playerModel/{@link #FEATURE_TEXT_INPUT}/{@link #FEATURE_HEADER_BOTTOM}/
+ * {@link #FEATURE_ACCENT} (plus palette/sound/buttonSkin/frame/pagedBook). LM already emits
+ * {@link #FEATURE_FIXED_FOOTER}; that sits in {@link #PENDING_NEXT} until KaiPath
+ * advertises/honors it.
  */
 public final class UltraClientFeatures {
     public static final String FEATURE_STYLE = "style";
@@ -42,6 +44,7 @@ public final class UltraClientFeatures {
     public static final String FEATURE_TEXT_INPUT = "textinput";
     public static final String FEATURE_HEADER_BOTTOM = "headerbottom";
     public static final String FEATURE_ACCENT = "accent";
+    public static final String FEATURE_FIXED_FOOTER = "fixedfooter";
 
     /** Wire / doc spellings accepted for {@link #FEATURE_ACTIVE_TAB}. */
     public static final String FEATURE_ACTIVE_TAB_DOC = "activeTab";
@@ -55,6 +58,8 @@ public final class UltraClientFeatures {
     public static final String FEATURE_HEADER_BOTTOM_DOC = "headerBottom";
     /** Wire / doc spelling for {@link #FEATURE_ACCENT}. */
     public static final String FEATURE_ACCENT_DOC = "accent";
+    /** Wire / doc spelling for {@link #FEATURE_FIXED_FOOTER}. */
+    public static final String FEATURE_FIXED_FOOTER_DOC = "fixedFooter";
 
     /** Optional features the LM bridge expects a fully conforming client to advertise. */
     public static final Set<String> EXPECTED_OPTIONAL =
@@ -65,10 +70,11 @@ public final class UltraClientFeatures {
                     FEATURE_PLAYER_MODEL,
                     FEATURE_TEXT_INPUT,
                     FEATURE_HEADER_BOTTOM,
-                    FEATURE_ACCENT);
+                    FEATURE_ACCENT,
+                    FEATURE_FIXED_FOOTER);
 
     /**
-     * Features KaiPath <b>1.3.9</b> already advertises/honors. Missing any of these is a real
+     * Features KaiPath <b>1.3.13</b> already advertises/honors. Missing any of these is a real
      * client gap (wrong jar / old client).
      */
     public static final Set<String> SHIPPED_ON_RECOMMENDED =
@@ -77,14 +83,15 @@ public final class UltraClientFeatures {
                     FEATURE_ACTIVE_TAB,
                     FEATURE_TITLE_ALIGN,
                     FEATURE_PLAYER_MODEL,
-                    FEATURE_TEXT_INPUT);
+                    FEATURE_TEXT_INPUT,
+                    FEATURE_HEADER_BOTTOM,
+                    FEATURE_ACCENT);
 
     /**
-     * LM already emits these on the wire; KaiPath 1.3.9 does not advertise/honor them yet.
-     * Guitest reports them as {@code pendingNext=} (info, not a pre-1.3.9 warn).
+     * LM already emits these on the wire; KaiPath 1.3.13 does not advertise/honor them yet.
+     * Guitest reports them as {@code pendingNext=} (info, not a pre-1.3.13 warn).
      */
-    public static final Set<String> PENDING_NEXT =
-            Set.of(FEATURE_HEADER_BOTTOM, FEATURE_ACCENT);
+    public static final Set<String> PENDING_NEXT = Set.of(FEATURE_FIXED_FOOTER);
 
     private static final Map<UUID, State> BY_PLAYER = new ConcurrentHashMap<>();
 
@@ -169,7 +176,7 @@ public final class UltraClientFeatures {
         return missing;
     }
 
-    /** Gaps vs KaiPath 1.3.9 shipped set — warn on login/guitest. */
+    /** Gaps vs KaiPath 1.3.13 shipped set — warn on login/guitest. */
     public static List<String> missingShipped(State state) {
         List<String> missing = new ArrayList<>();
         if (state == null || !state.has(FEATURE_STYLE)) {
@@ -187,10 +194,16 @@ public final class UltraClientFeatures {
         if (state == null || !state.has(FEATURE_TEXT_INPUT)) {
             missing.add(FEATURE_TEXT_INPUT_DOC);
         }
+        if (state == null || !state.has(FEATURE_HEADER_BOTTOM)) {
+            missing.add(FEATURE_HEADER_BOTTOM_DOC);
+        }
+        if (state == null || !state.has(FEATURE_ACCENT)) {
+            missing.add(FEATURE_ACCENT_DOC);
+        }
         return missing;
     }
 
-    /** Gaps still expected after the recommended KaiPath (headerBottom + accent). */
+    /** Gaps still expected after the recommended KaiPath ({@code fixedFooter}). */
     public static List<String> missingPending(State state) {
         List<String> missing = new ArrayList<>();
         for (String feature : PENDING_NEXT) {
@@ -220,6 +233,9 @@ public final class UltraClientFeatures {
         }
         if (FEATURE_ACCENT.equals(key)) {
             return FEATURE_ACCENT_DOC;
+        }
+        if (FEATURE_FIXED_FOOTER.equals(key)) {
+            return FEATURE_FIXED_FOOTER_DOC;
         }
         return feature == null ? "" : feature;
     }
@@ -259,14 +275,18 @@ public final class UltraClientFeatures {
                 lines.add(
                         "system accent colors ignored (layoutJson.accent / button accent not painted; "
                                 + "activeTab stays shared yellow)");
+            } else if (FEATURE_FIXED_FOOTER.equals(key)) {
+                lines.add(
+                        "footer buttons may scroll with body "
+                                + "(button footer:true / fixedFooter not pinned)");
             }
         }
         return lines;
     }
 
     /**
-     * Log when 1.3.9-shipped features are missing (real gap). {@link #PENDING_NEXT} gaps
-     * (headerBottom, accent) log at info so 1.3.9 clients are not warned as broken.
+     * Log when 1.3.13-shipped features are missing (real gap). {@link #PENDING_NEXT} gaps
+     * ({@code fixedFooter}) log at info so 1.3.13 clients are not warned as broken.
      */
     public static void warnMissingOptionalFeatures(ServerPlayer player, String context) {
         if (player == null) {
@@ -280,7 +300,7 @@ public final class UltraClientFeatures {
         String ctx = context == null ? "?" : context;
         if (!shippedGaps.isEmpty()) {
             AdaptiveDifficultyMod.LOGGER.warn(
-                    "[{}] Ultra client gap (pre-1.3.9 features) player={} kaipathVersion={} "
+                    "[{}] Ultra client gap (pre-1.3.13 features) player={} kaipathVersion={} "
                             + "context={} advertised={} features={} missingShipped={} — {}",
                     AdaptiveDifficultyMod.MOD_ID,
                     safeName(player),
@@ -293,7 +313,7 @@ public final class UltraClientFeatures {
         }
         if (!pending.isEmpty()) {
             AdaptiveDifficultyMod.LOGGER.info(
-                    "[{}] Ultra pending after KaiPath 1.3.9 player={} kaipathVersion={} "
+                    "[{}] Ultra pending after KaiPath 1.3.13 player={} kaipathVersion={} "
                             + "context={} pending={}",
                     AdaptiveDifficultyMod.MOD_ID,
                     safeName(player),

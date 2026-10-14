@@ -76,7 +76,7 @@ public final class UltraProgressionScreens {
                         "confirm")
                 .buttonRight("do:boost:end", UltraStyle.danger("End boost"), "danger")
                 .rowGap();
-        spec.footerBackHome();
+        spec.footerBackHome("Progression Home");
         spec.send(player);
     }
 
@@ -96,7 +96,7 @@ public final class UltraProgressionScreens {
                         toggle,
                         staffFree ? "confirm" : "dim")
                 .rowGap();
-        spec.footerBackHome();
+        spec.footerBackHome("Progression Home");
         spec.send(player);
     }
 }
