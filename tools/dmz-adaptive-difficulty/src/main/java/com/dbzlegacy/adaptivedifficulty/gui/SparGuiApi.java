@@ -15,6 +15,7 @@ import java.util.Locale;
 import java.util.Map;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle;
 
 /**
  * Public static API for Bukkit companion reflection ({@code LegacyMechanicsGUI}).
@@ -139,7 +140,7 @@ public final class SparGuiApi {
 
     public static List<String> statsLines(ServerPlayer player) {
         if (player == null || !DifficultyConfig.get().enableSparringSystem) {
-            return List.of("§cSparring system is disabled.");
+            return List.of(UltraStyle.DANGER + "Sparring system is disabled.");
         }
         return SparringSystem.statsLines(player);
     }
@@ -147,7 +148,7 @@ public final class SparGuiApi {
     /** Lifetime / bond summary without Combat or full report dump (Ultra stats page). */
     public static List<String> statsOverviewLines(ServerPlayer player) {
         if (player == null || !DifficultyConfig.get().enableSparringSystem) {
-            return List.of("§cSparring system is disabled.");
+            return List.of(UltraStyle.DANGER + "Sparring system is disabled.");
         }
         return SparringSystem.statsOverviewLines(player);
     }
@@ -163,25 +164,25 @@ public final class SparGuiApi {
     /** Full report for one recent fight (1-based index). */
     public static List<String> recentReportLines(ServerPlayer player, int index) {
         if (player == null || !DifficultyConfig.get().enableSparringSystem) {
-            return List.of("§cSparring system is disabled.");
+            return List.of(UltraStyle.DANGER + "Sparring system is disabled.");
         }
         List<String> lines = SparringSystem.recentReportLines(player, index);
         if (lines.isEmpty()) {
-            return List.of("§7That fight report is no longer available.");
+            return List.of(UltraStyle.LABEL + "That fight report is no longer available.");
         }
         return lines;
     }
 
     public static List<String> topLines(ServerPlayer player, String category) {
         if (!DifficultyConfig.get().enableSparringSystem) {
-            return List.of("§cSparring system is disabled.");
+            return List.of(UltraStyle.DANGER + "Sparring system is disabled.");
         }
         return SparringSystem.topLines(category, 10);
     }
 
     public static List<String> dojoTopLines(ServerPlayer player, String category) {
         if (!DifficultyConfig.get().enableSparringSystem) {
-            return List.of("§cSparring system is disabled.");
+            return List.of(UltraStyle.DANGER + "Sparring system is disabled.");
         }
         return SparringSystem.dojoTopLines(category, 10);
     }
@@ -197,14 +198,14 @@ public final class SparGuiApi {
 
     public static List<String> dojoInfoLines(ServerPlayer player) {
         if (player == null || !DifficultyConfig.get().enableSparringSystem) {
-            return List.of("§cSparring system is disabled.");
+            return List.of(UltraStyle.DANGER + "Sparring system is disabled.");
         }
         return SparringSystem.dojoInfoLines(player);
     }
 
     public static List<String> dojoWarLines(ServerPlayer player) {
         if (player == null || !DifficultyConfig.get().enableSparringSystem) {
-            return List.of("§cSparring system is disabled.");
+            return List.of(UltraStyle.DANGER + "Sparring system is disabled.");
         }
         return DojoRankings.warInfoLines(player);
     }
@@ -218,28 +219,28 @@ public final class SparGuiApi {
 
     public static List<String> dojoHallOfFameLines(ServerPlayer player) {
         if (!DifficultyConfig.get().enableSparringSystem) {
-            return List.of("§cSparring system is disabled.");
+            return List.of(UltraStyle.DANGER + "Sparring system is disabled.");
         }
         return SparringSystem.dojoHallOfFameLines();
     }
 
     public static List<String> dojoMemberLines(ServerPlayer player) {
         if (player == null || !DifficultyConfig.get().enableSparringSystem) {
-            return List.of("§cSparring system is disabled.");
+            return List.of(UltraStyle.DANGER + "Sparring system is disabled.");
         }
         return SparringSystem.dojoMemberLines(player);
     }
 
     public static List<String> ownedDojoMemberLines(ServerPlayer player) {
         if (player == null || !DifficultyConfig.get().enableSparringSystem) {
-            return List.of("§cSparring system is disabled.");
+            return List.of(UltraStyle.DANGER + "Sparring system is disabled.");
         }
         return DojoRankings.ownedDojoMemberLines(player);
     }
 
     public static List<String> joinedDojoMemberLines(ServerPlayer player) {
         if (player == null || !DifficultyConfig.get().enableSparringSystem) {
-            return List.of("§cSparring system is disabled.");
+            return List.of(UltraStyle.DANGER + "Sparring system is disabled.");
         }
         return DojoRankings.joinedDojoMemberLines(player);
     }
@@ -265,9 +266,9 @@ public final class SparGuiApi {
 
     public static List<String> mentorLines(ServerPlayer player) {
         List<String> lines = new ArrayList<>();
-        lines.add("§bTraining bonds");
+        lines.add(UltraStyle.AQUA + "Training bonds");
         if (player == null || !DifficultyConfig.get().enableSparringSystem) {
-            lines.add("§cSparring system is disabled.");
+            lines.add(UltraStyle.DANGER + "Sparring system is disabled.");
             return lines;
         }
         SparStore.MentorBond bond = SparStore.get().bond(player.m_20148_());
@@ -277,36 +278,36 @@ public final class SparGuiApi {
         boolean hasApprentice = appCount > 0;
         if (hasMentor || hasApprentice) {
             if (hasMentor) {
-                lines.add("§7Your mentor §f" + blank(bond.mentorName, "-"));
+                lines.add(UltraStyle.LABEL + "Your mentor " + UltraStyle.VALUE + blank(bond.mentorName, "-"));
             }
             if (hasApprentice) {
-                lines.add("§7Your apprentices §f" + appCount + "§8/§f" + SparringSystem.MAX_APPRENTICES);
-                lines.add("§8  §f" + bond.apprenticeNamesSummary());
+                lines.add(UltraStyle.LABEL + "Your apprentices " + UltraStyle.VALUE + appCount + UltraStyle.DIM + "/" + UltraStyle.VALUE + SparringSystem.MAX_APPRENTICES);
+                lines.add(UltraStyle.DIM + "  " + UltraStyle.VALUE + bond.apprenticeNamesSummary());
                 float sharePct = SparCombat.MENTOR_SHARE_PCT * 100.0f / Math.max(1, appCount);
-                lines.add("§7Mentor share §f" + String.format(java.util.Locale.ROOT, "%.1f", sharePct)
-                        + "% §8each (dojo split)");
-                lines.add("§7Dojo peers spar §a+"
+                lines.add(UltraStyle.LABEL + "Mentor share " + UltraStyle.VALUE + String.format(java.util.Locale.ROOT, "%.1f", sharePct)
+                        + "% " + UltraStyle.DIM + "each (dojo split)");
+                lines.add(UltraStyle.LABEL + "Dojo peers spar " + UltraStyle.GREEN + "+"
                         + Math.round(SparCombat.DOJO_PEER_SPAR_BONUS_PCT * 100) + "% TP");
             }
             if (hasMentor) {
-                lines.add("§7Spar mentor §a+"
+                lines.add(UltraStyle.LABEL + "Spar mentor " + UltraStyle.GREEN + "+"
                         + Math.round(SparCombat.MENTOR_SPAR_BONUS_PCT * 100)
-                        + "% §8- peers +"
+                        + "% " + UltraStyle.DIM + "- peers +"
                         + Math.round(SparCombat.DOJO_PEER_SPAR_BONUS_PCT * 100) + "%");
             }
-            lines.add("§7Streak §f" + bond.streakCurrent + " §8best §f" + bond.streakBest);
+            lines.add(UltraStyle.LABEL + "Streak " + UltraStyle.VALUE + bond.streakCurrent + " " + UltraStyle.DIM + "best " + UltraStyle.VALUE + bond.streakBest);
         } else {
-            lines.add("§7Invite apprentices or ask a mentor from Actions.");
-            lines.add("§8Dojo: up to §f" + SparringSystem.MAX_APPRENTICES + " §8apprentices - one master");
-            lines.add("§8Invite lasts §f1 hour §8- peers spar +"
+            lines.add(UltraStyle.LABEL + "Invite apprentices or ask a mentor from Actions.");
+            lines.add(UltraStyle.DIM + "Dojo: up to " + UltraStyle.VALUE + SparringSystem.MAX_APPRENTICES + " " + UltraStyle.DIM + "apprentices - one master");
+            lines.add(UltraStyle.DIM + "Invite lasts " + UltraStyle.VALUE + "1 hour " + UltraStyle.DIM + "- peers spar +"
                     + Math.round(SparCombat.DOJO_PEER_SPAR_BONUS_PCT * 100) + "% TP");
             lines.add(SparringSystem.bondStatus(player));
         }
         int pending = SparringSystem.pendingMentorInviteCount(player);
         if (pending > 0) {
-            lines.add("§ePending invites §f" + pending + " §8- open Bond invites (§f1h§8)");
+            lines.add(UltraStyle.YELLOW + "Pending invites " + UltraStyle.VALUE + pending + " " + UltraStyle.DIM + "- open Bond invites (" + UltraStyle.VALUE + "1h" + UltraStyle.DIM + ")");
         } else {
-            lines.add("§8Open Actions to recruit, request a master, or release.");
+            lines.add(UltraStyle.DIM + "Open Actions to recruit, request a master, or release.");
         }
         return lines;
     }
@@ -358,12 +359,12 @@ public final class SparGuiApi {
         List<String> cards = pendingMentorInviteCards(player);
         List<String> lines = new ArrayList<>();
         if (cards.isEmpty()) {
-            lines.add("§7No pending mentor invites.");
-            lines.add("§8Outgoing: you invited someone.");
-            lines.add("§8Incoming: they invited you - Accept or Decline.");
+            lines.add(UltraStyle.LABEL + "No pending mentor invites.");
+            lines.add(UltraStyle.DIM + "Outgoing: you invited someone.");
+            lines.add(UltraStyle.DIM + "Incoming: they invited you - Accept or Decline.");
             return lines;
         }
-        lines.add("§e§lPending Mentor Invites");
+        lines.add(UltraStyle.YELLOW + UltraStyle.BOLD + "Pending Mentor Invites");
         for (String card : cards) {
             String[] p = card.split("\t", -1);
             if (p.length < 3) {
@@ -376,11 +377,11 @@ public final class SparGuiApi {
             String role = "mentor".equalsIgnoreCase(kind) ? "Mentor" : "Apprentice";
             String onlineWord = online ? "online" : "offline";
             if ("IN".equals(dir)) {
-                lines.add("§aIncoming §f" + name + " §8(" + onlineWord + ")"
-                        + " §8-> you as " + role);
+                lines.add(UltraStyle.GREEN + "Incoming " + UltraStyle.VALUE + name + " " + UltraStyle.DIM + "(" + onlineWord + ")"
+                        + " " + UltraStyle.DIM + "-> you as " + role);
             } else {
-                lines.add("§6Outgoing §f" + name + " §8(" + onlineWord + ")"
-                        + " §8-> them as " + role);
+                lines.add(UltraStyle.GOLD + "Outgoing " + UltraStyle.VALUE + name + " " + UltraStyle.DIM + "(" + onlineWord + ")"
+                        + " " + UltraStyle.DIM + "-> them as " + role);
             }
         }
         return lines;
@@ -424,38 +425,38 @@ public final class SparGuiApi {
             case "mentor", "actions", "dojo", "roster", "apprentices" -> mentorLines(player);
             case "pending", "invites", "pendinginvites" -> pendingMentorLines(player);
             case "help" -> List.of(
-                    "§6§l/spar §8- Sparring TP",
-                    "§7Mentor bonds: GUI -> Training bonds",
-                    "§e/spar stats|end|top [category]",
-                    "§8Commands still work for staff / scripts"
+                    UltraStyle.HEADER + "/spar " + UltraStyle.DIM + "- Sparring TP",
+                    UltraStyle.LABEL + "Mentor bonds: GUI -> Training bonds",
+                    UltraStyle.YELLOW + "/spar stats|end|top [category]",
+                    UltraStyle.DIM + "Commands still work for staff / scripts"
             );
             default -> {
                 Map<String, String> ph = placeholders(player);
                 List<String> lore = new ArrayList<>();
                 if ("true".equalsIgnoreCase(ph.get("sessionActive"))) {
-                    lore.add("§aSession ACTIVE §8with §f" + blank(ph.get("partner"), "?")
-                            + "  §7TP §f" + ph.getOrDefault("session_tp", "0"));
+                    lore.add(UltraStyle.GREEN + "Session ACTIVE " + UltraStyle.DIM + "with " + UltraStyle.VALUE + blank(ph.get("partner"), "?")
+                            + "  " + UltraStyle.LABEL + "TP " + UltraStyle.VALUE + ph.getOrDefault("session_tp", "0"));
                     if ("true".equalsIgnoreCase(ph.get("perfect"))) {
-                        lore.add("§6Perfect spar §7- hits are close enough for the training bonus.");
+                        lore.add(UltraStyle.GOLD + "Perfect spar " + UltraStyle.LABEL + "- hits are close enough for the training bonus.");
                     }
                 } else {
-                    lore.add("§7No sparring session right now - hit each other within 30 blocks to start one.");
+                    lore.add(UltraStyle.LABEL + "No sparring session right now - hit each other within 30 blocks to start one.");
                 }
                 if ("true".equalsIgnoreCase(ph.get("mentor_bonded"))) {
                     String role = ph.getOrDefault("mentor_role", "?");
                     if ("both".equalsIgnoreCase(role)) {
-                        lore.add("§bMentor §f" + blank(ph.get("mentor_name"), "?")
-                                + " §8- §bApprentice §f" + blank(ph.get("apprentice_name"), "?")
-                                + "  §7streak §f" + ph.getOrDefault("streak", "0"));
+                        lore.add(UltraStyle.AQUA + "Mentor " + UltraStyle.VALUE + blank(ph.get("mentor_name"), "?")
+                                + " " + UltraStyle.DIM + "- " + UltraStyle.AQUA + "Apprentice " + UltraStyle.VALUE + blank(ph.get("apprentice_name"), "?")
+                                + "  " + UltraStyle.LABEL + "streak " + UltraStyle.VALUE + ph.getOrDefault("streak", "0"));
                     } else if ("mentor".equalsIgnoreCase(role)) {
-                        lore.add("§bMentoring §f" + blank(ph.get("apprentice_name"), "?")
-                                + "  §7streak §f" + ph.getOrDefault("streak", "0"));
+                        lore.add(UltraStyle.AQUA + "Mentoring " + UltraStyle.VALUE + blank(ph.get("apprentice_name"), "?")
+                                + "  " + UltraStyle.LABEL + "streak " + UltraStyle.VALUE + ph.getOrDefault("streak", "0"));
                     } else {
-                        lore.add("§bApprentice of §f" + blank(ph.get("mentor_name"), "?")
-                                + "  §7streak §f" + ph.getOrDefault("streak", "0"));
+                        lore.add(UltraStyle.AQUA + "Apprentice of " + UltraStyle.VALUE + blank(ph.get("mentor_name"), "?")
+                                + "  " + UltraStyle.LABEL + "streak " + UltraStyle.VALUE + ph.getOrDefault("streak", "0"));
                     }
                 } else {
-                    lore.add("§7No mentor bond. §8Use Training bonds to invite");
+                    lore.add(UltraStyle.LABEL + "No mentor bond. " + UltraStyle.DIM + "Use Training bonds to invite");
                 }
                 yield lore;
             }
@@ -471,7 +472,7 @@ public final class SparGuiApi {
      */
     public static String handleDo(ServerPlayer player, String action, String arg, String page) {
         if (player == null) {
-            return "§cThis only works in-game - console can't open this menu.";
+            return UltraStyle.DANGER + "This only works in-game - console can't open this menu.";
         }
         String act = action == null ? "" : action.toLowerCase(Locale.ROOT).trim();
         String a = arg == null ? "" : arg.trim();
@@ -479,7 +480,7 @@ public final class SparGuiApi {
             return handleAdmin(player, a);
         }
         if (!DifficultyConfig.get().enableSparringSystem) {
-            return "§cSparring system is disabled.";
+            return UltraStyle.DANGER + "Sparring system is disabled.";
         }
         if ("page".equals(act) || "refresh".equals(act)) {
             return "";
@@ -498,7 +499,7 @@ public final class SparGuiApi {
             if ("off".equalsIgnoreCase(a) || "false".equalsIgnoreCase(a)) {
                 return SparringSystem.setTpMsg(player, false);
             }
-            return "§cUsage: spar do tpmsg toggle|on|off";
+            return UltraStyle.DANGER + "Usage: spar do tpmsg toggle|on|off";
         }
         if ("mentor_tpmsg".equals(act) || "mentor_tp_msg".equals(act) || "mentortpmsg".equals(act)) {
             if ("toggle".equalsIgnoreCase(a) || a.isBlank()) {
@@ -511,7 +512,7 @@ public final class SparGuiApi {
             if ("off".equalsIgnoreCase(a) || "false".equalsIgnoreCase(a)) {
                 return SparringSystem.setMentorTpMsg(player, false);
             }
-            return "§cUsage: spar do mentor_tpmsg toggle|on|off";
+            return UltraStyle.DANGER + "Usage: spar do mentor_tpmsg toggle|on|off";
         }
         if ("mentor".equals(act)) {
             String sub = a.toLowerCase(Locale.ROOT).trim();
@@ -549,7 +550,7 @@ public final class SparGuiApi {
                         && bond.mentorUuid != null && !bond.mentorUuid.isBlank();
                 boolean hasApprentice = bond != null && bond.apprenticeCount() > 0;
                 if (hasMentor && hasApprentice) {
-                    return "§eLeave your mentor, or release one of your apprentices?";
+                    return UltraStyle.YELLOW + "Leave your mentor, or release one of your apprentices?";
                 }
                 return SparringSystem.removeBond(player);
             }
@@ -580,7 +581,7 @@ public final class SparGuiApi {
                 }
                 return SparringSystem.removeApprentice(player, who.isBlank() ? null : who);
             }
-            return "§cUsage: spar do mentor accept|decline|cancel|leave|release [player]";
+            return UltraStyle.DANGER + "Usage: spar do mentor accept|decline|cancel|leave|release [player]";
         }
         if ("mentor_leave".equals(act) || "mentorleave".equals(act) || "leave_mentor".equals(act)) {
             return SparringSystem.removeMentor(player);
@@ -600,21 +601,21 @@ public final class SparGuiApi {
         }
         if ("mentor_invite".equals(act) || "mentorinvite".equals(act)) {
             if (a.isBlank()) {
-                return "§cSelect a player below, then invite them as your apprentice.";
+                return UltraStyle.DANGER + "Select a player below, then invite them as your apprentice.";
             }
             ServerPlayer target = resolveOnline(player, a);
             if (target == null) {
-                return "§cPlayer not online: " + a;
+                return UltraStyle.DANGER + "Player not online: " + a;
             }
             return SparringSystem.mentorInvite(player, target);
         }
         if ("apprentice_invite".equals(act) || "apprenticeinvite".equals(act)) {
             if (a.isBlank()) {
-                return "§cSelect a player below, then ask them to be your mentor.";
+                return UltraStyle.DANGER + "Select a player below, then ask them to be your mentor.";
             }
             ServerPlayer target = resolveOnline(player, a);
             if (target == null) {
-                return "§cPlayer not online: " + a;
+                return UltraStyle.DANGER + "Player not online: " + a;
             }
             return SparringSystem.apprenticeInvite(player, target);
         }
@@ -632,19 +633,19 @@ public final class SparGuiApi {
                     who = who.substring(1).trim();
                 }
                 if (who.isBlank()) {
-                    return "§cSelect a rival dojo master below.";
+                    return UltraStyle.DANGER + "Select a rival dojo master below.";
                 }
                 ServerPlayer target = resolveOnline(player, who);
                 if (target == null) {
-                    return "§cPlayer not online: " + who;
+                    return UltraStyle.DANGER + "Player not online: " + who;
                 }
                 return SparringSystem.dojoChallenge(player, target);
             }
-            return "§cUsage: spar do dojo accept|decline|challenge <master>";
+            return UltraStyle.DANGER + "Usage: spar do dojo accept|decline|challenge <master>";
         }
         if ("dojo_challenge".equals(act) || "dojo_war".equals(act)) {
             if (a.isBlank()) {
-                return "§cSelect a rival dojo master below.";
+                return UltraStyle.DANGER + "Select a rival dojo master below.";
             }
             String who = a.trim();
             if (who.regionMatches(true, 0, "uuid:", 0, 5)) {
@@ -657,7 +658,7 @@ public final class SparGuiApi {
             if (target != null) {
                 return SparringSystem.dojoChallenge(player, target);
             }
-            return "§cPlayer not online: " + who;
+            return UltraStyle.DANGER + "Player not online: " + who;
         }
         if ("dojo_accept".equals(act) || "dojo_war_accept".equals(act)) {
             return SparringSystem.dojoAcceptWar(player);
@@ -670,37 +671,37 @@ public final class SparGuiApi {
         }
         if ("dojo_name".equals(act) || "dojo_rename".equals(act)) {
             if (a.isBlank()) {
-                return "§cUsage: /spar dojo name <name>";
+                return UltraStyle.DANGER + "Usage: /spar dojo name <name>";
             }
             return SparringSystem.dojoSetName(player, a);
         }
         if ("dojo_banner".equals(act) || "dojo_set_banner".equals(act)) {
             if (a.isBlank()) {
-                return "§cSelect a banner from the Banner menu.";
+                return UltraStyle.DANGER + "Select a banner from the Banner menu.";
             }
             return SparringSystem.dojoSetBanner(player, a);
         }
-        return "§cSomething went wrong. Try again, or ask staff if it keeps happening.";
+        return UltraStyle.DANGER + "Something went wrong. Try again, or ask staff if it keeps happening.";
     }
 
     /** Staff: save / status / mentor resetcd — used by GUI + {@code /spar admin …}. */
     public static String handleAdmin(ServerPlayer player, String arg) {
         if (!StaffAccess.isStaff(player)) {
-            return "§cStaff only.";
+            return UltraStyle.DANGER + "Staff only.";
         }
         String raw = arg == null ? "" : arg.trim();
         String lower = raw.toLowerCase(Locale.ROOT);
         if (lower.startsWith("save")) {
             SparStore.get().markDirty();
             SparStore.get().save();
-            return "§eSpar store saved.";
+            return UltraStyle.YELLOW + "Spar store saved.";
         }
         if (lower.startsWith("status")) {
             boolean on = DifficultyConfig.get().enableSparringSystem;
-            return "§6Spar admin status\n"
-                    + "§7enabled §f" + (on ? "ON" : "OFF") + "\n"
-                    + "§7bonds §f" + SparStore.get().bondsByPlayer.size() + "\n"
-                    + "§8" + SparStore.path();
+            return UltraStyle.GOLD + "Spar admin status\n"
+                    + UltraStyle.LABEL + "enabled " + UltraStyle.VALUE + (on ? "ON" : "OFF") + "\n"
+                    + UltraStyle.LABEL + "bonds " + UltraStyle.VALUE + SparStore.get().bondsByPlayer.size() + "\n"
+                    + UltraStyle.DIM + SparStore.path();
         }
         if (lower.startsWith("resetcd") || lower.startsWith("mentor") || lower.contains("resetcd")) {
             String targetArg = raw;
@@ -715,18 +716,18 @@ public final class SparGuiApi {
                     && !targetArg.equalsIgnoreCase("self")) {
                 ServerPlayer found = resolveOnline(player, targetArg);
                 if (found == null) {
-                    return "§cPlayer not online: " + targetArg;
+                    return UltraStyle.DANGER + "Player not online: " + targetArg;
                 }
                 target = found;
             }
             return SparringSystem.resetMentorCd(player, target);
         }
-        return "§6§l/spar admin\n"
-                + "§e/spar admin save §7- save sparring data to disk\n"
-                + "§e/spar admin status §7- enabled + path\n"
-                + "§7Clear mentor cooldown\n"
-                + "§8/spar admin mentor resetcd [player]\n"
-                + "§8GUI buttons call these directly (no Forge perm-level gate).";
+        return UltraStyle.HEADER + "/spar admin\n"
+                + UltraStyle.YELLOW + "/spar admin save " + UltraStyle.LABEL + "- save sparring data to disk\n"
+                + UltraStyle.YELLOW + "/spar admin status " + UltraStyle.LABEL + "- enabled + path\n"
+                + UltraStyle.LABEL + "Clear mentor cooldown\n"
+                + UltraStyle.DIM + "/spar admin mentor resetcd [player]\n"
+                + UltraStyle.DIM + "GUI buttons call these directly (no Forge perm-level gate).";
     }
 
     /**
