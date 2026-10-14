@@ -700,6 +700,12 @@ def main() -> int:
     )[0]
     if "PrestigeUniverseRoleWarn" not in reply_confirm_body:
         errors.append("PrestigeSystem.replyConfirm must include PrestigeUniverseRoleWarn lines")
+    build_sh = (ROOT / "build.sh").read_text(encoding="utf-8")
+    if "progression/shop/PrestigeUniverseRoleWarn.class" not in build_sh:
+        errors.append(
+            "build.sh must merge PrestigeUniverseRoleWarn.class "
+            "(next to PrestigeSystem) or prestige confirm NoClassDefFoundErrors"
+        )
     difficulty_titles = (ULTRA / "UltraDifficultyScreens.java").read_text(encoding="utf-8")
     if "titles_p" not in difficulty_titles or "TITLES_PER_PAGE" not in difficulty_titles:
         errors.append("UltraDifficultyScreens must paginate titles via titles_pN (no hard 10-cap drop)")
