@@ -1,7 +1,8 @@
 # DMZUltra asset reuse via the KaiPath Ultra bridge
 
 **Audience:** Cursor (server partners) + JLDK (KaiPath client).  
-**Reference client assets:** live `mods/dmzultra-0.2.9.jar` (client-side only).  
+**Reference client assets:** live `mods/dmzultra-0.2.9.jar` (client-side only; not required in
+server CI). Asset ids below match that jar’s `assets/dmzultra/...` layout.  
 **Protocol home:** KaiPath (`docs/KAIPATH_GUI_PROTOCOL.md`) — **not** DMZUltra.
 
 ## Governing rules
