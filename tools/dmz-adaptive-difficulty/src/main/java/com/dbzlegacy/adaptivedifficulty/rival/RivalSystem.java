@@ -3,6 +3,7 @@ package com.dbzlegacy.adaptivedifficulty.rival;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.calc.LmOverhaulScaledCombat;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
+import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import com.dbzlegacy.adaptivedifficulty.util.LmChat;
 import java.util.ArrayList;
@@ -330,24 +331,24 @@ public final class RivalSystem {
         RivalPlayerRecord me = store.ensurePlayer(player);
         String pendingUuid = me.pendingMutualAcceptUuid == null ? "" : me.pendingMutualAcceptUuid.trim();
         if (pendingUuid.isBlank()) {
-            return "§cNo Mutual accept waiting for a slot replace.";
+            return UltraStyle.dangerLine("No Mutual accept waiting for a slot replace.");
         }
         RivalPlayerRecord them = store.get(pendingUuid);
         if (them == null) {
             me.pendingMutualAcceptUuid = "";
             store.markDirty();
-            return "§cThat pending Accept expired.";
+            return UltraStyle.dangerLine("That pending Accept expired.");
         }
         RivalPlayerRecord drop = findByName(store, replaceArg);
         if (drop == null) {
-            return "§cPick one of your Mutual rivals to replace.";
+            return UltraStyle.dangerLine("Pick one of your Mutual rivals to replace.");
         }
         if (drop.uuid.equals(them.uuid)) {
-            return "§cPick a different Mutual to replace.";
+            return UltraStyle.dangerLine("Pick a different Mutual to replace.");
         }
         RivalLink dropLink = me.rivals.get(drop.uuid);
         if (dropLink == null || !dropLink.mutual) {
-            return "§cThat player is not one of your Mutual rivals.";
+            return UltraStyle.dangerLine("That player is not one of your Mutual rivals.");
         }
         demoteMutualPair(me, drop);
         notifyReplacedMutual(player, drop);
@@ -362,8 +363,11 @@ public final class RivalSystem {
         promoteMutual(me, them, myLink, theirLink, now);
         store.markDirty();
         notifyMutualAccepted(player, me, them, true);
-        return "§aAccepted §f" + them.name + " §a— Mutual!"
-                + " §8Replaced Mutual with §f" + drop.name + "§8.";
+        // Colors via UltraStyle so bare section-sign never lands in this success path.
+        return UltraStyle.GREEN + "Accepted " + UltraStyle.WHITE + them.name
+                + UltraStyle.GREEN + " - Mutual!"
+                + UltraStyle.DARK_GRAY + " Replaced Mutual with " + UltraStyle.WHITE + drop.name
+                + UltraStyle.DARK_GRAY + ".";
     }
 
     /** True when this player must pick a Mutual to replace before Accept completes. */
@@ -381,7 +385,7 @@ public final class RivalSystem {
      */
     public static String cancelMutualReplace(ServerPlayer player) {
         if (player == null) {
-            return "§cThis only works in-game.";
+            return UltraStyle.dangerLine("This only works in-game.");
         }
         RivalStore store = RivalStore.get();
         RivalPlayerRecord me = store.ensurePlayer(player);
@@ -389,16 +393,18 @@ public final class RivalSystem {
                 ? ""
                 : me.pendingMutualAcceptUuid.trim();
         if (pendingUuid.isBlank()) {
-            return "§cNo Mutual accept waiting for a slot replace.";
+            return UltraStyle.dangerLine("No Mutual accept waiting for a slot replace.");
         }
         String name = pendingMutualAcceptName(player);
         me.pendingMutualAcceptUuid = "";
         store.markDirty();
         if (name == null || name.isBlank() || name.equals(pendingUuid)) {
-            return "§eCancelled Mutual accept. §8You can Accept again later from Requests.";
+            return UltraStyle.YELLOW + "Cancelled Mutual accept. " + UltraStyle.DARK_GRAY
+                    + "You can Accept again later from Requests.";
         }
-        return "§eCancelled Mutual accept for §f" + name
-                + "§e. §8You can Accept again later from Requests.";
+        return UltraStyle.YELLOW + "Cancelled Mutual accept for " + UltraStyle.WHITE + name
+                + UltraStyle.YELLOW + ". " + UltraStyle.DARK_GRAY
+                + "You can Accept again later from Requests.";
     }
 
     public static String pendingMutualAcceptName(ServerPlayer player) {

@@ -796,6 +796,29 @@ def main() -> int:
     check("acceptReplace Mutual slot pick",
           "acceptReplace" in rival_sys and "needsMutualReplacePick" in rival_sys
           and "pendingMutualAcceptUuid" in read(SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalPlayerRecord.java"))
+    accept_replace_fn = (
+        rival_sys.split("public static String acceptReplace", 1)[1]
+        .split("public static boolean needsMutualReplacePick", 1)[0]
+        if "public static String acceptReplace" in rival_sys
+        else ""
+    )
+    cancel_replace_fn = (
+        rival_sys.split("public static String cancelMutualReplace", 1)[1]
+        .split("public static String pendingMutualAcceptName", 1)[0]
+        if "public static String cancelMutualReplace" in rival_sys
+        else ""
+    )
+    check(
+        "acceptReplace/cancelMutualReplace use UltraStyle (no bare §)",
+        "UltraStyle.dangerLine" in accept_replace_fn
+        and "UltraStyle.GREEN" in accept_replace_fn
+        and "UltraStyle.WHITE" in accept_replace_fn
+        and "UltraStyle.DARK_GRAY" in accept_replace_fn
+        and "UltraStyle.YELLOW" in cancel_replace_fn
+        and "UltraStyle.dangerLine" in cancel_replace_fn
+        and "§" not in accept_replace_fn
+        and "§" not in cancel_replace_fn,
+    )
     check("GUI pick_replace_mutual page",
           "pick_replace_mutual" in rival_chest and "pick_replace_mutual" in cmi_rival)
     check("rival list status order helper", "rivalListOrder" in rival_sys and "statusListRank" in rival_sys)
