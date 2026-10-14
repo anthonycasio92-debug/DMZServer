@@ -1,5 +1,18 @@
 # Branch consolidation
 
+## 2026-10-14 — KaiPath 1.3.17 / LM 4.6.155 Ultra bridge
+
+Merged into **`main`** and deleted:
+
+| Branch | What landed |
+|--------|-------------|
+| `cursor/ultra-bridge-fixedfooter-fac2` | Kit `UltraBridgeFooter` + `FIXED_FOOTER.md`, advertise `fixedFooter`/`portraitFrame`, fail-open chrome fixtures |
+| `cursor/ultra-fixedfooter-1317-fac2` | LM **4.6.155**: `FEATURE_FIXED_FOOTER` shipped on KaiPath **1.3.17**, `PENDING_NEXT` empty, recommend 1.3.17 |
+
+Live already has `LegacyMechanics-4.6.155.jar` (restart if not yet loaded). No remaining `origin/cursor/*` after this consolidation.
+
+**Work from here:** branch off `main` only (`cursor/<topic>-fac2`).
+
 ## 2026-10-11 — Legacy Mechanics 4.6.93 main line
 
 Native KubeJS hot-path ports and the Combat / `hot-path.json` staff tab are on **`main`** as **LegacyMechanics 4.6.93**.
