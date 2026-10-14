@@ -14,9 +14,10 @@ import net.minecraft.server.level.ServerPlayer;
  *
  * <p>Tiles are collected into a list then packed two-up so adding or gating systems
  * automatically grows or shrinks the panel (no fixed empty body band / choose prompt).
- * Hub tiles use {@link UltraStyle#STYLE_NORMAL} (dark); only Staff Admin uses
- * {@link UltraStyle#STYLE_DANGER}. Confirm/yellow is reserved for active selection
- * inside system menus — never on the hub landing.
+ * Hub tiles use {@link UltraStyle#STYLE_NORMAL} (dark) plus a per-system {@code accent}
+ * letter for KaiPath to tint. Confirm/yellow is reserved for selected actions inside
+ * system menus — never on the hub landing. Staff Admin uses accent {@code 4} (dark red),
+ * not {@link UltraStyle#STYLE_DANGER} (action danger is for destructive buttons).
  */
 public final class UltraHubScreens {
     private UltraHubScreens() {}
@@ -50,8 +51,7 @@ public final class UltraHubScreens {
                 .page("main")
                 .activeTab("home");
 
-        // Hub tiles: normal (dark) for every system. Yellow/confirm means active/selected —
-        // nothing is selected on the hub. Staff Admin is the only danger/red tile.
+        // Hub tiles: normal (dark) + per-system accent. Nothing is "selected" on the hub.
         List<HubTile> tiles = new ArrayList<>();
         tiles.add(new HubTile("difficulty", "Difficulty", UltraStyle.STYLE_NORMAL, true));
         tiles.add(new HubTile("rival", "Rival", UltraStyle.STYLE_NORMAL, false));
@@ -65,12 +65,11 @@ public final class UltraHubScreens {
             tiles.add(new HubTile("skills", "Skills", UltraStyle.STYLE_NORMAL, true));
         } else {
             // Dim locked tile - still occupies a slot so layout stays predictable.
-            tiles.add(new HubTile("skillcheck_denied", UltraStyle.dim("Skill Check"), UltraStyle.STYLE_DIM, true));
+            tiles.add(new HubTile("skillcheck_denied", "Skill Check", UltraStyle.STYLE_DIM, true));
         }
         tiles.add(new HubTile("character", "Character Services", UltraStyle.STYLE_NORMAL, true));
         if (staff) {
-            tiles.add(new HubTile(
-                    "admin", UltraStyle.danger("Staff Admin"), UltraStyle.STYLE_DANGER, true));
+            tiles.add(new HubTile("admin", "Staff Admin", UltraStyle.STYLE_NORMAL, true));
         }
 
         placeTiles(spec, ph, tiles);
@@ -110,7 +109,7 @@ public final class UltraHubScreens {
 
     /**
      * Pack hub tiles two-up. Panel height follows {@link UltraScreenSpec} content packing
-     * (no BODY_MIN_H when there is no body copy), so more systems just add rows.
+     * (compact min height when there is no body copy), so more systems just add rows.
      */
     private static void placeTiles(UltraScreenSpec spec, Map<String, String> ph, List<HubTile> tiles) {
         if (spec == null || tiles == null || tiles.isEmpty()) {
@@ -146,10 +145,11 @@ public final class UltraHubScreens {
                         ? UltraStyle.STYLE_NORMAL
                         : tile.onStyle())
                 : UltraStyle.STYLE_DIM;
+        String accent = UltraStyle.hubTileAccentCode(system);
         if (left) {
-            spec.buttonLeft(action, styled, style);
+            spec.buttonLeft(action, styled, style, accent);
         } else {
-            spec.buttonRight(action, styled, style);
+            spec.buttonRight(action, styled, style, accent);
         }
     }
 

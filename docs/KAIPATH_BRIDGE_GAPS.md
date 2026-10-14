@@ -1,10 +1,16 @@
 # Ultra bridge gap matrix (LM ↔ KaiPath)
 
-**LM 4.6.148** + **KaiPath 1.3.9** (live / recommended). Official KaiPath updates are owned by the KaiPath mod developer.
+**LM 4.6.149** + **KaiPath 1.3.9** (live / recommended). Official KaiPath updates are owned by the KaiPath mod developer.
 
-## Still missing on KaiPath 1.3.9
+## Still missing on KaiPath 1.3.9 (real bridge gaps)
 
-None for the Ultra Weights / Config typed-entry path. Stock **1.3.9** advertises and honors:
+| Part | Owner | Notes |
+|------|-------|-------|
+| **`layoutJson.headerBottom`** | Cursor+JLDK | LM 4.6.149 emits it. Client must keep title+divider **above** this Y so under-title tabs do not collide with the yellow line. |
+| **Title vertical centering** | JLDK-only | No protocol field — center title text in the header band between the gears. |
+| **`layoutJson.accent` + button `accent`** | Cursor+JLDK | LM 4.6.149 emits single-letter codes. Client paints title / activeTab / hub-tile tint. |
+
+Weights / Config typed-entry path is done on both sides:
 
 | Part | Status |
 |------|--------|
@@ -13,7 +19,7 @@ None for the Ultra Weights / Config typed-entry path. Stock **1.3.9** advertises
 | `textInput` in GuiFeaturesPacket advertise | **Done** |
 | `style` / `activeTab` / `titleAlign` / `playerModel` | **Done** (since 1.3.7) |
 
-LM 4.6.143+ treats those five as `SHIPPED_ON_RECOMMENDED`. `/lm admin guitest` should report `missingShipped=none pendingNext=none` on 1.3.9.
+LM treats the five shipped features as `SHIPPED_ON_RECOMMENDED`. `/lm admin guitest` should report `missingShipped=none pendingNext=none` on 1.3.9 for those.
 
 Deferred (neither side): `inputsJson` `slider` / `toggle`.
 
@@ -24,6 +30,9 @@ Deferred (neither side): `inputsJson` `slider` / `toggle`.
 | Button `style` on every button | **Done** | Wire always emits `style`. Roles: `confirm` / `danger` / `dim` / `normal`. |
 | Text input (`inputsJson` field 11) | **Done** | `type=text` + `args.bindInput` → `args.value`. Config + Difficulty Weights shop. |
 | `playerModel.parts` (cosmetics) | **Done** (4.6.111) | Schema 1: `headBones` / `form` / `extras`. See [`KAIPATH_GUI_PROTOCOL.md`](KAIPATH_GUI_PROTOCOL.md). |
+| `layoutJson.headerBottom` | **Done** (LM 4.6.149) | Awaiting KaiPath honor. |
+| `layoutJson.accent` / button `accent` | **Done** (LM 4.6.149) | Awaiting KaiPath honor. Hub tiles / titles / active tabs. |
+| Hub compact floor | **Done** (LM) | `PANEL_COMPACT_MIN_H=150` for tile-only menus — not a bridge gap. |
 | Slider / toggle as input types | **Deferred** | BOOLEAN stays styled buttons; NUMBER uses text + ±. Reserved below. |
 
 ## JLDK / KaiPath (client) — 1.3.9
@@ -33,11 +42,14 @@ Vendored / live jar: `mods/kaipath-1.3.9.jar`. Reference kit remains at [`tools/
 | Gap | KaiPath **1.3.9** | Notes |
 |-----|-------------------|-------|
 | Button `style` colors | **Done** | |
-| `activeTab` highlight | **Done** | |
+| `activeTab` highlight | **Done** | Still shared yellow until `accent` is honored |
 | `titleAlign` | **Done** | |
 | `playerModel` draw | **Done** | |
 | Text field widgets (field 11) | **Done** | Unblocks Weight shop |
 | GuiFeaturesPacket advertise | **Full** | `["style","activeTab","titleAlign","playerModel","textInput"]` |
+| `headerBottom` | **Needed** | Title+divider above this Y |
+| `accent` | **Needed** | Title / activeTab / hub tile tint |
+| Title vertical center in header band | **Needed** | No new field |
 | Slider / toggle widgets | N/A | Reserved until LM ships types |
 
 ## Practical pitfalls (watch-outs)
@@ -68,18 +80,10 @@ client `fitLabel` to append ASCII `...` instead.
 
 Booleans stay styled buttons; numbers stay text + ± steppers.
 
-### 6. Hub / header layout (JLDK — screenshot follow-ups)
+### 6. Header geometry + accent (see open gaps above)
 
-LM sends correct button `style` roles (hub tiles `normal`, Staff Admin `danger`,
-active tab `confirm`, inactive tab `dim`). These layout issues are client-side:
-
-1. **Compact main hub** — large empty band below Staff Admin; tighten vertical
-   spacing so the panel does not feel hollow when there are few tile rows.
-2. **Tabs below the yellow divider** — Difficulty (and other system) tab buttons
-   currently sit on/above the yellow header line; render the tab row below it.
-3. **Title vertically centered between the gears** — system titles (e.g.
-   "Difficulty") sit too high against the top edge; center them in the header
-   band between the gear icons.
+LM 4.6.149 emits `headerBottom` and `accent`. Hub compactness is LM-only
+(`PANEL_COMPACT_MIN_H`). Title vertical centering remains JLDK-only.
 
 ## Reserved (later): `inputsJson` slider / toggle
 

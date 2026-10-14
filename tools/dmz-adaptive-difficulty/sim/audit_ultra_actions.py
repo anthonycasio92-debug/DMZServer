@@ -751,13 +751,15 @@ def main() -> int:
         errors.append('UltraSparScreens admin must say "show status" not "print status"')
     hub = (ULTRA / "UltraHubScreens.java").read_text(encoding="utf-8")
     admin_tile = re.search(r'new HubTile\(\s*"admin"[\s\S]*?true\)', hub)
-    if not admin_tile or "STYLE_DANGER" not in admin_tile.group(0):
-        errors.append("UltraHubScreens Staff Admin tile must use STYLE_DANGER (red)")
+    if not admin_tile or "STYLE_NORMAL" not in admin_tile.group(0):
+        errors.append("UltraHubScreens Staff Admin tile must use STYLE_NORMAL + accent (not danger)")
+    if "hubTileAccentCode" not in hub:
+        errors.append("UltraHubScreens must send hubTileAccentCode on tiles")
     # Hub: yellow/confirm means selected — nothing is selected on the hub.
     open_main = hub.split("private static void openMain", 1)[-1].split(
         "private static void openAdmin", 1
     )[0]
-    for system in ("difficulty", "skillcheck", "skills", "character", "rival", "spar", "prestige"):
+    for system in ("difficulty", "skillcheck", "skills", "character", "rival", "spar", "prestige", "admin"):
         tile = re.search(rf'new HubTile\(\s*"{system}"[\s\S]*?true\)', open_main)
         if not tile:
             tile = re.search(rf'new HubTile\(\s*"{system}"[\s\S]*?false\)', open_main)
@@ -765,12 +767,30 @@ def main() -> int:
             errors.append(
                 f'UltraHubScreens "{system}" tile must not use STYLE_CONFIRM on the hub'
             )
-    # Tab styles: active=confirm, inactive=dim, staff/admin=danger.
+        if tile and "STYLE_DANGER" in tile.group(0):
+            errors.append(
+                f'UltraHubScreens "{system}" tile must not use STYLE_DANGER (use accent)'
+            )
+    # headerBottom + accent protocol fields; tab styles use accent not shared yellow.
     spec_src = (ULTRA / "UltraScreenSpec.java").read_text(encoding="utf-8")
+    if '"headerBottom"' not in spec_src and "headerBottom" not in spec_src:
+        errors.append("UltraScreenSpec must emit layoutJson.headerBottom")
+    if "HEADER_BOTTOM" not in style or "HEADER_BOTTOM_TABS" not in style:
+        errors.append("UltraStyle must define HEADER_BOTTOM / HEADER_BOTTOM_TABS")
+    if "PANEL_COMPACT_MIN_H" not in style:
+        errors.append("UltraStyle must define PANEL_COMPACT_MIN_H for hub packing")
+    if "systemAccentCode" not in style or "ACCENT_DIFFICULTY" not in style:
+        errors.append("UltraStyle must define per-system accent constants + systemAccentCode")
     if "tabStyle(" not in spec_src or "staffOnly()" not in spec_src:
-        errors.append("UltraScreenSpec must style staff tabs danger via tabStyle/staffOnly")
-    if "STYLE_CONFIRM" not in spec_src or "STYLE_DIM" not in spec_src:
-        errors.append("UltraScreenSpec tab styles must keep confirm (active) and dim (inactive)")
+        errors.append("UltraScreenSpec must style tabs via tabStyle/staffOnly")
+    if 'addProperty("accent"' not in spec_src and 'o.addProperty("accent"' not in spec_src:
+        errors.append("UltraScreenSpec must emit layoutJson.accent and/or button accent")
+    if DOC.is_file():
+        proto = DOC.read_text(encoding="utf-8")
+        if "headerBottom" not in proto or "tabsUnderTitle" not in proto:
+            errors.append("KAIPATH_GUI_PROTOCOL.md §4 must document headerBottom + tabsUnderTitle")
+        if "`accent`" not in proto and "button `accent`" not in proto:
+            errors.append("KAIPATH_GUI_PROTOCOL.md §4 must document accent")
     # Rival Challenge/Actions Accept+Decline must stack (same misclick risk as spar mentor/dojo).
     if re.search(
         r'buttonLeft\("do:challenge:accept"[^\n]*\n[^\n]*buttonRight\("do:challenge:decline"',

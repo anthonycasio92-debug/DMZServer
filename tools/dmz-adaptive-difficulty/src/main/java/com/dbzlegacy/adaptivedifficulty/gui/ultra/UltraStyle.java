@@ -24,6 +24,8 @@ public final class UltraStyle {
     public static final String AQUA;
     public static final String LIGHT_PURPLE;
     public static final String DARK_GREEN;
+    public static final String DARK_PURPLE;
+    public static final String DARK_RED;
 
     public static final String HEADER;
     public static final String LABEL;
@@ -33,6 +35,18 @@ public final class UltraStyle {
     public static final String DIM;
     public static final String NOTICE_HEAD;
     public static final String NOTICE_BODY;
+
+    /**
+     * Per-system accent inks (body/chat lines that allow section-sign). Hub tiles / tabs /
+     * titles cannot embed these in labels — use {@link #systemAccentCode(String)} on the wire.
+     */
+    public static final String ACCENT_DIFFICULTY;
+    public static final String ACCENT_RIVAL;
+    public static final String ACCENT_SPAR;
+    public static final String ACCENT_PRESTIGE;
+    public static final String ACCENT_CHARACTER;
+    public static final String ACCENT_SKILLCHECK;
+    public static final String ACCENT_ADMIN;
 
     /** Mid-dot separator for compact button labels (e.g. boost presets). */
     public static final String SEP;
@@ -63,6 +77,11 @@ public final class UltraStyle {
     public static final int PANEL_H = 300;
     public static final int PANEL_MIN_W = 300;
     public static final int PANEL_MIN_H = 220;
+    /**
+     * Floor for tile-only menus (no body copy), e.g. main hub. Lower than {@link #PANEL_MIN_H}
+     * so hub rows are not padded with a hollow band under the last tile.
+     */
+    public static final int PANEL_COMPACT_MIN_H = 150;
     /** Upper bound for content-driven panel growth (dense menus, e.g. Difficulty lines). */
     public static final int PANEL_MAX_H = 420;
     /** Gap between panel edge and screen edge when centered. */
@@ -82,6 +101,16 @@ public final class UltraStyle {
      * title chrome.
      */
     public static final int TAB_ROW_Y = 28;
+    /**
+     * {@code layoutJson.headerBottom} when there is no under-title tab row — client chrome
+     * (title + yellow divider) must end at or above this panel-relative Y.
+     */
+    public static final int HEADER_BOTTOM = BODY_TOP;
+    /**
+     * {@code layoutJson.headerBottom} when {@code tabsUnderTitle} is true. Tab buttons sit at
+     * {@link #TAB_ROW_Y}; client title + divider must stay strictly above this line.
+     */
+    public static final int HEADER_BOTTOM_TABS = TAB_ROW_Y;
     /** Y where the body starts when a tab button row is present. */
     public static final int BODY_TOP_TABS = TAB_ROW_Y + BTN_H + BTN_GAP;
     /** Minimum body scroll region height so lines stay readable. */
@@ -117,6 +146,8 @@ public final class UltraStyle {
         AQUA = MARK + "b";
         LIGHT_PURPLE = MARK + "d";
         DARK_GREEN = MARK + "2";
+        DARK_PURPLE = MARK + "5";
+        DARK_RED = MARK + "4";
         HEADER = GOLD + BOLD;
         LABEL = GRAY;
         VALUE = WHITE;
@@ -125,6 +156,13 @@ public final class UltraStyle {
         DIM = DARK_GRAY;
         NOTICE_HEAD = HEADER;
         NOTICE_BODY = YELLOW;
+        ACCENT_DIFFICULTY = RED;
+        ACCENT_RIVAL = DARK_PURPLE;
+        ACCENT_SPAR = GOLD;
+        ACCENT_PRESTIGE = AQUA;
+        ACCENT_CHARACTER = GREEN;
+        ACCENT_SKILLCHECK = YELLOW;
+        ACCENT_ADMIN = DARK_RED;
         // ASCII-only separators: KaiPath/JLDK still mojibakes multi-byte punctuation.
         SEP = "|";
         TIMES = "x";
@@ -283,5 +321,57 @@ public final class UltraStyle {
                 ? "f"
                 : codeLetter.trim().substring(0, 1);
         return wireText(MARK + letter + plain(text));
+    }
+
+    /**
+     * Single-letter Minecraft color code for {@code layoutJson.accent} / button {@code accent}.
+     * Empty when the screen uses the shared hub gold header (no per-system tint).
+     *
+     * <p>Labels stay plain ASCII — KaiPath mojibakes section-sign in title/button text.
+     * JLDK paints title chrome and active-tab highlight from this code.
+     */
+    public static String systemAccentCode(String screenId) {
+        if (screenId == null || screenId.isBlank()) {
+            return "";
+        }
+        String id = screenId.trim().toLowerCase();
+        return switch (id) {
+            case "difficulty", "weights" -> "c";
+            case "rival" -> "5";
+            case "spar" -> "6";
+            case "prestige" -> "b";
+            case "character" -> "a";
+            case "skillcheck", "skills" -> "e";
+            case "admin", "config", "progression" -> "4";
+            case "hub" -> "6";
+            default -> "";
+        };
+    }
+
+    /** Accent ink for body lines (section-sign OK). Empty string when none. */
+    public static String systemAccent(String screenId) {
+        String code = systemAccentCode(screenId);
+        if (code.isEmpty()) {
+            return "";
+        }
+        return MARK + code;
+    }
+
+    /** Hub tile accent letter for a system id ({@code difficulty}, {@code admin}, …). */
+    public static String hubTileAccentCode(String system) {
+        if (system == null || system.isBlank()) {
+            return "";
+        }
+        String s = system.trim().toLowerCase();
+        return switch (s) {
+            case "difficulty" -> "c";
+            case "rival" -> "5";
+            case "spar" -> "6";
+            case "prestige" -> "b";
+            case "character" -> "a";
+            case "skillcheck", "skills", "skillcheck_denied" -> "e";
+            case "admin" -> "4";
+            default -> "";
+        };
     }
 }

@@ -244,7 +244,11 @@ public final class UltraSparScreens {
             UltraPickHelper.placePageButtons(
                     spec, "stats|Stats", "mentor|Training bonds", "settings|Chat settings");
             if (StaffAccess.isStaff(player)) {
-                spec.buttonLeft("page:admin", UltraStyle.danger("Staff Admin"), UltraStyle.STYLE_DANGER)
+                spec.buttonLeft(
+                                "page:admin",
+                                "Staff Admin",
+                                UltraStyle.STYLE_NORMAL,
+                                UltraStyle.hubTileAccentCode("admin"))
                         .rowGap();
             }
         }

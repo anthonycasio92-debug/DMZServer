@@ -236,6 +236,23 @@ public final class UltraScreenSpec {
 
     public UltraScreenSpec button(
             String actionId, String label, String style, int x, int y, int w, String bindInputId) {
+        return button(actionId, label, style, x, y, w, bindInputId, null);
+    }
+
+    /**
+     * Same as {@link #button(String, String, String, int, int, int, String)} with an optional
+     * single-letter {@code accent} (Minecraft color code) for KaiPath to tint the control.
+     * Labels stay plain ASCII — do not embed section-sign in {@code label}.
+     */
+    public UltraScreenSpec button(
+            String actionId,
+            String label,
+            String style,
+            int x,
+            int y,
+            int w,
+            String bindInputId,
+            String accent) {
         UltraScreenIds.requireValidActionId(screenId, actionId, label);
         int width = Math.max(UltraStyle.BTN_MIN_W, w);
         String resolvedStyle = normalizeStyle(style);
@@ -256,8 +273,22 @@ public final class UltraScreenSpec {
                 width,
                 UltraStyle.BTN_H,
                 UltraStyle.BTN_PAD,
-                bind));
+                bind,
+                normalizeAccent(accent)));
         return this;
+    }
+
+    /** Full-width button with optional accent letter. */
+    public UltraScreenSpec button(String actionId, String label, String style, String accent) {
+        return button(actionId, label, style, UltraStyle.COL_L, nextRow, UltraStyle.BTN_W, null, accent);
+    }
+
+    public UltraScreenSpec buttonLeft(String actionId, String label, String style, String accent) {
+        return button(actionId, label, style, UltraStyle.COL_L, nextRow, UltraStyle.BTN_W, null, accent);
+    }
+
+    public UltraScreenSpec buttonRight(String actionId, String label, String style, String accent) {
+        return button(actionId, label, style, UltraStyle.COL_R, nextRow, UltraStyle.BTN_W, null, accent);
     }
 
     public UltraScreenSpec rowGap() {
@@ -378,10 +409,11 @@ public final class UltraScreenSpec {
         }
         int height;
         if (naturalBodyH <= 0) {
-            // Compact tile menus: pack to content, clamped to min/max (not stuck at PANEL_H).
+            // Compact tile menus (hub): pack to content; lower floor than PANEL_MIN_H so
+            // few tile rows are not padded with a hollow band under the last row.
             int packed = Math.max(contentBottom, bodyTop + buttonStackH);
             height = Math.max(
-                    UltraStyle.PANEL_MIN_H, Math.min(UltraStyle.PANEL_MAX_H, packed));
+                    UltraStyle.PANEL_COMPACT_MIN_H, Math.min(UltraStyle.PANEL_MAX_H, packed));
         } else {
             height = panelHeight;
             if (contentBottom > height) {
@@ -449,6 +481,9 @@ public final class UltraScreenSpec {
             o.addProperty("id", b.actionId);
             o.addProperty("label", b.label);
             o.addProperty("style", b.style);
+            if (b.accent != null && !b.accent.isBlank()) {
+                o.addProperty("accent", b.accent);
+            }
             o.addProperty("x", b.x);
             o.addProperty("y", b.y + buttonShift);
             o.addProperty("w", b.w);
@@ -498,7 +533,17 @@ public final class UltraScreenSpec {
         layout.addProperty("margin", panelMargin);
         // Always present - KaiPath must center titles when value is "center" (not left-default).
         layout.addProperty("titleAlign", UltraStyle.TITLE_ALIGN);
-        layout.addProperty("tabsUnderTitle", !tabs.isEmpty());
+        boolean underTitleTabs = !tabs.isEmpty();
+        layout.addProperty("tabsUnderTitle", underTitleTabs);
+        // Client chrome (title + yellow divider) must end at/above this Y; tab row sits at/after it.
+        layout.addProperty(
+                "headerBottom",
+                underTitleTabs ? UltraStyle.HEADER_BOTTOM_TABS : UltraStyle.HEADER_BOTTOM);
+        String accentCode = UltraStyle.systemAccentCode(screenId);
+        if (accentCode != null && !accentCode.isBlank()) {
+            // Single-letter color for title chrome + activeTab highlight (plain ASCII titles).
+            layout.addProperty("accent", accentCode);
+        }
         // Shared body / button metrics - every screen benefits.
         layout.addProperty("lineHeight", UltraStyle.LINE_H);
         layout.addProperty("lineGap", UltraStyle.LINE_GAP);
@@ -587,12 +632,17 @@ public final class UltraScreenSpec {
             // Plain + pre-fit: stock KaiPath fitLabel uses a mojibaked ellipsis (A/E glyphs).
             String label =
                     UltraStyle.fitAsciiLabel(tab.label, UltraStyle.labelMaxWidth(tabW));
-            // Staff-only tabs stay danger/red. Regular: active=confirm (yellow), inactive=dim.
+            // Inactive=dim. Active/staff=normal + accent (KaiPath paints highlight from accent /
+            // activeTab — not shared yellow confirm).
             String style = tabStyle(tab, active);
             JsonObject o = new JsonObject();
             o.addProperty("id", qualifyAction("tab:" + tab.id));
             o.addProperty("label", label);
             o.addProperty("style", style);
+            String tabAccent = tabAccentCode(tab, active);
+            if (tabAccent != null && !tabAccent.isBlank()) {
+                o.addProperty("accent", tabAccent);
+            }
             o.addProperty("x", x);
             o.addProperty("y", y);
             o.addProperty("w", tabW);
@@ -634,12 +684,36 @@ public final class UltraScreenSpec {
         };
     }
 
-    /** Staff/danger tabs always red; else confirm when active, dim when inactive. */
+    /**
+     * Inactive tabs stay dim (dark). Active and staff tabs use normal — highlight comes from
+     * {@code accent} + {@code activeTab}, not shared confirm yellow.
+     */
     private static String tabStyle(Tab tab, boolean active) {
         if (tab != null && tab.staffOnly()) {
-            return UltraStyle.STYLE_DANGER;
+            return UltraStyle.STYLE_NORMAL;
         }
-        return active ? UltraStyle.STYLE_CONFIRM : UltraStyle.STYLE_DIM;
+        return active ? UltraStyle.STYLE_NORMAL : UltraStyle.STYLE_DIM;
+    }
+
+    private String tabAccentCode(Tab tab, boolean active) {
+        if (tab != null && tab.staffOnly()) {
+            return "4";
+        }
+        if (!active) {
+            return "";
+        }
+        return UltraStyle.systemAccentCode(screenId);
+    }
+
+    private static String normalizeAccent(String accent) {
+        if (accent == null || accent.isBlank()) {
+            return "";
+        }
+        String a = accent.trim();
+        if (!a.isEmpty() && a.charAt(0) == '\u00A7' && a.length() >= 2) {
+            a = a.substring(1);
+        }
+        return a.substring(0, 1).toLowerCase();
     }
 
     /**
@@ -666,7 +740,8 @@ public final class UltraScreenSpec {
             int w,
             int h,
             int pad,
-            String bindInput) {}
+            String bindInput,
+            String accent) {}
 
     private record Input(
             String id,
