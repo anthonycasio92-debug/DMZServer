@@ -151,6 +151,21 @@ public final class GuiOpenPacketRoundTripTest {
             fail("ADVERTISED_FEATURES_JSON must not embed a mod id");
         }
 
+        // fitLabel ASCII patcher must rewrite mojibake ellipsis constants
+        try {
+            java.nio.file.Path patcher =
+                    java.nio.file.Path.of("tools/ultra-gui-kit/patch_fitlabel_ascii.py");
+            if (!java.nio.file.Files.isRegularFile(patcher)) {
+                // When cwd is the kit dir during some runners
+                patcher = java.nio.file.Path.of("patch_fitlabel_ascii.py");
+            }
+            if (!java.nio.file.Files.isRegularFile(patcher)) {
+                fail("missing patch_fitlabel_ascii.py");
+            }
+        } catch (Throwable t) {
+            fail("fitLabel patcher check failed: " + t.getMessage());
+        }
+
         System.out.println(
                 "GuiOpenPacketRoundTripTest OK (11 fields + multi-mod partners + advertise)");
     }

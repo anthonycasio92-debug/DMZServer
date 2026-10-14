@@ -90,10 +90,29 @@ if command -v zip >/dev/null 2>&1; then
     'com/dmzlegacy/kaipath/ultra/consumers/legacymechanics/*' \
     'com/dmzlegacy/kaipath/ultra/consumers/UltraGuiConsumerRegistry.class' \
     'com/dmzlegacy/kaipath/ultra/consumers/UltraGuiConsumerRegistry$*.class' \
+    'com/dmzlegacy/kaipath/ultra/consumers/UltraGuiPartners.class' \
     2>/dev/null || true
 fi
 
 jar uf "$OUT_JAR" -C "$CLASSES" com/dmzlegacy/kaipath/ultra/consumers/
+
+# Fix stock fitLabel mojibake ellipsis (â€¦ → ...) that shows as weird A/E glyphs.
+FIT_CLASS_DIR="$OUT_DIR/fitlabel-patch"
+mkdir -p "$FIT_CLASS_DIR/com/dmzlegacy/kaipath/ultra/internal"
+unzip -p "$OUT_JAR" com/dmzlegacy/kaipath/ultra/internal/UltraWidgetReflect.class \
+  > "$FIT_CLASS_DIR/com/dmzlegacy/kaipath/ultra/internal/UltraWidgetReflect.class"
+python3 "$HERE/patch_fitlabel_ascii.py" \
+  "$FIT_CLASS_DIR/com/dmzlegacy/kaipath/ultra/internal/UltraWidgetReflect.class"
+jar uf "$OUT_JAR" -C "$FIT_CLASS_DIR" com/dmzlegacy/kaipath/ultra/internal/UltraWidgetReflect.class
+# Verify mojibake gone and ASCII ellipsis present
+if unzip -p "$OUT_JAR" com/dmzlegacy/kaipath/ultra/internal/UltraWidgetReflect.class \
+  | python3 -c "import sys; d=sys.stdin.buffer.read(); moj=bytes([0xC3,0xA2,0xE2,0x82,0xAC,0xC2,0xA6]);
+sys.exit(1 if moj in d or b'...' not in d else 0)"; then
+  echo "fitLabel ASCII ellipsis OK"
+else
+  echo "ERROR: UltraWidgetReflect still has mojibake ellipsis or missing ASCII ..." >&2
+  exit 1
+fi
 
 # Restore stamped MANIFEST via zip (jar uf often drops META-INF/MANIFEST.MF).
 (cd "$MANIFEST_DIR" && zip -q "$OUT_JAR" META-INF/MANIFEST.MF)

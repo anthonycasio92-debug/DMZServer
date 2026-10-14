@@ -652,24 +652,13 @@ public class LmDynamicScreen extends UltraScreen {
         return "";
     }
 
-    /** Ensure label carries a readable style/accent tint when the server sent a plain string. */
+    /**
+     * Labels stay plain ASCII. Color comes from button {@code style} / {@code accent} chrome —
+     * never prepend section-sign ({@code §a}/{@code §e}/…) which mojibakes into stray A/E glyphs
+     * on stock KaiPath clients.
+     */
     private static String styleLabel(String style, String accent, String label) {
-        if (label == null) {
-            return "";
-        }
-        if (label.indexOf('§') >= 0 || label.indexOf('\u00a7') >= 0) {
-            return label;
-        }
-        String code = normalizeAccent(accent);
-        if (!code.isBlank()) {
-            return "§" + code + label;
-        }
-        return switch (normalizeStyle(style)) {
-            case "confirm" -> "§a" + label;
-            case "danger" -> "§c" + label;
-            case "dim" -> "§8" + label;
-            default -> label;
-        };
+        return stripSection(label);
     }
 
     private static String stripAtPrefix(String actionId) {
@@ -720,8 +709,35 @@ public class LmDynamicScreen extends UltraScreen {
         }
     }
 
+    /**
+     * Strip section-sign color codes and common UTF-8-as-Latin-1 mojibake (including the
+     * stock {@code fitLabel} ellipsis {@code â€¦}) so labels never show stray A/E glyphs.
+     */
     private static String stripSection(String s) {
-        return s == null ? "" : s;
+        if (s == null || s.isEmpty()) {
+            return "";
+        }
+        String text = s;
+        // Mojibaked U+2026 ellipsis (â€¦) and real ellipsis → ASCII ...
+        text = text.replace("\u00e2\u20ac\u00a6", "...");
+        text = text.replace("\u2026", "...");
+        // Drop section-sign + following code (and already-mojibaked C2 A7 sequences).
+        StringBuilder out = new StringBuilder(text.length());
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (c == '\u00a7' || c == '\u00c2') {
+                // §X or leftover C2 from UTF-8 section-sign — skip mark and next code char
+                if (i + 1 < text.length()) {
+                    i++;
+                }
+                continue;
+            }
+            if (c <= 0x7F) {
+                out.append(c);
+            }
+            // drop other non-ASCII (fancy punctuation that mojibakes)
+        }
+        return out.toString();
     }
 
     private record StyledChrome(int x, int y, int w, int h, String style, String accent) {}

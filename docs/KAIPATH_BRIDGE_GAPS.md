@@ -84,9 +84,15 @@ UltraGuiPartners.register("legacymechanics", "myshop"); // any mod ids
 
 Pre-1.3.9 KaiPath ignores field 11. LM Weights / Config pages show an explicit danger line when `textInput` is missing.
 
-### 2. UTF-8 mojibake / tab ellipsis
+### 2. UTF-8 mojibake / tab ellipsis (weird A/E glyphs)
 
-LM Ultra copy prefers ASCII. Pre-fit labels with ASCII `...` so stock KaiPath `fitLabel` never appends mojibaked ellipsis. JLDK: change client `fitLabel` to ASCII `...`.
+Stock KaiPath `UltraWidgetReflect.fitLabel` appends a mojibaked ellipsis (`â€¦`) that renders
+as stray **A/E** glyphs. Section-sign label prefixes (`§a`, `§e`, …) cause the same glitch.
+
+**Kit / JLDK fix:** replace `fitLabel` ellipsis with ASCII `...`; keep button/tab labels plain
+ASCII and tint via `style` / `accent` chrome only. See
+[`tools/ultra-gui-kit/kaipath-client/.../FITLABEL_ASCII.md`](../tools/ultra-gui-kit/kaipath-client/com/dmzlegacy/kaipath/ultra/internal/FITLABEL_ASCII.md).
+Partner servers should still pre-fit with ASCII `...` as defense in depth.
 
 ### 3. Player model custom parts
 

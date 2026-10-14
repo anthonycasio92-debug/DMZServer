@@ -96,6 +96,12 @@ UltraGuiPartners.registerDefaults();
 After merge, partner guitests (e.g. LM `/lm admin guitest`) move from
 `pendingNext=[headerBottom, accent]` → `pendingNext=none`.
 
+## Also merge: ASCII `fitLabel` (weird A/E glyphs)
+
+Stock `UltraWidgetReflect.fitLabel` uses a mojibaked ellipsis. Replace with ASCII `...` and
+never prefix labels with section-sign color codes. Details:
+[`FITLABEL_ASCII.md`](../tools/ultra-gui-kit/kaipath-client/com/dmzlegacy/kaipath/ultra/internal/FITLABEL_ASCII.md).
+
 ## Deferred (not blocking)
 
 - `inputsJson` types `slider` / `toggle` — reserved in [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md).
