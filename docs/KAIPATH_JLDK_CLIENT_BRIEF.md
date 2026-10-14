@@ -1,6 +1,6 @@
 # JLDK brief — KaiPath Ultra GUI client conformance
 
-**Status (LM 4.6.154 live + KaiPath 1.3.17):** Client honors style / activeTab / titleAlign /
+**Status (LM 4.6.155 live + KaiPath 1.3.17):** Client honors style / activeTab / titleAlign /
 playerModel / textInput / headerBottom / accent / palette / sound / buttonSkin / frame /
 paged_book / **fixedFooter** / **portraitFrame** (advertised). LM emits button **`footer:true`**
 (unchanged wire — matches 1.3.17).

@@ -2,7 +2,7 @@
 
 | Side | Role |
 |------|------|
-| LM **4.6.154** | `GuiOpenPacket` (11 fields), styles, `titleAlign`, `playerModel.parts`, text fields, **`headerBottom`**, **`accent`**, button **`footer:true`**, chrome emit (sound/skin/frame/`paged_book`) |
+| LM **4.6.155** | `GuiOpenPacket` (11 fields), styles, `titleAlign`, `playerModel.parts`, text fields, **`headerBottom`**, **`accent`**, button **`footer:true`**, chrome emit (sound/skin/frame/`paged_book`) |
 | KaiPath **1.3.17** (recommended) | Prior chrome + **`fixedFooter`** (pins `footer:true`) + advertise **`portraitFrame`** |
 | **Pending on KaiPath** | None for bridge chrome (title vertical centering confirm only) |
 

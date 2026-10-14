@@ -342,15 +342,12 @@ def main() -> int:
         if "FEATURE_HEADER_BOTTOM" not in shipped_block or "FEATURE_ACCENT" not in shipped_block:
             errors.append(
                 "SHIPPED_ON_RECOMMENDED must include FEATURE_HEADER_BOTTOM + FEATURE_ACCENT "
-                "(KaiPath 1.3.13)"
+                "(KaiPath 1.3.13+)"
             )
-        if "PENDING_NEXT" not in feat_text or "FEATURE_FIXED_FOOTER" not in feat_text:
-            errors.append("UltraClientFeatures.PENDING_NEXT must track fixedFooter")
-        # PENDING_NEXT must be non-empty while KaiPath 1.3.13 lacks fixedFooter.
-        if "PENDING_NEXT =\n            Set.of()" in feat_text or "PENDING_NEXT = Set.of()" in feat_text:
+        # KaiPath 1.3.17 ships fixedFooter — must be in SHIPPED_ON_RECOMMENDED, not PENDING_NEXT.
+        if "FEATURE_FIXED_FOOTER" not in shipped_block:
             errors.append(
-                "UltraClientFeatures.PENDING_NEXT must list fixedFooter "
-                "(not empty while LM emits footer:true)"
+                "SHIPPED_ON_RECOMMENDED must include FEATURE_FIXED_FOOTER (KaiPath 1.3.17)"
             )
         pending_decl = "public static final Set<String> PENDING_NEXT"
         if pending_decl not in feat_text:
@@ -360,19 +357,26 @@ def main() -> int:
             pending_block = feat_text.split(pending_decl, 1)[-1].split(
                 "private static final Map", 1
             )[0]
-        if pending_block and "FEATURE_FIXED_FOOTER" not in pending_block:
-            errors.append("PENDING_NEXT must include FEATURE_FIXED_FOOTER")
         if pending_block and (
-            "FEATURE_HEADER_BOTTOM" in pending_block or "FEATURE_ACCENT" in pending_block
+            "FEATURE_HEADER_BOTTOM" in pending_block
+            or "FEATURE_ACCENT" in pending_block
+            or "FEATURE_FIXED_FOOTER" in pending_block
         ):
             errors.append(
-                "PENDING_NEXT must not include headerBottom/accent "
-                "(shipped on KaiPath 1.3.13)"
+                "PENDING_NEXT must not include headerBottom/accent/fixedFooter "
+                "(shipped on KaiPath 1.3.17)"
             )
         if "headerBottom" not in feat_text or 'FEATURE_ACCENT_DOC = "accent"' not in feat_text:
             errors.append("UltraClientFeatures must expose headerBottom/accent doc spellings")
         if "fixedFooter" not in feat_text:
             errors.append("UltraClientFeatures must expose fixedFooter doc spelling")
+        if 'FEATURE_FIXED_FOOTER_DOC = "fixedFooter"' not in feat_text:
+            errors.append("UltraClientFeatures must define FEATURE_FIXED_FOOTER_DOC = \"fixedFooter\"")
+    lm_net = ROOT / "src/main/java/com/dbzlegacy/adaptivedifficulty/net/gui/LmGuiNetwork.java"
+    if lm_net.is_file():
+        lm_net_text = lm_net.read_text(encoding="utf-8")
+        if 'KAIPATH_RECOMMENDED_VERSION = "1.3.17"' not in lm_net_text:
+            errors.append('LmGuiNetwork.KAIPATH_RECOMMENDED_VERSION must be "1.3.17"')
     if "roundTripStyleAndActiveTab" not in net:
         errors.append("LmGuiNetwork must round-trip style + activeTab in self-test")
     if "GuiFeaturesPacket" not in net:

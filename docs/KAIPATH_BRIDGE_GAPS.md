@@ -1,6 +1,6 @@
 # Ultra bridge gap matrix (LM ↔ KaiPath)
 
-**LM 4.6.154** (live) + **KaiPath 1.3.17** (recommended). Official KaiPath updates are owned by the KaiPath mod developer.
+**LM 4.6.155** (live) + **KaiPath 1.3.17** (recommended). Official KaiPath updates are owned by the KaiPath mod developer.
 
 **At a glance:** Bridge chrome gaps closed on **1.3.17** — `fixedFooter` pins `footer:true`; `portraitFrame` is advertised. LM wire already matched (`footer:true`); guitest tracks `FEATURE_FIXED_FOOTER` as shipped. JLDK one-pager: [`KAIPATH_JLDK_CLIENT_BRIEF.md`](KAIPATH_JLDK_CLIENT_BRIEF.md).
 
@@ -43,13 +43,13 @@ missingShipped=none pendingNext=none
 | `layoutJson.headerBottom` / `tabsUnderTitle` | **Done** (1.3.13) |
 | `layoutJson.accent` + button/tab `accent` | **Done** (1.3.13 via `UltraBridgeChrome`) |
 | GuiFeaturesPacket advertise | **Done** on 1.3.17 (incl. `portraitFrame` + `fixedFooter`) |
-| `sound` / `buttonSkin` / `frame` / `paged_book` | **Done** (client 1.3.13+ + LM 4.6.154 emit) |
+| `sound` / `buttonSkin` / `frame` / `paged_book` | **Done** (client 1.3.13+ + LM 4.6.155 emit) |
 | `footer:true` / `fixedFooter` | **Done** (client 1.3.17 + LM emit 4.6.152+) |
 | `playerModel.portraitFrame` advertise | **Done** (1.3.17) |
 
-## Optional chrome (emitted by LM 4.6.154; not tracked as pending)
+## Optional chrome (emitted by LM 4.6.155; not tracked as pending)
 
-| Part | KaiPath 1.3.17 | LM 4.6.154 |
+| Part | KaiPath 1.3.17 | LM 4.6.155 |
 |------|---------------|------------|
 | `sound` (`minecraft:ui.button.click`) | Honors (missing → silent) | **Emits** on buttons/tabs |
 | `buttonSkin` (`legacymechanics:button`) | Honors (RL → boolean paint) | **Emits** on buttons/tabs |
@@ -71,7 +71,7 @@ missingShipped=none pendingNext=none
 - `sound` → registry Optional; missing SoundEvent → **silent no-op** (no crash)
 - skin / frame / portraitFrame → `UltraBridgeChrome.id` only validates `ns:path`; result is a **boolean** that enables GuiGraphics tint paint — **no texture bind**
 
-LM 4.6.154 uses `minecraft:ui.button.click` + `legacymechanics:*` enable tokens so KaiPath-only clients stay healthy.
+LM 4.6.155 uses `minecraft:ui.button.click` + `legacymechanics:*` enable tokens so KaiPath-only clients stay healthy.
 
 ### 3. `pagedBook` vs `paged_book`
 
@@ -118,7 +118,7 @@ Booleans stay styled buttons; numbers stay text + ± steppers. Not a KaiPath blo
 | Hub compact floor | `PANEL_COMPACT_MIN_H=150` for tile-only menus |
 | Active-tab style | LM sends `style=normal` + `accent` |
 | Main hub title gold | Hub omits `layoutJson.accent` (shared chrome) |
-| Prestige GoD / Supreme Kai soft warn | Ultra + chat paths (4.6.154) |
+| Prestige GoD / Supreme Kai soft warn | Ultra + chat paths (4.6.155) |
 
 ## Cursor / LM (server) checklist
 
@@ -130,8 +130,8 @@ Booleans stay styled buttons; numbers stay text + ± steppers. Not a KaiPath blo
 | Emit `layoutJson.headerBottom` | **Done** |
 | Emit `layoutJson.accent` / button `accent` | **Done** |
 | Emit button `footer:true` | **Done** (4.6.152) — matches 1.3.17 |
-| Emit sound / buttonSkin / frame / paged_book | **Done** (4.6.154) |
-| Chrome defaults safe without DMZUltra | **Done** (4.6.154) |
+| Emit sound / buttonSkin / frame / paged_book | **Done** (4.6.155) |
+| Chrome defaults safe without DMZUltra | **Done** (4.6.155) |
 | Track `FEATURE_FIXED_FOOTER` as shipped on 1.3.17 | **Done** |
 | Recommend KaiPath **1.3.17** | **Done** |
 | `inputsJson` `slider` / `toggle` | **Deferred** |
