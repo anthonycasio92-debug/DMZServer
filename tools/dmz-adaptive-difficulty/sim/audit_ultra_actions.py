@@ -1005,6 +1005,20 @@ def main() -> int:
     skill_ui = (ULTRA / "UltraSkillCheckScreens.java").read_text(encoding="utf-8")
     if ".tabs(" in skill_ui:
         errors.append("UltraSkillCheckScreens must not call .tabs() (no tab bar)")
+    if 'skillsLines(player, "core")' in skill_ui:
+        errors.append(
+            "UltraSkillCheckScreens must use compact skillcheck lines "
+            "(not coreLines with DMZ/Ki/Energy header)"
+        )
+    if "skillcheck" not in skill_ui and "skillCheckGuiLines" not in skill_ui:
+        errors.append("UltraSkillCheckScreens must load skillcheck/compact skill lines")
+    if ".lineGap(" not in skill_ui:
+        errors.append("UltraSkillCheckScreens must tighten lineGap for dense skill list")
+    unlock = (ROOT / "src/main/java/com/dbzlegacy/adaptivedifficulty/progression/shop/SkillUnlockService.java").read_text(
+        encoding="utf-8"
+    )
+    if "skillCheckGuiLines" not in unlock:
+        errors.append("SkillUnlockService must expose skillCheckGuiLines (skills-only Ultra home)")
 
     print("=== Ultra action / panel audit ===")
     for e in errors:

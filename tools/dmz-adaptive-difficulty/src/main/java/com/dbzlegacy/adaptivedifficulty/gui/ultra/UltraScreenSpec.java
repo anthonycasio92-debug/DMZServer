@@ -47,6 +47,10 @@ public final class UltraScreenSpec {
     private int firstButtonY = -1;
     /** Pinned footer buttons ({@code footer:true}) — placed at panel bottom in {@link #toPacket}. */
     private final List<Button> footerButtons = new ArrayList<>();
+    /** Optional tighter body line gap (null = {@link UltraStyle#LINE_GAP}). */
+    private Integer lineGapOverride;
+    /** Optional tighter body pad (null = {@link UltraStyle#BODY_PAD}). */
+    private Integer bodyPadOverride;
 
     private UltraScreenSpec(String screenId) {
         this.screenId = screenId == null || screenId.isBlank() ? "hub" : screenId.trim();
@@ -77,6 +81,18 @@ public final class UltraScreenSpec {
         // Plain ASCII title - KaiPath paints the header in its own color; section-sign
         // codes mojibake as stray A/E glyphs on some clients.
         this.title = UltraStyle.wireText(UltraStyle.plain(title == null ? "" : title));
+        return this;
+    }
+
+    /** Tighter body line spacing for dense lists (e.g. Skill Check). */
+    public UltraScreenSpec lineGap(int gap) {
+        this.lineGapOverride = Math.max(0, gap);
+        return this;
+    }
+
+    /** Tighter body padding for dense lists. */
+    public UltraScreenSpec bodyPad(int pad) {
+        this.bodyPadOverride = Math.max(0, pad);
         return this;
     }
 
@@ -487,11 +503,13 @@ public final class UltraScreenSpec {
                         + UltraStyle.PANEL_MARGIN
                         + footerReserve;
         int bodyTop = tabs.isEmpty() ? UltraStyle.BODY_TOP : UltraStyle.BODY_TOP_TABS;
-        int lineStep = UltraStyle.LINE_H + UltraStyle.LINE_GAP;
+        int lineGap = lineGapOverride != null ? lineGapOverride : UltraStyle.LINE_GAP;
+        int bodyPad = bodyPadOverride != null ? bodyPadOverride : UltraStyle.BODY_PAD;
+        int lineStep = UltraStyle.LINE_H + lineGap;
         int naturalBodyH =
                 lines.isEmpty()
                         ? 0
-                        : UltraStyle.BODY_PAD * 2 + lines.size() * lineStep;
+                        : bodyPad * 2 + lines.size() * lineStep;
 
         // Grow toward PANEL_MAX_H when body text needs more viewport than the default
         // BODY_MIN_H band - shift buttons down so extra height expands the body, not
@@ -571,7 +589,7 @@ public final class UltraScreenSpec {
             bodyMaxH =
                     Math.max(
                             UltraStyle.BODY_MIN_H,
-                            Math.max(lineStep + UltraStyle.BODY_PAD * 2, bodyBottom - bodyTop));
+                            Math.max(lineStep + bodyPad * 2, bodyBottom - bodyTop));
         }
         boolean scrollBody =
                 naturalBodyH > bodyMaxH || contentBottom + buttonShift > UltraStyle.PANEL_MAX_H;
@@ -673,9 +691,11 @@ public final class UltraScreenSpec {
         layout.addProperty("frame", UltraStyle.PANEL_FRAME);
         // Shared body / button metrics - every screen benefits.
         layout.addProperty("lineHeight", UltraStyle.LINE_H);
-        layout.addProperty("lineGap", UltraStyle.LINE_GAP);
+        layout.addProperty(
+                "lineGap", lineGapOverride != null ? lineGapOverride : UltraStyle.LINE_GAP);
         layout.addProperty("bodyTop", bodyTop);
-        layout.addProperty("bodyPad", UltraStyle.BODY_PAD);
+        layout.addProperty(
+                "bodyPad", bodyPadOverride != null ? bodyPadOverride : UltraStyle.BODY_PAD);
         layout.addProperty("bodyMaxHeight", bodyMaxH);
         layout.addProperty("scrollBody", scrollBody);
         layout.addProperty("buttonPad", UltraStyle.BTN_PAD);

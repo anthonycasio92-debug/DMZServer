@@ -133,6 +133,26 @@ public final class LivingWorldNearbyMeditation {
         out.add("§8  - §7Each held prestige adds 10%.");
     }
 
+    /** One-line Meditation for Ultra Skill Check (no tip padding). */
+    public static void appendCompactLine(List<String> out, ServerPlayer player, Skills skills) {
+        if (out == null || player == null) {
+            return;
+        }
+        int cap = cap();
+        int level = Math.max(0, DmzSkillUtil.level(skills, SKILL));
+        if (cap <= 0) {
+            return;
+        }
+        if (level >= cap) {
+            out.add("§5Meditation §f" + level + "/" + cap + " §8· §6Max");
+            return;
+        }
+        long need = requirementMs(level);
+        long progress = shownProgress(player, level, need);
+        out.add("§5Meditation §f" + level + "/" + cap
+                + " §8· §f" + compact(progress) + "/" + compact(need));
+    }
+
     private static boolean resolveApi() {
         if (isMeditating != null && isMeditationCircleMember != null
                 && isPlayerMeditating != null && fighterClass != null) {

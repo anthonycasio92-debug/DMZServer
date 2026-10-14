@@ -1502,6 +1502,9 @@ public final class ProgressionGuiApi {
                     "§e/skillcheck §7- Donator Skill Check"
             );
         }
+        if ("skillcheck".equals(p) || "check".equals(p) || "compact".equals(p)) {
+            return SkillUnlockService.skillCheckGuiLines(player);
+        }
         return SkillUnlockService.coreLines(player);
     }
 
