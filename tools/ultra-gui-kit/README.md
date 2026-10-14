@@ -44,11 +44,13 @@ See [`server/HelloWorldServerSketch.java`](server/HelloWorldServerSketch.java) a
 
 1. Honor **`layoutJson.headerBottom`** — title + yellow divider strictly above this Y
 2. Honor **`layoutJson.accent`** + per-button/tab **`accent`**
-3. Advertise on **each** registered channel:
-   `["style","activeTab","titleAlign","playerModel","textInput","headerBottom","accent"]`
-4. Title vertical centering in the header band (no new field)
-5. Multi-mod partner list: [`UltraGuiPartners`](kaipath-client/com/dmzlegacy/kaipath/ultra/consumers/UltraGuiPartners.java) — register every server mod that ships Ultra menus, not only `legacymechanics`
-6. **Fix weird A/E glyphs** — `UltraWidgetReflect.fitLabel` must use ASCII `...` (not mojibaked `…` / `â€¦`); button labels stay plain ASCII (no `§a`/`§e` prefixes). See [`FITLABEL_ASCII.md`](kaipath-client/com/dmzlegacy/kaipath/ultra/internal/FITLABEL_ASCII.md).
+3. Honor **`palette` / `sound` / `buttonSkin` / `frame` / `paged_book` / `portraitFrame`**
+   (mod-agnostic chrome — see [`KAIPATH_GUI_PROTOCOL.md`](../../docs/KAIPATH_GUI_PROTOCOL.md))
+4. Advertise on **each** registered channel:
+   `["style","activeTab","titleAlign","playerModel","textInput","headerBottom","accent","palette","sound","buttonSkin","frame","pagedBook","combined.forms.v1"]`
+5. Title vertical centering in the header band (no new field)
+6. Multi-mod partner list: [`UltraGuiPartners`](kaipath-client/com/dmzlegacy/kaipath/ultra/consumers/UltraGuiPartners.java) — register every server mod that ships Ultra menus, not only `legacymechanics`
+7. **Fix weird A/E glyphs** — `UltraWidgetReflect.fitLabel` must use ASCII `...` (not mojibaked `…` / `â€¦`); button labels stay plain ASCII (no `§a`/`§e` prefixes). See [`FITLABEL_ASCII.md`](kaipath-client/com/dmzlegacy/kaipath/ultra/internal/FITLABEL_ASCII.md).
 
 ```java
 // Client boot (already wired via LmUltraConsumer.bootstrap):
@@ -66,4 +68,4 @@ bash tools/ultra-gui-kit/build-kaipath-overlay.sh
 
 ---
 
-Reference server impl (one partner): `tools/dmz-adaptive-difficulty/…/net/gui/` (**4.6.151**).
+Reference server impl (one partner): `tools/dmz-adaptive-difficulty/…/net/gui/` (**4.6.152**).

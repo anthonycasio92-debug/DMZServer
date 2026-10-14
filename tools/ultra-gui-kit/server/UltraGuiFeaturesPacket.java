@@ -13,7 +13,9 @@ import net.minecraft.network.FriendlyByteBuf;
  *
  * <pre>
  * channel.sendToServer(new UltraGuiFeaturesPacket(
- *     "[\"style\",\"activeTab\",\"titleAlign\",\"playerModel\",\"textInput\",\"headerBottom\",\"accent\"]"));
+ *     "[\"style\",\"activeTab\",\"titleAlign\",\"playerModel\",\"textInput\","
+ *     + "\"headerBottom\",\"accent\",\"palette\",\"sound\",\"buttonSkin\",\"frame\","
+ *     + "\"pagedBook\",\"combined.forms.v1\"]"));
  * </pre>
  */
 public final class UltraGuiFeaturesPacket {

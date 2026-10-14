@@ -31,12 +31,16 @@ public final class UltraGuiConsumerRegistry {
      * Features this reference client honors on <b>every</b> registered {@code <modid>:gui}
      * channel — keep in sync with {@code LmDynamicScreen} + {@code GuiOpenPacket} UTF-8 decode.
      *
-     * <p>Released KaiPath <b>1.3.9</b> advertises five features (through {@code textInput}).
-     * This kit adds {@code headerBottom} + {@code accent} so any partner mod's pending gaps
-     * clear after merge into the next official KaiPath jar.
+     * <p>Released KaiPath <b>1.3.9</b> advertises five features (through {@code textInput}) plus
+     * {@code combined.forms.v1}. This kit adds {@code headerBottom}, {@code accent}, and the
+     * mod-agnostic chrome set ({@code palette}/{@code sound}/{@code buttonSkin}/{@code frame}/
+     * {@code pagedBook}) so partner pending gaps clear after merge into the next official
+     * KaiPath jar. Partners that do not understand an id ignore it.
      */
     public static final String ADVERTISED_FEATURES_JSON =
-            "[\"style\",\"activeTab\",\"titleAlign\",\"playerModel\",\"textInput\",\"headerBottom\",\"accent\"]";
+            "[\"style\",\"activeTab\",\"titleAlign\",\"playerModel\",\"textInput\","
+                    + "\"headerBottom\",\"accent\",\"palette\",\"sound\",\"buttonSkin\",\"frame\","
+                    + "\"pagedBook\",\"combined.forms.v1\"]";
 
     private static final Map<String, BoundChannel> CHANNELS = new ConcurrentHashMap<>();
 

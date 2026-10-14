@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Dev-only smoke: overlay tools/ultra-gui-kit/kaipath-client onto a released KaiPath jar.
-# Adds headerBottom + accent honor/advertise (and field 11 / textInput if base is older).
+# Adds headerBottom/accent/palette/sound/buttonSkin/frame/pagedBook honor+advertise
+# (and field 11 / textInput if base is older).
 # Official KaiPath releases are owned by the KaiPath mod developer — do NOT deploy this
 # overlay to live; merge kaipath-client/ into the next official jar instead.
 #

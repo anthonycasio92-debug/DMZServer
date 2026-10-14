@@ -7,7 +7,8 @@ import net.minecraftforge.network.NetworkEvent;
 /**
  * Client → server feature advertisement (message 2). Advertise the full set via
  * {@link com.dmzlegacy.kaipath.ultra.consumers.UltraGuiConsumerRegistry#ADVERTISED_FEATURES_JSON}
- * (includes {@code textInput}, {@code headerBottom}, and {@code accent}).
+ * (includes {@code textInput}, {@code headerBottom}, {@code accent}, {@code palette},
+ * {@code sound}, {@code buttonSkin}, {@code frame}, {@code pagedBook}).
  */
 public final class GuiFeaturesPacket {
     private final String featuresJson;

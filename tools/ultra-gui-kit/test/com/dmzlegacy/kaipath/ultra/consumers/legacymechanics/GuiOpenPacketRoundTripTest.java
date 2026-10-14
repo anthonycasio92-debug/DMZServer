@@ -125,7 +125,13 @@ public final class GuiOpenPacketRoundTripTest {
                     "playerModel",
                     "textInput",
                     "headerBottom",
-                    "accent"
+                    "accent",
+                    "palette",
+                    "sound",
+                    "buttonSkin",
+                    "frame",
+                    "pagedBook",
+                    "combined.forms.v1"
                 }) {
             if (!UltraGuiConsumerRegistry.ADVERTISED_FEATURES_JSON.contains(feat)) {
                 fail("missing advertise feature: " + feat);
