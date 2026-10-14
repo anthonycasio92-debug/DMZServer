@@ -301,7 +301,12 @@ public final class UltraSparScreens {
                 String picker = arg.contains(":") ? arg : "uuid:" + arg;
                 String packed = ("OUT".equalsIgnoreCase(dir) ? "OUT|" : "IN|") + picker;
                 String action = "page:pending_decide:" + packed;
-                String shown = label.isBlank() ? picker : label;
+                String shown = label.isBlank()
+                        ? RivalGuiApi.displayPickerArg(player, picker)
+                        : label;
+                if (shown == null || shown.isBlank()) {
+                    shown = "-";
+                }
                 if (placed % 2 == 0) {
                     spec.buttonLeft(action, UltraStyle.confirm(shown), "confirm");
                 } else {

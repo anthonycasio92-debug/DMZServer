@@ -239,6 +239,85 @@ public final class RivalGuiApi {
     }
 
     /**
+     * Online player picker args as {@code uuid:&lt;uuid&gt;}, sorted by display name.
+     * Prefer these over bare names so renames cannot break declare/challenge/spectate.
+     */
+    public static List<String> onlinePlayerArgs(ServerPlayer exclude) {
+        List<String[]> rows = new ArrayList<>();
+        MinecraftServer server = exclude == null ? null : exclude.m_20194_();
+        if (server == null) {
+            return List.of();
+        }
+        for (ServerPlayer p : server.m_6846_().m_11314_()) {
+            if (p == null) {
+                continue;
+            }
+            if (exclude != null && p.m_20148_().equals(exclude.m_20148_())) {
+                continue;
+            }
+            String name = p.m_7755_().getString();
+            if (name == null || name.isBlank()) {
+                name = p.m_20148_().toString();
+            }
+            rows.add(new String[] {"uuid:" + p.m_20148_(), name});
+        }
+        rows.sort((a, b) -> String.CASE_INSENSITIVE_ORDER.compare(a[1], b[1]));
+        List<String> out = new ArrayList<>(rows.size());
+        for (String[] row : rows) {
+            out.add(row[0]);
+        }
+        return out;
+    }
+
+    /** Mutual / Nemesis rivals only — for Mutual slot replace pickers. */
+    public static List<String> mutualRivalArgs(ServerPlayer player) {
+        List<String> out = new ArrayList<>();
+        for (String card : currentRivalCards(player)) {
+            if (card == null || card.isBlank()) {
+                continue;
+            }
+            String[] p = card.split("\t", -1);
+            if (p.length < 2) {
+                continue;
+            }
+            String status = p.length > 2 && p[2] != null ? p[2].trim() : "";
+            if (!"Mutual".equalsIgnoreCase(status) && !"Nemesis".equalsIgnoreCase(status)) {
+                continue;
+            }
+            String uuid = p[0] == null ? "" : p[0].trim();
+            String name = p[1] == null ? "" : p[1].trim();
+            if (!uuid.isBlank()) {
+                out.add("uuid:" + uuid);
+            } else if (!name.isBlank()) {
+                out.add(name);
+            }
+        }
+        return out;
+    }
+
+    /** True when {@code pickerArg} is a pending incoming declare (or Mutual-confirm) on this player. */
+    public static boolean hasIncomingDeclareFrom(ServerPlayer player, String pickerArg) {
+        if (player == null || pickerArg == null || pickerArg.isBlank()) {
+            return false;
+        }
+        String want = pickerArg.trim();
+        for (String arg : acceptCandidateArgs(player)) {
+            if (arg != null && want.equalsIgnoreCase(arg.trim())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static String pendingMutualAcceptName(ServerPlayer player) {
+        return RivalSystem.pendingMutualAcceptName(player);
+    }
+
+    public static String cancelMutualReplace(ServerPlayer player) {
+        return RivalSystem.cancelMutualReplace(player);
+    }
+
+    /**
      * Names of players with a pending incoming declare ({@code inviteReceived}) on this player.
      * Online declarers are listed first; offline still included (accept/decline use name lookup).
      */
@@ -666,6 +745,11 @@ public final class RivalGuiApi {
                 return "§cSelect which Mutual rivalry to replace.";
             }
             return RivalSystem.acceptReplace(player, a);
+        }
+        if ("cancel_mutual_replace".equals(act)
+                || "cancel_replace".equals(act)
+                || "cancelmutualreplace".equals(act)) {
+            return RivalSystem.cancelMutualReplace(player);
         }
         if ("decline".equals(act) || "deny".equals(act)) {
             if (a.isBlank()) {

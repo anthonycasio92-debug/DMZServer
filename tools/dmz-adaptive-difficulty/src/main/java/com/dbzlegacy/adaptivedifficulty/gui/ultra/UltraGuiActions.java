@@ -300,6 +300,13 @@ public final class UltraGuiActions {
                 || "buy_weight".equals(parts.action)) {
             return;
         }
+        // Mutual slots full after Accept/Declare — land on the replace picker (not Requests/Actions).
+        if ("rival".equals(safeScreen)
+                && ("accept".equals(parts.action) || "declare".equals(parts.action))
+                && RivalGuiApi.needsMutualReplacePick(player)) {
+            UltraGui.open(player, "rival", "pick_replace_mutual");
+            return;
+        }
         String reopen = reopenPage(safeScreen, parts, args);
         UltraGui.open(
                 player,
@@ -718,6 +725,7 @@ public final class UltraGuiActions {
             case "rival" -> switch (parts.action == null ? "" : parts.action) {
                 case "challenge", "challenge_accept", "challenge_decline", "challenge_cancel",
                         "challenge_send", "spectate", "spectate_stop" -> "challenge";
+                case "cancel_mutual_replace", "cancel_replace", "cancelmutualreplace" -> "requests";
                 case "tpmsg", "tp_msg", "instinct", "declare", "accept", "decline", "silent",
                         "remove", "accept_replace" -> "actions";
                 default -> homePage(screen);

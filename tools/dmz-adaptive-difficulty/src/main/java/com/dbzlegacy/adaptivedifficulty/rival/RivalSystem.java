@@ -226,9 +226,9 @@ public final class RivalSystem {
         if (myLink.mutual) {
             return "§eAlready mutual rivals with " + them.name + ".";
         }
-        // If they already sent a visible declare, accepting path.
+        // If they already sent a visible declare, accepting path (UUID so renames cannot break it).
         if (theirLink.inviteSent || myLink.inviteReceived) {
-            return accept(player, target.m_7755_().getString());
+            return accept(player, "uuid:" + them.uuid);
         }
         if (myLink.inviteSent) {
             return "§eDeclare already pending for " + them.name + ".";
@@ -373,6 +373,32 @@ public final class RivalSystem {
         }
         RivalPlayerRecord me = RivalStore.get().ensurePlayer(player);
         return me != null && me.pendingMutualAcceptUuid != null && !me.pendingMutualAcceptUuid.isBlank();
+    }
+
+    /**
+     * Abort a Mutual accept that is waiting on a slot replace. Leaves both sides Declared
+     * (invite flags were already cleared when Accept hit the slot cap).
+     */
+    public static String cancelMutualReplace(ServerPlayer player) {
+        if (player == null) {
+            return "§cThis only works in-game.";
+        }
+        RivalStore store = RivalStore.get();
+        RivalPlayerRecord me = store.ensurePlayer(player);
+        String pendingUuid = me == null || me.pendingMutualAcceptUuid == null
+                ? ""
+                : me.pendingMutualAcceptUuid.trim();
+        if (pendingUuid.isBlank()) {
+            return "§cNo Mutual accept waiting for a slot replace.";
+        }
+        String name = pendingMutualAcceptName(player);
+        me.pendingMutualAcceptUuid = "";
+        store.markDirty();
+        if (name == null || name.isBlank() || name.equals(pendingUuid)) {
+            return "§eCancelled Mutual accept. §8You can Accept again later from Requests.";
+        }
+        return "§eCancelled Mutual accept for §f" + name
+                + "§e. §8You can Accept again later from Requests.";
     }
 
     public static String pendingMutualAcceptName(ServerPlayer player) {

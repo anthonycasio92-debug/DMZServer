@@ -64,8 +64,12 @@ KNOWN_DO: dict[str, set[str]] = {
         "tpmsg",
         "instinct",
         "accept_replace",
+        "cancel_mutual_replace",
         "admin",
         "challenge",
+        "challenge_accept",
+        "challenge_decline",
+        "challenge_cancel",
         "challenge_send",
         "spectate",
         "spectate_stop",
@@ -606,14 +610,39 @@ def main() -> int:
         re.S | re.M,
     )
     replace_block = replace_m.group(0) if replace_m else ""
-    if "displayPickerArg" not in replace_block or '+ "|"' not in replace_block:
+    if "labeledArgs" not in replace_block and (
+        "displayPickerArg" not in replace_block or '+ "|"' not in replace_block
+    ):
         errors.append(
-            "UltraRivalScreens.openReplacePick must pass arg|displayPickerArg pairs to placeNameButtons"
+            "UltraRivalScreens.openReplacePick must resolve Mutual names via labeledArgs/displayPickerArg"
         )
+    if "replace_confirm:" not in replace_block and "replace_confirm:" not in rival:
+        errors.append("UltraRivalScreens mutual drop must go through replace_confirm before accept_replace")
     if 'placeNameButtons(spec, "accept_replace", RivalGuiApi.currentRivalArgs' in rival:
         errors.append(
             "UltraRivalScreens.openReplacePick must not pass raw currentRivalArgs to placeNameButtons"
         )
+    if 'placeNameButtons(spec, "accept", incoming' in rival or 'placeNameButtons(spec, "decline", incoming' in rival:
+        errors.append(
+            "UltraRivalScreens.openRequests must label incoming declares via displayPickerArg "
+            "(not raw placeNameButtons)"
+        )
+    if "onlinePlayerNames" in rival and "onlinePlayerArgs" not in rival:
+        errors.append("UltraRivalScreens player pickers must use onlinePlayerArgs (UUID), not names only")
+    if "PICK_PER_PAGE" not in rival and "pick_declare:" not in rival:
+        errors.append("UltraRivalScreens player pickers must paginate (pick_*:N)")
+    if 'do:challenge:accept"' in rival or "do:challenge:accept\"" in rival:
+        # Generic challenge accept without a counterparty is ambiguous when multiple pending.
+        if "challenge_accept:" not in rival:
+            errors.append("UltraRivalScreens must use per-challenge do:challenge_accept:uuid (not generic)")
+    if "do:challenge:accept" in rival and "challenge_accept:" not in rival:
+        errors.append("UltraRivalScreens must wire per-challenge Accept via challenge_accept")
+    if "hasIncomingDeclareFrom" not in rival:
+        errors.append("UltraRivalScreens declare picker must Offer Accept when they already declared you")
+    if "cancel_mutual_replace" not in rival or "replace_confirm:" not in rival:
+        errors.append("UltraRivalScreens mutual swap needs Decline instead + replace_confirm step")
+    if "needsMutualReplacePick" not in (ULTRA / "UltraGuiActions.java").read_text(encoding="utf-8"):
+        errors.append("UltraGuiActions must reopen pick_replace_mutual after Accept hits the slot cap")
     config = (ULTRA / "UltraConfigScreens.java").read_text(encoding="utf-8")
     review_m = re.search(
         r"private static void openReview\b.*?^\s*(?:public|private) static ",
