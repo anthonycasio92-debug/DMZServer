@@ -653,6 +653,11 @@ public final class UltraScreenSpec {
             // Single-letter color for title chrome + activeTab highlight (plain ASCII titles).
             layout.addProperty("accent", accentCode);
         }
+        String paletteName = UltraStyle.systemPaletteName(screenId);
+        if (paletteName != null && !paletteName.isBlank()) {
+            // Named palette for clients that prefer names over accent letters (KaiPath 1.3.13+).
+            layout.addProperty("palette", paletteName);
+        }
         // Non-empty valid RL enables framed panel chrome (KaiPath 1.3.13+).
         layout.addProperty("frame", UltraStyle.PANEL_FRAME);
         // Shared body / button metrics - every screen benefits.
