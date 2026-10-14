@@ -72,8 +72,8 @@ public final class UltraCharacterScreens {
                 .title("Character Services")
                 .page(page)
                 .activeTab(tab)
-                // Short labels: 3-up tabs are ~102px; "Android Removal" truncates on stock
-                // KaiPath and shows mojibaked ellipsis (weird A/E glyphs).
+                // Exact short labels only — UltraScreenSelfTest.verifyMenuLinks requires
+                // buttonsJson "label":"Home"|"Saga"|"Android" with no section-sign/color prefixes.
                 .tabs("home|Home", "saga|Saga", "android|Android")
                 .lineGap(2)
                 .bodyPad(4);
