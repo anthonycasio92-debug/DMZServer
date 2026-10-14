@@ -43,16 +43,16 @@ missingShipped=none pendingNext=none
 | `layoutJson.headerBottom` / `tabsUnderTitle` | **Done** (1.3.13) |
 | `layoutJson.accent` + button/tab `accent` | **Done** (1.3.13 via `UltraBridgeChrome`) |
 | GuiFeaturesPacket advertise | **Done** on 1.3.17 (incl. `portraitFrame` + `fixedFooter`) |
-| `sound` / `buttonSkin` / `frame` / `paged_book` | **Done** (client 1.3.13+ + LM 4.6.155 emit) |
+| `sound` / `buttonSkin` / `frame` / `paged_book` | Client **Done** (1.3.13+). LM emits `frame` / `paged_book`; **does not** emit button `sound`/`buttonSkin` (skinned path = flat chrome) |
 | `footer:true` / `fixedFooter` | **Done** (client 1.3.17 + LM emit 4.6.152+) |
 | `playerModel.portraitFrame` advertise | **Done** (1.3.17) |
 
-## Optional chrome (emitted by LM 4.6.155; not tracked as pending)
+## Optional chrome (LM emit policy; not tracked as pending)
 
-| Part | KaiPath 1.3.17 | LM 4.6.155 |
-|------|---------------|------------|
-| `sound` (`minecraft:ui.button.click`) | Honors (missing → silent) | **Emits** on buttons/tabs |
-| `buttonSkin` (`legacymechanics:button`) | Honors (RL → boolean paint) | **Emits** on buttons/tabs |
+| Part | KaiPath 1.3.17 | LM |
+|------|---------------|----|
+| `sound` (`minecraft:ui.button.click`) | Honors (missing → silent) | **Not emitted** on buttons/tabs (default click) |
+| `buttonSkin` (`legacymechanics:button`) | Honors (RL → boolean skinned paint) | **Not emitted** — skinned path draws flat squares |
 | `layoutJson.frame` (`legacymechanics:panel`) | Honors (RL → boolean border) | **Emits** |
 | `inputsJson` `type=paged_book` (advertise `pagedBook`) | Honors (`BookWidget`) | **Emits** (Staff Admin help book) |
 | `playerModel.portraitFrame` | Honors + **advertised** | **Emits** when playerModel present |
@@ -71,7 +71,7 @@ missingShipped=none pendingNext=none
 - `sound` → registry Optional; missing SoundEvent → **silent no-op** (no crash)
 - skin / frame / portraitFrame → `UltraBridgeChrome.id` only validates `ns:path`; result is a **boolean** that enables GuiGraphics tint paint — **no texture bind**
 
-LM 4.6.155 uses `minecraft:ui.button.click` + `legacymechanics:*` enable tokens so KaiPath-only clients stay healthy.
+LM keeps `layoutJson.frame` / `portraitFrame` as `legacymechanics:*` enable tokens. Buttons omit `sound`/`buttonSkin` so KaiPath uses default chrome (buttonSkin would force the flat skinned path).
 
 ### 3. `pagedBook` vs `paged_book`
 
@@ -130,8 +130,8 @@ Booleans stay styled buttons; numbers stay text + ± steppers. Not a KaiPath blo
 | Emit `layoutJson.headerBottom` | **Done** |
 | Emit `layoutJson.accent` / button `accent` | **Done** |
 | Emit button `footer:true` | **Done** (4.6.152) — matches 1.3.17 |
-| Emit sound / buttonSkin / frame / paged_book | **Done** (4.6.155) |
-| Chrome defaults safe without DMZUltra | **Done** (4.6.155) |
+| Emit `frame` / `paged_book` (not button `sound`/`buttonSkin`) | **Done** — omit buttonSkin (flat skinned chrome) |
+| Chrome defaults safe without DMZUltra | **Done** (default button chrome; frame/portrait tokens) |
 | Track `FEATURE_FIXED_FOOTER` as shipped on 1.3.17 | **Done** |
 | Recommend KaiPath **1.3.17** | **Done** |
 | `inputsJson` `slider` / `toggle` | **Deferred** |

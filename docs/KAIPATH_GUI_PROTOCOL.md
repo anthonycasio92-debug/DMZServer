@@ -63,8 +63,8 @@ Every button object in `buttonsJson`:
 | `h` | yes | number | Height |
 | `pad` | no | number | Horizontal label padding (default **8**) |
 | `footer` | no | boolean | When `true`, pin this button to the **panel footer** (does not scroll with body). Server places Y at the bottom band; clients must keep footer controls visible while body content scrolls above. |
-| `sound` | no | string | Registered SoundEvent RL (`ns:path`) played on click. LM emits `minecraft:ui.button.click` (vanilla — works without DMZUltra). Also accepts `{"id":"ns:path"}`. Missing registry entry → silent no-op. |
-| `buttonSkin` | no | string | Non-empty valid RL **enables** chrome button skin paint (KaiPath 1.3.13+). LM emits `legacymechanics:button`. Client does **not** load a texture from this RL. |
+| `sound` | no | string | Registered SoundEvent RL (`ns:path`) played on click. Also accepts `{"id":"ns:path"}`. Missing registry entry → silent no-op. LM **does not** emit (default click). |
+| `buttonSkin` | no | string | Non-empty valid RL **enables** chrome button skin paint (KaiPath 1.3.13+). Client does **not** load a texture from this RL. LM **does not** emit — skinned path draws flat squares instead of default chrome. |
 | `accent` | no | string | Single-letter color code (optional). LM does **not** emit per-button `accent` — title / activeTab use `layoutJson.accent` only. |
 | `palette` | no | string | Named theme on a button (optional). LM leaves this off buttons — panel-level `layoutJson.palette` only. |
 | `tint` | no | string | Optional body fill on a button. LM does **not** emit this; buttons use KaiPath default chrome. |

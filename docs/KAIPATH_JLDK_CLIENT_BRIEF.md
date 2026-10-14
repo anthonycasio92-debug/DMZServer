@@ -35,7 +35,7 @@ The client renders what the server sends — **no hardcoded screen/tab/button/ac
 | Text fields + `bindInput` → `args.value` | yes |
 | `layoutJson.headerBottom` / `tabsUnderTitle` | yes |
 | `layoutJson.accent` + button/tab `accent` | yes (`UltraBridgeChrome`) |
-| `palette` / `sound` / `buttonSkin` / `frame` / `paged_book` | yes |
+| `palette` / `frame` / `paged_book` (button `sound`/`buttonSkin` omitted by LM) | yes |
 | `playerModel.portraitFrame` | paints + **advertised** |
 | Button `footer:true` / `fixedFooter` | pins + auto spacing + **advertised** |
 | GuiFeaturesPacket | yes — see gap matrix advertise set |
