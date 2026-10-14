@@ -2,7 +2,7 @@
 
 | Side | Role |
 |------|------|
-| LM **4.6.153** | `GuiOpenPacket` (11 fields), styles, `titleAlign`, `playerModel.parts`, text fields, **`headerBottom`**, **`accent`**, button **`footer:true`** |
+| LM **4.6.154** | `GuiOpenPacket` (11 fields), styles, `titleAlign`, `playerModel.parts`, text fields, **`headerBottom`**, **`accent`**, button **`footer:true`**, chrome emit (sound/skin/frame/`paged_book`) |
 | KaiPath **1.3.13** (live / recommended) | `style`, `activeTab`, `titleAlign`, `playerModel`, `textInput`, `headerBottom`, `accent`, palette/sound/buttonSkin/frame/pagedBook |
 | **Pending on KaiPath** | Honor + advertise `fixedFooter`; title vertical centering (no field) |
 

@@ -1,6 +1,6 @@
 # Ultra bridge gap matrix (LM ↔ KaiPath)
 
-**LM 4.6.153** + **KaiPath 1.3.13** (live / recommended). Official KaiPath updates are owned by the KaiPath mod developer.
+**LM 4.6.154** + **KaiPath 1.3.13** (live / recommended). Official KaiPath updates are owned by the KaiPath mod developer.
 
 Pulled live jar: `mods/kaipath-1.3.13.jar`. Advertise set:
 
@@ -38,16 +38,18 @@ missingShipped=none pendingNext=[fixedFooter]
 | `layoutJson.accent` + button/tab `accent` | **Done** (1.3.13 via `UltraBridgeChrome`) |
 | GuiFeaturesPacket advertise | **Done** on 1.3.13 (12+ tokens incl. chrome extras) |
 
-## Optional chrome (emitted by LM 4.6.153; not tracked as pending)
+## Optional chrome (emitted by LM 4.6.154; not tracked as pending)
 
-| Part | KaiPath 1.3.13 | LM 4.6.153 |
+| Part | KaiPath 1.3.13 | LM 4.6.154 |
 |------|----------------|------------|
-| `sound` (`dmzultra:ui_confirm`) | Honors | **Emits** on buttons/tabs |
-| `buttonSkin` (`dmzultra:button`) | Honors | **Emits** on buttons/tabs |
-| `layoutJson.frame` (`dmzultra:panel`) | Honors | **Emits** |
+| `sound` (`minecraft:ui.button.click`) | Honors (missing → silent) | **Emits** on buttons/tabs |
+| `buttonSkin` (`legacymechanics:button`) | Honors (RL → boolean paint) | **Emits** on buttons/tabs |
+| `layoutJson.frame` (`legacymechanics:panel`) | Honors (RL → boolean border) | **Emits** |
 | `inputsJson` `type=paged_book` (advertise `pagedBook`) | Honors (`BookWidget`) | **Emits** (Staff Admin help book) |
-| `playerModel.portraitFrame` | Honors (not advertised) | **Emits** when playerModel present |
+| `playerModel.portraitFrame` | Honors (**not advertised** — JLDK) | **Emits** when playerModel present |
 | `layoutJson.palette` | Honors | Optional (accent already covers tint) |
+
+**DMZUltra absent:** verified against KaiPath 1.3.13 bytecode — no crash; sound no-ops unless the SoundEvent is registered; skin/frame/portraitFrame never bind a texture from the RL. Server `mods/kaipath-*.jar` does not affect client rendering.
 
 ## Not bridge gaps (LM-only, already shipped)
 
@@ -70,6 +72,7 @@ missingShipped=none pendingNext=[fixedFooter]
 | Emit button `footer:true` | **Done** (4.6.152) |
 | Track pending in `UltraClientFeatures.PENDING_NEXT` | **Done** (4.6.153) — `fixedFooter` only |
 | Recommend KaiPath **1.3.13** | **Done** (4.6.153) |
+| Chrome defaults safe without DMZUltra | **Done** (4.6.154) — vanilla sound + LM enable tokens |
 | `inputsJson` `slider` / `toggle` | **Deferred** |
 
 ## JLDK / KaiPath (client) checklist

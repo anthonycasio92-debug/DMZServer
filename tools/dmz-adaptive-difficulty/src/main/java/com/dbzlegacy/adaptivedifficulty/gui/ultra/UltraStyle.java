@@ -135,23 +135,29 @@ public final class UltraStyle {
 
     /**
      * Button click sound (KaiPath {@code sound} wire — registered SoundEvent RL).
-     * Prefer {@code dmzultra:ui_confirm} when the DMZUltra client pack is present.
+     *
+     * <p>Uses vanilla {@code minecraft:ui.button.click} so click feedback works when the
+     * player has KaiPath but not DMZUltra. KaiPath looks the id up in
+     * {@code BuiltInRegistries.SOUND_EVENT} and no-ops if missing — it never crashes.
      */
-    public static final String SOUND_CONFIRM = "dmzultra:ui_confirm";
+    public static final String SOUND_CONFIRM = "minecraft:ui.button.click";
     /**
-     * Button chrome skin RL. KaiPath 1.3.13 only requires a valid {@code ns:path}; a
-     * non-empty value enables {@code ChromeButton} skin painting.
+     * Button chrome skin enable token. KaiPath 1.3.13 only checks that the string is a
+     * valid {@code ns:path}; it does <b>not</b> load a texture from that RL. A non-empty
+     * value flips {@code ChromeButton} into tinted outline paint. Namespace is LM's own
+     * so absence of DMZUltra cannot be misread as a missing asset.
      */
-    public static final String BUTTON_SKIN = "dmzultra:button";
+    public static final String BUTTON_SKIN = "legacymechanics:button";
     /**
-     * Panel frame RL ({@code layoutJson.frame}). Non-empty valid RL enables framed chrome.
+     * Panel frame enable token ({@code layoutJson.frame}). Same valid-RL → boolean rule as
+     * {@link #BUTTON_SKIN}; draws a tinted border via {@code GuiGraphics}, no texture bind.
      */
-    public static final String PANEL_FRAME = "dmzultra:panel";
+    public static final String PANEL_FRAME = "legacymechanics:panel";
     /**
-     * Player-model portrait frame RL ({@code playerModel.portraitFrame}). Same enable rule
-     * as {@link #PANEL_FRAME}.
+     * Player-model portrait frame enable token ({@code playerModel.portraitFrame}). Same
+     * enable rule as {@link #PANEL_FRAME}.
      */
-    public static final String PORTRAIT_FRAME = "dmzultra:portrait";
+    public static final String PORTRAIT_FRAME = "legacymechanics:portrait";
 
     static {
         // Unicode escape keeps the mark out of other sources; static-init prevents folding.

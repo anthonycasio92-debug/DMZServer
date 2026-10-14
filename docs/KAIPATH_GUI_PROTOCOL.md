@@ -63,8 +63,8 @@ Every button object in `buttonsJson`:
 | `h` | yes | number | Height |
 | `pad` | no | number | Horizontal label padding (default **8**) |
 | `footer` | no | boolean | When `true`, pin this button to the **panel footer** (does not scroll with body). Server places Y at the bottom band; clients must keep footer controls visible while body content scrolls above. |
-| `sound` | no | string | Registered SoundEvent RL (`ns:path`) played on click. LM emits `dmzultra:ui_confirm`. Also accepts `{"id":"ns:path"}`. |
-| `buttonSkin` | no | string | Non-empty valid RL enables chrome button skin (KaiPath 1.3.13+). LM emits `dmzultra:button`. |
+| `sound` | no | string | Registered SoundEvent RL (`ns:path`) played on click. LM emits `minecraft:ui.button.click` (vanilla — works without DMZUltra). Also accepts `{"id":"ns:path"}`. Missing registry entry → silent no-op. |
+| `buttonSkin` | no | string | Non-empty valid RL **enables** chrome button skin paint (KaiPath 1.3.13+). LM emits `legacymechanics:button`. Client does **not** load a texture from this RL. |
 | `accent` | no | string | Single-letter color code for per-button tint |
 | `args` | recommended | object | Opaque JSON echoed to the server |
 
@@ -270,7 +270,7 @@ platform-default charset causes mojibake on accents (é/à).
   "tabsUnderTitle": true,
   "headerBottom": 28,
   "accent": "c",
-  "frame": "dmzultra:panel",
+  "frame": "legacymechanics:panel",
   "lineHeight": 16,
   "lineGap": 8,
   "bodyTop": 42,
@@ -320,7 +320,7 @@ honor `margin`. Button `x`/`y` are panel-relative.
 | `headerBottom` | **Panel-relative Y where client header chrome must end.** Title text + yellow divider stay **strictly above** this line. When `tabsUnderTitle` is true, LM places the tab row at this Y (default **28**); when false, default **42** (`bodyTop`). This is the geometry contract that keeps tabs under the yellow divider. |
 | `accent` | Optional single-letter Minecraft color code (`c`, `5`, `6`, `b`, `a`, `e`, `4`, …) for **system accent**. Paint the title (and `activeTab` highlight) with this color. Do **not** expect section-sign in the title string — titles stay plain ASCII to avoid mojibake. Omit or ignore when blank. |
 | `palette` | Optional named theme (`red`, `gold`, `aqua`, …). When set, overrides accent for title tint. |
-| `frame` | Optional RL (`ns:path`). Non-empty valid RL enables framed panel chrome. LM emits `dmzultra:panel`. |
+| `frame` | Optional RL (`ns:path`). Non-empty valid RL **enables** framed panel chrome (tinted border). LM emits `legacymechanics:panel`. No texture bind from the RL. |
 | `lineHeight` | Body line height in GUI pixels (do **not** squeeze below this) |
 | `lineGap` | Extra gap between body lines |
 | `bodyTop` | Panel-relative Y where the body/scroll region starts |
@@ -332,18 +332,31 @@ honor `margin`. Button `x`/`y` are panel-relative.
 | `buttonMinWidth` | Minimum button width (**80**) — never shrink for long labels |
 | `buttonHeight` | Standard button height |
 
-#### Client-internal (not LM wire fields)
+#### Chrome RL fallback (KaiPath 1.3.13, verified)
+
+These fields look like asset ids but KaiPath treats most as **enable tokens**:
+
+| Field | Client behavior without the named asset / without DMZUltra |
+|-------|------------------------------------------------------------|
+| `sound` | Registry lookup; missing → **silent no-op** (no exception) |
+| `buttonSkin` | Valid `ns:path` → boolean skin paint (GuiGraphics tint outline) |
+| `frame` | Valid `ns:path` → boolean panel border paint |
+| `portraitFrame` | Valid `ns:path` → boolean preview border paint |
+
+LM therefore uses vanilla sound + `legacymechanics:` enable tokens so a KaiPath-only client never depends on DMZUltra being installed. (Server-side `mods/kaipath-*.jar` does not affect client rendering.)
+
+#### Client-internal (not LM wire fields) — adoption eval post-4.6.153
 
 KaiPath 1.3.13 computes these locally — **do not send** them from the server:
 
-| Client field | Derived from |
-|--------------|--------------|
-| `titleTint` | `layoutJson.palette` / `layoutJson.accent` (via `UltraBridgeChrome.tint`) |
-| `contentTop` | Panel Y + cursor after header/tabs |
-| `contentBottom` | Panel bottom band (today ~`panelH - 28`; must respect `footer:true` once `fixedFooter` ships) |
-| `contentScroll` | Mouse-wheel offset inside the content band |
+| Client field | Derived from | Adopt as LM wire? |
+|--------------|--------------|-------------------|
+| `titleTint` | `layoutJson.palette` / `layoutJson.accent` via `UltraBridgeChrome.tint` | **No** — already covered by `accent`/`palette` |
+| `contentTop` | Panel Y + cursor after header/tabs | **No** — covered by `headerBottom` / `bodyTop` |
+| `contentBottom` | Hardcoded ~`panelH - 28` today | **No** — fix via client `fixedFooter` honor of `footer:true`, not a new server field |
+| `contentScroll` | Mouse-wheel offset inside the content band | **No** — client scroll state |
 
-LM already emits the geometry contract as `headerBottom`, `bodyTop`, `bodyMaxHeight`, `scrollBody`, and button `footer:true`. Adopting `contentTop`/`contentBottom`/`contentScroll` as wire fields would duplicate that and fight packing — **not adopted**.
+LM already emits the geometry contract as `headerBottom`, `bodyTop`, `bodyMaxHeight`, `scrollBody`, and button `footer:true`. Adopting `contentTop`/`contentBottom`/`contentScroll` as wire fields would fight packing and duplicate the footer pin. The open gap remains KaiPath honoring `footer:true` so its content band sits above the pinned footer.
 
 Buttons also carry per-button `pad` (same default) and optional per-button **`accent`**
 (same single-letter codes as `layoutJson.accent`) for hub tiles / staff controls. Labels
@@ -362,7 +375,7 @@ title chrome).
 | `width`, `height` | number | Bounds for the preview |
 | `scale` | number | Entity scale (default `1.0`) |
 | `rotate` | boolean | Slow turntable when `true` |
-| `portraitFrame` | string | Optional RL; non-empty valid RL enables preview frame chrome. LM emits `dmzultra:portrait`. (Honored on 1.3.13 even when not in the advertise list — JLDK should add `portraitFrame` to GuiFeatures.) |
+| `portraitFrame` | string | Optional RL; non-empty valid RL enables preview frame chrome. LM emits `legacymechanics:portrait`. Honored on 1.3.13 even when **not** in the advertise list — JLDK should add `portraitFrame` to GuiFeatures (guitest “unsupported” is a client advertise gap, not an LM emit bug). |
 | `parts` | object | Optional cosmetics snapshot — see below |
 
 **Backward compatible:** clients that do not know `playerModel` ignore it; the rest of the

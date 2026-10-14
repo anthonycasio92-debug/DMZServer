@@ -1,10 +1,10 @@
 # JLDK brief — KaiPath Ultra GUI client conformance
 
-**Status (LM 4.6.153 + KaiPath 1.3.13):** Live KaiPath **1.3.13** honors `style`, `activeTab`,
+**Status (LM 4.6.154 + KaiPath 1.3.13):** Live KaiPath **1.3.13** honors `style`, `activeTab`,
 `titleAlign`, `playerModel`, `textInput`, **`headerBottom`**, **`accent`** (plus palette /
 sound / buttonSkin / frame / pagedBook). LM already emits button **`footer:true`** —
 that is the open advertise-able bridge gap (plus title vertical centering, which needs no
-new field).
+new field). Please also advertise **`portraitFrame`** (honored but not listed).
 
 Full gap matrix: [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md).
 
