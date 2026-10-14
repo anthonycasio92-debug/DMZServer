@@ -22,6 +22,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.item.ItemStack;
+import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle;
 
 /** Sparring Tp System 3.2.11 facade. */
 public final class SparringSystem {
@@ -336,11 +337,11 @@ public final class SparringSystem {
             if (now >= vRt.messageNext) {
                 vRt.messageNext = now + 4000L;
                 DmzRewards.msg(attacker, LmChat.ok("Spar",
-                        "Friendly Fist §7knockdown — healed §f"
-                                + victim.m_7755_().getString() + "§7."));
+                        "Friendly Fist " + UltraStyle.LABEL + "knockdown — healed " + UltraStyle.VALUE
+                                + victim.m_7755_().getString() + UltraStyle.LABEL + "."));
                 DmzRewards.msg(victim, LmChat.ok("Spar",
-                        "Friendly Fist §7heal from §f"
-                                + attacker.m_7755_().getString() + "§7."));
+                        "Friendly Fist " + UltraStyle.LABEL + "heal from " + UltraStyle.VALUE
+                                + attacker.m_7755_().getString() + UltraStyle.LABEL + "."));
             }
         } catch (Throwable ignored) {
         }
@@ -420,27 +421,27 @@ public final class SparringSystem {
         // Seed movement window only — hits/blocks must not refresh the AFK gate.
         refreshMovementActivity(a, aRt, now);
         refreshMovementActivity(b, bRt, now);
-        String tipA = "§8Stay active: trade damage, move, and keep the fight going.";
+        String tipA = UltraStyle.DIM + "Stay active: trade damage, move, and keep the fight going.";
         String tipB = tipA;
         if (isSparringWithOwnMentor(a, b)) {
-            tipA = "§bMentor spar §8· +" + Math.round(SparCombat.MENTOR_SPAR_BONUS_PCT * 100) + "% TP";
+            tipA = UltraStyle.AQUA + "Mentor spar " + UltraStyle.DIM + "· +" + Math.round(SparCombat.MENTOR_SPAR_BONUS_PCT * 100) + "% TP";
         } else if (isSparringWithOwnMentor(b, a)) {
-            tipB = "§bMentor spar §8· +" + Math.round(SparCombat.MENTOR_SPAR_BONUS_PCT * 100) + "% TP";
+            tipB = UltraStyle.AQUA + "Mentor spar " + UltraStyle.DIM + "· +" + Math.round(SparCombat.MENTOR_SPAR_BONUS_PCT * 100) + "% TP";
         } else if (isSparringWithDojoPeer(a, b)) {
-            tipA = "§bDojo peers §8· +" + Math.round(SparCombat.DOJO_PEER_SPAR_BONUS_PCT * 100) + "% TP";
+            tipA = UltraStyle.AQUA + "Dojo peers " + UltraStyle.DIM + "· +" + Math.round(SparCombat.DOJO_PEER_SPAR_BONUS_PCT * 100) + "% TP";
             tipB = tipA;
         }
         DmzRewards.msg(a, LmChat.card(
                 "Sparring",
                 "/spar",
                 null,
-                "§aSession started with §f" + b.m_7755_().getString(),
+                UltraStyle.GREEN + "Session started with " + UltraStyle.VALUE + b.m_7755_().getString(),
                 tipA));
         DmzRewards.msg(b, LmChat.card(
                 "Sparring",
                 "/spar",
                 null,
-                "§aSession started with §f" + a.m_7755_().getString(),
+                UltraStyle.GREEN + "Session started with " + UltraStyle.VALUE + a.m_7755_().getString(),
                 tipB));
         SystemTelemetry.log("sparring", "spar_start", a, b, null);
     }
@@ -489,12 +490,12 @@ public final class SparringSystem {
             String reason
     ) {
         String who = partner == null ? "?" : partner.m_7755_().getString();
-        DmzRewards.msg(player, LmChat.info("Spar", "Session ended with §f" + who
-                + " §8(" + reason + ", " + (durationMs / 1000L) + "s)"));
-        DmzRewards.msg(player, LmChat.note("Spar", "§7TP §a+" + DmzRewards.formatWhole(rt.sessionTp)
-                + " §8| melee §f" + (int) rt.sessionMelee
-                + " §8| ki §f" + (int) rt.sessionKi
-                + " §8| combo §f" + rt.sessionMaxCombo));
+        DmzRewards.msg(player, LmChat.info("Spar", "Session ended with " + UltraStyle.VALUE + who
+                + " " + UltraStyle.DIM + "(" + reason + ", " + (durationMs / 1000L) + "s)"));
+        DmzRewards.msg(player, LmChat.note("Spar", UltraStyle.LABEL + "TP " + UltraStyle.GREEN + "+" + DmzRewards.formatWhole(rt.sessionTp)
+                + " " + UltraStyle.DIM + "| melee " + UltraStyle.VALUE + (int) rt.sessionMelee
+                + " " + UltraStyle.DIM + "| ki " + UltraStyle.VALUE + (int) rt.sessionKi
+                + " " + UltraStyle.DIM + "| combo " + UltraStyle.VALUE + rt.sessionMaxCombo));
     }
 
     private static void updateLeaderboard(ServerPlayer player, SparPlayerRuntime rt, long durationMs) {
@@ -554,7 +555,7 @@ public final class SparringSystem {
             }
             bond.streakLastDay = today;
             bond.streakBest = Math.max(bond.streakBest, bond.streakCurrent);
-            DmzRewards.msg(player, LmChat.ok("Spar", "Daily training secured! §eStreak "
+            DmzRewards.msg(player, LmChat.ok("Spar", "Daily training secured! " + UltraStyle.YELLOW + "Streak "
                     + bond.streakCurrent + " day" + (bond.streakCurrent == 1 ? "" : "s")));
         }
     }
@@ -765,7 +766,7 @@ public final class SparringSystem {
         if (rt == null || !rt.active || partner == null) {
             return;
         }
-        // No idle drip during recover grace (stopped fighting → match winding down).
+        // No idle drip during recover grace (stopped fighting - match winding down).
         if (rt.graceUntil > 0L && now < rt.graceUntil) {
             return;
         }
@@ -810,7 +811,7 @@ public final class SparringSystem {
             return;
         }
         rt.messageNext = now + SparCombat.PERFECT_ACTIONBAR_MS;
-        DmzRewards.msg(player, LmChat.tagged("Spar", "§6§lPerfect Training active"));
+        DmzRewards.msg(player, LmChat.tagged("Spar", UltraStyle.HEADER + "Perfect Training active"));
     }
 
     /**
@@ -818,7 +819,7 @@ public final class SparringSystem {
      * both fighters must exchange damage AND keep moving (unless clash/ki-charge hold).
      * Prevents AFK box-farming: standing still punching still expires the move window.
      * Ki charge uses holdUntil/chargingUntil — not fake hits — so the match stays open
-     * through charge→shot without idle release TP.
+     * through charge-shot without idle release TP.
      */
     private static void tickActivity(ServerPlayer player, ServerPlayer partner, SparPlayerRuntime rt, long now) {
         SparPlayerRuntime pRt = runtime(partner.m_20148_());
@@ -886,7 +887,7 @@ public final class SparringSystem {
                 pRt.graceWarned = true;
             }
             long left = Math.max(1L, (rt.graceUntil - now + 999L) / 1000L);
-            String msg = LmChat.note("Spar", "§eRecover within " + left + "s §8— " + reason);
+            String msg = LmChat.note("Spar", UltraStyle.YELLOW + "Recover within " + left + "s " + UltraStyle.DIM + "— " + reason);
             DmzRewards.msg(player, msg);
             if (partner != null) {
                 DmzRewards.msg(partner, msg);
@@ -1013,7 +1014,7 @@ public final class SparringSystem {
             boolean staff = StaffAccess.isStaff(mentor);
             String reason = staff
                     ? ("Mentor share from " + apprentice.m_7755_().getString()
-                    + (roster > 1 ? " §8(dojo " + roster + ")" : ""))
+                    + (roster > 1 ? " " + UltraStyle.DIM + "(dojo " + roster + ")" : ""))
                     : "apprentice";
             DmzRewards.awardTp(mentor, share, reason,
                     SparStore.get().mentorTpMessagesOn(mentor.m_20148_()), "Mentor");
@@ -1027,10 +1028,10 @@ public final class SparringSystem {
         List<String> lines = new ArrayList<>();
         List<SparStore.RecentSession> recent = SparStore.get().recentFor(player.m_20148_().toString());
         if (recent.isEmpty()) {
-            lines.add("§7No finished spars yet");
-            lines.add("§8  - §7Fight someone, then open Stats again.");
+            lines.add(UltraStyle.LABEL + "No finished spars yet");
+            lines.add(UltraStyle.DIM + "  - " + UltraStyle.LABEL + "Fight someone, then open Stats again.");
         } else {
-            // One multi-line report tile per spar (GUI groups "§8  -" under the title).
+            // One multi-line report tile per spar (GUI groups UltraStyle.DIM + "  -" under the title).
             int i = 1;
             for (SparStore.RecentSession r : recent) {
                 appendRecentReport(lines, i, r);
@@ -1052,26 +1053,26 @@ public final class SparringSystem {
         }
         SparStore.MentorBond bond = SparStore.get().bond(player.m_20148_());
         SparStore.LeaderboardEntry lb = SparStore.get().leaderboard.get(player.m_20148_().toString());
-        lines.add("§bTraining bonds");
-        lines.add("§8  - §7Mentor §f"
+        lines.add(UltraStyle.AQUA + "Training bonds");
+        lines.add(UltraStyle.DIM + "  - " + UltraStyle.LABEL + "Mentor " + UltraStyle.VALUE
                 + (bond.mentorName == null || bond.mentorName.isBlank() ? "none" : bond.mentorName));
         int apps = bond.apprenticeCount();
         if (apps <= 0) {
-            lines.add("§8  - §7Apprentices §fnone");
+            lines.add(UltraStyle.DIM + "  - " + UltraStyle.LABEL + "Apprentices " + UltraStyle.VALUE + "none");
         } else {
-            lines.add("§8  - §7Apprentices §f" + apps + "§8/§f" + MAX_APPRENTICES
-                    + " §8- §f" + bond.apprenticeNamesSummary());
+            lines.add(UltraStyle.DIM + "  - " + UltraStyle.LABEL + "Apprentices " + UltraStyle.VALUE + apps + UltraStyle.DIM + "/" + UltraStyle.VALUE + MAX_APPRENTICES
+                    + " " + UltraStyle.DIM + "- " + UltraStyle.VALUE + bond.apprenticeNamesSummary());
         }
-        lines.add("§8  - §7Streak §f" + bond.streakCurrent + " §8(best " + bond.streakBest + ")");
+        lines.add(UltraStyle.DIM + "  - " + UltraStyle.LABEL + "Streak " + UltraStyle.VALUE + bond.streakCurrent + " " + UltraStyle.DIM + "(best " + bond.streakBest + ")");
         if (lb != null) {
-            lines.add("§eLifetime");
-            lines.add("§8  - §7Total TP §a" + DmzRewards.formatWhole(lb.totalTp));
-            lines.add("§8  - §7Sessions §f" + lb.sessions
-                    + " §8| best combo §f" + lb.highestCombo);
-            lines.add("§8  - §7Best payout §a" + DmzRewards.formatWhole(lb.bestPayout)
-                    + " §8| perfects §f" + lb.perfectSessions);
+            lines.add(UltraStyle.YELLOW + "Lifetime");
+            lines.add(UltraStyle.DIM + "  - " + UltraStyle.LABEL + "Total TP " + UltraStyle.GREEN + DmzRewards.formatWhole(lb.totalTp));
+            lines.add(UltraStyle.DIM + "  - " + UltraStyle.LABEL + "Sessions " + UltraStyle.VALUE + lb.sessions
+                    + " " + UltraStyle.DIM + "| best combo " + UltraStyle.VALUE + lb.highestCombo);
+            lines.add(UltraStyle.DIM + "  - " + UltraStyle.LABEL + "Best payout " + UltraStyle.GREEN + DmzRewards.formatWhole(lb.bestPayout)
+                    + " " + UltraStyle.DIM + "| perfects " + UltraStyle.VALUE + lb.perfectSessions);
         } else {
-            lines.add("§7No lifetime spar stats yet.");
+            lines.add(UltraStyle.LABEL + "No lifetime spar stats yet.");
         }
         return lines;
     }
@@ -1122,18 +1123,18 @@ public final class SparringSystem {
             return;
         }
         String who = r.partnerName == null || r.partnerName.isBlank() ? "unknown" : r.partnerName;
-        String perfect = r.perfect ? " §6Perfect" : "";
-        lines.add("§6Spar Report #" + index + " §8vs §f" + who);
-        lines.add("§8  - §7TP §a+" + DmzRewards.formatWhole(r.tp));
-        lines.add("§8  - §7Time §f" + formatDuration(r.durationMs));
-        lines.add("§8  - §7Melee §f" + DmzRewards.formatWhole(r.melee)
-                + " §8| §7Ki §f" + DmzRewards.formatWhole(r.ki));
-        lines.add("§8  - §7Combo §f" + r.maxCombo + perfect);
+        String perfect = r.perfect ? " " + UltraStyle.GOLD + "Perfect" : "";
+        lines.add(UltraStyle.GOLD + "Spar Report #" + index + " " + UltraStyle.DIM + "vs " + UltraStyle.VALUE + who);
+        lines.add(UltraStyle.DIM + "  - " + UltraStyle.LABEL + "TP " + UltraStyle.GREEN + "+" + DmzRewards.formatWhole(r.tp));
+        lines.add(UltraStyle.DIM + "  - " + UltraStyle.LABEL + "Time " + UltraStyle.VALUE + formatDuration(r.durationMs));
+        lines.add(UltraStyle.DIM + "  - " + UltraStyle.LABEL + "Melee " + UltraStyle.VALUE + DmzRewards.formatWhole(r.melee)
+                + " " + UltraStyle.DIM + "| " + UltraStyle.LABEL + "Ki " + UltraStyle.VALUE + DmzRewards.formatWhole(r.ki));
+        lines.add(UltraStyle.DIM + "  - " + UltraStyle.LABEL + "Combo " + UltraStyle.VALUE + r.maxCombo + perfect);
         if (r.reason != null && !r.reason.isBlank()) {
-            lines.add("§8  - §7Ended §f" + r.reason);
+            lines.add(UltraStyle.DIM + "  - " + UltraStyle.LABEL + "Ended " + UltraStyle.VALUE + r.reason);
         }
         if (r.endedAt > 0L) {
-            lines.add("§8  - §7When §f" + formatEndedAgo(r.endedAt));
+            lines.add(UltraStyle.DIM + "  - " + UltraStyle.LABEL + "When " + UltraStyle.VALUE + formatEndedAgo(r.endedAt));
         }
     }
 
@@ -1174,7 +1175,7 @@ public final class SparringSystem {
             case "time" -> "Time";
             default -> "Training points";
         };
-        lines.add("§6§lHall of Infamy §8- §f" + label);
+        lines.add(UltraStyle.HEADER + "Hall of Infamy " + UltraStyle.DIM + "- " + UltraStyle.VALUE + label);
         List<Map.Entry<String, SparStore.LeaderboardEntry>> entries =
                 new ArrayList<>(SparStore.get().leaderboard.entrySet());
         entries.sort((a, b) -> {
@@ -1212,12 +1213,12 @@ public final class SparringSystem {
                 case "time" -> (lb.totalTimeMs / 60000L) + "m";
                 default -> DmzRewards.formatWhole(lb.totalTp) + " TP";
             };
-            lines.add("§e#" + i + " §f" + (lb.name == null || lb.name.isBlank() ? "?" : lb.name)
-                    + " §7" + value);
+            lines.add(UltraStyle.YELLOW + "#" + i + " " + UltraStyle.VALUE + (lb.name == null || lb.name.isBlank() ? "?" : lb.name)
+                    + " " + UltraStyle.LABEL + value);
             i++;
         }
         if (i == 1) {
-            lines.add("§7No sparring data yet.");
+            lines.add(UltraStyle.LABEL + "No sparring data yet.");
         }
         return lines;
     }
@@ -1289,63 +1290,63 @@ public final class SparringSystem {
     public static String endCommand(ServerPlayer player) {
         SparPlayerRuntime rt = runtime(player.m_20148_());
         if (!rt.active) {
-            return "§cNo active spar session.";
+            return UltraStyle.DANGER + "No active spar session.";
         }
         ServerPlayer partner = player.m_20194_() == null || rt.partner == null
                 ? null
                 : player.m_20194_().m_6846_().m_11259_(rt.partner);
         endSession(player, partner, "command");
-        return "§eSpar session ended.";
+        return UltraStyle.YELLOW + "Spar session ended.";
     }
 
     public static String setTpMsg(ServerPlayer player, Boolean on) {
         if (player == null) {
-            return "§cPlayers only.";
+            return UltraStyle.DANGER + "Players only.";
         }
         if (on == null) {
             boolean cur = SparStore.get().tpMessagesOn(player.m_20148_());
-            return "§eSpar TP chat: " + (cur ? "ON" : "OFF");
+            return UltraStyle.YELLOW + "Spar TP chat: " + (cur ? "ON" : "OFF");
         }
         SparStore.get().setTpMessages(player.m_20148_(), on);
-        return "§eSpar TP chat " + (on ? "ON" : "OFF")
+        return UltraStyle.YELLOW + "Spar TP chat " + (on ? "ON" : "OFF")
                 + (on ? " — combat TP gains show in chat" : " — muted");
     }
 
     public static String setMentorTpMsg(ServerPlayer player, Boolean on) {
         if (player == null) {
-            return "§cPlayers only.";
+            return UltraStyle.DANGER + "Players only.";
         }
         if (on == null) {
             boolean cur = SparStore.get().mentorTpMessagesOn(player.m_20148_());
-            return "§eMentor TP chat: " + (cur ? "ON" : "OFF");
+            return UltraStyle.YELLOW + "Mentor TP chat: " + (cur ? "ON" : "OFF");
         }
         SparStore.get().setMentorTpMessages(player.m_20148_(), on);
-        return "§eMentor TP chat " + (on ? "ON" : "OFF")
+        return UltraStyle.YELLOW + "Mentor TP chat " + (on ? "ON" : "OFF")
                 + (on ? " — apprentice share TP shows in chat" : " — muted");
     }
 
     public static String mentorInvite(ServerPlayer player, ServerPlayer target) {
         if (target == null) {
-            return "§cPlayer not online.";
+            return UltraStyle.DANGER + "Player not online.";
         }
         if (player.m_20148_().equals(target.m_20148_())) {
-            return "§cYou cannot mentor yourself.";
+            return UltraStyle.DANGER + "You cannot mentor yourself.";
         }
         SparStore.MentorBond mine = SparStore.get().bond(player.m_20148_());
         long now = System.currentTimeMillis();
         // Cooldown set when releasing an apprentice / changing roster.
         if (now < mine.apprenticeChangeReadyAt) {
-            return "§cDojo cooldown active (12h).";
+            return UltraStyle.DANGER + "Dojo cooldown active (12h).";
         }
         if (mine.isMentoringUuid(target.m_20148_().toString())) {
-            return "§cYou already mentor §f" + target.m_7755_().getString() + "§c.";
+            return UltraStyle.DANGER + "You already mentor " + UltraStyle.VALUE + target.m_7755_().getString() + UltraStyle.DANGER + ".";
         }
         if (mine.apprenticeCount() >= MAX_APPRENTICES) {
-            return "§cDojo full (§f" + MAX_APPRENTICES + " §capprentices max).";
+            return UltraStyle.DANGER + "Dojo full (" + UltraStyle.VALUE + MAX_APPRENTICES + " " + UltraStyle.DANGER + "apprentices max).";
         }
         SparStore.MentorBond theirs = SparStore.get().bond(target.m_20148_());
         if (theirs.mentorUuid != null && !theirs.mentorUuid.isBlank()) {
-            return "§cThey already have a mentor.";
+            return UltraStyle.DANGER + "They already have a mentor.";
         }
         SparStore.BondInvite invite = new SparStore.BondInvite();
         invite.fromUuid = player.m_20148_().toString();
@@ -1354,31 +1355,31 @@ public final class SparringSystem {
         invite.expiresAt = now + MENTOR_INVITE_MS;
         SparStore.get().invites.put(target.m_20148_().toString(), invite);
         SparStore.get().markDirty();
-        DmzRewards.msg(target, LmChat.note("Mentor", "§f" + invite.fromName
-                + " §ewants you as their Apprentice."));
-        DmzRewards.msg(target, LmChat.tip("/spar", "→ Training bonds → Bond invites to Accept or Decline"));
-        return "§aInvite sent to §f" + target.m_7755_().getString() + "§a.";
+        DmzRewards.msg(target, LmChat.note("Mentor", UltraStyle.VALUE + invite.fromName
+                + " " + UltraStyle.YELLOW + "wants you as their Apprentice."));
+        DmzRewards.msg(target, LmChat.tip("/spar", "- Training bonds - Bond invites to Accept or Decline"));
+        return UltraStyle.GREEN + "Invite sent to " + UltraStyle.VALUE + target.m_7755_().getString() + UltraStyle.GREEN + ".";
     }
 
     public static String apprenticeInvite(ServerPlayer player, ServerPlayer target) {
         if (target == null) {
-            return "§cPlayer not online.";
+            return UltraStyle.DANGER + "Player not online.";
         }
         if (player.m_20148_().equals(target.m_20148_())) {
-            return "§cInvalid target.";
+            return UltraStyle.DANGER + "Invalid target.";
         }
         SparStore.MentorBond mine = SparStore.get().bond(player.m_20148_());
         long now = System.currentTimeMillis();
         // Cooldown set when leaving a mentor.
         if (now < mine.mentorChangeReadyAt) {
-            return "§cMentor change cooldown active (12h).";
+            return UltraStyle.DANGER + "Mentor change cooldown active (12h).";
         }
         if (mine.mentorUuid != null && !mine.mentorUuid.isBlank()) {
-            return "§cYou already have a mentor.";
+            return UltraStyle.DANGER + "You already have a mentor.";
         }
         SparStore.MentorBond theirs = SparStore.get().bond(target.m_20148_());
         if (theirs.apprenticeCount() >= MAX_APPRENTICES) {
-            return "§cTheir dojo is full (§f" + MAX_APPRENTICES + " §capprentices).";
+            return UltraStyle.DANGER + "Their dojo is full (" + UltraStyle.VALUE + MAX_APPRENTICES + " " + UltraStyle.DANGER + "apprentices).";
         }
         SparStore.BondInvite invite = new SparStore.BondInvite();
         invite.fromUuid = player.m_20148_().toString();
@@ -1387,10 +1388,10 @@ public final class SparringSystem {
         invite.expiresAt = now + MENTOR_INVITE_MS;
         SparStore.get().invites.put(target.m_20148_().toString(), invite);
         SparStore.get().markDirty();
-        DmzRewards.msg(target, LmChat.note("Mentor", "§f" + invite.fromName
-                + " §ewants you as their Mentor."));
-        DmzRewards.msg(target, LmChat.tip("/spar", "→ Training bonds → Bond invites to Accept or Decline"));
-        return "§aInvite sent to §f" + target.m_7755_().getString() + "§a.";
+        DmzRewards.msg(target, LmChat.note("Mentor", UltraStyle.VALUE + invite.fromName
+                + " " + UltraStyle.YELLOW + "wants you as their Mentor."));
+        DmzRewards.msg(target, LmChat.tip("/spar", "- Training bonds - Bond invites to Accept or Decline"));
+        return UltraStyle.GREEN + "Invite sent to " + UltraStyle.VALUE + target.m_7755_().getString() + UltraStyle.GREEN + ".";
     }
 
     /**
@@ -1492,7 +1493,7 @@ public final class SparringSystem {
         if (invite == null || now > invite.expiresAt) {
             SparStore.get().invites.remove(me);
             SparStore.get().markDirty();
-            return "§cNo pending invite.";
+            return UltraStyle.DANGER + "No pending invite.";
         }
         if (fromArg != null && !fromArg.isBlank() && !match) {
             AdaptiveDifficultyMod.LOGGER.warn(
@@ -1502,7 +1503,7 @@ public final class SparringSystem {
                     fromArg,
                     invite.fromUuid,
                     invite.fromName);
-            return "§cThat invite is not pending for you.";
+            return UltraStyle.DANGER + "That invite is not pending for you.";
         }
         MinecraftServer server = player.m_20194_();
         ServerPlayer other = resolveInviter(server, invite);
@@ -1512,7 +1513,7 @@ public final class SparringSystem {
                     AdaptiveDifficultyMod.MOD_ID,
                     player.m_7755_().getString(),
                     invite.fromUuid);
-            return "§cInviter is no longer online.";
+            return UltraStyle.DANGER + "Inviter is no longer online.";
         }
         ServerPlayer mentor;
         ServerPlayer apprentice;
@@ -1529,21 +1530,21 @@ public final class SparringSystem {
                 && !apprenticeBond.mentorUuid.equalsIgnoreCase(mentor.m_20148_().toString())) {
             SparStore.get().invites.remove(player.m_20148_().toString());
             SparStore.get().markDirty();
-            return "§cThey already have a mentor.";
+            return UltraStyle.DANGER + "They already have a mentor.";
         }
         if (!mentorBond.isMentoringUuid(apprentice.m_20148_().toString())
                 && mentorBond.apprenticeCount() >= MAX_APPRENTICES) {
             SparStore.get().invites.remove(player.m_20148_().toString());
             SparStore.get().markDirty();
-            return "§cDojo full (§f" + MAX_APPRENTICES + " §capprentices max).";
+            return UltraStyle.DANGER + "Dojo full (" + UltraStyle.VALUE + MAX_APPRENTICES + " " + UltraStyle.DANGER + "apprentices max).";
         }
         bindMentor(mentor, apprentice);
         SparStore.get().invites.remove(player.m_20148_().toString());
         SparStore.get().markDirty();
-        DmzRewards.msg(mentor, LmChat.ok("Mentor", "You are now mentoring §f" + apprentice.m_7755_().getString()
-                + " §8(" + mentorBond.apprenticeCount() + "/" + MAX_APPRENTICES + ")"));
-        DmzRewards.msg(apprentice, LmChat.ok("Mentor", "Your mentor is now §f" + mentor.m_7755_().getString()));
-        return "§aMentor bond created.";
+        DmzRewards.msg(mentor, LmChat.ok("Mentor", "You are now mentoring " + UltraStyle.VALUE + apprentice.m_7755_().getString()
+                + " " + UltraStyle.DIM + "(" + mentorBond.apprenticeCount() + "/" + MAX_APPRENTICES + ")"));
+        DmzRewards.msg(apprentice, LmChat.ok("Mentor", "Your mentor is now " + UltraStyle.VALUE + mentor.m_7755_().getString()));
+        return UltraStyle.GREEN + "Mentor bond created.";
     }
 
     public static String mentorDecline(ServerPlayer player) {
@@ -1553,10 +1554,10 @@ public final class SparringSystem {
     public static String mentorDecline(ServerPlayer player, String fromArg) {
         SparStore.BondInvite invite = SparStore.get().invites.get(player.m_20148_().toString());
         if (invite == null) {
-            return "§cNo pending invite.";
+            return UltraStyle.DANGER + "No pending invite.";
         }
         if (fromArg != null && !fromArg.isBlank() && !matchesInviteFrom(invite, fromArg)) {
-            return "§cThat invite is not pending for you.";
+            return UltraStyle.DANGER + "That invite is not pending for you.";
         }
         SparStore.get().invites.remove(player.m_20148_().toString());
         MinecraftServer server = player.m_20194_();
@@ -1564,33 +1565,33 @@ public final class SparringSystem {
             try {
                 ServerPlayer other = server.m_6846_().m_11259_(UUID.fromString(invite.fromUuid));
                 if (other != null) {
-                    DmzRewards.msg(other, LmChat.fail("Mentor", "§f" + player.m_7755_().getString()
-                            + " §cdenied your invite."));
+                    DmzRewards.msg(other, LmChat.fail("Mentor", UltraStyle.VALUE + player.m_7755_().getString()
+                            + " " + UltraStyle.DANGER + "denied your invite."));
                 }
             } catch (IllegalArgumentException ignored) {
             }
         }
         SparStore.get().markDirty();
-        return "§7Invite denied.";
+        return UltraStyle.LABEL + "Invite denied.";
     }
 
     /** Cancel an outgoing invite you sent to {@code targetArg} (uuid: or name). */
     public static String mentorCancelInvite(ServerPlayer player, String targetArg) {
         if (player == null) {
-            return "§cPlayers only.";
+            return UltraStyle.DANGER + "Players only.";
         }
         if (targetArg == null || targetArg.isBlank()) {
-            return "§cPick whose invite to cancel.";
+            return UltraStyle.DANGER + "Pick whose invite to cancel.";
         }
         expireInvites(System.currentTimeMillis());
         String me = player.m_20148_().toString();
         String targetKey = resolveInviteTargetKey(player, targetArg);
         if (targetKey == null) {
-            return "§cNo outgoing invite to that player.";
+            return UltraStyle.DANGER + "No outgoing invite to that player.";
         }
         SparStore.BondInvite inv = SparStore.get().invites.get(targetKey);
         if (inv == null || inv.fromUuid == null || !me.equals(inv.fromUuid)) {
-            return "§cNo outgoing invite to that player.";
+            return UltraStyle.DANGER + "No outgoing invite to that player.";
         }
         SparStore.get().invites.remove(targetKey);
         SparStore.get().markDirty();
@@ -1599,13 +1600,13 @@ public final class SparringSystem {
             try {
                 ServerPlayer other = server.m_6846_().m_11259_(UUID.fromString(targetKey));
                 if (other != null) {
-                    DmzRewards.msg(other, LmChat.info("Mentor", "§f" + player.m_7755_().getString()
-                            + " §7cancelled their invite."));
+                    DmzRewards.msg(other, LmChat.info("Mentor", UltraStyle.VALUE + player.m_7755_().getString()
+                            + " " + UltraStyle.LABEL + "cancelled their invite."));
                 }
             } catch (IllegalArgumentException ignored) {
             }
         }
-        return "§7Outgoing invite cancelled.";
+        return UltraStyle.LABEL + "Outgoing invite cancelled.";
     }
 
     /** Leave mentor bond or release apprentice, whichever applies. */
@@ -1620,19 +1621,19 @@ public final class SparringSystem {
             return removeMentor(player);
         }
         if (hasMentor && hasApprentice) {
-            return "§eLeave your mentor, or release one of your apprentices?";
+            return UltraStyle.YELLOW + "Leave your mentor, or release one of your apprentices?";
         }
-        return "§cYou have no mentor bond to remove.";
+        return UltraStyle.DANGER + "You have no mentor bond to remove.";
     }
 
     public static String removeMentor(ServerPlayer player) {
         SparStore.MentorBond bond = SparStore.get().bond(player.m_20148_());
         if (bond.mentorUuid == null || bond.mentorUuid.isBlank()) {
-            return "§cYou have no mentor.";
+            return UltraStyle.DANGER + "You have no mentor.";
         }
         String mentorName = bond.mentorName;
         clearBond(player.m_20148_().toString(), bond.mentorUuid, true);
-        return "§7Left mentor §f" + mentorName + "§7. 12-hour cooldown started.";
+        return UltraStyle.LABEL + "Left mentor " + UltraStyle.VALUE + mentorName + UltraStyle.LABEL + ". 12-hour cooldown started.";
     }
 
     public static String removeApprentice(ServerPlayer player) {
@@ -1647,14 +1648,14 @@ public final class SparringSystem {
         SparStore.MentorBond bond = SparStore.get().bond(player.m_20148_());
         bond.normalizeApprentices();
         if (bond.apprenticeCount() <= 0) {
-            return "§cYou have no apprentice.";
+            return UltraStyle.DANGER + "You have no apprentice.";
         }
         String appUuid;
         String name;
         if (targetArg != null && !targetArg.isBlank()) {
             SparStore.ApprenticeRef match = findApprentice(bond, player, targetArg);
             if (match == null) {
-                return "§cThat player is not your apprentice.";
+                return UltraStyle.DANGER + "That player is not your apprentice.";
             }
             appUuid = match.uuid;
             name = match.name == null || match.name.isBlank() ? match.uuid : match.name;
@@ -1663,12 +1664,12 @@ public final class SparringSystem {
             appUuid = only.uuid;
             name = only.name == null || only.name.isBlank() ? only.uuid : only.name;
         } else {
-            return "§ePick which apprentice to release (§f"
+            return UltraStyle.YELLOW + "Pick which apprentice to release (" + UltraStyle.VALUE
                     + bond.apprenticeNamesSummary()
-                    + "§e).\n§8GUI: Training bonds → Release apprentice…";
+                    + UltraStyle.YELLOW + ").\n" + UltraStyle.DIM + "GUI: Training bonds - Release apprentice…";
         }
         clearBond(appUuid, player.m_20148_().toString(), true);
-        return "§7Released apprentice §f" + name + "§7. 12-hour cooldown started.";
+        return UltraStyle.LABEL + "Released apprentice " + UltraStyle.VALUE + name + UltraStyle.LABEL + ". 12-hour cooldown started.";
     }
 
     /** Encoded dojo roster for GUI: {@code uuid\tname}. */
@@ -1859,15 +1860,15 @@ public final class SparringSystem {
         bond.mentorChangeReadyAt = 0L;
         bond.apprenticeChangeReadyAt = 0L;
         SparStore.get().markDirty();
-        return "§aCleared mentor/apprentice cooldowns for §f" + t.m_7755_().getString();
+        return UltraStyle.GREEN + "Cleared mentor/apprentice cooldowns for " + UltraStyle.VALUE + t.m_7755_().getString();
     }
 
     public static String bondStatus(ServerPlayer player) {
         SparStore.MentorBond bond = SparStore.get().bond(player.m_20148_());
         int n = bond.apprenticeCount();
         String apps = n <= 0 ? "none" : n + "/" + MAX_APPRENTICES + " (" + bond.apprenticeNamesSummary() + ")";
-        return "§6Mentor: §f" + blank(bond.mentorName, "none")
-                + " §8| §6Apprentices: §f" + apps;
+        return UltraStyle.GOLD + "Mentor: " + UltraStyle.VALUE + blank(bond.mentorName, "none")
+                + " " + UltraStyle.DIM + "| " + UltraStyle.GOLD + "Apprentices: " + UltraStyle.VALUE + apps;
     }
 
     private static void bindMentor(ServerPlayer mentor, ServerPlayer apprentice) {
