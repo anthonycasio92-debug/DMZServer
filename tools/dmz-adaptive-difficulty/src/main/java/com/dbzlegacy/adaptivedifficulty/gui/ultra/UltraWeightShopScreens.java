@@ -26,9 +26,9 @@ import net.minecraftforge.common.util.LazyOptional;
  */
 public final class UltraWeightShopScreens {
     /** Hard cap so typed values stay sane (1 copper : 1 weight). */
-    public static final int MAX_WEIGHT_VALUE = 100_000;
+    public static final int MAX_WEIGHT_VALUE = 10_000_000;
 
-    /** Digits needed to type {@link #MAX_WEIGHT_VALUE} (was hard-capped at 4 / 9999). */
+    /** Digits needed to type {@link #MAX_WEIGHT_VALUE} (was hard-capped at 4 / 9999, then 100k). */
     public static final int MAX_WEIGHT_DIGITS = String.valueOf(MAX_WEIGHT_VALUE).length();
 
     /** Curios slot id for {@code CurioType.WEIGHTS} ({@code data/.../curios/slots/weights.json}). */
@@ -133,7 +133,7 @@ public final class UltraWeightShopScreens {
                 .textField(
                         INPUT_ID,
                         "",
-                        "e.g. 50000",
+                        "e.g. 500000",
                         UltraStyle.COL_L,
                         spec.row(),
                         UltraStyle.PANEL_W - UltraStyle.COL_L * 2,

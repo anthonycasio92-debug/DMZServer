@@ -617,10 +617,15 @@ def main() -> int:
     if "footerBackHome(String" not in spec_src:
         errors.append("UltraScreenSpec.footerBackHome must take a destination name")
 
-    # Weight shop must accept up to MAX_WEIGHT_VALUE digits (not a stale 4-digit / 9999 cap).
+    # Weight shop must accept up to MAX_WEIGHT_VALUE digits (not a stale 4-digit / 9999 / 100k cap).
     weight_shop = (ULTRA / "UltraWeightShopScreens.java").read_text(encoding="utf-8")
-    if "MAX_WEIGHT_VALUE = 100_000" not in weight_shop and "MAX_WEIGHT_VALUE = 100000" not in weight_shop:
-        errors.append("UltraWeightShopScreens.MAX_WEIGHT_VALUE must be 100000")
+    if (
+        "MAX_WEIGHT_VALUE = 10_000_000" not in weight_shop
+        and "MAX_WEIGHT_VALUE = 10000000" not in weight_shop
+    ):
+        errors.append("UltraWeightShopScreens.MAX_WEIGHT_VALUE must be 10000000")
+    if "MAX_WEIGHT_VALUE = 100_000" in weight_shop or "MAX_WEIGHT_VALUE = 100000" in weight_shop:
+        errors.append("UltraWeightShopScreens.MAX_WEIGHT_VALUE must not remain at the old 100000 cap")
     if "s.length() > 4" in weight_shop or "length() > 4" in weight_shop:
         errors.append("UltraWeightShopScreens.parseWeightValue must not hard-cap at 4 digits (9999)")
     if "MAX_WEIGHT_DIGITS" not in weight_shop:
