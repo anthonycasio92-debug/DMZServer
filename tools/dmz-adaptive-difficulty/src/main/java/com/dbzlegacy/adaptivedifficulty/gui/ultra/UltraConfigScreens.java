@@ -23,11 +23,20 @@ public final class UltraConfigScreens {
     /** Settings shown per page (inline controls are dense). */
     private static final int PAGE_SIZE = 2;
 
-    private static final int PANEL_W = 480;
+    /**
+     * Fit the default Ultra dialog width so small GUI scales do not clip a 480px panel.
+     * Left category rail is chrome (does not clamp body packing); main column is flow layout.
+     */
+    private static final int PANEL_W = UltraStyle.PANEL_W;
     private static final int SIDE_X = 8;
-    private static final int SIDE_W = 88;
-    private static final int MAIN_X = 104;
-    private static final int MAIN_W = 360;
+    /** Matches {@link UltraStyle#BTN_MIN_W} — client never shrinks buttons below that. */
+    private static final int SIDE_W = UltraStyle.BTN_MIN_W;
+    private static final int MAIN_X = SIDE_X + SIDE_W + 8;
+    private static final int MAIN_W = PANEL_W - MAIN_X - UltraStyle.PANEL_MARGIN;
+    /** Extra gap under a setting label before its control (avoids text/button overlap). */
+    private static final int LABEL_CTRL_GAP = 4;
+    /** Min clear space between two controls on one row before we stack instead. */
+    private static final int CTRL_GAP = 8;
 
     /** Categories always shown in the left rail (user-facing order). */
     private static final String[][] CATEGORIES = {
@@ -134,15 +143,15 @@ public final class UltraConfigScreens {
                 spec.labelValue("Group", ConfigEditor.displayName(leaf(groupPath)));
             }
         }
+        // Header copy lives in the body band. Category rail is chrome (left) so it does not
+        // clamp body packing. Search + settings use main-column flow (label above control).
+        int railTop = UltraStyle.CONTENT_ROW;
+        placeCategoryRail(spec, module, searching, railTop);
+        int mainTop = UltraStyle.CONTENT_ROW;
+        placeSearchRow(spec, player, query, mainTop);
         if (tab != null && !tab.editable() && !searching) {
-            spec.line(UltraStyle.dim("This category is closed - player records are not edited here."));
+            flowLabel(spec, "This category is closed - player records are not edited here.");
         }
-
-        int bodyTop = UltraStyle.CONTENT_ROW + 36;
-        placeCategoryRail(spec, module, searching, bodyTop);
-        placeSearchRow(spec, player, query, bodyTop);
-        int contentY = bodyTop + UltraStyle.BTN_H + UltraStyle.BTN_GAP + 4;
-        spec.setRow(contentY);
         if (!searching && !groupPath.isBlank()) {
             String parent = ConfigEditor.parentPath(groupPath);
             spec.button(
@@ -151,14 +160,14 @@ public final class UltraConfigScreens {
                             UltraStyle.STYLE_DIM,
                             MAIN_X,
                             spec.row(),
-                            160)
+                            Math.min(160, MAIN_W))
                     .rowGap();
         }
 
         if (from >= to) {
-            spec.line(UltraStyle.dim(searching
-                    ? "No settings match that search."
-                    : "No settings in this category."));
+            flowLabel(
+                    spec,
+                    searching ? "No settings match that search." : "No settings in this category.");
         }
         for (int i = from; i < to; i++) {
             Row row = rows.get(i);
@@ -201,7 +210,8 @@ public final class UltraConfigScreens {
             boolean active = !searching && id.equalsIgnoreCase(activeModule);
             String style = active ? UltraStyle.STYLE_CONFIRM : UltraStyle.STYLE_DIM;
             String text = active ? UltraStyle.confirm(label) : UltraStyle.dim(label);
-            spec.button("do:select_module:" + id, text, style, SIDE_X, y, SIDE_W);
+            // Chrome: left rail must not set firstButtonY or body text collapses onto controls.
+            spec.chromeButton("do:select_module:" + id, text, style, SIDE_X, y, SIDE_W);
             y += UltraStyle.BTN_H + 2;
         }
     }
@@ -211,42 +221,45 @@ public final class UltraConfigScreens {
         noteIfTextInputMissing(spec, player);
         spec.setRow(y);
         String inputId = "input:search";
+        // Full main-column width; Search then Clear stacked so small widths never overlap.
         spec.textFieldRow(inputId, query == null ? "" : query, "Search settings...", MAIN_X, MAIN_W);
-        spec.rowGap();
+        spec.rowGap(LABEL_CTRL_GAP);
         spec.buttonBound(
                         "do:search",
                         UltraStyle.confirm("Search"),
                         UltraStyle.STYLE_CONFIRM,
                         MAIN_X,
                         spec.row(),
-                        140,
+                        MAIN_W,
                         inputId)
-                .button(
+                .rowGap();
+        spec.button(
                         "do:search_clear",
                         UltraStyle.dim("Clear"),
                         UltraStyle.STYLE_DIM,
-                        MAIN_X + 150,
+                        MAIN_X,
                         spec.row(),
-                        80);
-        spec.rowGap();
+                        MAIN_W)
+                .rowGap();
     }
 
     private static void placeActionFooter(UltraScreenSpec spec) {
-        // Pinned action band above nav footer — always visible; Discard stacked under Save.
+        // Pinned action band above nav footer — stacked for small UI (no side-by-side squeeze).
         spec.button(
                         "do:save_all",
                         UltraStyle.confirm("Save all"),
                         UltraStyle.STYLE_CONFIRM,
                         MAIN_X,
                         spec.row(),
-                        110)
-                .button(
+                        MAIN_W)
+                .rowGap();
+        spec.button(
                         "do:reload_module",
                         UltraStyle.LABEL + "Reload disk",
                         UltraStyle.STYLE_NORMAL,
-                        MAIN_X + 120,
+                        MAIN_X,
                         spec.row(),
-                        120)
+                        MAIN_W)
                 .rowGap();
         spec.button(
                         "do:discard_all",
@@ -254,8 +267,26 @@ public final class UltraConfigScreens {
                         UltraStyle.STYLE_DANGER,
                         MAIN_X,
                         spec.row(),
-                        240)
+                        MAIN_W)
                 .rowGap();
+    }
+
+    /**
+     * Setting title/description as a main-column flow row (not body {@code line}), so the label
+     * sits above its control instead of scrolling in a band that overlaps buttons.
+     */
+    private static void flowLabel(UltraScreenSpec spec, String text) {
+        if (spec == null || text == null || text.isBlank()) {
+            return;
+        }
+        spec.button(
+                        "do:refresh",
+                        UltraStyle.LABEL + UltraStyle.plain(text),
+                        UltraStyle.STYLE_DIM,
+                        MAIN_X,
+                        spec.row(),
+                        MAIN_W)
+                .rowGap(LABEL_CTRL_GAP);
     }
 
     private static void appendSetting(
@@ -269,16 +300,20 @@ public final class UltraConfigScreens {
         String value = ConfigEditor.shownValue(uuid, module, path);
         String desc = ConfigEditor.friendlyDescription(module, path, raw == null ? "" : raw);
         String crumb = row.searchHit() ? (row.moduleLabel() + " > " + name) : name;
-        String mark = dirty ? UltraStyle.GOLD + "* " : "";
-        spec.line(UltraStyle.LABEL + mark + crumb);
-        spec.line(UltraStyle.DIM + shortDesc(desc));
+        String mark = dirty ? "* " : "";
+        // Label on top, control below — flow rows, never body lines mixed with absolute buttons.
+        flowLabel(spec, mark + crumb);
+        String shortD = shortDesc(desc);
+        if (shortD != null && !shortD.isBlank() && !shortD.equals("-")) {
+            flowLabel(spec, shortD);
+        }
         String invalid = ConfigEditor.invalidMessage(uuid, module, path);
         if (invalid != null && !invalid.isBlank()) {
-            spec.line(UltraStyle.danger(invalid));
+            flowLabel(spec, UltraStyle.plain(invalid));
         }
         ConfigEditor.EditorTab moduleTab = ConfigEditor.tab(module);
         if (moduleTab == null || !moduleTab.editable()) {
-            spec.line(UltraStyle.dim("Closed - " + shortVal(value)));
+            flowLabel(spec, "Closed - " + shortVal(value));
             return;
         }
         appendInlineControl(spec, player, module, path, entry.kind(), value, raw);
@@ -289,14 +324,15 @@ public final class UltraConfigScreens {
                             UltraStyle.STYLE_DIM,
                             MAIN_X,
                             spec.row(),
-                            80)
+                            Math.min(80, MAIN_W))
                     .rowGap();
         }
     }
 
     /**
      * Inline control for one setting. Case labels stay for audits that require typed
-     * {@code textFieldRow} + Apply on NUMBER / ENUM / LIST.
+     * {@code textFieldRow} + Apply on NUMBER / ENUM / LIST. Controls stack under the label;
+     * side-by-side only when the main column has room (see {@link #fitsRow}).
      */
     private static void appendInlineControl(
             UltraScreenSpec spec,
@@ -316,59 +352,67 @@ public final class UltraConfigScreens {
                                 on ? UltraStyle.STYLE_CONFIRM : UltraStyle.STYLE_DIM,
                                 MAIN_X,
                                 spec.row(),
-                                100)
+                                Math.min(100, MAIN_W))
                         .rowGap();
             }
             case NUMBER -> {
                 noteIfTextInputMissing(spec, player);
                 String inputId = "input:" + module + "|" + encoded;
                 spec.textFieldRow(inputId, value == null ? "" : value, "Type a number...", MAIN_X, MAIN_W);
-                spec.rowGap();
+                spec.rowGap(LABEL_CTRL_GAP);
+                // Apply on its own row; +/- share a row only when width allows.
                 spec.buttonBound(
                                 "do:set:" + module + "|" + encoded,
                                 UltraStyle.confirm("Apply"),
                                 UltraStyle.STYLE_CONFIRM,
                                 MAIN_X,
                                 spec.row(),
-                                90,
+                                MAIN_W,
                                 inputId)
-                        .button(
-                                "do:step:" + module + "|" + encoded + "|-1",
-                                UltraStyle.dim("-"),
-                                UltraStyle.STYLE_DIM,
-                                MAIN_X + 100,
-                                spec.row(),
-                                40)
-                        .button(
-                                "do:step:" + module + "|" + encoded + "|1",
-                                UltraStyle.dim("+"),
-                                UltraStyle.STYLE_DIM,
-                                MAIN_X + 150,
-                                spec.row(),
-                                40)
                         .rowGap();
+                placeStepPair(spec, module, encoded);
             }
             case ENUM -> {
                 noteIfTextInputMissing(spec, player);
                 String inputId = "input:" + module + "|" + encoded;
                 spec.textFieldRow(inputId, value == null ? "" : value, "Type an option...", MAIN_X, MAIN_W);
-                spec.rowGap();
-                spec.buttonBound(
-                                "do:set:" + module + "|" + encoded,
-                                UltraStyle.confirm("Apply"),
-                                UltraStyle.STYLE_CONFIRM,
-                                MAIN_X,
-                                spec.row(),
-                                90,
-                                inputId)
-                        .button(
-                                "do:cycle:" + module + "|" + encoded,
-                                UltraStyle.confirm("Next"),
-                                UltraStyle.STYLE_CONFIRM,
-                                MAIN_X + 100,
-                                spec.row(),
-                                90)
-                        .rowGap();
+                spec.rowGap(LABEL_CTRL_GAP);
+                if (fitsRow(90, 90)) {
+                    spec.buttonBound(
+                                    "do:set:" + module + "|" + encoded,
+                                    UltraStyle.confirm("Apply"),
+                                    UltraStyle.STYLE_CONFIRM,
+                                    MAIN_X,
+                                    spec.row(),
+                                    90,
+                                    inputId)
+                            .button(
+                                    "do:cycle:" + module + "|" + encoded,
+                                    UltraStyle.confirm("Next"),
+                                    UltraStyle.STYLE_CONFIRM,
+                                    MAIN_X + 90 + CTRL_GAP,
+                                    spec.row(),
+                                    90)
+                            .rowGap();
+                } else {
+                    spec.buttonBound(
+                                    "do:set:" + module + "|" + encoded,
+                                    UltraStyle.confirm("Apply"),
+                                    UltraStyle.STYLE_CONFIRM,
+                                    MAIN_X,
+                                    spec.row(),
+                                    MAIN_W,
+                                    inputId)
+                            .rowGap();
+                    spec.button(
+                                    "do:cycle:" + module + "|" + encoded,
+                                    UltraStyle.confirm("Next"),
+                                    UltraStyle.STYLE_CONFIRM,
+                                    MAIN_X,
+                                    spec.row(),
+                                    MAIN_W)
+                            .rowGap();
+                }
             }
             case LIST, MAP, GROUP -> {
                 ConfigEditor.AddMode addMode = ConfigEditor.addMode(module, path);
@@ -379,14 +423,14 @@ public final class UltraConfigScreens {
                             ? "Type key=value..."
                             : "Type a new entry...";
                     spec.textFieldRow(inputId, "", placeholder, MAIN_X, MAIN_W);
-                    spec.rowGap();
+                    spec.rowGap(LABEL_CTRL_GAP);
                     spec.buttonBound(
                                     "do:add:" + module + "|" + encoded,
                                     UltraStyle.confirm("Apply"),
                                     UltraStyle.STYLE_CONFIRM,
                                     MAIN_X,
                                     spec.row(),
-                                    90,
+                                    MAIN_W,
                                     inputId)
                             .rowGap();
                 }
@@ -397,26 +441,69 @@ public final class UltraConfigScreens {
                                 UltraStyle.STYLE_NORMAL,
                                 MAIN_X,
                                 spec.row(),
-                                200)
+                                MAIN_W)
                         .rowGap();
             }
             case TEXT -> {
                 noteIfTextInputMissing(spec, player);
                 String inputId = "input:" + module + "|" + encoded;
                 spec.textFieldRow(inputId, value == null ? "" : value, "Type a value...", MAIN_X, MAIN_W);
-                spec.rowGap();
+                spec.rowGap(LABEL_CTRL_GAP);
                 spec.buttonBound(
                                 "do:set:" + module + "|" + encoded,
                                 UltraStyle.confirm("Apply"),
                                 UltraStyle.STYLE_CONFIRM,
                                 MAIN_X,
                                 spec.row(),
-                                90,
+                                MAIN_W,
                                 inputId)
                         .rowGap();
             }
-            default -> spec.line(UltraStyle.dim("This field type has no Ultra editor yet."));
+            default -> flowLabel(spec, "This field type has no Ultra editor yet.");
         }
+    }
+
+    private static void placeStepPair(UltraScreenSpec spec, String module, String encoded) {
+        int stepW = UltraStyle.BTN_MIN_W;
+        if (fitsRow(stepW, stepW)) {
+            spec.button(
+                            "do:step:" + module + "|" + encoded + "|-1",
+                            UltraStyle.dim("-"),
+                            UltraStyle.STYLE_DIM,
+                            MAIN_X,
+                            spec.row(),
+                            stepW)
+                    .button(
+                            "do:step:" + module + "|" + encoded + "|1",
+                            UltraStyle.dim("+"),
+                            UltraStyle.STYLE_DIM,
+                            MAIN_X + stepW + CTRL_GAP,
+                            spec.row(),
+                            stepW)
+                    .rowGap();
+            return;
+        }
+        spec.button(
+                        "do:step:" + module + "|" + encoded + "|-1",
+                        UltraStyle.dim("-"),
+                        UltraStyle.STYLE_DIM,
+                        MAIN_X,
+                        spec.row(),
+                        MAIN_W)
+                .rowGap();
+        spec.button(
+                        "do:step:" + module + "|" + encoded + "|1",
+                        UltraStyle.dim("+"),
+                        UltraStyle.STYLE_DIM,
+                        MAIN_X,
+                        spec.row(),
+                        MAIN_W)
+                .rowGap();
+    }
+
+    /** True when {@code leftW + gap + rightW} fits in the main column. */
+    private static boolean fitsRow(int leftW, int rightW) {
+        return leftW + CTRL_GAP + rightW <= MAIN_W;
     }
 
     private static void openReview(ServerPlayer player) {

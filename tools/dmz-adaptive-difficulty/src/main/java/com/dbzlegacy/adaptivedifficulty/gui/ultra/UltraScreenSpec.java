@@ -278,10 +278,33 @@ public final class UltraScreenSpec {
             int w,
             String bindInputId,
             String accent) {
+        return addButton(actionId, label, style, x, y, w, bindInputId, accent, true);
+    }
+
+    /**
+     * Side-rail / chrome control that must not clamp the body text region. Same wire shape as
+     * {@link #button(String, String, String, int, int, int)} but ignored by {@link #firstButtonY}
+     * packing (hub tab chrome uses the same rule).
+     */
+    public UltraScreenSpec chromeButton(
+            String actionId, String label, String style, int x, int y, int w) {
+        return addButton(actionId, label, style, x, y, w, null, null, false);
+    }
+
+    private UltraScreenSpec addButton(
+            String actionId,
+            String label,
+            String style,
+            int x,
+            int y,
+            int w,
+            String bindInputId,
+            String accent,
+            boolean affectsBodyFloor) {
         UltraScreenIds.requireValidActionId(screenId, actionId, label);
         int width = Math.max(UltraStyle.BTN_MIN_W, w);
         String resolvedStyle = normalizeStyle(style);
-        if (firstButtonY < 0 || y < firstButtonY) {
+        if (affectsBodyFloor && (firstButtonY < 0 || y < firstButtonY)) {
             firstButtonY = y;
         }
         String bind = null;
@@ -310,6 +333,12 @@ public final class UltraScreenSpec {
                 false,
                 UltraStyle.SOUND_CONFIRM,
                 UltraStyle.BUTTON_SKIN));
+        return this;
+    }
+
+    /** Advance {@link #nextRow} by one control row, plus optional extra gap (px). */
+    public UltraScreenSpec rowGap(int extraPx) {
+        nextRow += UltraStyle.BTN_H + UltraStyle.BTN_GAP + Math.max(0, extraPx);
         return this;
     }
 

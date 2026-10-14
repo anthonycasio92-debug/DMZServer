@@ -112,6 +112,8 @@ KNOWN_DO: dict[str, set[str]] = {
         "undo",
         "search",
         "search_clear",
+        # Flow-layout setting titles (label-above-control rows) use a no-op refresh hit target.
+        "refresh",
     },
     "skillcheck": set(),
     "skills": set(),
@@ -269,6 +271,12 @@ def main() -> int:
         errors.append("UltraConfigScreens set/add must log and resolve typed args via typedValueFromArgs")
     if "placeCategoryRail" not in config_screens and "CATEGORIES" not in config_screens:
         errors.append("UltraConfigScreens must keep a left category rail (Difficulty…Currency)")
+    if "chromeButton" not in config_screens:
+        errors.append("UltraConfigScreens category rail must use chromeButton (body packing)")
+    if "flowLabel" not in config_screens:
+        errors.append("UltraConfigScreens settings must use flowLabel (label above control)")
+    if "PANEL_W = 480" in config_screens:
+        errors.append("UltraConfigScreens must not hardcode PANEL_W = 480 (clips on small UI)")
     if 'do:search' not in config_screens or "rememberSearch" not in config_screens:
         errors.append("UltraConfigScreens must pin search (do:search + ConfigEditor.rememberSearch)")
     if 'do:save_all' not in config_screens or 'do:discard_all' not in config_screens or 'do:reload_module' not in config_screens:
