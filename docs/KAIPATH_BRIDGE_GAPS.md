@@ -2,6 +2,8 @@
 
 **LM 4.6.154** (live) + **KaiPath 1.3.13** (live / recommended). Official KaiPath updates are owned by the KaiPath mod developer.
 
+**At a glance — KaiPath next:** (1) honor `footer:true` + advertise `fixedFooter`, (2) advertise `portraitFrame`, (3) read § Pitfalls before release. JLDK one-pager: [`KAIPATH_JLDK_CLIENT_BRIEF.md`](KAIPATH_JLDK_CLIENT_BRIEF.md).
+
 Pulled live jar: `mods/kaipath-1.3.13.jar`. Advertise set:
 
 ```text

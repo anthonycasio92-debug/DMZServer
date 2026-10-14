@@ -167,12 +167,19 @@ Known optional feature ids:
 | `buttonSkin` | Button `buttonSkin` chrome |
 | `frame` | `layoutJson.frame` panel chrome |
 | `pagedBook` | Advertise spelling (camelCase) for `inputsJson` **`type=paged_book`** (snake_case on the wire) |
+| `portraitFrame` | `playerModel.portraitFrame` enable token (**honored on 1.3.13, not advertised yet**) |
 | `fixedFooter` | Button `footer:true` pinned chrome (**pending** on KaiPath 1.3.13) |
 
-Example (KaiPath 1.3.13 live advertise):
+Example (KaiPath 1.3.13 live advertise — missing `portraitFrame` / `fixedFooter`):
 
 ```json
 ["style","activeTab","titleAlign","playerModel","textInput","headerBottom","accent","palette","sound","buttonSkin","frame","pagedBook","combined.forms.v1"]
+```
+
+Target advertise after next KaiPath (see [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md)):
+
+```json
+["style","activeTab","titleAlign","playerModel","textInput","headerBottom","accent","palette","sound","buttonSkin","frame","pagedBook","portraitFrame","fixedFooter","combined.forms.v1"]
 ```
 
 **Spelling split:** GuiFeatures advertise uses camelCase **`pagedBook`**; the widget `type` string is snake_case **`paged_book`**.
