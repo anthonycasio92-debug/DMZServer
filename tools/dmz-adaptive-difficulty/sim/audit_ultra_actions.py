@@ -674,6 +674,32 @@ def main() -> int:
         errors.append('UltraPrestigeScreens must label wallet "Lifetime prestiges" (not Completed)')
     if "Completed prestiges" in prestige:
         errors.append('UltraPrestigeScreens must not use "Completed prestiges"')
+    if "PrestigeUniverseRoleWarn" not in prestige:
+        errors.append(
+            "UltraPrestigeScreens must warn GoD / Supreme Kai via PrestigeUniverseRoleWarn "
+            "before Prestige now"
+        )
+    role_warn = (
+        ROOT
+        / "src/main/java/com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigeUniverseRoleWarn.java"
+    ).read_text(encoding="utf-8")
+    if "DestroyerRoleService" not in role_warn or '"DESTROYER"' not in role_warn:
+        errors.append(
+            "PrestigeUniverseRoleWarn must reflect Noea DestroyerRoleService and match DESTROYER"
+        )
+    if "KaiApi" not in role_warn or "isSupremeKai" not in role_warn:
+        errors.append("PrestigeUniverseRoleWarn must reflect KaiApi.isSupremeKai")
+    if "GOD_OF_DESTRUCTION" not in role_warn or "SUPREME_KAI" not in role_warn:
+        errors.append("PrestigeUniverseRoleWarn must expose GoD + Supreme Kai warning copy")
+    prestige_sys = (
+        ROOT
+        / "src/main/java/com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigeSystem.java"
+    ).read_text(encoding="utf-8")
+    reply_confirm_body = prestige_sys.split("private static String replyConfirm", 1)[-1].split(
+        "private static String replyCap", 1
+    )[0]
+    if "PrestigeUniverseRoleWarn" not in reply_confirm_body:
+        errors.append("PrestigeSystem.replyConfirm must include PrestigeUniverseRoleWarn lines")
     difficulty_titles = (ULTRA / "UltraDifficultyScreens.java").read_text(encoding="utf-8")
     if "titles_p" not in difficulty_titles or "TITLES_PER_PAGE" not in difficulty_titles:
         errors.append("UltraDifficultyScreens must paginate titles via titles_pN (no hard 10-cap drop)")

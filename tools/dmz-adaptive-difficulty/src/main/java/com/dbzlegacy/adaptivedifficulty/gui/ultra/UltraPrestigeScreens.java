@@ -2,6 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.gui.ultra;
 
 import com.dbzlegacy.adaptivedifficulty.gui.ProgressionGuiApi;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem;
+import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeUniverseRoleWarn;
 import java.util.Locale;
 import java.util.Map;
 import net.minecraft.server.level.ServerPlayer;
@@ -128,8 +129,15 @@ public final class UltraPrestigeScreens {
         paintWallet(spec, ph);
         spec.notice("Turning in current prestige removes its stat bonus. This cannot be undone.")
                 .line(UltraStyle.danger(
-                        "Exchanging prestige for favor removes the stat bonus from the exchanged prestiges."))
-                .line(UltraStyle.LABEL
+                        "Exchanging prestige for favor removes the stat bonus from the exchanged prestiges."));
+        // Soft role warnings before Prestige now — never block; checks fail open.
+        if (PrestigeUniverseRoleWarn.isGodOfDestruction(player)) {
+            spec.line(UltraStyle.danger(PrestigeUniverseRoleWarn.GOD_OF_DESTRUCTION));
+        }
+        if (PrestigeUniverseRoleWarn.isSupremeKai(player)) {
+            spec.line(UltraStyle.danger(PrestigeUniverseRoleWarn.SUPREME_KAI));
+        }
+        spec.line(UltraStyle.LABEL
                         + "Bulk bonus: exchange 3 for 4 favor, 6 for 9, or 9 for 15")
                 .setRow(140);
         spec.button("do:confirm", UltraStyle.danger("Prestige now"), UltraStyle.STYLE_DANGER).rowGap();
