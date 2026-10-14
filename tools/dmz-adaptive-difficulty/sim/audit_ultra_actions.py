@@ -322,6 +322,7 @@ def main() -> int:
             "FEATURE_TEXT_INPUT",
             "FEATURE_HEADER_BOTTOM",
             "FEATURE_ACCENT",
+            "FEATURE_FIXED_FOOTER",
         ):
             if needle not in feat_text:
                 errors.append(f"UltraClientFeatures must define {needle}")
@@ -332,25 +333,46 @@ def main() -> int:
         if "textInput" not in feat_text:
             errors.append("UltraClientFeatures must cover textInput (inputsJson)")
         if "FEATURE_HEADER_BOTTOM" not in feat_text or "FEATURE_ACCENT" not in feat_text:
-            errors.append("UltraClientFeatures must define headerBottom + accent pending features")
-        if "PENDING_NEXT" not in feat_text or "FEATURE_HEADER_BOTTOM" not in feat_text:
-            errors.append("UltraClientFeatures.PENDING_NEXT must track headerBottom + accent")
-        # PENDING_NEXT must be non-empty while KaiPath 1.3.9 lacks these.
+            errors.append("UltraClientFeatures must define headerBottom + accent shipped features")
+        if "SHIPPED_ON_RECOMMENDED" not in feat_text:
+            errors.append("UltraClientFeatures must define SHIPPED_ON_RECOMMENDED")
+        shipped_block = feat_text.split("SHIPPED_ON_RECOMMENDED", 1)[-1].split(
+            "PENDING_NEXT", 1
+        )[0]
+        if "FEATURE_HEADER_BOTTOM" not in shipped_block or "FEATURE_ACCENT" not in shipped_block:
+            errors.append(
+                "SHIPPED_ON_RECOMMENDED must include FEATURE_HEADER_BOTTOM + FEATURE_ACCENT "
+                "(KaiPath 1.3.13)"
+            )
+        if "PENDING_NEXT" not in feat_text or "FEATURE_FIXED_FOOTER" not in feat_text:
+            errors.append("UltraClientFeatures.PENDING_NEXT must track fixedFooter")
+        # PENDING_NEXT must be non-empty while KaiPath 1.3.13 lacks fixedFooter.
         if "PENDING_NEXT =\n            Set.of()" in feat_text or "PENDING_NEXT = Set.of()" in feat_text:
             errors.append(
-                "UltraClientFeatures.PENDING_NEXT must list headerBottom + accent "
-                "(not empty while LM emits them)"
+                "UltraClientFeatures.PENDING_NEXT must list fixedFooter "
+                "(not empty while LM emits footer:true)"
             )
-        if "FEATURE_HEADER_BOTTOM" not in feat_text.split("PENDING_NEXT", 1)[-1].split(
-            "private static final Map", 1
-        )[0]:
-            errors.append("PENDING_NEXT must include FEATURE_HEADER_BOTTOM")
-        if "FEATURE_ACCENT" not in feat_text.split("PENDING_NEXT", 1)[-1].split(
-            "private static final Map", 1
-        )[0]:
-            errors.append("PENDING_NEXT must include FEATURE_ACCENT")
+        pending_decl = "public static final Set<String> PENDING_NEXT"
+        if pending_decl not in feat_text:
+            errors.append("UltraClientFeatures must declare public PENDING_NEXT set")
+            pending_block = ""
+        else:
+            pending_block = feat_text.split(pending_decl, 1)[-1].split(
+                "private static final Map", 1
+            )[0]
+        if pending_block and "FEATURE_FIXED_FOOTER" not in pending_block:
+            errors.append("PENDING_NEXT must include FEATURE_FIXED_FOOTER")
+        if pending_block and (
+            "FEATURE_HEADER_BOTTOM" in pending_block or "FEATURE_ACCENT" in pending_block
+        ):
+            errors.append(
+                "PENDING_NEXT must not include headerBottom/accent "
+                "(shipped on KaiPath 1.3.13)"
+            )
         if "headerBottom" not in feat_text or 'FEATURE_ACCENT_DOC = "accent"' not in feat_text:
             errors.append("UltraClientFeatures must expose headerBottom/accent doc spellings")
+        if "fixedFooter" not in feat_text:
+            errors.append("UltraClientFeatures must expose fixedFooter doc spelling")
     if "roundTripStyleAndActiveTab" not in net:
         errors.append("LmGuiNetwork must round-trip style + activeTab in self-test")
     if "GuiFeaturesPacket" not in net:

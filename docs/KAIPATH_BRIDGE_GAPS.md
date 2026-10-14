@@ -1,22 +1,28 @@
 # Ultra bridge gap matrix (LM ↔ KaiPath)
 
-**LM 4.6.151** + **KaiPath 1.3.9** (live / recommended). Official KaiPath updates are owned by the KaiPath mod developer.
+**LM 4.6.153** + **KaiPath 1.3.13** (live / recommended). Official KaiPath updates are owned by the KaiPath mod developer.
+
+Pulled live jar: `mods/kaipath-1.3.13.jar`. Advertise set:
+
+```text
+style, activeTab, titleAlign, playerModel, textInput, headerBottom, accent,
+palette, sound, buttonSkin, frame, pagedBook, combined.forms.v1
+```
 
 ## Open bridge gaps (only these)
 
-| Gap | Owner | LM status | KaiPath 1.3.9 | Notes |
-|-----|-------|-----------|----------------|-------|
-| **`layoutJson.headerBottom`** | Cursor + JLDK | **Emits** (4.6.149+) | **Missing** | Keep title + yellow divider **strictly above** this panel-relative Y. With `tabsUnderTitle=true`, tab row sits at this Y (default **28**). Spec: [`KAIPATH_GUI_PROTOCOL.md`](KAIPATH_GUI_PROTOCOL.md) §4. |
-| **`layoutJson.accent` + button/tab `accent`** | Cursor + JLDK | **Emits** (4.6.149+) | **Missing** | Single-letter color codes. Paint title + `activeTab` highlight from `layoutJson.accent`; hub tiles / staff controls from per-button `accent`. Titles/labels stay plain ASCII. |
+| Gap | Owner | LM status | KaiPath 1.3.13 | Notes |
+|-----|-------|-----------|-----------------|-------|
+| **`button footer:true` / `fixedFooter`** | Cursor + JLDK | **Emits** (4.6.152+) | **Missing** | Pin Back + Main menu (or contextual Back) in fixed chrome so they do not scroll with body. Spec: [`KAIPATH_GUI_PROTOCOL.md`](KAIPATH_GUI_PROTOCOL.md). Advertise: `fixedFooter`. |
 | **Title vertical centering** | **JLDK-only** | N/A (no field) | **Missing** | Center title text in the header band between the gear icons. No protocol change. |
 
-`/lm admin guitest` on KaiPath **1.3.9** should report:
+`/lm admin guitest` on KaiPath **1.3.13** should report:
 
 ```text
-missingShipped=none pendingNext=[headerBottom, accent]
+missingShipped=none pendingNext=[fixedFooter]
 ```
 
-(`UltraClientFeatures.PENDING_NEXT` tracks the two advertise-able gaps. Title centering is docs-only.)
+(`UltraClientFeatures.PENDING_NEXT` tracks `fixedFooter`. Title centering is docs-only.)
 
 ## Closed on both sides (not gaps)
 
@@ -24,11 +30,22 @@ missingShipped=none pendingNext=[headerBottom, accent]
 |------|--------|
 | GuiOpen fields 1–11 (`inputsJson`) | **Done** |
 | Button `style` (`confirm` / `danger` / `dim` / `normal`) | **Done** (1.3.7+) |
-| `activeTab` highlight | **Done** (shared yellow until `accent` ships) |
+| `activeTab` highlight | **Done** (tint from `accent` on 1.3.13) |
 | `layoutJson.titleAlign` | **Done** |
 | `layoutJson.playerModel` (+ `parts` schema 1) | **Done** |
-| `textInput` / EditBox / `bindInput` → `args.value` | **Done** (1.3.9) |
-| GuiFeaturesPacket advertise (5 features) | **Done** on 1.3.9 |
+| `textInput` / EditBox / `bindInput` → `args.value` | **Done** (1.3.9+) |
+| `layoutJson.headerBottom` / `tabsUnderTitle` | **Done** (1.3.13) |
+| `layoutJson.accent` + button/tab `accent` | **Done** (1.3.13 via `UltraBridgeChrome`) |
+| GuiFeaturesPacket advertise | **Done** on 1.3.13 (12+ tokens incl. chrome extras) |
+
+## Optional (safe to emit; not tracked as pending)
+
+| Part | KaiPath 1.3.13 | LM |
+|------|----------------|-----|
+| `layoutJson.palette` / button `palette` | Honors | Optional emit |
+| `portraitFrame` with `playerModel` | Honors | Optional emit |
+| `sound` / `buttonSkin` / `frame` | Honors | Optional emit |
+| `inputsJson` `type=paged_book` | Honors (`BookWidget`) | Optional emit |
 
 ## Not bridge gaps (LM-only, already shipped)
 
@@ -48,32 +65,37 @@ missingShipped=none pendingNext=[headerBottom, accent]
 | Emit `playerModel.parts` schema 1 | **Done** |
 | Emit `layoutJson.headerBottom` | **Done** (4.6.149) |
 | Emit `layoutJson.accent` / button `accent` | **Done** (4.6.149) |
-| Track pending in `UltraClientFeatures.PENDING_NEXT` | **Done** (4.6.151) — `headerBottom`, `accent` |
+| Emit button `footer:true` | **Done** (4.6.152) |
+| Track pending in `UltraClientFeatures.PENDING_NEXT` | **Done** (4.6.153) — `fixedFooter` only |
+| Recommend KaiPath **1.3.13** | **Done** (4.6.153) |
 | `inputsJson` `slider` / `toggle` | **Deferred** |
 
 ## JLDK / KaiPath (client) checklist
 
-Vendored / live jar: `mods/kaipath-1.3.9.jar`. Reference kit: [`tools/ultra-gui-kit/kaipath-client/`](../tools/ultra-gui-kit/kaipath-client/).
+Vendored / live jar: `mods/kaipath-1.3.13.jar`. Reference kit: [`tools/ultra-gui-kit/kaipath-client/`](../tools/ultra-gui-kit/kaipath-client/).
 
-| Item | 1.3.9 | Next KaiPath |
-|------|-------|---------------|
+| Item | 1.3.13 | Next KaiPath |
+|------|--------|---------------|
 | Button `style` | **Done** | — |
-| `activeTab` | **Done** (yellow) | Tint from `accent` |
+| `activeTab` | **Done** (accent tint) | — |
 | `titleAlign` | **Done** | — |
 | `playerModel` | **Done** | — |
 | `textInput` | **Done** | — |
-| Advertise 5 features | **Done** | Add `headerBottom`, `accent` |
-| Honor `headerBottom` | **Needed** | Title+divider above Y |
-| Honor `accent` | **Needed** | Title / activeTab / hub tint |
+| `headerBottom` | **Done** | — |
+| `accent` / palette chrome | **Done** | — |
+| Advertise shipped set | **Done** | Add `fixedFooter` |
+| Honor `footer:true` / `fixedFooter` | **Needed** | Pin footer buttons |
 | Title vertical center | **Needed** | No new field |
 | `slider` / `toggle` widgets | N/A | When LM ships types |
 
-### Advertise when headerBottom + accent ship
+### Advertise when fixedFooter ships
 
 ```java
 UltraGuiConsumerRegistry.advertiseFeatures(
     "legacymechanics:gui",
-    "[\"style\",\"activeTab\",\"titleAlign\",\"playerModel\",\"textInput\",\"headerBottom\",\"accent\"]");
+    "[\"style\",\"activeTab\",\"titleAlign\",\"playerModel\",\"textInput\","
+        + "\"headerBottom\",\"accent\",\"palette\",\"sound\",\"buttonSkin\","
+        + "\"frame\",\"pagedBook\",\"fixedFooter\",\"combined.forms.v1\"]");
 ```
 
 ## Practical pitfalls
@@ -84,7 +106,7 @@ Pre-1.3.9 KaiPath ignores field 11. LM Weights / Config pages show an explicit d
 
 ### 2. UTF-8 mojibake / tab ellipsis
 
-LM Ultra copy prefers ASCII. Pre-fit labels with ASCII `...` so stock KaiPath `fitLabel` never appends mojibaked ellipsis. JLDK: change client `fitLabel` to ASCII `...`.
+LM Ultra copy prefers ASCII. Pre-fit labels with ASCII `...` so stock KaiPath `fitLabel` never appends mojibaked ellipsis. JLDK: change client `fitLabel` to ASCII `...` (present on 1.3.13).
 
 ### 3. Player model custom parts
 
@@ -92,7 +114,7 @@ LM Ultra copy prefers ASCII. Pre-fit labels with ASCII `...` so stock KaiPath `f
 
 ### 4. Pending vs shipped diagnostics
 
-Missing `SHIPPED_ON_RECOMMENDED` → warn (wrong/old jar). Missing `PENDING_NEXT` → info (`pendingNext=` in guitest). Do not treat 1.3.9 as broken for headerBottom/accent until a newer KaiPath advertises them.
+Missing `SHIPPED_ON_RECOMMENDED` → warn (wrong/old jar). Missing `PENDING_NEXT` → info (`pendingNext=` in guitest). On **1.3.13**, only `fixedFooter` is pending; pre-1.3.13 clients missing `headerBottom`/`accent` warn as shipped gaps.
 
 ### 5. Slider / toggle types are deferred
 
