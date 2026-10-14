@@ -1,6 +1,6 @@
 # Ultra bridge gap matrix (LM ↔ KaiPath)
 
-**LM 4.6.143** + **KaiPath 1.3.9** (live / recommended). Official KaiPath updates are owned by the KaiPath mod developer.
+**LM 4.6.148** + **KaiPath 1.3.9** (live / recommended). Official KaiPath updates are owned by the KaiPath mod developer.
 
 ## Still missing on KaiPath 1.3.9
 
@@ -67,6 +67,19 @@ client `fitLabel` to append ASCII `...` instead.
 ### 5. Slider / toggle types are deferred
 
 Booleans stay styled buttons; numbers stay text + ± steppers.
+
+### 6. Hub / header layout (JLDK — screenshot follow-ups)
+
+LM sends correct button `style` roles (hub tiles `normal`, Staff Admin `danger`,
+active tab `confirm`, inactive tab `dim`). These layout issues are client-side:
+
+1. **Compact main hub** — large empty band below Staff Admin; tighten vertical
+   spacing so the panel does not feel hollow when there are few tile rows.
+2. **Tabs below the yellow divider** — Difficulty (and other system) tab buttons
+   currently sit on/above the yellow header line; render the tab row below it.
+3. **Title vertically centered between the gears** — system titles (e.g.
+   "Difficulty") sit too high against the top edge; center them in the header
+   band between the gear icons.
 
 ## Reserved (later): `inputsJson` slider / toggle
 

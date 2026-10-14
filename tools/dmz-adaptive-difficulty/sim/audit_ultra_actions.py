@@ -750,9 +750,27 @@ def main() -> int:
     if "print status" in spar:
         errors.append('UltraSparScreens admin must say "show status" not "print status"')
     hub = (ULTRA / "UltraHubScreens.java").read_text(encoding="utf-8")
-    admin_tile = re.search(r'HubTile\("admin",[^\n]+', hub)
-    if admin_tile and "STYLE_DANGER" in admin_tile.group(0):
-        errors.append("UltraHubScreens Staff Admin tile must use normal/dim style (not danger)")
+    admin_tile = re.search(r'new HubTile\(\s*"admin"[\s\S]*?true\)', hub)
+    if not admin_tile or "STYLE_DANGER" not in admin_tile.group(0):
+        errors.append("UltraHubScreens Staff Admin tile must use STYLE_DANGER (red)")
+    # Hub: yellow/confirm means selected — nothing is selected on the hub.
+    open_main = hub.split("private static void openMain", 1)[-1].split(
+        "private static void openAdmin", 1
+    )[0]
+    for system in ("difficulty", "skillcheck", "skills", "character", "rival", "spar", "prestige"):
+        tile = re.search(rf'new HubTile\(\s*"{system}"[\s\S]*?true\)', open_main)
+        if not tile:
+            tile = re.search(rf'new HubTile\(\s*"{system}"[\s\S]*?false\)', open_main)
+        if tile and "STYLE_CONFIRM" in tile.group(0):
+            errors.append(
+                f'UltraHubScreens "{system}" tile must not use STYLE_CONFIRM on the hub'
+            )
+    # Tab styles: active=confirm, inactive=dim, staff/admin=danger.
+    spec_src = (ULTRA / "UltraScreenSpec.java").read_text(encoding="utf-8")
+    if "tabStyle(" not in spec_src or "staffOnly()" not in spec_src:
+        errors.append("UltraScreenSpec must style staff tabs danger via tabStyle/staffOnly")
+    if "STYLE_CONFIRM" not in spec_src or "STYLE_DIM" not in spec_src:
+        errors.append("UltraScreenSpec tab styles must keep confirm (active) and dim (inactive)")
     # Rival Challenge/Actions Accept+Decline must stack (same misclick risk as spar mentor/dojo).
     if re.search(
         r'buttonLeft\("do:challenge:accept"[^\n]*\n[^\n]*buttonRight\("do:challenge:decline"',

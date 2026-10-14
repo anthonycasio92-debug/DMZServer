@@ -134,7 +134,8 @@ public final class UltraRivalScreens {
                     .rowGap();
         }
         if (StaffAccess.isStaff(player)) {
-            spec.buttonLeft("page:admin", UltraStyle.dim("Staff Admin"), "dim").rowGap();
+            spec.buttonLeft("page:admin", UltraStyle.danger("Staff Admin"), UltraStyle.STYLE_DANGER)
+                    .rowGap();
         }
         spec.footerBackHome();
         spec.send(player);

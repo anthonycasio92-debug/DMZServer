@@ -1,6 +1,6 @@
 # JLDK brief — KaiPath Ultra GUI client conformance
 
-**Status (LM 4.6.143 + KaiPath 1.3.9):** Live KaiPath **1.3.9** honors `style`, `activeTab`,
+**Status (LM 4.6.148 + KaiPath 1.3.9):** Live KaiPath **1.3.9** honors `style`, `activeTab`,
 `titleAlign`, `playerModel`, and **`textInput`** (GuiOpen field 11 / EditBox / `bindInput`).
 Weights shop typed entry is unblocked.
 
@@ -46,6 +46,17 @@ UltraGuiConsumerRegistry.advertiseFeatures(
 
 - `inputsJson` types `slider` / `toggle` — reserved in [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md).
 - Full DMZUltra geo application of `playerModel.parts` beyond the entity preview.
+
+## Layout follow-ups (from hub / Difficulty screenshots)
+
+LM owns button `style` values. KaiPath owns chrome layout:
+
+1. **Compact main hub** — tighten vertical spacing under the last hub tile row
+   (large empty area below Staff Admin).
+2. **Tabs below the yellow divider** — tab row must render under the header
+   gold/yellow line, not on/above it.
+3. **Title vertically centered between the gears** — center the screen title in
+   the header band (not flush to the top edge).
 
 ## Practical pitfalls
 

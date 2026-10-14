@@ -158,6 +158,11 @@ public final class UltraScreenSpec {
         return this;
     }
 
+    /**
+     * Tab row entries as {@code id|Label} or {@code id|Label|style}.
+     * Optional style: {@code danger}/{@code staff} for staff-only tabs (always red);
+     * otherwise active tabs are confirm (yellow) and inactive tabs are dim (dark).
+     */
     public UltraScreenSpec tabs(String... idLabelPairs) {
         tabs.clear();
         if (idLabelPairs == null) {
@@ -167,12 +172,16 @@ public final class UltraScreenSpec {
             if (pair == null || pair.isBlank()) {
                 continue;
             }
-            int bar = pair.indexOf('|');
-            if (bar <= 0) {
-                tabs.add(new Tab(pair, pair));
-            } else {
-                tabs.add(new Tab(pair.substring(0, bar), pair.substring(bar + 1)));
+            String[] parts = pair.split("\\|", -1);
+            String id = parts[0] == null ? "" : parts[0].trim();
+            if (id.isBlank()) {
+                continue;
             }
+            String label = parts.length > 1 && parts[1] != null && !parts[1].isBlank()
+                    ? parts[1].trim()
+                    : id;
+            String styleHint = parts.length > 2 && parts[2] != null ? parts[2].trim() : "";
+            tabs.add(new Tab(id, label, styleHint));
         }
         // Content starts below title + tab button row (under the header line).
         if (!tabs.isEmpty() && nextRow < UltraStyle.CONTENT_ROW_TABS) {
@@ -578,7 +587,8 @@ public final class UltraScreenSpec {
             // Plain + pre-fit: stock KaiPath fitLabel uses a mojibaked ellipsis (A/E glyphs).
             String label =
                     UltraStyle.fitAsciiLabel(tab.label, UltraStyle.labelMaxWidth(tabW));
-            String style = active ? UltraStyle.STYLE_CONFIRM : UltraStyle.STYLE_DIM;
+            // Staff-only tabs stay danger/red. Regular: active=confirm (yellow), inactive=dim.
+            String style = tabStyle(tab, active);
             JsonObject o = new JsonObject();
             o.addProperty("id", qualifyAction("tab:" + tab.id));
             o.addProperty("label", label);
@@ -624,7 +634,28 @@ public final class UltraScreenSpec {
         };
     }
 
-    private record Tab(String id, String label) {}
+    /** Staff/danger tabs always red; else confirm when active, dim when inactive. */
+    private static String tabStyle(Tab tab, boolean active) {
+        if (tab != null && tab.staffOnly()) {
+            return UltraStyle.STYLE_DANGER;
+        }
+        return active ? UltraStyle.STYLE_CONFIRM : UltraStyle.STYLE_DIM;
+    }
+
+    /**
+     * @param styleHint optional {@code danger}/{@code staff} (or blank). Ids {@code admin}/
+     *     {@code staff} are treated as staff-only even without a hint.
+     */
+    private record Tab(String id, String label, String styleHint) {
+        boolean staffOnly() {
+            String hint = styleHint == null ? "" : styleHint.trim().toLowerCase();
+            if ("danger".equals(hint) || "staff".equals(hint)) {
+                return true;
+            }
+            String tid = id == null ? "" : id.trim().toLowerCase();
+            return "admin".equals(tid) || "staff".equals(tid);
+        }
+    }
 
     private record Button(
             String actionId,

@@ -14,6 +14,9 @@ import net.minecraft.server.level.ServerPlayer;
  *
  * <p>Tiles are collected into a list then packed two-up so adding or gating systems
  * automatically grows or shrinks the panel (no fixed empty body band / choose prompt).
+ * Hub tiles use {@link UltraStyle#STYLE_NORMAL} (dark); only Staff Admin uses
+ * {@link UltraStyle#STYLE_DANGER}. Confirm/yellow is reserved for active selection
+ * inside system menus — never on the hub landing.
  */
 public final class UltraHubScreens {
     private UltraHubScreens() {}
@@ -47,25 +50,27 @@ public final class UltraHubScreens {
                 .page("main")
                 .activeTab("home");
 
+        // Hub tiles: normal (dark) for every system. Yellow/confirm means active/selected —
+        // nothing is selected on the hub. Staff Admin is the only danger/red tile.
         List<HubTile> tiles = new ArrayList<>();
-        tiles.add(new HubTile("difficulty", UltraStyle.confirm("Difficulty"), UltraStyle.STYLE_CONFIRM, true));
+        tiles.add(new HubTile("difficulty", "Difficulty", UltraStyle.STYLE_NORMAL, true));
         tiles.add(new HubTile("rival", "Rival", UltraStyle.STYLE_NORMAL, false));
         tiles.add(new HubTile("spar", "Sparring", UltraStyle.STYLE_NORMAL, false));
         tiles.add(new HubTile("prestige", "Prestige", UltraStyle.STYLE_NORMAL, false));
 
         boolean skillCheck = SkillCheckService.canUse(player);
         if (skillCheck) {
-            tiles.add(new HubTile("skillcheck", UltraStyle.confirm("Skill Check"), UltraStyle.STYLE_CONFIRM, true));
+            tiles.add(new HubTile("skillcheck", "Skill Check", UltraStyle.STYLE_NORMAL, true));
         } else if (staff) {
-            tiles.add(new HubTile("skills", UltraStyle.confirm("Skills"), UltraStyle.STYLE_CONFIRM, true));
+            tiles.add(new HubTile("skills", "Skills", UltraStyle.STYLE_NORMAL, true));
         } else {
             // Dim locked tile - still occupies a slot so layout stays predictable.
             tiles.add(new HubTile("skillcheck_denied", UltraStyle.dim("Skill Check"), UltraStyle.STYLE_DIM, true));
         }
-        tiles.add(new HubTile(
-                "character", UltraStyle.confirm("Character Services"), UltraStyle.STYLE_CONFIRM, true));
+        tiles.add(new HubTile("character", "Character Services", UltraStyle.STYLE_NORMAL, true));
         if (staff) {
-            tiles.add(new HubTile("admin", UltraStyle.LABEL + "Staff Admin", UltraStyle.STYLE_NORMAL, true));
+            tiles.add(new HubTile(
+                    "admin", UltraStyle.danger("Staff Admin"), UltraStyle.STYLE_DANGER, true));
         }
 
         placeTiles(spec, ph, tiles);
