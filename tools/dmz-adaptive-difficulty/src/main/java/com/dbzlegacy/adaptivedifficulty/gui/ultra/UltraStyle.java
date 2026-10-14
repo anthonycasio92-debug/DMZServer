@@ -134,18 +134,14 @@ public final class UltraStyle {
     public static final String STYLE_DIM = "dim";
 
     /**
-     * Button click sound (KaiPath {@code sound} wire — registered SoundEvent RL).
-     *
-     * <p>Uses vanilla {@code minecraft:ui.button.click} so click feedback works when the
-     * player has KaiPath but not DMZUltra. KaiPath looks the id up in
-     * {@code BuiltInRegistries.SOUND_EVENT} and no-ops if missing — it never crashes.
+     * Optional button click sound RL. <b>Not emitted</b> on GuiOpen buttons — KaiPath
+     * default click is used. Kept for callers that still pass the constant into Button.
      */
     public static final String SOUND_CONFIRM = "minecraft:ui.button.click";
     /**
-     * Button chrome skin enable token. KaiPath 1.3.13 only checks that the string is a
-     * valid {@code ns:path}; it does <b>not</b> load a texture from that RL. A non-empty
-     * value flips {@code ChromeButton} into tinted outline paint. Namespace is LM's own
-     * so absence of DMZUltra cannot be misread as a missing asset.
+     * Optional button chrome skin enable token. <b>Not emitted</b> — a non-empty
+     * {@code buttonSkin} flips KaiPath into the skinned (flat square) path instead of
+     * default chrome. Constant retained for layout/docs reference only.
      */
     public static final String BUTTON_SKIN = "legacymechanics:button";
     /**
