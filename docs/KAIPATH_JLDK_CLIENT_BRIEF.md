@@ -1,10 +1,11 @@
 # JLDK brief — KaiPath Ultra GUI client conformance
 
-**Status (LM 4.6.154 live + KaiPath 1.3.13):** Client honors style / activeTab / titleAlign /
+**Status (LM 4.6.155 live + KaiPath 1.3.17):** Client honors style / activeTab / titleAlign /
 playerModel / textInput / headerBottom / accent / palette / sound / buttonSkin / frame /
-paged_book. LM emits button **`footer:true`** and **`portraitFrame`**.
+paged_book / **fixedFooter** / **portraitFrame** (advertised). LM emits button **`footer:true`**
+(unchanged wire — matches 1.3.17).
 
-**Open gaps for next KaiPath:** merge kit `fixedFooter` ([`UltraBridgeFooter`](../tools/ultra-gui-kit/kaipath-client/com/dmzlegacy/kaipath/ultra/consumers/legacymechanics/UltraBridgeFooter.java) + [`FIXED_FOOTER.md`](../tools/ultra-gui-kit/kaipath-client/com/dmzlegacy/kaipath/ultra/consumers/legacymechanics/FIXED_FOOTER.md)); advertise `portraitFrame` + `fixedFooter` (kit already does); confirm title vertical centering in the gear-icon band.
+**Open gaps:** confirm title vertical centering in the gear-icon band only.
 
 Full matrix + pitfalls: [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md).
 
@@ -21,7 +22,7 @@ Full matrix + pitfalls: [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md).
 
 The client renders what the server sends — **no hardcoded screen/tab/button/action lists**.
 
-## Confirmed on KaiPath 1.3.13
+## Confirmed on KaiPath 1.3.17
 
 | Feature | Notes |
 |---------|-------|
@@ -35,34 +36,20 @@ The client renders what the server sends — **no hardcoded screen/tab/button/ac
 | `layoutJson.headerBottom` / `tabsUnderTitle` | yes |
 | `layoutJson.accent` + button/tab `accent` | yes (`UltraBridgeChrome`) |
 | `palette` / `sound` / `buttonSkin` / `frame` / `paged_book` | yes |
-| `playerModel.portraitFrame` | paints when present — **not advertised yet** |
+| `playerModel.portraitFrame` | paints + **advertised** |
+| Button `footer:true` / `fixedFooter` | pins + auto spacing + **advertised** |
 | GuiFeaturesPacket | yes — see gap matrix advertise set |
 | Verbatim GuiAction echo | yes |
 | Any `screenId` | yes |
 
-## Open gaps (do these next)
+## Remaining (confirm only)
 
-### 1. Button `footer:true` / `fixedFooter` — **blocking** (kit fix ready)
+### Title vertical centering
 
-LM pins dual footer controls with `"footer": true` on Back + Main menu (or contextual Back).
-**Keep those buttons in fixed chrome** (not in `scrollWidgets`) so they do not scroll with the
-body. Live `contentBottom = panelY + panelH - 28` ignores `footer` — raise the content band via
-`UltraBridgeFooter.contentBottomAbs`. Merge notes:
-[`FIXED_FOOTER.md`](../tools/ultra-gui-kit/kaipath-client/com/dmzlegacy/kaipath/ultra/consumers/legacymechanics/FIXED_FOOTER.md).
+1.3.13+ centers in the header band via `(headerBottom - 2 - 9) / 2`. Confirm alignment
+between the gear icons on all themes. No new protocol field.
 
-Advertise: `"fixedFooter"`.
-
-### 2. Advertise `portraitFrame`
-
-Already painted when `playerModel.portraitFrame` is a valid `ns:path`. Add `"portraitFrame"`
-to GuiFeatures so guitest stops treating it as unsupported. Kit advertise already includes it.
-
-### 3. Title vertical centering — confirm
-
-1.3.13 already centers in the header band via `(headerBottom - 2 - 9) / 2`. Confirm
-alignment between the gear icons on all themes. No new protocol field.
-
-## Advertise (after fixedFooter + portraitFrame)
+## Advertise (1.3.17)
 
 ```java
 UltraGuiConsumerRegistry.advertiseFeatures(
@@ -72,7 +59,7 @@ UltraGuiConsumerRegistry.advertiseFeatures(
         + "\"frame\",\"pagedBook\",\"portraitFrame\",\"fixedFooter\",\"combined.forms.v1\"]");
 ```
 
-LM guitest then moves from `pendingNext=[fixedFooter]` → `pendingNext=none`.
+LM guitest: `missingShipped=none pendingNext=none`.
 
 ## Pitfalls (must-read)
 
@@ -81,7 +68,7 @@ Full list: [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md) § Pitfalls & trap
 1. **Server jar ≠ client** — `mods/kaipath-*.jar` on the dedicated server does not paint Ultra; players need the client mod.
 2. **Chrome RLs are enable tokens** — `buttonSkin` / `frame` / `portraitFrame` do not load textures; missing `sound` is a silent no-op. LM uses `minecraft:ui.button.click` + `legacymechanics:*` so DMZUltra is not required.
 3. **Spelling** — advertise `pagedBook`; widget `type` is `paged_book`.
-4. **Do not add wire fields** for `titleTint` / `contentTop` / `contentBottom` / `contentScroll` — fix footer band on the client via `fixedFooter`.
+4. **Do not add wire fields** for `titleTint` / `contentTop` / `contentBottom` / `contentScroll`.
 5. Keep ASCII `fitLabel` ellipsis (`...`).
 
 ## Deferred (not blocking)

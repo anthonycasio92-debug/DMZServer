@@ -1,46 +1,34 @@
 # Ultra bridge gap matrix (LM ↔ KaiPath)
 
-**LM 4.6.154** (live) + **KaiPath 1.3.13** (live / recommended). Official KaiPath updates are owned by the KaiPath mod developer.
+**LM 4.6.155** (live) + **KaiPath 1.3.17** (recommended). Official KaiPath updates are owned by the KaiPath mod developer.
 
-**At a glance — KaiPath next:** (1) merge kit `fixedFooter` (`UltraBridgeFooter` + [`FIXED_FOOTER.md`](../tools/ultra-gui-kit/kaipath-client/com/dmzlegacy/kaipath/ultra/consumers/legacymechanics/FIXED_FOOTER.md)), (2) advertise `portraitFrame` + `fixedFooter`, (3) read § Pitfalls before release. JLDK one-pager: [`KAIPATH_JLDK_CLIENT_BRIEF.md`](KAIPATH_JLDK_CLIENT_BRIEF.md).
+**At a glance:** Bridge chrome gaps closed on **1.3.17** — `fixedFooter` pins `footer:true`; `portraitFrame` is advertised. LM wire already matched (`footer:true`); guitest tracks `FEATURE_FIXED_FOOTER` as shipped. JLDK one-pager: [`KAIPATH_JLDK_CLIENT_BRIEF.md`](KAIPATH_JLDK_CLIENT_BRIEF.md).
 
-Pulled live jar: `mods/kaipath-1.3.13.jar`. Advertise set:
+Advertise set (1.3.17):
 
 ```text
 style, activeTab, titleAlign, playerModel, textInput, headerBottom, accent,
-palette, sound, buttonSkin, frame, pagedBook, combined.forms.v1
+palette, sound, buttonSkin, frame, pagedBook, portraitFrame, fixedFooter, combined.forms.v1
 ```
 
 ## Open bridge gaps (KaiPath next)
 
-| Gap | Owner | LM status | KaiPath 1.3.13 | Notes |
-|-----|-------|-----------|-----------------|-------|
-| **`button footer:true` / `fixedFooter`** | **JLDK** | **Emits** (4.6.152+) | **Missing on live** | Pin Back + Main menu in fixed chrome (out of `scrollWidgets`). Live `contentBottom = panelY + panelH - 28` ignores `footer`. **Kit fix ready:** `UltraBridgeFooter` + `FIXED_FOOTER.md`. Advertise: `fixedFooter`. |
-| **Advertise `portraitFrame`** | **JLDK** | **Emits** when `playerModel` present | Honors but **not advertised** | Guitest treats missing advertise as unsupported even though paint works. **Kit already advertises** `portraitFrame`. |
-| **Title vertical centering** | **JLDK-only** | N/A (no field) | Partial | 1.3.13 already centers vertically in the header band via `(headerBottom - 2 - 9) / 2`. Confirm gear-icon band alignment on all themes. |
+| Gap | Owner | LM status | KaiPath 1.3.17 | Notes |
+|-----|-------|-----------|---------------|-------|
+| **Title vertical centering** | **JLDK-only** | N/A (no field) | Confirm | Centers via `(headerBottom - 2 - 9) / 2`. Confirm gear-icon band alignment on all themes. No protocol field. |
 
-`/lm admin guitest` on KaiPath **1.3.13** + LM **4.6.154**:
+`/lm admin guitest` on KaiPath **1.3.17**:
 
 ```text
-missingShipped=none pendingNext=[fixedFooter]
+missingShipped=none pendingNext=none
 ```
 
-## KaiPath handoff checklist (do these)
+## Closed on KaiPath 1.3.17
 
-1. **Merge kit `fixedFooter`** — copy [`UltraBridgeFooter`](../tools/ultra-gui-kit/kaipath-client/com/dmzlegacy/kaipath/ultra/consumers/legacymechanics/UltraBridgeFooter.java) + apply [`FIXED_FOOTER.md`](../tools/ultra-gui-kit/kaipath-client/com/dmzlegacy/kaipath/ultra/consumers/legacymechanics/FIXED_FOOTER.md) to the live scroll-clipped `LmDynamicScreen`. Footer buttons stay out of `scrollWidgets`; `contentBottom` uses footer band height (not hard-coded `panelH - 28`).
-2. **Advertise `portraitFrame` + `fixedFooter`** (kit `ADVERTISED_FEATURES_JSON` already has both).
-3. Keep advertise camelCase **`pagedBook`**; wire widget type stays snake_case **`paged_book`**.
-4. Re-read § Pitfalls before cutting the release.
-
-### Advertise when fixedFooter + portraitFrame ship
-
-```java
-UltraGuiConsumerRegistry.advertiseFeatures(
-    "legacymechanics:gui",
-    "[\"style\",\"activeTab\",\"titleAlign\",\"playerModel\",\"textInput\","
-        + "\"headerBottom\",\"accent\",\"palette\",\"sound\",\"buttonSkin\","
-        + "\"frame\",\"pagedBook\",\"portraitFrame\",\"fixedFooter\",\"combined.forms.v1\"]");
-```
+| Gap | Notes |
+|-----|-------|
+| **`fixedFooter`** | Client pins `footer:true` buttons; auto spacing. LM emission unchanged. |
+| **Advertise `portraitFrame`** | Was painted but not advertised on 1.3.13 — now advertised. |
 
 ## Closed on both sides (not gaps)
 
@@ -54,34 +42,36 @@ UltraGuiConsumerRegistry.advertiseFeatures(
 | `textInput` / EditBox / `bindInput` → `args.value` | **Done** (1.3.9+) |
 | `layoutJson.headerBottom` / `tabsUnderTitle` | **Done** (1.3.13) |
 | `layoutJson.accent` + button/tab `accent` | **Done** (1.3.13 via `UltraBridgeChrome`) |
-| GuiFeaturesPacket advertise | **Done** on 1.3.13 (12+ tokens incl. chrome extras) |
-| `sound` / `buttonSkin` / `frame` / `paged_book` | **Done** (client 1.3.13 + LM 4.6.154 emit) |
+| GuiFeaturesPacket advertise | **Done** on 1.3.17 (incl. `portraitFrame` + `fixedFooter`) |
+| `sound` / `buttonSkin` / `frame` / `paged_book` | **Done** (client 1.3.13+ + LM 4.6.155 emit) |
+| `footer:true` / `fixedFooter` | **Done** (client 1.3.17 + LM emit 4.6.152+) |
+| `playerModel.portraitFrame` advertise | **Done** (1.3.17) |
 
-## Optional chrome (emitted by LM 4.6.154; not tracked as pending)
+## Optional chrome (emitted by LM 4.6.155; not tracked as pending)
 
-| Part | KaiPath 1.3.13 | LM 4.6.154 |
-|------|----------------|------------|
+| Part | KaiPath 1.3.17 | LM 4.6.155 |
+|------|---------------|------------|
 | `sound` (`minecraft:ui.button.click`) | Honors (missing → silent) | **Emits** on buttons/tabs |
 | `buttonSkin` (`legacymechanics:button`) | Honors (RL → boolean paint) | **Emits** on buttons/tabs |
 | `layoutJson.frame` (`legacymechanics:panel`) | Honors (RL → boolean border) | **Emits** |
 | `inputsJson` `type=paged_book` (advertise `pagedBook`) | Honors (`BookWidget`) | **Emits** (Staff Admin help book) |
-| `playerModel.portraitFrame` | Honors (**not advertised** — JLDK) | **Emits** when playerModel present |
+| `playerModel.portraitFrame` | Honors + **advertised** | **Emits** when playerModel present |
 | `layoutJson.palette` | Honors | Optional (accent already covers tint) |
 
 ## Pitfalls & traps (read before KaiPath release)
 
 ### 1. Server jar ≠ client render
 
-`mods/kaipath-*.jar` on the **dedicated server** does nothing for Ultra painting. Players need the KaiPath **client** mod. Do not treat “server has 1.3.13” as “players have 1.3.13.”
+`mods/kaipath-*.jar` on the **dedicated server** does nothing for Ultra painting. Players need the KaiPath **client** mod. Do not treat “server has 1.3.17” as “players have 1.3.17.”
 
 ### 2. DMZUltra-absent chrome RLs
 
-`sound` / `buttonSkin` / `frame` / `portraitFrame` look like asset ids. On 1.3.13:
+`sound` / `buttonSkin` / `frame` / `portraitFrame` look like asset ids. On 1.3.13+:
 
 - `sound` → registry Optional; missing SoundEvent → **silent no-op** (no crash)
 - skin / frame / portraitFrame → `UltraBridgeChrome.id` only validates `ns:path`; result is a **boolean** that enables GuiGraphics tint paint — **no texture bind**
 
-LM 4.6.154 uses `minecraft:ui.button.click` + `legacymechanics:*` enable tokens so KaiPath-only clients stay healthy.
+LM 4.6.155 uses `minecraft:ui.button.click` + `legacymechanics:*` enable tokens so KaiPath-only clients stay healthy.
 
 ### 3. `pagedBook` vs `paged_book`
 
@@ -92,9 +82,9 @@ LM 4.6.154 uses `minecraft:ui.button.click` + `legacymechanics:*` enable tokens 
 
 Mismatched type string → book widget never mounts.
 
-### 4. `contentBottom` hard-code fights dual footer
+### 4. `contentBottom` / fixedFooter
 
-1.3.13 sets `contentBottom = panelY + panelH - 28` and ignores `footer:true`. LM dual footer (Back + Main menu) scrolls with the body until `fixedFooter` lands. Do **not** invent server `contentTop`/`contentBottom`/`contentScroll` wire fields — fix the client band.
+Pre-1.3.17 hard-coded `contentBottom = panelY + panelH - 28` and ignored `footer:true`. **1.3.17** pins footer buttons and auto-calculates spacing. Do **not** invent server `contentTop`/`contentBottom`/`contentScroll` wire fields.
 
 ### 5. `titleTint` is not a wire field
 
@@ -102,11 +92,11 @@ Client derives title color from `palette` / `accent`. LM already sends those. Do
 
 ### 6. UTF-8 mojibake / tab ellipsis
 
-LM Ultra copy prefers ASCII. Pre-fit labels with ASCII `...`. Stock KaiPath `fitLabel` on 1.3.13 uses ASCII `...` — keep it that way.
+LM Ultra copy prefers ASCII. Pre-fit labels with ASCII `...`. Stock KaiPath `fitLabel` uses ASCII `...` — keep it that way.
 
 ### 7. Pending vs shipped diagnostics
 
-Missing `SHIPPED_ON_RECOMMENDED` → warn (wrong/old jar). Missing `PENDING_NEXT` → info (`pendingNext=`). On **1.3.13** + LM **4.6.154**, only `fixedFooter` is pending.
+Missing `SHIPPED_ON_RECOMMENDED` → warn (wrong/old jar). Missing `PENDING_NEXT` → info (`pendingNext=`). On **1.3.17**, `pendingNext=none` (`FEATURE_FIXED_FOOTER` is shipped).
 
 ### 8. Older clients without textInput
 
@@ -128,7 +118,7 @@ Booleans stay styled buttons; numbers stay text + ± steppers. Not a KaiPath blo
 | Hub compact floor | `PANEL_COMPACT_MIN_H=150` for tile-only menus |
 | Active-tab style | LM sends `style=normal` + `accent` |
 | Main hub title gold | Hub omits `layoutJson.accent` (shared chrome) |
-| Prestige GoD / Supreme Kai soft warn | Ultra + chat paths (4.6.154) |
+| Prestige GoD / Supreme Kai soft warn | Ultra + chat paths (4.6.155) |
 
 ## Cursor / LM (server) checklist
 
@@ -139,32 +129,29 @@ Booleans stay styled buttons; numbers stay text + ± steppers. Not a KaiPath blo
 | Emit `playerModel.parts` schema 1 | **Done** |
 | Emit `layoutJson.headerBottom` | **Done** |
 | Emit `layoutJson.accent` / button `accent` | **Done** |
-| Emit button `footer:true` | **Done** (4.6.152) |
-| Emit sound / buttonSkin / frame / paged_book | **Done** (4.6.154) |
-| Chrome defaults safe without DMZUltra | **Done** (4.6.154) |
-| Track pending `fixedFooter` only | **Done** |
-| Recommend KaiPath **1.3.13** | **Done** |
+| Emit button `footer:true` | **Done** (4.6.152) — matches 1.3.17 |
+| Emit sound / buttonSkin / frame / paged_book | **Done** (4.6.155) |
+| Chrome defaults safe without DMZUltra | **Done** (4.6.155) |
+| Track `FEATURE_FIXED_FOOTER` as shipped on 1.3.17 | **Done** |
+| Recommend KaiPath **1.3.17** | **Done** |
 | `inputsJson` `slider` / `toggle` | **Deferred** |
 
 ## JLDK / KaiPath (client) checklist
 
-Vendored / live jar: `mods/kaipath-1.3.13.jar`. Reference kit: [`tools/ultra-gui-kit/kaipath-client/`](../tools/ultra-gui-kit/kaipath-client/).
-
-| Item | 1.3.13 | Next KaiPath |
-|------|--------|---------------|
-| Button `style` | **Done** | — |
-| `activeTab` | **Done** (accent tint) | — |
-| `titleAlign` | **Done** | — |
-| `playerModel` | **Done** | — |
-| `textInput` | **Done** | — |
-| `headerBottom` | **Done** | — |
-| `accent` / palette chrome | **Done** | — |
-| `sound` / `buttonSkin` / `frame` / `paged_book` | **Done** | — |
-| Advertise shipped set | **Done** | Add `fixedFooter`, `portraitFrame` (kit ready) |
-| Honor `footer:true` / `fixedFooter` | **Needed on live** | Kit: `UltraBridgeFooter` + `FIXED_FOOTER.md` |
-| Advertise `portraitFrame` | **Needed on live** | Already paints; kit advertises |
-| Title vertical center | Confirm | Gear-band alignment |
-| `slider` / `toggle` widgets | N/A | When LM ships types |
+| Item | 1.3.17 |
+|------|--------|
+| Button `style` | **Done** |
+| `activeTab` | **Done** (accent tint) |
+| `titleAlign` | **Done** |
+| `playerModel` | **Done** |
+| `textInput` | **Done** |
+| `headerBottom` | **Done** |
+| `accent` / palette chrome | **Done** |
+| `sound` / `buttonSkin` / `frame` / `paged_book` | **Done** |
+| Advertise `portraitFrame` + `fixedFooter` | **Done** |
+| Honor `footer:true` / `fixedFooter` | **Done** |
+| Title vertical center | Confirm gear-band alignment |
+| `slider` / `toggle` widgets | When LM ships types |
 
 ## Reserved (later): `inputsJson` slider / toggle
 
