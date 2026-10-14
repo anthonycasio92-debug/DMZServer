@@ -319,19 +319,15 @@ public final class UltraScreenSpec {
     }
 
     /**
-     * System-home footer: left {@code Back to main menu} ({@code nav:hub}). Pinned at the
-     * panel bottom ({@code footer:true}) — not in the scrollable body.
+     * Tabbed system-page footer: right {@code Main menu} only ({@code nav:hub}). Tabs are the
+     * in-system navigation — no left {@code Back to …}. Pinned ({@code footer:true}).
      */
     public UltraScreenSpec footerBackToMain() {
-        return placeFooter(
-                "nav:hub",
-                UltraStyle.BACK_TO_MAIN,
-                null,
-                null);
+        return placeFooter(null, null, "nav:hub", UltraStyle.MAIN_MENU);
     }
 
     /**
-     * Sub-page footer: left {@code Back to {destination}} ({@code nav:home}) + right
+     * Sub-page footer (no tab row): left {@code Back to {destination}} ({@code nav:home}) + right
      * {@code Main menu} ({@code nav:hub}). Both pinned ({@code footer:true}).
      *
      * @param destination plain words naming where left goes (e.g. {@code Rival Home}, {@code Shop})
@@ -345,7 +341,7 @@ public final class UltraScreenSpec {
     }
 
     /**
-     * Nested footer: left {@code Back to {destination}} ({@code backActionId}) + right
+     * Nested sub-page footer (no tab row): left {@code Back to {destination}} + right
      * {@code Main menu}. Use when the parent is not the system home tab.
      */
     public UltraScreenSpec footerBack(String backActionId, String destination) {
@@ -365,7 +361,9 @@ public final class UltraScreenSpec {
     private UltraScreenSpec placeFooter(
             String leftActionId, String leftLabel, String rightActionId, String rightLabel) {
         // Footer Y is resolved in toPacket against final panel height; placeholder 0.
-        addFooterButton(leftActionId, leftLabel, UltraStyle.COL_L);
+        if (leftActionId != null && !leftActionId.isBlank()) {
+            addFooterButton(leftActionId, leftLabel, UltraStyle.COL_L);
+        }
         if (rightActionId != null && !rightActionId.isBlank()) {
             addFooterButton(rightActionId, rightLabel, UltraStyle.COL_R);
         }

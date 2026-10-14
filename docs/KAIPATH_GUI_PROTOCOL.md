@@ -111,9 +111,10 @@ Pinned footer pair (every non-hub page):
 ]
 ```
 
-Advertise: `fixedFooter` (shipped on KaiPath **1.3.17**). System home tabs emit left-only
-`Back to main menu` (`nav:hub`); sub-pages emit contextual `Back to {destination}`
-(left) + `Main menu` (right). Never say "Hub" in player-facing labels.
+Advertise: `fixedFooter` (shipped on KaiPath **1.3.17**). Tabbed system pages emit
+right-only `Main menu` (`nav:hub` — tabs are in-system nav). Sub-pages (no tab row) emit
+contextual `Back to {destination}` (left) + `Main menu` (right). Never say "Hub" in
+player-facing labels.
 
 #### `style` values (client must implement)
 

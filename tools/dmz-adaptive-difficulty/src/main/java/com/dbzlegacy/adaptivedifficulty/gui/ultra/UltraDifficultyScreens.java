@@ -108,6 +108,14 @@ public final class UltraDifficultyScreens {
                 .tabs("home|Home", "tiers|Tiers", "summons|Summons");
     }
 
+    /** Subpage: no tab row — dual footer (Back + Main menu). */
+    private static UltraScreenSpec sub(String page) {
+        return UltraScreenSpec.of("difficulty")
+                .title("Difficulty")
+                .page(page);
+    }
+
+
     /** Overview - where you stand, titles, rival teams, coins. Not a copy of Tiers/Summons. */
     private static void openHome(ServerPlayer player) {
         DifficultySnapshot snap = DifficultyCache.refresh(player);
@@ -166,7 +174,7 @@ public final class UltraDifficultyScreens {
                     .setRow(UltraStyle.CONTENT_ROW_TABS + 90);
             spec.buttonLeft("do:toggle_personal", UltraStyle.confirm("Turn personal ON"), "confirm")
                     .rowGap();
-            spec.footerBackHome("Difficulty Home");
+            spec.footerBackToMain();
             spec.send(player);
             return;
         }
@@ -209,7 +217,7 @@ public final class UltraDifficultyScreens {
                                 : UltraStyle.dim("Personal difficulty - OFF"),
                         data.isPersonalEnabled() ? "confirm" : "dim")
                 .rowGap();
-        spec.footerBackHome("Difficulty Home");
+        spec.footerBackToMain();
         spec.send(player);
     }
 
@@ -262,7 +270,7 @@ public final class UltraDifficultyScreens {
             spec.buttonLeft("do:toggle_personal", UltraStyle.confirm("Turn personal ON"), "confirm")
                     .rowGap();
         }
-        spec.footerBackHome("Difficulty Home");
+        spec.footerBackToMain();
         spec.send(player);
     }
 
@@ -281,7 +289,7 @@ public final class UltraDifficultyScreens {
                 .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
         spec.buttonLeft("page:end_dragon", UltraStyle.confirm("Summon End Dragon"), "confirm")
                 .rowGap();
-        spec.footerBackHome("Difficulty Home");
+        spec.footerBackToMain();
         spec.send(player);
     }
 
@@ -291,14 +299,14 @@ public final class UltraDifficultyScreens {
         String cost = free
                 ? "Free for staff"
                 : AncientCoinEconomy.formatExactCost(EndDimensionStrength.summonCopperCost());
-        UltraScreenSpec spec = base("end_dragon", "summons")
+        UltraScreenSpec spec = sub("end_dragon")
                 .line(UltraStyle.LABEL + "End Dragon")
                 .labelValue("Cost", cost)
                 .labelValue("Status", ready ? "Ready" : "Requirements not met");
         for (String line : summonStatusLines(player, ready)) {
             spec.line(line);
         }
-        spec.setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
+        spec.setRow(UltraStyle.CONTENT_ROW + UltraStyle.BODY_MIN_H);
         if (ready) {
             spec.button("do:summon_end_dragon", UltraStyle.confirm("Confirm summon"), "confirm").rowGap();
         } else {
@@ -377,14 +385,14 @@ public final class UltraDifficultyScreens {
             return;
         }
         TeamMode mode = data.getTeamMode();
-        UltraScreenSpec spec = base("team", "home")
+        UltraScreenSpec spec = sub("team")
                 .line(UltraStyle.LABEL + "How rival teams affect scaling");
         for (String line : DifficultyTeamGuiApi.linesForPage(player, "team")) {
             if (line != null && !line.isBlank()) {
                 spec.line(line);
             }
         }
-        spec.setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
+        spec.setRow(UltraStyle.CONTENT_ROW + UltraStyle.BODY_MIN_H);
         spec.buttonLeft(
                         "do:mode:personal",
                         mode == TeamMode.PERSONAL_ONLY
@@ -421,12 +429,12 @@ public final class UltraDifficultyScreens {
         int pages = Math.max(1, (all.length + pageSize - 1) / pageSize);
         int page = Math.min(pages - 1, Math.max(0, pageIndex));
         String active = TitleSystem.activeId(player);
-        UltraScreenSpec spec = base("titles_p" + page, "home")
+        UltraScreenSpec spec = sub("titles_p" + page)
                 .labelValue("Equipped", blank(TitleSystem.activeDisplay(player)))
                 .labelValue("Title score", String.valueOf(TitleSystem.computeTitleScore(player)))
                 .line(UltraStyle.LABEL + "Equip a title you have unlocked.")
                 .labelValue("Titles page", (page + 1) + "/" + pages)
-                .setRow(UltraStyle.CONTENT_ROW_TABS + 80);
+                .setRow(UltraStyle.CONTENT_ROW + 80);
         int from = page * pageSize;
         int placed = 0;
         for (int i = from; i < all.length && placed < pageSize; i++) {
@@ -488,10 +496,10 @@ public final class UltraDifficultyScreens {
 
     private static void openTitleDetail(ServerPlayer player, String titleIdRaw) {
         DifficultyTitle title = DifficultyTitle.byId(titleIdRaw);
-        UltraScreenSpec spec = base("title_detail:" + (titleIdRaw == null ? "" : titleIdRaw), "home");
+        UltraScreenSpec spec = sub("title_detail:" + (titleIdRaw == null ? "" : titleIdRaw));
         if (title == null) {
             spec.line(UltraStyle.dim("Couldn't find that - try refreshing the list."))
-                    .setRow(UltraStyle.CONTENT_ROW_TABS + 80);
+                    .setRow(UltraStyle.CONTENT_ROW + 80);
             spec.footerBack("page:titles_p0", "Titles");
             spec.send(player);
             return;
@@ -509,7 +517,7 @@ public final class UltraDifficultyScreens {
                 .line(UltraStyle.LABEL + "Bonus when worn " + UltraStyle.VALUE
                         + UltraStyle.plain(title.perkTip(mastery)))
                 .labelValue("Title score", "+" + title.scorePoints)
-                .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
+                .setRow(UltraStyle.CONTENT_ROW + UltraStyle.BODY_MIN_H);
         if (earned && !equipped) {
             spec.buttonLeft("do:equip_title:" + title.id, UltraStyle.confirm("Equip this title"), "confirm")
                     .rowGap();
@@ -546,13 +554,13 @@ public final class UltraDifficultyScreens {
     private static void openSettings(ServerPlayer player) {
         PlayerDifficultyData data = DifficultyCache.data(player);
         boolean coinChat = data != null && data.isCoinDropChat();
-        UltraScreenSpec spec = base("settings", "home")
+        UltraScreenSpec spec = sub("settings")
                 .line(UltraStyle.LABEL + "Ancient Coin settings")
                 .labelValue("Ancient Coins", AncientCoinEconomy.inventoryBreakdown(player))
                 .line(UltraStyle.LABEL + "Coin drop messages in chat.")
                 .labelValue("Coin messages", coinChat ? "On" : "Off")
                 .line(UltraStyle.DIM + "Earn coins from scaled kills and tier play.")
-                .setRow(UltraStyle.CONTENT_ROW_TABS + 90);
+                .setRow(UltraStyle.CONTENT_ROW + 90);
         spec.button(
                         "do:toggle_coin_chat",
                         coinChat
@@ -573,7 +581,7 @@ public final class UltraDifficultyScreens {
         Map<String, String> ph = new HashMap<>();
         LmOverhaulScaledCombat.putPlaceholders(ph, player);
         long cr = snap == null ? 0L : (snap.combatRating > 0 ? snap.combatRating : snap.calculated);
-        UltraScreenSpec spec = base("stats", "home")
+        UltraScreenSpec spec = sub("stats")
                 .line(UltraStyle.LABEL + "Combat rating and scaled stats")
                 .labelValue(
                         "Tier",
@@ -608,7 +616,7 @@ public final class UltraDifficultyScreens {
                                 + (profile.style == null ? "HYBRID" : profile.style.name()))
                 .labelValue("Top stats", blank(profile.topStatsLabel()))
                 .labelValue("Ancient Coins", AncientCoinEconomy.inventoryBreakdown(player))
-                .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
+                .setRow(UltraStyle.CONTENT_ROW + UltraStyle.BODY_MIN_H);
         spec.footerBackHome("Difficulty Home");
         spec.send(player);
     }
@@ -618,10 +626,10 @@ public final class UltraDifficultyScreens {
             openHome(player);
             return;
         }
-        UltraScreenSpec spec = base("admin", "home")
+        UltraScreenSpec spec = sub("admin")
                 .line(UltraStyle.LABEL + "Server tools - typed admin: /difficulty admin")
                 .line(UltraStyle.DIM + "Reload config, event log, and LM Staff Admin hub")
-                .setRow(UltraStyle.CONTENT_ROW_TABS + 90);
+                .setRow(UltraStyle.CONTENT_ROW + 90);
         spec.buttonLeft("do:reload", UltraStyle.confirm("Reload LM config"), "confirm")
                 .buttonRight("page:stats", UltraStyle.dim("Staff details"), "dim")
                 .rowGap();
@@ -637,10 +645,10 @@ public final class UltraDifficultyScreens {
             openHome(player);
             return;
         }
-        UltraScreenSpec spec = base("eventlog", "home")
+        UltraScreenSpec spec = sub("eventlog")
                 .line(UltraStyle.LABEL + "Unified system event log")
                 .line(UltraStyle.DIM + "Use the toggles, or typed: /lm admin syslog ...")
-                .setRow(UltraStyle.CONTENT_ROW_TABS + 90);
+                .setRow(UltraStyle.CONTENT_ROW + 90);
         spec.buttonLeft("do:syslog:status", UltraStyle.confirm("Status"), "confirm")
                 .buttonRight("do:syslog:on", UltraStyle.confirm("Turn ON"), "confirm")
                 .rowGap();

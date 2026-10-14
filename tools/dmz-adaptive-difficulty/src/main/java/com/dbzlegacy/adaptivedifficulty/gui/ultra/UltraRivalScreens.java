@@ -90,6 +90,14 @@ public final class UltraRivalScreens {
                 .tabs("home|Home", "actions|Actions", "challenge|Challenge");
     }
 
+    /** Subpage: no tab row — dual footer (Back + Main menu). */
+    private static UltraScreenSpec sub(String page) {
+        return UltraScreenSpec.of("rival")
+                .title("Rivals")
+                .page(page);
+    }
+
+
     private static void openHome(ServerPlayer player) {
         Map<String, String> ph = RivalGuiApi.placeholders(player);
         UltraScreenSpec spec = base("home", "home")
@@ -141,7 +149,7 @@ public final class UltraRivalScreens {
                             UltraStyle.hubTileAccentCode("admin"))
                     .rowGap();
         }
-        spec.footerBackHome("Rival Home");
+        spec.footerBackToMain();
         spec.send(player);
     }
 
@@ -166,7 +174,7 @@ public final class UltraRivalScreens {
                 "records:history|Challenge history");
         placePerChallengeButtons(spec, player);
         spec.button("do:spectate_stop", UltraStyle.dim("Stop spectate"), "dim").rowGap();
-        spec.footerBackHome("Rival Home");
+        spec.footerBackToMain();
         spec.send(player);
     }
 
@@ -220,14 +228,14 @@ public final class UltraRivalScreens {
     }
 
     private static void openList(ServerPlayer player) {
-        UltraScreenSpec spec = base("list", "home")
+        UltraScreenSpec spec = sub("list")
                 .line(UltraStyle.LABEL + "Your current rivals.");
         for (String line : RivalGuiApi.listLines(player)) {
             if (line != null && !line.isBlank()) {
                 spec.line(line);
             }
         }
-        spec.setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
+        spec.setRow(UltraStyle.CONTENT_ROW + UltraStyle.BODY_MIN_H);
         List<String> args = RivalGuiApi.currentRivalArgs(player);
         int placed = 0;
         if (args != null) {
@@ -262,11 +270,11 @@ public final class UltraRivalScreens {
 
     private static void openListDetail(ServerPlayer player, String arg) {
         String who = RivalGuiApi.displayPickerArg(player, arg);
-        UltraScreenSpec spec = base("list_detail:" + arg, "home")
+        UltraScreenSpec spec = sub("list_detail:" + arg)
                 .line(UltraStyle.LABEL + "Rival profile")
                 .labelValue("Target", who == null || who.isBlank() ? "-" : who)
                 .notice("Removing a rival cannot be undone from this menu.")
-                .setRow(UltraStyle.CONTENT_ROW_TABS + 100);
+                .setRow(UltraStyle.CONTENT_ROW + 100);
         if (arg != null && !arg.isBlank()) {
             spec.buttonLeft("do:remove:" + arg, UltraStyle.danger("Remove rival"), "danger")
                     .rowGap();
@@ -276,20 +284,20 @@ public final class UltraRivalScreens {
     }
 
     private static void openTop(ServerPlayer player) {
-        UltraScreenSpec spec = base("top", "home").line(UltraStyle.LABEL + "Rival leaderboard");
+        UltraScreenSpec spec = sub("top").line(UltraStyle.LABEL + "Rival leaderboard");
         for (String line : RivalGuiApi.topLines(player)) {
             if (line != null && !line.isBlank()) {
                 spec.line(line);
             }
         }
-        spec.setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
+        spec.setRow(UltraStyle.CONTENT_ROW + UltraStyle.BODY_MIN_H);
         spec.footerBackHome("Rival Home");
         spec.send(player);
     }
 
     private static void openRecords(ServerPlayer player, String sub) {
         String tab = sub == null || sub.isBlank() ? "history" : sub.toLowerCase(Locale.ROOT);
-        UltraScreenSpec spec = base("records:" + tab, "home")
+        UltraScreenSpec spec = sub("records:" + tab)
                 .line(UltraStyle.LABEL + "Records - " + tab);
         List<String> lines = switch (tab) {
             case "stats" -> RivalGuiApi.statsLines(player);
@@ -308,7 +316,7 @@ public final class UltraRivalScreens {
                 }
             }
         }
-        spec.setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
+        spec.setRow(UltraStyle.CONTENT_ROW + UltraStyle.BODY_MIN_H);
         UltraPickHelper.placePageButtons(
                 spec,
                 "records:history|History",
@@ -324,7 +332,7 @@ public final class UltraRivalScreens {
     }
 
     private static void openRequests(ServerPlayer player) {
-        UltraScreenSpec spec = base("requests", "actions")
+        UltraScreenSpec spec = sub("requests")
                 .line(UltraStyle.LABEL + "Incoming and outgoing rival requests.")
                 .line(UltraStyle.DIM + "Accept a declare to become Mutual. Decline leaves them Declared only.");
         List<String> cards = RivalGuiApi.pendingInviteCards(player);
@@ -340,7 +348,7 @@ public final class UltraRivalScreens {
                 }
             }
         }
-        spec.setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
+        spec.setRow(UltraStyle.CONTENT_ROW + UltraStyle.BODY_MIN_H);
         List<String> incoming = RivalGuiApi.pendingIncomingDeclareArgs(player);
         int placed = 0;
         if (incoming != null) {
@@ -372,11 +380,11 @@ public final class UltraRivalScreens {
         Map<String, String> ph = RivalGuiApi.placeholders(player);
         boolean tpOn = "true".equalsIgnoreCase(ph.getOrDefault("tpMsg", ph.getOrDefault("tp_msg", "false")));
         boolean instinctOn = "true".equalsIgnoreCase(ph.getOrDefault("instinct", "false"));
-        UltraScreenSpec spec = base("settings", "actions")
+        UltraScreenSpec spec = sub("settings")
                 .line(UltraStyle.LABEL + "Rival chat and instinct toggles.")
                 .labelValue("TP chat", tpOn ? "ON" : "OFF")
                 .labelValue("Instinct", instinctOn ? "ON" : "OFF")
-                .setRow(UltraStyle.CONTENT_ROW_TABS + 80);
+                .setRow(UltraStyle.CONTENT_ROW + 80);
         spec.buttonLeft(
                         "do:tpmsg:toggle",
                         tpOn ? UltraStyle.confirm("TP chat - ON") : UltraStyle.dim("TP chat - OFF"),
@@ -402,11 +410,11 @@ public final class UltraRivalScreens {
         int pg = Math.min(pages - 1, Math.max(0, pageIndex));
         int from = pg * PICK_PER_PAGE;
         int to = Math.min(total, from + PICK_PER_PAGE);
-        UltraScreenSpec spec = base(pg > 0 ? pageBase + ":" + pg : pageBase, tab)
+        UltraScreenSpec spec = sub(pg > 0 ? pageBase + ":" + pg : pageBase)
                 .line(UltraStyle.LABEL + heading)
                 .line(UltraStyle.DIM + pickExplainer(doAction))
                 .labelValue("Players", total + (pages > 1 ? (" | page " + (pg + 1) + "/" + pages) : ""))
-                .setRow(UltraStyle.CONTENT_ROW_TABS + 70);
+                .setRow(UltraStyle.CONTENT_ROW + 70);
         int placed = 0;
         for (int i = from; i < to; i++) {
             String arg = args.get(i);
@@ -484,10 +492,10 @@ public final class UltraRivalScreens {
 
     private static void openChallengeTime(ServerPlayer player, String target) {
         String who = RivalGuiApi.displayPickerArg(player, target);
-        UltraScreenSpec spec = base("challenge_time:" + target, "challenge")
+        UltraScreenSpec spec = sub("challenge_time:" + target)
                 .line(UltraStyle.LABEL + "Challenge length")
                 .labelValue("Rival", who == null || who.isBlank() ? "-" : who)
-                .setRow(UltraStyle.CONTENT_ROW_TABS + 80);
+                .setRow(UltraStyle.CONTENT_ROW + 80);
         if (target != null && !target.isBlank()) {
             for (int min = 1; min <= 10; min += 2) {
                 spec.buttonLeft(
@@ -510,11 +518,11 @@ public final class UltraRivalScreens {
     private static void openAcceptConfirm(ServerPlayer player, String arg) {
         String who = RivalGuiApi.displayPickerArg(player, arg);
         String plain = who == null || who.isBlank() ? "-" : UltraStyle.plain(who);
-        UltraScreenSpec spec = base("accept_confirm:" + arg, "actions")
+        UltraScreenSpec spec = sub("accept_confirm:" + arg)
                 .line(UltraStyle.LABEL + "They already declared you")
                 .labelValue("Player", plain)
                 .notice("Accept mutual rivalry with " + plain + " instead of sending another declare?")
-                .setRow(UltraStyle.CONTENT_ROW_TABS + 100);
+                .setRow(UltraStyle.CONTENT_ROW + 100);
         if (arg != null && !arg.isBlank()) {
             spec.button("do:accept:" + arg, UltraStyle.confirm("Accept mutual rivalry"), "confirm")
                     .rowGap();
@@ -526,11 +534,11 @@ public final class UltraRivalScreens {
     private static void openReplacePick(ServerPlayer player) {
         String pending = RivalGuiApi.pendingMutualAcceptName(player);
         String pendingPlain = pending == null || pending.isBlank() ? "them" : UltraStyle.plain(pending);
-        UltraScreenSpec spec = base("pick_replace_mutual", "actions")
+        UltraScreenSpec spec = sub("pick_replace_mutual")
                 .line(UltraStyle.LABEL + "Drop a Mutual to accept " + pendingPlain)
                 .notice("Mutual slots are full. Pick who to demote to Declared so you can accept "
                         + pendingPlain + ".")
-                .setRow(UltraStyle.CONTENT_ROW_TABS + 80);
+                .setRow(UltraStyle.CONTENT_ROW + 80);
         List<String> choices = labeledArgs(player, RivalGuiApi.mutualRivalArgs(player));
         // Navigate to confirm — do not accept_replace immediately.
         int placed = 0;
@@ -574,12 +582,12 @@ public final class UltraRivalScreens {
         String pendingPlain = pending == null || pending.isBlank() ? "them" : UltraStyle.plain(pending);
         String dropShown = RivalGuiApi.displayPickerArg(player, dropArg);
         String dropPlain = dropShown == null || dropShown.isBlank() ? "-" : UltraStyle.plain(dropShown);
-        UltraScreenSpec spec = base("replace_confirm:" + dropArg, "actions")
+        UltraScreenSpec spec = sub("replace_confirm:" + dropArg)
                 .line(UltraStyle.LABEL + "Confirm Mutual demotion")
                 .labelValue("Accept", pendingPlain)
                 .labelValue("Demote", dropPlain)
                 .notice("This will demote " + dropPlain + " from Mutual to Declared. Continue?")
-                .setRow(UltraStyle.CONTENT_ROW_TABS + 100);
+                .setRow(UltraStyle.CONTENT_ROW + 100);
         // Stack Continue above Cancel — side-by-side is a misclick demotion risk.
         if (dropArg != null && !dropArg.isBlank()) {
             spec.button(
@@ -610,9 +618,9 @@ public final class UltraRivalScreens {
             openHome(player);
             return;
         }
-        UltraScreenSpec spec = base("admin", "actions")
+        UltraScreenSpec spec = sub("admin")
                 .line(UltraStyle.LABEL + "Staff rival tools")
-                .setRow(UltraStyle.CONTENT_ROW_TABS + 80);
+                .setRow(UltraStyle.CONTENT_ROW + 80);
         spec.buttonLeft("do:admin:save", UltraStyle.confirm("Save data"), "confirm")
                 .buttonRight("do:admin:refresh", UltraStyle.confirm("Reload data"), "confirm")
                 .rowGap();

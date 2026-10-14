@@ -630,8 +630,24 @@ def main() -> int:
         m = re.search(pattern, spec_text, re.S)
         if m is None:
             errors.append(f"UltraScreenSpec.{method} not found")
-        elif "nav:refresh" in m.group(1) or "Refresh" in m.group(1):
+            continue
+        body = m.group(1)
+        if "nav:refresh" in body or "Refresh" in body:
             errors.append(f"UltraScreenSpec.{method} must not include Refresh / nav:refresh")
+        if method == "footerBackToMain":
+            # Tabbed pages: right Main menu only — no left Back.
+            if "BACK_TO_MAIN" in body:
+                errors.append(
+                    "UltraScreenSpec.footerBackToMain must use MAIN_MENU (not BACK_TO_MAIN)"
+                )
+            if "MAIN_MENU" not in body or '"nav:hub"' not in body:
+                errors.append(
+                    "UltraScreenSpec.footerBackToMain must place nav:hub + MAIN_MENU on the right"
+                )
+            if "backTo(" in body or "COL_L" in body:
+                errors.append(
+                    "UltraScreenSpec.footerBackToMain must not place a left Back button"
+                )
 
     # Tabs are hub-style buttons under the title line; tabsJson stays empty for every screen.
     self_test_path = ULTRA / "UltraScreenSelfTest.java"
@@ -726,8 +742,16 @@ def main() -> int:
         errors.append(
             "UltraWeightShopScreens.openShop must not stack page:main Back with footerBack*"
         )
-    if "footerBackToMain()" not in shop_body:
-        errors.append("UltraWeightShopScreens.openShop must use footerBackToMain (weights tab home)")
+    if "footerBackHome(\"Difficulty Home\")" not in shop_body and "footerBackHome(\"Difficulty home\")" not in shop_body:
+        errors.append(
+            'UltraWeightShopScreens.openShop is a Difficulty subpage — use '
+            'footerBackHome("Difficulty Home") (no system tabs)'
+        )
+    if "footerBackToMain()" in shop_body:
+        errors.append(
+            "UltraWeightShopScreens.openShop must not use footerBackToMain "
+            "(subpage keeps Back + Main menu)"
+        )
     rival = (ULTRA / "UltraRivalScreens.java").read_text(encoding="utf-8")
     if 'confirm("Reload")' in rival and 'confirm("Reload data")' not in rival:
         errors.append('UltraRivalScreens staff admin must label refresh "Reload data"')

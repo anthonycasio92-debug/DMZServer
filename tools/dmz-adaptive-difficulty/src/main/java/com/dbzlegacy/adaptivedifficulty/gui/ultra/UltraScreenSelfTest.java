@@ -115,21 +115,21 @@ public final class UltraScreenSelfTest {
                             .tabs("home|Home", "tiers|Tiers", "summons|Summons")
                             .line("self-test")
                             .buttonLeft("tab:tiers", "Tiers", "normal")
-                            .footerBackHome("Home");
+                            .footerBackToMain();
                     case "rival" -> UltraScreenSpec.of("rival")
                             .title("Rival")
                             .page("home")
                             .activeTab("home")
                             .tabs("home|Home", "actions|Actions", "challenge|Challenge")
                             .line("self-test")
-                            .footerBackHome("Home");
+                            .footerBackToMain();
                     case "spar" -> UltraScreenSpec.of("spar")
                             .title("Sparring")
                             .page("main")
                             .activeTab("home")
                             .tabs("home|Home", "dojo|Dojo", "dojo_war|Wars")
                             .line("self-test")
-                            .footerBackHome("Home");
+                            .footerBackToMain();
                     case "prestige" -> UltraScreenSpec.of("prestige")
                             .title("Prestige")
                             .page("shop")
@@ -139,7 +139,7 @@ public final class UltraScreenSelfTest {
                             .button("page:tiers", "Difficulty tiers", "confirm")
                             .button("page:effects", "Effects", "confirm")
                             .line("self-test")
-                            .footerBackHome("Home");
+                            .footerBackToMain();
                     case "character" -> UltraScreenSpec.of("character")
                             .title("Character Services")
                             .page("main")
@@ -147,7 +147,7 @@ public final class UltraScreenSelfTest {
                             .tabs("home|Home", "saga|Saga", "android|Android")
                             .line("self-test")
                             .playerModel(248, 60, 86, 120, 0.9f, true)
-                            .footerBackHome("Home");
+                            .footerBackToMain();
                     case "skillcheck" -> UltraScreenSpec.of("skillcheck")
                             .title("Skill Check")
                             .page("main")
@@ -166,7 +166,7 @@ public final class UltraScreenSelfTest {
                             .activeTab("home")
                             .tabs("home|Home", "boosts|Boosts", "coins|Coins")
                             .line("self-test")
-                            .footerBackHome("Home");
+                            .footerBackToMain();
                     case "config" -> UltraScreenSpec.of("config")
                             .title("Config Editor")
                             .page("list")

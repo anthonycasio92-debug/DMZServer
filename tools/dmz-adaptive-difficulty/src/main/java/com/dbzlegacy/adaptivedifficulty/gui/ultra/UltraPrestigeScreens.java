@@ -91,6 +91,14 @@ public final class UltraPrestigeScreens {
                 .tabs("home|Home", "prestige|Prestige", "shop|Shop");
     }
 
+    /** Subpage: no tab row — dual footer (Back + Main menu). */
+    private static UltraScreenSpec sub(String page) {
+        return UltraScreenSpec.of("prestige")
+                .title("Prestige")
+                .page(page);
+    }
+
+
     private static void paintWallet(UltraScreenSpec spec, Map<String, String> ph) {
         // Exact wording required for these three labels.
         spec.labelValue("Lifetime prestiges", ph.getOrDefault("completed", "0"));
@@ -159,7 +167,7 @@ public final class UltraPrestigeScreens {
             }
             spec.rowGap();
         }
-        spec.footerBackHome("Prestige Home");
+        spec.footerBackToMain();
         spec.send(player);
     }
 
@@ -180,7 +188,7 @@ public final class UltraPrestigeScreens {
                 .rowGap();
         spec.button("page:effects", UltraStyle.confirm("Effects"), UltraStyle.STYLE_CONFIRM)
                 .rowGap();
-        spec.footerBackHome("Prestige Home");
+        spec.footerBackToMain();
         spec.send(player);
     }
 
@@ -190,7 +198,7 @@ public final class UltraPrestigeScreens {
         int pageSize = SKILLS_PER_PAGE;
         int pages = Math.max(1, (ids.length + pageSize - 1) / pageSize);
         int page = Math.min(pages - 1, Math.max(0, pageIndex));
-        UltraScreenSpec spec = base(skillsPageId(page), "shop");
+        UltraScreenSpec spec = sub(skillsPageId(page));
         paintWallet(spec, ph);
         spec.line(UltraStyle.LABEL + "Permanent skill levels - 1 favor each (Potential Unlock +2)")
                 .labelValue("Skills page", (page + 1) + "/" + pages)
@@ -251,7 +259,7 @@ public final class UltraPrestigeScreens {
 
     private static void openTiers(ServerPlayer player) {
         Map<String, String> ph = ProgressionGuiApi.prestigePlaceholders(player);
-        UltraScreenSpec spec = base("tiers", "shop");
+        UltraScreenSpec spec = sub("tiers");
         paintWallet(spec, ph);
         spec.line(UltraStyle.LABEL + "Permanent difficulty tiers - survive prestige")
                 .line(UltraStyle.LABEL + "Buy T1 first, then T2-T7 in order. Still activate with coins.")
@@ -290,7 +298,7 @@ public final class UltraPrestigeScreens {
         boolean mutant = "true".equalsIgnoreCase(ph.get("mutant"));
         boolean majinCan = "true".equalsIgnoreCase(ph.get("majin_can_buy"));
         boolean mutantCan = "true".equalsIgnoreCase(ph.get("mutant_can_buy"));
-        UltraScreenSpec spec = base("effects", "shop");
+        UltraScreenSpec spec = sub("effects");
         paintWallet(spec, ph);
         spec.line(UltraStyle.LABEL + "Permanent Majin / Mutant - " + formCost + " favor each")
                 .line(UltraStyle.LABEL + "Only one special form at a time. Remove before switching.")

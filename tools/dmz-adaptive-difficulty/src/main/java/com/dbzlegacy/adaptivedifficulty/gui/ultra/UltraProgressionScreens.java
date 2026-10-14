@@ -35,6 +35,14 @@ public final class UltraProgressionScreens {
                 .tabs("home|Home", "boosts|Boosts", "coins|Coins");
     }
 
+    /** Subpage: no tab row — dual footer (Back + Main menu). */
+    private static UltraScreenSpec sub(String page) {
+        return UltraScreenSpec.of("progression")
+                .title("Progression")
+                .page(page);
+    }
+
+
     /** Overview only - Boosts and Coins live on their tabs. */
     private static void openHome(ServerPlayer player) {
         UltraScreenSpec spec = base("main", "home")
@@ -76,7 +84,7 @@ public final class UltraProgressionScreens {
                         "confirm")
                 .buttonRight("do:boost:end", UltraStyle.danger("End boost"), "danger")
                 .rowGap();
-        spec.footerBackHome("Progression Home");
+        spec.footerBackToMain();
         spec.send(player);
     }
 
@@ -96,7 +104,7 @@ public final class UltraProgressionScreens {
                         toggle,
                         staffFree ? "confirm" : "dim")
                 .rowGap();
-        spec.footerBackHome("Progression Home");
+        spec.footerBackToMain();
         spec.send(player);
     }
 }

@@ -76,7 +76,7 @@ public final class UltraWeightShopScreens {
     static void openShop(ServerPlayer player) {
         AncientCoinEconomy.migrateWalletToItems(player);
         UltraScreenSpec spec =
-                base("weights", "home")
+                sub("weights")
                         .line(UltraStyle.LABEL + "Training weights - 1 ancient copper per weight value.")
                         .labelValue(
                                 "Copper",
@@ -86,7 +86,7 @@ public final class UltraWeightShopScreens {
                         .labelValue("Ancient Coins", AncientCoinEconomy.inventoryBreakdown(player))
                         .labelValue("Max value", String.valueOf(MAX_WEIGHT_VALUE))
                         .line(UltraStyle.DIM + "Pick a type, type the weight value, then confirm.")
-                        .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
+                        .setRow(UltraStyle.CONTENT_ROW + UltraStyle.BODY_MIN_H);
         for (WeightOffer offer : WeightOffer.values()) {
             spec.button(
                             "page:weights_input:" + offer.id,
@@ -94,7 +94,7 @@ public final class UltraWeightShopScreens {
                             UltraStyle.STYLE_CONFIRM)
                     .rowGap();
         }
-        spec.footerBackToMain();
+        spec.footerBackHome("Difficulty Home");
         spec.send(player);
     }
 
@@ -106,7 +106,7 @@ public final class UltraWeightShopScreens {
         }
         AncientCoinEconomy.migrateWalletToItems(player);
         UltraScreenSpec spec =
-                base("weights_input:" + offer.id, "home")
+                sub("weights_input:" + offer.id)
                         .line(UltraStyle.LABEL + offer.label)
                         .labelValue(
                                 "Copper",
@@ -116,7 +116,7 @@ public final class UltraWeightShopScreens {
                         .labelValue("Ancient Coins", AncientCoinEconomy.inventoryBreakdown(player))
                         .labelValue("Price", "1 copper per weight value")
                         .labelValue("Max value", String.valueOf(MAX_WEIGHT_VALUE))
-                        .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
+                        .setRow(UltraStyle.CONTENT_ROW + UltraStyle.BODY_MIN_H);
 
         if (!UltraClientFeatures.hasTextInput(player)) {
             spec.line(UltraStyle.danger("Typed weight entry needs a newer KaiPath client."))
@@ -161,7 +161,7 @@ public final class UltraWeightShopScreens {
         boolean free = PaidFeatureAccess.bypassAncientCoinCost(player);
         String costText = free ? "Free for staff" : AncientCoinEconomy.formatExactCost(cost);
         UltraScreenSpec spec =
-                base("weights_confirm:" + offer.id + ":" + value, "home")
+                sub("weights_confirm:" + offer.id + ":" + value)
                         .line(UltraStyle.LABEL + "Confirm weight purchase")
                         .labelValue("Type", offer.label)
                         .labelValue("Weight value", String.valueOf(value))
@@ -172,7 +172,7 @@ public final class UltraWeightShopScreens {
                                         AncientCoinEconomy.countOf(
                                                 player, AncientCoinEconomy.CoinKind.COPPER)))
                         .labelValue("Ancient Coins", AncientCoinEconomy.inventoryBreakdown(player))
-                        .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
+                        .setRow(UltraStyle.CONTENT_ROW + UltraStyle.BODY_MIN_H);
         if (!free && !AncientCoinEconomy.canAfford(player, cost)) {
             spec.line(UltraStyle.danger(AncientCoinEconomy.missingText(player, cost)))
                     .button(
@@ -447,6 +447,14 @@ public final class UltraWeightShopScreens {
                 .activeTab(tab)
                 .tabs("home|Home", "tiers|Tiers", "summons|Summons");
     }
+
+    /** Weights shop / confirm — Difficulty subpages without the system tab row. */
+    private static UltraScreenSpec sub(String page) {
+        return UltraScreenSpec.of("difficulty")
+                .title("Difficulty")
+                .page(page);
+    }
+
 
     private static String argsString(JsonObject args, String key) {
         if (args == null || key == null || !args.has(key) || args.get(key).isJsonNull()) {
