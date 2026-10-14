@@ -857,8 +857,28 @@ def main() -> int:
         errors.append(
             "UltraRivalScreens must confirm Accept their declare (not silent Declare→Accept)"
         )
-    if "Silent (private)" not in rival and "Tiers: Silent" not in rival:
-        errors.append("UltraRivalScreens Home must explain Silent/Declared/Mutual/Nemesis tiers")
+    # Home is status-only (RP/tier/nemesis/mutual); Silent/Declare/Accept live on Actions pick→type.
+    if "nemesisNames" not in home_body or "mutualNames" not in home_body:
+        errors.append("UltraRivalScreens.openHome must show Nemesis and Mutual names")
+    if "Wins" in home_body or "Losses" in home_body:
+        errors.append("UltraRivalScreens.openHome must not show Wins/Losses (Challenge tab)")
+    if "Tiers: Silent" in home_body or "Nemesis rises from challenge deaths" in home_body:
+        errors.append("UltraRivalScreens.openHome must not explain tiers or Nemesis challenge deaths")
+    if "rival_type:" not in rival or "rival_pick" not in rival or "placeRivalListButtons" not in rival:
+        errors.append(
+            "UltraRivalScreens Actions must consolidate Silent/Declare/Requests via pick→rival_type "
+            "and show the rival list"
+        )
+    if "Silent (private)" not in rival:
+        errors.append("UltraRivalScreens rival_type must offer Silent (private)")
+    challenge_m = re.search(
+        r"private static void openChallenge\b.*?^\s*private static void ",
+        rival,
+        re.S | re.M,
+    )
+    challenge_body = challenge_m.group(0) if challenge_m else ""
+    if 'labelValue("Wins"' not in challenge_body or 'labelValue("Losses"' not in challenge_body:
+        errors.append("UltraRivalScreens.openChallenge must show Wins and Losses")
     if "cancel_mutual_replace" not in rival or "replace_confirm:" not in rival:
         errors.append("UltraRivalScreens mutual swap needs Decline instead + replace_confirm step")
     if "demote" not in rival.lower() or "Mutual to Declared" not in rival:

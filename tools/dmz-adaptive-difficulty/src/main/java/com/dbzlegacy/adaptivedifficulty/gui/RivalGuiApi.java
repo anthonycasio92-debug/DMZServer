@@ -163,18 +163,75 @@ public final class RivalGuiApi {
 
     public static List<String> challengeLines(ServerPlayer player) {
         List<String> lines = new ArrayList<>();
-        lines.add("§8?? §cChallenge §8??");
-        lines.add("§7Send a challenge - respond on §eChallenge requests");
+        lines.add("§7Timed fights against a rival. Challenge deaths can raise Nemesis.");
         if (player != null && RivalChallengeManager.get().isInChallenge(player.m_20148_())) {
-            lines.add("§eChallenge active");
+            lines.add("§eYou are in an active challenge.");
         } else {
             lines.add("§7No active fight right now.");
         }
         int pending = pendingChallengeCards(player).size();
         if (pending > 0) {
-            lines.add("§e" + pending + " pending request" + (pending == 1 ? "" : "s"));
+            lines.add("§e" + pending + " pending challenge request"
+                    + (pending == 1 ? "" : "s") + " below.");
+        } else {
+            lines.add("§7No pending challenge requests.");
         }
         return lines;
+    }
+
+    /** Comma-separated Nemesis display names (or {@code -} when none). */
+    public static String nemesisNames(ServerPlayer player) {
+        return joinRivalNamesByStatus(player, "Nemesis");
+    }
+
+    /** Comma-separated Mutual display names (or {@code -} when none). */
+    public static String mutualNames(ServerPlayer player) {
+        return joinRivalNamesByStatus(player, "Mutual");
+    }
+
+    private static String joinRivalNamesByStatus(ServerPlayer player, String statusLabel) {
+        if (player == null || statusLabel == null || statusLabel.isBlank()) {
+            return "-";
+        }
+        List<String> names = new ArrayList<>();
+        String want = statusLabel.trim();
+        for (String card : currentRivalCards(player)) {
+            if (card == null || card.isBlank()) {
+                continue;
+            }
+            String[] p = card.split("\t", -1);
+            if (p.length < 3) {
+                continue;
+            }
+            String status = p[2] == null ? "" : p[2].trim();
+            if (!want.equalsIgnoreCase(status)) {
+                continue;
+            }
+            String uuid = p[0] == null ? "" : p[0].trim();
+            String name = p[1] == null ? "" : p[1].trim();
+            String shown = displayPickerArg(player, uuid.isBlank() ? name : "uuid:" + uuid);
+            if (shown == null || shown.isBlank()) {
+                shown = name;
+            }
+            shown = shown.replace('\u00A7', ' ').trim();
+            if (!shown.isBlank() && !names.contains(shown)) {
+                names.add(shown);
+            }
+        }
+        // Fallback: persistent nemesis uuid when no Nemesis-status card yet.
+        if (names.isEmpty() && "Nemesis".equalsIgnoreCase(want)) {
+            RivalPlayerRecord me = RivalStore.get().ensurePlayer(player);
+            if (me != null && me.nemesisUuid != null && !me.nemesisUuid.isBlank()) {
+                String shown = displayPickerArg(player, "uuid:" + me.nemesisUuid.trim());
+                if (shown != null && !shown.isBlank()) {
+                    names.add(shown.replace('\u00A7', ' ').trim());
+                }
+            }
+        }
+        if (names.isEmpty()) {
+            return "-";
+        }
+        return String.join(", ", names);
     }
 
     /** Encoded pending duel requests (incoming + outgoing). */
@@ -189,27 +246,23 @@ public final class RivalGuiApi {
         List<String> cards = pendingChallengeCards(player);
         List<String> lines = new ArrayList<>();
         if (cards.isEmpty()) {
-            lines.add("§7No pending challenge requests.");
-            lines.add("§8Incoming: Accept or Decline on the board.");
-            lines.add("§8Outgoing: Cancel or keep waiting.");
             return lines;
         }
-        lines.add("§e§lPending Requests");
+        lines.add("§ePending challenges");
         for (String card : cards) {
             String[] p = card.split("\t", -1);
             if (p.length < 3) {
                 continue;
             }
-            String name = p[1];
+            String name = p[1] == null || p[1].isBlank() ? "-" : p[1].trim();
             String dir = p[2];
             boolean online = p.length > 4 && "1".equals(p[4]);
-            String mins = p.length > 5 ? p[5] : "?";
+            String mins = p.length > 5 && p[5] != null && !p[5].isBlank() ? p[5] : "-";
+            String onlineWord = online ? "online" : "offline";
             if ("IN".equalsIgnoreCase(dir)) {
-                lines.add("§a? §f" + name + " §8- §f" + mins + " min"
-                        + (online ? " §a*" : " §8?"));
+                lines.add("§aIncoming §f" + name + " §8- §f" + mins + " min §8(" + onlineWord + ")");
             } else {
-                lines.add("§6? §f" + name + " §8- §f" + mins + " min"
-                        + (online ? " §a*" : " §8?"));
+                lines.add("§6Outgoing §f" + name + " §8- §f" + mins + " min §8(" + onlineWord + ")");
             }
         }
         return lines;
