@@ -17,7 +17,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.common.util.LazyOptional;
 
 /**
- * Difficulty -> Weights shop. Players pick a DMZ weight type, type a weight value (1 copper per
+ * Sparring -> Weights shop. Players pick a DMZ weight type, type a weight value (1 copper per
  * point), confirm, then receive the item with {@code WeightValue} NBT via
  * {@code WeightItem.setWeight(stack, value)} (reflection; falls back to direct NBT).
  *
@@ -94,7 +94,7 @@ public final class UltraWeightShopScreens {
                             UltraStyle.STYLE_CONFIRM)
                     .rowGap();
         }
-        spec.footerBackHome("Difficulty Home");
+        spec.footerBackHome("Spar Home");
         spec.send(player);
     }
 
@@ -440,18 +440,10 @@ public final class UltraWeightShopScreens {
         return null;
     }
 
-    private static UltraScreenSpec base(String page, String tab) {
-        return UltraScreenSpec.of("difficulty")
-                .title("Difficulty")
-                .page(page)
-                .activeTab(tab)
-                .tabs("home|Home", "tiers|Tiers", "summons|Summons");
-    }
-
-    /** Weights shop / confirm — Difficulty subpages without the system tab row. */
+    /** Weights shop / confirm — Sparring subpages without the system tab row. */
     private static UltraScreenSpec sub(String page) {
-        return UltraScreenSpec.of("difficulty")
-                .title("Difficulty")
+        return UltraScreenSpec.of("spar")
+                .title("Sparring")
                 .page(page);
     }
 

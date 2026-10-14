@@ -836,7 +836,7 @@ public final class UltraScreenSpec {
 
     /**
      * @param styleHint optional {@code danger}/{@code staff} (or blank). Ids {@code admin}/
-     *     {@code staff} are treated as staff-only even without a hint.
+     *     {@code staff}/{@code stats} are treated as staff-only even without a hint.
      */
     private record Tab(String id, String label, String styleHint) {
         boolean staffOnly() {
@@ -845,7 +845,7 @@ public final class UltraScreenSpec {
                 return true;
             }
             String tid = id == null ? "" : id.trim().toLowerCase();
-            return "admin".equals(tid) || "staff".equals(tid);
+            return "admin".equals(tid) || "staff".equals(tid) || "stats".equals(tid);
         }
     }
 

@@ -372,7 +372,7 @@ public final class UltraStyle {
         }
         String id = screenId.trim().toLowerCase();
         return switch (id) {
-            case "difficulty", "weights" -> "c";
+            case "difficulty" -> "c";
             case "rival" -> "5";
             case "spar" -> "6";
             case "prestige" -> "b";

@@ -112,7 +112,7 @@ public final class UltraScreenSelfTest {
                             .title("Difficulty")
                             .page("main")
                             .activeTab("home")
-                            .tabs("home|Home", "tiers|Tiers", "summons|Summons")
+                            .tabs("home|Home", "tiers|Tiers", "summons|Summons", "stats|CR|staff")
                             .line("self-test")
                             .buttonLeft("tab:tiers", "Tiers", "normal")
                             .footerBackToMain();

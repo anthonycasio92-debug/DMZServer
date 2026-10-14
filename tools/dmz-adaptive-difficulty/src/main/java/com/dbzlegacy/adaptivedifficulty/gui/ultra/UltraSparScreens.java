@@ -56,6 +56,14 @@ public final class UltraSparScreens {
             openTop(player, lower.substring("dojo_top_".length()).trim());
             return;
         }
+        if (lower.startsWith("weights_input:")) {
+            UltraWeightShopScreens.openInput(player, raw.substring("weights_input:".length()).trim());
+            return;
+        }
+        if (lower.startsWith("weights_confirm:")) {
+            openWeightsConfirm(player, raw.substring("weights_confirm:".length()).trim());
+            return;
+        }
         switch (lower) {
             case "stats" -> openStats(player);
             case "top", "leaderboard", "dojo_rank", "dojo_rankings" -> openTop(player, "tp");
@@ -74,8 +82,28 @@ public final class UltraSparScreens {
                     openOnlinePick(player, "Ask as apprentice", "apprentice_invite", "pick_mentor", "mentor");
             case "pick_release" -> openReleasePick(player);
             case "pick_dojo_challenge" -> openDojoChallengePick(player);
+            case "weights", "weight", "weight_shop" -> UltraWeightShopScreens.openShop(player);
             default -> openHome(player);
         }
+    }
+
+    private static void openWeightsConfirm(ServerPlayer player, String rest) {
+        if (rest == null || rest.isBlank()) {
+            UltraWeightShopScreens.openShop(player);
+            return;
+        }
+        int colon = rest.lastIndexOf(':');
+        if (colon <= 0 || colon >= rest.length() - 1) {
+            UltraWeightShopScreens.openShop(player);
+            return;
+        }
+        String typeId = rest.substring(0, colon).trim();
+        Integer value = UltraWeightShopScreens.parseWeightValue(rest.substring(colon + 1));
+        if (value == null) {
+            UltraWeightShopScreens.openShop(player);
+            return;
+        }
+        UltraWeightShopScreens.openConfirm(player, typeId, value);
     }
 
     private static UltraScreenSpec base(String page, String tab) {
@@ -134,7 +162,8 @@ public final class UltraSparScreens {
                 .labelValue("Partner", partner == null || partner.isBlank() ? "none" : partner)
                 .line(UltraStyle.LABEL + "Rankings show who has trained the most. Your stats are this character only.")
                 .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
-        UltraPickHelper.placePageButtons(spec, "top|Player rankings", "stats|Your stats");
+        UltraPickHelper.placePageButtons(
+                spec, "top|Player rankings", "stats|Your stats", "weights|Weights");
         spec.footerBackToMain();
         spec.send(player);
     }

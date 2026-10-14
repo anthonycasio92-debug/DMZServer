@@ -218,7 +218,7 @@ public final class UltraGuiActions {
                 UltraGui.open(player, safeScreen, inputPage);
                 return;
             }
-            if ("difficulty".equals(safeScreen)
+            if (("spar".equals(safeScreen) || "sparring".equals(safeScreen) || "difficulty".equals(safeScreen))
                     && ("weight_value".equals(payload) || inputPage.startsWith("weights_input:"))) {
                 String msg = UltraWeightShopScreens.handleInputSubmit(player, inputPage, args);
                 if (msg != null && !msg.isBlank()) {
@@ -226,8 +226,8 @@ public final class UltraGuiActions {
                     if (notice != null && !notice.isBlank()) {
                         DmzRewards.msg(player, notice);
                     }
-                    // Validation failed - stay on the input page.
-                    UltraGui.open(player, safeScreen, inputPage);
+                    // Validation failed - stay on the input page (always Sparring now).
+                    UltraGui.open(player, "spar", inputPage);
                 }
                 // Success opens confirm inside handleInputSubmit; skip generic reopen.
                 return;
@@ -365,6 +365,21 @@ public final class UltraGuiActions {
         if ("do:guitest_ack".equals(a) || "guitest_ack".equals(a)) {
             return true;
         }
+        // Difficulty Combat Rating tab/page — staff only (hidden from player tab row).
+        if ("difficulty".equalsIgnoreCase(screen == null ? "" : screen)) {
+            String lower = a.toLowerCase(Locale.ROOT);
+            if (lower.equals("tab:stats")
+                    || lower.equals("page:stats")
+                    || lower.endsWith(":tab:stats")
+                    || lower.endsWith(":page:stats")
+                    || lower.equals("stats")
+                    || lower.equals("statistics")
+                    || lower.equals("details")
+                    || lower.equals("cr")
+                    || lower.equals("combat_rating")) {
+                return true;
+            }
+        }
         if (!a.startsWith("do:")) {
             return false;
         }
@@ -455,14 +470,6 @@ public final class UltraGuiActions {
                             || "syslog".equals(act)) {
                         yield nullToEmpty(MechanicsGuiApi.handleDo(player, act, arg, page));
                     }
-                    if ("weight_quote".equals(act)
-                            || "quote".equals(act)
-                            || "weight_buy".equals(act)
-                            || "buy_weight".equals(act)) {
-                        yield nullToEmpty(
-                                UltraWeightShopScreens.handleAction(
-                                        player, act, arg, page, args));
-                    }
                     DifficultyActions.Result r =
                             DifficultyActions.handleArgNoReopen(player, act, arg, page);
                     if (r == null) {
@@ -471,7 +478,17 @@ public final class UltraGuiActions {
                     yield r.message() == null ? "" : r.message();
                 }
                 case "rival" -> nullToEmpty(RivalGuiApi.handleDo(player, act, arg, page));
-                case "spar", "sparring" -> nullToEmpty(SparGuiApi.handleDo(player, act, arg, page));
+                case "spar", "sparring" -> {
+                    if ("weight_quote".equals(act)
+                            || "quote".equals(act)
+                            || "weight_buy".equals(act)
+                            || "buy_weight".equals(act)) {
+                        yield nullToEmpty(
+                                UltraWeightShopScreens.handleAction(
+                                        player, act, arg, page, args));
+                    }
+                    yield nullToEmpty(SparGuiApi.handleDo(player, act, arg, page));
+                }
                 case "prestige" ->
                         nullToEmpty(ProgressionGuiApi.handlePrestigeDo(player, act, arg, page));
                 case "character", "saga" -> characterDo(player, act, arg, page);
@@ -683,7 +700,6 @@ public final class UltraGuiActions {
                 case "toggle_coin_chat" -> "settings";
                 case "reload", "reloadconfig" -> "admin";
                 case "syslog" -> "eventlog";
-                case "weight_buy", "buy_weight" -> "weights";
                 default -> page.isBlank() ? homePage(screen) : page;
             };
             case "prestige" -> switch (parts.action == null ? "" : parts.action) {
@@ -718,6 +734,7 @@ public final class UltraGuiActions {
                 case "mentor_invite", "apprentice_invite", "mentor_release" -> "mentor";
                 case "tpmsg", "mentor_tpmsg", "mentor_tp_msg" -> "settings";
                 case "admin" -> "admin";
+                case "weight_buy", "buy_weight", "weight_quote", "quote" -> "weights";
                 default -> {
                     String pageHint = stringArg(args, "page");
                     yield pageHint.isBlank() ? homePage(screen) : pageHint;
@@ -783,6 +800,7 @@ public final class UltraGuiActions {
             case "difficulty" -> switch (t) {
                 case "tiers" -> "tiers";
                 case "summons" -> "summons";
+                case "stats", "cr", "combat_rating" -> "stats";
                 default -> "main";
             };
             case "rival" -> switch (t) {

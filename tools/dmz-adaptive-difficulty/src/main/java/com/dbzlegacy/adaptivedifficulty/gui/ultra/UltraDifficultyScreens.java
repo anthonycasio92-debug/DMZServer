@@ -24,8 +24,8 @@ import java.util.Map;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Difficulty - Home / Tiers / Summons with CNPC-parity sub-pages (teams, titles, stats,
- * coin settings, staff tools). Home is overview only.
+ * Difficulty - Home / Tiers / Summons (plus staff-only Combat Rating tab). Sub-pages cover
+ * teams, titles, coin settings, and staff tools. Weights live under Sparring.
  */
 public final class UltraDifficultyScreens {
     /** Titles shown per list page (enum can grow past this). */
@@ -44,12 +44,13 @@ public final class UltraDifficultyScreens {
             openTitleDetail(player, raw.substring("title_detail:".length()).trim());
             return;
         }
-        if (lower.startsWith("weights_input:")) {
-            UltraWeightShopScreens.openInput(player, raw.substring("weights_input:".length()).trim());
-            return;
-        }
-        if (lower.startsWith("weights_confirm:")) {
-            openWeightsConfirm(player, raw.substring("weights_confirm:".length()).trim());
+        // Weights moved to Sparring — keep old Difficulty deep-links working.
+        if (lower.startsWith("weights_input:")
+                || lower.startsWith("weights_confirm:")
+                || "weights".equals(lower)
+                || "weight".equals(lower)
+                || "weight_shop".equals(lower)) {
+            UltraSparScreens.open(player, raw);
             return;
         }
         if (lower.startsWith("titles_p") || lower.startsWith("titles:")) {
@@ -73,39 +74,26 @@ public final class UltraDifficultyScreens {
             case "team", "teams" -> openTeam(player);
             case "titles", "title", "titles_p0" -> openTitles(player, 0);
             case "settings", "coins" -> openSettings(player);
-            case "stats", "statistics", "details" -> openStats(player);
+            case "stats", "statistics", "details", "cr", "combat_rating" -> openStats(player);
             case "admin", "staff" -> openStaffAdmin(player);
             case "eventlog", "event_log", "logs", "syslog" -> openEventLog(player);
-            case "weights", "weight", "weight_shop" -> UltraWeightShopScreens.openShop(player);
             default -> openHome(player);
         }
     }
 
-    private static void openWeightsConfirm(ServerPlayer player, String rest) {
-        if (rest == null || rest.isBlank()) {
-            UltraWeightShopScreens.openShop(player);
-            return;
-        }
-        int colon = rest.lastIndexOf(':');
-        if (colon <= 0 || colon >= rest.length() - 1) {
-            UltraWeightShopScreens.openShop(player);
-            return;
-        }
-        String typeId = rest.substring(0, colon).trim();
-        Integer value = UltraWeightShopScreens.parseWeightValue(rest.substring(colon + 1));
-        if (value == null) {
-            UltraWeightShopScreens.openShop(player);
-            return;
-        }
-        UltraWeightShopScreens.openConfirm(player, typeId, value);
-    }
-
-    private static UltraScreenSpec base(String page, String tab) {
-        return UltraScreenSpec.of("difficulty")
+    private static UltraScreenSpec base(ServerPlayer player, String page, String tab) {
+        UltraScreenSpec spec = UltraScreenSpec.of("difficulty")
                 .title("Difficulty")
                 .page(page)
-                .activeTab(tab)
-                .tabs("home|Home", "tiers|Tiers", "summons|Summons");
+                .activeTab(tab);
+        if (StaffAccess.isStaff(player)) {
+            // Combat Rating is staff-only — omitted from the tab row for players.
+            // Short label: 4-up tabs need <=10 chars or KaiPath truncates with mojibake.
+            spec.tabs("home|Home", "tiers|Tiers", "summons|Summons", "stats|CR|staff");
+        } else {
+            spec.tabs("home|Home", "tiers|Tiers", "summons|Summons");
+        }
+        return spec;
     }
 
     /** Subpage: no tab row — dual footer (Back + Main menu). */
@@ -115,30 +103,21 @@ public final class UltraDifficultyScreens {
                 .page(page);
     }
 
-
     /** Overview - where you stand, titles, rival teams, coins. Not a copy of Tiers/Summons. */
     private static void openHome(ServerPlayer player) {
         DifficultySnapshot snap = DifficultyCache.refresh(player);
         PlayerDifficultyData data = DifficultyCache.data(player);
         boolean personal = data != null && data.isPersonalEnabled();
         String tierName = snap == null || snap.activeTier <= 0 ? "None" : snap.activeTierName;
-        long cr = snap == null ? 0L : (snap.combatRating > 0 ? snap.combatRating : snap.calculated);
-        UltraScreenSpec spec = base("main", "home")
+        UltraScreenSpec spec = base(player, "main", "home")
                 .labelValue("Personal difficulty", personal ? "On" : "Off")
                 .labelValue("Active tier", tierName)
-                .labelValue("Combat rating", String.valueOf(cr))
-                .labelValue("Title", blank(TitleSystem.activeDisplay(player)))
-                .labelValue("Title score", String.valueOf(TitleSystem.computeTitleScore(player)))
+                .labelValue("Title", blankTitle(TitleSystem.activeDisplay(player)))
                 .labelValue("Ancient Coins", AncientCoinEconomy.inventoryBreakdown(player))
                 .line(UltraStyle.LABEL + "Where you stand, your titles, and rival teams.")
                 .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
         UltraPickHelper.placePageButtons(
-                spec,
-                "titles|Titles",
-                "team|Rival teams",
-                "settings|Coin settings",
-                "stats|Combat rating",
-                "weights|Weights");
+                spec, "titles|Titles", "team|Rival teams", "settings|Coin settings");
         if (StaffAccess.isStaff(player)) {
             UltraPickHelper.placePageButtons(spec, "admin|Server tools", "eventlog|Event log");
         }
@@ -167,7 +146,7 @@ public final class UltraDifficultyScreens {
         }
         PlayerDifficultyData data = DifficultyCache.data(player);
         if (data == null || !data.isPersonalEnabled()) {
-            UltraScreenSpec spec = base("tiers", "tiers")
+            UltraScreenSpec spec = base(player, "tiers", "tiers")
                     .line(UltraStyle.LABEL + "Your personal difficulty is off.")
                     .line(UltraStyle.LABEL + "Turn personal ON, then pick a tier.")
                     .line(UltraStyle.DIM + "Activation cost scales with your level.")
@@ -182,7 +161,7 @@ public final class UltraDifficultyScreens {
         DifficultySnapshot snap = DifficultyCache.refresh(player);
         int max = snap == null ? 0 : Math.max(0, snap.highestUnlockedTier);
         int active = data.getActiveTier();
-        UltraScreenSpec spec = base("tiers", "tiers");
+        UltraScreenSpec spec = base(player, "tiers", "tiers");
         if (active <= 0) {
             spec.labelValue("Active tier", "None");
         } else {
@@ -262,7 +241,7 @@ public final class UltraDifficultyScreens {
 
     private static void openFeatureLocked(
             ServerPlayer player, String page, String tab, String title, String body) {
-        UltraScreenSpec spec = base(page, tab)
+        UltraScreenSpec spec = base(player, page, tab)
                 .line(UltraStyle.danger(title))
                 .line(UltraStyle.LABEL + body)
                 .setRow(UltraStyle.CONTENT_ROW_TABS + 80);
@@ -280,14 +259,18 @@ public final class UltraDifficultyScreens {
         String cost = free
                 ? "Free for staff"
                 : AncientCoinEconomy.formatExactCost(EndDimensionStrength.summonCopperCost());
-        UltraScreenSpec spec = base("summons", "summons")
-                .line(UltraStyle.LABEL + "Select a boss, then confirm. More bosses can be added to this list.");
-        for (String line : summonStatusLines(player, ready)) {
-            spec.line(line);
-        }
-        spec.labelValue("End Dragon", ready ? "Ready - " + cost : "Requirements not met")
+        UltraScreenSpec spec = base(player, "summons", "summons")
+                .line(UltraStyle.LABEL + "Each boss needs a personal difficulty tier to summon.")
+                .line(UltraStyle.LABEL
+                        + "Different bosses unlock at different tiers - open a boss for its requirements.")
+                .line(UltraStyle.DIM + "Select a boss, then confirm.")
                 .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
-        spec.buttonLeft("page:end_dragon", UltraStyle.confirm("Summon End Dragon"), "confirm")
+        // Boss list: ready state only — per-boss requirements live on the confirm page.
+        String dragonLabel = ready ? ("End Dragon - Ready - " + cost) : "End Dragon - locked";
+        spec.buttonLeft(
+                        "page:end_dragon",
+                        ready ? UltraStyle.confirm(dragonLabel) : UltraStyle.dim(dragonLabel),
+                        ready ? "confirm" : "dim")
                 .rowGap();
         spec.footerBackToMain();
         spec.send(player);
@@ -576,12 +559,16 @@ public final class UltraDifficultyScreens {
     }
 
     private static void openStats(ServerPlayer player) {
+        if (!StaffAccess.isStaff(player)) {
+            openHome(player);
+            return;
+        }
         DifficultySnapshot snap = DifficultyCache.refresh(player);
         PlayerCombatProfile profile = PlayerCombatProfile.of(player);
         Map<String, String> ph = new HashMap<>();
         LmOverhaulScaledCombat.putPlaceholders(ph, player);
         long cr = snap == null ? 0L : (snap.combatRating > 0 ? snap.combatRating : snap.calculated);
-        UltraScreenSpec spec = sub("stats")
+        UltraScreenSpec spec = base(player, "stats", "stats")
                 .line(UltraStyle.LABEL + "Combat rating and scaled stats")
                 .labelValue(
                         "Tier",
@@ -598,7 +585,7 @@ public final class UltraDifficultyScreens {
                         (snap == null ? "-" : String.valueOf(snap.dmzLevel))
                                 + " - Prestige "
                                 + (snap == null ? "-" : String.valueOf(snap.prestige)))
-                .labelValue("Title", blank(TitleSystem.activeDisplay(player)))
+                .labelValue("Title", blankTitle(TitleSystem.activeDisplay(player)))
                 .labelValue(
                         "Overhaul",
                         ph.getOrDefault("overhaul_scale", "x1")
@@ -616,8 +603,8 @@ public final class UltraDifficultyScreens {
                                 + (profile.style == null ? "HYBRID" : profile.style.name()))
                 .labelValue("Top stats", blank(profile.topStatsLabel()))
                 .labelValue("Ancient Coins", AncientCoinEconomy.inventoryBreakdown(player))
-                .setRow(UltraStyle.CONTENT_ROW + UltraStyle.BODY_MIN_H);
-        spec.footerBackHome("Difficulty Home");
+                .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
+        spec.footerBackToMain();
         spec.send(player);
     }
 
@@ -664,5 +651,10 @@ public final class UltraDifficultyScreens {
             return "-";
         }
         return s;
+    }
+
+    /** Active title for Difficulty home — em dash when unequipped (ASCII "-" on the wire). */
+    private static String blankTitle(String s) {
+        return blank(s);
     }
 }

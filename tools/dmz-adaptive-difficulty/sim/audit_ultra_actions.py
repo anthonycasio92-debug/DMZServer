@@ -30,8 +30,6 @@ KNOWN_DO: dict[str, set[str]] = {
         "toggle_coin_chat",
         "reload",
         "syslog",
-        "weight_quote",
-        "weight_buy",
     },
     "character": {
         "reskin_confirm",
@@ -93,6 +91,10 @@ KNOWN_DO: dict[str, set[str]] = {
         "dojo_accept",
         "dojo_war_cancel",
         "dojo_challenge",
+        "weight_quote",
+        "weight_buy",
+        "quote",
+        "buy_weight",
     },
     "config": {
         "open_module",
@@ -480,7 +482,7 @@ def main() -> int:
     checks = [
         ("UltraHubScreens.java", "hub", KNOWN_DO["hub"]),
         ("UltraDifficultyScreens.java", "difficulty", KNOWN_DO["difficulty"]),
-        ("UltraWeightShopScreens.java", "difficulty", KNOWN_DO["difficulty"]),
+        ("UltraWeightShopScreens.java", "spar", KNOWN_DO["spar"]),
         ("UltraCharacterScreens.java", "character", KNOWN_DO["character"]),
         ("UltraPrestigeScreens.java", "prestige", KNOWN_DO["prestige"]),
         ("UltraProgressionScreens.java", "progression", KNOWN_DO["progression"]),
@@ -742,16 +744,40 @@ def main() -> int:
         errors.append(
             "UltraWeightShopScreens.openShop must not stack page:main Back with footerBack*"
         )
-    if "footerBackHome(\"Difficulty Home\")" not in shop_body and "footerBackHome(\"Difficulty home\")" not in shop_body:
+    if "footerBackHome(\"Spar Home\")" not in shop_body and 'footerBackHome("Spar Home")' not in shop_body:
         errors.append(
-            'UltraWeightShopScreens.openShop is a Difficulty subpage — use '
-            'footerBackHome("Difficulty Home") (no system tabs)'
+            'UltraWeightShopScreens.openShop is a Sparring subpage — use '
+            'footerBackHome("Spar Home") (no system tabs)'
         )
+    if 'of("spar")' not in weight_shop and 'of("sparring")' not in weight_shop:
+        errors.append('UltraWeightShopScreens must emit screenId spar (moved off Difficulty)')
     if "footerBackToMain()" in shop_body:
         errors.append(
             "UltraWeightShopScreens.openShop must not use footerBackToMain "
             "(subpage keeps Back + Main menu)"
         )
+    difficulty_home = (ULTRA / "UltraDifficultyScreens.java").read_text(encoding="utf-8")
+    home_m = re.search(
+        r"private static void openHome\b.*?^\s*private static void ",
+        difficulty_home,
+        re.S | re.M,
+    )
+    home_body = home_m.group(0) if home_m else ""
+    if "Combat rating" in home_body or "Title score" in home_body:
+        errors.append("UltraDifficultyScreens.openHome must not show Combat rating / Title score")
+    if "weights|Weights" in home_body or '"weights|' in home_body:
+        errors.append("UltraDifficultyScreens.openHome must not offer Weights (moved to Sparring)")
+    if "stats|CR|staff" not in difficulty_home and "stats|Combat Rating|staff" not in difficulty_home:
+        errors.append("UltraDifficultyScreens must expose staff-only Combat Rating tab (stats|CR|staff)")
+    spar_home = (ULTRA / "UltraSparScreens.java").read_text(encoding="utf-8")
+    spar_home_m = re.search(
+        r"private static void openHome\b.*?^\s*private static void ",
+        spar_home,
+        re.S | re.M,
+    )
+    spar_home_body = spar_home_m.group(0) if spar_home_m else ""
+    if "weights|Weights" not in spar_home_body:
+        errors.append("UltraSparScreens.openHome must offer Weights")
     rival = (ULTRA / "UltraRivalScreens.java").read_text(encoding="utf-8")
     if 'confirm("Reload")' in rival and 'confirm("Reload data")' not in rival:
         errors.append('UltraRivalScreens staff admin must label refresh "Reload data"')
