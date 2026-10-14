@@ -305,10 +305,10 @@ public final class UltraConfigScreens {
             spec.buttonLeft("do:undo:" + module + "|" + encoded, UltraStyle.dim("Undo field"), "dim")
                     .rowGap();
         }
-        // One Back only (parent field list). No second footer Back.
+        // Named destination - parent field list. No second footer Back.
         spec.buttonLeft(
                         "page:" + listPage(module, listPageNum, ConfigEditor.parentPath(path)),
-                        UltraStyle.BACK,
+                        UltraStyle.backTo("Field list"),
                         UltraStyle.STYLE_DIM)
                 .buttonRight("do:save_all", UltraStyle.confirm("Save all"), "confirm")
                 .rowGap();

@@ -323,8 +323,8 @@ public final class UltraSparScreens {
             spec.line(UltraStyle.dim(
                     "No bond invites waiting. Send one from Training bonds, or wait for someone to invite you."));
         }
-        // One Back only - training bonds (no footerBackHome stack).
-        spec.button("page:mentor", UltraStyle.BACK, "dim").rowGap();
+        // Named destination - training bonds (no footerBackHome stack).
+        spec.button("page:mentor", UltraStyle.backTo("Training bonds"), "dim").rowGap();
         spec.send(player);
     }
 
@@ -358,8 +358,8 @@ public final class UltraSparScreens {
                     .rowGap();
             spec.button("do:mentor_decline:" + picker, UltraStyle.danger("Decline"), "danger")
                     .rowGap();
-            // One Back to pending list (no footerBackHome stack).
-            spec.button("page:pending", UltraStyle.BACK, "dim").rowGap();
+            // Named destination - pending list (no footerBackHome stack).
+            spec.button("page:pending", UltraStyle.backTo("Pending invites"), "dim").rowGap();
         }
         spec.send(player);
     }
@@ -499,8 +499,8 @@ public final class UltraSparScreens {
         if (placed % 2 == 1) {
             spec.rowGap();
         }
-        // One Back only - wars (no footerBackHome stack).
-        spec.button("page:dojo_war", UltraStyle.BACK, "dim").rowGap();
+        // Named destination - dojo wars (no footerBackHome stack).
+        spec.button("page:dojo_war", UltraStyle.backTo("Dojo wars"), "dim").rowGap();
         spec.send(player);
     }
 

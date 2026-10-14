@@ -266,8 +266,8 @@ public final class UltraRivalScreens {
             spec.buttonLeft("do:remove:" + arg, UltraStyle.danger("Remove rival"), "danger")
                     .rowGap();
         }
-        // One Back only - rival list (no footerBackHome stack).
-        spec.button("page:list", UltraStyle.BACK, "dim").rowGap();
+        // Named destination - rival list (no footerBackHome stack).
+        spec.button("page:list", UltraStyle.backTo("Rival list"), "dim").rowGap();
         spec.send(player);
     }
 
@@ -562,7 +562,8 @@ public final class UltraRivalScreens {
         }
         // Escape hatch — do not trap the player on this page.
         spec.button("do:cancel_mutual_replace", UltraStyle.dim("Decline instead"), "dim").rowGap();
-        spec.button("page:requests", UltraStyle.BACK, "dim").rowGap();
+        // Named destination - requests (no footerBackHome stack).
+        spec.button("page:requests", UltraStyle.backTo("Requests"), "dim").rowGap();
         spec.send(player);
     }
 
@@ -611,7 +612,7 @@ public final class UltraRivalScreens {
                 .line(UltraStyle.LABEL + "Staff rival tools")
                 .setRow(UltraStyle.CONTENT_ROW_TABS + 80);
         spec.buttonLeft("do:admin:save", UltraStyle.confirm("Save data"), "confirm")
-                .buttonRight("do:admin:refresh", UltraStyle.confirm("Reload"), "confirm")
+                .buttonRight("do:admin:refresh", UltraStyle.confirm("Reload data"), "confirm")
                 .rowGap();
         spec.button("do:admin:status", UltraStyle.dim("Status"), "dim").rowGap();
         spec.footerBackHome();

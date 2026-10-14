@@ -28,6 +28,9 @@ import net.minecraft.server.level.ServerPlayer;
  * coin settings, staff tools). Home is overview only.
  */
 public final class UltraDifficultyScreens {
+    /** Titles shown per list page (enum can grow past this). */
+    private static final int TITLES_PER_PAGE = 8;
+
     private UltraDifficultyScreens() {}
 
     public static void open(ServerPlayer player, String page) {
@@ -49,13 +52,26 @@ public final class UltraDifficultyScreens {
             openWeightsConfirm(player, raw.substring("weights_confirm:".length()).trim());
             return;
         }
+        if (lower.startsWith("titles_p") || lower.startsWith("titles:")) {
+            String num = lower.startsWith("titles_p")
+                    ? lower.substring("titles_p".length())
+                    : lower.substring("titles:".length());
+            int pageIndex = 0;
+            try {
+                pageIndex = Integer.parseInt(num.trim());
+            } catch (NumberFormatException ignored) {
+                pageIndex = 0;
+            }
+            openTitles(player, Math.max(0, pageIndex));
+            return;
+        }
         switch (lower) {
             case "tiers", "buy", "tier", "purchase", "unlock", "adjust", "change", "set", "lower" ->
                     openTiers(player);
             case "summons", "summon" -> openSummons(player);
             case "end_dragon", "dragon", "summon_dragon", "summon_confirm" -> openSummonConfirm(player);
             case "team", "teams" -> openTeam(player);
-            case "titles", "title" -> openTitles(player);
+            case "titles", "title", "titles_p0" -> openTitles(player, 0);
             case "settings", "coins" -> openSettings(player);
             case "stats", "statistics", "details" -> openStats(player);
             case "admin", "staff" -> openStaffAdmin(player);
@@ -167,7 +183,7 @@ public final class UltraDifficultyScreens {
         spec.labelValue("Unlocked up to", "T" + max)
                 .labelValue("Ancient Coins", AncientCoinEconomy.inventoryBreakdown(player))
                 .line(UltraStyle.DIM + "Scaled mobs can hurt other players nearby.")
-                .line(UltraStyle.DIM + "Upgrades cost Ancient Coins - downgrades are Free")
+                .line(UltraStyle.DIM + "Upgrades cost Ancient Coins - downgrades are free")
                 .line(UltraStyle.DIM + "Click again within 10 seconds to confirm");
         if (!PaidFeatureAccess.bypassAncientCoinCost(player)) {
             spec.line(UltraStyle.DIM + "Upgrade cost scales with your level");
@@ -290,8 +306,8 @@ public final class UltraDifficultyScreens {
                     .button("do:summon_end_dragon", UltraStyle.dim("Confirm summon - locked"), "dim")
                     .rowGap();
         }
-        // One Back only - parent summons list (no footerBackHome stack).
-        spec.buttonLeft("page:summons", UltraStyle.BACK, "dim").rowGap();
+        // Named destination - summons list (no footerBackHome stack).
+        spec.buttonLeft("page:summons", UltraStyle.backTo("Summons"), "dim").rowGap();
         spec.send(player);
     }
 
@@ -400,16 +416,23 @@ public final class UltraDifficultyScreens {
         spec.send(player);
     }
 
-    private static void openTitles(ServerPlayer player) {
+    private static void openTitles(ServerPlayer player, int pageIndex) {
+        DifficultyTitle[] all = DifficultyTitle.values();
+        int pageSize = TITLES_PER_PAGE;
+        int pages = Math.max(1, (all.length + pageSize - 1) / pageSize);
+        int page = Math.min(pages - 1, Math.max(0, pageIndex));
         String active = TitleSystem.activeId(player);
-        UltraScreenSpec spec = base("titles", "home")
+        UltraScreenSpec spec = base("titles_p" + page, "home")
                 .labelValue("Equipped", blank(TitleSystem.activeDisplay(player)))
                 .labelValue("Title score", String.valueOf(TitleSystem.computeTitleScore(player)))
                 .line(UltraStyle.LABEL + "Equip a title you have unlocked.")
+                .labelValue("Titles page", (page + 1) + "/" + pages)
                 .setRow(UltraStyle.CONTENT_ROW_TABS + 80);
+        int from = page * pageSize;
         int placed = 0;
-        for (DifficultyTitle t : DifficultyTitle.values()) {
-            if (placed >= 10 || t == null) {
+        for (int i = from; i < all.length && placed < pageSize; i++) {
+            DifficultyTitle t = all[i];
+            if (t == null) {
                 continue;
             }
             boolean earned = TitleSystem.has(player, t);
@@ -430,6 +453,28 @@ public final class UltraDifficultyScreens {
         if (placed % 2 == 1) {
             spec.rowGap();
         }
+        if (page > 0) {
+            spec.buttonLeft(
+                    "page:titles_p" + (page - 1),
+                    UltraStyle.dim("Prev titles page"),
+                    UltraStyle.STYLE_DIM);
+        }
+        if (page + 1 < pages) {
+            if (page > 0) {
+                spec.buttonRight(
+                        "page:titles_p" + (page + 1),
+                        UltraStyle.LABEL + "Next titles page",
+                        UltraStyle.STYLE_NORMAL);
+            } else {
+                spec.buttonLeft(
+                        "page:titles_p" + (page + 1),
+                        UltraStyle.LABEL + "Next titles page",
+                        UltraStyle.STYLE_NORMAL);
+            }
+            spec.rowGap();
+        } else if (page > 0) {
+            spec.rowGap();
+        }
         PlayerDifficultyData data = DifficultyCache.data(player);
         boolean sense = data != null && data.titleProgress().titleSenseChat();
         spec.buttonLeft(
@@ -448,8 +493,8 @@ public final class UltraDifficultyScreens {
         if (title == null) {
             spec.line(UltraStyle.dim("Couldn't find that - try refreshing the list."))
                     .setRow(UltraStyle.CONTENT_ROW_TABS + 80);
-            // One Back only - titles list.
-            spec.button("page:titles", UltraStyle.BACK, "dim").rowGap();
+            // Named destination - titles list (no footerBackHome stack).
+            spec.button("page:titles_p0", UltraStyle.backTo("Titles"), "dim").rowGap();
             spec.send(player);
             return;
         }
@@ -476,8 +521,8 @@ public final class UltraDifficultyScreens {
         } else {
             spec.line(UltraStyle.dim("Equip unlocks after you earn the title."));
         }
-        // One Back only - titles list (no footerBackHome stack).
-        spec.button("page:titles", UltraStyle.BACK, "dim").rowGap();
+        // Named destination - titles list (no footerBackHome stack).
+        spec.button("page:titles_p0", UltraStyle.backTo("Titles"), "dim").rowGap();
         spec.send(player);
     }
 
@@ -605,8 +650,8 @@ public final class UltraDifficultyScreens {
         spec.buttonLeft("do:syslog:off", UltraStyle.danger("Turn OFF"), "danger")
                 .buttonRight("do:syslog:flush", UltraStyle.dim("Flush"), "dim")
                 .rowGap();
-        // One Back only - server tools (no footerBackHome stack).
-        spec.button("page:admin", UltraStyle.BACK, "dim").rowGap();
+        // Named destination - staff admin (no footerBackHome stack).
+        spec.button("page:admin", UltraStyle.backTo("Staff Admin"), "dim").rowGap();
         spec.send(player);
     }
 

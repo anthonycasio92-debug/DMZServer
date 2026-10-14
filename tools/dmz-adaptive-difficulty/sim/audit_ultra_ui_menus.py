@@ -64,26 +64,27 @@ def audit() -> list[dict]:
         text = path.read_text(encoding="utf-8")
         for name, body in methods_of(text):
             has_footer = "footerBackHome()" in body or "footerBackToMain()" in body
-            back_labels = re.findall(
-                r'(?:dim|confirm|danger)\(\s*"([^"]*[Bb]ack[^"]*)"\s*\)', body
+            # Dual-back policy: named destinations OK with footer; generic "Back" is not.
+            generic_back_labels = re.findall(
+                r'(?:dim|confirm|danger)\(\s*"(Back)"\s*\)', body
             )
-            if has_footer and back_labels:
+            if has_footer and generic_back_labels:
                 if not any(
                     mutually_exclusive(body, lab, "footerBackHome()")
                     or mutually_exclusive(body, lab, "footerBackToMain()")
-                    for lab in back_labels
+                    for lab in generic_back_labels
                 ):
-                    # Also OK if BACK const is only in early-return branch
                     add(
                         "high",
                         path.name,
                         name,
                         "stacked_back",
-                        f"footerBack* + Back label(s): {back_labels}",
+                        f"footerBack* + generic Back label(s): {generic_back_labels}",
                     )
             if (
                 has_footer
                 and "UltraStyle.BACK" in body
+                and "UltraStyle.backTo(" not in body
                 and not mutually_exclusive(body, "UltraStyle.BACK", "footerBackHome()")
             ):
                 add(
@@ -91,7 +92,7 @@ def audit() -> list[dict]:
                     path.name,
                     name,
                     "stacked_back_const",
-                    "UltraStyle.BACK button + footerBackHome()",
+                    "UltraStyle.BACK button + footerBackHome() (use backTo for contextual exits)",
                 )
 
             # multi_footer only if both calls can run without return between

@@ -416,9 +416,9 @@ public final class UltraCharacterScreens {
                     .rowGap();
         } else {
             spec.line(UltraStyle.danger(UltraStyle.plain(pre)));
-            spec.button("page:reskin", UltraStyle.BACK, UltraStyle.STYLE_DIM).rowGap();
+            spec.button("page:reskin", UltraStyle.backTo("Reskin"), UltraStyle.STYLE_DIM).rowGap();
         }
-        // Ready path: Cancel only. Locked path: one Back. No footer stack.
+        // Ready path: Cancel only. Locked path: named Reskin exit. No footer stack.
         spec.send(player);
     }
 
@@ -643,8 +643,8 @@ public final class UltraCharacterScreens {
                                     ? SagaResetService.NOTHING_TO_RESET
                                     : SagaResetService.RESET_OFF;
             spec.line(UltraStyle.danger(why));
-            // One Back only - saga list (no footerBackHome stack).
-            spec.button("tab:saga", UltraStyle.BACK, UltraStyle.STYLE_DIM).rowGap();
+            // Named destination - saga list (no footerBackHome stack).
+            spec.button("tab:saga", UltraStyle.backTo("Saga list"), UltraStyle.STYLE_DIM).rowGap();
             spec.send(player);
             return;
         }

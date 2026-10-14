@@ -136,6 +136,18 @@ public final class UltraStyle {
 
     private UltraStyle() {}
 
+    /**
+     * Contextual back that names its destination (e.g. "Weights shop", "Rival list").
+     * Use beside {@link UltraScreenSpec#footerBackHome()} when both exits are intentional —
+     * footer stays generic hub Back; this names the specific parent page.
+     */
+    public static String backTo(String destination) {
+        if (destination == null || destination.isBlank()) {
+            return BACK;
+        }
+        return LABEL + destination.trim();
+    }
+
     public static String plain(String text) {
         if (text == null || text.isBlank()) {
             return "";

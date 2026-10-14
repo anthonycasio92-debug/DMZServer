@@ -94,7 +94,7 @@ public final class UltraWeightShopScreens {
                             UltraStyle.STYLE_CONFIRM)
                     .rowGap();
         }
-        // One Back only (nav:home). Do not also add page:main Back.
+        // Footer hub Back only - do not stack a second page:main Back (same destination).
         spec.footerBackHome();
         spec.send(player);
     }
@@ -125,8 +125,11 @@ public final class UltraWeightShopScreens {
                             UltraStyle.DIM
                                     + "Install KaiPath 1.3.9 or newer to type weight values. "
                                     + "Until then this shop cannot take a typed value.")
-                    // One Back only - parent shop list.
-                    .buttonLeft("page:weights", UltraStyle.BACK, UltraStyle.STYLE_DIM)
+                    // Named destination - parent shop list (no footerBackHome stack).
+                    .buttonLeft(
+                            "page:weights",
+                            UltraStyle.backTo("Weights shop"),
+                            UltraStyle.STYLE_DIM)
                     .rowGap();
             spec.send(player);
             return;
@@ -149,8 +152,9 @@ public final class UltraWeightShopScreens {
                         UltraStyle.STYLE_CONFIRM,
                         INPUT_ID)
                 .rowGap();
-        // One Back only - parent shop list (no footerBackHome stack).
-        spec.buttonLeft("page:weights", UltraStyle.BACK, UltraStyle.STYLE_DIM).rowGap();
+        // Named destination - parent shop list (no footerBackHome stack).
+        spec.buttonLeft("page:weights", UltraStyle.backTo("Weights shop"), UltraStyle.STYLE_DIM)
+                .rowGap();
         spec.send(player);
     }
 
@@ -196,8 +200,9 @@ public final class UltraWeightShopScreens {
                             UltraStyle.STYLE_DIM)
                     .rowGap();
         }
-        // One Back only - parent shop list (no footerBackHome stack).
-        spec.buttonLeft("page:weights", UltraStyle.BACK, UltraStyle.STYLE_DIM).rowGap();
+        // Named destination - parent shop list (no footerBackHome stack).
+        spec.buttonLeft("page:weights", UltraStyle.backTo("Weights shop"), UltraStyle.STYLE_DIM)
+                .rowGap();
         spec.send(player);
     }
 

@@ -675,8 +675,11 @@ public final class UltraGuiActions {
                 case "summon_end_dragon", "end_dragon", "summon_dragon" -> "end_dragon";
                 case "mode", "set_mode", "team" -> "team";
                 case "equip_title" ->
-                        page != null && page.startsWith("title_detail:") ? page : "titles";
-                case "clear_title", "toggle_title_sense" -> "titles";
+                        page != null && page.startsWith("title_detail:") ? page : "titles_p0";
+                case "clear_title", "toggle_title_sense" ->
+                        page != null && (page.startsWith("titles_p") || page.startsWith("titles:"))
+                                ? page
+                                : "titles_p0";
                 case "toggle_coin_chat" -> "settings";
                 case "reload", "reloadconfig" -> "admin";
                 case "syslog" -> "eventlog";
@@ -687,9 +690,14 @@ public final class UltraGuiActions {
                 case "confirm", "turnin", "turn_in", "redeem" -> "turnin";
                 case "skill", "buy_skill", "skillup" -> {
                     String skillPage = stringArg(args, "page");
-                    yield skillPage != null && skillPage.startsWith("skills")
-                            ? skillPage
-                            : "skills";
+                    if (skillPage != null
+                            && (skillPage.startsWith("skills_p")
+                                    || skillPage.startsWith("skills:")
+                                    || "skills".equals(skillPage)
+                                    || "skill".equals(skillPage))) {
+                        yield skillPage;
+                    }
+                    yield "skills_p0";
                 }
                 case "tier", "buy_tier", "unlock_tier" -> "tiers";
                 case "majin", "buy_majin", "mutant", "buy_mutant",

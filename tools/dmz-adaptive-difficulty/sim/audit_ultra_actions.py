@@ -508,7 +508,7 @@ def main() -> int:
         errors.append("UltraWeightShopScreens.parseWeightValue must not hard-cap at 4 digits (9999)")
     if "MAX_WEIGHT_DIGITS" not in weight_shop:
         errors.append("UltraWeightShopScreens must define MAX_WEIGHT_DIGITS from MAX_WEIGHT_VALUE")
-    # No stacked Back: same open* method must not call footerBackHome and also label a Back button.
+    # Dual-back OK when contextual names a destination; forbid generic "Back" + footer.
     for path in sorted(ULTRA.glob("Ultra*Screens.java")):
         src = path.read_text(encoding="utf-8")
         for m in re.finditer(
@@ -530,9 +530,17 @@ def main() -> int:
             body = src[m.start() : end]
             if "footerBackHome()" not in body and "footerBackToMain()" not in body:
                 continue
-            if re.search(r'(?:dim|confirm|danger)\(\s*"[^"]*[Bb]ack[^"]*"\s*\)', body):
+            # Generic exact "Back" next to footer = same-feeling duplicate.
+            if re.search(r'(?:dim|confirm|danger)\(\s*"Back"\s*\)', body):
                 errors.append(
-                    f"{path.name}.{name}: Back-labeled button stacked with footerBackHome/ToMain"
+                    f'{path.name}.{name}: dim/confirm("Back") with footer - name the destination '
+                    "or drop the contextual Back"
+                )
+            if "UltraStyle.BACK" in body and "UltraStyle.backTo(" not in body:
+                # BACK const + footer without a named backTo nearby is a duplicate hub exit.
+                errors.append(
+                    f"{path.name}.{name}: UltraStyle.BACK + footerBack* - use UltraStyle.backTo("
+                    '"Destination") for contextual exits'
                 )
             # True duplicate: page:main Back next to footerBackHome (same destination often).
             if 'dim("Back")' in body or "dim(\"Back\")" in body:
@@ -579,13 +587,62 @@ def main() -> int:
         errors.append("UltraPrestigeScreens must expose shop hub + Skills/Tiers/Effects submenus")
     if "page:skills" not in prestige or "page:tiers" not in prestige or "page:effects" not in prestige:
         errors.append("UltraPrestigeScreens shop hub must link page:skills / page:tiers / page:effects")
+    if "skills_p" not in prestige or "skillsPageId" not in prestige:
+        errors.append("UltraPrestigeScreens skill shop must paginate via skills_pN page ids")
+    if 'buttonLeft("open:prestige"' in prestige or 'buttonRight("tab:shop"' in prestige:
+        errors.append(
+            "UltraPrestigeScreens must not use open:prestige / tab:shop for skill-shop Prev/Next "
+            "(those reopen Home / page 0)"
+        )
+    if re.search(r'"page:skills:\d+"', prestige):
+        errors.append(
+            "UltraPrestigeScreens must not emit page:skills:N buttons "
+            "(use page:skills_pN - nested colons are fragile)"
+        )
     if "do:tier:" not in prestige or "do:majin" not in prestige or "do:mutant" not in prestige:
         errors.append("UltraPrestigeScreens must wire do:tier / do:majin / do:mutant favor buys")
     if 'labelValue("Lifetime prestiges"' not in prestige and "Lifetime prestiges" not in prestige:
         errors.append('UltraPrestigeScreens must label wallet "Lifetime prestiges" (not Completed)')
     if "Completed prestiges" in prestige:
         errors.append('UltraPrestigeScreens must not use "Completed prestiges"')
+    difficulty_titles = (ULTRA / "UltraDifficultyScreens.java").read_text(encoding="utf-8")
+    if "titles_p" not in difficulty_titles or "TITLES_PER_PAGE" not in difficulty_titles:
+        errors.append("UltraDifficultyScreens must paginate titles via titles_pN (no hard 10-cap drop)")
+    if re.search(r"placed\s*>=\s*10", difficulty_titles):
+        errors.append("UltraDifficultyScreens must not hard-drop titles after placed >= 10")
+    # openShop historically stacked "page:main" Back + footer (same destination).
+    shop_m = re.search(
+        r"static void openShop\b.*?^\s*static void ",
+        weight_shop,
+        re.S | re.M,
+    )
+    shop_body = shop_m.group(0) if shop_m else ""
+    if '"page:main"' in shop_body and "footerBackHome()" in shop_body:
+        errors.append(
+            "UltraWeightShopScreens.openShop must not stack page:main Back with footerBackHome"
+        )
     rival = (ULTRA / "UltraRivalScreens.java").read_text(encoding="utf-8")
+    if 'confirm("Reload")' in rival and 'confirm("Reload data")' not in rival:
+        errors.append('UltraRivalScreens staff admin must label refresh "Reload data"')
+    # Challenge Accept/Decline only via placePerChallengeButtons on Challenge tab.
+    home_m = re.search(
+        r"private static void openHome\b.*?^\s*private static void ",
+        rival,
+        re.S | re.M,
+    )
+    actions_m = re.search(
+        r"private static void openActions\b.*?^\s*private static void ",
+        rival,
+        re.S | re.M,
+    )
+    home_body = home_m.group(0) if home_m else ""
+    actions_body = actions_m.group(0) if actions_m else ""
+    if "challenge_accept" in home_body or "challenge_decline" in home_body:
+        errors.append("UltraRivalScreens.openHome must not duplicate challenge Accept/Decline")
+    if "challenge_accept" in actions_body or "challenge_decline" in actions_body:
+        errors.append("UltraRivalScreens.openActions must not duplicate challenge Accept/Decline")
+    if "placePerChallengeButtons" not in rival or "challenge_accept" not in rival:
+        errors.append("UltraRivalScreens must keep per-challenge Accept on Challenge via placePerChallengeButtons")
     detail_m = re.search(
         r"private static void openListDetail\b.*?^\s*private static void ",
         rival,

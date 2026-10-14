@@ -23,40 +23,63 @@ public final class UltraPrestigeScreens {
         }
         String raw = page == null || page.isBlank() ? "main" : page.trim();
         String p = raw.toLowerCase(Locale.ROOT);
-        int skillsPage = 0;
-        if (p.startsWith("skills:") || p.startsWith("shop:skills:")) {
-            String num = p.startsWith("skills:")
-                    ? p.substring("skills:".length())
-                    : p.substring("shop:skills:".length());
-            try {
-                skillsPage = Integer.parseInt(num.trim());
-            } catch (NumberFormatException ignored) {
-                skillsPage = 0;
-            }
+        Integer skillsPage = parseSkillsPage(p);
+        if (skillsPage != null) {
             openSkillsShop(player, Math.max(0, skillsPage));
             return;
-        }
-        // Legacy "shop:N" from older builds meant skill page N.
-        if (p.startsWith("shop:")) {
-            String rest = p.substring("shop:".length()).trim();
-            if (rest.chars().allMatch(Character::isDigit)) {
-                try {
-                    skillsPage = Integer.parseInt(rest);
-                } catch (NumberFormatException ignored) {
-                    skillsPage = 0;
-                }
-                openSkillsShop(player, Math.max(0, skillsPage));
-                return;
-            }
         }
         switch (p) {
             case "turnin", "points", "prestige" -> openTurnIn(player);
             case "shop", "shop_hub", "catalog" -> openShopHub(player);
-            case "skills", "skill" -> openSkillsShop(player, 0);
+            case "skills", "skill", "skills_p0" -> openSkillsShop(player, 0);
             case "tiers", "tier", "difficulty" -> openTiers(player);
             case "effects", "effect", "forms", "form" -> openEffects(player);
             default -> openHome(player);
         }
+    }
+
+    /**
+     * Skill-shop page tokens use {@code skills_pN} (no nested colons). Also accepts legacy
+     * {@code skills:N} / {@code shop:N} from older builds.
+     */
+    private static Integer parseSkillsPage(String p) {
+        if (p == null || p.isBlank()) {
+            return null;
+        }
+        if (p.startsWith("skills_p")) {
+            return parseNonNegInt(p.substring("skills_p".length()));
+        }
+        if (p.startsWith("skills:")) {
+            return parseNonNegInt(p.substring("skills:".length()));
+        }
+        if (p.startsWith("shop:skills:")) {
+            return parseNonNegInt(p.substring("shop:skills:".length()));
+        }
+        if (p.startsWith("shop:skills_p")) {
+            return parseNonNegInt(p.substring("shop:skills_p".length()));
+        }
+        // Legacy "shop:N" from older builds meant skill page N.
+        if (p.startsWith("shop:")) {
+            String rest = p.substring("shop:".length()).trim();
+            if (!rest.isEmpty() && rest.chars().allMatch(Character::isDigit)) {
+                return parseNonNegInt(rest);
+            }
+        }
+        return null;
+    }
+
+    private static Integer parseNonNegInt(String raw) {
+        try {
+            int n = Integer.parseInt(raw == null ? "" : raw.trim());
+            return Math.max(0, n);
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    /** Stable page id for skill-shop pagination (avoids nested colon page tokens). */
+    private static String skillsPageId(int page) {
+        return "skills_p" + Math.max(0, page);
     }
 
     private static UltraScreenSpec base(String page, String tab) {
@@ -159,7 +182,7 @@ public final class UltraPrestigeScreens {
         int pageSize = SKILLS_PER_PAGE;
         int pages = Math.max(1, (ids.length + pageSize - 1) / pageSize);
         int page = Math.min(pages - 1, Math.max(0, pageIndex));
-        UltraScreenSpec spec = base(page > 0 ? "skills:" + page : "skills", "shop");
+        UltraScreenSpec spec = base(skillsPageId(page), "shop");
         paintWallet(spec, ph);
         spec.line(UltraStyle.LABEL + "Permanent skill levels - 1 favor each (Potential Unlock +2)")
                 .labelValue("Skills page", (page + 1) + "/" + pages)
@@ -191,26 +214,30 @@ public final class UltraPrestigeScreens {
         if (placed % 2 == 1) {
             spec.rowGap();
         }
+        // Never use open:prestige / tab:shop for paging - those reopen Home / page 0.
         if (page > 0) {
             spec.buttonLeft(
-                    "page:skills:" + (page - 1), UltraStyle.dim("Prev"), UltraStyle.STYLE_DIM);
+                    "page:" + skillsPageId(page - 1),
+                    UltraStyle.dim("Prev skills page"),
+                    UltraStyle.STYLE_DIM);
         }
         if (page + 1 < pages) {
             if (page > 0) {
                 spec.buttonRight(
-                        "page:skills:" + (page + 1),
-                        UltraStyle.LABEL + "Next",
+                        "page:" + skillsPageId(page + 1),
+                        UltraStyle.LABEL + "Next skills page",
                         UltraStyle.STYLE_NORMAL);
             } else {
                 spec.buttonLeft(
-                        "page:skills:" + (page + 1),
-                        UltraStyle.LABEL + "Next",
+                        "page:" + skillsPageId(page + 1),
+                        UltraStyle.LABEL + "Next skills page",
                         UltraStyle.STYLE_NORMAL);
             }
             spec.rowGap();
         } else if (page > 0) {
             spec.rowGap();
         }
+        // Named contextual exit + footer hub Back (different destinations).
         spec.button("page:shop", UltraStyle.dim("Shop catalog"), UltraStyle.STYLE_DIM).rowGap();
         spec.footerBackHome();
         spec.send(player);
