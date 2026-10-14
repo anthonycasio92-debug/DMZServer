@@ -1065,6 +1065,10 @@ public final class ProgressionGuiApi {
         if ("page".equals(act) || "refresh".equals(act)) {
             return "";
         }
+        if ("confirm_now".equals(act) || "confirm_gui".equals(act)) {
+            // Ultra confirm subpage already showed warnings - purchase without chat double-click.
+            return PrestigeSystem.confirmFromGui(player);
+        }
         if ("confirm".equals(act) || "buy".equals(act) || "purchase".equals(act)) {
             return PrestigeSystem.confirmOrPrompt(player);
         }

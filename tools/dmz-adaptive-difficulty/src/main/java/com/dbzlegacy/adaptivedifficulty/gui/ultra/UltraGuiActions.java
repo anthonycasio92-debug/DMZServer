@@ -703,18 +703,9 @@ public final class UltraGuiActions {
                 default -> page.isBlank() ? homePage(screen) : page;
             };
             case "prestige" -> switch (parts.action == null ? "" : parts.action) {
-                case "confirm", "turnin", "turn_in", "redeem" -> "turnin";
-                case "skill", "buy_skill", "skillup" -> {
-                    String skillPage = stringArg(args, "page");
-                    if (skillPage != null
-                            && (skillPage.startsWith("skills_p")
-                                    || skillPage.startsWith("skills:")
-                                    || "skills".equals(skillPage)
-                                    || "skill".equals(skillPage))) {
-                        yield skillPage;
-                    }
-                    yield "skills_p0";
-                }
+                case "confirm", "confirm_now", "confirm_gui" -> "turnin";
+                case "turnin", "turn_in", "redeem" -> "exchange";
+                case "skill", "buy_skill", "skillup" -> "skills";
                 case "tier", "buy_tier", "unlock_tier" -> "tiers";
                 case "majin", "buy_majin", "mutant", "buy_mutant",
                         "unmajin", "unbuy_majin", "remove_majin",

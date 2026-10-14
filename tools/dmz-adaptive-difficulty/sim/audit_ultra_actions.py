@@ -49,6 +49,7 @@ KNOWN_DO: dict[str, set[str]] = {
     },
     "prestige": {
         "confirm",
+        "confirm_now",
         "turnin",
         "skill",
         "tier",
@@ -679,8 +680,14 @@ def main() -> int:
         errors.append("UltraPrestigeScreens must expose shop hub + Skills/Tiers/Effects submenus")
     if "page:skills" not in prestige or "page:tiers" not in prestige or "page:effects" not in prestige:
         errors.append("UltraPrestigeScreens shop hub must link page:skills / page:tiers / page:effects")
-    if "skills_p" not in prestige or "skillsPageId" not in prestige:
-        errors.append("UltraPrestigeScreens skill shop must paginate via skills_pN page ids")
+    if "page:exchange" not in prestige or "openExchange" not in prestige:
+        errors.append("UltraPrestigeScreens must put exchange shop under Shop (page:exchange)")
+    if "openConfirm" not in prestige or "do:confirm_now" not in prestige:
+        errors.append("UltraPrestigeScreens must use GUI confirm subpage (do:confirm_now)")
+    if 'do:confirm"' in prestige and "page:confirm" not in prestige:
+        errors.append("UltraPrestigeScreens Prestige now must open confirm page (not chat do:confirm)")
+    if "SKILLS_PER_PAGE" in prestige or "Next skills page" in prestige:
+        errors.append("UltraPrestigeScreens skill shop must be single-page (no skills_p pagination)")
     if 'buttonLeft("open:prestige"' in prestige or 'buttonRight("tab:shop"' in prestige:
         errors.append(
             "UltraPrestigeScreens must not use open:prestige / tab:shop for skill-shop Prev/Next "
@@ -689,7 +696,7 @@ def main() -> int:
     if re.search(r'"page:skills:\d+"', prestige):
         errors.append(
             "UltraPrestigeScreens must not emit page:skills:N buttons "
-            "(use page:skills_pN - nested colons are fragile)"
+            "(nested colons are fragile)"
         )
     if "do:tier:" not in prestige or "do:majin" not in prestige or "do:mutant" not in prestige:
         errors.append("UltraPrestigeScreens must wire do:tier / do:majin / do:mutant favor buys")
@@ -697,11 +704,21 @@ def main() -> int:
         errors.append('UltraPrestigeScreens must label wallet "Lifetime prestiges" (not Completed)')
     if "Completed prestiges" in prestige:
         errors.append('UltraPrestigeScreens must not use "Completed prestiges"')
+    if "Current prestige amount" not in prestige or "Prestige favor" not in prestige:
+        errors.append(
+            "UltraPrestigeScreens must use Current prestige amount / Prestige favor wording"
+        )
+    if "paintFavorBalance" not in prestige:
+        errors.append("UltraPrestigeScreens shops must use favor-only header (paintFavorBalance)")
     if "PrestigeUniverseRoleWarn" not in prestige:
         errors.append(
             "UltraPrestigeScreens must warn GoD / Supreme Kai via PrestigeUniverseRoleWarn "
-            "before Prestige now"
+            "on the confirm subpage"
         )
+    if "confirmFromGui" not in (
+        ROOT / "src/main/java/com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigeSystem.java"
+    ).read_text(encoding="utf-8"):
+        errors.append("PrestigeSystem must expose confirmFromGui for Ultra confirm subpage")
     role_warn = (
         ROOT
         / "src/main/java/com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigeUniverseRoleWarn.java"

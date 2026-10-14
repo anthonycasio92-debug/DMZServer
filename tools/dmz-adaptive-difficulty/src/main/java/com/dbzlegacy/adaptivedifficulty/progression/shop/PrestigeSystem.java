@@ -110,6 +110,36 @@ public final class PrestigeSystem {
         return replyConfirm(player, completed, next, required, level, held);
     }
 
+    /**
+     * Ultra GUI confirm subpage - run the prestige purchase when eligible.
+     * Skips the chat double-click prompt (confirmation already happened in the GUI).
+     */
+    public static String confirmFromGui(ServerPlayer player) {
+        if (!DifficultyConfig.get().enablePrestigeSystem || player == null) {
+            return "§cPrestige system is disabled.";
+        }
+        StatsData data = DmzProgression.stats(player);
+        if (data == null) {
+            return "§cCould not read your Dragon Mine Z stats.";
+        }
+        int level;
+        try {
+            level = Math.max(0, data.getLevel());
+        } catch (Throwable t) {
+            return "§cCould not determine your Dragon Mine Z level.";
+        }
+        int completed = getCompleted(player);
+        int held = getHeld(player);
+        int required = requiredLevel(player);
+        if (held >= MAX_HELD) {
+            return replyCap(player, held);
+        }
+        if (level < required) {
+            return replyRequirement(player, completed, completed + 1, required, level);
+        }
+        return purchase(player, data, completed, required, level);
+    }
+
     private static String purchase(
             ServerPlayer player, StatsData data, int completed, int required, int level
     ) {
