@@ -473,8 +473,9 @@ Short id **or** explicit state map:
 }
 ```
 
-Prefer short ids; the client resolves state textures. Do not send flat color RGB as a
-substitute for skins.
+Prefer short ids; the client resolves textures. On live `dmzultra-0.2.9`, arena ships a
+**single** `button.png` — hover/pressed/disabled come from `UltraUi$Look` / tint, not
+extra files. Do not send flat color RGB as a substitute for skins.
 
 ### `frame` (layout)
 
