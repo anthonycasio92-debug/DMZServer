@@ -3,6 +3,7 @@ package com.dbzlegacy.adaptivedifficulty.progression.shop;
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
+import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import com.dbzlegacy.adaptivedifficulty.util.LmChat;
@@ -215,10 +216,10 @@ public final class PrestigeSystem {
                 .append(MAX_HELD)
                 .append(".");
         if (goD) {
-            summary.append("\n§c").append(PrestigeUniverseRoleWarn.GOD_OF_DESTRUCTION);
+            summary.append('\n').append(UltraStyle.DANGER).append(PrestigeUniverseRoleWarn.GOD_OF_DESTRUCTION);
         }
         if (kai) {
-            summary.append("\n§c").append(PrestigeUniverseRoleWarn.SUPREME_KAI);
+            summary.append('\n').append(UltraStyle.DANGER).append(PrestigeUniverseRoleWarn.SUPREME_KAI);
         }
         if (!preferGuiFeedback()) {
             send(player, "");
@@ -229,10 +230,10 @@ public final class PrestigeSystem {
                     + " §7is enough (needs §e" + DmzRewards.formatWhole(required) + "§7).");
             send(player, "§7Current prestige amount will be §6" + (held + 1) + "§7/§f" + MAX_HELD + ".");
             if (goD) {
-                send(player, "§c" + PrestigeUniverseRoleWarn.GOD_OF_DESTRUCTION);
+                send(player, UltraStyle.DANGER + PrestigeUniverseRoleWarn.GOD_OF_DESTRUCTION);
             }
             if (kai) {
-                send(player, "§c" + PrestigeUniverseRoleWarn.SUPREME_KAI);
+                send(player, UltraStyle.DANGER + PrestigeUniverseRoleWarn.SUPREME_KAI);
             }
             send(player, "§7Click again within 10 seconds.");
             MutableComponent row = Component.m_237113_("§7")
