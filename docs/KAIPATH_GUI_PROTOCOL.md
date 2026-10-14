@@ -65,9 +65,9 @@ Every button object in `buttonsJson`:
 | `footer` | no | boolean | When `true`, pin this button to the **panel footer** (does not scroll with body). Server places Y at the bottom band; clients must keep footer controls visible while body content scrolls above. |
 | `sound` | no | string | Registered SoundEvent RL (`ns:path`) played on click. LM emits `minecraft:ui.button.click` (vanilla — works without DMZUltra). Also accepts `{"id":"ns:path"}`. Missing registry entry → silent no-op. |
 | `buttonSkin` | no | string | Non-empty valid RL **enables** chrome button skin paint (KaiPath 1.3.13+). LM emits `legacymechanics:button`. Client does **not** load a texture from this RL. |
-| `accent` | no | string | Single-letter color code for per-button tint (compat; prefer `palette` / `tint`) |
-| `palette` | no | string | Named theme (`red`, `gold`, `aqua`, …) for **border / accent chrome** |
-| `tint` | no | string | Body fill color. LM emits the same named palette as `palette` (via `systemPaletteName`). **JLDK:** KaiPath 1.3.17 `UltraBridgeChrome.tint` reads only `palette`/`accent` into one ARGB used for body+border — confirm whether `tint` should be a palette name, hex, or needs a next client that splits body vs border. |
+| `accent` | no | string | Single-letter color code (optional; used for active-tab / hub-tile highlight). LM does **not** emit per-button `palette` / `tint`. |
+| `palette` | no | string | Named theme on a button (optional). LM leaves this off buttons — panel-level `layoutJson.palette` only. |
+| `tint` | no | string | Optional body fill on a button. LM does **not** emit this; buttons use KaiPath default chrome. |
 | `args` | recommended | object | Opaque JSON echoed to the server |
 
 ```json
@@ -361,17 +361,11 @@ KaiPath 1.3.13 computes these locally — **do not send** them from the server:
 
 LM already emits the geometry contract as `headerBottom`, `bodyTop`, `bodyMaxHeight`, `scrollBody`, and button `footer:true`. Adopting `contentTop`/`contentBottom`/`contentScroll` as wire fields would fight packing and duplicate the footer pin. KaiPath **1.3.17** honors `footer:true` / `fixedFooter` so the content band sits above the pinned footer.
 
-Buttons also carry per-button `pad` (same default), optional **`accent`** (letter codes),
-and LM **`palette` + `tint`** (named colors from `UltraStyle.systemPaletteName` / hub tile
-accent mapping). Intended split: `palette` = border, `tint` = body fill. Labels stay plain
-ASCII; text color is left to the client default until body tint is confirmed. Overlong
-labels truncate with ASCII `...`; pages scroll rather than squeezing buttons.
-
-**JLDK ask (button `tint`):** On KaiPath **1.3.17**, `ChromeButton` takes a single ARGB from
-`UltraBridgeChrome.tint(buttonJson)` which only inspects `palette` then `accent` — there is
-no `"tint"` JSON key. Body fill and border both use that one color. Please confirm the
-wire format for a separate body `tint` (palette name vs `#RRGGBB` / int) and whether the
-next KaiPath should apply `palette`→border and `tint`→body independently.
+Buttons carry per-button `pad` (same default) and optional **`accent`** for active-tab /
+hub-tile highlight. LM does **not** emit per-button `palette` or `tint` — buttons use
+KaiPath default chrome. Per-system color stays on **`layoutJson.palette`** (panel frame /
+title). Labels stay plain ASCII. Overlong labels truncate with ASCII `...`; pages scroll
+rather than squeezing buttons.
 
 **System accent map (LM):** Difficulty `c` · Rival `5` · Sparring `6` · Prestige `b` ·
 Character `a` · Skill Check `e` · Staff Admin `4`. Main hub omits `accent` (shared gold
