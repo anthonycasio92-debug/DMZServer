@@ -133,6 +133,26 @@ public final class UltraStyle {
     public static final String STYLE_DANGER = "danger";
     public static final String STYLE_DIM = "dim";
 
+    /**
+     * Button click sound (KaiPath {@code sound} wire — registered SoundEvent RL).
+     * Prefer {@code dmzultra:ui_confirm} when the DMZUltra client pack is present.
+     */
+    public static final String SOUND_CONFIRM = "dmzultra:ui_confirm";
+    /**
+     * Button chrome skin RL. KaiPath 1.3.13 only requires a valid {@code ns:path}; a
+     * non-empty value enables {@code ChromeButton} skin painting.
+     */
+    public static final String BUTTON_SKIN = "dmzultra:button";
+    /**
+     * Panel frame RL ({@code layoutJson.frame}). Non-empty valid RL enables framed chrome.
+     */
+    public static final String PANEL_FRAME = "dmzultra:panel";
+    /**
+     * Player-model portrait frame RL ({@code playerModel.portraitFrame}). Same enable rule
+     * as {@link #PANEL_FRAME}.
+     */
+    public static final String PORTRAIT_FRAME = "dmzultra:portrait";
+
     static {
         // Unicode escape keeps the mark out of other sources; static-init prevents folding.
         MARK = "\u00A7";

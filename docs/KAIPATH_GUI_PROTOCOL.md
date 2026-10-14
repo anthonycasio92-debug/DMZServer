@@ -63,6 +63,9 @@ Every button object in `buttonsJson`:
 | `h` | yes | number | Height |
 | `pad` | no | number | Horizontal label padding (default **8**) |
 | `footer` | no | boolean | When `true`, pin this button to the **panel footer** (does not scroll with body). Server places Y at the bottom band; clients must keep footer controls visible while body content scrolls above. |
+| `sound` | no | string | Registered SoundEvent RL (`ns:path`) played on click. LM emits `dmzultra:ui_confirm`. Also accepts `{"id":"ns:path"}`. |
+| `buttonSkin` | no | string | Non-empty valid RL enables chrome button skin (KaiPath 1.3.13+). LM emits `dmzultra:button`. |
+| `accent` | no | string | Single-letter color code for per-button tint |
 | `args` | recommended | object | Opaque JSON echoed to the server |
 
 ```json
@@ -157,12 +160,22 @@ Known optional feature ids:
 | `titleAlign` | `layoutJson.titleAlign` (`center` / `left`) |
 | `playerModel` | `layoutJson.playerModel` entity preview |
 | `textInput` | GuiOpenPacket field 11 `inputsJson` text fields + `bindInput` |
+| `headerBottom` | `layoutJson.headerBottom` / `tabsUnderTitle` |
+| `accent` | `layoutJson.accent` + button/tab `accent` |
+| `palette` | Named palette themes (also drives title tint) |
+| `sound` | Button `sound` click RL |
+| `buttonSkin` | Button `buttonSkin` chrome |
+| `frame` | `layoutJson.frame` panel chrome |
+| `pagedBook` | Advertise spelling (camelCase) for `inputsJson` **`type=paged_book`** (snake_case on the wire) |
+| `fixedFooter` | Button `footer:true` pinned chrome (**pending** on KaiPath 1.3.13) |
 
-Example (conforming client after implementing all):
+Example (KaiPath 1.3.13 live advertise):
 
 ```json
-["style","activeTab","titleAlign","playerModel","textInput"]
+["style","activeTab","titleAlign","playerModel","textInput","headerBottom","accent","palette","sound","buttonSkin","frame","pagedBook","combined.forms.v1"]
 ```
+
+**Spelling split:** GuiFeatures advertise uses camelCase **`pagedBook`**; the widget `type` string is snake_case **`paged_book`**.
 
 Send once after channel registration (client setup / first join). Extra ids are ignored.
 Extra wire fields after #1 are ignored.
@@ -202,7 +215,7 @@ Protocol `"1"`. Message 0 open, 1 action, 2 features (optional).
 | 8 | `panelWidth` | varint | Default **350** |
 | 9 | `panelHeight` | varint | Default **300** (grows toward **420** when needed) |
 | 10 | `layoutJson` | string | JSON object (panel + body/button metrics + optional `playerModel`) |
-| 11 | `inputsJson` | string | JSON array of input elements (`type=text` today); default `[]` |
+| 11 | `inputsJson` | string | JSON array of input elements (`type=text` / `type=paged_book`); default `[]` |
 
 Missing trailing fields → defaults. Bytes after the last understood field ignored.
 
@@ -231,6 +244,7 @@ Missing trailing fields → defaults. Bytes after the last understood field igno
 | `type` | Status | Notes |
 |--------|--------|-------|
 | `text` | **Shipped** (LM 4.6.108+) | Config TEXT / NUMBER / ENUM detail editors |
+| `paged_book` | **Shipped** (LM 4.6.153+ / KaiPath 1.3.13+) | Multi-page book widget. Advertise feature id is **`pagedBook`**. Shape: `{ "id", "type":"paged_book", "x","y","w","h", "pages":[{"title","lines":[…]}], "page":0, "args" }` |
 | `toggle` | Reserved | Not on wire yet — BOOLEAN uses styled buttons |
 | `slider` | Reserved | Not on wire yet — see [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md) |
 
@@ -256,6 +270,7 @@ platform-default charset causes mojibake on accents (é/à).
   "tabsUnderTitle": true,
   "headerBottom": 28,
   "accent": "c",
+  "frame": "dmzultra:panel",
   "lineHeight": 16,
   "lineGap": 8,
   "bodyTop": 42,
@@ -304,6 +319,8 @@ honor `margin`. Button `x`/`y` are panel-relative.
 | `tabsUnderTitle` | When `true`, LM placed tab controls as regular buttons under the header (not KaiPath's native title-chrome tab strip). Honor `headerBottom`. |
 | `headerBottom` | **Panel-relative Y where client header chrome must end.** Title text + yellow divider stay **strictly above** this line. When `tabsUnderTitle` is true, LM places the tab row at this Y (default **28**); when false, default **42** (`bodyTop`). This is the geometry contract that keeps tabs under the yellow divider. |
 | `accent` | Optional single-letter Minecraft color code (`c`, `5`, `6`, `b`, `a`, `e`, `4`, …) for **system accent**. Paint the title (and `activeTab` highlight) with this color. Do **not** expect section-sign in the title string — titles stay plain ASCII to avoid mojibake. Omit or ignore when blank. |
+| `palette` | Optional named theme (`red`, `gold`, `aqua`, …). When set, overrides accent for title tint. |
+| `frame` | Optional RL (`ns:path`). Non-empty valid RL enables framed panel chrome. LM emits `dmzultra:panel`. |
 | `lineHeight` | Body line height in GUI pixels (do **not** squeeze below this) |
 | `lineGap` | Extra gap between body lines |
 | `bodyTop` | Panel-relative Y where the body/scroll region starts |
@@ -314,6 +331,19 @@ honor `margin`. Button `x`/`y` are panel-relative.
 | `buttonGap` | Vertical gap between button rows |
 | `buttonMinWidth` | Minimum button width (**80**) — never shrink for long labels |
 | `buttonHeight` | Standard button height |
+
+#### Client-internal (not LM wire fields)
+
+KaiPath 1.3.13 computes these locally — **do not send** them from the server:
+
+| Client field | Derived from |
+|--------------|--------------|
+| `titleTint` | `layoutJson.palette` / `layoutJson.accent` (via `UltraBridgeChrome.tint`) |
+| `contentTop` | Panel Y + cursor after header/tabs |
+| `contentBottom` | Panel bottom band (today ~`panelH - 28`; must respect `footer:true` once `fixedFooter` ships) |
+| `contentScroll` | Mouse-wheel offset inside the content band |
+
+LM already emits the geometry contract as `headerBottom`, `bodyTop`, `bodyMaxHeight`, `scrollBody`, and button `footer:true`. Adopting `contentTop`/`contentBottom`/`contentScroll` as wire fields would duplicate that and fight packing — **not adopted**.
 
 Buttons also carry per-button `pad` (same default) and optional per-button **`accent`**
 (same single-letter codes as `layoutJson.accent`) for hub tiles / staff controls. Labels
@@ -332,6 +362,7 @@ title chrome).
 | `width`, `height` | number | Bounds for the preview |
 | `scale` | number | Entity scale (default `1.0`) |
 | `rotate` | boolean | Slow turntable when `true` |
+| `portraitFrame` | string | Optional RL; non-empty valid RL enables preview frame chrome. LM emits `dmzultra:portrait`. (Honored on 1.3.13 even when not in the advertise list — JLDK should add `portraitFrame` to GuiFeatures.) |
 | `parts` | object | Optional cosmetics snapshot — see below |
 
 **Backward compatible:** clients that do not know `playerModel` ignore it; the rest of the

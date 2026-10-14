@@ -277,7 +277,9 @@ public final class UltraScreenSpec {
                 UltraStyle.BTN_PAD,
                 bind,
                 normalizeAccent(accent),
-                false));
+                false,
+                UltraStyle.SOUND_CONFIRM,
+                UltraStyle.BUTTON_SKIN));
         return this;
     }
 
@@ -376,7 +378,9 @@ public final class UltraScreenSpec {
                         UltraStyle.BTN_PAD,
                         null,
                         "",
-                        true));
+                        true,
+                        UltraStyle.SOUND_CONFIRM,
+                        UltraStyle.BUTTON_SKIN));
     }
 
     /**
@@ -411,7 +415,38 @@ public final class UltraScreenSpec {
                         y,
                         Math.max(40, w),
                         Math.max(14, h),
-                        Math.max(1, Math.min(256, maxLength <= 0 ? 64 : maxLength))));
+                        Math.max(1, Math.min(256, maxLength <= 0 ? 64 : maxLength)),
+                        null,
+                        0));
+        return this;
+    }
+
+    /**
+     * Multi-page book widget ({@code inputsJson} {@code type=paged_book}). Advertise id is
+     * camelCase {@code pagedBook}; wire type is snake_case {@code paged_book}.
+     *
+     * <p>Each page is {@code { "title": "...", "lines": ["...", ...] }}.
+     */
+    public UltraScreenSpec pagedBook(
+            String inputId, int x, int y, int w, int h, JsonArray pages, int startPage) {
+        UltraScreenIds.requireValidActionId(screenId, inputId, "paged_book");
+        if (firstButtonY < 0 || y < firstButtonY) {
+            firstButtonY = y;
+        }
+        JsonArray copy = pages == null ? new JsonArray() : pages.deepCopy();
+        inputs.add(
+                new Input(
+                        qualifyAction(inputId),
+                        "paged_book",
+                        "",
+                        "",
+                        x,
+                        y,
+                        Math.max(80, w),
+                        Math.max(40, h),
+                        0,
+                        copy,
+                        Math.max(0, startPage)));
         return this;
     }
 
@@ -563,7 +598,9 @@ public final class UltraScreenSpec {
                             b.pad,
                             b.bindInput,
                             b.accent,
-                            true),
+                            true,
+                            b.sound,
+                            b.buttonSkin),
                     0,
                     height);
         }
@@ -579,11 +616,16 @@ public final class UltraScreenSpec {
             o.addProperty("y", in.y + buttonShift);
             o.addProperty("w", in.w);
             o.addProperty("h", in.h);
-            o.addProperty("value", UltraStyle.wireText(in.value == null ? "" : in.value));
-            o.addProperty(
-                    "placeholder",
-                    UltraStyle.wireText(in.placeholder == null ? "" : in.placeholder));
-            o.addProperty("maxLength", in.maxLength);
+            if ("paged_book".equalsIgnoreCase(in.type)) {
+                o.add("pages", in.pages == null ? new JsonArray() : in.pages);
+                o.addProperty("page", Math.max(0, in.page));
+            } else {
+                o.addProperty("value", UltraStyle.wireText(in.value == null ? "" : in.value));
+                o.addProperty(
+                        "placeholder",
+                        UltraStyle.wireText(in.placeholder == null ? "" : in.placeholder));
+                o.addProperty("maxLength", in.maxLength);
+            }
             JsonObject args = new JsonObject();
             args.addProperty("screen", screenId);
             args.addProperty(UltraScreenIds.META_SYSTEM, screenId);
@@ -611,6 +653,8 @@ public final class UltraScreenSpec {
             // Single-letter color for title chrome + activeTab highlight (plain ASCII titles).
             layout.addProperty("accent", accentCode);
         }
+        // Non-empty valid RL enables framed panel chrome (KaiPath 1.3.13+).
+        layout.addProperty("frame", UltraStyle.PANEL_FRAME);
         // Shared body / button metrics - every screen benefits.
         layout.addProperty("lineHeight", UltraStyle.LINE_H);
         layout.addProperty("lineGap", UltraStyle.LINE_GAP);
@@ -636,6 +680,8 @@ public final class UltraScreenSpec {
             if (playerModel.parts != null && !playerModel.parts.entrySet().isEmpty()) {
                 pm.add("parts", playerModel.parts);
             }
+            // Enable portrait chrome when the client honors portraitFrame (1.3.13+).
+            pm.addProperty("portraitFrame", UltraStyle.PORTRAIT_FRAME);
             layout.add("playerModel", pm);
         }
         return new GuiOpenPacket(
@@ -715,6 +761,8 @@ public final class UltraScreenSpec {
             o.addProperty("w", tabW);
             o.addProperty("h", UltraStyle.BTN_H);
             o.addProperty("pad", UltraStyle.BTN_PAD);
+            o.addProperty("sound", UltraStyle.SOUND_CONFIRM);
+            o.addProperty("buttonSkin", UltraStyle.BUTTON_SKIN);
             JsonObject args = new JsonObject();
             args.addProperty("screen", screenId);
             args.addProperty(UltraScreenIds.META_SYSTEM, screenId);
@@ -822,6 +870,12 @@ public final class UltraScreenSpec {
         if (b.footer) {
             o.addProperty("footer", true);
         }
+        if (b.sound != null && !b.sound.isBlank()) {
+            o.addProperty("sound", b.sound);
+        }
+        if (b.buttonSkin != null && !b.buttonSkin.isBlank()) {
+            o.addProperty("buttonSkin", b.buttonSkin);
+        }
         JsonObject args = new JsonObject();
         // Logical system - echoed by KaiPath into GuiActionPacket even when wire screenId is hub.
         args.addProperty("screen", screenId);
@@ -845,7 +899,9 @@ public final class UltraScreenSpec {
             int pad,
             String bindInput,
             String accent,
-            boolean footer) {}
+            boolean footer,
+            String sound,
+            String buttonSkin) {}
 
     private record Input(
             String id,
@@ -856,7 +912,9 @@ public final class UltraScreenSpec {
             int y,
             int w,
             int h,
-            int maxLength) {}
+            int maxLength,
+            JsonArray pages,
+            int page) {}
 
     private record PlayerModel(
             int x, int y, int width, int height, float scale, boolean rotate, JsonObject parts) {}

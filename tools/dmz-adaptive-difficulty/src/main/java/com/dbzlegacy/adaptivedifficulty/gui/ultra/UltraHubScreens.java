@@ -3,6 +3,8 @@ package com.dbzlegacy.adaptivedifficulty.gui.ultra;
 import com.dbzlegacy.adaptivedifficulty.gui.MechanicsGuiApi;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.SkillCheckService;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -84,18 +86,41 @@ public final class UltraHubScreens {
             openMain(player);
             return;
         }
+        JsonArray bookPages = new JsonArray();
+        JsonObject page1 = new JsonObject();
+        page1.addProperty("title", "Staff Admin");
+        JsonArray lines1 = new JsonArray();
+        lines1.add("Reload LM config from disk.");
+        lines1.add("Open Progression panel or Config editor.");
+        page1.add("lines", lines1);
+        bookPages.add(page1);
+        JsonObject page2 = new JsonObject();
+        page2.addProperty("title", "Commands");
+        JsonArray lines2 = new JsonArray();
+        lines2.add("Full list: /lm admin help");
+        lines2.add("Guitest: /lm admin guitest");
+        page2.add("lines", lines2);
+        bookPages.add(page2);
+
         UltraScreenSpec spec = UltraScreenSpec.of("admin")
                 .title("Staff Admin")
                 .page("admin")
                 .activeTab("home")
-                .line(UltraStyle.LABEL + "Reload, config editor, progression tools")
-                .line(UltraStyle.DIM + "Full commands: /lm admin help")
-                .setRow(UltraStyle.CONTENT_ROW + UltraStyle.BODY_MIN_H);
+                .pagedBook(
+                        "input:admin_help",
+                        UltraStyle.COL_L,
+                        UltraStyle.CONTENT_ROW,
+                        UltraStyle.BTN_W * 2 + UltraStyle.BTN_GAP,
+                        88,
+                        bookPages,
+                        0)
+                .setRow(UltraStyle.CONTENT_ROW + 88 + UltraStyle.BTN_GAP);
         spec.button("do:reload", UltraStyle.confirm("Reload LM config"), UltraStyle.STYLE_CONFIRM)
                 .rowGap();
         spec.buttonLeft("open:progression", "Progression panel", UltraStyle.STYLE_NORMAL)
                 .buttonRight("open:config", "Config editor", UltraStyle.STYLE_NORMAL)
                 .rowGap();
+        // Hub admin is not a system-home tab — keep explicit nav:hub (audit forbids footerBackToMain here).
         spec.setRow(spec.row() + UltraStyle.BTN_GAP)
                 .button(
                         "nav:hub",
