@@ -1,6 +1,8 @@
-# Ultra bridge gap matrix (LM ↔ KaiPath)
+# Ultra bridge gap matrix (any partner mod ↔ KaiPath)
 
-**LM 4.6.151** + **KaiPath 1.3.9** (live / recommended). Official KaiPath updates are owned by the KaiPath mod developer.
+**Protocol is multi-mod** (`{modId}:gui`). Reference partner: **LM 4.6.151** + **KaiPath 1.3.9**
+(live / recommended). Any Forge mod can pull [`tools/ultra-gui-kit/server/`](../tools/ultra-gui-kit/server/)
+and register the same wire format. Official KaiPath updates are owned by the KaiPath mod developer.
 
 ## Open bridge gaps (only these)
 
@@ -68,12 +70,12 @@ Vendored / live jar: `mods/kaipath-1.3.9.jar`. Reference kit: [`tools/ultra-gui-
 | Title vertical center | **Missing** | **Done in kit** — No new field |
 | `slider` / `toggle` widgets | N/A | When LM ships types |
 
-### Advertise when headerBottom + accent ship
+### Advertise when headerBottom + accent ship (every partner channel)
 
 ```java
-UltraGuiConsumerRegistry.advertiseFeatures(
-    "legacymechanics:gui",
-    "[\"style\",\"activeTab\",\"titleAlign\",\"playerModel\",\"textInput\",\"headerBottom\",\"accent\"]");
+UltraGuiPartners.register("legacymechanics", "myshop"); // any mod ids
+// UltraGuiConsumerRegistry advertises on each channel:
+// ["style","activeTab","titleAlign","playerModel","textInput","headerBottom","accent"]
 ```
 
 ## Practical pitfalls

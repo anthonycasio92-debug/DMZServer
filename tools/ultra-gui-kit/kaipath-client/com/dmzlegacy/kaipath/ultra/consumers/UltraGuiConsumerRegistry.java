@@ -16,22 +16,24 @@ import net.minecraftforge.network.simple.SimpleChannel;
 
 /**
  * Multi-mod Ultra GUI client registry. Each server mod owns {@code <modid>:gui}; KaiPath keys
- * consumers by that channel id — never assume a single mod.
+ * consumers by that channel id — never assume a single mod (LegacyMechanics is only one partner).
  *
- * <p>JLDK: call {@link #registerClientChannel(String)} once per partner mod. Reference client
- * advertises the full optional set via {@link #ADVERTISED_FEATURES_JSON}.
+ * <p>JLDK: register every partner via {@link UltraGuiPartners#registerDefaults()} or
+ * {@link #registerClientChannel(String)}. Packet codecs are channel-agnostic; the same
+ * GuiOpen/GuiAction/GuiFeatures classes serve all mods. Advertises the full optional set via
+ * {@link #ADVERTISED_FEATURES_JSON} on every registered channel.
  */
 public final class UltraGuiConsumerRegistry {
     public static final String CHANNEL_PATH = "gui";
     public static final String PROTOCOL_VERSION = "1";
 
     /**
-     * Features this reference client honors — keep in sync with
-     * {@code LmDynamicScreen} + {@code GuiOpenPacket} UTF-8 decode.
+     * Features this reference client honors on <b>every</b> registered {@code <modid>:gui}
+     * channel — keep in sync with {@code LmDynamicScreen} + {@code GuiOpenPacket} UTF-8 decode.
      *
      * <p>Released KaiPath <b>1.3.9</b> advertises five features (through {@code textInput}).
-     * This kit adds {@code headerBottom} + {@code accent} so LM {@code pendingNext} clears
-     * after merge into the next official KaiPath jar.
+     * This kit adds {@code headerBottom} + {@code accent} so any partner mod's pending gaps
+     * clear after merge into the next official KaiPath jar.
      */
     public static final String ADVERTISED_FEATURES_JSON =
             "[\"style\",\"activeTab\",\"titleAlign\",\"playerModel\",\"textInput\",\"headerBottom\",\"accent\"]";

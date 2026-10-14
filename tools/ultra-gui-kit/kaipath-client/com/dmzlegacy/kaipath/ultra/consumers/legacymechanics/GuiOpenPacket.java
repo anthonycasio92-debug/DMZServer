@@ -8,7 +8,8 @@ import net.minecraftforge.network.NetworkEvent;
 
 /**
  * Server → client Ultra GUI open. Protocol {@link LmGuiNetwork#PROTOCOL_VERSION} field layout
- * matches LM {@code docs/KAIPATH_GUI_PROTOCOL.md} (11 fields, append-tolerant).
+ * matches {@code docs/KAIPATH_GUI_PROTOCOL.md} (11 fields, append-tolerant). Channel-agnostic
+ * — the same codec serves every {@code <modid>:gui} partner, not only LegacyMechanics.
  */
 public final class GuiOpenPacket {
     public static final int DEFAULT_PANEL_W = 350;
@@ -207,7 +208,7 @@ public final class GuiOpenPacket {
             try {
                 LmScreens.open(packet);
             } catch (Throwable t) {
-                UltraUiBridge.LOGGER.error("[kaipath] LM GuiOpenPacket handle failed screenId={}",
+                UltraUiBridge.LOGGER.error("[kaipath] GuiOpenPacket handle failed screenId={}",
                         packet == null ? "<null>" : packet.screenId(), t);
             }
         });

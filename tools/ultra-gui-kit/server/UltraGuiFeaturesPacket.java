@@ -4,15 +4,16 @@ import net.minecraft.network.FriendlyByteBuf;
 
 /**
  * Client → server: optional feature advertisement. Message index {@code 2} on
- * {@code <modid>:gui}.
+ * {@code <modid>:gui} (any partner mod — same wire shape).
  *
  * <p>Copy into your KaiPath / client mod. Backward compatible: if you never send this,
- * the server treats you as the 1.3.1 baseline (no {@code style} / {@code activeTab}).
+ * the server treats you as the baseline (no optional features).
  *
- * <p>After implementing button styles and active-tab highlight, send once:
+ * <p>After implementing the full renderer, advertise once per channel:
  *
  * <pre>
- * channel.sendToServer(new UltraGuiFeaturesPacket("[\"style\",\"activeTab\"]"));
+ * channel.sendToServer(new UltraGuiFeaturesPacket(
+ *     "[\"style\",\"activeTab\",\"titleAlign\",\"playerModel\",\"textInput\",\"headerBottom\",\"accent\"]"));
  * </pre>
  */
 public final class UltraGuiFeaturesPacket {

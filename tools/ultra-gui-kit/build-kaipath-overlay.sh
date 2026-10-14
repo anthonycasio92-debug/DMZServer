@@ -124,6 +124,10 @@ if ! jar tf "$OUT_JAR" | grep -q 'consumers/UltraGuiConsumerRegistry.class'; the
   echo "ERROR: missing UltraGuiConsumerRegistry in $OUT_JAR" >&2
   exit 1
 fi
+if ! jar tf "$OUT_JAR" | grep -q 'consumers/UltraGuiPartners.class'; then
+  echo "ERROR: missing UltraGuiPartners in $OUT_JAR" >&2
+  exit 1
+fi
 
 javap -classpath "$OUT_JAR" -public \
   com.dmzlegacy.kaipath.ultra.consumers.legacymechanics.GuiOpenPacket \
@@ -146,7 +150,7 @@ if ! strings "$OUT_JAR" | grep -q 'textInput'; then
 fi
 
 echo "Built $OUT_JAR"
-jar tf "$OUT_JAR" | grep -E 'consumers/(UltraGuiConsumerRegistry|legacymechanics/)' | sort
+jar tf "$OUT_JAR" | grep -E 'consumers/(UltraGuiConsumerRegistry|UltraGuiPartners|legacymechanics/)' | sort
 echo "Advertise: $(python3 - <<PY
 import zipfile
 z=zipfile.ZipFile("$OUT_JAR")

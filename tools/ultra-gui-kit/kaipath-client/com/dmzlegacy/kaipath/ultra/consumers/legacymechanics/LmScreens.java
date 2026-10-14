@@ -11,9 +11,10 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 /**
- * Opens LM Ultra screens. <b>No screenId whitelist</b> — any id renders via
- * {@link LmDynamicScreen}. Optional {@link #register} factories are only used when a caller
- * opens by bare id without a packet (legacy); packet opens always use the dynamic renderer.
+ * Opens Ultra screens for <b>any</b> registered {@code <modid>:gui} channel. <b>No screenId
+ * whitelist</b> — any id renders via {@link LmDynamicScreen}. Optional {@link #register}
+ * factories are only used when a caller opens by bare id without a packet (legacy); packet
+ * opens always use the dynamic renderer bound to the channel that delivered the open.
  */
 public final class LmScreens {
     private static final Map<String, Function<Minecraft, UltraScreen>> SCREENS = new HashMap<>();
@@ -32,7 +33,7 @@ public final class LmScreens {
         }
     }
 
-    /** Preferred entry: full packet → dynamic screen (any screenId) on the LM channel. */
+    /** Preferred entry: full packet → dynamic screen (any screenId). Defaults to LM channel. */
     public static void open(GuiOpenPacket packet) {
         open(packet, LmGuiNetwork.CHANNEL_ID);
     }
@@ -101,7 +102,7 @@ public final class LmScreens {
                         "{\"center\":true,\"margin\":6}")));
             }
         } catch (RuntimeException e) {
-            UltraUiBridge.LOGGER.warn("[kaipath] LM screen {} failed", id, e);
+            UltraUiBridge.LOGGER.warn("[kaipath] Ultra screen {} failed", id, e);
             mc.m_91152_(new MissingScreen(id, e.getMessage()));
         }
     }
@@ -124,7 +125,7 @@ public final class LmScreens {
         private final String detail;
 
         MissingScreen(String id, String detail) {
-            super(Component.m_237113_("LM GUI error"));
+            super(Component.m_237113_("Ultra GUI error"));
             this.detail = "Failed: " + (id == null ? "?" : id)
                     + (detail == null || detail.isBlank() ? "" : " — " + detail);
         }

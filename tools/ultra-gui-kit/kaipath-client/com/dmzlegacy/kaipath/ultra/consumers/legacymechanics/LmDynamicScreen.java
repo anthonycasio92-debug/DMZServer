@@ -25,8 +25,9 @@ import net.minecraft.world.entity.LivingEntity;
  * field 11 {@code inputsJson} text fields, button {@code style} / {@code accent} colors,
  * {@code layoutJson.headerBottom}, and optional {@code layoutJson.playerModel}.
  *
- * <p>No hardcoded screen/tab/button lists. Clicks go back on the bound {@code <modid>:gui}
- * channel. Advertise via {@link UltraGuiConsumerRegistry#ADVERTISED_FEATURES_JSON}.
+ * <p>No hardcoded screen/tab/button lists. Works for <b>any</b> partner mod — clicks echo on
+ * the bound {@code <modid>:gui} channel that opened the screen. Advertise via
+ * {@link UltraGuiConsumerRegistry#ADVERTISED_FEATURES_JSON}.
  */
 public class LmDynamicScreen extends UltraScreen {
     /** Default {@code headerBottom} when under-title tabs are present. */

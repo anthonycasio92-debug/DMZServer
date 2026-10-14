@@ -1,16 +1,17 @@
 package com.example.ultragui;
 
 /**
- * Sketch only — not compiled by this repo. Shows the minimal server loop after you copy
- * {@link UltraGuiOpenPacket} / {@link UltraGuiActionPacket} / {@link UltraGuiChannel} into your mod.
+ * Sketch only — not compiled by this repo. Minimal server loop after you copy
+ * {@link UltraGuiOpenPacket} / {@link UltraGuiActionPacket} / {@link UltraGuiFeaturesPacket} /
+ * {@link UltraGuiChannel} into <b>your</b> Forge mod (any mod id — not LegacyMechanics-specific).
  *
  * <pre>
- * // Registration (Forge):
+ * // Registration (Forge) — channel = YOUR_MOD_ID:gui
  * SimpleChannel ch = NetworkRegistry.newSimpleChannel(
  *     new ResourceLocation(MOD_ID, UltraGuiChannel.PATH),
  *     () -> UltraGuiChannel.PROTOCOL_VERSION,
- *     NetworkRegistry.acceptMissingOr(UltraGuiChannel.PROTOCOL_VERSION),
- *     NetworkRegistry.acceptMissingOr(UltraGuiChannel.PROTOCOL_VERSION));
+ *     remote -> true,
+ *     remote -> true);
  * ch.messageBuilder(UltraGuiOpenPacket.class, 0, NetworkDirection.PLAY_TO_CLIENT)
  *   .encoder(UltraGuiOpenPacket::encode).decoder(UltraGuiOpenPacket::decode)
  *   .consumerMainThread((m, ctx) -> ctx.get().setPacketHandled(true)).add();
@@ -21,18 +22,32 @@ package com.example.ultragui;
  *       ctx.get().enqueueWork(() -> onClick(p, m));
  *       ctx.get().setPacketHandled(true);
  *   }).add();
+ * ch.messageBuilder(UltraGuiFeaturesPacket.class, 2, NetworkDirection.PLAY_TO_SERVER)
+ *   .encoder(UltraGuiFeaturesPacket::encode).decoder(UltraGuiFeaturesPacket::decode)
+ *   .consumerMainThread((m, ctx) -> {
+ *       // Optional: remember client features for this player
+ *       ctx.get().setPacketHandled(true);
+ *   }).add();
  *
- * // Open:
- * String buttons = "[{\"id\":\"@myshop:do:ping\",\"label\":\"§aPing\","
- *     + "\"x\":20,\"y\":80,\"w\":150,\"h\":18,\"args\":{\"screen\":\"hello\"}}]";
+ * // Tell KaiPath to listen (client side, once per partner mod):
+ * // UltraGuiPartners.register("mymod");  // or add "mymod" to DEFAULT_PARTNERS
+ *
+ * // Open — plain ASCII labels; tint via accent / style (avoid section-sign in title/buttons)
+ * String buttons = "["
+ *     + "{\"id\":\"@mymod:do:ping\",\"label\":\"Ping\",\"x\":20,\"y\":40,"
+ *     + "\"w\":150,\"h\":18,\"style\":\"confirm\",\"accent\":\"a\","
+ *     + "\"args\":{\"screen\":\"hello\"}}"
+ *     + "]";
+ * String layout = "{\"center\":true,\"margin\":6,\"titleAlign\":\"center\","
+ *     + "\"headerBottom\":42,\"accent\":\"6\"}";
  * UltraGuiOpenPacket open = new UltraGuiOpenPacket(
- *     "hello", "§6My Shop", "main", "[]", "", "[\"Welcome.\"]", buttons,
- *     350, 220, "{\"center\":true,\"margin\":6}");
+ *     "hello", "My Shop", "main", "[]", "", "[\"Welcome.\"]", buttons,
+ *     350, 220, layout, "[]");
  * ch.send(PacketDistributor.PLAYER.with(() -> player), open);
  *
- * // Click:
+ * // Click — actionId / argsJson echoed verbatim from the button
  * void onClick(ServerPlayer p, UltraGuiActionPacket m) {
- *     if ("@myshop:do:ping".equals(m.actionId())) {
+ *     if ("@mymod:do:ping".equals(m.actionId())) {
  *         p.sendSystemMessage(Component.literal("Pong"));
  *     }
  * }

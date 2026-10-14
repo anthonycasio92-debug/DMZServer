@@ -1,9 +1,14 @@
 # JLDK brief — KaiPath Ultra GUI client conformance
 
-**Status (LM 4.6.151 + KaiPath 1.3.9):** Live KaiPath **1.3.9** honors `style`, `activeTab`,
-`titleAlign`, `playerModel`, and **`textInput`**. LM already emits **`headerBottom`** and
-**`accent`** — those are the open advertise-able bridge gaps (plus title vertical centering,
-which needs no new field).
+**Status (KaiPath 1.3.9 + multi-mod protocol):** Live KaiPath **1.3.9** honors `style`,
+`activeTab`, `titleAlign`, `playerModel`, and **`textInput`** on every registered
+`{modId}:gui` channel. Partner servers (LM **4.6.151** and any other mod using the kit)
+already emit **`headerBottom`** and **`accent`** — those are the open advertise-able bridge
+gaps (plus title vertical centering, which needs no new field).
+
+**Multi-mod rule:** codecs and the dynamic screen are shared. Register every partner mod id
+via [`UltraGuiPartners`](../tools/ultra-gui-kit/kaipath-client/com/dmzlegacy/kaipath/ultra/consumers/UltraGuiPartners.java)
+— do not hardcode a single `legacymechanics` consumer.
 
 Full gap matrix: [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md).
 
@@ -12,13 +17,14 @@ Full gap matrix: [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md).
 | Protocol + conformance contract | [`docs/KAIPATH_GUI_PROTOCOL.md`](KAIPATH_GUI_PROTOCOL.md) |
 | Bridge gap matrix | [`docs/KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md) |
 | KaiPath client sources (reference) | [`tools/ultra-gui-kit/kaipath-client/`](../tools/ultra-gui-kit/kaipath-client/) |
-| Server codecs (any mod) | [`tools/ultra-gui-kit/server/`](../tools/ultra-gui-kit/server/) |
+| Server codecs (**any** Forge mod) | [`tools/ultra-gui-kit/server/`](../tools/ultra-gui-kit/server/) |
 
 ---
 
 ## Governing rule
 
 The client renders what the server sends — **no hardcoded screen/tab/button/action lists**.
+Each server mod owns `{modId}:gui`; clicks return on the channel that opened the screen.
 
 ## Confirmed on KaiPath 1.3.9
 
@@ -76,15 +82,19 @@ Single-letter Minecraft color codes (no section-sign in title/button labels).
 
 Advertise: `"accent"`. **Done in kit**.
 
-## Advertise (kit default — merge as-is)
+## Advertise (kit default — every partner channel)
 
 ```java
-UltraGuiConsumerRegistry.advertiseFeatures(
-    "legacymechanics:gui",
-    "[\"style\",\"activeTab\",\"titleAlign\",\"playerModel\",\"textInput\",\"headerBottom\",\"accent\"]");
+// Boot: register all partners (not only LM)
+UltraGuiPartners.registerDefaults();
+// Or: UltraGuiPartners.register("legacymechanics", "myshop");
+
+// Registry advertises the same JSON on each channel automatically:
+// ["style","activeTab","titleAlign","playerModel","textInput","headerBottom","accent"]
 ```
 
-After merge, LM guitest moves from `pendingNext=[headerBottom, accent]` → `pendingNext=none`.
+After merge, partner guitests (e.g. LM `/lm admin guitest`) move from
+`pendingNext=[headerBottom, accent]` → `pendingNext=none`.
 
 ## Deferred (not blocking)
 

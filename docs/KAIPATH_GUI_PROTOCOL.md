@@ -16,13 +16,12 @@ LegacyMechanics (LM).
 channel namespace or mod id. New menus are added on the **server mod** side only. Optional
 fields (`style`, `activeTab`) are **data**, not new hardcoded screens.
 
-**KaiPath 1.3.7** (CurseForge latest / vendored): decodes GuiOpen fields 1–10, honors
-button `style`, `layoutJson.titleAlign`, `activeTab`, and `playerModel`, and advertises
-those four via `GuiFeaturesPacket`. **Still missing:** field 11 `inputsJson` /
-`textInput` — reference kit
-(`tools/ultra-gui-kit/kaipath-client/`) has the merge; ship a rebuild past 1.3.7 to
-unblock Weight shop text entry. LM **4.6.108+** logs missing optional features via
-`GuiFeaturesPacket`. (CurseForge never published 1.3.5; jump was 1.3.1 → 1.3.7.)
+**KaiPath 1.3.9** (live / recommended): decodes GuiOpen fields 1–11, honors `style`,
+`titleAlign`, `activeTab`, `playerModel`, and `textInput`, and advertises those five via
+`GuiFeaturesPacket` on each registered `{modId}:gui` channel. **Still missing on 1.3.9:**
+`headerBottom` + `accent` (plus title vertical centering) — reference kit
+(`tools/ultra-gui-kit/kaipath-client/`) has the merge for **all** partner mods, not only LM.
+Server mods pull `tools/ultra-gui-kit/server/` and own their own channel namespace.
 
 Implement-yourself kit: [`tools/ultra-gui-kit/`](../tools/ultra-gui-kit/).
 JLDK handoff: [`docs/KAIPATH_JLDK_CLIENT_BRIEF.md`](KAIPATH_JLDK_CLIENT_BRIEF.md).
@@ -387,9 +386,10 @@ GuiOpenPacket open = new GuiOpenPacket(
 CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), open);
 ```
 
-Client: `UltraGuiConsumerRegistry.registerClientChannel("mymod")` then send
-`GuiFeaturesPacket` with `["style","activeTab","titleAlign","playerModel"]` once
-implemented.
+Client: `UltraGuiPartners.register("mymod")` (or add to `DEFAULT_PARTNERS`) then the
+registry advertises
+`["style","activeTab","titleAlign","playerModel","textInput","headerBottom","accent"]`
+once those features are implemented.
 
 ---
 
