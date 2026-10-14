@@ -25,7 +25,7 @@ import net.minecraft.server.level.ServerPlayer;
  *   <li>{@link #FEATURE_PLAYER_MODEL} — {@code layoutJson.playerModel} entity preview
  *   <li>{@link #FEATURE_TEXT_INPUT} — GuiOpenPacket field 11 {@code inputsJson} text fields
  *   <li>{@link #FEATURE_HEADER_BOTTOM} — {@code layoutJson.headerBottom} (title+divider above tabs)
- *   <li>{@link #FEATURE_ACCENT} — {@code layoutJson.accent} + button/tab {@code accent}
+ *   <li>{@link #FEATURE_ACCENT} — {@code layoutJson.accent} (panel/title/activeTab; buttons emit no color keys)
  *   <li>{@link #FEATURE_FIXED_FOOTER} — button {@code footer:true} pinned chrome
  * </ul>
  *
@@ -278,7 +278,7 @@ public final class UltraClientFeatures {
                                 + "(layoutJson.headerBottom ignored)");
             } else if (FEATURE_ACCENT.equals(key)) {
                 lines.add(
-                        "system accent colors ignored (layoutJson.accent / button accent not painted; "
+                        "system accent colors ignored (layoutJson.accent not painted; "
                                 + "activeTab stays shared yellow)");
             } else if (FEATURE_FIXED_FOOTER.equals(key)) {
                 lines.add(

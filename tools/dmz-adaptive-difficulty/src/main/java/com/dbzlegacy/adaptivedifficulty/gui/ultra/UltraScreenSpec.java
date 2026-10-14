@@ -750,14 +750,13 @@ public final class UltraScreenSpec {
             // Plain + pre-fit: stock KaiPath fitLabel uses a mojibaked ellipsis (A/E glyphs).
             String label =
                     UltraStyle.fitAsciiLabel(tab.label, UltraStyle.labelMaxWidth(tabW));
-            // Inactive=dim. Active/staff=normal + accent (KaiPath paints highlight from accent /
-            // activeTab — not shared yellow confirm).
+            // Inactive=dim. Active/staff=normal. No button color keys — KaiPath default chrome;
+            // layoutJson.accent / palette keep title + panel colors (activeTab highlight).
             String style = tabStyle(tab, active);
             JsonObject o = new JsonObject();
             o.addProperty("id", qualifyAction("tab:" + tab.id));
             o.addProperty("label", label);
             o.addProperty("style", style);
-            // No per-button accent — layoutJson.accent keeps title / activeTab colors.
             o.addProperty("x", x);
             o.addProperty("y", y);
             o.addProperty("w", tabW);
@@ -846,7 +845,7 @@ public final class UltraScreenSpec {
         o.addProperty("id", b.actionId);
         o.addProperty("label", b.label);
         o.addProperty("style", b.style);
-        // No per-button accent — layoutJson.accent keeps title / activeTab colors.
+        // Zero color keys (no accent/palette/tint) — KaiPath default chrome.
         o.addProperty("x", b.x);
         int y = b.footer ? b.y : b.y + buttonShift;
         // Footer pins to panel bottom even if packing shifted body rows.
