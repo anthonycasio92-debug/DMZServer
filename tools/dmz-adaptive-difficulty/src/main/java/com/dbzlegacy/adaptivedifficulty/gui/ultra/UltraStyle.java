@@ -58,6 +58,8 @@ public final class UltraStyle {
 
     public static final String BACK;
     public static final String BACK_TO_MAIN;
+    /** Right-side footer exit to the Ultra hub (never say "Hub"). */
+    public static final String MAIN_MENU;
     public static final int BTN_MIN_W = 80;
     /** Horizontal padding inside buttons (client honors via layoutJson / button pad). */
     public static final int BTN_PAD = 8;
@@ -170,20 +172,26 @@ public final class UltraStyle {
         // No leading "<" - some clients render it as garbage next to color codes.
         BACK = LABEL + "Back";
         BACK_TO_MAIN = LABEL + "Back to main menu";
+        MAIN_MENU = LABEL + "Main menu";
     }
 
     private UltraStyle() {}
 
     /**
-     * Contextual back that names its destination (e.g. "Weights shop", "Rival list").
-     * Use beside {@link UltraScreenSpec#footerBackHome()} when both exits are intentional —
-     * footer stays generic hub Back; this names the specific parent page.
+     * Contextual back label that names its destination (e.g. {@code Back to Rival Home}).
+     * Prefer {@link UltraScreenSpec#footerBackHome(String)} / {@link UltraScreenSpec#footerBack}
+     * so the control lives in the pinned footer, not the scrollable body.
      */
     public static String backTo(String destination) {
         if (destination == null || destination.isBlank()) {
             return BACK;
         }
-        return LABEL + destination.trim();
+        String dest = destination.trim();
+        // Avoid "Back to Back to ..." if a caller already prefixed.
+        if (dest.regionMatches(true, 0, "Back to ", 0, 8)) {
+            return LABEL + dest;
+        }
+        return LABEL + "Back to " + dest;
     }
 
     public static String plain(String text) {

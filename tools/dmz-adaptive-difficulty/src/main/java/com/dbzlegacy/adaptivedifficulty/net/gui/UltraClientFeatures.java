@@ -42,6 +42,7 @@ public final class UltraClientFeatures {
     public static final String FEATURE_TEXT_INPUT = "textinput";
     public static final String FEATURE_HEADER_BOTTOM = "headerbottom";
     public static final String FEATURE_ACCENT = "accent";
+    public static final String FEATURE_FIXED_FOOTER = "fixedfooter";
 
     /** Wire / doc spellings accepted for {@link #FEATURE_ACTIVE_TAB}. */
     public static final String FEATURE_ACTIVE_TAB_DOC = "activeTab";
@@ -55,6 +56,8 @@ public final class UltraClientFeatures {
     public static final String FEATURE_HEADER_BOTTOM_DOC = "headerBottom";
     /** Wire / doc spelling for {@link #FEATURE_ACCENT}. */
     public static final String FEATURE_ACCENT_DOC = "accent";
+    /** Wire / doc spelling for {@link #FEATURE_FIXED_FOOTER}. */
+    public static final String FEATURE_FIXED_FOOTER_DOC = "fixedFooter";
 
     /** Optional features the LM bridge expects a fully conforming client to advertise. */
     public static final Set<String> EXPECTED_OPTIONAL =
@@ -65,7 +68,8 @@ public final class UltraClientFeatures {
                     FEATURE_PLAYER_MODEL,
                     FEATURE_TEXT_INPUT,
                     FEATURE_HEADER_BOTTOM,
-                    FEATURE_ACCENT);
+                    FEATURE_ACCENT,
+                    FEATURE_FIXED_FOOTER);
 
     /**
      * Features KaiPath <b>1.3.9</b> already advertises/honors. Missing any of these is a real
@@ -84,7 +88,7 @@ public final class UltraClientFeatures {
      * Guitest reports them as {@code pendingNext=} (info, not a pre-1.3.9 warn).
      */
     public static final Set<String> PENDING_NEXT =
-            Set.of(FEATURE_HEADER_BOTTOM, FEATURE_ACCENT);
+            Set.of(FEATURE_HEADER_BOTTOM, FEATURE_ACCENT, FEATURE_FIXED_FOOTER);
 
     private static final Map<UUID, State> BY_PLAYER = new ConcurrentHashMap<>();
 
@@ -221,6 +225,9 @@ public final class UltraClientFeatures {
         if (FEATURE_ACCENT.equals(key)) {
             return FEATURE_ACCENT_DOC;
         }
+        if (FEATURE_FIXED_FOOTER.equals(key)) {
+            return FEATURE_FIXED_FOOTER_DOC;
+        }
         return feature == null ? "" : feature;
     }
 
@@ -259,6 +266,10 @@ public final class UltraClientFeatures {
                 lines.add(
                         "system accent colors ignored (layoutJson.accent / button accent not painted; "
                                 + "activeTab stays shared yellow)");
+            } else if (FEATURE_FIXED_FOOTER.equals(key)) {
+                lines.add(
+                        "footer buttons may scroll with body "
+                                + "(button footer:true / fixedFooter not pinned)");
             }
         }
         return lines;
