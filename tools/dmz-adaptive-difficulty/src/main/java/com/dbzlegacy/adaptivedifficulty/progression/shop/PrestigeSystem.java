@@ -3,6 +3,7 @@ package com.dbzlegacy.adaptivedifficulty.progression.shop;
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
+import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import com.dbzlegacy.adaptivedifficulty.util.LmChat;
@@ -216,10 +217,10 @@ public final class PrestigeSystem {
                     + " §7is enough (needs §e" + DmzRewards.formatWhole(required) + "§7).");
             send(player, "§7Current prestige amount will be §6" + (held + 1) + "§7/§f" + MAX_HELD + ".");
             send(player, "§7Click again within 10 seconds.");
-            MutableComponent row = Component.m_237113_("§7")
-                    .m_7220_(btn("§a[Confirm Prestige]", "/prestige do confirm", "Complete prestige"))
+            MutableComponent row = Component.m_237113_(UltraStyle.LABEL)
+                    .m_7220_(btn(UltraStyle.CONFIRM + "[Confirm Prestige]", "/prestige do confirm", "Complete prestige"))
                     .m_7220_(Component.m_237113_("  "))
-                    .m_7220_(btn("§c[Cancel]", "/prestige", "Cancel"));
+                    .m_7220_(btn(UltraStyle.DANGER + "[Cancel]", "/prestige", "Cancel"));
             send(player, row);
             send(player, LmChat.DIVIDER);
         }
@@ -227,15 +228,17 @@ public final class PrestigeSystem {
     }
 
     private static String replyCap(ServerPlayer player, int held) {
-        String summary = "§cYou're holding as many as you can.\n"
-                + "§7That's §6" + held + "§7/§f" + MAX_HELD + ".\n"
-                + "§7Spend one, then you can prestige again.";
+        String summary = UltraStyle.DANGER + "You're holding as many as you can.\n"
+                + UltraStyle.LABEL + "That's " + UltraStyle.GOLD + held + UltraStyle.LABEL + "/"
+                + UltraStyle.VALUE + MAX_HELD + ".\n"
+                + UltraStyle.LABEL + "Spend one, then you can prestige again.";
         if (!preferGuiFeedback()) {
             send(player, "");
             send(player, LmChat.DIVIDER);
-            send(player, "§cYou're holding as many as you can.");
-            send(player, "§7That's §6" + held + "§7/§f" + MAX_HELD + ".");
-            send(player, "§7Spend one, then you can prestige again.");
+            send(player, UltraStyle.DANGER + "You're holding as many as you can.");
+            send(player, UltraStyle.LABEL + "That's " + UltraStyle.GOLD + held + UltraStyle.LABEL + "/"
+                    + UltraStyle.VALUE + MAX_HELD + ".");
+            send(player, UltraStyle.LABEL + "Spend one, then you can prestige again.");
             send(player, LmChat.DIVIDER);
         }
         return summary;
@@ -246,18 +249,22 @@ public final class PrestigeSystem {
     ) {
         int held = heldCountForNeed(player);
         int nextRequired = followingRequirement(completed, held);
-        String summary = "§cNot high enough yet.\n"
-                + "§7Requires §e" + DmzRewards.formatWhole(required)
-                + " §7power to prestige (next: §e" + DmzRewards.formatWhole(nextRequired) + "§7).\n"
-                + "§7You're at §f" + DmzRewards.formatWhole(level) + "§7.";
+        String summary = UltraStyle.DANGER + "Not high enough yet.\n"
+                + UltraStyle.LABEL + "Requires " + UltraStyle.YELLOW + DmzRewards.formatWhole(required)
+                + UltraStyle.LABEL + " power to prestige (next: " + UltraStyle.YELLOW
+                + DmzRewards.formatWhole(nextRequired) + UltraStyle.LABEL + ").\n"
+                + UltraStyle.LABEL + "You're at " + UltraStyle.VALUE + DmzRewards.formatWhole(level)
+                + UltraStyle.LABEL + ".";
         if (!preferGuiFeedback()) {
             send(player, "");
             send(player, LmChat.DIVIDER);
-            send(player, "§cNot high enough yet.");
-            send(player, "§7Requires §e" + DmzRewards.formatWhole(required)
-                    + " §7power to prestige (next: §e" + DmzRewards.formatWhole(nextRequired) + "§7).");
-            send(player, "§7You're at §f" + DmzRewards.formatWhole(level) + "§7.");
-            send(player, "§7Prestige: §f" + completed);
+            send(player, UltraStyle.DANGER + "Not high enough yet.");
+            send(player, UltraStyle.LABEL + "Requires " + UltraStyle.YELLOW
+                    + DmzRewards.formatWhole(required) + UltraStyle.LABEL + " power to prestige (next: "
+                    + UltraStyle.YELLOW + DmzRewards.formatWhole(nextRequired) + UltraStyle.LABEL + ").");
+            send(player, UltraStyle.LABEL + "You're at " + UltraStyle.VALUE
+                    + DmzRewards.formatWhole(level) + UltraStyle.LABEL + ".");
+            send(player, UltraStyle.LABEL + "Prestige: " + UltraStyle.VALUE + completed);
             send(player, LmChat.DIVIDER);
         }
         return summary;
