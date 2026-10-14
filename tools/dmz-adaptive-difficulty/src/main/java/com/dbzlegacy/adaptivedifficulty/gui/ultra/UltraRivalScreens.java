@@ -2,6 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.gui.ultra;
 
 import com.dbzlegacy.adaptivedifficulty.gui.RivalGuiApi;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -145,13 +146,11 @@ public final class UltraRivalScreens {
                     continue;
                 }
                 String action = "page:list_detail:" + arg;
-                String label = UltraStyle.confirm("Open");
-                // Prefer a human name from the arg when it looks like name/uuid.
-                String shown = arg.contains(":") ? arg.substring(arg.lastIndexOf(':') + 1) : arg;
-                if (shown.length() > 16) {
-                    shown = shown.substring(0, 15) + "...";
+                String shown = RivalGuiApi.displayPickerArg(player, arg);
+                if (shown == null || shown.isBlank()) {
+                    shown = "-";
                 }
-                label = UltraStyle.confirm(shown);
+                String label = UltraStyle.confirm(shown);
                 if (placed % 2 == 0) {
                     spec.buttonLeft(action, label, "confirm");
                 } else {
@@ -359,7 +358,22 @@ public final class UltraRivalScreens {
                 .line(UltraStyle.LABEL + "Choose which mutual rival to replace.")
                 .notice("This frees a mutual slot for the incoming request.")
                 .setRow(UltraStyle.CONTENT_ROW_TABS + 80);
-        UltraPickHelper.placeNameButtons(spec, "accept_replace", RivalGuiApi.currentRivalArgs(player), 6);
+        List<String> choices = new ArrayList<>();
+        List<String> args = RivalGuiApi.currentRivalArgs(player);
+        if (args != null) {
+            for (String arg : args) {
+                if (arg == null || arg.isBlank()) {
+                    continue;
+                }
+                String shown = RivalGuiApi.displayPickerArg(player, arg);
+                if (shown == null || shown.isBlank()) {
+                    shown = "-";
+                }
+                // placeNameButtons accepts arg|Label so do: keeps uuid: while the button shows a name.
+                choices.add(arg + "|" + shown);
+            }
+        }
+        UltraPickHelper.placeNameButtons(spec, "accept_replace", choices, 6);
         spec.footerBackHome();
         spec.send(player);
     }

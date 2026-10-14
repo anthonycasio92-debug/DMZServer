@@ -590,6 +590,30 @@ def main() -> int:
     detail = detail_m.group(0) if detail_m else ""
     if "displayPickerArg" not in detail:
         errors.append("UltraRivalScreens.openListDetail must resolve Target via RivalGuiApi.displayPickerArg")
+    list_m = re.search(
+        r"private static void openList\b.*?^\s*private static void ",
+        rival,
+        re.S | re.M,
+    )
+    list_block = list_m.group(0) if list_m else ""
+    if "displayPickerArg" not in list_block:
+        errors.append("UltraRivalScreens.openList must resolve button labels via RivalGuiApi.displayPickerArg")
+    if "lastIndexOf(':')" in list_block or "substring(arg.lastIndexOf" in list_block:
+        errors.append("UltraRivalScreens.openList must not substring uuid: args for button labels")
+    replace_m = re.search(
+        r"private static void openReplacePick\b.*?^\s*private static void ",
+        rival,
+        re.S | re.M,
+    )
+    replace_block = replace_m.group(0) if replace_m else ""
+    if "displayPickerArg" not in replace_block or '+ "|"' not in replace_block:
+        errors.append(
+            "UltraRivalScreens.openReplacePick must pass arg|displayPickerArg pairs to placeNameButtons"
+        )
+    if 'placeNameButtons(spec, "accept_replace", RivalGuiApi.currentRivalArgs' in rival:
+        errors.append(
+            "UltraRivalScreens.openReplacePick must not pass raw currentRivalArgs to placeNameButtons"
+        )
     config = (ULTRA / "UltraConfigScreens.java").read_text(encoding="utf-8")
     review_m = re.search(
         r"private static void openReview\b.*?^\s*(?:public|private) static ",
