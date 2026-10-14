@@ -243,8 +243,9 @@ public final class UltraScreenSpec {
 
     /**
      * Same as {@link #button(String, String, String, int, int, int, String)} with an optional
-     * single-letter {@code accent} (Minecraft color code) for KaiPath to tint the control.
-     * Labels stay plain ASCII — do not embed section-sign in {@code label}.
+     * single-letter {@code accent} used to color the <em>label text</em> (not button chrome).
+     * When {@code accent} is blank, {@link UltraStyle#systemAccentCode(String)} for this screen
+     * is applied. Pass a raw label — section-sign is added via {@link UltraStyle#color}.
      */
     public UltraScreenSpec button(
             String actionId,
@@ -266,9 +267,16 @@ public final class UltraScreenSpec {
             UltraScreenIds.requireValidActionId(screenId, bindInputId, "bindInput");
             bind = qualifyAction(bindInputId);
         }
+        String accentCode = normalizeAccent(accent);
+        if (accentCode.isEmpty()) {
+            accentCode = UltraStyle.systemAccentCode(screenId);
+        }
+        String fitted = UltraStyle.fitAsciiLabel(label, UltraStyle.labelMaxWidth(width));
+        String colored =
+                accentCode.isEmpty() ? fitted : UltraStyle.color(accentCode, fitted);
         buttons.add(new Button(
                 qualifyAction(actionId),
-                UltraStyle.fitAsciiLabel(label, UltraStyle.labelMaxWidth(width)),
+                colored,
                 resolvedStyle,
                 x,
                 y,
@@ -276,7 +284,7 @@ public final class UltraScreenSpec {
                 UltraStyle.BTN_H,
                 UltraStyle.BTN_PAD,
                 bind,
-                normalizeAccent(accent),
+                accentCode,
                 false,
                 UltraStyle.SOUND_CONFIRM,
                 UltraStyle.BUTTON_SKIN));
@@ -366,10 +374,15 @@ public final class UltraScreenSpec {
 
     private void addFooterButton(String actionId, String label, int x) {
         UltraScreenIds.requireValidActionId(screenId, actionId, label);
+        String accentCode = UltraStyle.systemAccentCode(screenId);
+        String fitted =
+                UltraStyle.fitAsciiLabel(label, UltraStyle.labelMaxWidth(UltraStyle.BTN_W));
+        String colored =
+                accentCode.isEmpty() ? fitted : UltraStyle.color(accentCode, fitted);
         footerButtons.add(
                 new Button(
                         qualifyAction(actionId),
-                        UltraStyle.fitAsciiLabel(label, UltraStyle.labelMaxWidth(UltraStyle.BTN_W)),
+                        colored,
                         UltraStyle.STYLE_DIM,
                         x,
                         0,
@@ -377,7 +390,7 @@ public final class UltraScreenSpec {
                         UltraStyle.BTN_H,
                         UltraStyle.BTN_PAD,
                         null,
-                        "",
+                        accentCode,
                         true,
                         UltraStyle.SOUND_CONFIRM,
                         UltraStyle.BUTTON_SKIN));
@@ -748,10 +761,12 @@ public final class UltraScreenSpec {
             UltraScreenIds.requireValidActionId(screenId, "tab:" + tab.id, tab.label);
             boolean active = tab.id.equalsIgnoreCase(activeTab);
             // Plain + pre-fit: stock KaiPath fitLabel uses a mojibaked ellipsis (A/E glyphs).
-            String label =
+            String fitted =
                     UltraStyle.fitAsciiLabel(tab.label, UltraStyle.labelMaxWidth(tabW));
-            // Inactive=dim. Active/staff=normal. No button color keys — KaiPath default chrome;
-            // layoutJson.accent / palette keep title + panel colors (activeTab highlight).
+            String accentCode = UltraStyle.systemAccentCode(screenId);
+            String label =
+                    accentCode.isEmpty() ? fitted : UltraStyle.color(accentCode, fitted);
+            // Inactive=dim. Active/staff=normal. Label ink = system accent; chrome stays default.
             String style = tabStyle(tab, active);
             JsonObject o = new JsonObject();
             o.addProperty("id", qualifyAction("tab:" + tab.id));

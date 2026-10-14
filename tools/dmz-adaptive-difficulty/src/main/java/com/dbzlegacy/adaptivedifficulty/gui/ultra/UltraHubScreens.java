@@ -16,10 +16,10 @@ import net.minecraft.server.level.ServerPlayer;
  *
  * <p>Tiles are collected into a list then packed two-up so adding or gating systems
  * automatically grows or shrinks the panel (no fixed empty body band / choose prompt).
- * Hub tiles use {@link UltraStyle#STYLE_NORMAL} (dark) plus a per-system {@code accent}
- * letter for KaiPath to tint. Confirm/yellow is reserved for selected actions inside
- * system menus — never on the hub landing. Staff Admin uses accent {@code 4} (dark red),
- * not {@link UltraStyle#STYLE_DANGER} (action danger is for destructive buttons).
+ * Hub tiles use {@link UltraStyle#STYLE_NORMAL} chrome plus per-system <em>label</em> ink
+ * via {@link UltraStyle#systemAccent(String)}. Confirm/yellow is reserved for selected
+ * actions inside system menus — never on the hub landing. Staff Admin uses accent
+ * {@code 4} (dark red) on the label, not {@link UltraStyle#STYLE_DANGER}.
  */
 public final class UltraHubScreens {
     private UltraHubScreens() {}
@@ -164,13 +164,18 @@ public final class UltraHubScreens {
                 || "difficulty".equals(system)
                 || (ph != null && "true".equalsIgnoreCase(ph.get(system)));
         String action = actionFor(system);
-        String styled = on ? tile.label() : UltraStyle.dim(UltraStyle.plain(tile.label()));
+        // Per-system identity on the label text (chrome stays default). fitAsciiLabel strips
+        // section-sign; UltraScreenSpec re-applies via the accent letter + UltraStyle.color.
+        String ink = UltraStyle.systemAccent(system);
+        String base = UltraStyle.plain(tile.label());
+        String styled = on ? (ink.isEmpty() ? base : ink + base) : UltraStyle.dim(base);
         String style = on
                 ? (tile.onStyle() == null || tile.onStyle().isBlank()
                         ? UltraStyle.STYLE_NORMAL
                         : tile.onStyle())
                 : UltraStyle.STYLE_DIM;
-        String accent = UltraStyle.hubTileAccentCode(system);
+        // hubTileAccentCode == systemAccentCode; letter re-applied after fitAsciiLabel.
+        String accent = on ? UltraStyle.hubTileAccentCode(system) : "";
         if (left) {
             spec.buttonLeft(action, styled, style, accent);
         } else {

@@ -860,8 +860,8 @@ def main() -> int:
     admin_tile = re.search(r'new HubTile\(\s*"admin"[\s\S]*?true\)', hub)
     if not admin_tile or "STYLE_NORMAL" not in admin_tile.group(0):
         errors.append("UltraHubScreens Staff Admin tile must use STYLE_NORMAL + accent (not danger)")
-    if "hubTileAccentCode" not in hub:
-        errors.append("UltraHubScreens must send hubTileAccentCode on tiles")
+    if "hubTileAccentCode" not in hub and "systemAccent" not in hub:
+        errors.append("UltraHubScreens must color tiles via hubTileAccentCode / systemAccent")
     # Hub: yellow/confirm means selected — nothing is selected on the hub.
     open_main = hub.split("private static void openMain", 1)[-1].split(
         "private static void openAdmin", 1
