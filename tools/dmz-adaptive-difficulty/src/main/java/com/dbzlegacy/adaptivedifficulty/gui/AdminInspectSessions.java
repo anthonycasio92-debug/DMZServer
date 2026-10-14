@@ -1,5 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.gui;
 
+import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -7,8 +9,9 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Staff inspect: viewer (admin) UUID → subject UUID. CNPC panels paint and apply actions on the
- * subject while the admin keeps the GUI open.
+ * Staff inspect: viewer (admin) UUID → subject UUID. Ultra panels paint and apply actions on the
+ * subject while the admin keeps the GUI open ({@link com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraGui}
+ * resolves the subject; packets still go to the viewer).
  */
 public final class AdminInspectSessions {
     private static final Map<UUID, UUID> VIEWER_TO_SUBJECT = new ConcurrentHashMap<>();
@@ -71,11 +74,45 @@ public final class AdminInspectSessions {
         return subject;
     }
 
+    /**
+     * Who performs a GUI action. Staff-only admin ops (reload/syslog/…) always run as the clicking
+     * staff member — not the inspect target ({@code StaffAccess} would reject the subject).
+     */
+    public static ServerPlayer resolveActor(ServerPlayer viewer, String action) {
+        if (viewer == null) {
+            return null;
+        }
+        if (action == null || action.isBlank()) {
+            return resolveSubject(viewer);
+        }
+        String a = action.trim().toLowerCase(Locale.ROOT);
+        return switch (a) {
+            case "admin",
+                    "reload",
+                    "reloadconfig",
+                    "syslog",
+                    "migrate-cnpc",
+                    "migratecnpc",
+                    "cnpcmigrate",
+                    "guitest_ack" -> viewer;
+            default -> resolveSubject(viewer);
+        };
+    }
+
+    /** Banner for Ultra body copy while inspecting, or null when not inspecting. */
     public static String inspectBannerLine(ServerPlayer viewer) {
+        if (viewer == null || !isInspecting(viewer.m_20148_())) {
+            return null;
+        }
         ServerPlayer subject = resolveSubject(viewer);
         if (subject == null || subject.m_20148_().equals(viewer.m_20148_())) {
             return null;
         }
-        return "§eInspecting §f" + subject.m_7755_().getString() + "§e — edits apply to them";
+        return UltraStyle.YELLOW
+                + "Inspecting "
+                + UltraStyle.VALUE
+                + subject.m_7755_().getString()
+                + UltraStyle.YELLOW
+                + " - edits apply to them";
     }
 }

@@ -1,12 +1,16 @@
 package com.dbzlegacy.adaptivedifficulty.gui.ultra;
 
+import com.dbzlegacy.adaptivedifficulty.gui.AdminInspectSessions;
 import com.dbzlegacy.adaptivedifficulty.net.gui.GuiOpenPacket;
 import com.dbzlegacy.adaptivedifficulty.net.gui.LmGuiNetwork;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
+import java.util.Locale;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
@@ -27,6 +31,13 @@ public final class UltraScreenSpec {
 
     /** When set, {@link #send} captures packets instead of transmitting (startup self-test). */
     private static final ThreadLocal<List<GuiOpenPacket>> PROBE = new ThreadLocal<>();
+    /**
+     * Stack of staff viewers (staff inspect). {@link #send} delivers the GuiOpenPacket to the
+     * top viewer even when screen builders were invoked with the inspect subject for data.
+     * Nested {@link UltraGui#open} / action-dispatch binds push/pop so an inner clear does not
+     * drop the outer viewer.
+     */
+    private static final ThreadLocal<Deque<ServerPlayer>> INSPECT_VIEWER = new ThreadLocal<>();
 
     private final String screenId;
     private String title = "";
@@ -75,6 +86,41 @@ public final class UltraScreenSpec {
             PROBE.remove();
         }
         return captured;
+    }
+
+    /**
+     * Push the staff viewer for the duration of an Ultra open / action built from an inspect
+     * subject. Always pair with {@link #clearInspectViewer()} in {@code finally}.
+     */
+    public static void bindInspectViewer(ServerPlayer viewer) {
+        if (viewer == null) {
+            return;
+        }
+        Deque<ServerPlayer> stack = INSPECT_VIEWER.get();
+        if (stack == null) {
+            stack = new ArrayDeque<>();
+            INSPECT_VIEWER.set(stack);
+        }
+        stack.push(viewer);
+    }
+
+    /** Pop one {@link #bindInspectViewer} frame. */
+    public static void clearInspectViewer() {
+        Deque<ServerPlayer> stack = INSPECT_VIEWER.get();
+        if (stack == null || stack.isEmpty()) {
+            INSPECT_VIEWER.remove();
+            return;
+        }
+        stack.pop();
+        if (stack.isEmpty()) {
+            INSPECT_VIEWER.remove();
+        }
+    }
+
+    /** Active inspect viewer (top of stack), or null when not in an inspect open. */
+    public static ServerPlayer inspectViewer() {
+        Deque<ServerPlayer> stack = INSPECT_VIEWER.get();
+        return stack == null || stack.isEmpty() ? null : stack.peek();
     }
 
     public UltraScreenSpec title(String title) {
@@ -785,16 +831,41 @@ public final class UltraScreenSpec {
     }
 
     public void send(ServerPlayer player) {
+        ServerPlayer viewer = inspectViewer();
+        ServerPlayer dest = viewer != null ? viewer : player;
+        prependInspectBanner(viewer != null ? viewer : player);
         GuiOpenPacket packet = toPacket();
         List<GuiOpenPacket> probe = PROBE.get();
         if (probe != null) {
             probe.add(packet);
             return;
         }
-        if (player == null) {
+        if (dest == null) {
             return;
         }
-        LmGuiNetwork.sendOpen(player, packet);
+        LmGuiNetwork.sendOpen(dest, packet);
+    }
+
+    /** First body line while staff is inspecting another player. */
+    private void prependInspectBanner(ServerPlayer viewer) {
+        if (viewer == null) {
+            return;
+        }
+        String banner = AdminInspectSessions.inspectBannerLine(viewer);
+        if (banner == null || banner.isBlank()) {
+            return;
+        }
+        String plain = UltraStyle.plain(banner).toLowerCase(Locale.ROOT);
+        if (!lines.isEmpty()) {
+            String first = UltraStyle.plain(lines.get(0)).toLowerCase(Locale.ROOT);
+            if (first.startsWith("inspecting")) {
+                return;
+            }
+        }
+        if (!plain.startsWith("inspecting")) {
+            return;
+        }
+        lines.add(0, UltraStyle.wireText(banner));
     }
 
     /**
