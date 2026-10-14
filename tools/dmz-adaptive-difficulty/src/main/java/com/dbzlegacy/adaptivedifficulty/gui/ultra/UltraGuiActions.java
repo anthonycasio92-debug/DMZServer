@@ -727,8 +727,8 @@ public final class UltraGuiActions {
                 default -> homePage(screen);
             };
             case "spar", "sparring" -> switch (parts.action == null ? "" : parts.action) {
-                case "dojo_accept", "dojo_war_accept", "dojo_war_cancel", "dojo_war_revoke",
-                        "dojo_cancel" -> "dojo_war_pending";
+                case "dojo_accept", "dojo_war_accept", "dojo_decline", "dojo_war_decline",
+                        "dojo_war_cancel", "dojo_war_revoke", "dojo_cancel" -> "dojo_war_pending";
                 case "dojo_challenge" -> "dojo_war";
                 case "mentor_accept", "mentor_decline", "mentor" -> "pending";
                 case "mentor_invite", "apprentice_invite", "mentor_release" -> "mentor";

@@ -89,6 +89,7 @@ KNOWN_DO: dict[str, set[str]] = {
         "mentor_release",
         "admin",
         "dojo_accept",
+        "dojo_decline",
         "dojo_war_cancel",
         "dojo_challenge",
         "weight_quote",
@@ -778,6 +779,22 @@ def main() -> int:
     spar_home_body = spar_home_m.group(0) if spar_home_m else ""
     if "weights|Weights" not in spar_home_body:
         errors.append("UltraSparScreens.openHome must offer Weights")
+    if "labelValue(\"Session\"" in spar_home_body or "labelValue(\"Partner\"" in spar_home_body:
+        errors.append("UltraSparScreens.openHome must not show Session/Partner (staff Admin only)")
+    if "mentor|Mentor bonds" not in spar_home_body and "mentor|Actions" not in spar_home_body:
+        errors.append("UltraSparScreens.openHome must offer Mentor bonds / Actions entry")
+    if "settings|Chat settings" not in spar_home_body:
+        errors.append("UltraSparScreens.openHome must offer Chat settings")
+    if "fight_report:" not in spar_home and "recentFightCards" not in spar_home:
+        errors.append("UltraSparScreens must offer clickable fight reports from stats")
+    if "Hall of Infamy" not in spar_home:
+        errors.append("UltraSparScreens must expose Hall of Infamy (sparring HOF rename)")
+    if "Hall of Chosen" not in spar_home:
+        errors.append("UltraSparScreens must expose Hall of Chosen (dojo HOF rename)")
+    if 'dojo|Home' in spar_home:
+        errors.append("UltraSparScreens Dojo tab must not keep a Home button")
+    if "§8??" in (ULTRA.parent / "SparGuiApi.java").read_text(encoding="utf-8"):
+        errors.append("SparGuiApi must not use ?? decorative sparring headers")
     rival = (ULTRA / "UltraRivalScreens.java").read_text(encoding="utf-8")
     if 'confirm("Reload")' in rival and 'confirm("Reload data")' not in rival:
         errors.append('UltraRivalScreens staff admin must label refresh "Reload data"')

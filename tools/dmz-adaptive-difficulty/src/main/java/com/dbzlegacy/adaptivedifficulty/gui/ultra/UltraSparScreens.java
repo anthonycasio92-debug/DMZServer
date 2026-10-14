@@ -9,8 +9,10 @@ import java.util.Map;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Sparring - CNPC parity (Home / Dojo / Wars) with mentor/apprentice picks, war challenges,
- * and rankings. Home is overview only; Dojo and Wars hold the controls.
+ * Sparring Ultra UI (Home / Dojo / Wars).
+ * Home: rankings, stats + fight reports, mentor Actions, Weights, chat, staff.
+ * Dojo: training-bond info, members (own/joined toggle), Hall of Chosen.
+ * Wars: challenge, pending, top dojos, Hall of Chosen.
  */
 public final class UltraSparScreens {
     private UltraSparScreens() {}
@@ -64,18 +66,25 @@ public final class UltraSparScreens {
             openWeightsConfirm(player, raw.substring("weights_confirm:".length()).trim());
             return;
         }
+        if (lower.startsWith("fight_report:")) {
+            openFightReport(player, raw.substring("fight_report:".length()).trim());
+            return;
+        }
         switch (lower) {
             case "stats" -> openStats(player);
-            case "top", "leaderboard", "dojo_rank", "dojo_rankings" -> openTop(player, "tp");
+            case "top", "leaderboard", "infamy", "hof", "hall_of_infamy" -> openTop(player, "tp");
+            case "dojo_rank", "dojo_rankings" -> openTop(player, "rp");
             case "dojo", "roster" -> openDojo(player, "home");
-            case "dojo_members" -> openDojo(player, "members");
-            case "dojo_hof" -> openDojo(player, "hof");
+            case "dojo_members", "dojo_members_own" -> openDojo(player, "members_own");
+            case "dojo_members_joined" -> openDojo(player, "members_joined");
+            case "dojo_hof", "chosen", "hall_of_chosen" -> openDojo(player, "hof");
             case "mentor", "actions" -> openMentor(player);
             case "pending", "invites" -> openPending(player);
             case "settings" -> openSettings(player);
             case "admin" -> openAdmin(player);
             case "wars", "dojo_war" -> openWars(player);
             case "dojo_war_pending" -> openDojoWarPending(player);
+            case "dojo_war_hof" -> openWarsHof(player);
             case "pick_apprentice" ->
                     openOnlinePick(player, "Invite apprentice", "mentor_invite", "pick_apprentice", "mentor");
             case "pick_mentor" ->
@@ -130,53 +139,105 @@ public final class UltraSparScreens {
         if (p.startsWith("dojo_war") || "pick_dojo_challenge".equals(p) || p.contains("dojo_challenge")) {
             return "wars";
         }
-        if (p.startsWith("dojo_top") || "dojo_rank".equals(p) || "dojo_rankings".equals(p) || p.startsWith("top")) {
-            return "home";
-        }
-        if (p.startsWith("dojo")
+        if (p.startsWith("dojo_top")
+                || "dojo_rank".equals(p)
+                || "dojo_rankings".equals(p)
+                || p.startsWith("top")
+                || "infamy".equals(p)
+                || "hof".equals(p)
+                || "stats".equals(p)
+                || p.startsWith("fight_report")
+                || "settings".equals(p)
+                || "admin".equals(p)
                 || "mentor".equals(p)
                 || "actions".equals(p)
                 || "pending".equals(p)
                 || "invites".equals(p)
-                || "settings".equals(p)
-                || "admin".equals(p)
-                || "roster".equals(p)
                 || p.startsWith("pick_apprentice")
                 || p.startsWith("pick_mentor")
-                || p.startsWith("pick_accept")
-                || p.startsWith("pick_decline")
                 || p.startsWith("pick_release")
-                || p.startsWith("pick_confirm")) {
+                || p.startsWith("weights")) {
+            return "home";
+        }
+        if (p.startsWith("dojo") || "roster".equals(p) || "chosen".equals(p) || p.startsWith("pick_confirm")) {
             return "dojo";
         }
         return "home";
     }
 
-    /** Rankings and personal stats only - Dojo / Wars stay on their tabs. */
+    /**
+     * Home hub: rankings, stats (with fight reports), mentor Actions, Weights, chat, staff.
+     * Session/partner text is staff-only (Admin); Combat overhaul lines stay out of Ultra.
+     */
     private static void openHome(ServerPlayer player) {
-        Map<String, String> ph = SparGuiApi.placeholders(player);
-        boolean active = "true".equalsIgnoreCase(ph.get("session_active"));
-        String partner = ph.getOrDefault("partner", "");
         UltraScreenSpec spec = base("main", "home")
-                .labelValue("Session", active ? "in progress" : "not running")
-                .labelValue("Partner", partner == null || partner.isBlank() ? "none" : partner)
-                .line(UltraStyle.LABEL + "Rankings show who has trained the most. Your stats are this character only.")
+                .line(UltraStyle.LABEL + "Rankings, your spars, training bonds, and weights.")
                 .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
         UltraPickHelper.placePageButtons(
-                spec, "top|Player rankings", "stats|Your stats", "weights|Weights");
+                spec,
+                "top|Rankings",
+                "infamy|Hall of Infamy",
+                "stats|Your stats",
+                "mentor|Mentor bonds",
+                "weights|Weights",
+                "settings|Chat settings");
+        if (StaffAccess.isStaff(player)) {
+            UltraPickHelper.placePageButtons(spec, "admin|Staff Admin");
+        }
         spec.footerBackToMain();
         spec.send(player);
     }
 
     private static void openStats(ServerPlayer player) {
-        UltraScreenSpec spec = sub("stats").line(UltraStyle.LABEL + "Spar stats");
-        for (String line : SparGuiApi.linesForPage(player, "stats")) {
+        UltraScreenSpec spec = sub("stats").line(UltraStyle.LABEL + "Your spar stats");
+        for (String line : SparGuiApi.statsOverviewLines(player)) {
+            if (line != null && !line.isBlank()) {
+                spec.line(line);
+            }
+        }
+        List<String> fights = SparGuiApi.recentFightCards(player);
+        spec.setRow(UltraStyle.CONTENT_ROW + UltraStyle.BODY_MIN_H);
+        if (fights == null || fights.isEmpty()) {
+            spec.line(UltraStyle.dim("No finished spars yet. Fight someone, then check back."));
+        } else {
+            spec.line(UltraStyle.LABEL + "Last fights - open a report:");
+            for (String card : fights) {
+                if (card == null || card.isBlank()) {
+                    continue;
+                }
+                String[] p = card.split("\t", 2);
+                String idx = p[0] == null ? "" : p[0].trim();
+                String label = p.length > 1 && p[1] != null && !p[1].isBlank() ? p[1].trim() : ("Fight " + idx);
+                if (idx.isBlank()) {
+                    continue;
+                }
+                spec.button(
+                                "page:fight_report:" + idx,
+                                UltraStyle.confirm(label),
+                                "confirm")
+                        .rowGap();
+            }
+        }
+        spec.footerBackHome("Spar Home");
+        spec.send(player);
+    }
+
+    private static void openFightReport(ServerPlayer player, String indexRaw) {
+        int index = 1;
+        try {
+            index = Integer.parseInt(indexRaw == null ? "1" : indexRaw.trim());
+        } catch (NumberFormatException ignored) {
+            index = 1;
+        }
+        UltraScreenSpec spec = sub("fight_report:" + index)
+                .line(UltraStyle.LABEL + "Fight report");
+        for (String line : SparGuiApi.recentReportLines(player, index)) {
             if (line != null && !line.isBlank()) {
                 spec.line(line);
             }
         }
         spec.setRow(UltraStyle.CONTENT_ROW + UltraStyle.BODY_MIN_H);
-        spec.footerBackHome("Spar Home");
+        spec.footerBack("page:stats", "Your stats");
         spec.send(player);
     }
 
@@ -196,8 +257,11 @@ public final class UltraSparScreens {
         List<String> lines = dojoBoard
                 ? SparGuiApi.dojoTopLines(player, cat)
                 : SparGuiApi.topLines(player, cat);
+        String heading = dojoBoard
+                ? "Top dojos - " + boardLabel(cat)
+                : "Hall of Infamy - " + boardLabel(cat);
         UltraScreenSpec spec = sub(dojoBoard ? "dojo_top_" + cat : "top_" + cat)
-                .line(UltraStyle.LABEL + "Leaderboard - " + boardLabel(cat));
+                .line(UltraStyle.LABEL + heading);
         if (lines != null) {
             for (String line : lines) {
                 if (line != null && !line.isBlank()) {
@@ -206,16 +270,21 @@ public final class UltraSparScreens {
             }
         }
         spec.setRow(UltraStyle.CONTENT_ROW + UltraStyle.BODY_MIN_H);
-        UltraPickHelper.placePageButtons(
-                spec,
-                "top_tp|Training points",
-                "top_sessions|Sessions",
-                "top_perfect|Perfect spars",
-                "top_combo|Combo",
-                "top_time|Time",
-                "dojo_top_rp|Reputation",
-                "dojo_top_wars|War wins");
-        spec.footerBackHome("Spar Home");
+        if (dojoBoard) {
+            UltraPickHelper.placePageButtons(
+                    spec, "dojo_top_rp|Reputation", "dojo_top_wars|War wins");
+        } else {
+            UltraPickHelper.placePageButtons(
+                    spec,
+                    "top_tp|Training points",
+                    "top_sessions|Sessions",
+                    "top_perfect|Perfect spars",
+                    "top_combo|Combo",
+                    "top_time|Time");
+        }
+        String backPage = dojoBoard ? "dojo_war" : "main";
+        String backLabel = dojoBoard ? "Wars" : "Spar Home";
+        spec.footerBack("page:" + backPage, backLabel);
         spec.send(player);
     }
 
@@ -233,17 +302,18 @@ public final class UltraSparScreens {
 
     private static void openDojo(ServerPlayer player, String sub) {
         String key = sub == null || sub.isBlank() ? "home" : sub;
+        // Default members view: owned dojo if master, else joined.
+        if ("members".equals(key)) {
+            key = SparGuiApi.ownsDojo(player) ? "members_own" : "members_joined";
+        }
         String page = switch (key) {
-            case "members" -> "dojo_members";
+            case "members_own" -> "dojo_members_own";
+            case "members_joined" -> "dojo_members_joined";
             case "hof" -> "dojo_hof";
             default -> "dojo";
         };
         Map<String, String> ph = SparGuiApi.placeholders(player);
-        UltraScreenSpec spec = base(page, "dojo")
-                .labelValue(
-                        "Session",
-                        "true".equalsIgnoreCase(ph.get("session_active")) ? "in progress" : "none active")
-                .labelValue("Partner", blank(ph.get("partner")));
+        UltraScreenSpec spec = base(page, "dojo");
         if (!"true".equalsIgnoreCase(ph.get("system_enabled"))) {
             spec.line(UltraStyle.danger("Sparring is turned off. Ask staff to enable it."))
                     .setRow(UltraStyle.CONTENT_ROW_TABS + 80);
@@ -252,8 +322,15 @@ public final class UltraSparScreens {
             return;
         }
         switch (key) {
-            case "members" -> {
-                for (String line : SparGuiApi.dojoMemberLines(player)) {
+            case "members_own" -> {
+                for (String line : SparGuiApi.ownedDojoMemberLines(player)) {
+                    if (line != null && !line.isBlank()) {
+                        spec.line(line);
+                    }
+                }
+            }
+            case "members_joined" -> {
+                for (String line : SparGuiApi.joinedDojoMemberLines(player)) {
                     if (line != null && !line.isBlank()) {
                         spec.line(line);
                     }
@@ -267,7 +344,8 @@ public final class UltraSparScreens {
                 }
             }
             default -> {
-                for (String line : SparGuiApi.linesForPage(player, "dojo")) {
+                // Training bonds info instead of active spar session text.
+                for (String line : SparGuiApi.mentorLines(player)) {
                     if (line != null && !line.isBlank()) {
                         spec.line(line);
                     }
@@ -275,19 +353,42 @@ public final class UltraSparScreens {
             }
         }
         spec.setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
-        UltraPickHelper.placePageButtons(
-                spec, "dojo|Home", "dojo_members|Members", "dojo_hof|Hall of fame");
-        if ("home".equals(key)) {
-            UltraPickHelper.placePageButtons(
-                    spec, "stats|Stats", "mentor|Training bonds", "settings|Chat settings");
-            if (StaffAccess.isStaff(player)) {
-                spec.buttonLeft(
-                                "page:admin",
-                                "Staff Admin",
-                                UltraStyle.STYLE_NORMAL,
-                                UltraStyle.hubTileAccentCode("admin"))
-                        .rowGap();
+        boolean owns = SparGuiApi.ownsDojo(player);
+        boolean joined = SparGuiApi.joinedDojo(player);
+        if ("members_own".equals(key) || "members_joined".equals(key)) {
+            if (owns && joined) {
+                if ("members_own".equals(key)) {
+                    UltraPickHelper.placePageButtons(
+                            spec,
+                            "dojo_members_joined|Show joined dojo",
+                            "dojo_hof|Hall of Chosen",
+                            "mentor|Actions");
+                } else {
+                    UltraPickHelper.placePageButtons(
+                            spec,
+                            "dojo_members_own|Show your dojo",
+                            "dojo_hof|Hall of Chosen",
+                            "mentor|Actions");
+                }
+            } else {
+                UltraPickHelper.placePageButtons(
+                        spec,
+                        owns ? "dojo_members_own|Dojo members" : "dojo_members_joined|Dojo members",
+                        "dojo_hof|Hall of Chosen",
+                        "mentor|Actions");
             }
+        } else if ("hof".equals(key)) {
+            UltraPickHelper.placePageButtons(
+                    spec,
+                    owns ? "dojo_members_own|Dojo members" : "dojo_members_joined|Dojo members",
+                    "dojo_hof|Hall of Chosen",
+                    "mentor|Actions");
+        } else {
+            UltraPickHelper.placePageButtons(
+                    spec,
+                    owns ? "dojo_members_own|Dojo members" : "dojo_members_joined|Dojo members",
+                    "dojo_hof|Hall of Chosen",
+                    "mentor|Actions");
         }
         spec.footerBackToMain();
         spec.send(player);
@@ -295,7 +396,7 @@ public final class UltraSparScreens {
 
     private static void openMentor(ServerPlayer player) {
         UltraScreenSpec spec = sub("mentor")
-                .line(UltraStyle.LABEL + "Masters recruit - students request a master");
+                .line(UltraStyle.LABEL + "Actions - recruit, request, or manage training bonds");
         for (String line : SparGuiApi.mentorLines(player)) {
             if (line != null && !line.isBlank()) {
                 spec.line(line);
@@ -363,9 +464,9 @@ public final class UltraSparScreens {
         }
         if (placed == 0) {
             spec.line(UltraStyle.dim(
-                    "No bond invites waiting. Send one from Training bonds, or wait for someone to invite you."));
+                    "No bond invites waiting. Send one from Actions, or wait for someone to invite you."));
         }
-        spec.footerBack("page:mentor", "Training bonds");
+        spec.footerBack("page:mentor", "Actions");
         spec.send(player);
     }
 
@@ -429,8 +530,8 @@ public final class UltraSparScreens {
                 .rowGap();
         String backLabel =
                 switch (returnPage == null ? "" : returnPage) {
-                    case "mentor", "pending" -> "Training bonds";
-                    case "dojo_war", "dojo_war_pending", "wars" -> "Dojo wars";
+                    case "mentor", "pending" -> "Actions";
+                    case "dojo_war", "dojo_war_pending", "wars" -> "Wars";
                     default -> "Spar Home";
                 };
         spec.footerBack("page:" + returnPage, backLabel);
@@ -491,20 +592,44 @@ public final class UltraSparScreens {
         }
         int warPending = SparGuiApi.pendingDojoWarCards(player).size();
         spec.setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
-        UltraPickHelper.placePageButtons(spec, "pick_dojo_challenge|Challenge rival dojo...");
-        String pendingLabel = warPending > 0 ? "War pending (" + warPending + ")" : "War pending";
+        UltraPickHelper.placePageButtons(
+                spec,
+                "pick_dojo_challenge|Challenge another dojo...",
+                "dojo_top_rp|Top dojos",
+                "dojo_war_hof|Hall of Chosen");
+        String pendingLabel =
+                warPending > 0 ? "Pending requests (" + warPending + ")" : "Pending requests";
         spec.buttonLeft("page:dojo_war_pending", UltraStyle.confirm(pendingLabel), "confirm").rowGap();
+        spec.footerBackToMain();
+        spec.send(player);
+    }
+
+    private static void openWarsHof(ServerPlayer player) {
+        UltraScreenSpec spec = base("dojo_war_hof", "wars")
+                .line(UltraStyle.LABEL + "Hall of Chosen - dojo war seasons");
+        for (String line : SparGuiApi.dojoHallOfFameLines(player)) {
+            if (line != null && !line.isBlank()) {
+                spec.line(line);
+            }
+        }
+        spec.setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
+        UltraPickHelper.placePageButtons(
+                spec,
+                "pick_dojo_challenge|Challenge another dojo...",
+                "dojo_top_rp|Top dojos",
+                "dojo_war_pending|Pending requests");
         spec.footerBackToMain();
         spec.send(player);
     }
 
     private static void openDojoWarPending(ServerPlayer player) {
         UltraScreenSpec spec = sub("dojo_war_pending")
-                .line(UltraStyle.LABEL + "Dojo war pending");
+                .line(UltraStyle.LABEL + "Pending war requests")
+                .line(UltraStyle.DIM + "Accept or deny even if the other master is offline.");
         List<String> cards = SparGuiApi.pendingDojoWarCards(player);
         if (cards == null || cards.isEmpty()) {
             spec.line(UltraStyle.dim(
-                    "No dojo war challenges waiting - declare war when your roster is ready."));
+                    "No war requests waiting. Challenge another dojo when your roster is ready."));
         } else {
             for (String card : cards) {
                 if (card == null || card.isBlank()) {
@@ -512,8 +637,12 @@ public final class UltraSparScreens {
                 }
                 String[] parts = splitCard(card);
                 String label = parts.length > 1 && !parts[1].isBlank() ? parts[1].trim() : parts[0];
+                String dir = parts.length > 2 ? parts[2].trim() : "IN";
+                boolean online = parts.length > 4 && "1".equals(parts[4]);
                 if (label != null && !label.isBlank()) {
-                    spec.line(UltraStyle.LABEL + label);
+                    String side = "OUT".equalsIgnoreCase(dir) ? "Outgoing" : "Incoming";
+                    spec.line(UltraStyle.LABEL + side + " " + label
+                            + (online ? " (online)" : " (offline)"));
                 }
             }
         }
@@ -527,10 +656,12 @@ public final class UltraSparScreens {
                 String[] parts = splitCard(card);
                 String arg = parts.length > 0 ? parts[0].trim() : "";
                 String label = parts.length > 1 && !parts[1].isBlank() ? parts[1].trim() : arg;
+                String dir = parts.length > 2 ? parts[2].trim() : "IN";
                 if (arg.isBlank()) {
                     continue;
                 }
-                String action = "page:dojo_war_pending_decide:" + arg;
+                String packed = ("OUT".equalsIgnoreCase(dir) ? "OUT|" : "IN|") + arg;
+                String action = "page:dojo_war_pending_decide:" + packed;
                 if (placed % 2 == 0) {
                     spec.buttonLeft(action, UltraStyle.confirm(label), "confirm");
                 } else {
@@ -543,24 +674,39 @@ public final class UltraSparScreens {
         if (placed % 2 == 1) {
             spec.rowGap();
         }
-        spec.footerBack("page:dojo_war", "Dojo wars");
+        spec.footerBack("page:dojo_war", "Wars");
         spec.send(player);
     }
 
     private static void openDojoWarDecide(ServerPlayer player, String pickerArg) {
-        String who = RivalGuiApi.displayPickerArg(player, pickerArg);
-        UltraScreenSpec spec = sub("dojo_war_pending_decide:" + pickerArg)
+        String dir = "IN";
+        String picker = pickerArg == null ? "" : pickerArg;
+        if (picker.regionMatches(true, 0, "OUT|", 0, 4) || picker.regionMatches(true, 0, "IN|", 0, 3)) {
+            int bar = picker.indexOf('|');
+            dir = picker.substring(0, bar);
+            picker = picker.substring(bar + 1);
+        }
+        boolean outgoing = "OUT".equalsIgnoreCase(dir);
+        String who = RivalGuiApi.displayPickerArg(player, picker);
+        if (who == null || who.isBlank()) {
+            who = picker;
+        }
+        UltraScreenSpec spec = sub("dojo_war_pending_decide:" + (outgoing ? "OUT|" : "IN|") + picker)
                 .line(UltraStyle.LABEL + "Dojo war request")
                 .labelValue("Dojo", who == null || who.isBlank() ? "-" : who)
-                .line(UltraStyle.LABEL + "Accept to start the war (2x RP vs that dojo).")
-                .line(UltraStyle.LABEL + "Cancel to drop this war challenge.")
                 .setRow(UltraStyle.CONTENT_ROW + 100);
-        String arg = pickerArg == null ? "" : pickerArg;
-        // Stack Accept above Cancel - side-by-side is a misclick cancel risk.
-        spec.button("do:dojo_accept:" + arg, UltraStyle.confirm("Accept"), "confirm").rowGap();
-        spec.button("do:dojo_war_cancel:" + arg, UltraStyle.danger("Cancel challenge"), "danger")
-                .rowGap();
-        spec.footerBackHome("Spar Home");
+        if (outgoing) {
+            spec.line(UltraStyle.LABEL + "You challenged this dojo. Withdraw to cancel.");
+            spec.button("do:dojo_war_cancel:" + picker, UltraStyle.danger("Cancel challenge"), "danger")
+                    .rowGap();
+        } else {
+            spec.line(UltraStyle.LABEL + "Accept to start the war (2x RP vs that dojo).")
+                    .line(UltraStyle.LABEL + "Deny to refuse this challenge.");
+            // Stack Accept above Deny - side-by-side is a misclick risk.
+            spec.button("do:dojo_accept:" + picker, UltraStyle.confirm("Accept"), "confirm").rowGap();
+            spec.button("do:dojo_decline:" + picker, UltraStyle.danger("Deny"), "danger").rowGap();
+        }
+        spec.footerBack("page:dojo_war_pending", "Pending requests");
         spec.send(player);
     }
 
@@ -593,7 +739,7 @@ public final class UltraSparScreens {
         if (placed == 0) {
             spec.line(UltraStyle.dim("Nobody else is online right now - try again when other players are on."));
         }
-        spec.footerBack("page:" + back, "Training bonds");
+        spec.footerBack("page:" + back, "Actions");
         spec.send(player);
     }
 
@@ -629,16 +775,16 @@ public final class UltraSparScreens {
             spec.rowGap();
         }
         if (placed == 0) {
-            spec.line(UltraStyle.dim("No apprentices to release. Take an apprentice from Training bonds first."));
+            spec.line(UltraStyle.dim("No apprentices to release. Take an apprentice from Actions first."));
         }
-        spec.footerBack("page:mentor", "Training bonds");
+        spec.footerBack("page:mentor", "Actions");
         spec.send(player);
     }
 
     private static void openDojoChallengePick(ServerPlayer player) {
         UltraScreenSpec spec = sub("pick_dojo_challenge")
-                .line(UltraStyle.LABEL + "Challenge rival dojo")
-                .line(UltraStyle.DIM + "Choose a rival dojo master.")
+                .line(UltraStyle.LABEL + "Challenge another dojo")
+                .line(UltraStyle.DIM + "Pick a rival dojo. The master does not need to be online.")
                 .setRow(UltraStyle.CONTENT_ROW + 70);
         List<String> cards = SparGuiApi.rivalDojoCards(player);
         int placed = 0;
@@ -653,7 +799,9 @@ public final class UltraSparScreens {
                 if (arg.isBlank()) {
                     continue;
                 }
-                String nav = "page:pick_confirm:dojo_challenge|dojo_war|" + arg;
+                // Prefer uuid: so challenge works while the defending master is offline.
+                String target = arg.contains(":") ? arg : "uuid:" + arg;
+                String nav = "page:pick_confirm:dojo_challenge|dojo_war|" + target;
                 if (placed % 2 == 0) {
                     spec.buttonLeft(nav, UltraStyle.confirm(label), "confirm");
                 } else {
@@ -667,19 +815,24 @@ public final class UltraSparScreens {
             spec.rowGap();
         }
         if (placed == 0) {
-            spec.line(UltraStyle.dim("No rival dojo masters are online - challenge when one is on."));
+            spec.line(UltraStyle.dim("No rival dojos on the ladder yet."));
         }
-        spec.footerBack("page:dojo_war", "Dojo wars");
+        spec.footerBack("page:dojo_war", "Wars");
         spec.send(player);
     }
 
     private static void openAdmin(ServerPlayer player) {
         if (!StaffAccess.isStaff(player)) {
-            openDojo(player, "home");
+            openHome(player);
             return;
         }
+        Map<String, String> ph = SparGuiApi.placeholders(player);
+        boolean active = "true".equalsIgnoreCase(ph.get("session_active"));
+        String partner = ph.getOrDefault("partner", "");
         UltraScreenSpec spec = sub("admin")
-                .line(UltraStyle.LABEL + "Save spar data and show status")
+                .line(UltraStyle.LABEL + "Staff spar tools")
+                .labelValue("Session", active ? "in progress" : "not running")
+                .labelValue("Partner", partner == null || partner.isBlank() ? "none" : partner)
                 .setRow(UltraStyle.CONTENT_ROW + 80);
         spec.buttonLeft("do:admin:save", UltraStyle.confirm("Save data"), "confirm")
                 .buttonRight("do:admin:status", UltraStyle.dim("Show status"), "dim")
