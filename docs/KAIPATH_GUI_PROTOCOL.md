@@ -50,10 +50,10 @@ The client **must** render what the server sends (no hardcoded screen/tab/button
 | Honor **`layoutJson.playerModel`** (+ optional `parts`) | 1.3.7 | **yes** (entity) | yes (+ parts hook) |
 | Honor **`inputsJson`** text fields (field 11) | 1.3.9 | **yes** | yes |
 | Honor **`layoutJson.headerBottom`** | next | **no** | **yes** |
-| Honor **`palette` / letter `accent`** | next | **no** | accent **yes**; palette proposed |
-| Honor **`sound` / `buttonSkin` / `frame` / `paged_book`** | later | **no** | proposed — see § Proposed chrome |
+| Honor **`palette` / letter `accent`** | next | **no** | **yes** (kit) |
+| Honor **`sound` / `buttonSkin` / `frame` / `paged_book`** | next | **no** | **yes** (kit; texture blit TBD) |
 | Decode GuiOpen strings as **UTF-8** | 1.3.1 | MC `readUtf` | **yes** (explicit) |
-| Send **GuiFeaturesPacket** | 1.3.7 | **yes** (5 features) | **yes** (+ `headerBottom`/`accent`) |
+| Send **GuiFeaturesPacket** | 1.3.7 | **yes** (5 features) | **yes** (+ chrome set) |
 | `inputsJson` `slider` / `toggle` | later | — | reserved — see [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md) |
 
 ### Button JSON schema
@@ -141,16 +141,16 @@ Known optional feature ids:
 | `textInput` | GuiOpenPacket field 11 `inputsJson` text fields + `bindInput` |
 | `headerBottom` | `layoutJson.headerBottom` geometry |
 | `accent` | Letter-code `accent` tint (compat) |
-| `palette` | Generic `palette` color names → UltraUi palette (**proposed**) |
-| `sound` | Button/layout `sound` ids (**proposed**) |
-| `buttonSkin` | Button skin ids / state maps (**proposed**) |
-| `frame` | Panel `frame` chrome (**proposed**) |
-| `pagedBook` | `inputsJson` `type=paged_book` (**proposed**) |
+| `palette` | Generic `palette` color names → UltraUi palette (**kit**) |
+| `sound` | Button/input `sound` ids (**kit**) |
+| `buttonSkin` | Button skin ids / state maps (**kit**; texture blit TBD) |
+| `frame` | Panel `frame` chrome (**kit**; texture blit TBD) |
+| `pagedBook` | `inputsJson` `type=paged_book` (**kit**) |
 
-Example (kit after `headerBottom` / `accent`):
+Example (kit advertise set):
 
 ```json
-["style","activeTab","titleAlign","playerModel","textInput","headerBottom","accent"]
+["style","activeTab","titleAlign","playerModel","textInput","headerBottom","accent","palette","sound","buttonSkin","frame","pagedBook","combined.forms.v1"]
 ```
 
 Send once after channel registration (client setup / first join). Extra ids are ignored.
@@ -220,7 +220,7 @@ Missing trailing fields → defaults. Bytes after the last understood field igno
 | `type` | Status | Notes |
 |--------|--------|-------|
 | `text` | **Shipped** (KaiPath 1.3.9+) | Single-line EditBox; `bindInput` → `args.value` |
-| `paged_book` | **Proposed** | Multi-page reader (prev/next). Copy Warrior Journal **UX**, not DMZUltra screen classes. See § Proposed chrome. |
+| `paged_book` | **Kit** | Multi-page reader (prev/next). Copy Warrior Journal **UX**, not DMZUltra screen classes. See § Proposed chrome. |
 | `toggle` | Reserved | Not on wire yet — booleans use styled buttons |
 | `slider` | Reserved | Not on wire yet — see [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md) |
 Buttons that apply a field include `args.bindInput` set to that input’s `id`. On click (or
@@ -520,7 +520,7 @@ Prev/next controls are client chrome. Page turns may use a `sound` on the input 
 (`dmzultra:scene_tick`). Copy the Warrior Journal **interaction pattern** only — do not
 subclass DMZUltra journal screens.
 
-Advertise when implemented: `palette`, `sound`, `buttonSkin`, `frame`, `pagedBook`.
+Advertise (kit): `palette`, `sound`, `buttonSkin`, `frame`, `pagedBook` (plus shipped set).
 
 ---
 

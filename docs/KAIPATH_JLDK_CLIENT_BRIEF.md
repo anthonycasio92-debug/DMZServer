@@ -2,7 +2,7 @@
 
 **Status (KaiPath 1.3.9 + multi-mod protocol):** Live KaiPath **1.3.9** honors `style`,
 `activeTab`, `titleAlign`, `playerModel`, and **`textInput`** on every registered
-`{modId}:gui` channel. Partner servers (LM **4.6.151** and any other mod using the kit)
+`{modId}:gui` channel. Partner servers (LM **4.6.152** and any other mod using the kit)
 already emit **`headerBottom`** and **`accent`** — those are the open advertise-able bridge
 gaps (plus title vertical centering, which needs no new field).
 
@@ -92,11 +92,12 @@ UltraGuiPartners.registerDefaults();
 // Or: UltraGuiPartners.register("legacymechanics", "myshop");
 
 // Registry advertises the same JSON on each channel automatically:
-// ["style","activeTab","titleAlign","playerModel","textInput","headerBottom","accent"]
+// ["style","activeTab","titleAlign","playerModel","textInput","headerBottom","accent",
+//  "palette","sound","buttonSkin","frame","pagedBook","combined.forms.v1"]
 ```
 
 After merge, partner guitests (e.g. LM `/lm admin guitest`) move from
-`pendingNext=[headerBottom, accent]` → `pendingNext=none`.
+`pendingNext=[headerBottom, accent, palette]` → `pendingNext=none`.
 
 ## Also merge: ASCII `fitLabel` (weird A/E glyphs)
 
@@ -104,13 +105,14 @@ Stock `UltraWidgetReflect.fitLabel` uses a mojibaked ellipsis. Replace with ASCI
 never prefix labels with section-sign color codes. Details:
 [`FITLABEL_ASCII.md`](../tools/ultra-gui-kit/kaipath-client/com/dmzlegacy/kaipath/ultra/internal/FITLABEL_ASCII.md).
 
-## Proposed next (mod-agnostic chrome)
+## Chrome honor (in kit — texture blit still JLDK)
 
-Implement from protocol § Proposed chrome + [`DMZULTRA_ASSET_REUSE.md`](DMZULTRA_ASSET_REUSE.md):
-`palette`, `sound`, `buttonSkin`, `frame`, `portraitFrame`, `paged_book`. Verify against
+Kit already honors protocol § Proposed chrome + [`DMZULTRA_ASSET_REUSE.md`](DMZULTRA_ASSET_REUSE.md):
+`palette` (ARGB map), `sound` (reflection play), `buttonSkin`/`frame`/`portraitFrame`
+(chrome rects until texture blit), `paged_book` (Prev/Next). Verify against
 [`BridgeFutureFieldsFixture.json`](../tools/ultra-gui-kit/server/BridgeFutureFieldsFixture.json)
-(`myshop:gui` — not a production partner). Ask which UltraUi Theme/Palette values are
-hardcoded vs data-driven before expanding palette names.
+(`myshop:gui` — not a production partner). Map namespaced ids → DMZUltra textures in the
+official KaiPath jar.
 
 ## Deferred (not blocking)
 

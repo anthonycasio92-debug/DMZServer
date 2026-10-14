@@ -8,32 +8,36 @@ DMZUltra asset reuse (client-only): [`DMZULTRA_ASSET_REUSE.md`](DMZULTRA_ASSET_R
 
 ## Open bridge gaps — near-term (kit / next KaiPath)
 
-| Gap | Owner | Server emit | KaiPath 1.3.9 | Notes |
-|-----|-------|-------------|----------------|-------|
-| **`layoutJson.headerBottom`** | Cursor + JLDK | **Yes** (partners) | **Missing** | Title + yellow divider strictly above this Y. Default **28** with under-title tabs, **42** without. |
-| **Letter `accent`** | Cursor + JLDK | **Yes** (partners) | **Missing** | Compat letter codes. Prefer generic **`palette`** for new work. |
-| **Title vertical centering** | **JLDK-only** | N/A | **Missing** | Center title in header band. No protocol field. |
-| **ASCII `fitLabel`** | JLDK | N/A | **Broken** (mojibake `…`) | Kit patches overlay + documents source fix. |
+| Gap | Owner | Server emit | KaiPath 1.3.9 | Kit | Notes |
+|-----|-------|-------------|----------------|-----|-------|
+| **`layoutJson.headerBottom`** | Cursor + JLDK | **Yes** | **Missing** | **Done** | Title + yellow divider strictly above this Y. |
+| **Letter `accent`** | Cursor + JLDK | **Yes** | **Missing** | **Done** | Compat letter codes. Prefer **`palette`**. |
+| **`palette`** | Cursor + JLDK | **Yes** (LM 4.6.152) | **Missing** | **Done** | Generic color names on layout/buttons/tabs. |
+| **Title vertical centering** | **JLDK-only** | N/A | **Missing** | **Done** | Center title in header band. No protocol field. |
+| **ASCII `fitLabel`** | JLDK | N/A | **Broken** | **Patched** | Overlay + source docs. |
 
-On KaiPath **1.3.9**, partner guitest typically reports:
+On stock KaiPath **1.3.9**, partner guitest typically reports:
 
 ```text
-missingShipped=none pendingNext=[headerBottom, accent]
+missingShipped=none pendingNext=[headerBottom, accent, palette]
 ```
 
-## Proposed gaps — DMZUltra chrome reuse (mod-agnostic)
+After merging this kit into the next official KaiPath jar: `pendingNext=none` for those three.
 
-These fields are **specified** in [`KAIPATH_GUI_PROTOCOL.md`](KAIPATH_GUI_PROTOCOL.md)
-§ Proposed chrome. No partner may hardcode system names into the protocol.
+## Chrome gaps — kit-honored, texture blit still JLDK
 
-| Gap | Wire field | Example values | Advertise id |
-|-----|------------|----------------|--------------|
-| Generic palette names | `layoutJson.palette` + button/tab `palette` | `gold`, `purple`, `dark_red`, … | `palette` |
-| Click / tick sounds | button/layout/input `sound` | `dmzultra:ui_confirm`, `dmzultra:scene_tick` | `sound` |
-| Button texture skins | button `buttonSkin` | `dmzultra:arena` or state map | `buttonSkin` |
-| Panel chrome | `layoutJson.frame` | `dmzultra:card` or map | `frame` |
-| Portrait chrome | `playerModel.portraitFrame` | `dmzultra:portrait` | (under `playerModel`) |
-| Paged book widget | `inputsJson` `type=paged_book` | pages[] with title/lines | `pagedBook` |
+Wire fields from [`KAIPATH_GUI_PROTOCOL.md`](KAIPATH_GUI_PROTOCOL.md) § Proposed chrome.
+Kit advertises + paints chrome rects / plays sounds; full DMZUltra texture mapping stays
+KaiPath-owned.
+
+| Gap | Wire field | Advertise id | Kit status |
+|-----|------------|--------------|------------|
+| Generic palette names | `layoutJson.palette` + button/tab `palette` | `palette` | **Honored** (ARGB map) |
+| Click / tick sounds | button/input `sound` | `sound` | **Honored** (reflection play) |
+| Button texture skins | button `buttonSkin` | `buttonSkin` | Chrome cue (texture blit TBD) |
+| Panel chrome | `layoutJson.frame` | `frame` | Edge rects (texture blit TBD) |
+| Portrait chrome | `playerModel.portraitFrame` | (under `playerModel`) | Edge rects (texture blit TBD) |
+| Paged book widget | `inputsJson` `type=paged_book` | `pagedBook` | **Honored** (Prev/Next) |
 
 **Answered from live `dmzultra-0.2.9`:** `UltraUi$Palette` = data `(accent,second,tint)`;
 `UltraUi$Theme` = hardcoded feature enum. Keep wire `palette` as generic color names;
@@ -63,22 +67,23 @@ do not require Theme enum names for other mods. JLDK still chooses the name→RG
 | Emit `inputsJson` field 11 | **Done** |
 | Emit `playerModel.parts` schema 1 | **Done** |
 | Emit `layoutJson.headerBottom` | **Done** |
-| Emit letter `accent` / document `palette` | accent **Done**; palette **spec only** |
+| Emit letter `accent` / `palette` | **Done** (LM 4.6.152) |
 | Spec `sound` / `buttonSkin` / `frame` / `paged_book` | **Done** (docs + fixture) |
-| Emit chrome fields from production partners | **Not yet** — wait for KaiPath advertise |
+| Emit `portraitFrame` on playerModel | **Done** (LM 4.6.152) |
+| Emit `sound` / `buttonSkin` / `frame` / `paged_book` from production | **Not yet** — safe after KaiPath advertise |
 | `inputsJson` `slider` / `toggle` | **Deferred** |
 
 ## JLDK / KaiPath checklist
 
 Vendored / live jar: `mods/kaipath-1.3.9.jar`. Reference kit: [`tools/ultra-gui-kit/`](../tools/ultra-gui-kit/).
 
-| Item | 1.3.9 | Next / later |
-|------|-------|--------------|
+| Item | 1.3.9 | Kit / next |
+|------|-------|------------|
 | Honor `headerBottom` | Missing | **Done in kit** |
 | Honor letter `accent` | Missing | **Done in kit** |
 | Title vertical center | Missing | **Done in kit** |
 | ASCII `fitLabel` | Broken | **Patched in kit overlay** |
-| Honor `palette` / `sound` / `buttonSkin` / `frame` / `paged_book` | — | **Implement from protocol** |
+| Honor `palette` / `sound` / `buttonSkin` / `frame` / `paged_book` | — | **Done in kit** (texture blit TBD) |
 | Register all `UltraGuiPartners` | LM-oriented | **Multi-mod in kit** |
 
 ## Practical pitfalls

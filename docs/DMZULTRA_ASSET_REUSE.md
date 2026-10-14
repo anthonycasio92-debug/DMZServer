@@ -44,19 +44,19 @@ verified over SFTP). Client-side only — not required in server CI.
 | Russo One font | `assets/dmzultra/font/russo_one.ttf` — client-owned |
 | `titleAlign`, `activeTab` (via button style), `playerModel` + `parts` schema 1 | Shipped on KaiPath 1.3.9 |
 | `inputsJson` field 11 (`type=text`) | Shipped on KaiPath 1.3.9 |
-| `headerBottom` + letter `accent` | Emitted by partners; kit honors — merge next KaiPath |
+| `headerBottom` + letter `accent` + `palette` | Emitted by LM 4.6.152; kit honors — merge next KaiPath |
 
 ## Reusable assets → protocol fields
 
 | DMZUltra asset (client) | Protocol field (mod-agnostic) | Status |
 |-------------------------|-------------------------------|--------|
-| `UltraUi$Palette` / theme accents | `layoutJson.palette` + button/tab `palette` (generic color **names**) | **Proposed** |
-| Letter-code tint (compat) | `layoutJson.accent` + button `accent` (`0`-`9`/`a`-`f`) | Shipped emit / pending client |
-| `sounds/ui_confirm.ogg`, `scene_tick.ogg`, `travel_tick.ogg` | Button (or layout) `sound` — namespaced id | **Proposed** |
-| `textures/gui/arena/button.png` (+ states) | Button `buttonSkin` — namespaced skin id or state map | **Proposed** |
-| `card_frame.png`, `panel_tile.png`, `header.png` | `layoutJson.frame` — namespaced frame id or map | **Proposed** |
-| `portrait_frame.png`, `portrait_frame_grey.png` | `playerModel.portraitFrame` — namespaced id | **Proposed** |
-| Warrior Journal paged UX (`com/dmzultra/client/journal/`) | `inputsJson` `type: "paged_book"` — copy UX, not code | **Proposed** |
+| `UltraUi$Palette` / theme accents | `layoutJson.palette` + button/tab `palette` (generic color **names**) | **Kit honors** (ARGB); texture Theme map TBD |
+| Letter-code tint (compat) | `layoutJson.accent` + button `accent` (`0`-`9`/`a`-`f`) | Emit + kit honor |
+| `sounds/ui_confirm.ogg`, `scene_tick.ogg`, `travel_tick.ogg` | Button (or layout) `sound` — namespaced id | **Kit honors** (play) |
+| `textures/gui/arena/button.png` (+ states) | Button `buttonSkin` — namespaced skin id or state map | Kit chrome cue; blit TBD |
+| `card_frame.png`, `panel_tile.png`, `header.png` | `layoutJson.frame` — namespaced frame id or map | Kit edge rects; blit TBD |
+| `portrait_frame.png`, `portrait_frame_grey.png` | `playerModel.portraitFrame` — namespaced id | Emit + kit edge rects; blit TBD |
+| Warrior Journal paged UX (`com/dmzultra/client/journal/`) | `inputsJson` `type: "paged_book"` — copy UX, not code | **Kit honors** (Prev/Next) |
 
 Full wire shapes: [`KAIPATH_GUI_PROTOCOL.md`](KAIPATH_GUI_PROTOCOL.md) §4 / §11 (future fields).  
 Gap tracking: [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md).
