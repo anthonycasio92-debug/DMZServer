@@ -2,6 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.progression.skills;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
+import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle;
 import com.dbzlegacy.adaptivedifficulty.progression.DmzSkillUtil;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionData;
@@ -144,13 +145,15 @@ public final class LivingWorldNearbyMeditation {
             return;
         }
         if (level >= cap) {
-            out.add("§5Meditation §f" + level + "/" + cap + " §8· §6Max");
+            out.add(UltraStyle.DARK_PURPLE + "Meditation " + UltraStyle.VALUE + level + "/" + cap
+                    + " " + UltraStyle.DIM + "- " + UltraStyle.GOLD + "Max");
             return;
         }
         long need = requirementMs(level);
         long progress = shownProgress(player, level, need);
-        out.add("§5Meditation §f" + level + "/" + cap
-                + " §8· §f" + compact(progress) + "/" + compact(need));
+        out.add(UltraStyle.DARK_PURPLE + "Meditation " + UltraStyle.VALUE + level + "/" + cap
+                + " " + UltraStyle.DIM + "- " + UltraStyle.VALUE
+                + compact(progress) + "/" + compact(need));
     }
 
     private static boolean resolveApi() {

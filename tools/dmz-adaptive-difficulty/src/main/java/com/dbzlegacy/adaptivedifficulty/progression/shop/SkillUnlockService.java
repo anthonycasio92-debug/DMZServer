@@ -3,6 +3,7 @@ package com.dbzlegacy.adaptivedifficulty.progression.shop;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.calc.LmOverhaulScaledCombat;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
+import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle;
 import com.dbzlegacy.adaptivedifficulty.progression.DmzSkillUtil;
 import com.dbzlegacy.adaptivedifficulty.progression.InvestedStrength;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionData;
@@ -68,7 +69,8 @@ public final class SkillUnlockService {
         List<String> out = new ArrayList<>();
         StatsData data = DmzProgression.stats(player);
         if (data == null) {
-            out.add("§cNo DMZ data found. Rejoin or ask staff if this keeps happening.");
+            out.add(UltraStyle.DANGER
+                    + "No DMZ data found. Rejoin or ask staff if this keeps happening.");
             return out;
         }
         Skills skills;
@@ -78,7 +80,7 @@ public final class SkillUnlockService {
             skills = null;
         }
         if (skills == null) {
-            out.add("§cNo skill data found. Ask staff if skill unlock is on.");
+            out.add(UltraStyle.DANGER + "No skill data found. Ask staff if skill unlock is on.");
             return out;
         }
         DmzSkillUtil.prepareForRead(skills);
@@ -187,11 +189,14 @@ public final class SkillUnlockService {
         int level = skillLevel(skills, "potentialunlock");
         boolean piccolo = PotentialProgression.hasPiccoloUnlock(player);
         if (level >= HARD_MAX_POTENTIAL) {
-            out.add("§dPotential §f" + level + "/" + HARD_MAX_POTENTIAL + " §8· §6Max");
+            out.add(UltraStyle.LIGHT_PURPLE + "Potential " + UltraStyle.VALUE + level + "/"
+                    + HARD_MAX_POTENTIAL + " " + UltraStyle.DIM + "- " + UltraStyle.GOLD + "Max");
             return;
         }
         if (level >= 10 && !piccolo) {
-            out.add("§dPotential §f" + level + "/" + HARD_MAX_POTENTIAL + " §8· §eSoft cap");
+            out.add(UltraStyle.LIGHT_PURPLE + "Potential " + UltraStyle.VALUE + level + "/"
+                    + HARD_MAX_POTENTIAL + " " + UltraStyle.DIM + "- " + UltraStyle.YELLOW
+                    + "Soft cap");
             return;
         }
         int next = level + 1;
@@ -200,9 +205,12 @@ public final class SkillUnlockService {
         if (progress > required) {
             progress = required;
         }
-        String status = piccolo && level >= 10 ? " §8· §aPiccolo" : "";
-        out.add("§dPotential §f" + level + "/" + HARD_MAX_POTENTIAL
-                + status + " §8· §f" + progress + "/" + required);
+        String status = piccolo && level >= 10
+                ? " " + UltraStyle.DIM + "- " + UltraStyle.GREEN + "Piccolo"
+                : "";
+        out.add(UltraStyle.LIGHT_PURPLE + "Potential " + UltraStyle.VALUE + level + "/"
+                + HARD_MAX_POTENTIAL + status + " " + UltraStyle.DIM + "- " + UltraStyle.VALUE
+                + progress + "/" + required);
     }
 
     private static void appendSaga(List<String> out, ServerPlayer player, Skills skills) {
@@ -220,17 +228,17 @@ public final class SkillUnlockService {
     }
 
     private static void appendSagaCompact(List<String> out, ServerPlayer player, Skills skills) {
-        appendSagaSkillCompact(out, player, skills, "kicontrol", "Ki Control", "§3", 1);
-        appendSagaSkillCompact(out, player, skills, "kimanipulation", "Ki Manip", "§9", 10);
-        appendSagaSkillCompact(out, player, skills, "kisense", "Ki Sense", "§5", 10);
-        appendSagaSkillCompact(out, player, skills, "defense_penetration", "Def Pen", "§c", 10);
-        appendSagaSkillCompact(out, player, skills, "healing_reduction", "Heal Red", "§4", 10);
-        appendSagaSkillCompact(out, player, skills, "instant_transmission", "IT", "§d", 10);
-        appendSagaSkillCompact(out, player, skills, "ki_infusion", "Ki Infusion", "§b", 10);
-        appendSagaSkillCompact(out, player, skills, "kiboost", "Ki Boost", "§3", 4);
-        appendSagaSkillCompact(out, player, skills, "kiprotection", "Ki Prot", "§9", 10);
-        appendSagaSkillCompact(out, player, skills, "kaioken", "Kaioken", "§c", 5);
-        appendSagaSkillCompact(out, player, skills, "fusion", "Fusion", "§d", 5);
+        appendSagaSkillCompact(out, player, skills, "kicontrol", "Ki Control", UltraStyle.DARK_AQUA, 1);
+        appendSagaSkillCompact(out, player, skills, "kimanipulation", "Ki Manip", UltraStyle.BLUE, 10);
+        appendSagaSkillCompact(out, player, skills, "kisense", "Ki Sense", UltraStyle.DARK_PURPLE, 10);
+        appendSagaSkillCompact(out, player, skills, "defense_penetration", "Def Pen", UltraStyle.RED, 10);
+        appendSagaSkillCompact(out, player, skills, "healing_reduction", "Heal Red", UltraStyle.DARK_RED, 10);
+        appendSagaSkillCompact(out, player, skills, "instant_transmission", "IT", UltraStyle.LIGHT_PURPLE, 10);
+        appendSagaSkillCompact(out, player, skills, "ki_infusion", "Ki Infusion", UltraStyle.AQUA, 10);
+        appendSagaSkillCompact(out, player, skills, "kiboost", "Ki Boost", UltraStyle.DARK_AQUA, 4);
+        appendSagaSkillCompact(out, player, skills, "kiprotection", "Ki Prot", UltraStyle.BLUE, 10);
+        appendSagaSkillCompact(out, player, skills, "kaioken", "Kaioken", UltraStyle.RED, 5);
+        appendSagaSkillCompact(out, player, skills, "fusion", "Fusion", UltraStyle.LIGHT_PURPLE, 5);
     }
 
     private static void appendSagaSkill(
@@ -257,13 +265,16 @@ public final class SkillUnlockService {
         int level = effectiveSkillLevel(player, skills, id);
         int max = skillMax(skills, id, fallbackMax);
         if (level < 1) {
-            out.add(color + name + " §f0/" + max + " §8· §cLocked");
+            out.add(color + name + " " + UltraStyle.VALUE + "0/" + max
+                    + " " + UltraStyle.DIM + "- " + UltraStyle.DANGER + "Locked");
             return;
         }
         if (level >= max) {
-            out.add(color + name + " §f" + level + "/" + max + " §8· §6Max");
+            out.add(color + name + " " + UltraStyle.VALUE + level + "/" + max
+                    + " " + UltraStyle.DIM + "- " + UltraStyle.GOLD + "Max");
         } else {
-            out.add(color + name + " §f" + level + "/" + max + " §8· §aOn");
+            out.add(color + name + " " + UltraStyle.VALUE + level + "/" + max
+                    + " " + UltraStyle.DIM + "- " + UltraStyle.GREEN + "On");
         }
     }
 

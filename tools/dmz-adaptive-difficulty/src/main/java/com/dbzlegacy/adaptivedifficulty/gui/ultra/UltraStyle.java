@@ -26,6 +26,8 @@ public final class UltraStyle {
     public static final String DARK_GREEN;
     public static final String DARK_PURPLE;
     public static final String DARK_RED;
+    public static final String DARK_AQUA;
+    public static final String BLUE;
 
     public static final String HEADER;
     public static final String LABEL;
@@ -176,6 +178,8 @@ public final class UltraStyle {
         DARK_GREEN = MARK + "2";
         DARK_PURPLE = MARK + "5";
         DARK_RED = MARK + "4";
+        DARK_AQUA = MARK + "3";
+        BLUE = MARK + "9";
         HEADER = GOLD + BOLD;
         LABEL = GRAY;
         VALUE = WHITE;
