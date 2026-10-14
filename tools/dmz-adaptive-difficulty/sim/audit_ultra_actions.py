@@ -294,6 +294,29 @@ def main() -> int:
     if "skillcheck_denied" not in ultra_hub or "STYLE_DIM" not in ultra_hub:
         errors.append("Hub Skill Check denied tile must send STYLE_DIM")
 
+    # Staff inspect: Ultra must resolve AdminInspectSessions subject for data, send to viewer.
+    ultra_gui = (ULTRA / "UltraGui.java").read_text(encoding="utf-8")
+    ultra_actions = (ULTRA / "UltraGuiActions.java").read_text(encoding="utf-8")
+    ultra_spec = (ULTRA / "UltraScreenSpec.java").read_text(encoding="utf-8")
+    inspect_sessions = (
+        ROOT
+        / "src/main/java/com/dbzlegacy/adaptivedifficulty/gui/AdminInspectSessions.java"
+    ).read_text(encoding="utf-8")
+    if "AdminInspectSessions.resolveSubject" not in ultra_gui:
+        errors.append("UltraGui.open must resolve AdminInspectSessions subject for menu data")
+    if "bindInspectViewer" not in ultra_gui or "clearInspectViewer" not in ultra_gui:
+        errors.append("UltraGui.openUltra must bindInspectViewer so packets go to staff viewer")
+    if "AdminInspectSessions.resolveSubject" not in ultra_actions:
+        errors.append("UltraGuiActions.dispatch must resolve inspect subject for edits")
+    if "resolveActor" not in ultra_actions:
+        errors.append("UltraGuiActions.runDo must use AdminInspectSessions.resolveActor")
+    if "inspectBannerLine" not in ultra_spec or "prependInspectBanner" not in ultra_spec:
+        errors.append("UltraScreenSpec.send must prepend inspectBannerLine during inspect")
+    if "resolveActor" not in inspect_sessions:
+        errors.append("AdminInspectSessions must expose resolveActor for staff-as-self ops")
+    if "§" in inspect_sessions:
+        errors.append("AdminInspectSessions inspectBannerLine must use UltraStyle (no bare §)")
+
     packet = PACKET.read_text(encoding="utf-8")
     if "panelWidth" not in packet or "layoutJson" not in packet:
         errors.append("GuiOpenPacket must carry panelWidth/panelHeight/layoutJson")
