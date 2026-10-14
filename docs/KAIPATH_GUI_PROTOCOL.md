@@ -109,7 +109,7 @@ Pinned footer pair (every non-hub page):
 ]
 ```
 
-Advertise when implemented: `fixedFooter`. System home tabs emit left-only
+Advertise: `fixedFooter` (shipped on KaiPath **1.3.17**). System home tabs emit left-only
 `Back to main menu` (`nav:hub`); sub-pages emit contextual `Back to {destination}`
 (left) + `Main menu` (right). Never say "Hub" in player-facing labels.
 
@@ -167,16 +167,10 @@ Known optional feature ids:
 | `buttonSkin` | Button `buttonSkin` chrome |
 | `frame` | `layoutJson.frame` panel chrome |
 | `pagedBook` | Advertise spelling (camelCase) for `inputsJson` **`type=paged_book`** (snake_case on the wire) |
-| `portraitFrame` | `playerModel.portraitFrame` enable token (**honored on 1.3.13, not advertised yet**) |
-| `fixedFooter` | Button `footer:true` pinned chrome (**pending** on KaiPath 1.3.13) |
+| `portraitFrame` | `playerModel.portraitFrame` enable token (**advertised on 1.3.17**) |
+| `fixedFooter` | Button `footer:true` pinned chrome (**shipped on KaiPath 1.3.17**) |
 
-Example (KaiPath 1.3.13 live advertise — missing `portraitFrame` / `fixedFooter`):
-
-```json
-["style","activeTab","titleAlign","playerModel","textInput","headerBottom","accent","palette","sound","buttonSkin","frame","pagedBook","combined.forms.v1"]
-```
-
-Target advertise after next KaiPath (see [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md)):
+Advertise (KaiPath **1.3.17** — see [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md)):
 
 ```json
 ["style","activeTab","titleAlign","playerModel","textInput","headerBottom","accent","palette","sound","buttonSkin","frame","pagedBook","portraitFrame","fixedFooter","combined.forms.v1"]
@@ -360,7 +354,7 @@ KaiPath 1.3.13 computes these locally — **do not send** them from the server:
 |--------------|--------------|-------------------|
 | `titleTint` | `layoutJson.palette` / `layoutJson.accent` via `UltraBridgeChrome.tint` | **No** — already covered by `accent`/`palette` |
 | `contentTop` | Panel Y + cursor after header/tabs | **No** — covered by `headerBottom` / `bodyTop` |
-| `contentBottom` | Hardcoded ~`panelH - 28` today | **No** — fix via client `fixedFooter` honor of `footer:true`, not a new server field |
+| `contentBottom` | Client band above pinned footer (1.3.17+) | **No** — derived from `footer:true` / `fixedFooter`, not a server wire field |
 | `contentScroll` | Mouse-wheel offset inside the content band | **No** — client scroll state |
 
 LM already emits the geometry contract as `headerBottom`, `bodyTop`, `bodyMaxHeight`, `scrollBody`, and button `footer:true`. Adopting `contentTop`/`contentBottom`/`contentScroll` as wire fields would fight packing and duplicate the footer pin. The open gap remains KaiPath honoring `footer:true` so its content band sits above the pinned footer.
@@ -382,7 +376,7 @@ title chrome).
 | `width`, `height` | number | Bounds for the preview |
 | `scale` | number | Entity scale (default `1.0`) |
 | `rotate` | boolean | Slow turntable when `true` |
-| `portraitFrame` | string | Optional RL; non-empty valid RL enables preview frame chrome. LM emits `legacymechanics:portrait`. Honored on 1.3.13 even when **not** in the advertise list — JLDK should add `portraitFrame` to GuiFeatures (guitest “unsupported” is a client advertise gap, not an LM emit bug). |
+| `portraitFrame` | string | Optional RL; non-empty valid RL enables preview frame chrome. LM emits `legacymechanics:portrait`. Advertised + honored on KaiPath **1.3.17**. |
 | `parts` | object | Optional cosmetics snapshot — see below |
 
 **Backward compatible:** clients that do not know `playerModel` ignore it; the rest of the

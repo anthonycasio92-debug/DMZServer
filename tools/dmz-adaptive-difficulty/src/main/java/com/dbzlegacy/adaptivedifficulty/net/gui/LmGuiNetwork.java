@@ -54,10 +54,10 @@ public final class LmGuiNetwork {
 
     /**
      * Current recommended/released KaiPath for Ultra (live). Ships style, activeTab,
-     * titleAlign, playerModel, textInput, headerBottom, accent (+ palette/sound/buttonSkin/
-     * frame/pagedBook). Still lacks button {@code footer:true} / {@code fixedFooter}.
+     * titleAlign, playerModel, textInput, headerBottom, accent, fixedFooter (+ palette/sound/
+     * buttonSkin/frame/pagedBook/portraitFrame). LM {@code footer:true} matches 1.3.17.
      */
-    public static final String KAIPATH_RECOMMENDED_VERSION = "1.3.13";
+    public static final String KAIPATH_RECOMMENDED_VERSION = "1.3.17";
 
     /**
      * Optional channel: clients without KaiPath omit it. Accept missing so those players
