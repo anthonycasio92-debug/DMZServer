@@ -100,6 +100,7 @@ KNOWN_DO: dict[str, set[str]] = {
     },
     "config": {
         "open_module",
+        "select_module",
         "save_all",
         "discard_all",
         "reload_module",
@@ -109,6 +110,8 @@ KNOWN_DO: dict[str, set[str]] = {
         "step",
         "cycle",
         "undo",
+        "search",
+        "search_clear",
     },
     "skillcheck": set(),
     "skills": set(),
@@ -253,17 +256,25 @@ def main() -> int:
         else ""
     )
     if "textFieldRow" not in number_block:
-        errors.append("UltraConfigScreens NUMBER detail must offer textFieldRow (typed value), not only +/- steps")
+        errors.append("UltraConfigScreens NUMBER inline must offer textFieldRow (typed value), not only +/- steps")
     if "textFieldRow" not in enum_block:
-        errors.append("UltraConfigScreens ENUM detail must offer textFieldRow + Apply")
+        errors.append("UltraConfigScreens ENUM inline must offer textFieldRow + Apply")
     if "textFieldRow" not in list_block or "do:add:" not in list_block or "buttonBound" not in list_block:
         errors.append(
-            "UltraConfigScreens LIST/MAP/GROUP detail must offer textFieldRow + buttonBound Apply (do:add)"
+            "UltraConfigScreens LIST/MAP/GROUP inline must offer textFieldRow + buttonBound Apply (do:add)"
         )
     if 'dim("Back")' in list_block:
-        errors.append("UltraConfigScreens LIST/MAP/GROUP must not stack a Back button (use Entries + one Back)")
+        errors.append("UltraConfigScreens LIST/MAP/GROUP must not stack a Back button (use Open + one footer)")
     if "typedValueFromArgs" not in config_screens:
         errors.append("UltraConfigScreens set/add must log and resolve typed args via typedValueFromArgs")
+    if "placeCategoryRail" not in config_screens and "CATEGORIES" not in config_screens:
+        errors.append("UltraConfigScreens must keep a left category rail (Difficulty…Currency)")
+    if 'do:search' not in config_screens or "rememberSearch" not in config_screens:
+        errors.append("UltraConfigScreens must pin search (do:search + ConfigEditor.rememberSearch)")
+    if 'do:save_all' not in config_screens or 'do:discard_all' not in config_screens or 'do:reload_module' not in config_screens:
+        errors.append("UltraConfigScreens must keep Save all / Reload / Discard changes actions")
+    if "searchAll" not in (ROOT / "src/main/java/com/dbzlegacy/adaptivedifficulty/config/editor/ConfigEditor.java").read_text(encoding="utf-8"):
+        errors.append("ConfigEditor.searchAll must power cross-category search")
     bridge_gaps = ROOT.parent.parent / "docs" / "KAIPATH_BRIDGE_GAPS.md"
     if not bridge_gaps.is_file():
         # ROOT = .../tools/dmz-adaptive-difficulty

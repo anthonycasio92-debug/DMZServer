@@ -80,6 +80,9 @@ public final class ConfigEditor {
 
     public record Entry(String line, String path, Kind kind) {}
 
+    /** One search hit across modules — breadcrumb uses {@link EditorTab#label()}. */
+    public record SearchHit(String moduleId, String moduleLabel, Entry entry) {}
+
     public enum AddMode {
         NONE, VALUE, KEY_AND_VALUE
     }
@@ -650,7 +653,7 @@ public final class ConfigEditor {
         return false;
     }
 
-    /** Fields on this page, or every matching name in the module when {@code query} is set. */
+    /** Fields on this page, or every matching name/description/field id in the module when {@code query} is set. */
     public static List<Entry> visibleFields(String moduleId, String path, String query) {
         if (query == null || query.isBlank()) {
             return children(moduleId, path == null ? "" : path);
@@ -660,13 +663,56 @@ public final class ConfigEditor {
         walkFields(moduleId, "", all, 0);
         List<Entry> matched = new ArrayList<>();
         for (Entry entry : all) {
-            String leaf = leafName(entry.path());
-            String name = displayName(leaf).toLowerCase(Locale.ROOT);
-            if (name.contains(needle) || leaf.toLowerCase(Locale.ROOT).contains(needle)) {
+            if (matchesQuery(moduleId, entry, needle)) {
                 matched.add(entry);
             }
         }
         return matched;
+    }
+
+    /**
+     * Search across every editor tab (Difficulty…Currency). Matches plain name, field id, and
+     * one-line description. Used by the Ultra search-first config editor.
+     */
+    public static List<SearchHit> searchAll(String query) {
+        List<SearchHit> out = new ArrayList<>();
+        if (query == null || query.isBlank()) {
+            return out;
+        }
+        String needle = query.trim().toLowerCase(Locale.ROOT);
+        for (EditorTab tab : editorTabs()) {
+            if (tab == null || tab.id() == null || tab.id().isBlank()) {
+                continue;
+            }
+            List<Entry> all = new ArrayList<>();
+            walkFields(tab.id(), "", all, 0);
+            for (Entry entry : all) {
+                if (entry == null || entry.kind() == Kind.GROUP) {
+                    continue;
+                }
+                if (matchesQuery(tab.id(), entry, needle)) {
+                    out.add(new SearchHit(tab.id(), tab.label(), entry));
+                }
+            }
+        }
+        return out;
+    }
+
+    private static boolean matchesQuery(String moduleId, Entry entry, String needle) {
+        if (entry == null || needle == null || needle.isBlank()) {
+            return false;
+        }
+        String leaf = leafName(entry.path());
+        String name = displayName(leaf).toLowerCase(Locale.ROOT);
+        if (name.contains(needle) || leaf.toLowerCase(Locale.ROOT).contains(needle)) {
+            return true;
+        }
+        String path = entry.path() == null ? "" : entry.path().toLowerCase(Locale.ROOT);
+        if (path.contains(needle)) {
+            return true;
+        }
+        String desc = friendlyDescription(moduleId, entry.path(), currentText(moduleId, entry.path()));
+        return desc != null && desc.toLowerCase(Locale.ROOT).contains(needle);
     }
 
     public static String effectiveRaw(UUID player, String moduleId, String path) {

@@ -732,8 +732,20 @@ public final class UltraGuiActions {
                 }
             };
             case "config" -> {
-                if ("open_module".equals(parts.action) && parts.arg != null && !parts.arg.isBlank()) {
-                    yield "list:" + parts.arg + ":0:";
+                if (("open_module".equals(parts.action) || "select_module".equals(parts.action))
+                        && parts.arg != null
+                        && !parts.arg.isBlank()) {
+                    yield "edit:" + parts.arg + ":0:";
+                }
+                if ("search".equals(parts.action) || "search_clear".equals(parts.action)) {
+                    String cfgSearchPage = stringArg(args, "page");
+                    if (cfgSearchPage != null && cfgSearchPage.startsWith("edit:")) {
+                        // Keep category; reset to first page of search/category results.
+                        String[] bits = cfgSearchPage.split(":", -1);
+                        String mod = bits.length > 1 && !bits[1].isBlank() ? bits[1] : "difficulty";
+                        yield "edit:" + mod + ":0:";
+                    }
+                    yield homePage(screen);
                 }
                 String cfgPage = stringArg(args, "page");
                 yield cfgPage.isBlank() ? homePage(screen) : cfgPage;
@@ -773,7 +785,7 @@ public final class UltraGuiActions {
     private static String homePage(String screen) {
         return switch (screen == null ? "" : screen) {
             case "rival" -> "home";
-            case "config" -> "modules";
+            case "config" -> "edit:difficulty:0:";
             case "admin" -> "admin";
             case "skillcheck", "skills" -> "main";
             default -> "main";
@@ -783,6 +795,19 @@ public final class UltraGuiActions {
     private static String tabPage(String screen, String tab) {
         String t = tab == null ? "" : tab.toLowerCase();
         return switch (screen == null ? "" : screen) {
+            case "config" -> {
+                String id = switch (t) {
+                    case "difficulty", "diff" -> "difficulty";
+                    case "progression", "prog" -> "progression";
+                    case "character", "character-services", "char" -> "character-services";
+                    case "saga" -> "saga";
+                    case "rival" -> "rival";
+                    case "sparring", "spar" -> "sparring";
+                    case "currency", "coins" -> "currency";
+                    default -> "difficulty";
+                };
+                yield "edit:" + id + ":0:";
+            }
             case "character" -> switch (t) {
                 case "saga", "reset" -> "reset:0";
                 case "android", "android_remove" -> UltraStyle.PAGE_ANDROID_REMOVE;

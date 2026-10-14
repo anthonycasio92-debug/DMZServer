@@ -252,6 +252,12 @@ public final class UltraScreenSpec {
                 actionId, label, style, UltraStyle.COL_L, nextRow, UltraStyle.BTN_W, bindInputId);
     }
 
+    /** Bound Apply/search button at an explicit x/width (main-column layouts). */
+    public UltraScreenSpec buttonBound(
+            String actionId, String label, String style, int x, int y, int w, String bindInputId) {
+        return button(actionId, label, style, x, y, w, bindInputId);
+    }
+
     public UltraScreenSpec button(
             String actionId, String label, String style, int x, int y, int w, String bindInputId) {
         return button(actionId, label, style, x, y, w, bindInputId, null);
@@ -479,13 +485,28 @@ public final class UltraScreenSpec {
 
     /** Full-width text field on the current row (left column). */
     public UltraScreenSpec textFieldRow(String inputId, String value, String placeholder) {
+        int width = Math.max(80, panelWidth - UltraStyle.COL_L * 2);
         return textField(
                 inputId,
                 value,
                 placeholder,
                 UltraStyle.COL_L,
                 nextRow,
-                UltraStyle.PANEL_W - UltraStyle.COL_L * 2,
+                width,
+                UltraStyle.BTN_H,
+                128);
+    }
+
+    /** Text field on the current row at an explicit x/width (main column layouts). */
+    public UltraScreenSpec textFieldRow(
+            String inputId, String value, String placeholder, int x, int width) {
+        return textField(
+                inputId,
+                value,
+                placeholder,
+                Math.max(0, x),
+                nextRow,
+                Math.max(40, width),
                 UltraStyle.BTN_H,
                 128);
     }
