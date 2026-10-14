@@ -31,17 +31,16 @@ public final class UltraGuiConsumerRegistry {
      * Features this reference client honors on <b>every</b> registered {@code <modid>:gui}
      * channel — keep in sync with {@code LmDynamicScreen} + {@code GuiOpenPacket} UTF-8 decode.
      *
-     * <p>Released KaiPath <b>1.3.9</b> advertises five features (through {@code textInput}) plus
-     * {@code combined.forms.v1}. This kit adds {@code headerBottom}, {@code accent}, and the
-     * mod-agnostic chrome set ({@code palette}/{@code sound}/{@code buttonSkin}/{@code frame}/
-     * {@code pagedBook}/{@code portraitFrame}) so partner pending gaps clear after merge into
-     * the next official KaiPath jar. Partners that do not understand an id ignore it.
-     * Official 1.3.13 still needs to advertise {@code portraitFrame} + honor {@code fixedFooter}.
+     * <p>Released KaiPath <b>1.3.13</b> advertises through {@code pagedBook} (+ {@code
+     * combined.forms.v1}) but not {@code portraitFrame}/{@code fixedFooter}. This kit advertises
+     * and honors the full set (incl. {@code footer:true} via {@code UltraBridgeFooter}) so partner
+     * {@code pendingNext} clears after merge into the next official jar. Partners that do not
+     * understand an id ignore it.
      */
     public static final String ADVERTISED_FEATURES_JSON =
             "[\"style\",\"activeTab\",\"titleAlign\",\"playerModel\",\"textInput\","
                     + "\"headerBottom\",\"accent\",\"palette\",\"sound\",\"buttonSkin\",\"frame\","
-                    + "\"pagedBook\",\"portraitFrame\",\"combined.forms.v1\"]";
+                    + "\"pagedBook\",\"portraitFrame\",\"fixedFooter\",\"combined.forms.v1\"]";
 
     private static final Map<String, BoundChannel> CHANNELS = new ConcurrentHashMap<>();
 

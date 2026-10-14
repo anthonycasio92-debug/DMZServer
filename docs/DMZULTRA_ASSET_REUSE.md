@@ -74,6 +74,11 @@ Use Minecraft `namespace:path` ids. **Never** put `assets/` prefixes or absolute
 | Frame | `dmzultra:card` | card_frame + panel_tile + header set |
 | Portrait | `dmzultra:portrait` / `dmzultra:portrait_grey` | Portrait frame textures |
 
+**Fail-open defaults (LM 4.6.154 + kit fixtures):** prefer `minecraft:ui.button.click` and
+`legacymechanics:button` / `legacymechanics:panel` / `legacymechanics:portrait`. On KaiPath
+1.3.13, skin/frame/portraitFrame are boolean enable tokens (no texture bind); missing sound is
+a silent no-op. DMZUltra ids still work when that client mod is present.
+
 Other mods may ship their own namespaces (`myshop:ping`, `myshop:wood_frame`, …). KaiPath
 resolves whatever the client has loaded; unknown ids are ignored (no crash).
 

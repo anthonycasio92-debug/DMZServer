@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 # Dev-only smoke: overlay tools/ultra-gui-kit/kaipath-client onto a released KaiPath jar.
-# Adds headerBottom/accent/palette/sound/buttonSkin/frame/pagedBook honor+advertise
-# (and field 11 / textInput if base is older).
+# Adds headerBottom/accent/palette/sound/buttonSkin/frame/pagedBook/portraitFrame/fixedFooter
+# honor+advertise (and field 11 / textInput if base is older).
 # Official KaiPath releases are owned by the KaiPath mod developer — do NOT deploy this
 # overlay to live; merge kaipath-client/ into the next official jar instead.
 #
 # Usage:
 #   bash tools/ultra-gui-kit/build-kaipath-overlay.sh
 # Optional:
-#   KAIPATH_BASE_JAR=mods/kaipath-1.3.9.jar
-#   KAIPATH_OVERLAY_VERSION=1.3.9-lm-ultra
+#   KAIPATH_BASE_JAR=mods/kaipath-1.3.13.jar
+#   KAIPATH_OVERLAY_VERSION=1.3.13-lm-ultra
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
-BASE_JAR="${KAIPATH_BASE_JAR:-$ROOT/mods/kaipath-1.3.9.jar}"
+BASE_JAR="${KAIPATH_BASE_JAR:-$ROOT/mods/kaipath-1.3.13.jar}"
 GSON="$ROOT/libraries/com/google/code/gson/gson/2.10.1/gson-2.10.1.jar"
 LOG4J="$ROOT/libraries/org/apache/logging/log4j/log4j-api/2.19.0/log4j-api-2.19.0.jar"
 OUT_DIR="$HERE/build"
@@ -21,7 +21,7 @@ CLASSES="$OUT_DIR/classes"
 STUB_CLASSES="$OUT_DIR/stub-classes"
 SRC="$HERE/kaipath-client"
 TEST_SRC="$HERE/test"
-VERSION="${KAIPATH_OVERLAY_VERSION:-1.3.9-lm-ultra}"
+VERSION="${KAIPATH_OVERLAY_VERSION:-1.3.13-lm-ultra}"
 OUT_JAR="$ROOT/mods/kaipath-${VERSION}.jar"
 
 if [[ ! -f "$BASE_JAR" ]]; then
@@ -134,7 +134,8 @@ fi
 
 for c in \
   GuiOpenPacket GuiActionPacket GuiFeaturesPacket \
-  LmGuiNetwork LmScreens LmDynamicScreen LmHubScreen LmUltraConsumer; do
+  LmGuiNetwork LmScreens LmDynamicScreen LmHubScreen LmUltraConsumer \
+  UltraBridgeChrome UltraBridgeFooter; do
   if ! jar tf "$OUT_JAR" | grep -q "consumers/legacymechanics/${c}.class"; then
     echo "ERROR: missing $c in $OUT_JAR" >&2
     exit 1
@@ -157,17 +158,16 @@ if ! grep -q 'inputsJson' "$OUT_DIR/GuiOpenPacket.javap.txt"; then
   exit 1
 fi
 
-# Confirm textInput advertise string is in the registry class bytes
-if ! strings "$OUT_JAR" | grep -q 'textInput'; then
-  # fallback: javap / strings on extracted class
-  if ! jar xf "$OUT_JAR" com/dmzlegacy/kaipath/ultra/consumers/UltraGuiConsumerRegistry.class \
-    && strings com/dmzlegacy/kaipath/ultra/consumers/UltraGuiConsumerRegistry.class | grep -q textInput; then
-    echo "ERROR: UltraGuiConsumerRegistry does not embed textInput advertise" >&2
-    exit 1
+# Confirm advertise tokens are in the registry class bytes
+for token in textInput fixedFooter portraitFrame; do
+  if ! strings "$OUT_JAR" | grep -q "$token"; then
+    if ! (cd "$OUT_DIR" && jar xf "$OUT_JAR" com/dmzlegacy/kaipath/ultra/consumers/UltraGuiConsumerRegistry.class \
+      && strings com/dmzlegacy/kaipath/ultra/consumers/UltraGuiConsumerRegistry.class | grep -q "$token"); then
+      echo "ERROR: UltraGuiConsumerRegistry does not embed $token advertise" >&2
+      exit 1
+    fi
   fi
-  rm -f com/dmzlegacy/kaipath/ultra/consumers/UltraGuiConsumerRegistry.class
-  rmdir -p com/dmzlegacy/kaipath/ultra/consumers 2>/dev/null || true
-fi
+done
 
 echo "Built $OUT_JAR"
 jar tf "$OUT_JAR" | grep -E 'consumers/(UltraGuiConsumerRegistry|UltraGuiPartners|legacymechanics/)' | sort
