@@ -35,8 +35,9 @@ These fields are **specified** in [`KAIPATH_GUI_PROTOCOL.md`](KAIPATH_GUI_PROTOC
 | Portrait chrome | `playerModel.portraitFrame` | `dmzultra:portrait` | (under `playerModel`) |
 | Paged book widget | `inputsJson` `type=paged_book` | pages[] with title/lines | `pagedBook` |
 
-**Open question for JLDK:** which `UltraUi$Theme` / `$Palette` values are hardcoded vs
-data-driven? Answer before expanding the palette name list.
+**Answered from live `dmzultra-0.2.9`:** `UltraUi$Palette` = data `(accent,second,tint)`;
+`UltraUi$Theme` = hardcoded feature enum. Keep wire `palette` as generic color names;
+do not require Theme enum names for other mods. JLDK still chooses the name→RGB map.
 
 **Reference fixture (not a production partner):**
 [`tools/ultra-gui-kit/server/BridgeFutureFieldsFixture.json`](../tools/ultra-gui-kit/server/BridgeFutureFieldsFixture.json).

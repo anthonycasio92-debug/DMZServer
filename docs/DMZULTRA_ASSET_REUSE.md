@@ -1,10 +1,25 @@
 # DMZUltra asset reuse via the KaiPath Ultra bridge
 
 **Audience:** Cursor (server partners) + JLDK (KaiPath client).  
-**Reference client assets:** live `mods/dmzultra-0.2.9.jar` (client-side only; not required in
-server CI). Asset ids below match that jar’s `assets/dmzultra/...` layout.  
+**Reference client assets:** Kinetic live `mods/dmzultra-0.2.9.jar` (**59,038,311** bytes,
+verified over SFTP). Client-side only — not required in server CI.  
 **Protocol home:** KaiPath (`docs/KAIPATH_GUI_PROTOCOL.md`) — **not** DMZUltra.
 
+### Live jar verification (0.2.9)
+
+| Check | Result |
+|-------|--------|
+| `{modId}:gui` / GuiOpen / GuiFeatures | **Absent** — zero protocol code in this jar |
+| `*Screen.class` count | **57** (monolithic features — do not subclass) |
+| Russo One | `assets/dmzultra/font/russo_one.ttf` |
+| UI sounds | `ui_confirm`, `scene_tick`, `travel_tick` registered in `sounds.json` as `dmzultra:<id>` |
+| Arena chrome | `textures/gui/arena/{button,card_frame,header,panel_tile,portrait_frame,portrait_frame_grey}.png` |
+| Button state textures | **Single** `button.png` only — hover/pressed/disabled are client Look/tint, not separate files |
+| Widgets | `UltraButton`, `UltraList`, `UltraEditBox`, `UltraUi` |
+| Journal UX | `com.dmzultra.client.journal.JournalScreen` (+ page classes) |
+| `UltraUi$Palette` | **Record** `(int accent, int second, int tint)` — data-driven RGB triple |
+| `UltraUi$Theme` | **Hardcoded enum:** `ULTRA`, `ANGEL`, `DIVINE`, `TIME`, `MULTIVERSE`, `FORGE`, `PARTY`, `JOURNAL`, `SCOUTER`, `KI`, `SAGA`, `SHENRON` |
+| `UltraUi$Look` | **Hardcoded enum:** `NORMAL`, `SELECTED`, `ACCENT`, `DANGER`, `DISABLED` (maps near bridge `style`) |
 ## Governing rules
 
 1. **All DMZUltra assets are client-side.** Server mods must never reference
@@ -64,7 +79,16 @@ resolves whatever the client has loaded; unknown ids are ignored (no crash).
 
 ## Palette names (generic — not partner system names)
 
-Protocol values are **color names**, not feature names:
+Live 0.2.9 clarified the client model:
+
+| Client type | Shape | Bridge implication |
+|-------------|-------|--------------------|
+| `UltraUi$Palette` | `(accent, second, tint)` ints | **Data-driven** — KaiPath should map wire `palette` **color names** → a `Palette` triple |
+| `UltraUi$Theme` | Fixed feature enum (`ULTRA`, `JOURNAL`, …) | **Hardcoded** — DMZUltra feature skins. Do **not** require these names in the multi-mod protocol |
+| `UltraUi$Look` | `NORMAL` / `SELECTED` / `ACCENT` / `DANGER` / `DISABLED` | Aligns with semantic bridge `style` (`normal` / `confirm` / `danger` / `dim`) |
+
+Protocol `palette` values stay **generic color names** (not Theme enum names, not partner
+system names):
 
 `red` · `dark_red` · `purple` · `dark_purple` · `gold` · `yellow` · `green` · `aqua` · `blue` · `white` · `gray`
 
@@ -76,12 +100,9 @@ Partners map their own systems locally (example only — **not** protocol enums)
 | danger / staff | `dark_red` |
 | magic / rivalry | `purple` |
 
-Do **not** put `ACCENT_RIVAL`, `SYSTEM_DIFFICULTY`, or similar into the protocol.
-
-**Ask JLDK before parameterizing further:** which `UltraUi$Theme` / `$Palette` values are
-hardcoded vs data-driven in the live client. Until answered, stick to the generic name list
-above and let KaiPath map names → palette entries.
-
+Do **not** put `ACCENT_RIVAL`, `SYSTEM_DIFFICULTY`, `ULTRA`, `JOURNAL`, or similar into the
+protocol as required values. Optional future `theme` (DMZUltra Theme names) can be a
+KaiPath-only extension later if JLDK wants it — not required for other mods.
 ## Semantic `style` vs decorative `palette`
 
 | Field | Role |

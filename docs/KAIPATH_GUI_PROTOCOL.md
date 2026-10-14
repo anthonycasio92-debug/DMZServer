@@ -430,9 +430,13 @@ as each lands).
 
 See also [`DMZULTRA_ASSET_REUSE.md`](DMZULTRA_ASSET_REUSE.md). These fields are
 **mod-agnostic**. Ids are `namespace:path` (never `assets/...` filesystem paths). Unknown
-ids → ignore (no crash). Ask JLDK which `UltraUi$Theme` / `$Palette` entries are hardcoded
-vs data-driven before expanding the palette name list.
+ids → ignore (no crash).
 
+**Live `dmzultra-0.2.9` (verified):** `UltraUi$Palette` is a data record
+`(accent,second,tint)`; `UltraUi$Theme` is a hardcoded feature enum (`ULTRA`, `JOURNAL`, …)
+and must **not** be required as multi-mod protocol values. KaiPath maps generic wire
+`palette` color names → `Palette` ints. Arena `button.png` is a single texture (Look/tint
+supplies hover/pressed/disabled — no separate state files in the jar).
 ### `palette` (layout + button/tab)
 
 Generic color **names** only: `red`, `dark_red`, `purple`, `dark_purple`, `gold`, `yellow`,
