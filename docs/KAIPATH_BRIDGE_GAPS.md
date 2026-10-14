@@ -1,6 +1,6 @@
 # Ultra bridge gap matrix (LM ↔ KaiPath)
 
-**LM 4.6.142** + **KaiPath 1.3.9** (live / recommended). Official KaiPath updates are owned by the KaiPath mod developer.
+**LM 4.6.143** + **KaiPath 1.3.9** (live / recommended). Official KaiPath updates are owned by the KaiPath mod developer.
 
 ## Still missing on KaiPath 1.3.9
 
@@ -13,7 +13,7 @@ None for the Ultra Weights / Config typed-entry path. Stock **1.3.9** advertises
 | `textInput` in GuiFeaturesPacket advertise | **Done** |
 | `style` / `activeTab` / `titleAlign` / `playerModel` | **Done** (since 1.3.7) |
 
-LM 4.6.142+ treats those five as `SHIPPED_ON_RECOMMENDED`. `/lm admin guitest` should report `missingShipped=none pendingNext=none` on 1.3.9.
+LM 4.6.143+ treats those five as `SHIPPED_ON_RECOMMENDED`. `/lm admin guitest` should report `missingShipped=none pendingNext=none` on 1.3.9.
 
 Deferred (neither side): `inputsJson` `slider` / `toggle`.
 
@@ -52,7 +52,7 @@ Fancy punctuation can still show as `â€` on some clients. LM Ultra copy prefe
 
 Stock KaiPath `UltraWidgetReflect.fitLabel` appends a mojibaked ellipsis (`â€¦`) when a
 label does not fit the control. That reads as stray A/E glyphs on narrow tab buttons
-(e.g. Character Services). LM 4.6.142+ pre-fits every tab/button label with ASCII
+(e.g. Character Services). LM 4.6.143+ pre-fits every tab/button label with ASCII
 `...` and keeps Character tabs short (`Home` / `Saga` / `Android`). JLDK: change
 client `fitLabel` to append ASCII `...` instead.
 

@@ -639,8 +639,16 @@ def main() -> int:
         errors.append("UltraRivalScreens must wire per-challenge Accept via challenge_accept")
     if "hasIncomingDeclareFrom" not in rival:
         errors.append("UltraRivalScreens declare picker must Offer Accept when they already declared you")
+    if "Accept their declare" not in rival or "accept_confirm:" not in rival:
+        errors.append(
+            "UltraRivalScreens must confirm Accept their declare (not silent Declare→Accept)"
+        )
+    if "Silent (private)" not in rival and "Tiers: Silent" not in rival:
+        errors.append("UltraRivalScreens Home must explain Silent/Declared/Mutual/Nemesis tiers")
     if "cancel_mutual_replace" not in rival or "replace_confirm:" not in rival:
         errors.append("UltraRivalScreens mutual swap needs Decline instead + replace_confirm step")
+    if "demote" not in rival.lower() or "Mutual to Declared" not in rival:
+        errors.append("UltraRivalScreens replace confirm must warn Mutual→Declared demotion")
     if "needsMutualReplacePick" not in (ULTRA / "UltraGuiActions.java").read_text(encoding="utf-8"):
         errors.append("UltraGuiActions must reopen pick_replace_mutual after Accept hits the slot cap")
     config = (ULTRA / "UltraConfigScreens.java").read_text(encoding="utf-8")
