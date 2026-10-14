@@ -38,14 +38,16 @@ missingShipped=none pendingNext=[fixedFooter]
 | `layoutJson.accent` + button/tab `accent` | **Done** (1.3.13 via `UltraBridgeChrome`) |
 | GuiFeaturesPacket advertise | **Done** on 1.3.13 (12+ tokens incl. chrome extras) |
 
-## Optional (safe to emit; not tracked as pending)
+## Optional chrome (emitted by LM 4.6.153; not tracked as pending)
 
-| Part | KaiPath 1.3.13 | LM |
-|------|----------------|-----|
-| `layoutJson.palette` / button `palette` | Honors | Optional emit |
-| `portraitFrame` with `playerModel` | Honors | Optional emit |
-| `sound` / `buttonSkin` / `frame` | Honors | Optional emit |
-| `inputsJson` `type=paged_book` | Honors (`BookWidget`) | Optional emit |
+| Part | KaiPath 1.3.13 | LM 4.6.153 |
+|------|----------------|------------|
+| `sound` (`dmzultra:ui_confirm`) | Honors | **Emits** on buttons/tabs |
+| `buttonSkin` (`dmzultra:button`) | Honors | **Emits** on buttons/tabs |
+| `layoutJson.frame` (`dmzultra:panel`) | Honors | **Emits** |
+| `inputsJson` `type=paged_book` (advertise `pagedBook`) | Honors (`BookWidget`) | **Emits** (Staff Admin help book) |
+| `playerModel.portraitFrame` | Honors (not advertised) | **Emits** when playerModel present |
+| `layoutJson.palette` | Honors | Optional (accent already covers tint) |
 
 ## Not bridge gaps (LM-only, already shipped)
 
