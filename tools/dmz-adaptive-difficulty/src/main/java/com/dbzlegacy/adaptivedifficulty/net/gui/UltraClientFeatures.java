@@ -24,11 +24,15 @@ import net.minecraft.server.level.ServerPlayer;
  *   <li>{@link #FEATURE_TITLE_ALIGN} — {@code layoutJson.titleAlign} ({@code center}/{@code left})
  *   <li>{@link #FEATURE_PLAYER_MODEL} — {@code layoutJson.playerModel} entity preview
  *   <li>{@link #FEATURE_TEXT_INPUT} — GuiOpenPacket field 11 {@code inputsJson} text fields
+ *   <li>{@link #FEATURE_HEADER_BOTTOM} — {@code layoutJson.headerBottom} (title+divider above tabs)
+ *   <li>{@link #FEATURE_ACCENT} — {@code layoutJson.accent} + button/tab {@code accent}
  * </ul>
  *
  * <p>Clients that never send {@link GuiFeaturesPacket} are treated as the KaiPath <b>1.3.1
  * baseline</b>: dynamic layout/buttons only. KaiPath <b>1.3.9</b> advertises
- * style/activeTab/titleAlign/playerModel/{@link #FEATURE_TEXT_INPUT}.
+ * style/activeTab/titleAlign/playerModel/{@link #FEATURE_TEXT_INPUT}. LM already emits
+ * {@link #FEATURE_HEADER_BOTTOM} and {@link #FEATURE_ACCENT}; those sit in
+ * {@link #PENDING_NEXT} until KaiPath advertises/honors them.
  */
 public final class UltraClientFeatures {
     public static final String FEATURE_STYLE = "style";
@@ -36,6 +40,8 @@ public final class UltraClientFeatures {
     public static final String FEATURE_TITLE_ALIGN = "titlealign";
     public static final String FEATURE_PLAYER_MODEL = "playermodel";
     public static final String FEATURE_TEXT_INPUT = "textinput";
+    public static final String FEATURE_HEADER_BOTTOM = "headerbottom";
+    public static final String FEATURE_ACCENT = "accent";
 
     /** Wire / doc spellings accepted for {@link #FEATURE_ACTIVE_TAB}. */
     public static final String FEATURE_ACTIVE_TAB_DOC = "activeTab";
@@ -45,6 +51,10 @@ public final class UltraClientFeatures {
     public static final String FEATURE_PLAYER_MODEL_DOC = "playerModel";
     /** Wire / doc spelling for {@link #FEATURE_TEXT_INPUT}. */
     public static final String FEATURE_TEXT_INPUT_DOC = "textInput";
+    /** Wire / doc spelling for {@link #FEATURE_HEADER_BOTTOM}. */
+    public static final String FEATURE_HEADER_BOTTOM_DOC = "headerBottom";
+    /** Wire / doc spelling for {@link #FEATURE_ACCENT}. */
+    public static final String FEATURE_ACCENT_DOC = "accent";
 
     /** Optional features the LM bridge expects a fully conforming client to advertise. */
     public static final Set<String> EXPECTED_OPTIONAL =
@@ -53,7 +63,9 @@ public final class UltraClientFeatures {
                     FEATURE_ACTIVE_TAB,
                     FEATURE_TITLE_ALIGN,
                     FEATURE_PLAYER_MODEL,
-                    FEATURE_TEXT_INPUT);
+                    FEATURE_TEXT_INPUT,
+                    FEATURE_HEADER_BOTTOM,
+                    FEATURE_ACCENT);
 
     /**
      * Features KaiPath <b>1.3.9</b> already advertises/honors. Missing any of these is a real
@@ -67,8 +79,12 @@ public final class UltraClientFeatures {
                     FEATURE_PLAYER_MODEL,
                     FEATURE_TEXT_INPUT);
 
-    /** Reserved for optional features not yet on the recommended KaiPath. Empty as of 1.3.9. */
-    public static final Set<String> PENDING_NEXT = Set.of();
+    /**
+     * LM already emits these on the wire; KaiPath 1.3.9 does not advertise/honor them yet.
+     * Guitest reports them as {@code pendingNext=} (info, not a pre-1.3.9 warn).
+     */
+    public static final Set<String> PENDING_NEXT =
+            Set.of(FEATURE_HEADER_BOTTOM, FEATURE_ACCENT);
 
     private static final Map<UUID, State> BY_PLAYER = new ConcurrentHashMap<>();
 
@@ -174,7 +190,7 @@ public final class UltraClientFeatures {
         return missing;
     }
 
-    /** Gaps still expected after the recommended KaiPath (none as of 1.3.9). */
+    /** Gaps still expected after the recommended KaiPath (headerBottom + accent). */
     public static List<String> missingPending(State state) {
         List<String> missing = new ArrayList<>();
         for (String feature : PENDING_NEXT) {
@@ -198,6 +214,12 @@ public final class UltraClientFeatures {
         }
         if (FEATURE_TEXT_INPUT.equals(key)) {
             return FEATURE_TEXT_INPUT_DOC;
+        }
+        if (FEATURE_HEADER_BOTTOM.equals(key)) {
+            return FEATURE_HEADER_BOTTOM_DOC;
+        }
+        if (FEATURE_ACCENT.equals(key)) {
+            return FEATURE_ACCENT_DOC;
         }
         return feature == null ? "" : feature;
     }
@@ -229,14 +251,22 @@ public final class UltraClientFeatures {
             } else if (FEATURE_TEXT_INPUT.equals(key)) {
                 lines.add(
                         "text fields ignored (GuiOpenPacket.inputsJson / bindInput not rendered)");
+            } else if (FEATURE_HEADER_BOTTOM.equals(key)) {
+                lines.add(
+                        "title/divider may overlap under-title tabs "
+                                + "(layoutJson.headerBottom ignored)");
+            } else if (FEATURE_ACCENT.equals(key)) {
+                lines.add(
+                        "system accent colors ignored (layoutJson.accent / button accent not painted; "
+                                + "activeTab stays shared yellow)");
             }
         }
         return lines;
     }
 
     /**
-     * Log when 1.3.9-shipped features are missing (real gap). {@link #PENDING_NEXT} gaps (none
-     * today) log at info so older clients are not warned as broken for reserved work.
+     * Log when 1.3.9-shipped features are missing (real gap). {@link #PENDING_NEXT} gaps
+     * (headerBottom, accent) log at info so 1.3.9 clients are not warned as broken.
      */
     public static void warnMissingOptionalFeatures(ServerPlayer player, String context) {
         if (player == null) {

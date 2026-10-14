@@ -1,9 +1,9 @@
 # JLDK brief — KaiPath Ultra GUI client conformance
 
-**Status (LM 4.6.150 + KaiPath 1.3.9):** Live KaiPath **1.3.9** honors `style`, `activeTab`,
-`titleAlign`, `playerModel`, and **`textInput`** (GuiOpen field 11 / EditBox / `bindInput`).
-LM 4.6.149+ adds **`layoutJson.headerBottom`** + **`layoutJson.accent`** / button **`accent`**
-— KaiPath must honor these next (see below).
+**Status (LM 4.6.151 + KaiPath 1.3.9):** Live KaiPath **1.3.9** honors `style`, `activeTab`,
+`titleAlign`, `playerModel`, and **`textInput`**. LM already emits **`headerBottom`** and
+**`accent`** — those are the open advertise-able bridge gaps (plus title vertical centering,
+which needs no new field).
 
 Full gap matrix: [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md).
 
@@ -28,31 +28,30 @@ The client renders what the server sends — **no hardcoded screen/tab/button/ac
 | Dynamic title / tabs / lines / buttons | yes |
 | Button `style` | yes |
 | `layoutJson.titleAlign` = `center` | yes |
-| `activeTab` highlight | yes (currently shared yellow — see accent) |
+| `activeTab` highlight | yes (shared yellow until `accent`) |
 | `playerModel` entity preview | yes |
 | Text fields + `bindInput` → `args.value` | yes |
-| GuiFeaturesPacket | yes — `["style","activeTab","titleAlign","playerModel","textInput"]` |
+| GuiFeaturesPacket | yes — five features (see below) |
 | Verbatim GuiAction echo | yes |
 | Any `screenId` | yes |
 
-## Open — protocol geometry + accent (LM 4.6.149 ships the fields)
+## Open gaps (do these next)
 
-### 1. `layoutJson.headerBottom` (tabs under the yellow divider)
+### 1. `layoutJson.headerBottom` — tabs under the yellow divider
 
-LM places tabs as regular buttons at Y=`headerBottom` with `tabsUnderTitle=true`, avoiding
-KaiPath's native title-chrome tab strip. **Client must keep title text + yellow divider
-strictly above `headerBottom`.** Default with tabs: **28**; without: **42**.
+LM places tabs as regular buttons at Y=`headerBottom` with `tabsUnderTitle=true`.
+**Keep title text + yellow divider strictly above `headerBottom`.** Defaults: **28** with
+tabs, **42** without. Spec: [`KAIPATH_GUI_PROTOCOL.md`](KAIPATH_GUI_PROTOCOL.md) §4.
 
-This is the only clean fix for tab/divider collision. Spec: [`KAIPATH_GUI_PROTOCOL.md`](KAIPATH_GUI_PROTOCOL.md) §4.
+Advertise: `"headerBottom"`.
 
-### 2. Title vertical centering (JLDK-only)
+### 2. Title vertical centering — JLDK-only
 
-Title Y is 100% KaiPath chrome. Center the title text in the header band between the gear
-icons. No further protocol field.
+Center the title text in the header band between the gear icons. No protocol field.
 
-### 3. `layoutJson.accent` + button `accent`
+### 3. `layoutJson.accent` + button/tab `accent`
 
-Single-letter Minecraft color codes (no section-sign in title/button labels — those mojibake).
+Single-letter Minecraft color codes (no section-sign in title/button labels).
 
 | System | Code |
 |--------|------|
@@ -63,20 +62,24 @@ Single-letter Minecraft color codes (no section-sign in title/button labels — 
 | Character Services | `a` |
 | Skill Check | `e` |
 | Staff Admin | `4` |
-| Main hub title | *(omit `accent` — shared gold)* |
+| Main hub title | *(omit — shared gold)* |
 
 - Paint **title** from `layoutJson.accent`.
 - Paint **`activeTab` highlight** from `layoutJson.accent` (replaces shared yellow).
 - Paint hub tile / staff control tint from per-button `accent` when present.
 - Button `style` stays semantic (`confirm` / `danger` / `dim` / `normal`).
 
-## Advertise (when accent + headerBottom ship client-side)
+Advertise: `"accent"`.
+
+## Advertise (after implementing gaps 1 + 3)
 
 ```java
 UltraGuiConsumerRegistry.advertiseFeatures(
     "legacymechanics:gui",
     "[\"style\",\"activeTab\",\"titleAlign\",\"playerModel\",\"textInput\",\"headerBottom\",\"accent\"]");
 ```
+
+LM guitest then moves from `pendingNext=[headerBottom, accent]` → `pendingNext=none`.
 
 ## Deferred (not blocking)
 

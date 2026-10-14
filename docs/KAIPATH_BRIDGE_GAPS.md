@@ -1,95 +1,109 @@
 # Ultra bridge gap matrix (LM ↔ KaiPath)
 
-**LM 4.6.150** + **KaiPath 1.3.9** (live / recommended). Official KaiPath updates are owned by the KaiPath mod developer.
+**LM 4.6.151** + **KaiPath 1.3.9** (live / recommended). Official KaiPath updates are owned by the KaiPath mod developer.
 
-## Still missing on KaiPath 1.3.9 (real bridge gaps)
+## Open bridge gaps (only these)
 
-| Part | Owner | Notes |
-|------|-------|-------|
-| **`layoutJson.headerBottom`** | Cursor+JLDK | LM 4.6.149 emits it. Client must keep title+divider **above** this Y so under-title tabs do not collide with the yellow line. |
-| **Title vertical centering** | JLDK-only | No protocol field — center title text in the header band between the gears. |
-| **`layoutJson.accent` + button `accent`** | Cursor+JLDK | LM 4.6.149 emits single-letter codes. Client paints title / activeTab / hub-tile tint. |
+| Gap | Owner | LM status | KaiPath 1.3.9 | Notes |
+|-----|-------|-----------|----------------|-------|
+| **`layoutJson.headerBottom`** | Cursor + JLDK | **Emits** (4.6.149+) | **Missing** | Keep title + yellow divider **strictly above** this panel-relative Y. With `tabsUnderTitle=true`, tab row sits at this Y (default **28**). Spec: [`KAIPATH_GUI_PROTOCOL.md`](KAIPATH_GUI_PROTOCOL.md) §4. |
+| **`layoutJson.accent` + button/tab `accent`** | Cursor + JLDK | **Emits** (4.6.149+) | **Missing** | Single-letter color codes. Paint title + `activeTab` highlight from `layoutJson.accent`; hub tiles / staff controls from per-button `accent`. Titles/labels stay plain ASCII. |
+| **Title vertical centering** | **JLDK-only** | N/A (no field) | **Missing** | Center title text in the header band between the gear icons. No protocol change. |
 
-Weights / Config typed-entry path is done on both sides:
+`/lm admin guitest` on KaiPath **1.3.9** should report:
+
+```text
+missingShipped=none pendingNext=[headerBottom, accent]
+```
+
+(`UltraClientFeatures.PENDING_NEXT` tracks the two advertise-able gaps. Title centering is docs-only.)
+
+## Closed on both sides (not gaps)
 
 | Part | Status |
 |------|--------|
-| GuiOpen **field 11** `inputsJson` | **Done** |
-| EditBox / `type=text` + `bindInput` → `args.value` | **Done** |
-| `textInput` in GuiFeaturesPacket advertise | **Done** |
-| `style` / `activeTab` / `titleAlign` / `playerModel` | **Done** (since 1.3.7) |
+| GuiOpen fields 1–11 (`inputsJson`) | **Done** |
+| Button `style` (`confirm` / `danger` / `dim` / `normal`) | **Done** (1.3.7+) |
+| `activeTab` highlight | **Done** (shared yellow until `accent` ships) |
+| `layoutJson.titleAlign` | **Done** |
+| `layoutJson.playerModel` (+ `parts` schema 1) | **Done** |
+| `textInput` / EditBox / `bindInput` → `args.value` | **Done** (1.3.9) |
+| GuiFeaturesPacket advertise (5 features) | **Done** on 1.3.9 |
 
-LM treats the five shipped features as `SHIPPED_ON_RECOMMENDED`. `/lm admin guitest` should report `missingShipped=none pendingNext=none` on 1.3.9 for those.
+## Not bridge gaps (LM-only, already shipped)
 
-Deferred (neither side): `inputsJson` `slider` / `toggle`.
+| Item | Notes |
+|------|-------|
+| Hub tile styles | All `normal` + per-system `accent` letter; Staff Admin accent `4` (not `STYLE_DANGER`) |
+| Hub compact floor | `PANEL_COMPACT_MIN_H=150` for tile-only menus |
+| Active-tab style | LM sends `style=normal` + `accent` (not shared `confirm` yellow) |
+| Main hub title gold | Hub omits `layoutJson.accent` (shared chrome) |
 
-## Cursor / LM (server protocol) — status
+## Cursor / LM (server) checklist
 
-| Gap | Status | Notes |
-|-----|--------|-------|
-| Button `style` on every button | **Done** | Wire always emits `style`. Roles: `confirm` / `danger` / `dim` / `normal`. |
-| Text input (`inputsJson` field 11) | **Done** | `type=text` + `args.bindInput` → `args.value`. Config + Difficulty Weights shop. |
-| `playerModel.parts` (cosmetics) | **Done** (4.6.111) | Schema 1: `headBones` / `form` / `extras`. See [`KAIPATH_GUI_PROTOCOL.md`](KAIPATH_GUI_PROTOCOL.md). |
-| `layoutJson.headerBottom` | **Done** (LM 4.6.149) | Awaiting KaiPath honor. |
-| `layoutJson.accent` / button `accent` | **Done** (LM 4.6.149) | Awaiting KaiPath honor. Hub tiles / titles / active tabs. |
-| Hub compact floor | **Done** (LM) | `PANEL_COMPACT_MIN_H=150` for tile-only menus — not a bridge gap. |
-| Slider / toggle as input types | **Deferred** | BOOLEAN stays styled buttons; NUMBER uses text + ±. Reserved below. |
+| Item | Status |
+|------|--------|
+| Emit `style` on every button | **Done** |
+| Emit `inputsJson` field 11 | **Done** |
+| Emit `playerModel.parts` schema 1 | **Done** |
+| Emit `layoutJson.headerBottom` | **Done** (4.6.149) |
+| Emit `layoutJson.accent` / button `accent` | **Done** (4.6.149) |
+| Track pending in `UltraClientFeatures.PENDING_NEXT` | **Done** (4.6.151) — `headerBottom`, `accent` |
+| `inputsJson` `slider` / `toggle` | **Deferred** |
 
-## JLDK / KaiPath (client) — 1.3.9
+## JLDK / KaiPath (client) checklist
 
-Vendored / live jar: `mods/kaipath-1.3.9.jar`. Reference kit remains at [`tools/ultra-gui-kit/kaipath-client/`](../tools/ultra-gui-kit/kaipath-client/) for protocol parity.
+Vendored / live jar: `mods/kaipath-1.3.9.jar`. Reference kit: [`tools/ultra-gui-kit/kaipath-client/`](../tools/ultra-gui-kit/kaipath-client/).
 
-| Gap | KaiPath **1.3.9** | Notes |
-|-----|-------------------|-------|
-| Button `style` colors | **Done** | |
-| `activeTab` highlight | **Done** | Still shared yellow until `accent` is honored |
-| `titleAlign` | **Done** | |
-| `playerModel` draw | **Done** | |
-| Text field widgets (field 11) | **Done** | Unblocks Weight shop |
-| GuiFeaturesPacket advertise | **Full** | `["style","activeTab","titleAlign","playerModel","textInput"]` |
-| `headerBottom` | **Needed** | Title+divider above this Y |
-| `accent` | **Needed** | Title / activeTab / hub tile tint |
-| Title vertical center in header band | **Needed** | No new field |
-| Slider / toggle widgets | N/A | Reserved until LM ships types |
+| Item | 1.3.9 | Next KaiPath |
+|------|-------|---------------|
+| Button `style` | **Done** | — |
+| `activeTab` | **Done** (yellow) | Tint from `accent` |
+| `titleAlign` | **Done** | — |
+| `playerModel` | **Done** | — |
+| `textInput` | **Done** | — |
+| Advertise 5 features | **Done** | Add `headerBottom`, `accent` |
+| Honor `headerBottom` | **Needed** | Title+divider above Y |
+| Honor `accent` | **Needed** | Title / activeTab / hub tint |
+| Title vertical center | **Needed** | No new field |
+| `slider` / `toggle` widgets | N/A | When LM ships types |
 
-## Practical pitfalls (watch-outs)
+### Advertise when headerBottom + accent ship
+
+```java
+UltraGuiConsumerRegistry.advertiseFeatures(
+    "legacymechanics:gui",
+    "[\"style\",\"activeTab\",\"titleAlign\",\"playerModel\",\"textInput\",\"headerBottom\",\"accent\"]");
+```
+
+## Practical pitfalls
 
 ### 1. Older clients without textInput
 
-Pre-1.3.9 KaiPath ignores field 11. LM Weights / Config pages show an explicit danger line when `textInput` is missing — do not leave a silent dead field.
+Pre-1.3.9 KaiPath ignores field 11. LM Weights / Config pages show an explicit danger line when `textInput` is missing.
 
 ### 2. UTF-8 mojibake / tab ellipsis
 
-Fancy punctuation can still show as `â€` on some clients. LM Ultra copy prefers ASCII dashes.
-
-Stock KaiPath `UltraWidgetReflect.fitLabel` appends a mojibaked ellipsis (`â€¦`) when a
-label does not fit the control. That reads as stray A/E glyphs on narrow tab buttons
-(e.g. Character Services). LM 4.6.143+ pre-fits every tab/button label with ASCII
-`...` and keeps Character tabs short (`Home` / `Saga` / `Android`). JLDK: change
-client `fitLabel` to append ASCII `...` instead.
+LM Ultra copy prefers ASCII. Pre-fit labels with ASCII `...` so stock KaiPath `fitLabel` never appends mojibaked ellipsis. JLDK: change client `fitLabel` to ASCII `...`.
 
 ### 3. Player model custom parts
 
-`playerModel.parts` schema v1 is LM-side; verify all part types render on the client preview.
+`playerModel.parts` schema v1 is LM-side; verify part types render on the client preview.
 
-### 4. Limited graceful degradation
+### 4. Pending vs shipped diagnostics
 
-`GuiFeaturesPacket` drives guitest / gap logs and Weights/Config copy; LM does not yet hide every optional chrome feature-by-feature.
+Missing `SHIPPED_ON_RECOMMENDED` → warn (wrong/old jar). Missing `PENDING_NEXT` → info (`pendingNext=` in guitest). Do not treat 1.3.9 as broken for headerBottom/accent until a newer KaiPath advertises them.
 
 ### 5. Slider / toggle types are deferred
 
 Booleans stay styled buttons; numbers stay text + ± steppers.
 
-### 6. Header geometry + accent (see open gaps above)
-
-LM 4.6.149 emits `headerBottom` and `accent`. Hub compactness is LM-only
-(`PANEL_COMPACT_MIN_H`). Title vertical centering remains JLDK-only.
-
 ## Reserved (later): `inputsJson` slider / toggle
 
-Not implemented on either side. When added, prefer extending field 11 rather than a new packet field.
+Not implemented on either side. Prefer extending field 11 when added.
 
 ## Docs
 
 - Protocol: [`KAIPATH_GUI_PROTOCOL.md`](KAIPATH_GUI_PROTOCOL.md)
 - JLDK handoff: [`KAIPATH_JLDK_CLIENT_BRIEF.md`](KAIPATH_JLDK_CLIENT_BRIEF.md)
+- Overview: [`KAIPATH_1.3.1_ULTRA.md`](KAIPATH_1.3.1_ULTRA.md)

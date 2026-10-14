@@ -320,6 +320,8 @@ def main() -> int:
             "FEATURE_TITLE_ALIGN",
             "FEATURE_PLAYER_MODEL",
             "FEATURE_TEXT_INPUT",
+            "FEATURE_HEADER_BOTTOM",
+            "FEATURE_ACCENT",
         ):
             if needle not in feat_text:
                 errors.append(f"UltraClientFeatures must define {needle}")
@@ -329,6 +331,26 @@ def main() -> int:
             )
         if "textInput" not in feat_text:
             errors.append("UltraClientFeatures must cover textInput (inputsJson)")
+        if "FEATURE_HEADER_BOTTOM" not in feat_text or "FEATURE_ACCENT" not in feat_text:
+            errors.append("UltraClientFeatures must define headerBottom + accent pending features")
+        if "PENDING_NEXT" not in feat_text or "FEATURE_HEADER_BOTTOM" not in feat_text:
+            errors.append("UltraClientFeatures.PENDING_NEXT must track headerBottom + accent")
+        # PENDING_NEXT must be non-empty while KaiPath 1.3.9 lacks these.
+        if "PENDING_NEXT =\n            Set.of()" in feat_text or "PENDING_NEXT = Set.of()" in feat_text:
+            errors.append(
+                "UltraClientFeatures.PENDING_NEXT must list headerBottom + accent "
+                "(not empty while LM emits them)"
+            )
+        if "FEATURE_HEADER_BOTTOM" not in feat_text.split("PENDING_NEXT", 1)[-1].split(
+            "private static final Map", 1
+        )[0]:
+            errors.append("PENDING_NEXT must include FEATURE_HEADER_BOTTOM")
+        if "FEATURE_ACCENT" not in feat_text.split("PENDING_NEXT", 1)[-1].split(
+            "private static final Map", 1
+        )[0]:
+            errors.append("PENDING_NEXT must include FEATURE_ACCENT")
+        if "headerBottom" not in feat_text or 'FEATURE_ACCENT_DOC = "accent"' not in feat_text:
+            errors.append("UltraClientFeatures must expose headerBottom/accent doc spellings")
     if "roundTripStyleAndActiveTab" not in net:
         errors.append("LmGuiNetwork must round-trip style + activeTab in self-test")
     if "GuiFeaturesPacket" not in net:
