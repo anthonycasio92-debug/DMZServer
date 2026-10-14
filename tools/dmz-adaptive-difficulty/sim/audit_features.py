@@ -1071,14 +1071,26 @@ def main() -> int:
         "public static void updateMomentum", 1)[0] if "public static void flushTpMessage" in spar_c147 else ""
     check("flushTpMessage staff gate",
           "StaffAccess.isStaff(player)" in flush_fn)
-    check("player TP line is simple +TP (label)",
-          'DmzRewards.msg(player, base)' in flush_fn
-          and "activeBonusTags" not in flush_fn.split("if (!StaffAccess.isStaff(player))", 1)[0]
-          if "if (!StaffAccess.isStaff(player))" in flush_fn else False)
-    check("staff TP line has bonus + stack + session",
-          "activeBonusTags" in flush_fn and "staffStackTags" in flush_fn
-          and "session" in flush_fn and "m/k/c" in flush_fn)
-    check("staffStackTags API", "staffStackTags(" in spar_c147 and "burstLabel(" in spar_c147)
+    player_half = (
+        flush_fn.split("if (!StaffAccess.isStaff(player))", 1)[0]
+        if "if (!StaffAccess.isStaff(player))" in flush_fn
+        else ""
+    )
+    check("player TP line is simple +TP (label) subtitle",
+          "ScreenNotify.subtitleOnly" in flush_fn
+          and "formatWhole(pending)" in flush_fn
+          and "activeBonusTags" not in player_half)
+    check("staff TP subtitle is trimmed (no full stack tags)",
+          "staffTpSubtitle" in flush_fn
+          and "staffStackTags" not in flush_fn
+          and "sess" in flush_fn
+          and "TP_SUBTITLE_MAX_CHARS" in spar_c147)
+    check("staffStackTags API still exists for other callers",
+          "staffStackTags(" in spar_c147 and "burstLabel(" in spar_c147)
+    check("momentum notice is subtitle",
+          "ScreenNotify.subtitleOnly" in spar_c147
+          and "Momentum " in spar_c147
+          and 'LmChat.note("Spar"' not in spar_c147)
 
     print("\n=== Mentor Actions GUI (2.3.146) ===")
     spar_chest146 = read(gui_root / "SparChestGui.java")
@@ -1180,7 +1192,10 @@ def main() -> int:
     check("LmChat TAG_ALIASES", "TAG_ALIASES" in lmchat and 'systemName' in lmchat)
     check("LmChat ok/fail/tp helpers", 'ok(String' in lmchat and 'fail(String' in lmchat and 'tp(String' in lmchat)
     check("LmChat open-tip normalize", "normalizeOpenTip" in lmchat)
-    check("awardTp uses LmChat.tp", "LmChat.tp(resolveTpSystem" in rewards)
+    check("awardTp TP notice is subtitle",
+          "ScreenNotify.subtitleOnly" in rewards
+          and "lm.tp.grant.subtitle" in rewards
+          and "LmChat.tp(resolveTpSystem" not in rewards)
     check("GuiChat mirrors aliases", "TAG_ALIASES" in guichat and "normalizeOpenTip" in guichat)
     check("Mentor invite uses LmChat.tip", 'LmChat.tip("/spar"' in spar_sys)
     check("Perfect Training tagged", 'LmChat.tagged("Spar"' in spar_sys and "Perfect Training" in spar_sys)
@@ -1534,6 +1549,20 @@ def main() -> int:
     check("LM tips use action bar",
           "ScreenNotify.actionBar" in lm_tips
           and "void actionBar" in read(SRC / "com/dbzlegacy/adaptivedifficulty/util/ScreenNotify.java"))
+    screen_notify = read(SRC / "com/dbzlegacy/adaptivedifficulty/util/ScreenNotify.java")
+    potential_src = read(
+        SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/PotentialProgression.java"
+    )
+    check("ScreenNotify.subtitleOnly exists",
+          "void subtitleOnly" in screen_notify
+          and "ClientboundSetSubtitleTextPacket" in screen_notify
+          and 'ClientboundSetTitleTextPacket(Component.m_237113_(""))' in screen_notify)
+    check("Potential notices are subtitles not chat",
+          "ScreenNotify.subtitleOnly" in potential_src
+          and "potentialSubtitle" in potential_src
+          and 'DmzRewards.msg(player, LmChat.note("Potential"' not in potential_src
+          and 'DmzRewards.msg(player, LmChat.fail("Potential"' not in potential_src
+          and 'DmzRewards.msg(player, LmChat.info("Potential"' not in potential_src)
     check("LM tips LP frequent groups",
           "lmTipFrequentGroups" in lm_tips
           and "getPrimaryGroup" in lm_tips

@@ -9,6 +9,7 @@ import com.dragonminez.common.network.S2C.StatsSyncS2C;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.Resources;
 import java.util.UUID;
+import net.minecraft.ChatFormatting;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 
@@ -57,7 +58,12 @@ public final class DmzRewards {
                 );
             }
             if (showMessage) {
-                msg(player, LmChat.tp(resolveTpSystem(prefix), formatWhole(grant), reason));
+                // Subtitle only — chat TP lines clutter the fight feed.
+                String why = reason == null || reason.isBlank() ? "" : " (" + reason + ")";
+                String system = resolveTpSystem(prefix);
+                String line = system + " +" + formatWhole(grant) + " TP" + why;
+                ScreenNotify.subtitleOnly(
+                        player, line, ChatFormatting.GREEN, "lm.tp.grant.subtitle", 1_500L);
             }
             return true;
         } catch (Throwable t) {

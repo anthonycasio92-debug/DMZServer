@@ -43,6 +43,52 @@ public final class ScreenNotify {
     }
 
     /**
+     * Subtitle only (empty title packet) — for frequent TP / Potential notices.
+     * Yellow subtitle, default anti-spam when {@code cooldownKey} is non-blank.
+     */
+    public static void subtitleOnly(
+            ServerPlayer player, String subtitle, String cooldownKey, long cooldownMs
+    ) {
+        subtitleOnly(player, subtitle, ChatFormatting.YELLOW, cooldownKey, cooldownMs);
+    }
+
+    /**
+     * Subtitle only with an explicit color. Sends clear + timings + empty title + subtitle.
+     * No chat. Blank {@code cooldownKey} or {@code cooldownMs <= 0} skips anti-spam.
+     */
+    public static void subtitleOnly(
+            ServerPlayer player,
+            String subtitle,
+            ChatFormatting color,
+            String cooldownKey,
+            long cooldownMs
+    ) {
+        if (player == null || subtitle == null || subtitle.isBlank()) {
+            return;
+        }
+        try {
+            if (cooldownKey != null && !cooldownKey.isBlank() && cooldownMs > 0L) {
+                long now = System.currentTimeMillis();
+                long last = ProgressionData.tempGetLong(player, cooldownKey, 0L);
+                if (last > 0L && now - last < cooldownMs) {
+                    return;
+                }
+                ProgressionData.tempPut(player, cooldownKey, now);
+            }
+            if (player.f_8906_ == null) {
+                return;
+            }
+            ChatFormatting ink = color == null ? ChatFormatting.YELLOW : color;
+            player.f_8906_.m_9829_(new ClientboundClearTitlesPacket(false));
+            // Slightly shorter hold than full title+subtitle pairs — TP bursts fire often.
+            player.f_8906_.m_9829_(new ClientboundSetTitlesAnimationPacket(5, 35, 8));
+            player.f_8906_.m_9829_(new ClientboundSetTitleTextPacket(Component.m_237113_("")));
+            player.f_8906_.m_9829_(new ClientboundSetSubtitleTextPacket(styled(subtitle, ink)));
+        } catch (Throwable ignored) {
+        }
+    }
+
+    /**
      * Soft tip on the action bar (above hotbar) — less intrusive than a full-screen title.
      * Combines {@code title} · {@code detail} into one line.
      */
