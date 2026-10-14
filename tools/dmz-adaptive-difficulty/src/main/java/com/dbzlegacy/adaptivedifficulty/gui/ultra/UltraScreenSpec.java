@@ -126,14 +126,16 @@ public final class UltraScreenSpec {
             float scale,
             boolean rotate,
             JsonObject parts) {
-        this.playerModel = new PlayerModel(
-                x,
-                y,
-                Math.max(16, width),
-                Math.max(16, height),
-                scale <= 0f ? 1f : scale,
-                rotate,
-                parts);
+        this.playerModel =
+                new PlayerModel(
+                        x,
+                        y,
+                        Math.max(16, width),
+                        Math.max(16, height),
+                        scale <= 0f ? 1f : scale,
+                        rotate,
+                        "dmzultra:portrait",
+                        parts);
         return this;
     }
 
@@ -483,6 +485,10 @@ public final class UltraScreenSpec {
             o.addProperty("style", b.style);
             if (b.accent != null && !b.accent.isBlank()) {
                 o.addProperty("accent", b.accent);
+                String btnPalette = UltraStyle.paletteNameForAccentLetter(b.accent);
+                if (!btnPalette.isBlank()) {
+                    o.addProperty("palette", btnPalette);
+                }
             }
             o.addProperty("x", b.x);
             o.addProperty("y", b.y + buttonShift);
@@ -544,6 +550,11 @@ public final class UltraScreenSpec {
             // Single-letter color for title chrome + activeTab highlight (plain ASCII titles).
             layout.addProperty("accent", accentCode);
         }
+        String paletteName = UltraStyle.systemPaletteName(screenId);
+        if (paletteName != null && !paletteName.isBlank()) {
+            // Generic color name — preferred over letter accent when the client supports palette.
+            layout.addProperty("palette", paletteName);
+        }
         // Shared body / button metrics - every screen benefits.
         layout.addProperty("lineHeight", UltraStyle.LINE_H);
         layout.addProperty("lineGap", UltraStyle.LINE_GAP);
@@ -566,6 +577,12 @@ public final class UltraScreenSpec {
             pm.addProperty("height", playerModel.height);
             pm.addProperty("scale", playerModel.scale);
             pm.addProperty("rotate", playerModel.rotate);
+            // Namespaced portrait chrome — KaiPath maps to DMZUltra portrait_frame textures.
+            pm.addProperty(
+                    "portraitFrame",
+                    playerModel.portraitFrame == null || playerModel.portraitFrame.isBlank()
+                            ? "dmzultra:portrait"
+                            : playerModel.portraitFrame);
             if (playerModel.parts != null && !playerModel.parts.entrySet().isEmpty()) {
                 pm.add("parts", playerModel.parts);
             }
@@ -642,6 +659,10 @@ public final class UltraScreenSpec {
             String tabAccent = tabAccentCode(tab, active);
             if (tabAccent != null && !tabAccent.isBlank()) {
                 o.addProperty("accent", tabAccent);
+                String tabPalette = UltraStyle.paletteNameForAccentLetter(tabAccent);
+                if (!tabPalette.isBlank()) {
+                    o.addProperty("palette", tabPalette);
+                }
             }
             o.addProperty("x", x);
             o.addProperty("y", y);
@@ -755,5 +776,12 @@ public final class UltraScreenSpec {
             int maxLength) {}
 
     private record PlayerModel(
-            int x, int y, int width, int height, float scale, boolean rotate, JsonObject parts) {}
+            int x,
+            int y,
+            int width,
+            int height,
+            float scale,
+            boolean rotate,
+            String portraitFrame,
+            JsonObject parts) {}
 }

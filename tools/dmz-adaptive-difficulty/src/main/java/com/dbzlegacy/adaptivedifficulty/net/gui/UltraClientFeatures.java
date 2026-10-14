@@ -26,13 +26,14 @@ import net.minecraft.server.level.ServerPlayer;
  *   <li>{@link #FEATURE_TEXT_INPUT} — GuiOpenPacket field 11 {@code inputsJson} text fields
  *   <li>{@link #FEATURE_HEADER_BOTTOM} — {@code layoutJson.headerBottom} (title+divider above tabs)
  *   <li>{@link #FEATURE_ACCENT} — {@code layoutJson.accent} + button/tab {@code accent}
+ *   <li>{@link #FEATURE_PALETTE} — generic {@code palette} color names
  * </ul>
  *
  * <p>Clients that never send {@link GuiFeaturesPacket} are treated as the KaiPath <b>1.3.1
  * baseline</b>: dynamic layout/buttons only. KaiPath <b>1.3.9</b> advertises
  * style/activeTab/titleAlign/playerModel/{@link #FEATURE_TEXT_INPUT}. LM already emits
- * {@link #FEATURE_HEADER_BOTTOM} and {@link #FEATURE_ACCENT}; those sit in
- * {@link #PENDING_NEXT} until KaiPath advertises/honors them.
+ * {@link #FEATURE_HEADER_BOTTOM}, {@link #FEATURE_ACCENT}, and {@link #FEATURE_PALETTE}; those
+ * sit in {@link #PENDING_NEXT} until KaiPath advertises/honors them.
  */
 public final class UltraClientFeatures {
     public static final String FEATURE_STYLE = "style";
@@ -42,6 +43,11 @@ public final class UltraClientFeatures {
     public static final String FEATURE_TEXT_INPUT = "textinput";
     public static final String FEATURE_HEADER_BOTTOM = "headerbottom";
     public static final String FEATURE_ACCENT = "accent";
+    public static final String FEATURE_PALETTE = "palette";
+    public static final String FEATURE_SOUND = "sound";
+    public static final String FEATURE_BUTTON_SKIN = "buttonskin";
+    public static final String FEATURE_FRAME = "frame";
+    public static final String FEATURE_PAGED_BOOK = "pagedbook";
 
     /** Wire / doc spellings accepted for {@link #FEATURE_ACTIVE_TAB}. */
     public static final String FEATURE_ACTIVE_TAB_DOC = "activeTab";
@@ -55,6 +61,12 @@ public final class UltraClientFeatures {
     public static final String FEATURE_HEADER_BOTTOM_DOC = "headerBottom";
     /** Wire / doc spelling for {@link #FEATURE_ACCENT}. */
     public static final String FEATURE_ACCENT_DOC = "accent";
+    /** Wire / doc spelling for {@link #FEATURE_PALETTE}. */
+    public static final String FEATURE_PALETTE_DOC = "palette";
+    /** Wire / doc spelling for {@link #FEATURE_BUTTON_SKIN}. */
+    public static final String FEATURE_BUTTON_SKIN_DOC = "buttonSkin";
+    /** Wire / doc spelling for {@link #FEATURE_PAGED_BOOK}. */
+    public static final String FEATURE_PAGED_BOOK_DOC = "pagedBook";
 
     /** Optional features the LM bridge expects a fully conforming client to advertise. */
     public static final Set<String> EXPECTED_OPTIONAL =
@@ -65,7 +77,8 @@ public final class UltraClientFeatures {
                     FEATURE_PLAYER_MODEL,
                     FEATURE_TEXT_INPUT,
                     FEATURE_HEADER_BOTTOM,
-                    FEATURE_ACCENT);
+                    FEATURE_ACCENT,
+                    FEATURE_PALETTE);
 
     /**
      * Features KaiPath <b>1.3.9</b> already advertises/honors. Missing any of these is a real
@@ -84,8 +97,7 @@ public final class UltraClientFeatures {
      * Guitest reports them as {@code pendingNext=} (info, not a pre-1.3.9 warn).
      */
     public static final Set<String> PENDING_NEXT =
-            Set.of(FEATURE_HEADER_BOTTOM, FEATURE_ACCENT);
-
+            Set.of(FEATURE_HEADER_BOTTOM, FEATURE_ACCENT, FEATURE_PALETTE);
     private static final Map<UUID, State> BY_PLAYER = new ConcurrentHashMap<>();
 
     private UltraClientFeatures() {}
@@ -221,6 +233,15 @@ public final class UltraClientFeatures {
         if (FEATURE_ACCENT.equals(key)) {
             return FEATURE_ACCENT_DOC;
         }
+        if (FEATURE_PALETTE.equals(key)) {
+            return FEATURE_PALETTE_DOC;
+        }
+        if (FEATURE_BUTTON_SKIN.equals(key)) {
+            return FEATURE_BUTTON_SKIN_DOC;
+        }
+        if (FEATURE_PAGED_BOOK.equals(key)) {
+            return FEATURE_PAGED_BOOK_DOC;
+        }
         return feature == null ? "" : feature;
     }
 
@@ -259,6 +280,9 @@ public final class UltraClientFeatures {
                 lines.add(
                         "system accent colors ignored (layoutJson.accent / button accent not painted; "
                                 + "activeTab stays shared yellow)");
+            } else if (FEATURE_PALETTE.equals(key)) {
+                lines.add(
+                        "generic palette names ignored (layoutJson.palette / button palette not painted)");
             }
         }
         return lines;

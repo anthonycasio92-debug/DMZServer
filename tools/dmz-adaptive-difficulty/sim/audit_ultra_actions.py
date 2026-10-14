@@ -349,8 +349,14 @@ def main() -> int:
             "private static final Map", 1
         )[0]:
             errors.append("PENDING_NEXT must include FEATURE_ACCENT")
+        if "FEATURE_PALETTE" not in feat_text.split("PENDING_NEXT", 1)[-1].split(
+            "private static final Map", 1
+        )[0]:
+            errors.append("PENDING_NEXT must include FEATURE_PALETTE")
         if "headerBottom" not in feat_text or 'FEATURE_ACCENT_DOC = "accent"' not in feat_text:
             errors.append("UltraClientFeatures must expose headerBottom/accent doc spellings")
+        if 'FEATURE_PALETTE_DOC = "palette"' not in feat_text:
+            errors.append("UltraClientFeatures must expose palette doc spelling")
     if "roundTripStyleAndActiveTab" not in net:
         errors.append("LmGuiNetwork must round-trip style + activeTab in self-test")
     if "GuiFeaturesPacket" not in net:
