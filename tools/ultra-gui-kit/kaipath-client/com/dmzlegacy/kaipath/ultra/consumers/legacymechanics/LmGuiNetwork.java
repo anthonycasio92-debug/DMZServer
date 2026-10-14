@@ -3,10 +3,10 @@ package com.dmzlegacy.kaipath.ultra.consumers.legacymechanics;
 import com.dmzlegacy.kaipath.ultra.consumers.UltraGuiConsumerRegistry;
 
 /**
- * LM partner channel helper. Channel namespace is a <em>parameter</em> to
- * {@link UltraGuiConsumerRegistry#registerClientChannel(String)} — not baked into packet codecs.
- *
- * <p>Other mods: call {@code UltraGuiConsumerRegistry.registerClientChannel("mymod")} the same way.
+ * Convenience constants for the LegacyMechanics channel only. Packet codecs stay
+ * channel-agnostic — other mods must <b>not</b> import this class; register via
+ * {@link com.dmzlegacy.kaipath.ultra.consumers.UltraGuiPartners} /
+ * {@link UltraGuiConsumerRegistry#registerClientChannel(String)} instead.
  */
 public final class LmGuiNetwork {
     /** LM Forge mod id — one of many possible Ultra GUI channel namespaces. */

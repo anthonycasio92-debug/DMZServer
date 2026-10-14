@@ -409,4 +409,39 @@ public final class UltraStyle {
             default -> "";
         };
     }
+
+    /**
+     * Generic {@code layoutJson.palette} / button {@code palette} color <em>name</em> for a
+     * screen. Empty when the shared hub gold chrome applies. Not DMZUltra Theme enum names.
+     */
+    public static String systemPaletteName(String screenId) {
+        return paletteNameForAccentLetter(systemAccentCode(screenId));
+    }
+
+    /** Hub tile {@code palette} name for a system id. */
+    public static String hubTilePaletteName(String system) {
+        return paletteNameForAccentLetter(hubTileAccentCode(system));
+    }
+
+    /** Map a letter accent code to a generic palette name (empty in → empty out). */
+    public static String paletteNameForAccentLetter(String codeLetter) {
+        if (codeLetter == null || codeLetter.isBlank()) {
+            return "";
+        }
+        char c = codeLetter.trim().toLowerCase().charAt(0);
+        return switch (c) {
+            case 'c' -> "red";
+            case '4' -> "dark_red";
+            case '5' -> "purple";
+            case 'd' -> "dark_purple";
+            case '6' -> "gold";
+            case 'e' -> "yellow";
+            case 'a' -> "green";
+            case 'b' -> "aqua";
+            case '9', '1' -> "blue";
+            case 'f' -> "white";
+            case '7', '8' -> "gray";
+            default -> "";
+        };
+    }
 }

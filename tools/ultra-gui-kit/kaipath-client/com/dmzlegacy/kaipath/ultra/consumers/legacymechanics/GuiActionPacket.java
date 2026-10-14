@@ -5,7 +5,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.network.NetworkEvent;
 
 /**
- * Client → server button/tab press. Echo LM button {@code id} / {@code args} verbatim —
+ * Client → server button/tab press. Echo button {@code id} / {@code args} verbatim —
  * never validate or rewrite action ids on the client.
  */
 public final class GuiActionPacket {

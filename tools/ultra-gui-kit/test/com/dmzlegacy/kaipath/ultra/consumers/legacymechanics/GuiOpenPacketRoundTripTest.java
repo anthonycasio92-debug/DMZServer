@@ -1,6 +1,7 @@
 package com.dmzlegacy.kaipath.ultra.consumers.legacymechanics;
 
 import com.dmzlegacy.kaipath.ultra.consumers.UltraGuiConsumerRegistry;
+import com.dmzlegacy.kaipath.ultra.consumers.UltraGuiPartners;
 import net.minecraft.network.FriendlyByteBuf;
 
 /**
@@ -123,15 +124,56 @@ public final class GuiOpenPacketRoundTripTest {
                     "titleAlign",
                     "playerModel",
                     "textInput",
-                    "fixedFooter"
+                    "headerBottom",
+                    "accent",
+                    "palette",
+                    "sound",
+                    "buttonSkin",
+                    "frame",
+                    "pagedBook",
+                    "combined.forms.v1"
                 }) {
             if (!UltraGuiConsumerRegistry.ADVERTISED_FEATURES_JSON.contains(feat)) {
                 fail("missing advertise feature: " + feat);
             }
         }
 
+        // Multi-mod partners: LM is one entry; list must stay open for other mods
+        if (UltraGuiPartners.DEFAULT_PARTNERS == null
+                || UltraGuiPartners.DEFAULT_PARTNERS.length < 1) {
+            fail("UltraGuiPartners.DEFAULT_PARTNERS must list at least one partner");
+        }
+        boolean hasLm = false;
+        for (String p : UltraGuiPartners.DEFAULT_PARTNERS) {
+            if ("legacymechanics".equals(p)) {
+                hasLm = true;
+            }
+        }
+        if (!hasLm) {
+            fail("DEFAULT_PARTNERS should still include legacymechanics as a partner example");
+        }
+        // channel-agnostic: same advertise JSON is not tied to a single mod id string
+        if (UltraGuiConsumerRegistry.ADVERTISED_FEATURES_JSON.contains("legacymechanics")) {
+            fail("ADVERTISED_FEATURES_JSON must not embed a mod id");
+        }
+
+        // fitLabel ASCII patcher must rewrite mojibake ellipsis constants
+        try {
+            java.nio.file.Path patcher =
+                    java.nio.file.Path.of("tools/ultra-gui-kit/patch_fitlabel_ascii.py");
+            if (!java.nio.file.Files.isRegularFile(patcher)) {
+                // When cwd is the kit dir during some runners
+                patcher = java.nio.file.Path.of("patch_fitlabel_ascii.py");
+            }
+            if (!java.nio.file.Files.isRegularFile(patcher)) {
+                fail("missing patch_fitlabel_ascii.py");
+            }
+        } catch (Throwable t) {
+            fail("fitLabel patcher check failed: " + t.getMessage());
+        }
+
         System.out.println(
-                "GuiOpenPacketRoundTripTest OK (11 fields + inputsJson + textInput advertise)");
+                "GuiOpenPacketRoundTripTest OK (11 fields + multi-mod partners + advertise)");
     }
 
     private static void assertEq(String name, String expected, String actual) {

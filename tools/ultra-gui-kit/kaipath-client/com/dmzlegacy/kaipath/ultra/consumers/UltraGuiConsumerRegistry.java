@@ -16,24 +16,31 @@ import net.minecraftforge.network.simple.SimpleChannel;
 
 /**
  * Multi-mod Ultra GUI client registry. Each server mod owns {@code <modid>:gui}; KaiPath keys
- * consumers by that channel id — never assume a single mod.
+ * consumers by that channel id — never assume a single mod (LegacyMechanics is only one partner).
  *
- * <p>JLDK: call {@link #registerClientChannel(String)} once per partner mod. Reference client
- * advertises the full optional set via {@link #ADVERTISED_FEATURES_JSON}.
+ * <p>JLDK: register every partner via {@link UltraGuiPartners#registerDefaults()} or
+ * {@link #registerClientChannel(String)}. Packet codecs are channel-agnostic; the same
+ * GuiOpen/GuiAction/GuiFeatures classes serve all mods. Advertises the full optional set via
+ * {@link #ADVERTISED_FEATURES_JSON} on every registered channel.
  */
 public final class UltraGuiConsumerRegistry {
     public static final String CHANNEL_PATH = "gui";
     public static final String PROTOCOL_VERSION = "1";
 
     /**
-     * Features this reference client honors — keep in sync with
-     * {@code LmDynamicScreen} + {@code GuiOpenPacket} UTF-8 decode.
+     * Features this reference client honors on <b>every</b> registered {@code <modid>:gui}
+     * channel — keep in sync with {@code LmDynamicScreen} + {@code GuiOpenPacket} UTF-8 decode.
      *
-     * <p>Released KaiPath <b>1.3.7</b> advertises the same list <em>without</em>
-     * {@code textInput}; this kit adds field 11 widgets + that advertise flag.
+     * <p>Released KaiPath <b>1.3.9</b> advertises five features (through {@code textInput}) plus
+     * {@code combined.forms.v1}. This kit adds {@code headerBottom}, {@code accent}, and the
+     * mod-agnostic chrome set ({@code palette}/{@code sound}/{@code buttonSkin}/{@code frame}/
+     * {@code pagedBook}) so partner pending gaps clear after merge into the next official
+     * KaiPath jar. Partners that do not understand an id ignore it.
      */
     public static final String ADVERTISED_FEATURES_JSON =
-            "[\"style\",\"activeTab\",\"titleAlign\",\"playerModel\",\"textInput\",\"fixedFooter\"]";
+            "[\"style\",\"activeTab\",\"titleAlign\",\"playerModel\",\"textInput\","
+                    + "\"headerBottom\",\"accent\",\"palette\",\"sound\",\"buttonSkin\",\"frame\","
+                    + "\"pagedBook\",\"combined.forms.v1\"]";
 
     private static final Map<String, BoundChannel> CHANNELS = new ConcurrentHashMap<>();
 

@@ -22,13 +22,22 @@ import net.minecraft.world.entity.LivingEntity;
 
 /**
  * Renders whatever the server sends in {@link GuiOpenPacket} — title, tabs, lines, buttons,
- * field 11 {@code inputsJson} text fields, button {@code style} colors, and optional
- * {@code layoutJson.playerModel}.
+ * field 11 {@code inputsJson} (text + {@code paged_book}), button {@code style} /
+ * {@code palette} / {@code accent} / {@code sound} / {@code buttonSkin},
+ * {@code layoutJson.headerBottom} / {@code frame}, and optional {@code layoutJson.playerModel}.
  *
- * <p>No hardcoded screen/tab/button lists. Clicks go back on the bound {@code <modid>:gui}
- * channel. Advertise via {@link UltraGuiConsumerRegistry#ADVERTISED_FEATURES_JSON}.
+ * <p>No hardcoded screen/tab/button lists. Works for <b>any</b> partner mod — clicks echo on
+ * the bound {@code <modid>:gui} channel that opened the screen. Advertise via
+ * {@link UltraGuiConsumerRegistry#ADVERTISED_FEATURES_JSON}.
  */
 public class LmDynamicScreen extends UltraScreen {
+    /** Default {@code headerBottom} when under-title tabs are present. */
+    private static final int DEFAULT_HEADER_BOTTOM_TABS = 28;
+    /** Default {@code headerBottom} when there is no under-title tab row. */
+    private static final int DEFAULT_HEADER_BOTTOM = 42;
+    private static final int DIVIDER_YELLOW_ARGB = 0xFFE8C840;
+    private static final int FRAME_EDGE_ARGB = 0x66E8C840;
+
     private final GuiOpenPacket packet;
     private final String channelId;
     private int panelX;
@@ -46,13 +55,24 @@ public class LmDynamicScreen extends UltraScreen {
     private int buttonPad = 8;
     private int buttonMinWidth = 80;
     private String titleAlign = "center";
+    /** Panel-relative Y where title + yellow divider must end. */
+    private int headerBottom = DEFAULT_HEADER_BOTTOM;
+    private boolean tabsUnderTitle = false;
+    /** Single-letter Minecraft color code from layoutJson (empty = shared gold). */
+    private String layoutAccent = "";
+    /** Generic palette color name from layoutJson (preferred over letter accent). */
+    private String layoutPalette = "";
+    /** Namespaced frame id from layoutJson.frame. */
+    private String layoutFrame = "";
     private JsonObject playerModel;
     private final List<String> bodyLines = new ArrayList<>();
     /** input id → live EditBox (for bindInput / Enter → args.value). */
     private final Map<String, EditBox> textInputs = new LinkedHashMap<>();
     /** input id → args template from inputsJson (for Enter submit). */
     private final Map<String, JsonObject> inputArgsById = new LinkedHashMap<>();
-    /** Button chrome underlays drawn from {@code style}. */
+    /** paged_book id → current page index. */
+    private final Map<String, Integer> bookPageById = new LinkedHashMap<>();
+    /** Button chrome underlays drawn from {@code style} / {@code palette} / {@code accent}. */
     private final List<StyledChrome> buttonChrome = new ArrayList<>();
     /** Tab chrome for activeTab highlight. */
     private final List<StyledChrome> tabChrome = new ArrayList<>();
@@ -88,18 +108,16 @@ public class LmDynamicScreen extends UltraScreen {
         parseLayout();
         placePanel();
 
-        int cursorY = panelY + 8;
+        // Title + yellow divider occupy [0, headerBottom). Content starts at/after headerBottom.
+        int cursorY = panelY + headerBottom;
 
-        // Title drawn in render; reserve space under title + header rule
-        cursorY += 14;
-        // Match LM tabsUnderTitle: sit under the title line (hub-like), not in the title band
-        cursorY += 6;
-
-        // Tabs — dynamic from tabsJson; activeTab gets a highlight chip
+        // Compat: tabsJson strip (LM normally sends empty tabsJson + tab buttons at headerBottom)
         JsonArray tabs = parseArray(packet.tabsJson());
         int tabX = panelX + 8;
         int tabW = Math.max(48, Math.min(90, (panelW - 16) / Math.max(1, tabs.size())));
         String active = packet.activeTab() == null ? "" : packet.activeTab().trim();
+        String tabHighlightAccent = layoutAccent.isBlank() ? "e" : layoutAccent;
+        String tabHighlightPalette = layoutPalette.isBlank() ? "yellow" : layoutPalette;
         for (JsonElement el : tabs) {
             if (!el.isJsonObject()) {
                 continue;
@@ -116,8 +134,20 @@ public class LmDynamicScreen extends UltraScreen {
             }
             boolean isActive =
                     !active.isBlank() && active.equalsIgnoreCase(tabSemantic);
-            if (isActive) {
-                tabChrome.add(new StyledChrome(tabX, cursorY, tabW - 2, 16, "confirm"));
+            String tabAccent = str(tab, "accent", isActive ? tabHighlightAccent : "");
+            String tabPalette = str(tab, "palette", isActive ? tabHighlightPalette : "");
+            String tabSound = str(tab, "sound", "");
+            if (isActive || !tabAccent.isBlank() || !tabPalette.isBlank()) {
+                tabChrome.add(
+                        new StyledChrome(
+                                tabX,
+                                cursorY,
+                                tabW - 2,
+                                16,
+                                "normal",
+                                tabAccent,
+                                tabPalette,
+                                ""));
             }
             String actionId = id;
             JsonObject tabArgs = new JsonObject();
@@ -127,7 +157,7 @@ public class LmDynamicScreen extends UltraScreen {
                     tabW - 2,
                     16,
                     stripSection(label),
-                    () -> echoClick(actionId, tabArgs));
+                    () -> echoClick(actionId, tabArgs, tabSound));
             tabX += tabW;
         }
         if (tabs.size() > 0) {
@@ -157,7 +187,7 @@ public class LmDynamicScreen extends UltraScreen {
             cursorY = listY + listH + 6;
         }
 
-        // Text inputs — GuiOpenPacket field 11 inputsJson (type=text)
+        // Field 11 inputsJson — text EditBox + paged_book reader
         JsonArray inputs = parseArray(packet.inputsJson());
         for (JsonElement el : inputs) {
             if (!el.isJsonObject()) {
@@ -169,6 +199,10 @@ public class LmDynamicScreen extends UltraScreen {
                 continue;
             }
             String type = str(in, "type", "text");
+            if ("paged_book".equalsIgnoreCase(type)) {
+                cursorY = Math.max(cursorY, addPagedBook(in, cursorY));
+                continue;
+            }
             if (!"text".equalsIgnoreCase(type)) {
                 continue;
             }
@@ -207,10 +241,8 @@ public class LmDynamicScreen extends UltraScreen {
             inputArgsById.put(id, inputArgs);
         }
 
-        // Buttons — dynamic from buttonsJson; honor style chrome + pinned footer:true
+        // Buttons — dynamic from buttonsJson; honor style / palette / accent / sound / skin
         JsonArray buttons = parseArray(packet.buttonsJson());
-        boolean hasFooter = false;
-        int footerY = Math.max(8, panelH - 10 - 18);
         for (JsonElement el : buttons) {
             if (!el.isJsonObject()) {
                 continue;
@@ -222,12 +254,12 @@ public class LmDynamicScreen extends UltraScreen {
             }
             String label = str(b, "label", id);
             String style = normalizeStyle(str(b, "style", "normal"));
-            boolean footer =
-                    b.has("footer")
-                            && !b.get("footer").isJsonNull()
-                            && b.get("footer").getAsBoolean();
+            String accent = UltraBridgeChrome.normalizeAccent(str(b, "accent", ""));
+            String palette = UltraBridgeChrome.normalizePalette(str(b, "palette", ""));
+            String sound = str(b, "sound", "");
+            String skin = UltraBridgeChrome.buttonSkinId(b);
             int x = intVal(b, "x", 8);
-            int y = footer ? footerY : intVal(b, "y", cursorY - panelY);
+            int y = intVal(b, "y", cursorY - panelY);
             int w = Math.max(buttonMinWidth, intVal(b, "w", 150));
             int h = intVal(b, "h", 18);
             int padBtn = intVal(b, "pad", buttonPad);
@@ -242,25 +274,39 @@ public class LmDynamicScreen extends UltraScreen {
             int absY = panelY + y;
             int absW = Math.max(buttonMinWidth, w);
             int absH = Math.max(12, h);
-            buttonChrome.add(new StyledChrome(absX, absY, absW, absH, style));
+            String semantic = stripAtPrefix(id);
+            if (semantic.startsWith("tab:")) {
+                semantic = semantic.substring(4);
+            }
+            boolean isActiveTab =
+                    !active.isBlank() && active.equalsIgnoreCase(semantic);
+            if (isActiveTab && accent.isBlank() && palette.isBlank()) {
+                accent = layoutAccent.isBlank() ? "e" : layoutAccent;
+                palette = layoutPalette.isBlank() ? "yellow" : layoutPalette;
+            }
+            if (!style.equals("normal")
+                    || !accent.isBlank()
+                    || !palette.isBlank()
+                    || !skin.isBlank()) {
+                buttonChrome.add(
+                        new StyledChrome(absX, absY, absW, absH, style, accent, palette, skin));
+            }
             String actionId = id;
             JsonObject args = argsObj;
+            String clickSound = sound;
             addThemedButton(
                     absX,
                     absY,
                     absW,
                     absH,
-                    styleLabel(style, stripSection(label)),
-                    () -> echoClick(actionId, args));
-            if (footer) {
-                hasFooter = true;
-            }
+                    styleLabel(style, accent, stripSection(label)),
+                    () -> echoClick(actionId, args, clickSound));
         }
 
-        // Close: top-right when a pinned footer owns the bottom band; else bottom-right.
+        // Always offer Close so a sparse packet cannot trap the player
         addThemedButton(
                 panelX + panelW - 68,
-                hasFooter ? panelY + 4 : panelY + panelH - 22,
+                panelY + panelH - 22,
                 60,
                 16,
                 "Close",
@@ -268,6 +314,11 @@ public class LmDynamicScreen extends UltraScreen {
     }
 
     private void echoClick(String actionId, JsonObject argsObj) {
+        echoClick(actionId, argsObj, "");
+    }
+
+    private void echoClick(String actionId, JsonObject argsObj, String soundId) {
+        playUiSound(soundId);
         JsonObject args = argsObj == null ? new JsonObject() : argsObj.deepCopy();
         String bind = str(args, "bindInput", "");
         if (!bind.isBlank()) {
@@ -278,6 +329,126 @@ public class LmDynamicScreen extends UltraScreen {
         }
         UltraGuiConsumerRegistry.sendAction(
                 channelId, packet.screenId(), actionId, args.toString());
+    }
+
+    /** Best-effort namespaced sound play (reflection — no new compile stubs). */
+    private void playUiSound(String soundId) {
+        if (soundId == null || soundId.isBlank()) {
+            return;
+        }
+        try {
+            Minecraft mc = Minecraft.m_91087_();
+            if (mc == null || mc.f_91074_ == null) {
+                return;
+            }
+            String raw = soundId.trim();
+            int colon = raw.indexOf(':');
+            String ns = colon > 0 ? raw.substring(0, colon) : "minecraft";
+            String path = colon > 0 ? raw.substring(colon + 1) : raw;
+            Class<?> rlClass = Class.forName("net.minecraft.resources.ResourceLocation");
+            Object loc = rlClass.getConstructor(String.class, String.class).newInstance(ns, path);
+            Class<?> seClass = Class.forName("net.minecraft.sounds.SoundEvent");
+            Method create;
+            try {
+                create = seClass.getMethod("m_262592_", rlClass); // createVariableRangeEvent
+            } catch (NoSuchMethodException e) {
+                create = seClass.getMethod("createVariableRangeEvent", rlClass);
+            }
+            Object event = create.invoke(null, loc);
+            // LocalPlayer.playSound(SoundEvent, float, float) — SRG m_5496_
+            try {
+                mc.f_91074_
+                        .getClass()
+                        .getMethod("m_5496_", seClass, float.class, float.class)
+                        .invoke(mc.f_91074_, event, 1f, 1f);
+            } catch (NoSuchMethodException e) {
+                mc.f_91074_
+                        .getClass()
+                        .getMethod("playSound", seClass, float.class, float.class)
+                        .invoke(mc.f_91074_, event, 1f, 1f);
+            }
+        } catch (Throwable t) {
+            UltraUiBridge.LOGGER.debug("[kaipath] sound play skipped id={}", soundId, t);
+        }
+    }
+
+    /**
+     * {@code type=paged_book} — title + lines for current page, Prev/Next. Returns absolute Y
+     * just below the widget for cursor packing.
+     */
+    private int addPagedBook(JsonObject in, int cursorYAbs) {
+        String id = str(in, "id", "");
+        int x = intVal(in, "x", 8);
+        int y = intVal(in, "y", cursorYAbs - panelY);
+        int w = Math.max(80, intVal(in, "w", panelW - 16));
+        int h = Math.max(48, intVal(in, "h", 120));
+        String sound = str(in, "sound", "");
+        JsonArray pages =
+                in.has("pages") && in.get("pages").isJsonArray()
+                        ? in.getAsJsonArray("pages")
+                        : new JsonArray();
+        int pageCount = Math.max(1, pages.size());
+        int page = bookPageById.getOrDefault(id, intVal(in, "page", 0));
+        if (page < 0) {
+            page = 0;
+        }
+        if (page >= pageCount) {
+            page = pageCount - 1;
+        }
+        bookPageById.put(id, page);
+        JsonObject pageObj =
+                pages.size() > 0 && pages.get(page).isJsonObject()
+                        ? pages.get(page).getAsJsonObject()
+                        : new JsonObject();
+        String title = stripSection(str(pageObj, "title", "Page " + (page + 1)));
+        List<String> lines = new ArrayList<>();
+        lines.add(title);
+        if (pageObj.has("lines") && pageObj.get("lines").isJsonArray()) {
+            for (JsonElement lineEl : pageObj.getAsJsonArray("lines")) {
+                if (lineEl != null && lineEl.isJsonPrimitive()) {
+                    lines.add(stripSection(lineEl.getAsString()));
+                }
+            }
+        }
+        int absX = panelX + x;
+        int absY = panelY + y;
+        int listH = Math.max(20, h - 22);
+        buttonChrome.add(
+                new StyledChrome(absX, absY, w, h, "dim", "", layoutPalette, ""));
+        addThemedList(absX + 2, absY + 2, Math.max(1, w - 4), listH, lines);
+        int navY = absY + h - 18;
+        int navW = Math.max(40, (w - 8) / 2);
+        String bookId = id;
+        String bookSound = sound;
+        int pageSnapshot = page;
+        int pageCountSnapshot = pageCount;
+        if (pageSnapshot > 0) {
+            addThemedButton(
+                    absX + 2,
+                    navY,
+                    navW,
+                    16,
+                    "Prev",
+                    () -> {
+                        bookPageById.put(bookId, pageSnapshot - 1);
+                        playUiSound(bookSound);
+                        m_7856_();
+                    });
+        }
+        if (pageSnapshot < pageCountSnapshot - 1) {
+            addThemedButton(
+                    absX + w - navW - 2,
+                    navY,
+                    navW,
+                    16,
+                    "Next",
+                    () -> {
+                        bookPageById.put(bookId, pageSnapshot + 1);
+                        playUiSound(bookSound);
+                        m_7856_();
+                    });
+        }
+        return absY + h + 4;
     }
 
     @Override
@@ -313,11 +484,18 @@ public class LmDynamicScreen extends UltraScreen {
         buttonPad = 8;
         buttonMinWidth = 80;
         titleAlign = "center";
+        tabsUnderTitle = false;
+        layoutAccent = "";
+        layoutPalette = "";
+        layoutFrame = "";
+        headerBottom = DEFAULT_HEADER_BOTTOM;
         playerModel = null;
         panelW = packet.panelWidth() > 0 ? packet.panelWidth() : GuiOpenPacket.DEFAULT_PANEL_W;
         panelH = packet.panelHeight() > 0 ? packet.panelHeight() : GuiOpenPacket.DEFAULT_PANEL_H;
+        boolean hasTabsJson = parseArray(packet.tabsJson()).size() > 0;
         String layout = packet.layoutJson();
         if (layout == null || layout.isBlank()) {
+            headerBottom = hasTabsJson ? DEFAULT_HEADER_BOTTOM_TABS : DEFAULT_HEADER_BOTTOM;
             return;
         }
         try {
@@ -366,6 +544,24 @@ public class LmDynamicScreen extends UltraScreen {
                 String align = o.get("titleAlign").getAsString();
                 titleAlign = align == null ? "center" : align.trim().toLowerCase(Locale.ROOT);
             }
+            if (o.has("tabsUnderTitle") && o.get("tabsUnderTitle").isJsonPrimitive()) {
+                tabsUnderTitle = o.get("tabsUnderTitle").getAsBoolean();
+            }
+            if (o.has("accent") && o.get("accent").isJsonPrimitive()) {
+                layoutAccent = UltraBridgeChrome.normalizeAccent(o.get("accent").getAsString());
+            }
+            if (o.has("palette") && o.get("palette").isJsonPrimitive()) {
+                layoutPalette = UltraBridgeChrome.normalizePalette(o.get("palette").getAsString());
+            }
+            layoutFrame = UltraBridgeChrome.frameId(o);
+            if (o.has("headerBottom")) {
+                headerBottom = Math.max(12, o.get("headerBottom").getAsInt());
+            } else {
+                headerBottom =
+                        (tabsUnderTitle || hasTabsJson)
+                                ? DEFAULT_HEADER_BOTTOM_TABS
+                                : DEFAULT_HEADER_BOTTOM;
+            }
             if (o.has("bodyMaxHeight")) {
                 bodyMaxHeight = Math.max(lineHeight, o.get("bodyMaxHeight").getAsInt());
             }
@@ -383,6 +579,7 @@ public class LmDynamicScreen extends UltraScreen {
             }
         } catch (Throwable t) {
             UltraUiBridge.LOGGER.warn("[kaipath] layoutJson parse failed — using defaults", t);
+            headerBottom = hasTabsJson ? DEFAULT_HEADER_BOTTOM_TABS : DEFAULT_HEADER_BOTTOM;
         }
     }
 
@@ -407,14 +604,24 @@ public class LmDynamicScreen extends UltraScreen {
     @Override
     public void m_88315_(GuiGraphics g, int mouseX, int mouseY, float tick) {
         m_280273_(g);
-        // Style chrome under tabs/buttons (confirm=green, danger=red, dim=gray)
+        // Optional panel frame chrome (namespaced id — client maps to textures when available)
+        if (!layoutFrame.isBlank()) {
+            UltraUiAccess.fillRect(g, theme(), panelX, panelY, panelW, 2, FRAME_EDGE_ARGB);
+            UltraUiAccess.fillRect(
+                    g, theme(), panelX, panelY + panelH - 2, panelW, 2, FRAME_EDGE_ARGB);
+            UltraUiAccess.fillRect(g, theme(), panelX, panelY, 2, panelH, FRAME_EDGE_ARGB);
+            UltraUiAccess.fillRect(
+                    g, theme(), panelX + panelW - 2, panelY, 2, panelH, FRAME_EDGE_ARGB);
+        }
         for (StyledChrome c : tabChrome) {
             paintChrome(g, c);
         }
         for (StyledChrome c : buttonChrome) {
             paintChrome(g, c);
         }
-        // Player model entity preview (bounds from layoutJson.playerModel)
+        int dividerY = panelY + Math.max(10, headerBottom - 2);
+        UltraUiAccess.fillRect(
+                g, theme(), panelX + 8, dividerY, Math.max(1, panelW - 16), 1, DIVIDER_YELLOW_ARGB);
         drawPlayerModel(g, mouseX, mouseY, tick);
         UltraUiAccess.themed(theme(), () -> {
             String title = stripSection(packet.title());
@@ -424,7 +631,11 @@ public class LmDynamicScreen extends UltraScreen {
             int titleX = "center".equalsIgnoreCase(titleAlign)
                     ? panelX + Math.max(8, (panelW - titleW) / 2)
                     : panelX + 8;
-            g.m_280488_(this.f_96547_, titleComp, titleX, panelY + 8, 0xFFE8E8E8);
+            int fontH = 9;
+            int bandH = Math.max(fontH, headerBottom - 2);
+            int titleY = panelY + Math.max(2, (bandH - fontH) / 2);
+            int titleColor = UltraBridgeChrome.resolveTintArgb(layoutPalette, layoutAccent);
+            g.m_280488_(this.f_96547_, titleComp, titleX, titleY, titleColor);
             super.m_88315_(g, mouseX, mouseY, tick);
         });
     }
@@ -433,13 +644,28 @@ public class LmDynamicScreen extends UltraScreen {
         if (c == null) {
             return;
         }
-        int argb = styleArgb(c.style);
-        if (argb == 0) {
+        int fill = styleArgb(c.style);
+        int bar = styleAccentArgb(c.style);
+        if ((c.palette != null && !c.palette.isBlank())
+                || (c.accent != null && !c.accent.isBlank())) {
+            int tint = UltraBridgeChrome.resolveTintArgb(c.palette, c.accent);
+            fill = (tint & 0x00FFFFFF) | 0x40000000;
+            bar = tint;
+        }
+        // buttonSkin present — slightly stronger fill so skinned tiles read as chrome
+        if (c.skin != null && !c.skin.isBlank() && fill == 0) {
+            fill = 0x40222222;
+            bar = UltraBridgeChrome.resolveTintArgb(layoutPalette, layoutAccent);
+        }
+        if (fill == 0 && bar == 0) {
             return;
         }
-        // Soft fill + left accent bar
-        UltraUiAccess.fillRect(g, theme(), c.x, c.y, c.w, c.h, argb);
-        UltraUiAccess.fillRect(g, theme(), c.x, c.y, 3, c.h, styleAccentArgb(c.style));
+        if (fill != 0) {
+            UltraUiAccess.fillRect(g, theme(), c.x, c.y, c.w, c.h, fill);
+        }
+        if (bar != 0) {
+            UltraUiAccess.fillRect(g, theme(), c.x, c.y, 3, c.h, bar);
+        }
     }
 
     private void drawPlayerModel(GuiGraphics g, int mouseX, int mouseY, float tick) {
@@ -460,6 +686,7 @@ public class LmDynamicScreen extends UltraScreen {
         if (parts != null) {
             UltraUiBridge.LOGGER.debug("[kaipath] playerModel.parts schema={}", str(parts, "schema", "?"));
         }
+        String portraitFrame = str(playerModel, "portraitFrame", "");
 
         Minecraft mc = Minecraft.m_91087_();
         if (mc == null || mc.f_91074_ == null) {
@@ -474,8 +701,19 @@ public class LmDynamicScreen extends UltraScreen {
         }
         float lookX = pmRotate ? (float) Math.sin(Math.toRadians(turntableDegrees)) * 40f : mouseX - centerX;
         float lookY = pmRotate ? -20f : mouseY - (panelY + pmY + pmH / 2f);
+        // Portrait frame chrome (namespaced id — texture map is KaiPath/DMZUltra-owned)
+        if (!portraitFrame.isBlank()) {
+            int fx = panelX + pmX - 2;
+            int fy = panelY + pmY - 2;
+            int fw = pmW + 4;
+            int fh = pmH + 4;
+            int edge = UltraBridgeChrome.resolveTintArgb(layoutPalette, layoutAccent);
+            UltraUiAccess.fillRect(g, theme(), fx, fy, fw, 2, edge);
+            UltraUiAccess.fillRect(g, theme(), fx, fy + fh - 2, fw, 2, edge);
+            UltraUiAccess.fillRect(g, theme(), fx, fy, 2, fh, edge);
+            UltraUiAccess.fillRect(g, theme(), fx + fw - 2, fy, 2, fh, edge);
+        }
         if (!renderEntityPreview(g, centerX, centerY, scale, lookX, lookY, entity)) {
-            // Fallback plate so the bounds are visible even if InventoryScreen APIs move
             UltraUiAccess.fillRect(
                     g, theme(), panelX + pmX, panelY + pmY, pmW, pmH, 0x33000000);
         }
@@ -550,20 +788,13 @@ public class LmDynamicScreen extends UltraScreen {
         };
     }
 
-    /** Ensure label carries a readable style tint when the server sent a plain string. */
-    private static String styleLabel(String style, String label) {
-        if (label == null) {
-            return "";
-        }
-        if (label.indexOf('§') >= 0 || label.indexOf('\u00a7') >= 0) {
-            return label;
-        }
-        return switch (normalizeStyle(style)) {
-            case "confirm" -> "§a" + label;
-            case "danger" -> "§c" + label;
-            case "dim" -> "§8" + label;
-            default -> label;
-        };
+    /**
+     * Labels stay plain ASCII. Color comes from button {@code style} / {@code palette} /
+     * {@code accent} chrome — never prepend section-sign ({@code §a}/{@code §e}/…) which
+     * mojibakes into stray A/E glyphs on stock KaiPath clients.
+     */
+    private static String styleLabel(String style, String accent, String label) {
+        return stripSection(label);
     }
 
     private static String stripAtPrefix(String actionId) {
@@ -614,9 +845,45 @@ public class LmDynamicScreen extends UltraScreen {
         }
     }
 
+    /**
+     * Strip section-sign color codes and common UTF-8-as-Latin-1 mojibake (including the
+     * stock {@code fitLabel} ellipsis {@code â€¦}) so labels never show stray A/E glyphs.
+     */
     private static String stripSection(String s) {
-        return s == null ? "" : s;
+        if (s == null || s.isEmpty()) {
+            return "";
+        }
+        String text = s;
+        // Mojibaked U+2026 ellipsis (â€¦) and real ellipsis → ASCII ...
+        text = text.replace("\u00e2\u20ac\u00a6", "...");
+        text = text.replace("\u2026", "...");
+        // Drop section-sign + following code (and already-mojibaked C2 A7 sequences).
+        StringBuilder out = new StringBuilder(text.length());
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (c == '\u00a7' || c == '\u00c2') {
+                // §X or leftover C2 from UTF-8 section-sign — skip mark and next code char
+                if (i + 1 < text.length()) {
+                    i++;
+                }
+                continue;
+            }
+            if (c <= 0x7F) {
+                out.append(c);
+            }
+            // drop other non-ASCII (fancy punctuation that mojibakes)
+        }
+        return out.toString();
     }
 
-    private record StyledChrome(int x, int y, int w, int h, String style) {}
+    /**
+     * Decorative chrome underlay for a button/tab/book tile.
+     *
+     * @param style semantic style ({@code confirm}/{@code danger}/{@code dim}/{@code normal})
+     * @param accent letter color code (compat; empty when palette set)
+     * @param palette generic color name (preferred over accent)
+     * @param skin optional {@code buttonSkin} id (chrome strength cue until texture blit)
+     */
+    private record StyledChrome(
+            int x, int y, int w, int h, String style, String accent, String palette, String skin) {}
 }

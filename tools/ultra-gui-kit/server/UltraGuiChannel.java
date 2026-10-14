@@ -11,12 +11,15 @@ package com.example.ultragui;
  * <ul>
  *   <li>Channel id = {@code new ResourceLocation(modId, "gui")} → wire name {@code modid:gui}
  *   <li>Forge SimpleChannel protocol string = {@link #PROTOCOL_VERSION} ({@code "1"})
- *   <li>Message 0 = GuiOpenPacket (S→C), message 1 = GuiActionPacket (C→S)
+ *   <li>Message 0 = GuiOpenPacket (S→C)
+ *   <li>Message 1 = GuiActionPacket (C→S)
+ *   <li>Message 2 = GuiFeaturesPacket (C→S, optional)
  * </ul>
  *
- * <p>Examples: {@code legacymechanics:gui}, {@code mymod:gui}, {@code shopmod:gui}.
+ * <p>Examples: {@code mymod:gui}, {@code shopmod:gui}, {@code legacymechanics:gui}.
  *
- * <p>KaiPath keys client consumers by this channel id — never assume a single mod.
+ * <p>KaiPath keys client consumers by this channel id via {@code UltraGuiPartners} — never
+ * assume a single mod. Any Forge mod can pull this {@code server/} kit.
  */
 public final class UltraGuiChannel {
     /** Path segment of every Ultra GUI channel. */

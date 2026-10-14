@@ -1,18 +1,19 @@
 #!/usr/bin/env bash
 # Dev-only smoke: overlay tools/ultra-gui-kit/kaipath-client onto a released KaiPath jar.
-# Adds GuiOpen field 11 (inputsJson / EditBox / bindInput) + textInput advertise.
+# Adds headerBottom/accent/palette/sound/buttonSkin/frame/pagedBook honor+advertise
+# (and field 11 / textInput if base is older).
 # Official KaiPath releases are owned by the KaiPath mod developer — do NOT deploy this
 # overlay to live; merge kaipath-client/ into the next official jar instead.
 #
 # Usage:
 #   bash tools/ultra-gui-kit/build-kaipath-overlay.sh
 # Optional:
-#   KAIPATH_BASE_JAR=mods/kaipath-1.3.7.jar
-#   KAIPATH_OVERLAY_VERSION=1.3.7-lm-ultra
+#   KAIPATH_BASE_JAR=mods/kaipath-1.3.9.jar
+#   KAIPATH_OVERLAY_VERSION=1.3.9-lm-ultra
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
-BASE_JAR="${KAIPATH_BASE_JAR:-$ROOT/mods/kaipath-1.3.7.jar}"
+BASE_JAR="${KAIPATH_BASE_JAR:-$ROOT/mods/kaipath-1.3.9.jar}"
 GSON="$ROOT/libraries/com/google/code/gson/gson/2.10.1/gson-2.10.1.jar"
 LOG4J="$ROOT/libraries/org/apache/logging/log4j/log4j-api/2.19.0/log4j-api-2.19.0.jar"
 OUT_DIR="$HERE/build"
@@ -20,7 +21,7 @@ CLASSES="$OUT_DIR/classes"
 STUB_CLASSES="$OUT_DIR/stub-classes"
 SRC="$HERE/kaipath-client"
 TEST_SRC="$HERE/test"
-VERSION="${KAIPATH_OVERLAY_VERSION:-1.3.7-lm-ultra}"
+VERSION="${KAIPATH_OVERLAY_VERSION:-1.3.9-lm-ultra}"
 OUT_JAR="$ROOT/mods/kaipath-${VERSION}.jar"
 
 if [[ ! -f "$BASE_JAR" ]]; then
@@ -90,10 +91,29 @@ if command -v zip >/dev/null 2>&1; then
     'com/dmzlegacy/kaipath/ultra/consumers/legacymechanics/*' \
     'com/dmzlegacy/kaipath/ultra/consumers/UltraGuiConsumerRegistry.class' \
     'com/dmzlegacy/kaipath/ultra/consumers/UltraGuiConsumerRegistry$*.class' \
+    'com/dmzlegacy/kaipath/ultra/consumers/UltraGuiPartners.class' \
     2>/dev/null || true
 fi
 
 jar uf "$OUT_JAR" -C "$CLASSES" com/dmzlegacy/kaipath/ultra/consumers/
+
+# Fix stock fitLabel mojibake ellipsis (â€¦ → ...) that shows as weird A/E glyphs.
+FIT_CLASS_DIR="$OUT_DIR/fitlabel-patch"
+mkdir -p "$FIT_CLASS_DIR/com/dmzlegacy/kaipath/ultra/internal"
+unzip -p "$OUT_JAR" com/dmzlegacy/kaipath/ultra/internal/UltraWidgetReflect.class \
+  > "$FIT_CLASS_DIR/com/dmzlegacy/kaipath/ultra/internal/UltraWidgetReflect.class"
+python3 "$HERE/patch_fitlabel_ascii.py" \
+  "$FIT_CLASS_DIR/com/dmzlegacy/kaipath/ultra/internal/UltraWidgetReflect.class"
+jar uf "$OUT_JAR" -C "$FIT_CLASS_DIR" com/dmzlegacy/kaipath/ultra/internal/UltraWidgetReflect.class
+# Verify mojibake gone and ASCII ellipsis present
+if unzip -p "$OUT_JAR" com/dmzlegacy/kaipath/ultra/internal/UltraWidgetReflect.class \
+  | python3 -c "import sys; d=sys.stdin.buffer.read(); moj=bytes([0xC3,0xA2,0xE2,0x82,0xAC,0xC2,0xA6]);
+sys.exit(1 if moj in d or b'...' not in d else 0)"; then
+  echo "fitLabel ASCII ellipsis OK"
+else
+  echo "ERROR: UltraWidgetReflect still has mojibake ellipsis or missing ASCII ..." >&2
+  exit 1
+fi
 
 # Restore stamped MANIFEST via zip (jar uf often drops META-INF/MANIFEST.MF).
 (cd "$MANIFEST_DIR" && zip -q "$OUT_JAR" META-INF/MANIFEST.MF)
@@ -124,6 +144,10 @@ if ! jar tf "$OUT_JAR" | grep -q 'consumers/UltraGuiConsumerRegistry.class'; the
   echo "ERROR: missing UltraGuiConsumerRegistry in $OUT_JAR" >&2
   exit 1
 fi
+if ! jar tf "$OUT_JAR" | grep -q 'consumers/UltraGuiPartners.class'; then
+  echo "ERROR: missing UltraGuiPartners in $OUT_JAR" >&2
+  exit 1
+fi
 
 javap -classpath "$OUT_JAR" -public \
   com.dmzlegacy.kaipath.ultra.consumers.legacymechanics.GuiOpenPacket \
@@ -146,7 +170,7 @@ if ! strings "$OUT_JAR" | grep -q 'textInput'; then
 fi
 
 echo "Built $OUT_JAR"
-jar tf "$OUT_JAR" | grep -E 'consumers/(UltraGuiConsumerRegistry|legacymechanics/)' | sort
+jar tf "$OUT_JAR" | grep -E 'consumers/(UltraGuiConsumerRegistry|UltraGuiPartners|legacymechanics/)' | sort
 echo "Advertise: $(python3 - <<PY
 import zipfile
 z=zipfile.ZipFile("$OUT_JAR")
