@@ -200,10 +200,30 @@ def main() -> int:
         errors.append(
             "UltraCharacterScreens tabs must stay short (Home/Saga/Android) — long labels mojibake on KaiPath"
         )
+    if '.tabs("home|Home", "saga|Saga", "android|Android")' not in char_tabs:
+        errors.append(
+            'UltraCharacterScreens must define tabs as exact home|Home, saga|Saga, android|Android'
+        )
     for const in ("STYLE_NORMAL", "STYLE_CONFIRM", "STYLE_DANGER", "STYLE_DIM"):
         if f"{const} =" not in style:
             errors.append(f"UltraStyle must define {const} for button wire styles")
     spec_text_full = SPEC.read_text(encoding="utf-8")
+    # Tab wire labels must stay plain ASCII (no UltraStyle.color) — Character self-test.
+    tab_btn = ""
+    if "private void appendTabButtons" in spec_text_full:
+        tab_btn = spec_text_full.split("private void appendTabButtons", 1)[1].split(
+            "private ", 1
+        )[0]
+    if "UltraStyle.color(" in tab_btn:
+        errors.append(
+            "UltraScreenSpec.appendTabButtons must emit plain tab labels "
+            "(no UltraStyle.color) — Character self-test requires label=Home/Saga/Android"
+        )
+    if "plainWireLabel" not in spec_text_full:
+        errors.append(
+            "UltraScreenSpec must keep Character buttonsJson labels free of section-sign "
+            "(plainWireLabel)"
+        )
     if "playerModel" not in spec_text_full:
         errors.append("UltraScreenSpec must support optional playerModel in layoutJson")
     parts_helper = ULTRA / "PlayerModelParts.java"

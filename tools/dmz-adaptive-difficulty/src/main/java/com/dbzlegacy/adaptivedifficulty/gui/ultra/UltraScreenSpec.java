@@ -294,11 +294,12 @@ public final class UltraScreenSpec {
             accentCode = UltraStyle.systemAccentCode(screenId);
         }
         String fitted = UltraStyle.fitAsciiLabel(label, UltraStyle.labelMaxWidth(width));
-        String colored =
-                accentCode.isEmpty() ? fitted : UltraStyle.color(accentCode, fitted);
+        // Character startup self-test forbids section-sign / C2 in buttonsJson labels; style carries
+        // confirm/dim/danger. Other screens may still bake UltraStyle.color ink into labels.
+        String wireLabel = plainWireLabel(fitted, accentCode);
         buttons.add(new Button(
                 qualifyAction(actionId),
-                colored,
+                wireLabel,
                 resolvedStyle,
                 x,
                 y,
@@ -397,12 +398,11 @@ public final class UltraScreenSpec {
         String accentCode = UltraStyle.systemAccentCode(screenId);
         String fitted =
                 UltraStyle.fitAsciiLabel(label, UltraStyle.labelMaxWidth(UltraStyle.BTN_W));
-        String colored =
-                accentCode.isEmpty() ? fitted : UltraStyle.color(accentCode, fitted);
+        String wireLabel = plainWireLabel(fitted, accentCode);
         footerButtons.add(
                 new Button(
                         qualifyAction(actionId),
-                        colored,
+                        wireLabel,
                         UltraStyle.STYLE_DIM,
                         x,
                         0,
@@ -799,13 +799,12 @@ public final class UltraScreenSpec {
             }
             UltraScreenIds.requireValidActionId(screenId, "tab:" + tab.id, tab.label);
             boolean active = tab.id.equalsIgnoreCase(activeTab);
-            // Plain + pre-fit: stock KaiPath fitLabel uses a mojibaked ellipsis (A/E glyphs).
+            // Plain ASCII only — startup self-test requires exact "Home"/"Saga"/"Android"
+            // (no section-sign/accent prefixes). Active state is style=normal vs dim; title tint stays
+            // on layoutJson.accent.
             String fitted =
                     UltraStyle.fitAsciiLabel(tab.label, UltraStyle.labelMaxWidth(tabW));
-            String accentCode = UltraStyle.systemAccentCode(screenId);
-            String label =
-                    accentCode.isEmpty() ? fitted : UltraStyle.color(accentCode, fitted);
-            // Inactive=dim. Active/staff=normal. Label ink = system accent; chrome stays default.
+            String label = UltraStyle.plain(fitted);
             String style = tabStyle(tab, active);
             JsonObject o = new JsonObject();
             o.addProperty("id", qualifyAction("tab:" + tab.id));
@@ -862,6 +861,21 @@ public final class UltraScreenSpec {
             return UltraStyle.STYLE_NORMAL;
         }
         return active ? UltraStyle.STYLE_NORMAL : UltraStyle.STYLE_DIM;
+    }
+
+    /**
+     * Wire label for buttonsJson. Character forbids section-sign / C2 bytes (startup
+     * self-test); other screens may keep UltraStyle.color ink for hub-style tiles.
+     */
+    private String plainWireLabel(String fittedPlain, String accentCode) {
+        String plain = UltraStyle.plain(fittedPlain);
+        if ("character".equals(screenId)) {
+            return plain;
+        }
+        if (accentCode == null || accentCode.isBlank()) {
+            return plain;
+        }
+        return UltraStyle.color(accentCode, plain);
     }
 
     private static String normalizeAccent(String accent) {
