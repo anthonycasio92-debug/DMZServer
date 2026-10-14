@@ -2,7 +2,9 @@
 
 Protocol + conformance: [`docs/KAIPATH_GUI_PROTOCOL.md`](../../docs/KAIPATH_GUI_PROTOCOL.md).
 Gap matrix / pitfalls: [`docs/KAIPATH_BRIDGE_GAPS.md`](../../docs/KAIPATH_BRIDGE_GAPS.md).
+DMZUltra asset reuse: [`docs/DMZULTRA_ASSET_REUSE.md`](../../docs/DMZULTRA_ASSET_REUSE.md).
 JLDK brief: [`docs/KAIPATH_JLDK_CLIENT_BRIEF.md`](../../docs/KAIPATH_JLDK_CLIENT_BRIEF.md).
+Non-LM chrome fixture: [`server/BridgeFutureFieldsFixture.json`](server/BridgeFutureFieldsFixture.json).
 
 **This bridge is multi-mod.** Every server mod owns its own `{modId}:gui` channel. Packet
 codecs never embed a mod id. LegacyMechanics is one partner example — not the owner of the
@@ -25,10 +27,12 @@ protocol. KaiPath registers one client consumer per partner mod id.
    - msg 1 = action (`UltraGuiActionPacket`)
    - msg 2 = features (`UltraGuiFeaturesPacket`, optional C→S)
 3. Ask JLDK / KaiPath to add your Forge mod id to `UltraGuiPartners.DEFAULT_PARTNERS` (or call `UltraGuiPartners.register("yourmod")` on the client).
-4. Send opens with `style` + `activeTab` (+ `inputsJson` / `playerModel` / `headerBottom` / `accent` when needed). Prefer plain ASCII labels; tint via `accent` / `style`.
+4. Send opens with `style` + `activeTab` (+ `inputsJson` / `playerModel` / `headerBottom` / `palette` when needed). Prefer plain ASCII labels; tint via `palette` / `style`.
 5. Handle clicks verbatim (`actionId` + `argsJson` echoed from the button).
+6. For proposed chrome (`sound`, `buttonSkin`, `frame`, `paged_book`), follow the protocol — never bundle client asset files into your server jar.
 
-See [`server/HelloWorldServerSketch.java`](server/HelloWorldServerSketch.java).
+See [`server/HelloWorldServerSketch.java`](server/HelloWorldServerSketch.java) and
+[`server/BridgeFutureFieldsFixture.json`](server/BridgeFutureFieldsFixture.json).
 
 ---
 

@@ -3,7 +3,11 @@ package com.example.ultragui;
 /**
  * Sketch only — not compiled by this repo. Minimal server loop after you copy
  * {@link UltraGuiOpenPacket} / {@link UltraGuiActionPacket} / {@link UltraGuiFeaturesPacket} /
- * {@link UltraGuiChannel} into <b>your</b> Forge mod (any mod id — not LegacyMechanics-specific).
+ * {@link UltraGuiChannel} into <b>your</b> Forge mod (any {@code modId} — zero coupling to
+ * any production partner).
+ *
+ * <p>JSON twin that exercises every proposed chrome field:
+ * {@code BridgeFutureFieldsFixture.json}.
  *
  * <pre>
  * // Registration (Forge) — channel = YOUR_MOD_ID:gui
@@ -24,30 +28,36 @@ package com.example.ultragui;
  *   }).add();
  * ch.messageBuilder(UltraGuiFeaturesPacket.class, 2, NetworkDirection.PLAY_TO_SERVER)
  *   .encoder(UltraGuiFeaturesPacket::encode).decoder(UltraGuiFeaturesPacket::decode)
- *   .consumerMainThread((m, ctx) -> {
- *       // Optional: remember client features for this player
- *       ctx.get().setPacketHandled(true);
- *   }).add();
+ *   .consumerMainThread((m, ctx) -> ctx.get().setPacketHandled(true)).add();
  *
- * // Tell KaiPath to listen (client side, once per partner mod):
- * // UltraGuiPartners.register("mymod");  // or add "mymod" to DEFAULT_PARTNERS
+ * // KaiPath client: UltraGuiPartners.register("myshop");
  *
- * // Open — plain ASCII labels; tint via accent / style (avoid section-sign in title/buttons)
+ * // Open — plain ASCII; palette/sound/skin/frame/paged_book are mod-agnostic wire fields
  * String buttons = "["
- *     + "{\"id\":\"@mymod:do:ping\",\"label\":\"Ping\",\"x\":20,\"y\":40,"
- *     + "\"w\":150,\"h\":18,\"style\":\"confirm\",\"accent\":\"a\","
- *     + "\"args\":{\"screen\":\"hello\"}}"
+ *     + "{\"id\":\"@myshop:do:ping\",\"label\":\"Ping\",\"style\":\"confirm\","
+ *     + "\"palette\":\"gold\",\"sound\":\"dmzultra:ui_confirm\","
+ *     + "\"buttonSkin\":\"dmzultra:arena\",\"x\":20,\"y\":40,\"w\":150,\"h\":18,"
+ *     + "\"args\":{\"screen\":\"hello\",\"page\":\"main\"}}"
  *     + "]";
- * String layout = "{\"center\":true,\"margin\":6,\"titleAlign\":\"center\","
- *     + "\"headerBottom\":42,\"accent\":\"6\"}";
+ * String inputs = "["
+ *     + "{\"id\":\"@myshop:book:guide\",\"type\":\"paged_book\",\"x\":8,\"y\":70,"
+ *     + "\"w\":220,\"h\":120,\"sound\":\"dmzultra:scene_tick\",\"pages\":["
+ *     + "{\"title\":\"Welcome\",\"lines\":[\"Page one.\"]},"
+ *     + "{\"title\":\"Tips\",\"lines\":[\"Page two.\"]}]}"
+ *     + "]";
+ * String layout = "{"
+ *     + "\"center\":true,\"margin\":10,\"titleAlign\":\"center\","
+ *     + "\"headerBottom\":42,\"palette\":\"gold\",\"frame\":\"dmzultra:card\","
+ *     + "\"playerModel\":{\"x\":248,\"y\":60,\"width\":86,\"height\":120,"
+ *     + "\"scale\":1.0,\"rotate\":true,\"portraitFrame\":\"dmzultra:portrait\"}"
+ *     + "}";
  * UltraGuiOpenPacket open = new UltraGuiOpenPacket(
- *     "hello", "My Shop", "main", "[]", "", "[\"Welcome.\"]", buttons,
- *     350, 220, layout, "[]");
+ *     "hello", "My Shop", "main", "[]", "", "[\"Welcome.\"]",
+ *     buttons, 350, 300, layout, inputs);
  * ch.send(PacketDistributor.PLAYER.with(() -> player), open);
  *
- * // Click — actionId / argsJson echoed verbatim from the button
  * void onClick(ServerPlayer p, UltraGuiActionPacket m) {
- *     if ("@mymod:do:ping".equals(m.actionId())) {
+ *     if ("@myshop:do:ping".equals(m.actionId())) {
  *         p.sendSystemMessage(Component.literal("Pong"));
  *     }
  * }

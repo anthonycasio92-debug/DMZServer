@@ -25,6 +25,12 @@ Server mods pull `tools/ultra-gui-kit/server/` and own their own channel namespa
 
 Implement-yourself kit: [`tools/ultra-gui-kit/`](../tools/ultra-gui-kit/).
 JLDK handoff: [`docs/KAIPATH_JLDK_CLIENT_BRIEF.md`](KAIPATH_JLDK_CLIENT_BRIEF.md).
+DMZUltra asset reuse (client-only; bridge fields only):
+[`docs/DMZULTRA_ASSET_REUSE.md`](DMZULTRA_ASSET_REUSE.md).
+
+**Mod-agnostic rule:** new field names, enum values, defaults, and examples must not
+hardcode any single partner mod. Partners map their domains to generic values
+(`palette: "purple"`, `sound: "dmzultra:ui_confirm"`, …).
 
 ---
 
@@ -32,7 +38,7 @@ JLDK handoff: [`docs/KAIPATH_JLDK_CLIENT_BRIEF.md`](KAIPATH_JLDK_CLIENT_BRIEF.md
 
 The client **must** render what the server sends (no hardcoded screen/tab/button lists).
 
-| Capability | Required since | **1.3.7** released | Reference kit |
+| Capability | Required since | **1.3.9** released | Reference kit |
 |------------|----------------|--------------------|---------------|
 | Decode GuiOpen fields 1–10 | 1.3.1 | yes | yes |
 | Dynamic title / tabs / lines / buttons | 1.3.1 | yes | yes |
@@ -42,9 +48,12 @@ The client **must** render what the server sends (no hardcoded screen/tab/button
 | Honor **`activeTab`** highlight | 1.3.1+ | **yes** | yes |
 | Honor button **`style`** | 1.3.7 | **yes** | yes |
 | Honor **`layoutJson.playerModel`** (+ optional `parts`) | 1.3.7 | **yes** (entity) | yes (+ parts hook) |
-| Honor **`inputsJson`** text fields (field 11) | next | **no** | **yes** |
+| Honor **`inputsJson`** text fields (field 11) | 1.3.9 | **yes** | yes |
+| Honor **`layoutJson.headerBottom`** | next | **no** | **yes** |
+| Honor **`palette` / letter `accent`** | next | **no** | accent **yes**; palette proposed |
+| Honor **`sound` / `buttonSkin` / `frame` / `paged_book`** | later | **no** | proposed — see § Proposed chrome |
 | Decode GuiOpen strings as **UTF-8** | 1.3.1 | MC `readUtf` | **yes** (explicit) |
-| Send **GuiFeaturesPacket** | 1.3.7 | **yes** (4 features) | **yes** (+ `textInput`) |
+| Send **GuiFeaturesPacket** | 1.3.7 | **yes** (5 features) | **yes** (+ `headerBottom`/`accent`) |
 | `inputsJson` `slider` / `toggle` | later | — | reserved — see [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md) |
 
 ### Button JSON schema
@@ -54,8 +63,12 @@ Every button object in `buttonsJson`:
 | Field | Required | Type | Notes |
 |-------|----------|------|--------|
 | `id` | yes | string | Action id (echoed verbatim on click) |
-| `label` | yes | string | Display text (may include `§` colors) |
-| `style` | no | string | Visual role — see table below (default `normal`) |
+| `label` | yes | string | Display text — prefer **plain ASCII** (no section-sign) |
+| `style` | no | string | **Semantic** role — see table below (default `normal`) |
+| `palette` | no | string | **Decorative** generic color name (`gold`, `purple`, …). Prefer over letter `accent` for new work. |
+| `accent` | no | string | Legacy single-letter Minecraft color code (`c`, `5`, …). Ignored when `palette` is set. |
+| `sound` | no | string | Namespaced sound id played on click (e.g. `dmzultra:ui_confirm`). **Proposed.** |
+| `buttonSkin` | no | string or object | Namespaced skin id or state map. **Proposed.** |
 | `x` | yes | number | Panel-relative X |
 | `y` | yes | number | Panel-relative Y |
 | `w` | yes | number | Width (minimum **80** — never shrink for long labels) |
@@ -65,15 +78,18 @@ Every button object in `buttonsJson`:
 
 ```json
 {
-  "id": "@difficulty:do:activate:1",
-  "label": "§aActivate T1",
+  "id": "@myshop:do:buy",
+  "label": "Buy",
   "style": "confirm",
+  "palette": "gold",
+  "sound": "dmzultra:ui_confirm",
+  "buttonSkin": "dmzultra:arena",
   "x": 20,
   "y": 100,
   "w": 150,
   "h": 18,
   "pad": 8,
-  "args": { "screen": "difficulty", "page": "tiers" }
+  "args": { "screen": "shop", "page": "main" }
 }
 ```
 
@@ -88,8 +104,9 @@ Every button object in `buttonsJson`:
 
 Unknown style values → fall back to `normal`. Missing `style` → `normal`.
 
-KaiPath **1.3.1** ignores `style`: all buttons render identically (no green/red/dim
-distinction).
+`style` stays **semantic**. Decorative tints use `palette` (headers / tiles / tabs), not new
+style enums. Do not invent parallel RGB systems — map `palette` names onto the client’s
+existing UltraUi palette.
 
 ### `activeTab` (GuiOpenPacket field 5)
 
@@ -99,12 +116,10 @@ distinction).
 | Meaning | Id of the **currently open** tab |
 | Client must | Visually distinguish that tab from the others (highlight / selected state) |
 
-`tabsJson` entries use `{id,label}`. Match `activeTab` against the tab’s **unqualified**
-key when the server sends keys like `tiers`, or against the full `id` when that is what
-`activeTab` contains. LM builders set `activeTab` to the short key (e.g. `home`, `tiers`).
-
-KaiPath **1.3.1** ignores `activeTab`: the active tab is not highlighted.
-
+`tabsJson` entries use `{id,label}` and may include optional `palette` / `accent` /
+`sound` like buttons. Match `activeTab` against the tab’s **unqualified** key when the
+server sends keys like `home`, or against the full `id` when that is what `activeTab`
+contains.
 ### GuiFeaturesPacket (C→S) — message 2
 
 Optional capability advertisement. **Backward compatible:** a client that never sends it
@@ -124,11 +139,18 @@ Known optional feature ids:
 | `titleAlign` | `layoutJson.titleAlign` (`center` / `left`) |
 | `playerModel` | `layoutJson.playerModel` entity preview |
 | `textInput` | GuiOpenPacket field 11 `inputsJson` text fields + `bindInput` |
+| `headerBottom` | `layoutJson.headerBottom` geometry |
+| `accent` | Letter-code `accent` tint (compat) |
+| `palette` | Generic `palette` color names → UltraUi palette (**proposed**) |
+| `sound` | Button/layout `sound` ids (**proposed**) |
+| `buttonSkin` | Button skin ids / state maps (**proposed**) |
+| `frame` | Panel `frame` chrome (**proposed**) |
+| `pagedBook` | `inputsJson` `type=paged_book` (**proposed**) |
 
-Example (conforming client after implementing all):
+Example (kit after `headerBottom` / `accent`):
 
 ```json
-["style","activeTab","titleAlign","playerModel","textInput"]
+["style","activeTab","titleAlign","playerModel","textInput","headerBottom","accent"]
 ```
 
 Send once after channel registration (client setup / first join). Extra ids are ignored.
@@ -197,16 +219,16 @@ Missing trailing fields → defaults. Bytes after the last understood field igno
 
 | `type` | Status | Notes |
 |--------|--------|-------|
-| `text` | **Shipped** (LM 4.6.108+) | Config TEXT / NUMBER / ENUM detail editors |
-| `toggle` | Reserved | Not on wire yet — BOOLEAN uses styled buttons |
+| `text` | **Shipped** (KaiPath 1.3.9+) | Single-line EditBox; `bindInput` → `args.value` |
+| `paged_book` | **Proposed** | Multi-page reader (prev/next). Copy Warrior Journal **UX**, not DMZUltra screen classes. See § Proposed chrome. |
+| `toggle` | Reserved | Not on wire yet — booleans use styled buttons |
 | `slider` | Reserved | Not on wire yet — see [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md) |
-
 Buttons that apply a field include `args.bindInput` set to that input’s `id`. On click (or
 Enter in the field), the client must set `args.value` to the typed string before sending
 `GuiActionPacket`.
 
 **UTF-8:** All GuiOpen string fields (title, lines, labels, placeholders, …) are encoded and
-decoded by LM with explicit `StandardCharsets.UTF_8`. Clients must decode the same way;
+decoded with explicit `StandardCharsets.UTF_8`. Clients must decode the same way;
 platform-default charset causes mojibake on accents (é/à).
 
 ### 4. Layout JSON
@@ -222,7 +244,8 @@ platform-default charset causes mojibake on accents (é/à).
   "titleAlign": "center",
   "tabsUnderTitle": true,
   "headerBottom": 28,
-  "accent": "c",
+  "palette": "gold",
+  "frame": "dmzultra:card",
   "lineHeight": 16,
   "lineGap": 8,
   "bodyTop": 42,
@@ -240,6 +263,7 @@ platform-default charset causes mojibake on accents (é/à).
     "height": 120,
     "scale": 1.0,
     "rotate": true,
+    "portraitFrame": "dmzultra:portrait",
     "parts": {
       "schema": 1,
       "subject": "local",
@@ -267,10 +291,12 @@ honor `margin`. Button `x`/`y` are panel-relative.
 
 | Field | Meaning |
 |-------|---------|
-| `titleAlign` | **`center`** (LM default) or `left` — **must** position the title; do not assume left |
-| `tabsUnderTitle` | When `true`, LM placed tab controls as regular buttons under the header (not KaiPath's native title-chrome tab strip). Honor `headerBottom`. |
-| `headerBottom` | **Panel-relative Y where client header chrome must end.** Title text + yellow divider stay **strictly above** this line. When `tabsUnderTitle` is true, LM places the tab row at this Y (default **28**); when false, default **42** (`bodyTop`). This is the geometry contract that keeps tabs under the yellow divider. |
-| `accent` | Optional single-letter Minecraft color code (`c`, `5`, `6`, `b`, `a`, `e`, `4`, …) for **system accent**. Paint the title (and `activeTab` highlight) with this color. Do **not** expect section-sign in the title string — titles stay plain ASCII to avoid mojibake. Omit or ignore when blank. |
+| `titleAlign` | **`center`** (recommended default) or `left` — **must** position the title; do not assume left |
+| `tabsUnderTitle` | When `true`, tab controls are regular buttons under the header (not KaiPath's native title-chrome tab strip). Honor `headerBottom`. |
+| `headerBottom` | **Panel-relative Y where client header chrome must end.** Title text + yellow divider stay **strictly above** this line. When `tabsUnderTitle` is true, the tab row sits at this Y (default **28**); when false, default **42** (`bodyTop`). This is the geometry contract that keeps tabs under the yellow divider. |
+| `palette` | Optional generic color **name** for title / active-tab tint: `red`, `dark_red`, `purple`, `dark_purple`, `gold`, `yellow`, `green`, `aqua`, `blue`, `white`, `gray`. Maps to the client UltraUi palette — **not** partner system names. Prefer this over letter `accent`. When both are set, `palette` wins. |
+| `accent` | Optional single-letter Minecraft color code (`c`, `5`, `6`, `b`, `a`, `e`, `4`, …) for compat. Titles/labels stay plain ASCII (no section-sign). Omit when blank. |
+| `frame` | Optional panel chrome id (string) or state map — see § Proposed chrome. **Proposed.** |
 | `lineHeight` | Body line height in GUI pixels (do **not** squeeze below this) |
 | `lineGap` | Extra gap between body lines |
 | `bodyTop` | Panel-relative Y where the body/scroll region starts |
@@ -282,15 +308,9 @@ honor `margin`. Button `x`/`y` are panel-relative.
 | `buttonMinWidth` | Minimum button width (**80**) — never shrink for long labels |
 | `buttonHeight` | Standard button height |
 
-Buttons also carry per-button `pad` (same default) and optional per-button **`accent`**
-(same single-letter codes as `layoutJson.accent`) for hub tiles / staff controls. Labels
-stay plain ASCII; the client tints from `accent`. Overlong labels truncate with ASCII
-`...`; pages scroll rather than squeezing buttons.
-
-**System accent map (LM):** Difficulty `c` · Rival `5` · Sparring `6` · Prestige `b` ·
-Character `a` · Skill Check `e` · Staff Admin `4`. Main hub omits `accent` (shared gold
-title chrome).
-
+Buttons also carry per-button `pad` and optional per-button **`palette`** / **`accent`** for
+tiles and tabs. Labels stay plain ASCII; the client tints from `palette`/`accent`. Overlong
+labels truncate with ASCII `...`; pages scroll rather than squeezing buttons.
 #### `playerModel` (optional, client-rendered)
 
 | Field | Type | Notes |
@@ -299,13 +319,12 @@ title chrome).
 | `width`, `height` | number | Bounds for the preview |
 | `scale` | number | Entity scale (default `1.0`) |
 | `rotate` | boolean | Slow turntable when `true` |
+| `portraitFrame` | string | Optional namespaced portrait chrome id (`dmzultra:portrait`, `dmzultra:portrait_grey`, …). **Proposed.** |
 | `parts` | object | Optional cosmetics snapshot — see below |
 
 **Backward compatible:** clients that do not know `playerModel` ignore it; the rest of the
 layout still works. JLDK implements the entity rendering; the server declares position, size,
-and (when present) equipped custom parts. Screen builders opt in per screen (LM Character
-Services uses it; others default off).
-
+and (when present) equipped custom parts. Screen builders opt in per screen.
 ##### `playerModel.parts` (optional, schema 1)
 
 LM sends this so the client can draw **custom body pieces** on top of / instead of a bare
@@ -366,30 +385,137 @@ Client never validates action ids — echo verbatim.
 LM enforces this at packet **build** time via `UltraScreenIds.requireValidActionId`
 (malformed ids never reach the client).
 
-### 6. Hello world
+### 6. Hello world (any mod — exercises chrome fields)
+
+Plain ASCII labels. Decorative tint via `palette`. Sounds / skins / frames use namespaced
+ids. Full JSON fixture:
+[`tools/ultra-gui-kit/server/BridgeFutureFieldsFixture.json`](../tools/ultra-gui-kit/server/BridgeFutureFieldsFixture.json).
 
 ```java
 String buttons = "["
-    + "{\"id\":\"@myshop:do:ping\",\"label\":\"§aPing\","
-    + "\"style\":\"confirm\",\"x\":20,\"y\":80,\"w\":150,\"h\":18,"
+    + "{\"id\":\"@myshop:do:ping\",\"label\":\"Ping\",\"style\":\"confirm\","
+    + "\"palette\":\"gold\",\"sound\":\"dmzultra:ui_confirm\","
+    + "\"buttonSkin\":\"dmzultra:arena\",\"x\":20,\"y\":40,\"w\":150,\"h\":18,"
     + "\"pad\":8,\"args\":{\"screen\":\"hello\",\"page\":\"main\"}}"
     + "]";
-GuiOpenPacket open = new GuiOpenPacket(
-    "hello", "§6My Shop", "main",
-    "[{\"id\":\"home\",\"label\":\"Home\"}]",
-    "home",
-    "[\"Welcome.\"]",
-    buttons, 350, 300,
-    "{\"center\":true,\"margin\":10,\"titleAlign\":\"center\",\"lineHeight\":16,\"lineGap\":8,"
-        + "\"bodyTop\":42,\"bodyPad\":10,\"bodyMaxHeight\":140,\"scrollBody\":true,"
-        + "\"buttonPad\":8,\"buttonGap\":6,\"buttonMinWidth\":80,\"buttonHeight\":18}");
+String inputs = "["
+    + "{\"id\":\"@myshop:book:guide\",\"type\":\"paged_book\",\"x\":8,\"y\":70,"
+    + "\"w\":220,\"h\":120,\"pages\":["
+    + "{\"title\":\"Welcome\",\"lines\":[\"Page one.\"]},"
+    + "{\"title\":\"Tips\",\"lines\":[\"Page two.\"]}"
+    + "]}"
+    + "]";
+String layout = "{"
+    + "\"center\":true,\"margin\":10,\"titleAlign\":\"center\","
+    + "\"headerBottom\":42,\"palette\":\"gold\",\"frame\":\"dmzultra:card\","
+    + "\"lineHeight\":16,\"lineGap\":8,\"bodyTop\":48,\"bodyPad\":10,"
+    + "\"bodyMaxHeight\":140,\"scrollBody\":true,"
+    + "\"buttonPad\":8,\"buttonGap\":6,\"buttonMinWidth\":80,\"buttonHeight\":18,"
+    + "\"playerModel\":{\"x\":248,\"y\":60,\"width\":86,\"height\":120,"
+    + "\"scale\":1.0,\"rotate\":true,\"portraitFrame\":\"dmzultra:portrait\"}"
+    + "}";
+UltraGuiOpenPacket open = new UltraGuiOpenPacket(
+    "hello", "My Shop", "main", "[]", "", "[\"Welcome.\"]",
+    buttons, 350, 300, layout, inputs);
 CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), open);
 ```
 
-Client: `UltraGuiPartners.register("mymod")` (or add to `DEFAULT_PARTNERS`) then the
-registry advertises
-`["style","activeTab","titleAlign","playerModel","textInput","headerBottom","accent"]`
-once those features are implemented.
+Client: `UltraGuiPartners.register("myshop")` then advertise implemented features
+(at minimum the shipped set; add `palette` / `sound` / `buttonSkin` / `frame` / `pagedBook`
+as each lands).
+
+---
+
+## Proposed chrome fields (asset reuse — next KaiPath)
+
+See also [`DMZULTRA_ASSET_REUSE.md`](DMZULTRA_ASSET_REUSE.md). These fields are
+**mod-agnostic**. Ids are `namespace:path` (never `assets/...` filesystem paths). Unknown
+ids → ignore (no crash). Ask JLDK which `UltraUi$Theme` / `$Palette` entries are hardcoded
+vs data-driven before expanding the palette name list.
+
+### `palette` (layout + button/tab)
+
+Generic color **names** only: `red`, `dark_red`, `purple`, `dark_purple`, `gold`, `yellow`,
+`green`, `aqua`, `blue`, `white`, `gray`.
+
+Client maps names → UltraUi palette entries. Partners map their own systems → names on the
+server. When `palette` and letter `accent` both appear, **`palette` wins**.
+
+### `sound` (button / optional layout)
+
+```json
+"sound": "dmzultra:ui_confirm"
+```
+
+Play on click (button) or as a light UI tick when the client chooses (layout). Examples:
+`dmzultra:ui_confirm`, `dmzultra:scene_tick`, `dmzultra:travel_tick`. Other mods may use
+their own namespaces.
+
+### `buttonSkin` (button)
+
+Short id **or** explicit state map:
+
+```json
+"buttonSkin": "dmzultra:arena"
+```
+
+```json
+"buttonSkin": {
+  "id": "dmzultra:arena",
+  "normal": "dmzultra:gui/arena/button",
+  "hover": "dmzultra:gui/arena/button",
+  "pressed": "dmzultra:gui/arena/button",
+  "disabled": "dmzultra:gui/arena/button"
+}
+```
+
+Prefer short ids; the client resolves state textures. Do not send flat color RGB as a
+substitute for skins.
+
+### `frame` (layout)
+
+```json
+"frame": "dmzultra:card"
+```
+
+```json
+"frame": {
+  "id": "dmzultra:card",
+  "card": "dmzultra:gui/arena/card_frame",
+  "panel": "dmzultra:gui/arena/panel_tile",
+  "header": "dmzultra:gui/arena/header"
+}
+```
+
+### `playerModel.portraitFrame`
+
+```json
+"portraitFrame": "dmzultra:portrait"
+```
+
+Values such as `dmzultra:portrait` / `dmzultra:portrait_grey`. Draws chrome around the
+existing `playerModel` preview bounds.
+
+### `inputsJson` `type: "paged_book"`
+
+```json
+{
+  "id": "@myshop:book:guide",
+  "type": "paged_book",
+  "x": 8, "y": 70, "w": 220, "h": 120,
+  "page": 0,
+  "pages": [
+    { "title": "Welcome", "lines": ["Line A.", "Line B."] },
+    { "title": "Tips", "lines": ["More text."] }
+  ]
+}
+```
+
+Prev/next controls are client chrome. Page turns may use a `sound` on the input object
+(`dmzultra:scene_tick`). Copy the Warrior Journal **interaction pattern** only — do not
+subclass DMZUltra journal screens.
+
+Advertise when implemented: `palette`, `sound`, `buttonSkin`, `frame`, `pagedBook`.
 
 ---
 
@@ -413,6 +539,11 @@ With KaiPath **1.3.1+** dynamic-any screen ids, hub wire shim is off
 (`UltraScreenIds.KAIPATH_DYNAMIC_ANY_SCREEN_ID`).
 
 Smoke: `/lm admin guitest` → reports client features → click **Ping server**.
+
+**LM-only letter `accent` map** (not protocol enums — LM maps systems → letters locally):
+Difficulty `c` · Rival `5` · Sparring `6` · Prestige `b` · Character `a` · Skill Check `e` ·
+Staff Admin `4`. Main hub omits `accent` (shared gold). New work should prefer generic
+`palette` names instead.
 
 ---
 

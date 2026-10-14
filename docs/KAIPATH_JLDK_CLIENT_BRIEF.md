@@ -16,8 +16,10 @@ Full gap matrix: [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md).
 |-----|------|
 | Protocol + conformance contract | [`docs/KAIPATH_GUI_PROTOCOL.md`](KAIPATH_GUI_PROTOCOL.md) |
 | Bridge gap matrix | [`docs/KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md) |
+| DMZUltra asset reuse (bridge-only) | [`docs/DMZULTRA_ASSET_REUSE.md`](DMZULTRA_ASSET_REUSE.md) |
 | KaiPath client sources (reference) | [`tools/ultra-gui-kit/kaipath-client/`](../tools/ultra-gui-kit/kaipath-client/) |
 | Server codecs (**any** Forge mod) | [`tools/ultra-gui-kit/server/`](../tools/ultra-gui-kit/server/) |
+| Non-LM chrome fixture | [`BridgeFutureFieldsFixture.json`](../tools/ultra-gui-kit/server/BridgeFutureFieldsFixture.json) |
 
 ---
 
@@ -101,6 +103,14 @@ After merge, partner guitests (e.g. LM `/lm admin guitest`) move from
 Stock `UltraWidgetReflect.fitLabel` uses a mojibaked ellipsis. Replace with ASCII `...` and
 never prefix labels with section-sign color codes. Details:
 [`FITLABEL_ASCII.md`](../tools/ultra-gui-kit/kaipath-client/com/dmzlegacy/kaipath/ultra/internal/FITLABEL_ASCII.md).
+
+## Proposed next (mod-agnostic chrome)
+
+Implement from protocol § Proposed chrome + [`DMZULTRA_ASSET_REUSE.md`](DMZULTRA_ASSET_REUSE.md):
+`palette`, `sound`, `buttonSkin`, `frame`, `portraitFrame`, `paged_book`. Verify against
+[`BridgeFutureFieldsFixture.json`](../tools/ultra-gui-kit/server/BridgeFutureFieldsFixture.json)
+(`myshop:gui` — not a production partner). Ask which UltraUi Theme/Palette values are
+hardcoded vs data-driven before expanding palette names.
 
 ## Deferred (not blocking)
 
