@@ -757,11 +757,7 @@ public final class UltraScreenSpec {
             o.addProperty("id", qualifyAction("tab:" + tab.id));
             o.addProperty("label", label);
             o.addProperty("style", style);
-            String tabAccent = tabAccentCode(tab, active);
-            if (tabAccent != null && !tabAccent.isBlank()) {
-                o.addProperty("accent", tabAccent);
-            }
-            // No per-button palette/tint — KaiPath default button chrome; layoutJson.palette stays.
+            // No per-button accent — layoutJson.accent keeps title / activeTab colors.
             o.addProperty("x", x);
             o.addProperty("y", y);
             o.addProperty("w", tabW);
@@ -860,10 +856,7 @@ public final class UltraScreenSpec {
         o.addProperty("id", b.actionId);
         o.addProperty("label", b.label);
         o.addProperty("style", b.style);
-        if (b.accent != null && !b.accent.isBlank()) {
-            o.addProperty("accent", b.accent);
-        }
-        // No per-button palette/tint — KaiPath default button chrome; layoutJson.palette stays.
+        // No per-button accent — layoutJson.accent keeps title / activeTab colors.
         o.addProperty("x", b.x);
         int y = b.footer ? b.y : b.y + buttonShift;
         // Footer pins to panel bottom even if packing shifted body rows.
