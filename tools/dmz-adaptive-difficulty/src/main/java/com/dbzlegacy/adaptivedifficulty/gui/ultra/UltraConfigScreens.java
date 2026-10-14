@@ -165,7 +165,7 @@ public final class UltraConfigScreens {
                 .buttonRight("do:save_all", UltraStyle.confirm("Save all"), "confirm")
                 .rowGap();
         // One Back only via footer (nav:home).
-        spec.footerBackHome();
+        spec.footerBackHome("Config Home");
         spec.send(player);
     }
 
@@ -305,13 +305,10 @@ public final class UltraConfigScreens {
             spec.buttonLeft("do:undo:" + module + "|" + encoded, UltraStyle.dim("Undo field"), "dim")
                     .rowGap();
         }
-        // Named destination - parent field list. No second footer Back.
-        spec.buttonLeft(
-                        "page:" + listPage(module, listPageNum, ConfigEditor.parentPath(path)),
-                        UltraStyle.backTo("Field list"),
-                        UltraStyle.STYLE_DIM)
-                .buttonRight("do:save_all", UltraStyle.confirm("Save all"), "confirm")
-                .rowGap();
+        spec.button("do:save_all", UltraStyle.confirm("Save all"), "confirm").rowGap();
+        spec.footerBack(
+                "page:" + listPage(module, listPageNum, ConfigEditor.parentPath(path)),
+                "Field list");
         spec.send(player);
     }
 
@@ -341,7 +338,7 @@ public final class UltraConfigScreens {
         spec.button("do:save_all", UltraStyle.confirm("Confirm save"), "confirm").rowGap();
         spec.button("do:discard_all", UltraStyle.danger("Discard all"), "danger").rowGap();
         // One Back only via footer (nav:home).
-        spec.footerBackHome();
+        spec.footerBackHome("Config Home");
         spec.send(player);
     }
 

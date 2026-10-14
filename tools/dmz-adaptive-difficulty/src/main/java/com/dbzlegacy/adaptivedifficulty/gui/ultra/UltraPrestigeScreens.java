@@ -151,7 +151,7 @@ public final class UltraPrestigeScreens {
             }
             spec.rowGap();
         }
-        spec.footerBackHome();
+        spec.footerBackHome("Prestige Home");
         spec.send(player);
     }
 
@@ -172,7 +172,7 @@ public final class UltraPrestigeScreens {
                 .rowGap();
         spec.button("page:effects", UltraStyle.confirm("Effects"), UltraStyle.STYLE_CONFIRM)
                 .rowGap();
-        spec.footerBackHome();
+        spec.footerBackHome("Prestige Home");
         spec.send(player);
     }
 
@@ -237,9 +237,7 @@ public final class UltraPrestigeScreens {
         } else if (page > 0) {
             spec.rowGap();
         }
-        // Named contextual exit + footer hub Back (different destinations).
-        spec.button("page:shop", UltraStyle.dim("Shop catalog"), UltraStyle.STYLE_DIM).rowGap();
-        spec.footerBackHome();
+        spec.footerBack("page:shop", "Shop");
         spec.send(player);
     }
 
@@ -273,8 +271,7 @@ public final class UltraPrestigeScreens {
                 spec.button(action, UltraStyle.dim(caption), style).rowGap();
             }
         }
-        spec.button("page:shop", UltraStyle.dim("Shop catalog"), UltraStyle.STYLE_DIM).rowGap();
-        spec.footerBackHome();
+        spec.footerBack("page:shop", "Shop");
         spec.send(player);
     }
 
@@ -330,8 +327,7 @@ public final class UltraPrestigeScreens {
                             UltraStyle.STYLE_DIM)
                     .rowGap();
         }
-        spec.button("page:shop", UltraStyle.dim("Shop catalog"), UltraStyle.STYLE_DIM).rowGap();
-        spec.footerBackHome();
+        spec.footerBack("page:shop", "Shop");
         spec.send(player);
     }
 

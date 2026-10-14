@@ -141,7 +141,7 @@ public final class UltraRivalScreens {
                             UltraStyle.hubTileAccentCode("admin"))
                     .rowGap();
         }
-        spec.footerBackHome();
+        spec.footerBackHome("Rival Home");
         spec.send(player);
     }
 
@@ -166,7 +166,7 @@ public final class UltraRivalScreens {
                 "records:history|Challenge history");
         placePerChallengeButtons(spec, player);
         spec.button("do:spectate_stop", UltraStyle.dim("Stop spectate"), "dim").rowGap();
-        spec.footerBackHome();
+        spec.footerBackHome("Rival Home");
         spec.send(player);
     }
 
@@ -256,7 +256,7 @@ public final class UltraRivalScreens {
         if (placed == 0) {
             spec.line(UltraStyle.dim("No rivals on your list yet."));
         }
-        spec.footerBackHome();
+        spec.footerBackHome("Rival Home");
         spec.send(player);
     }
 
@@ -271,8 +271,7 @@ public final class UltraRivalScreens {
             spec.buttonLeft("do:remove:" + arg, UltraStyle.danger("Remove rival"), "danger")
                     .rowGap();
         }
-        // Named destination - rival list (no footerBackHome stack).
-        spec.button("page:list", UltraStyle.backTo("Rival list"), "dim").rowGap();
+        spec.footerBack("page:list", "Rival list");
         spec.send(player);
     }
 
@@ -284,7 +283,7 @@ public final class UltraRivalScreens {
             }
         }
         spec.setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
-        spec.footerBackHome();
+        spec.footerBackHome("Rival Home");
         spec.send(player);
     }
 
@@ -320,7 +319,7 @@ public final class UltraRivalScreens {
                 "records:hof|Hall of fame",
                 "records:journal|Journal",
                 "records:title|Title");
-        spec.footerBackHome();
+        spec.footerBackHome("Rival Home");
         spec.send(player);
     }
 
@@ -365,7 +364,7 @@ public final class UltraRivalScreens {
         if (placed == 0) {
             spec.line(UltraStyle.dim("No incoming declare requests right now."));
         }
-        spec.footerBackHome();
+        spec.footerBackHome("Rival Home");
         spec.send(player);
     }
 
@@ -389,7 +388,7 @@ public final class UltraRivalScreens {
                                 : UltraStyle.dim("Instinct - OFF"),
                         instinctOn ? UltraStyle.STYLE_CONFIRM : UltraStyle.STYLE_DIM)
                 .rowGap();
-        spec.footerBackHome();
+        spec.footerBackHome("Rival Home");
         spec.send(player);
     }
 
@@ -477,9 +476,9 @@ public final class UltraRivalScreens {
         } else if (pg > 0) {
             spec.rowGap();
         }
-        // Cancel is the only exit (no footerBackHome stack).
-        spec.button("page:" + ("challenge".equals(tab) ? "challenge" : "actions"), UltraStyle.dim("Cancel"), "dim")
-                .rowGap();
+        spec.footerBack(
+                "page:" + ("challenge".equals(tab) ? "challenge" : "actions"),
+                "challenge".equals(tab) ? "Challenge" : "Actions");
         spec.send(player);
     }
 
@@ -504,8 +503,7 @@ public final class UltraRivalScreens {
                 spec.rowGap();
             }
         }
-        // Cancel is the only exit (no footerBackHome stack).
-        spec.button("page:pick_challenge", UltraStyle.dim("Cancel"), "dim").rowGap();
+        spec.footerBack("page:pick_challenge", "Challenge pick");
         spec.send(player);
     }
 
@@ -521,7 +519,7 @@ public final class UltraRivalScreens {
             spec.button("do:accept:" + arg, UltraStyle.confirm("Accept mutual rivalry"), "confirm")
                     .rowGap();
         }
-        spec.button("page:pick_declare", UltraStyle.dim("Cancel"), "dim").rowGap();
+        spec.footerBack("page:pick_declare", "Declare pick");
         spec.send(player);
     }
 
@@ -567,8 +565,7 @@ public final class UltraRivalScreens {
         }
         // Escape hatch — do not trap the player on this page.
         spec.button("do:cancel_mutual_replace", UltraStyle.dim("Decline instead"), "dim").rowGap();
-        // Named destination - requests (no footerBackHome stack).
-        spec.button("page:requests", UltraStyle.backTo("Requests"), "dim").rowGap();
+        spec.footerBack("page:requests", "Requests");
         spec.send(player);
     }
 
@@ -591,7 +588,7 @@ public final class UltraRivalScreens {
                             "danger")
                     .rowGap();
         }
-        spec.button("page:pick_replace_mutual", UltraStyle.dim("Cancel"), "dim").rowGap();
+        spec.footerBack("page:pick_replace_mutual", "Replace pick");
         spec.send(player);
     }
 
@@ -620,7 +617,7 @@ public final class UltraRivalScreens {
                 .buttonRight("do:admin:refresh", UltraStyle.confirm("Reload data"), "confirm")
                 .rowGap();
         spec.button("do:admin:status", UltraStyle.dim("Status"), "dim").rowGap();
-        spec.footerBackHome();
+        spec.footerBackHome("Rival Home");
         spec.send(player);
     }
 

@@ -518,9 +518,19 @@ def main() -> int:
         errors.append('UltraStyle.BACK must not use a leading "<" (renders as garbage on some clients)')
     if 'BACK = LABEL + "Back"' not in style_src:
         errors.append('UltraStyle.BACK should be LABEL + "Back"')
+    if 'MAIN_MENU = LABEL + "Main menu"' not in style_src:
+        errors.append('UltraStyle.MAIN_MENU should be LABEL + "Main menu"')
+    if 'LABEL + "Back to "' not in style_src:
+        errors.append('UltraStyle.backTo must prefix "Back to " on destination names')
     spec_src = (ULTRA / "UltraScreenSpec.java").read_text(encoding="utf-8")
     if "UltraStyle.wireText" not in spec_src:
         errors.append("UltraScreenSpec must run UltraStyle.wireText on lines/titles before send")
+    if 'addProperty("footer", true)' not in spec_src and 'o.addProperty("footer", true)' not in spec_src:
+        errors.append("UltraScreenSpec must emit button footer:true for pinned footer rows")
+    if "footerBack(String" not in spec_src and "footerBack(String backActionId" not in spec_src:
+        errors.append("UltraScreenSpec must expose footerBack(actionId, destination)")
+    if "footerBackHome(String" not in spec_src:
+        errors.append("UltraScreenSpec.footerBackHome must take a destination name")
 
     # Weight shop must accept up to MAX_WEIGHT_VALUE digits (not a stale 4-digit / 9999 cap).
     weight_shop = (ULTRA / "UltraWeightShopScreens.java").read_text(encoding="utf-8")
@@ -530,14 +540,19 @@ def main() -> int:
         errors.append("UltraWeightShopScreens.parseWeightValue must not hard-cap at 4 digits (9999)")
     if "MAX_WEIGHT_DIGITS" not in weight_shop:
         errors.append("UltraWeightShopScreens must define MAX_WEIGHT_DIGITS from MAX_WEIGHT_VALUE")
-    # Dual-back OK when contextual names a destination; forbid generic "Back" + footer.
+    # Every open* that sends must pin a footer; forbid generic "Back" / Cancel-as-back duplicates.
+    footer_call = re.compile(r"footerBack(?:Home|ToMain)?\s*\(")
     for path in sorted(ULTRA.glob("Ultra*Screens.java")):
+        if path.name == "UltraHubScreens.java":
+            continue
         src = path.read_text(encoding="utf-8")
         for m in re.finditer(
             r"(?:private|public|static)\s+[^{;]+?\b(open\w*)\s*\([^)]*\)\s*\{",
             src,
         ):
             name = m.group(1)
+            if name == "open":
+                continue
             i = src.find("{", m.end() - 1)
             depth = 0
             end = i
@@ -550,7 +565,13 @@ def main() -> int:
                         end = j + 1
                         break
             body = src[m.start() : end]
-            if "footerBackHome()" not in body and "footerBackToMain()" not in body:
+            if "send(player)" not in body:
+                continue
+            if not footer_call.search(body):
+                errors.append(
+                    f"{path.name}.{name}: must call footerBackToMain / footerBackHome(dest) / "
+                    "footerBack(action, dest) so every page has a pinned way back"
+                )
                 continue
             # Generic exact "Back" next to footer = same-feeling duplicate.
             if re.search(r'(?:dim|confirm|danger)\(\s*"Back"\s*\)', body):
@@ -558,25 +579,29 @@ def main() -> int:
                     f'{path.name}.{name}: dim/confirm("Back") with footer - name the destination '
                     "or drop the contextual Back"
                 )
-            if "UltraStyle.BACK" in body and "UltraStyle.backTo(" not in body:
-                # BACK const + footer without a named backTo nearby is a duplicate hub exit.
+            if re.search(r'dim\(\s*"Cancel"\s*\)', body):
                 errors.append(
-                    f"{path.name}.{name}: UltraStyle.BACK + footerBack* - use UltraStyle.backTo("
-                    '"Destination") for contextual exits'
+                    f'{path.name}.{name}: dim("Cancel") with footer - use footerBack for exits '
+                    "(keep danger Cancel only when it is a distinct action)"
                 )
-            # True duplicate: page:main Back next to footerBackHome (same destination often).
-            if 'dim("Back")' in body or "dim(\"Back\")" in body:
+            # True duplicate: page:main Back next to footer.
+            if 'dim("Back")' in body or 'dim("Back")' in body:
                 errors.append(f"{path.name}.{name}: dim(\"Back\") with footer - keep one Back")
 
     # Footers must not ship a Refresh button.
     spec_text = SPEC.read_text(encoding="utf-8")
-    for method in ("footerBackToMain", "footerBackHome"):
-        # Crude extract: method body until next public method
-        m = re.search(
-            rf"public UltraScreenSpec {method}\(\)\s*\{{(.*?)\n    \}}",
-            spec_text,
-            re.S,
-        )
+    for method, pattern in (
+        ("footerBackToMain", r"public UltraScreenSpec footerBackToMain\(\)\s*\{(.*?)\n    \}"),
+        (
+            "footerBackHome",
+            r"public UltraScreenSpec footerBackHome\(String destination\)\s*\{(.*?)\n    \}",
+        ),
+        (
+            "footerBack",
+            r"public UltraScreenSpec footerBack\(String backActionId, String destination\)\s*\{(.*?)\n    \}",
+        ),
+    ):
+        m = re.search(pattern, spec_text, re.S)
         if m is None:
             errors.append(f"UltraScreenSpec.{method} not found")
         elif "nav:refresh" in m.group(1) or "Refresh" in m.group(1):
@@ -639,10 +664,12 @@ def main() -> int:
         re.S | re.M,
     )
     shop_body = shop_m.group(0) if shop_m else ""
-    if '"page:main"' in shop_body and "footerBackHome()" in shop_body:
+    if '"page:main"' in shop_body and "footerBack" in shop_body:
         errors.append(
-            "UltraWeightShopScreens.openShop must not stack page:main Back with footerBackHome"
+            "UltraWeightShopScreens.openShop must not stack page:main Back with footerBack*"
         )
+    if "footerBackToMain()" not in shop_body:
+        errors.append("UltraWeightShopScreens.openShop must use footerBackToMain (weights tab home)")
     rival = (ULTRA / "UltraRivalScreens.java").read_text(encoding="utf-8")
     if 'confirm("Reload")' in rival and 'confirm("Reload data")' not in rival:
         errors.append('UltraRivalScreens staff admin must label refresh "Reload data"')
