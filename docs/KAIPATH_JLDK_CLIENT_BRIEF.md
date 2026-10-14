@@ -35,7 +35,11 @@ The client renders what the server sends — **no hardcoded screen/tab/button/ac
 | Verbatim GuiAction echo | yes |
 | Any `screenId` | yes |
 
-## Open gaps (do these next)
+## Open gaps (merge kit — then done)
+
+Reference implementation is ready in
+[`tools/ultra-gui-kit/kaipath-client/`](../tools/ultra-gui-kit/kaipath-client/).
+Merge into the next official KaiPath jar; live **1.3.9** still lacks these.
 
 ### 1. `layoutJson.headerBottom` — tabs under the yellow divider
 
@@ -43,11 +47,12 @@ LM places tabs as regular buttons at Y=`headerBottom` with `tabsUnderTitle=true`
 **Keep title text + yellow divider strictly above `headerBottom`.** Defaults: **28** with
 tabs, **42** without. Spec: [`KAIPATH_GUI_PROTOCOL.md`](KAIPATH_GUI_PROTOCOL.md) §4.
 
-Advertise: `"headerBottom"`.
+Advertise: `"headerBottom"`. **Done in kit** (`LmDynamicScreen`).
 
 ### 2. Title vertical centering — JLDK-only
 
 Center the title text in the header band between the gear icons. No protocol field.
+**Done in kit** (title centered in `[0, headerBottom)`).
 
 ### 3. `layoutJson.accent` + button/tab `accent`
 
@@ -69,9 +74,9 @@ Single-letter Minecraft color codes (no section-sign in title/button labels).
 - Paint hub tile / staff control tint from per-button `accent` when present.
 - Button `style` stays semantic (`confirm` / `danger` / `dim` / `normal`).
 
-Advertise: `"accent"`.
+Advertise: `"accent"`. **Done in kit**.
 
-## Advertise (after implementing gaps 1 + 3)
+## Advertise (kit default — merge as-is)
 
 ```java
 UltraGuiConsumerRegistry.advertiseFeatures(
@@ -79,7 +84,7 @@ UltraGuiConsumerRegistry.advertiseFeatures(
     "[\"style\",\"activeTab\",\"titleAlign\",\"playerModel\",\"textInput\",\"headerBottom\",\"accent\"]");
 ```
 
-LM guitest then moves from `pendingNext=[headerBottom, accent]` → `pendingNext=none`.
+After merge, LM guitest moves from `pendingNext=[headerBottom, accent]` → `pendingNext=none`.
 
 ## Deferred (not blocking)
 

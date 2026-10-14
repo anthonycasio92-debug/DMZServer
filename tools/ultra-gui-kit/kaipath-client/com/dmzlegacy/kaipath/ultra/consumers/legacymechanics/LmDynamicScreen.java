@@ -22,13 +22,21 @@ import net.minecraft.world.entity.LivingEntity;
 
 /**
  * Renders whatever the server sends in {@link GuiOpenPacket} — title, tabs, lines, buttons,
- * field 11 {@code inputsJson} text fields, button {@code style} colors, and optional
- * {@code layoutJson.playerModel}.
+ * field 11 {@code inputsJson} text fields, button {@code style} / {@code accent} colors,
+ * {@code layoutJson.headerBottom}, and optional {@code layoutJson.playerModel}.
  *
  * <p>No hardcoded screen/tab/button lists. Clicks go back on the bound {@code <modid>:gui}
  * channel. Advertise via {@link UltraGuiConsumerRegistry#ADVERTISED_FEATURES_JSON}.
  */
 public class LmDynamicScreen extends UltraScreen {
+    /** Default {@code headerBottom} when under-title tabs are present. */
+    private static final int DEFAULT_HEADER_BOTTOM_TABS = 28;
+    /** Default {@code headerBottom} when there is no under-title tab row. */
+    private static final int DEFAULT_HEADER_BOTTOM = 42;
+    /** Shared hub gold when {@code layoutJson.accent} is omitted. */
+    private static final int TITLE_GOLD_ARGB = 0xFFFFAA00;
+    private static final int DIVIDER_YELLOW_ARGB = 0xFFE8C840;
+
     private final GuiOpenPacket packet;
     private final String channelId;
     private int panelX;
@@ -46,13 +54,18 @@ public class LmDynamicScreen extends UltraScreen {
     private int buttonPad = 8;
     private int buttonMinWidth = 80;
     private String titleAlign = "center";
+    /** Panel-relative Y where title + yellow divider must end. */
+    private int headerBottom = DEFAULT_HEADER_BOTTOM;
+    private boolean tabsUnderTitle = false;
+    /** Single-letter Minecraft color code from layoutJson (empty = shared gold). */
+    private String layoutAccent = "";
     private JsonObject playerModel;
     private final List<String> bodyLines = new ArrayList<>();
     /** input id → live EditBox (for bindInput / Enter → args.value). */
     private final Map<String, EditBox> textInputs = new LinkedHashMap<>();
     /** input id → args template from inputsJson (for Enter submit). */
     private final Map<String, JsonObject> inputArgsById = new LinkedHashMap<>();
-    /** Button chrome underlays drawn from {@code style}. */
+    /** Button chrome underlays drawn from {@code style} / {@code accent}. */
     private final List<StyledChrome> buttonChrome = new ArrayList<>();
     /** Tab chrome for activeTab highlight. */
     private final List<StyledChrome> tabChrome = new ArrayList<>();
@@ -88,18 +101,15 @@ public class LmDynamicScreen extends UltraScreen {
         parseLayout();
         placePanel();
 
-        int cursorY = panelY + 8;
+        // Title + yellow divider occupy [0, headerBottom). Content starts at/after headerBottom.
+        int cursorY = panelY + headerBottom;
 
-        // Title drawn in render; reserve space under title + header rule
-        cursorY += 14;
-        // Match LM tabsUnderTitle: sit under the title line (hub-like), not in the title band
-        cursorY += 6;
-
-        // Tabs — dynamic from tabsJson; activeTab gets a highlight chip
+        // Compat: tabsJson strip (LM normally sends empty tabsJson + tab buttons at headerBottom)
         JsonArray tabs = parseArray(packet.tabsJson());
         int tabX = panelX + 8;
         int tabW = Math.max(48, Math.min(90, (panelW - 16) / Math.max(1, tabs.size())));
         String active = packet.activeTab() == null ? "" : packet.activeTab().trim();
+        String tabHighlightAccent = layoutAccent.isBlank() ? "e" : layoutAccent;
         for (JsonElement el : tabs) {
             if (!el.isJsonObject()) {
                 continue;
@@ -116,8 +126,11 @@ public class LmDynamicScreen extends UltraScreen {
             }
             boolean isActive =
                     !active.isBlank() && active.equalsIgnoreCase(tabSemantic);
-            if (isActive) {
-                tabChrome.add(new StyledChrome(tabX, cursorY, tabW - 2, 16, "confirm"));
+            String tabAccent = str(tab, "accent", isActive ? tabHighlightAccent : "");
+            if (isActive || !tabAccent.isBlank()) {
+                tabChrome.add(
+                        new StyledChrome(
+                                tabX, cursorY, tabW - 2, 16, "normal", tabAccent));
             }
             String actionId = id;
             JsonObject tabArgs = new JsonObject();
@@ -220,6 +233,7 @@ public class LmDynamicScreen extends UltraScreen {
             }
             String label = str(b, "label", id);
             String style = normalizeStyle(str(b, "style", "normal"));
+            String accent = normalizeAccent(str(b, "accent", ""));
             int x = intVal(b, "x", 8);
             int y = intVal(b, "y", cursorY - panelY);
             int w = Math.max(buttonMinWidth, intVal(b, "w", 150));
@@ -236,7 +250,19 @@ public class LmDynamicScreen extends UltraScreen {
             int absY = panelY + y;
             int absW = Math.max(buttonMinWidth, w);
             int absH = Math.max(12, h);
-            buttonChrome.add(new StyledChrome(absX, absY, absW, absH, style));
+            // Active under-title tab buttons: tint from button accent or layout accent.
+            String semantic = stripAtPrefix(id);
+            if (semantic.startsWith("tab:")) {
+                semantic = semantic.substring(4);
+            }
+            boolean isActiveTab =
+                    !active.isBlank() && active.equalsIgnoreCase(semantic);
+            if (isActiveTab && accent.isBlank()) {
+                accent = layoutAccent.isBlank() ? "e" : layoutAccent;
+            }
+            if (!style.equals("normal") || !accent.isBlank()) {
+                buttonChrome.add(new StyledChrome(absX, absY, absW, absH, style, accent));
+            }
             String actionId = id;
             JsonObject args = argsObj;
             addThemedButton(
@@ -244,7 +270,7 @@ public class LmDynamicScreen extends UltraScreen {
                     absY,
                     absW,
                     absH,
-                    styleLabel(style, stripSection(label)),
+                    styleLabel(style, accent, stripSection(label)),
                     () -> echoClick(actionId, args));
         }
 
@@ -304,11 +330,16 @@ public class LmDynamicScreen extends UltraScreen {
         buttonPad = 8;
         buttonMinWidth = 80;
         titleAlign = "center";
+        tabsUnderTitle = false;
+        layoutAccent = "";
+        headerBottom = DEFAULT_HEADER_BOTTOM;
         playerModel = null;
         panelW = packet.panelWidth() > 0 ? packet.panelWidth() : GuiOpenPacket.DEFAULT_PANEL_W;
         panelH = packet.panelHeight() > 0 ? packet.panelHeight() : GuiOpenPacket.DEFAULT_PANEL_H;
+        boolean hasTabsJson = parseArray(packet.tabsJson()).size() > 0;
         String layout = packet.layoutJson();
         if (layout == null || layout.isBlank()) {
+            headerBottom = hasTabsJson ? DEFAULT_HEADER_BOTTOM_TABS : DEFAULT_HEADER_BOTTOM;
             return;
         }
         try {
@@ -357,6 +388,20 @@ public class LmDynamicScreen extends UltraScreen {
                 String align = o.get("titleAlign").getAsString();
                 titleAlign = align == null ? "center" : align.trim().toLowerCase(Locale.ROOT);
             }
+            if (o.has("tabsUnderTitle") && o.get("tabsUnderTitle").isJsonPrimitive()) {
+                tabsUnderTitle = o.get("tabsUnderTitle").getAsBoolean();
+            }
+            if (o.has("accent") && o.get("accent").isJsonPrimitive()) {
+                layoutAccent = normalizeAccent(o.get("accent").getAsString());
+            }
+            if (o.has("headerBottom")) {
+                headerBottom = Math.max(12, o.get("headerBottom").getAsInt());
+            } else {
+                headerBottom =
+                        (tabsUnderTitle || hasTabsJson)
+                                ? DEFAULT_HEADER_BOTTOM_TABS
+                                : DEFAULT_HEADER_BOTTOM;
+            }
             if (o.has("bodyMaxHeight")) {
                 bodyMaxHeight = Math.max(lineHeight, o.get("bodyMaxHeight").getAsInt());
             }
@@ -374,6 +419,7 @@ public class LmDynamicScreen extends UltraScreen {
             }
         } catch (Throwable t) {
             UltraUiBridge.LOGGER.warn("[kaipath] layoutJson parse failed — using defaults", t);
+            headerBottom = hasTabsJson ? DEFAULT_HEADER_BOTTOM_TABS : DEFAULT_HEADER_BOTTOM;
         }
     }
 
@@ -398,13 +444,17 @@ public class LmDynamicScreen extends UltraScreen {
     @Override
     public void m_88315_(GuiGraphics g, int mouseX, int mouseY, float tick) {
         m_280273_(g);
-        // Style chrome under tabs/buttons (confirm=green, danger=red, dim=gray)
+        // Style / accent chrome under tabs/buttons
         for (StyledChrome c : tabChrome) {
             paintChrome(g, c);
         }
         for (StyledChrome c : buttonChrome) {
             paintChrome(g, c);
         }
+        // Yellow divider — last pixel of the header band (strictly above headerBottom content)
+        int dividerY = panelY + Math.max(10, headerBottom - 2);
+        UltraUiAccess.fillRect(
+                g, theme(), panelX + 8, dividerY, Math.max(1, panelW - 16), 1, DIVIDER_YELLOW_ARGB);
         // Player model entity preview (bounds from layoutJson.playerModel)
         drawPlayerModel(g, mouseX, mouseY, tick);
         UltraUiAccess.themed(theme(), () -> {
@@ -415,7 +465,13 @@ public class LmDynamicScreen extends UltraScreen {
             int titleX = "center".equalsIgnoreCase(titleAlign)
                     ? panelX + Math.max(8, (panelW - titleW) / 2)
                     : panelX + 8;
-            g.m_280488_(this.f_96547_, titleComp, titleX, panelY + 8, 0xFFE8E8E8);
+            // Vertically center title in the header band above the divider
+            int fontH = 9;
+            int bandH = Math.max(fontH, headerBottom - 2);
+            int titleY = panelY + Math.max(2, (bandH - fontH) / 2);
+            int titleColor =
+                    layoutAccent.isBlank() ? TITLE_GOLD_ARGB : accentArgb(layoutAccent);
+            g.m_280488_(this.f_96547_, titleComp, titleX, titleY, titleColor);
             super.m_88315_(g, mouseX, mouseY, tick);
         });
     }
@@ -424,13 +480,22 @@ public class LmDynamicScreen extends UltraScreen {
         if (c == null) {
             return;
         }
-        int argb = styleArgb(c.style);
-        if (argb == 0) {
+        int fill = styleArgb(c.style);
+        int bar = styleAccentArgb(c.style);
+        if (c.accent != null && !c.accent.isBlank()) {
+            int accent = accentArgb(c.accent);
+            fill = (accent & 0x00FFFFFF) | 0x40000000;
+            bar = accent;
+        }
+        if (fill == 0 && bar == 0) {
             return;
         }
-        // Soft fill + left accent bar
-        UltraUiAccess.fillRect(g, theme(), c.x, c.y, c.w, c.h, argb);
-        UltraUiAccess.fillRect(g, theme(), c.x, c.y, 3, c.h, styleAccentArgb(c.style));
+        if (fill != 0) {
+            UltraUiAccess.fillRect(g, theme(), c.x, c.y, c.w, c.h, fill);
+        }
+        if (bar != 0) {
+            UltraUiAccess.fillRect(g, theme(), c.x, c.y, 3, c.h, bar);
+        }
     }
 
     private void drawPlayerModel(GuiGraphics g, int mouseX, int mouseY, float tick) {
@@ -541,13 +606,62 @@ public class LmDynamicScreen extends UltraScreen {
         };
     }
 
-    /** Ensure label carries a readable style tint when the server sent a plain string. */
-    private static String styleLabel(String style, String label) {
+    /** Single-letter Minecraft color code → opaque ARGB (shared gold when blank). */
+    private static int accentArgb(String code) {
+        String letter = normalizeAccent(code);
+        if (letter.isBlank()) {
+            return TITLE_GOLD_ARGB;
+        }
+        return switch (letter.charAt(0)) {
+            case '0' -> 0xFF000000;
+            case '1' -> 0xFF0000AA;
+            case '2' -> 0xFF00AA00;
+            case '3' -> 0xFF00AAAA;
+            case '4' -> 0xFFAA0000;
+            case '5' -> 0xFFAA00AA;
+            case '6' -> 0xFFFFAA00;
+            case '7' -> 0xFFAAAAAA;
+            case '8' -> 0xFF555555;
+            case '9' -> 0xFF5555FF;
+            case 'a' -> 0xFF55FF55;
+            case 'b' -> 0xFF55FFFF;
+            case 'c' -> 0xFFFF5555;
+            case 'd' -> 0xFFFF55FF;
+            case 'e' -> 0xFFFFFF55;
+            case 'f' -> 0xFFFFFFFF;
+            default -> TITLE_GOLD_ARGB;
+        };
+    }
+
+    private static String normalizeAccent(String accent) {
+        if (accent == null || accent.isBlank()) {
+            return "";
+        }
+        String s = accent.trim().toLowerCase(Locale.ROOT);
+        if (s.startsWith("§") || s.startsWith("\u00a7")) {
+            s = s.substring(1);
+        }
+        if (s.isEmpty()) {
+            return "";
+        }
+        char c = s.charAt(0);
+        if ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')) {
+            return String.valueOf(c);
+        }
+        return "";
+    }
+
+    /** Ensure label carries a readable style/accent tint when the server sent a plain string. */
+    private static String styleLabel(String style, String accent, String label) {
         if (label == null) {
             return "";
         }
         if (label.indexOf('§') >= 0 || label.indexOf('\u00a7') >= 0) {
             return label;
+        }
+        String code = normalizeAccent(accent);
+        if (!code.isBlank()) {
+            return "§" + code + label;
         }
         return switch (normalizeStyle(style)) {
             case "confirm" -> "§a" + label;
@@ -609,5 +723,5 @@ public class LmDynamicScreen extends UltraScreen {
         return s == null ? "" : s;
     }
 
-    private record StyledChrome(int x, int y, int w, int h, String style) {}
+    private record StyledChrome(int x, int y, int w, int h, String style, String accent) {}
 }

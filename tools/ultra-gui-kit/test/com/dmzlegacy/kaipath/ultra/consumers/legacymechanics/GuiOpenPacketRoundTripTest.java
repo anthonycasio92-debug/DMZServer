@@ -116,14 +116,23 @@ public final class GuiOpenPacketRoundTripTest {
         if (!UltraGuiConsumerRegistry.ADVERTISED_FEATURES_JSON.contains("textInput")) {
             fail("ADVERTISED_FEATURES_JSON must include textInput");
         }
-        for (String feat : new String[] {"style", "activeTab", "titleAlign", "playerModel", "textInput"}) {
+        for (String feat :
+                new String[] {
+                    "style",
+                    "activeTab",
+                    "titleAlign",
+                    "playerModel",
+                    "textInput",
+                    "headerBottom",
+                    "accent"
+                }) {
             if (!UltraGuiConsumerRegistry.ADVERTISED_FEATURES_JSON.contains(feat)) {
                 fail("missing advertise feature: " + feat);
             }
         }
 
         System.out.println(
-                "GuiOpenPacketRoundTripTest OK (11 fields + inputsJson + textInput advertise)");
+                "GuiOpenPacketRoundTripTest OK (11 fields + headerBottom/accent advertise)");
     }
 
     private static void assertEq(String name, String expected, String actual) {

@@ -29,11 +29,12 @@ public final class UltraGuiConsumerRegistry {
      * Features this reference client honors — keep in sync with
      * {@code LmDynamicScreen} + {@code GuiOpenPacket} UTF-8 decode.
      *
-     * <p>Released KaiPath <b>1.3.7</b> advertises the same list <em>without</em>
-     * {@code textInput}; this kit adds field 11 widgets + that advertise flag.
+     * <p>Released KaiPath <b>1.3.9</b> advertises five features (through {@code textInput}).
+     * This kit adds {@code headerBottom} + {@code accent} so LM {@code pendingNext} clears
+     * after merge into the next official KaiPath jar.
      */
     public static final String ADVERTISED_FEATURES_JSON =
-            "[\"style\",\"activeTab\",\"titleAlign\",\"playerModel\",\"textInput\"]";
+            "[\"style\",\"activeTab\",\"titleAlign\",\"playerModel\",\"textInput\",\"headerBottom\",\"accent\"]";
 
     private static final Map<String, BoundChannel> CHANNELS = new ConcurrentHashMap<>();
 

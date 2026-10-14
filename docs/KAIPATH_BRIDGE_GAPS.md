@@ -55,17 +55,17 @@ missingShipped=none pendingNext=[headerBottom, accent]
 
 Vendored / live jar: `mods/kaipath-1.3.9.jar`. Reference kit: [`tools/ultra-gui-kit/kaipath-client/`](../tools/ultra-gui-kit/kaipath-client/).
 
-| Item | 1.3.9 | Next KaiPath |
+| Item | 1.3.9 | Next KaiPath (kit ready) |
 |------|-------|---------------|
 | Button `style` | **Done** | — |
 | `activeTab` | **Done** (yellow) | Tint from `accent` |
 | `titleAlign` | **Done** | — |
 | `playerModel` | **Done** | — |
 | `textInput` | **Done** | — |
-| Advertise 5 features | **Done** | Add `headerBottom`, `accent` |
-| Honor `headerBottom` | **Needed** | Title+divider above Y |
-| Honor `accent` | **Needed** | Title / activeTab / hub tint |
-| Title vertical center | **Needed** | No new field |
+| Advertise 5 features | **Done** | Add `headerBottom`, `accent` (**done in kit**) |
+| Honor `headerBottom` | **Missing** | **Done in kit** — Title+divider above Y |
+| Honor `accent` | **Missing** | **Done in kit** — Title / activeTab / hub tint |
+| Title vertical center | **Missing** | **Done in kit** — No new field |
 | `slider` / `toggle` widgets | N/A | When LM ships types |
 
 ### Advertise when headerBottom + accent ship

@@ -7,7 +7,7 @@ import net.minecraftforge.network.NetworkEvent;
 /**
  * Client → server feature advertisement (message 2). Advertise the full set via
  * {@link com.dmzlegacy.kaipath.ultra.consumers.UltraGuiConsumerRegistry#ADVERTISED_FEATURES_JSON}
- * (includes {@code textInput} when field 11 widgets are present).
+ * (includes {@code textInput}, {@code headerBottom}, and {@code accent}).
  */
 public final class GuiFeaturesPacket {
     private final String featuresJson;

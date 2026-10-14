@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 # Dev-only smoke: overlay tools/ultra-gui-kit/kaipath-client onto a released KaiPath jar.
-# Adds GuiOpen field 11 (inputsJson / EditBox / bindInput) + textInput advertise.
+# Adds headerBottom + accent honor/advertise (and field 11 / textInput if base is older).
 # Official KaiPath releases are owned by the KaiPath mod developer — do NOT deploy this
 # overlay to live; merge kaipath-client/ into the next official jar instead.
 #
 # Usage:
 #   bash tools/ultra-gui-kit/build-kaipath-overlay.sh
 # Optional:
-#   KAIPATH_BASE_JAR=mods/kaipath-1.3.7.jar
-#   KAIPATH_OVERLAY_VERSION=1.3.7-lm-ultra
+#   KAIPATH_BASE_JAR=mods/kaipath-1.3.9.jar
+#   KAIPATH_OVERLAY_VERSION=1.3.9-lm-ultra
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
-BASE_JAR="${KAIPATH_BASE_JAR:-$ROOT/mods/kaipath-1.3.7.jar}"
+BASE_JAR="${KAIPATH_BASE_JAR:-$ROOT/mods/kaipath-1.3.9.jar}"
 GSON="$ROOT/libraries/com/google/code/gson/gson/2.10.1/gson-2.10.1.jar"
 LOG4J="$ROOT/libraries/org/apache/logging/log4j/log4j-api/2.19.0/log4j-api-2.19.0.jar"
 OUT_DIR="$HERE/build"
@@ -20,7 +20,7 @@ CLASSES="$OUT_DIR/classes"
 STUB_CLASSES="$OUT_DIR/stub-classes"
 SRC="$HERE/kaipath-client"
 TEST_SRC="$HERE/test"
-VERSION="${KAIPATH_OVERLAY_VERSION:-1.3.7-lm-ultra}"
+VERSION="${KAIPATH_OVERLAY_VERSION:-1.3.9-lm-ultra}"
 OUT_JAR="$ROOT/mods/kaipath-${VERSION}.jar"
 
 if [[ ! -f "$BASE_JAR" ]]; then
