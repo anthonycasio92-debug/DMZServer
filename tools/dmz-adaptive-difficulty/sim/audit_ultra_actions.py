@@ -219,6 +219,19 @@ def main() -> int:
             errors.append(
                 "UltraCharacterScreens playerModel y must be 60 (below tab strip; 36 clips head)"
             )
+    # Preview only on Character Home + model customize (bones) — not Saga/Android/race/class/reskin.
+    if 'base(player, "main", "home", true)' not in char_screens:
+        errors.append("UltraCharacterScreens must show playerModel on Character Home")
+    if "sub(player, \"bones:\" + pg, true)" not in char_screens and 'sub(player, "bones:0", true)' not in char_screens:
+        errors.append("UltraCharacterScreens must show playerModel on model customize (bones)")
+    if 'base(player, UltraStyle.PAGE_ANDROID_REMOVE, "android", false)' not in char_screens:
+        errors.append("UltraCharacterScreens must omit playerModel on Android Removal")
+    if "sub(player, \"race:\" + pg, false)" not in char_screens:
+        errors.append("UltraCharacterScreens must omit playerModel on race list")
+    if "sub(player, \"class:\" + pg, false)" not in char_screens:
+        errors.append("UltraCharacterScreens must omit playerModel on class list")
+    if 'sub(player, "reskin", false)' not in char_screens:
+        errors.append("UltraCharacterScreens must omit playerModel on reskin")
     if "scrollBody" not in spec_text_full:
         errors.append("UltraScreenSpec must emit scrollBody in layoutJson")
     if "buttonShift" not in spec_text_full or "targetBodyH" not in spec_text_full:

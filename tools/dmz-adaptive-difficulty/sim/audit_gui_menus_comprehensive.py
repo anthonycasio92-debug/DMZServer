@@ -47,8 +47,19 @@ def main() -> int:
             ok(f"{key}: Ultra open()", "public static void open(" in text)
 
     char = (ULTRA / "UltraCharacterScreens.java").read_text(encoding="utf-8") if (ULTRA / "UltraCharacterScreens.java").is_file() else ""
-    for needle in ("Change race", "Change class", "Model customization"):
+    for needle in ("Change race", "Change class", "Customize model"):
         ok(f"character Home has {needle}", needle in char)
+    ok(
+        "character playerModel only on home + model customize",
+        'base(player, "main", "home", true)' in char
+        and "sub(player, \"bones:\" + pg, true)" in char
+        and 'base(player, "reset:' in char
+        and ", false)" in char
+        and 'base(player, UltraStyle.PAGE_ANDROID_REMOVE, "android", false)' in char
+        and "sub(player, \"race:\" + pg, false)" in char
+        and "sub(player, \"class:\" + pg, false)" in char
+        and 'sub(player, "reskin", false)' in char,
+    )
 
     hub = (ULTRA / "UltraHubScreens.java").read_text(encoding="utf-8") if (ULTRA / "UltraHubScreens.java").is_file() else ""
     ok("hub hides Staff Admin from non-staff", "StaffAccess.isStaff" in hub and "Staff Admin" in hub)
