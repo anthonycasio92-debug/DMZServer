@@ -1,6 +1,6 @@
 # Ultra bridge gap matrix (LM ↔ KaiPath)
 
-**LM 4.6.149** + **KaiPath 1.3.9** (live / recommended). Official KaiPath updates are owned by the KaiPath mod developer.
+**LM 4.6.150** + **KaiPath 1.3.9** (live / recommended). Official KaiPath updates are owned by the KaiPath mod developer.
 
 ## Still missing on KaiPath 1.3.9 (real bridge gaps)
 

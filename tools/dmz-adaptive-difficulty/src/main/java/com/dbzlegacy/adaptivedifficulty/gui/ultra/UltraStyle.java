@@ -343,7 +343,8 @@ public final class UltraStyle {
             case "character" -> "a";
             case "skillcheck", "skills" -> "e";
             case "admin", "config", "progression" -> "4";
-            case "hub" -> "6";
+            // Main hub title keeps shared HEADER/GOLD chrome — no per-system accent override.
+            case "hub" -> "";
             default -> "";
         };
     }

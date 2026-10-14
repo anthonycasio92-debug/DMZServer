@@ -1,8 +1,8 @@
 # JLDK brief — KaiPath Ultra GUI client conformance
 
-**Status (LM 4.6.149 + KaiPath 1.3.9):** Live KaiPath **1.3.9** honors `style`, `activeTab`,
+**Status (LM 4.6.150 + KaiPath 1.3.9):** Live KaiPath **1.3.9** honors `style`, `activeTab`,
 `titleAlign`, `playerModel`, and **`textInput`** (GuiOpen field 11 / EditBox / `bindInput`).
-LM 4.6.149 adds **`layoutJson.headerBottom`** + **`layoutJson.accent`** / button **`accent`**
+LM 4.6.149+ adds **`layoutJson.headerBottom`** + **`layoutJson.accent`** / button **`accent`**
 — KaiPath must honor these next (see below).
 
 Full gap matrix: [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md).
@@ -63,7 +63,7 @@ Single-letter Minecraft color codes (no section-sign in title/button labels — 
 | Character Services | `a` |
 | Skill Check | `e` |
 | Staff Admin | `4` |
-| Hub title | `6` (gold) |
+| Main hub title | *(omit `accent` — shared gold)* |
 
 - Paint **title** from `layoutJson.accent`.
 - Paint **`activeTab` highlight** from `layoutJson.accent` (replaces shared yellow).

@@ -289,7 +289,8 @@ stay plain ASCII; the client tints from `accent`. Overlong labels truncate with 
 `...`; pages scroll rather than squeezing buttons.
 
 **System accent map (LM):** Difficulty `c` · Rival `5` · Sparring `6` · Prestige `b` ·
-Character `a` · Skill Check `e` · Staff Admin `4` · hub title gold `6`.
+Character `a` · Skill Check `e` · Staff Admin `4`. Main hub omits `accent` (shared gold
+title chrome).
 
 #### `playerModel` (optional, client-rendered)
 
