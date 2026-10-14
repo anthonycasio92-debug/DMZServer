@@ -62,6 +62,7 @@ Every button object in `buttonsJson`:
 | `w` | yes | number | Width (minimum **80** — never shrink for long labels) |
 | `h` | yes | number | Height |
 | `pad` | no | number | Horizontal label padding (default **8**) |
+| `footer` | no | boolean | When `true`, pin this button to the **panel footer** (does not scroll with body). Server places Y at the bottom band; clients must keep footer controls visible while body content scrolls above. |
 | `args` | recommended | object | Opaque JSON echoed to the server |
 
 ```json
@@ -77,6 +78,37 @@ Every button object in `buttonsJson`:
   "args": { "screen": "difficulty", "page": "tiers" }
 }
 ```
+
+Pinned footer pair (every non-hub page):
+
+```json
+[
+  {
+    "id": "@rival:nav:home",
+    "label": "Back to Rival Home",
+    "style": "dim",
+    "x": 16,
+    "y": 272,
+    "w": 150,
+    "h": 18,
+    "footer": true
+  },
+  {
+    "id": "@rival:nav:hub",
+    "label": "Main menu",
+    "style": "dim",
+    "x": 174,
+    "y": 272,
+    "w": 150,
+    "h": 18,
+    "footer": true
+  }
+]
+```
+
+Advertise when implemented: `fixedFooter`. System home tabs emit left-only
+`Back to main menu` (`nav:hub`); sub-pages emit contextual `Back to {destination}`
+(left) + `Main menu` (right). Never say "Hub" in player-facing labels.
 
 #### `style` values (client must implement)
 

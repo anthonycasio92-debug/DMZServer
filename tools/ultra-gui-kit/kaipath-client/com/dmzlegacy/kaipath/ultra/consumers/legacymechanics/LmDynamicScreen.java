@@ -207,8 +207,10 @@ public class LmDynamicScreen extends UltraScreen {
             inputArgsById.put(id, inputArgs);
         }
 
-        // Buttons — dynamic from buttonsJson; honor style chrome
+        // Buttons — dynamic from buttonsJson; honor style chrome + pinned footer:true
         JsonArray buttons = parseArray(packet.buttonsJson());
+        boolean hasFooter = false;
+        int footerY = Math.max(8, panelH - 10 - 18);
         for (JsonElement el : buttons) {
             if (!el.isJsonObject()) {
                 continue;
@@ -220,8 +222,12 @@ public class LmDynamicScreen extends UltraScreen {
             }
             String label = str(b, "label", id);
             String style = normalizeStyle(str(b, "style", "normal"));
+            boolean footer =
+                    b.has("footer")
+                            && !b.get("footer").isJsonNull()
+                            && b.get("footer").getAsBoolean();
             int x = intVal(b, "x", 8);
-            int y = intVal(b, "y", cursorY - panelY);
+            int y = footer ? footerY : intVal(b, "y", cursorY - panelY);
             int w = Math.max(buttonMinWidth, intVal(b, "w", 150));
             int h = intVal(b, "h", 18);
             int padBtn = intVal(b, "pad", buttonPad);
@@ -246,12 +252,15 @@ public class LmDynamicScreen extends UltraScreen {
                     absH,
                     styleLabel(style, stripSection(label)),
                     () -> echoClick(actionId, args));
+            if (footer) {
+                hasFooter = true;
+            }
         }
 
-        // Always offer Close so a sparse packet cannot trap the player
+        // Close: top-right when a pinned footer owns the bottom band; else bottom-right.
         addThemedButton(
                 panelX + panelW - 68,
-                panelY + panelH - 22,
+                hasFooter ? panelY + 4 : panelY + panelH - 22,
                 60,
                 16,
                 "Close",

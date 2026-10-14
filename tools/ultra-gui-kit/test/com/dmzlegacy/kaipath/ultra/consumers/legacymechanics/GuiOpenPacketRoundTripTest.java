@@ -116,7 +116,15 @@ public final class GuiOpenPacketRoundTripTest {
         if (!UltraGuiConsumerRegistry.ADVERTISED_FEATURES_JSON.contains("textInput")) {
             fail("ADVERTISED_FEATURES_JSON must include textInput");
         }
-        for (String feat : new String[] {"style", "activeTab", "titleAlign", "playerModel", "textInput"}) {
+        for (String feat :
+                new String[] {
+                    "style",
+                    "activeTab",
+                    "titleAlign",
+                    "playerModel",
+                    "textInput",
+                    "fixedFooter"
+                }) {
             if (!UltraGuiConsumerRegistry.ADVERTISED_FEATURES_JSON.contains(feat)) {
                 fail("missing advertise feature: " + feat);
             }
