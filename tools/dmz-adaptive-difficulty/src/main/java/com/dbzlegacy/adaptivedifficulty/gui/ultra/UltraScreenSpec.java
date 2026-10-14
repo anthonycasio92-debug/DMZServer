@@ -812,16 +812,6 @@ public final class UltraScreenSpec {
         return active ? UltraStyle.STYLE_NORMAL : UltraStyle.STYLE_DIM;
     }
 
-    private String tabAccentCode(Tab tab, boolean active) {
-        if (tab != null && tab.staffOnly()) {
-            return "4";
-        }
-        if (!active) {
-            return "";
-        }
-        return UltraStyle.systemAccentCode(screenId);
-    }
-
     private static String normalizeAccent(String accent) {
         if (accent == null || accent.isBlank()) {
             return "";
