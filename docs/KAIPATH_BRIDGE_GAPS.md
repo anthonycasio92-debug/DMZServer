@@ -15,6 +15,7 @@ palette, sound, buttonSkin, frame, pagedBook, portraitFrame, fixedFooter, combin
 
 | Gap | Owner | LM status | KaiPath 1.3.17 | Notes |
 |-----|-------|-----------|---------------|-------|
+| **Button `tint` vs `palette` split** | **JLDK** | **Emits** both (same named palette) | Single channel | 1.3.17 `ChromeButton` / `UltraBridgeChrome.tint` reads only `palette`/`accent` → one ARGB for body+border. LM wants `palette`=border, `tint`=body. Confirm wire format + next client. |
 | **Title vertical centering** | **JLDK-only** | N/A (no field) | Confirm | Centers via `(headerBottom - 2 - 9) / 2`. Confirm gear-icon band alignment on all themes. No protocol field. |
 
 `/lm admin guitest` on KaiPath **1.3.17**:

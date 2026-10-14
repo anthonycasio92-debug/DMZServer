@@ -761,6 +761,8 @@ public final class UltraScreenSpec {
             if (tabAccent != null && !tabAccent.isBlank()) {
                 o.addProperty("accent", tabAccent);
             }
+            // palette = border chrome; tint = body fill (same named palette today — see emitButtonChrome)
+            emitButtonChrome(o, tabAccent);
             o.addProperty("x", x);
             o.addProperty("y", y);
             o.addProperty("w", tabW);
@@ -837,6 +839,42 @@ public final class UltraScreenSpec {
     }
 
     /**
+     * Resolve the named palette for a button/tab: prefer the button's accent letter mapping,
+     * else the screen's {@link UltraStyle#systemPaletteName(String)}.
+     */
+    private String resolveButtonPaletteName(String accentLetter) {
+        if (accentLetter != null && !accentLetter.isBlank()) {
+            String fromAccent = UltraStyle.paletteNameForAccentLetter(accentLetter);
+            if (fromAccent != null && !fromAccent.isBlank()) {
+                return fromAccent;
+            }
+        }
+        String system = UltraStyle.systemPaletteName(screenId);
+        return system == null ? "" : system;
+    }
+
+    /**
+     * Emit chrome color fields on a button/tab JSON object.
+     *
+     * <p>{@code palette} — named theme for border / accent chrome.<br>
+     * {@code tint} — body fill color. Wire format matches {@code palette} names ({@code red},
+     * {@code gold}, …) because KaiPath 1.3.17 {@code UltraBridgeChrome.tint} resolves those
+     * names (it does not yet read a separate {@code tint} key — see protocol note for JLDK).
+     * Text color is left to the client default for now.
+     */
+    private void emitButtonChrome(JsonObject o, String accentLetter) {
+        if (o == null) {
+            return;
+        }
+        String palette = resolveButtonPaletteName(accentLetter);
+        if (palette == null || palette.isBlank()) {
+            return;
+        }
+        o.addProperty("palette", palette);
+        o.addProperty("tint", palette);
+    }
+
+    /**
      * @param styleHint optional {@code danger}/{@code staff} (or blank). Ids {@code admin}/
      *     {@code staff} are treated as staff-only even without a hint.
      */
@@ -862,6 +900,8 @@ public final class UltraScreenSpec {
         if (b.accent != null && !b.accent.isBlank()) {
             o.addProperty("accent", b.accent);
         }
+        // palette = border chrome; tint = body fill (named palette via systemPaletteName)
+        emitButtonChrome(o, b.accent);
         o.addProperty("x", b.x);
         int y = b.footer ? b.y : b.y + buttonShift;
         // Footer pins to panel bottom even if packing shifted body rows.
