@@ -204,9 +204,22 @@ public final class PrestigeSystem {
     private static String replyConfirm(
             ServerPlayer player, int completed, int next, int required, int level, int held
     ) {
-        String summary = "§ePrestige now?\n"
-                + "§7This resets your stats. Click again within 10 seconds.\n"
-                + "§7Current prestige amount will be §6" + (held + 1) + "§7/§f" + MAX_HELD + ".";
+        boolean goD = PrestigeUniverseRoleWarn.isGodOfDestruction(player);
+        boolean kai = PrestigeUniverseRoleWarn.isSupremeKai(player);
+        StringBuilder summary = new StringBuilder();
+        summary.append("§ePrestige now?\n")
+                .append("§7This resets your stats. Click again within 10 seconds.\n")
+                .append("§7Current prestige amount will be §6")
+                .append(held + 1)
+                .append("§7/§f")
+                .append(MAX_HELD)
+                .append(".");
+        if (goD) {
+            summary.append("\n§c").append(PrestigeUniverseRoleWarn.GOD_OF_DESTRUCTION);
+        }
+        if (kai) {
+            summary.append("\n§c").append(PrestigeUniverseRoleWarn.SUPREME_KAI);
+        }
         if (!preferGuiFeedback()) {
             send(player, "");
             send(player, LmChat.DIVIDER);
@@ -215,6 +228,12 @@ public final class PrestigeSystem {
             send(player, "§7Your level §f" + DmzRewards.formatWhole(level)
                     + " §7is enough (needs §e" + DmzRewards.formatWhole(required) + "§7).");
             send(player, "§7Current prestige amount will be §6" + (held + 1) + "§7/§f" + MAX_HELD + ".");
+            if (goD) {
+                send(player, "§c" + PrestigeUniverseRoleWarn.GOD_OF_DESTRUCTION);
+            }
+            if (kai) {
+                send(player, "§c" + PrestigeUniverseRoleWarn.SUPREME_KAI);
+            }
             send(player, "§7Click again within 10 seconds.");
             MutableComponent row = Component.m_237113_("§7")
                     .m_7220_(btn("§a[Confirm Prestige]", "/prestige do confirm", "Complete prestige"))
@@ -223,7 +242,7 @@ public final class PrestigeSystem {
             send(player, row);
             send(player, LmChat.DIVIDER);
         }
-        return summary;
+        return summary.toString();
     }
 
     private static String replyCap(ServerPlayer player, int held) {
