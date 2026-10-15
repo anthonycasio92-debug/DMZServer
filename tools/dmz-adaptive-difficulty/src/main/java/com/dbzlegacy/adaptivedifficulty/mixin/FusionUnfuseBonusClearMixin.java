@@ -24,18 +24,27 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * <p>DMZ 2.1.3 {@code FusionStatusHandler} has no {@code endFusion}. Its tick
  * handler, and {@code ForgeCommonEvents.endFusionIfNeeded}, both call
  * {@code FusionLogic.endFusion}. That method writes {@code FusionBonus} on fuse
- * via {@code addBonusSplit} and, on unfuse, calls {@code removeAllBonuses} only
- * for the leader, and only when that leader's stats are online. The partner is
- * never cleared. {@code clearFusionState} then drops the partner UUID, so the
- * tail has to use the id captured at the head.
+ * via {@code addBonusSplit} and, on unfuse, calls {@code removeAllBonuses("FusionBonus")}
+ * on the leader only, and only when that leader's stats are online.
+ * {@code removeAllBonuses} already walks every stat list and drops an exact name,
+ * including rows written by {@code addBonusSplit}. The partner is never cleared,
+ * and a fusion-zenkai name is not equal to {@code FusionBonus}.
+ * {@code clearFusionState} then drops the partner UUID, so the tail has to use
+ * the id captured at the head.
+ *
+ * <p>{@code clearAllSplit(String)} is not a name wipe. Its argument is a stat
+ * id: {@code RES} clears the DEF and STM columns, and any other argument
+ * calls {@code clearAll} on that stat. {@code clearAllSplit("FusionBonus")}
+ * looks up a stat named {@code FUSIONBONUS} and removes nothing.
+ * {@code clearBonus} matches with {@code String.contains} and can delete a
+ * racial key. This mixin does not call those methods.
  *
  * <p>Removal uses {@code removeAllBonuses} and {@code removeBonusSplit}, which
  * match the bonus name with {@code String.equals}. Racial keys
  * {@code Zenkai_}, {@code Assimilation_}, and {@code Absorption_} are never
- * passed to those methods. The contains-match wipe behind {@code /dmzracial}
- * is not used here. A name that contains both "fusion" and "zenkai" and is
- * not one of those racial prefixes is a fusion-scoped zenkai and is removed
- * by its exact name.
+ * passed to those methods. A name that contains both "fusion" and "zenkai"
+ * and is not one of those racial prefixes is a fusion-scoped zenkai and is
+ * removed by its exact name.
  *
  * <p>The class is named as a string so mixin config does not load
  * {@code FusionLogic} while the config is applied. {@link FusionBonusReadGateMixin}

@@ -2434,6 +2434,7 @@ def main() -> int:
           and "ASSIMILATION_PREFIX = \"Assimilation_\"" in fusion_clear
           and "ABSORPTION_PREFIX = \"Absorption_\"" in fusion_clear
           and "racialKey(name)" in fusion_clear
+          and ".clearAllSplit(" not in fusion_clear
           and "clearBonusSplit" not in fusion_clear
           and "clearBonus(" not in fusion_clear
           and "clearAll(" not in fusion_clear)
