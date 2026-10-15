@@ -807,17 +807,7 @@ public class LmDynamicScreen extends UltraScreen {
      * Staff inspect sends {@code uuid:<id>} on {@code playerModel.subject} or {@code parts.subject}.
      */
     static String previewSubjectToken(JsonObject model, JsonObject parts) {
-        String top = str(model, "subject", "");
-        if (top != null && !top.isBlank()) {
-            return top.trim();
-        }
-        if (parts != null) {
-            String nested = str(parts, "subject", "");
-            if (nested != null && !nested.isBlank()) {
-                return nested.trim();
-            }
-        }
-        return "local";
+        return InspectPreviewSubjects.token(model, parts);
     }
 
     private LivingEntity previewEntity(Minecraft mc, JsonObject model, JsonObject parts) {
