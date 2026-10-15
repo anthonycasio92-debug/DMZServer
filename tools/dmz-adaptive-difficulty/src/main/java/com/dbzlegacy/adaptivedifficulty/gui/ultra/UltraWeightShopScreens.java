@@ -86,7 +86,7 @@ public final class UltraWeightShopScreens {
                         .labelValue("Ancient Coins", AncientCoinEconomy.inventoryBreakdown(player))
                         .labelValue("Max value", String.valueOf(MAX_WEIGHT_VALUE))
                         .line(UltraStyle.DIM + "Pick a type, type the weight value, then confirm.")
-                        .setRow(UltraStyle.CONTENT_ROW + UltraStyle.BODY_MIN_H);
+                        .buttonsAfterLines();
         for (WeightOffer offer : WeightOffer.values()) {
             spec.button(
                             "page:weights_input:" + offer.id,
@@ -115,8 +115,7 @@ public final class UltraWeightShopScreens {
                                                 player, AncientCoinEconomy.CoinKind.COPPER)))
                         .labelValue("Ancient Coins", AncientCoinEconomy.inventoryBreakdown(player))
                         .labelValue("Price", "1 copper per weight value")
-                        .labelValue("Max value", String.valueOf(MAX_WEIGHT_VALUE))
-                        .setRow(UltraStyle.CONTENT_ROW + UltraStyle.BODY_MIN_H);
+                        .labelValue("Max value", String.valueOf(MAX_WEIGHT_VALUE));
 
         if (!UltraClientFeatures.hasTextInput(player)) {
             spec.line(UltraStyle.danger("Typed weight entry needs a newer KaiPath client."))
@@ -124,13 +123,15 @@ public final class UltraWeightShopScreens {
                             UltraStyle.DIM
                                     + "Install KaiPath 1.3.9 or newer to type weight values. "
                                     + "Until then this shop cannot take a typed value.");
+            spec.buttonsAfterLines();
             spec.footerBack("page:weights", "Weights shop");
             spec.send(player);
             return;
         }
 
-        spec.line(UltraStyle.LABEL + "Type how much weight value you want (1-" + MAX_WEIGHT_VALUE + ").")
-                .textField(
+        spec.line(UltraStyle.LABEL + "Type how much weight value you want (1-" + MAX_WEIGHT_VALUE + ").");
+        spec.buttonsAfterLines();
+        spec.textField(
                         INPUT_ID,
                         "",
                         "e.g. 500000",
@@ -171,11 +172,13 @@ public final class UltraWeightShopScreens {
                                 String.valueOf(
                                         AncientCoinEconomy.countOf(
                                                 player, AncientCoinEconomy.CoinKind.COPPER)))
-                        .labelValue("Ancient Coins", AncientCoinEconomy.inventoryBreakdown(player))
-                        .setRow(UltraStyle.CONTENT_ROW + UltraStyle.BODY_MIN_H);
+                        .labelValue("Ancient Coins", AncientCoinEconomy.inventoryBreakdown(player));
         if (!free && !AncientCoinEconomy.canAfford(player, cost)) {
-            spec.line(UltraStyle.danger(AncientCoinEconomy.missingText(player, cost)))
-                    .button(
+            spec.line(UltraStyle.danger(AncientCoinEconomy.missingText(player, cost)));
+        }
+        spec.buttonsAfterLines();
+        if (!free && !AncientCoinEconomy.canAfford(player, cost)) {
+            spec.button(
                             "page:weights_input:" + offer.id,
                             UltraStyle.dim("Change value"),
                             UltraStyle.STYLE_DIM)

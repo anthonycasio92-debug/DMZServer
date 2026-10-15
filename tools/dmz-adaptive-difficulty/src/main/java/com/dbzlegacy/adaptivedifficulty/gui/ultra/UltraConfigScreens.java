@@ -531,7 +531,7 @@ public final class UltraConfigScreens {
                 shown++;
             }
         }
-        spec.setRow(UltraStyle.CONTENT_ROW + UltraStyle.BODY_MIN_H);
+        spec.buttonsAfterLines();
         // Stack Confirm above Discard - side-by-side is a misclick wipe risk.
         spec.button("do:save_all", UltraStyle.confirm("Confirm save"), "confirm").rowGap();
         spec.button("do:discard_all", UltraStyle.danger("Discard all"), "danger").rowGap();

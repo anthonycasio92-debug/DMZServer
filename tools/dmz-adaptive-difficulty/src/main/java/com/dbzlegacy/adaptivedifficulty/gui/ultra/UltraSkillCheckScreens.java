@@ -71,10 +71,8 @@ public final class UltraSkillCheckScreens {
         if (staffAdmin) {
             spec.line(UltraStyle.DIM + "Staff: /skills - Donators: /skillcheck");
         }
-        // Dense list - body grows with line count; keep footer tight under content.
-        int lineCount = 1 + (lines == null ? 0 : lines.size()) + (staffAdmin ? 1 : 0);
-        int bodyH = Math.min(UltraStyle.BODY_MIN_H, 24 + lineCount * (UltraStyle.LINE_H + 2));
-        spec.setRow(UltraStyle.CONTENT_ROW + Math.max(80, bodyH));
+        // Dense list - band follows wired line count; extra skills scroll.
+        spec.buttonsAfterLines();
         spec.footerBackToMain();
         spec.send(player);
     }

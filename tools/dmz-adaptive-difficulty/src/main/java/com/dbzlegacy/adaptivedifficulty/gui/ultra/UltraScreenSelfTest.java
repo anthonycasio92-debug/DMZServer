@@ -3,6 +3,10 @@ package com.dbzlegacy.adaptivedifficulty.gui.ultra;
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.net.gui.GuiOpenPacket;
 import com.dbzlegacy.adaptivedifficulty.net.gui.LmGuiNetwork;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -653,6 +657,137 @@ public final class UltraScreenSelfTest {
         } else {
             AdaptiveDifficultyMod.LOGGER.warn(
                     "[{}] Ultra hub shim self-check issues: {}", AdaptiveDifficultyMod.MOD_ID, issues);
+        }
+    }
+
+    /**
+     * Body copy must end at or above the first content button. A minimum body height that
+     * ignores that boundary paints text through the buttons; leftover lines scroll.
+     */
+    public static void verifyBodyCap() {
+        List<String> broken = new ArrayList<>();
+        checkBodyCap(
+                broken,
+                "rival-high-buttons",
+                UltraScreenSpec.of("rival")
+                        .title("Rivals")
+                        .page("actions")
+                        .activeTab("actions")
+                        .tabs("home|Home", "actions|Actions", "challenge|Challenge")
+                        .line("Your rivals.")
+                        .line("Pending invites: 1")
+                        .setRow(UltraStyle.CONTENT_ROW_TABS + 70)
+                        .button("page:pick_rival", "Pick player", "normal")
+                        .toPacket(),
+                false);
+        checkBodyCap(
+                broken,
+                "progression-absolute-row",
+                UltraScreenSpec.of("progression")
+                        .title("Progression")
+                        .page("boosts")
+                        .activeTab("boosts")
+                        .tabs("home|Home", "boosts|Boosts", "coins|Coins")
+                        .line("Global TP boost: Off")
+                        .line("Presets start a boost")
+                        .setRow(100)
+                        .button("do:boost:end", "End boost", "danger")
+                        .toPacket(),
+                false);
+        UltraScreenSpec counted =
+                UltraScreenSpec.of("spar")
+                        .title("Spar")
+                        .page("main")
+                        .activeTab("home")
+                        .tabs("home|Home", "dojo|Dojo")
+                        .line("Hall of Infamy, your stats, and weights.");
+        int before = counted.row();
+        counted.buttonsAfterLines();
+        if (counted.row() < before + 80) {
+            broken.add(
+                    "buttonsAfterLines row="
+                            + counted.row()
+                            + " expected at least "
+                            + (before + 80));
+        }
+        checkBodyCap(
+                broken,
+                "buttons-after-lines",
+                counted.button("page:stats", "Your stats", "normal").toPacket(),
+                false);
+
+        UltraScreenSpec packed =
+                UltraScreenSpec.of("difficulty")
+                        .title("Difficulty")
+                        .page("main")
+                        .activeTab("home")
+                        .tabs("home|Home", "tiers|Tiers");
+        for (int i = 0; i < 20; i++) {
+            packed.line("Body line " + i + " stays in the scroll region.");
+        }
+        packed.setRow(UltraStyle.CONTENT_ROW_TABS + 70);
+        for (int i = 0; i < 10; i++) {
+            packed.button("page:pack" + i, "Row " + i, "normal").rowGap();
+        }
+        GuiOpenPacket packedPacket = packed.toPacket();
+        checkBodyCap(broken, "packed-buttons-scroll", packedPacket, true);
+        JsonObject packedLayout =
+                JsonParser.parseString(packedPacket.layoutJson()).getAsJsonObject();
+        int packedBody = packedLayout.get("bodyMaxHeight").getAsInt();
+        if (packedBody >= UltraStyle.BODY_MIN_H) {
+            broken.add(
+                    "packed-buttons-scroll: bodyMaxHeight="
+                            + packedBody
+                            + " still floored at the minimum body height");
+        }
+
+        if (broken.isEmpty()) {
+            AdaptiveDifficultyMod.LOGGER.info(
+                    "[{}] Ultra body cap self-check OK", AdaptiveDifficultyMod.MOD_ID);
+        } else {
+            AdaptiveDifficultyMod.LOGGER.error(
+                    "[{}] Ultra body cap self-check FAILED: {}", AdaptiveDifficultyMod.MOD_ID, broken);
+            throw new IllegalStateException(
+                    "LegacyMechanics Ultra body cap self-check failed: " + broken);
+        }
+    }
+
+    private static void checkBodyCap(
+            List<String> broken, String name, GuiOpenPacket packet, boolean expectScroll) {
+        if (packet == null || packet.layoutJson() == null || packet.buttonsJson() == null) {
+            broken.add(name + ": missing packet");
+            return;
+        }
+        JsonObject layout = JsonParser.parseString(packet.layoutJson()).getAsJsonObject();
+        int bodyTop = layout.get("bodyTop").getAsInt();
+        int bodyMax = layout.get("bodyMaxHeight").getAsInt();
+        boolean scroll = layout.get("scrollBody").getAsBoolean();
+        int minButton = Integer.MAX_VALUE;
+        JsonArray buttons = JsonParser.parseString(packet.buttonsJson()).getAsJsonArray();
+        for (JsonElement el : buttons) {
+            if (el == null || !el.isJsonObject()) {
+                continue;
+            }
+            JsonObject button = el.getAsJsonObject();
+            if (button.has("footer") && button.get("footer").getAsBoolean()) {
+                continue;
+            }
+            int y = button.get("y").getAsInt();
+            if (y < bodyTop) {
+                continue;
+            }
+            minButton = Math.min(minButton, y);
+        }
+        if (minButton != Integer.MAX_VALUE && bodyTop + bodyMax > minButton) {
+            broken.add(
+                    name
+                            + ": body ends at "
+                            + (bodyTop + bodyMax)
+                            + " over button y="
+                            + minButton);
+        }
+        if (expectScroll && !scroll) {
+            broken.add(name + ": expected scrollBody");
         }
     }
 }

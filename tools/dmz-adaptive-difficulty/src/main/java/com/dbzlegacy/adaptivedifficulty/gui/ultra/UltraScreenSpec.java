@@ -417,6 +417,23 @@ public final class UltraScreenSpec {
         return this;
     }
 
+    /**
+     * Park the next control row under the body copy.
+     *
+     * <p>Same estimate Skill Check uses: 24px of pad plus one step per wired line
+     * ({@link UltraStyle#LINE_H} + 2), capped at {@link UltraStyle#BODY_MIN_H}, with an
+     * 80px minimum band so a short screen still clears the header. Lines past that cap
+     * scroll. Tabbed screens start at {@link UltraStyle#CONTENT_ROW_TABS}; others at
+     * {@link UltraStyle#CONTENT_ROW}. Call after every {@link #line} and before the first
+     * button so the row follows the text that will actually be drawn.
+     */
+    public UltraScreenSpec buttonsAfterLines() {
+        int origin = tabs.isEmpty() ? UltraStyle.CONTENT_ROW : UltraStyle.CONTENT_ROW_TABS;
+        int lineCount = lines.size();
+        int bodyH = Math.min(UltraStyle.BODY_MIN_H, 24 + lineCount * (UltraStyle.LINE_H + 2));
+        return setRow(origin + Math.max(80, bodyH));
+    }
+
     public int row() {
         return nextRow;
     }
@@ -683,15 +700,9 @@ public final class UltraScreenSpec {
                 effectiveButtonTop < 0
                         ? bodyFloor
                         : Math.min(effectiveButtonTop - UltraStyle.BTN_GAP, bodyFloor);
-        int bodyMaxH;
-        if (naturalBodyH <= 0) {
-            bodyMaxH = Math.max(0, bodyBottom - bodyTop);
-        } else {
-            bodyMaxH =
-                    Math.max(
-                            UltraStyle.BODY_MIN_H,
-                            Math.max(lineStep + bodyPad * 2, bodyBottom - bodyTop));
-        }
+        // Painted viewport is the room above the first button (after buttonShift).
+        // Extra lines set scrollBody instead of painting through that row.
+        int bodyMaxH = Math.max(0, bodyBottom - bodyTop);
         boolean scrollBody =
                 naturalBodyH > bodyMaxH || contentBottom + buttonShift > UltraStyle.PANEL_MAX_H;
 

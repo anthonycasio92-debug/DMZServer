@@ -109,7 +109,7 @@ public final class UltraRivalScreens {
                 .labelValue(
                         "Mutual slots",
                         ph.getOrDefault("mutual", "0") + "/" + ph.getOrDefault("mutual_max", "0"))
-                .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
+                .buttonsAfterLines();
         UltraPickHelper.placePageButtons(
                 spec, "top|Leaderboard", "records|Records", "settings|Settings");
         if (StaffAccess.isStaff(player)) {
@@ -123,16 +123,19 @@ public final class UltraRivalScreens {
         Map<String, String> ph = RivalGuiApi.placeholders(player);
         UltraScreenSpec spec = base("actions", "actions")
                 .line(UltraStyle.LABEL + "Your rivals. Pick a player, then choose Silent, Declare, or Accept.")
-                .labelValue("Pending invites", ph.getOrDefault("pending_invites", "0"))
-                .setRow(UltraStyle.CONTENT_ROW_TABS + 70);
+                .labelValue("Pending invites", ph.getOrDefault("pending_invites", "0"));
+        boolean needsMutualSlot = RivalGuiApi.needsMutualReplacePick(player);
+        String pendingPlain = "them";
+        if (needsMutualSlot) {
+            String pending = RivalGuiApi.pendingMutualAcceptName(player);
+            pendingPlain = pending == null || pending.isBlank() ? "them" : UltraStyle.plain(pending);
+            spec.line(UltraStyle.LABEL + "Free a Mutual slot to accept " + pendingPlain);
+        }
+        spec.buttonsAfterLines();
         placeRivalListButtons(spec, player);
         placeIncomingDeclareButtons(spec, player);
         UltraPickHelper.placePageButtons(spec, "pick_rival|Pick player");
-        if (RivalGuiApi.needsMutualReplacePick(player)) {
-            String pending = RivalGuiApi.pendingMutualAcceptName(player);
-            String pendingPlain =
-                    pending == null || pending.isBlank() ? "them" : UltraStyle.plain(pending);
-            spec.line(UltraStyle.LABEL + "Free a Mutual slot to accept " + pendingPlain);
+        if (needsMutualSlot) {
             spec.button(
                             "page:pick_replace_mutual",
                             UltraStyle.danger("Drop Mutual"),
@@ -266,7 +269,7 @@ public final class UltraRivalScreens {
                         + (incoming
                                 ? "They already declared you - Accept becomes Mutual."
                                 : "Silent is private. Declare sends an invite for Mutual."))
-                .setRow(UltraStyle.CONTENT_ROW + 100);
+                .buttonsAfterLines();
         spec.button("do:silent:" + arg, UltraStyle.confirm("Silent (private)"), "confirm")
                 .rowGap();
         if (incoming) {
@@ -302,7 +305,7 @@ public final class UltraRivalScreens {
                 spec.line(line);
             }
         }
-        spec.setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
+        spec.buttonsAfterLines();
         placePerChallengeButtons(spec, player);
         // 3) Challenge actions, then Spectate with Stop spectate on the same row.
         UltraPickHelper.placePageButtons(
@@ -372,7 +375,7 @@ public final class UltraRivalScreens {
                 spec.line(line);
             }
         }
-        spec.setRow(UltraStyle.CONTENT_ROW + UltraStyle.BODY_MIN_H);
+        spec.buttonsAfterLines();
         List<String> args = RivalGuiApi.currentRivalArgs(player);
         int placed = 0;
         if (args != null) {
@@ -411,7 +414,7 @@ public final class UltraRivalScreens {
                 .line(UltraStyle.LABEL + "Rival profile")
                 .labelValue("Target", who == null || who.isBlank() ? "-" : who)
                 .notice("Removing a rival cannot be undone from this menu.")
-                .setRow(UltraStyle.CONTENT_ROW + 100);
+                .buttonsAfterLines();
         if (arg != null && !arg.isBlank()) {
             spec.buttonLeft("do:remove:" + arg, UltraStyle.danger("Remove rival"), "danger")
                     .rowGap();
@@ -427,7 +430,7 @@ public final class UltraRivalScreens {
                 spec.line(line);
             }
         }
-        spec.setRow(UltraStyle.CONTENT_ROW + UltraStyle.BODY_MIN_H);
+        spec.buttonsAfterLines();
         spec.footerBackHome("Rival Home");
         spec.send(player);
     }
@@ -453,7 +456,7 @@ public final class UltraRivalScreens {
                 }
             }
         }
-        spec.setRow(UltraStyle.CONTENT_ROW + UltraStyle.BODY_MIN_H);
+        spec.buttonsAfterLines();
         UltraPickHelper.placePageButtons(
                 spec,
                 "records:history|History",
@@ -485,7 +488,7 @@ public final class UltraRivalScreens {
                 }
             }
         }
-        spec.setRow(UltraStyle.CONTENT_ROW + UltraStyle.BODY_MIN_H);
+        spec.buttonsAfterLines();
         List<String> incoming = RivalGuiApi.pendingIncomingDeclareArgs(player);
         int placed = 0;
         if (incoming != null) {
@@ -518,7 +521,7 @@ public final class UltraRivalScreens {
                 .line(UltraStyle.LABEL + "Rival chat and instinct toggles.")
                 .labelValue("TP chat", tpOn ? "ON" : "OFF")
                 .labelValue("Instinct", instinctOn ? "ON" : "OFF")
-                .setRow(UltraStyle.CONTENT_ROW + 80);
+                .buttonsAfterLines();
         spec.buttonLeft(
                         "do:tpmsg:toggle",
                         tpOn ? UltraStyle.confirm("TP chat - ON") : UltraStyle.dim("TP chat - OFF"),
@@ -557,7 +560,7 @@ public final class UltraRivalScreens {
                 .line(UltraStyle.LABEL + heading)
                 .line(UltraStyle.DIM + pickExplainer(doAction))
                 .labelValue("Players", total + (pages > 1 ? (" | page " + (pg + 1) + "/" + pages) : ""))
-                .setRow(UltraStyle.CONTENT_ROW + 70);
+                .buttonsAfterLines();
         int placed = 0;
         for (int i = from; i < to; i++) {
             String arg = args.get(i);
@@ -632,7 +635,7 @@ public final class UltraRivalScreens {
         UltraScreenSpec spec = sub("challenge_time:" + target)
                 .line(UltraStyle.LABEL + "Challenge length")
                 .labelValue("Rival", who == null || who.isBlank() ? "-" : who)
-                .setRow(UltraStyle.CONTENT_ROW + 80);
+                .buttonsAfterLines();
         if (target != null && !target.isBlank()) {
             for (int min = 1; min <= 10; min += 2) {
                 spec.buttonLeft(
@@ -659,7 +662,7 @@ public final class UltraRivalScreens {
                 .line(UltraStyle.LABEL + "They already declared you")
                 .labelValue("Player", plain)
                 .notice("Accept mutual rivalry with " + plain + " instead of sending another declare?")
-                .setRow(UltraStyle.CONTENT_ROW + 100);
+                .buttonsAfterLines();
         if (arg != null && !arg.isBlank()) {
             spec.button("do:accept:" + arg, UltraStyle.confirm("Accept mutual rivalry"), "confirm")
                     .rowGap();
@@ -675,7 +678,7 @@ public final class UltraRivalScreens {
                 .line(UltraStyle.LABEL + "Drop a Mutual to accept " + pendingPlain)
                 .notice("Mutual slots are full. Pick who to demote to Declared so you can accept "
                         + pendingPlain + ".")
-                .setRow(UltraStyle.CONTENT_ROW + 80);
+                .buttonsAfterLines();
         List<String> choices = labeledArgs(player, RivalGuiApi.mutualRivalArgs(player));
         // Navigate to confirm — do not accept_replace immediately.
         int placed = 0;
@@ -724,7 +727,7 @@ public final class UltraRivalScreens {
                 .labelValue("Accept", pendingPlain)
                 .labelValue("Demote", dropPlain)
                 .notice("This will demote " + dropPlain + " from Mutual to Declared. Continue?")
-                .setRow(UltraStyle.CONTENT_ROW + 100);
+                .buttonsAfterLines();
         // Stack Continue above Cancel — side-by-side is a misclick demotion risk.
         if (dropArg != null && !dropArg.isBlank()) {
             spec.button(
@@ -755,7 +758,7 @@ public final class UltraRivalScreens {
         }
         UltraScreenSpec spec = sub("admin")
                 .line(UltraStyle.LABEL + "Staff rival tools")
-                .setRow(UltraStyle.CONTENT_ROW + 80);
+                .buttonsAfterLines();
         spec.buttonLeft("do:admin:save", UltraStyle.confirm("Save data"), "confirm")
                 .buttonRight("do:admin:refresh", UltraStyle.confirm("Reload data"), "confirm")
                 .rowGap();
