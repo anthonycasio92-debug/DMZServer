@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.gui.ultra;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
+import com.dbzlegacy.adaptivedifficulty.config.editor.ConfigEditor;
 import com.dbzlegacy.adaptivedifficulty.net.gui.GuiOpenPacket;
 import com.dbzlegacy.adaptivedifficulty.net.gui.LmGuiNetwork;
 import com.google.gson.JsonArray;
@@ -589,6 +590,43 @@ public final class UltraScreenSelfTest {
             if (!buttons.contains(mark + "8Spar")) {
                 broken.add("spar confirm label must use dark gray ink");
             }
+        }
+        if (!"End Dimension Strength".equals(ConfigEditor.staffLabel("enableEndDimensionStrength"))) {
+            broken.add("config label must read End Dimension Strength, not the raw field id");
+        }
+        String endDesc = ConfigEditor.friendlyDescription(
+                "difficulty", "enableEndDimensionStrength", "true");
+        if (endDesc == null
+                || endDesc.isBlank()
+                || endDesc.contains("enableEndDimensionStrength")
+                || endDesc.startsWith("Turns ")) {
+            broken.add("config description must say what End Dimension Strength does");
+        }
+        if (!"The End".equals(ConfigEditor.sectionTitle("difficulty", "enableEndDimensionStrength"))) {
+            broken.add("enableEndDimensionStrength must be grouped under The End");
+        }
+        boolean sawBoss = false;
+        boolean sawScale = false;
+        boolean sawSpawn = false;
+        for (ConfigEditor.SectionLink link : ConfigEditor.sections("difficulty")) {
+            if (link == null || link.title() == null) {
+                continue;
+            }
+            if ("Boss Behavior".equals(link.title())) {
+                sawBoss = true;
+            }
+            if ("Player Scaling".equals(link.title())) {
+                sawScale = true;
+            }
+            if ("Mob Spawning".equals(link.title())) {
+                sawSpawn = true;
+            }
+        }
+        if (!sawBoss || !sawScale || !sawSpawn) {
+            broken.add("difficulty config must group Boss Behavior, Player Scaling, and Mob Spawning");
+        }
+        if (!"ON".equals(ConfigEditor.defaultShown("difficulty", "enableEndDimensionStrength"))) {
+            broken.add("End Dimension Strength must show its default as ON");
         }
         List<GuiOpenPacket> charPkts =
                 UltraScreenSpec.captureSends(() -> probeBuilder("character"));

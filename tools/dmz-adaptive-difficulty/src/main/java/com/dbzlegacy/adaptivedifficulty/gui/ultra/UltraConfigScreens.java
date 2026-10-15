@@ -13,10 +13,11 @@ import java.util.UUID;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Staff config editor — search-first functional layout.
+ * Staff config editor.
  *
- * <p>Left category rail + pinned search + inline setting controls + pinned Save / Reload /
- * Discard band. Edits stay in memory until Save all (existing {@link ConfigEditor} drafts).
+ * <p>Left category rail, search, and sections such as {@code Difficulty > Mob Spawning}.
+ * Each field shows a plain label, a one-line description, and the current value next to
+ * the default. Edits stay in memory until Review changes, then Confirm save.
  * Rival/spar record files stay closed.
  */
 public final class UltraConfigScreens {
@@ -109,6 +110,20 @@ public final class UltraConfigScreens {
         String query = ConfigEditor.search(uuid);
         boolean searching = query != null && !query.isBlank();
         String groupPath = path == null ? "" : path;
+        String where = categoryLabel(module, tab);
+
+        boolean sectionMode = !searching && ConfigEditor.isSectionPath(groupPath);
+        boolean nestedGroup = !searching && !sectionMode && !groupPath.isBlank();
+        boolean showIndex = !searching && !sectionMode && !nestedGroup;
+        List<ConfigEditor.SectionLink> sections =
+                showIndex ? ConfigEditor.sections(module) : List.of();
+        if (showIndex && sections.size() == 1) {
+            groupPath = sections.get(0).openPath();
+            sectionMode = ConfigEditor.isSectionPath(groupPath);
+            nestedGroup = !sectionMode && !groupPath.isBlank();
+            showIndex = false;
+            sections = List.of();
+        }
 
         List<Row> rows = new ArrayList<>();
         if (searching) {
@@ -118,20 +133,28 @@ public final class UltraConfigScreens {
                 }
                 rows.add(new Row(hit.moduleId(), hit.moduleLabel(), hit.entry(), true));
             }
-        } else if (tab != null) {
-            for (ConfigEditor.Entry entry : ConfigEditor.visibleFields(module, groupPath, "")) {
-                if (entry == null) {
-                    continue;
+        } else if (sectionMode && tab != null) {
+            String section = groupPath.substring(ConfigEditor.SECTION_PREFIX.length());
+            for (ConfigEditor.Entry entry : ConfigEditor.fieldsInSection(module, section)) {
+                if (entry != null) {
+                    rows.add(new Row(module, where, entry, false));
                 }
-                rows.add(new Row(module, tab.label(), entry, false));
+            }
+        } else if (nestedGroup && tab != null) {
+            for (ConfigEditor.Entry entry : ConfigEditor.visibleFields(module, groupPath, "")) {
+                if (entry != null) {
+                    rows.add(new Row(module, where, entry, false));
+                }
             }
         }
 
         int pages = rows.isEmpty() ? 1 : (rows.size() + PAGE_SIZE - 1) / PAGE_SIZE;
-        int current = Math.min(Math.max(0, pageNumber), Math.max(0, pages - 1));
+        int current = showIndex ? 0 : Math.min(Math.max(0, pageNumber), Math.max(0, pages - 1));
         int from = current * PAGE_SIZE;
         int to = Math.min(rows.size(), from + PAGE_SIZE);
         int dirty = ConfigEditor.dirtyCount(uuid);
+        String crumb = breadcrumb(where, groupPath, searching);
+        ConfigEditor.rememberEditorPage(uuid, editPage(module, current, groupPath));
 
         UltraScreenSpec spec = UltraScreenSpec.of("config")
                 .title("Config Editor")
@@ -140,28 +163,24 @@ public final class UltraConfigScreens {
                 .lineGap(2)
                 .bodyPad(4)
                 .labelValue("Unsaved", String.valueOf(dirty));
-        if (searching) {
-            spec.labelValue("Search", shortVal(query));
-        } else if (tab != null) {
-            spec.labelValue("Category", tab.label());
-            if (!groupPath.isBlank()) {
-                spec.labelValue("Group", ConfigEditor.displayName(leaf(groupPath)));
-            }
-        }
         // Header copy lives in the body band. Category rail is chrome (left) so it does not
         // clamp body packing. Search + settings use main-column flow (label above control).
         int railTop = UltraStyle.CONTENT_ROW;
         placeCategoryRail(spec, module, searching, railTop);
         int mainTop = UltraStyle.CONTENT_ROW;
         placeSearchRow(spec, player, query, mainTop);
+        flowLabel(spec, crumb);
         if (tab != null && !tab.editable() && !searching) {
             flowLabel(spec, "This category is closed - player records are not edited here.");
         }
         if (!searching && !groupPath.isBlank()) {
-            String parent = ConfigEditor.parentPath(groupPath);
+            String parent = ConfigEditor.isSectionPath(groupPath)
+                    ? ""
+                    : ConfigEditor.parentPath(groupPath);
+            String upLabel = ConfigEditor.isSectionPath(groupPath) ? "All sections" : "Up one group";
             spec.button(
                             "page:" + editPage(module, 0, parent),
-                            UltraStyle.dim("Up one group"),
+                            UltraStyle.dim(upLabel),
                             UltraStyle.STYLE_DIM,
                             MAIN_X,
                             spec.row(),
@@ -169,14 +188,33 @@ public final class UltraConfigScreens {
                     .rowGap();
         }
 
-        if (from >= to) {
+        if (showIndex) {
+            if (sections.isEmpty()) {
+                flowLabel(spec, "No settings in this category.");
+            }
+            for (ConfigEditor.SectionLink section : sections) {
+                if (section == null) {
+                    continue;
+                }
+                String count = section.count() == 1 ? "1 setting" : section.count() + " settings";
+                spec.button(
+                                "page:" + editPage(module, 0, section.openPath()),
+                                UltraStyle.LABEL + clipWords(section.title() + " (" + count + ")", FLOW_CHARS),
+                                UltraStyle.STYLE_NORMAL,
+                                MAIN_X,
+                                spec.row(),
+                                MAIN_W)
+                        .rowGap();
+            }
+        } else if (from >= to) {
             flowLabel(
                     spec,
-                    searching ? "No settings match that search." : "No settings in this category.");
+                    searching ? "No settings match that search." : "No settings in this section.");
         }
-        for (int i = from; i < to; i++) {
-            Row row = rows.get(i);
-            appendSetting(spec, player, uuid, row);
+        if (!showIndex) {
+            for (int i = from; i < to; i++) {
+                appendSetting(spec, player, uuid, rows.get(i));
+            }
         }
 
         if (current > 0) {
@@ -251,8 +289,8 @@ public final class UltraConfigScreens {
     private static void placeActionFooter(UltraScreenSpec spec) {
         // Pinned action band above nav footer — stacked for small UI (no side-by-side squeeze).
         spec.button(
-                        "do:save_all",
-                        UltraStyle.confirm("Save all"),
+                        "page:review",
+                        UltraStyle.confirm("Review changes"),
                         UltraStyle.STYLE_CONFIRM,
                         MAIN_X,
                         spec.row(),
@@ -294,23 +332,50 @@ public final class UltraConfigScreens {
                 .rowGap(LABEL_CTRL_GAP);
     }
 
+    /** Up to three flow rows so a one-line description is not cut off mid-sentence. */
+    private static void flowText(UltraScreenSpec spec, String text) {
+        if (spec == null || text == null || text.isBlank()) {
+            return;
+        }
+        String rest = UltraStyle.plain(text).trim();
+        for (int i = 0; i < 3 && !rest.isEmpty(); i++) {
+            if (rest.length() <= FLOW_CHARS) {
+                flowLabel(spec, rest);
+                return;
+            }
+            String cut = rest.substring(0, FLOW_CHARS);
+            int sp = cut.lastIndexOf(' ');
+            int at = sp >= FLOW_CHARS / 2 ? sp : FLOW_CHARS;
+            flowLabel(spec, rest.substring(0, at).trim());
+            rest = rest.substring(at).trim();
+        }
+    }
+
     private static void appendSetting(
             UltraScreenSpec spec, ServerPlayer player, UUID uuid, Row row) {
         ConfigEditor.Entry entry = row.entry();
         String module = row.moduleId();
         String path = entry.path();
         boolean dirty = ConfigEditor.dirty(uuid, module, path);
-        String name = ConfigEditor.displayName(leaf(path));
+        String name = ConfigEditor.staffLabel(path);
         String raw = ConfigEditor.effectiveRaw(uuid, module, path);
         String value = ConfigEditor.shownValue(uuid, module, path);
         String desc = ConfigEditor.friendlyDescription(module, path, raw == null ? "" : raw);
-        String crumb = row.searchHit() ? (row.moduleLabel() + " > " + name) : name;
+        String section = ConfigEditor.sectionTitle(module, path);
+        String crumb = row.searchHit()
+                ? row.moduleLabel() + " > " + (section.isBlank() || section.equalsIgnoreCase(name)
+                        ? name
+                        : section + " > " + name)
+                : name;
         String mark = dirty ? "* " : "";
         // Label on top, control below — flow rows, never body lines mixed with absolute buttons.
-        flowLabel(spec, mark + crumb);
-        String shortD = shortDesc(desc);
-        if (shortD != null && !shortD.isBlank() && !shortD.equals("-")) {
-            flowLabel(spec, shortD);
+        flowText(spec, mark + crumb);
+        flowText(spec, desc);
+        String now = value == null ? "" : value;
+        String def = ConfigEditor.defaultShown(module, path);
+        flowLabel(spec, "Now: " + clipWords(now, 28));
+        if (def != null && !def.isBlank() && !"group".equalsIgnoreCase(def)) {
+            flowLabel(spec, "Default: " + clipWords(def, 24));
         }
         String invalid = ConfigEditor.invalidMessage(uuid, module, path);
         if (invalid != null && !invalid.isBlank()) {
@@ -513,30 +578,76 @@ public final class UltraConfigScreens {
 
     private static void openReview(ServerPlayer player) {
         List<ConfigEditor.PendingChange> pending = ConfigEditor.pendingChanges(player.m_20148_());
+        int count = pending == null ? 0 : pending.size();
         UltraScreenSpec spec = UltraScreenSpec.of("config")
-                .title("Config - Review")
+                .title("Review changes")
                 .page("review")
                 .panel(PANEL_W, UltraStyle.PANEL_MAX_H)
-                .labelValue("Pending", String.valueOf(pending == null ? 0 : pending.size()));
-        if (pending == null || pending.isEmpty()) {
+                .labelValue("Pending", String.valueOf(count));
+        if (count == 0) {
             spec.line(UltraStyle.dim("No unsaved changes."));
+            spec.line(UltraStyle.DIM + "Nothing is written until you confirm a change.");
         } else {
+            spec.line(UltraStyle.LABEL + "These edits are not saved yet.");
+            spec.line(UltraStyle.DIM + "Confirm save writes them. Discard throws them away.");
             int shown = 0;
             for (ConfigEditor.PendingChange change : pending) {
-                if (shown >= 12 || change == null) {
+                if (change == null) {
                     continue;
                 }
-                spec.line(UltraStyle.LABEL + change.name() + " " + UltraStyle.DIM + change.before()
-                        + " -> " + UltraStyle.VALUE + change.after());
+                if (shown >= 12) {
+                    break;
+                }
+                spec.line(UltraStyle.LABEL + change.name());
+                spec.line(UltraStyle.DIM + "Now " + prettyRaw(change.before())
+                        + " -> " + UltraStyle.VALUE + prettyRaw(change.after()));
                 shown++;
+            }
+            if (count > shown) {
+                spec.line(UltraStyle.DIM + "And " + (count - shown) + " more.");
             }
         }
         spec.buttonsAfterLines();
         // Stack Confirm above Discard - side-by-side is a misclick wipe risk.
         spec.button("do:save_all", UltraStyle.confirm("Confirm save"), "confirm").rowGap();
         spec.button("do:discard_all", UltraStyle.danger("Discard all"), "danger").rowGap();
-        spec.footerBack("page:edit:difficulty:0:", "Config Editor");
+        spec.footerBack("page:" + ConfigEditor.editorPage(player.m_20148_()), "Config Editor");
         spec.send(player);
+    }
+
+    private static String prettyRaw(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return "empty";
+        }
+        if ("true".equalsIgnoreCase(raw)) {
+            return "ON";
+        }
+        if ("false".equalsIgnoreCase(raw)) {
+            return "OFF";
+        }
+        return raw;
+    }
+
+    private static String categoryLabel(String module, ConfigEditor.EditorTab tab) {
+        for (String[] cat : CATEGORIES) {
+            if (cat[0].equalsIgnoreCase(module)) {
+                return cat[1];
+            }
+        }
+        return tab == null ? module : tab.label();
+    }
+
+    private static String breadcrumb(String category, String groupPath, boolean searching) {
+        if (searching) {
+            return "Search";
+        }
+        if (groupPath == null || groupPath.isBlank()) {
+            return category;
+        }
+        if (ConfigEditor.isSectionPath(groupPath)) {
+            return category + " > " + groupPath.substring(ConfigEditor.SECTION_PREFIX.length());
+        }
+        return category + " > " + ConfigEditor.staffLabel(groupPath);
     }
 
     /**
@@ -770,27 +881,12 @@ public final class UltraConfigScreens {
         }
     }
 
-    private static String leaf(String path) {
-        if (path == null || path.isBlank()) {
-            return "";
-        }
-        int dot = path.lastIndexOf('.');
-        return dot < 0 ? path : path.substring(dot + 1);
-    }
-
     private static String shortVal(String value) {
         if (value == null || value.isBlank()) {
             return "-";
         }
         String plain = UltraStyle.plain(value);
         return clipWords(plain, 16);
-    }
-
-    private static String shortDesc(String value) {
-        if (value == null || value.isBlank()) {
-            return "";
-        }
-        return clipWords(UltraStyle.plain(value), FLOW_CHARS);
     }
 
     /** Keep the longest leading words that fit {@code max} glyphs. No ellipsis. */
