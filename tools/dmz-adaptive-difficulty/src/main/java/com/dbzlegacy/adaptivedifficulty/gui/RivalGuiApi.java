@@ -2,6 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.gui;
 
 import com.dbzlegacy.adaptivedifficulty.calc.LmOverhaulScaledCombat;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
+import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalChallengeManager;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalConstants;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalInstinct;
@@ -163,18 +164,19 @@ public final class RivalGuiApi {
 
     public static List<String> challengeLines(ServerPlayer player) {
         List<String> lines = new ArrayList<>();
-        lines.add("§7Timed fights against a rival. Challenge deaths can raise Nemesis.");
+        lines.add(UltraStyle.LABEL
+                + "Timed fights against a rival. Challenge deaths can raise Nemesis.");
         if (player != null && RivalChallengeManager.get().isInChallenge(player.m_20148_())) {
-            lines.add("§eYou are in an active challenge.");
+            lines.add(UltraStyle.NOTICE_BODY + "You are in an active challenge.");
         } else {
-            lines.add("§7No active fight right now.");
+            lines.add(UltraStyle.LABEL + "No active fight right now.");
         }
         int pending = pendingChallengeCards(player).size();
         if (pending > 0) {
-            lines.add("§e" + pending + " pending challenge request"
+            lines.add(UltraStyle.YELLOW + pending + " pending challenge request"
                     + (pending == 1 ? "" : "s") + " below.");
         } else {
-            lines.add("§7No pending challenge requests.");
+            lines.add(UltraStyle.LABEL + "No pending challenge requests.");
         }
         return lines;
     }
@@ -213,7 +215,8 @@ public final class RivalGuiApi {
             if (shown == null || shown.isBlank()) {
                 shown = name;
             }
-            shown = shown.replace('\u00A7', ' ').trim();
+            // Strip section-sign color codes from picker display names.
+            shown = UltraStyle.plain(shown);
             if (!shown.isBlank() && !names.contains(shown)) {
                 names.add(shown);
             }
@@ -224,7 +227,7 @@ public final class RivalGuiApi {
             if (me != null && me.nemesisUuid != null && !me.nemesisUuid.isBlank()) {
                 String shown = displayPickerArg(player, "uuid:" + me.nemesisUuid.trim());
                 if (shown != null && !shown.isBlank()) {
-                    names.add(shown.replace('\u00A7', ' ').trim());
+                    names.add(UltraStyle.plain(shown));
                 }
             }
         }
@@ -248,7 +251,7 @@ public final class RivalGuiApi {
         if (cards.isEmpty()) {
             return lines;
         }
-        lines.add("§ePending challenges");
+        lines.add(UltraStyle.YELLOW + "Pending challenges");
         for (String card : cards) {
             String[] p = card.split("\t", -1);
             if (p.length < 3) {
@@ -260,9 +263,13 @@ public final class RivalGuiApi {
             String mins = p.length > 5 && p[5] != null && !p[5].isBlank() ? p[5] : "-";
             String onlineWord = online ? "online" : "offline";
             if ("IN".equalsIgnoreCase(dir)) {
-                lines.add("§aIncoming §f" + name + " §8- §f" + mins + " min §8(" + onlineWord + ")");
+                lines.add(UltraStyle.GREEN + "Incoming " + UltraStyle.WHITE + name
+                        + UltraStyle.DIM + " - " + UltraStyle.WHITE + mins + " min "
+                        + UltraStyle.DIM + "(" + onlineWord + ")");
             } else {
-                lines.add("§6Outgoing §f" + name + " §8- §f" + mins + " min §8(" + onlineWord + ")");
+                lines.add(UltraStyle.GOLD + "Outgoing " + UltraStyle.WHITE + name
+                        + UltraStyle.DIM + " - " + UltraStyle.WHITE + mins + " min "
+                        + UltraStyle.DIM + "(" + onlineWord + ")");
             }
         }
         return lines;
