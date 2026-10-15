@@ -50,7 +50,7 @@ Generic, not DMZ-only. One preview combines the base entity, optional `parts.hea
 
 ### `icon`
 
-Optional item id (`minecraft:iron_sword`) or texture path (`modid:path/to/texture.png`) on a button or tab. KaiPath **1.3.22** advertises `icon` and resolves it with `UltraBridgeIcon`. Unknown or blank ids are ignored and the control still works. LM emits per-system icons and treats a missing advertisement as `missingShipped=icon`.
+Optional item id (`minecraft:iron_sword`) or texture path (`modid:path/to/texture.png`) on a button or tab. KaiPath **1.3.22** advertises `icon` and resolves it with `UltraBridgeIcon`. Unknown or blank ids are ignored and the control still works. LM leaves `icon` blank (system menus are not vanilla items, and no custom gear textures ship). A client that does not advertise `icon` is `missingShipped=icon`.
 
 ### Partner discovery
 

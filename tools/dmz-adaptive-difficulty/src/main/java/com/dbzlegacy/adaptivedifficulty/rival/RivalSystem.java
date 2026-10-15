@@ -171,7 +171,7 @@ public final class RivalSystem {
                         + "§e. §8Waiting for them to Accept Mutual (Pending).";
             }
             return "§eAlready Declared with §f" + them.name
-                    + "§e. §8For Mutual: Actions → Pending → Accept.";
+                    + "§e. §8For Mutual: Rival tab → Accept.";
         }
         // Already one-sided silent.
         if (myLink.declaredByMe && !myLink.declaredByThem) {
@@ -264,7 +264,7 @@ public final class RivalSystem {
         store.markDirty();
 
         DmzRewards.msg(target, LmChat.tagged("Rival", "§e" + me.name + " §7visibly declared you as a rival!"));
-        DmzRewards.msg(target, LmChat.tip("/rival", "→ Actions → Review requests"));
+        DmzRewards.msg(target, LmChat.tip("/rival", "→ Rival"));
         return "§aDeclared §f" + them.name + "§a. §8They appear on your list as Declared;"
                 + " they were notified (Pending)." + declaredNote;
     }
@@ -688,9 +688,9 @@ public final class RivalSystem {
     public static List<String> emptyRivalListGuide() {
         List<String> lines = new ArrayList<>();
         lines.add("§7You do not have any rivals on your list yet.");
-        lines.add("§7From the main Rival menu, open §fActions §7→ §fDeclare… §7and choose a player.");
+        lines.add("§7From the Rival menu, open the §fRival §7tab and pick a player.");
         lines.add("§7When you both accept, they appear here for duels, rival TP, and progress.");
-        lines.add("§8Silent rivals and declare invites live on other pages — check Actions → Declare invites.");
+        lines.add("§8Silent rivals and declare invites are on that same Rival tab.");
         return lines;
     }
 
@@ -1196,7 +1196,7 @@ public final class RivalSystem {
         DmzRewards.msg(target, LmChat.card(
                 "Rival Declared",
                 "/rival",
-                "→ Actions → Pending → Accept Mutual",
+                "→ Rival → Accept Mutual",
                 "§7Rival   §e" + me.name,
                 "§8You both silently rivaled each other.",
                 "§8Both must Accept to become Mutual."));

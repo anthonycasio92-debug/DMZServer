@@ -76,7 +76,7 @@ public final class RivalChatMenu {
         MutableComponent row1 = Component.m_237113_("§7")
                 .m_7220_(btn("§6[List]", "/rival do page list", "Current rivals"))
                 .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§a[Actions]", "/rival do page actions", "Declare · silent · invites · remove"))
+                .m_7220_(btn("§a[Rival]", "/rival do page actions", "Rival list · pick a player"))
                 .m_7220_(Component.m_237113_("  "))
                 .m_7220_(btn("§c[Challenge]", "/rival do page challenge", "Challenge controls"))
                 .m_7220_(Component.m_237113_("  "))

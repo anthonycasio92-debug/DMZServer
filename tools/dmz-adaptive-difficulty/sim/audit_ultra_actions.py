@@ -893,6 +893,11 @@ def main() -> int:
                 errors.append(
                     "UltraScreenSpec.footerBackToMain must not place a left Back button"
                 )
+    place_footer = spec_text.split("private UltraScreenSpec placeFooter", 1)
+    if len(place_footer) < 2 or "STYLE_NORMAL" not in place_footer[1].split("private void addFooterButton", 1)[0]:
+        errors.append("Main menu footer button must use STYLE_NORMAL so it does not look disabled")
+    if len(place_footer) < 2 or "STYLE_DIM" not in place_footer[1].split("private void addFooterButton", 1)[0]:
+        errors.append("Back footer button must stay STYLE_DIM")
 
     # Tabs are hub-style buttons under the title line; tabsJson stays empty for every screen.
     self_test_path = ULTRA / "UltraScreenSelfTest.java"
@@ -1106,8 +1111,10 @@ def main() -> int:
         errors.append("UltraSparScreens.openHome Staff Admin must be danger/red")
     if "admin|Staff Admin" in spar_home_body:
         errors.append("UltraSparScreens.openHome must not use the default Staff Admin button")
-    if "settings|Chat settings" not in spar_home_body:
-        errors.append("UltraSparScreens.openHome must offer Chat settings")
+    if "settings|TP Chat" not in spar_home_body:
+        errors.append("UltraSparScreens.openHome must offer TP Chat")
+    if "settings|Chat settings" in spar_home_body:
+        errors.append("UltraSparScreens.openHome must not label TP Chat as Chat settings")
     if "fight_report:" not in spar_home and "recentFightCards" not in spar_home:
         errors.append("UltraSparScreens must offer clickable fight reports from stats")
     if "Last three fights" not in spar_home:
@@ -1120,10 +1127,18 @@ def main() -> int:
         re.S | re.M,
     )
     wars_body = wars_m.group(0) if wars_m else ""
-    if "dojoHallOfFameLines" not in wars_body:
-        errors.append("UltraSparScreens.openWars must include Hall of Chosen season lines")
-    if "dojo_war_hof|Hall of Chosen" in spar_home or "openWarsHof" in spar_home:
-        errors.append("UltraSparScreens must not keep a separate Hall of Chosen page")
+    if "dojoHallOfFameLines" in wars_body:
+        errors.append("UltraSparScreens.openWars must not bury Hall of Chosen in the wars body")
+    if "dojo_hof|Hall of Chosen" not in wars_body or "dojo_top_rp|Top dojos" not in wars_body:
+        errors.append("UltraSparScreens.openWars must offer Hall of Chosen beside Top dojos")
+    hof_m = re.search(
+        r"private static void openHallOfChosen\b.*?^\s*private static void ",
+        spar_home,
+        re.S | re.M,
+    )
+    hof_body = hof_m.group(0) if hof_m else ""
+    if "dojoHallOfFameLines" not in hof_body:
+        errors.append("UltraSparScreens.openHallOfChosen must show Hall of Chosen season lines")
     dojo_m = re.search(
         r"private static void openDojo\b.*?^\s*private static void ",
         spar_home,
@@ -1236,9 +1251,26 @@ def main() -> int:
         errors.append(
             "UltraRivalScreens must confirm Accept their declare (not silent Declare→Accept)"
         )
-    # Home is status-only (RP/tier/nemesis/mutual); Silent/Declare/Accept live on Actions pick→type.
-    if "nemesisNames" not in home_body or "mutualNames" not in home_body:
-        errors.append("UltraRivalScreens.openHome must show Nemesis and Mutual names")
+    # Home is navigation. Standing (RP/tier/nemesis/mutual) is the Info tab.
+    # Silent/Declare/Accept live on the Rival tab (page id actions) via pick→type.
+    info_m = re.search(
+        r"private static void openInfo\b.*?^\s*private static void ",
+        rival,
+        re.S | re.M,
+    )
+    info_body = info_m.group(0) if info_m else ""
+    if "nemesisNames" not in info_body or "mutualNames" not in info_body:
+        errors.append("UltraRivalScreens.openInfo must show Nemesis and Mutual names")
+    if "nemesisNames" in home_body or "mutualNames" in home_body:
+        errors.append("UltraRivalScreens.openHome must not keep rival info (Info tab)")
+    if "settings|TP Chat" not in home_body:
+        errors.append("UltraRivalScreens.openHome settings button must read TP Chat")
+    if "settings|Settings" in home_body:
+        errors.append("UltraRivalScreens.openHome must not label TP Chat as Settings")
+    if '"actions|Rival"' not in rival or '"info|Info"' not in rival:
+        errors.append("UltraRivalScreens tabs must be Home, Rival, Challenge, and Info")
+    if '"actions|Actions"' in rival:
+        errors.append("UltraRivalScreens must not keep the Actions tab label")
     if "Wins" in home_body or "Losses" in home_body:
         errors.append("UltraRivalScreens.openHome must not show Wins/Losses (Challenge tab)")
     if "Tiers: Silent" in home_body or "Nemesis rises from challenge deaths" in home_body:
