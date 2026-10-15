@@ -417,6 +417,7 @@ merge_onto_base_jar() {
         DendeResetAbsorptionWipeMixin \
         CreateCharacterAbsorptionWipeMixin \
         FusionBonusReadGateMixin \
+        FusionUnfuseBonusClearMixin \
         LegacyMechanicsMixinPlugin; do
       if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/mixin/${mixin_cls}.class" ]]; then
         cp "$OUT/com/dbzlegacy/adaptivedifficulty/mixin/${mixin_cls}.class" \

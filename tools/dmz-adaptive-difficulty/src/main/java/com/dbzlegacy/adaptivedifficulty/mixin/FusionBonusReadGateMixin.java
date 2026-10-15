@@ -17,7 +17,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * Unfuse does not always delete that key. While {@link com.dragonminez.common.stats.character.Status#isFused()}
  * is false, reads pretend the key is absent. A name that contains both
  * "fusion" and "zenkai" is the same kind of leftover. Racial {@code Zenkai_}
- * bonuses are left alone. The unfuse mixin still deletes the key when it can.
+ * bonuses are left alone. {@link FusionUnfuseBonusClearMixin} deletes the key
+ * on unfuse. This gate only hides a key that delete did not reach.
  */
 @Mixin(value = BonusStats.class, remap = false)
 public abstract class FusionBonusReadGateMixin {
