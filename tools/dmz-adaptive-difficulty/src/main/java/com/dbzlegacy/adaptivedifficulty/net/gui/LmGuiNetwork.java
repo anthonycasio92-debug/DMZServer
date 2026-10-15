@@ -187,7 +187,7 @@ public final class LmGuiNetwork {
                         + featureSummary)
                 .line(com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle.DIM
                         + "Ping=confirm (green). Active tab should highlight home.")
-                .setRow(80)
+                .buttonsAfterLines()
                 .button(
                         "do:guitest_ack",
                         com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle.confirm("Ping server"),
@@ -279,6 +279,7 @@ public final class LmGuiNetwork {
         UltraScreenSelfTest.verifyHubShim();
         UltraScreenSelfTest.verifyMenuLinks();
         UltraScreenSelfTest.verifyStaffGate();
+        UltraScreenSelfTest.verifyBodyCap();
         runPacketRoundTripSelfTest();
         AdaptiveDifficultyMod.LOGGER.info(
                 "[{}] Ultra GUI bridge ready channel={} protocol={} — KaiPath {}+ dynamic UI "

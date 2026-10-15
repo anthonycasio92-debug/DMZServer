@@ -49,7 +49,7 @@ public final class UltraProgressionScreens {
                 .line(UltraStyle.LABEL + "Training boosts, Ancient Coins, and staff tools")
                 .line(ProgressionGuiApi.statusText())
                 .line(UltraStyle.LABEL + "Open the Boosts or Coins tab for controls.")
-                .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
+                .buttonsAfterLines();
         spec.footerBackToMain();
         spec.send(player);
     }
@@ -59,7 +59,7 @@ public final class UltraProgressionScreens {
         UltraScreenSpec spec = base("boosts", "boosts")
                 .line(ph.getOrDefault("boost", UltraStyle.LABEL + "Global TP boost: Off"))
                 .line(UltraStyle.DIM + "Presets start a boost " + UltraStyle.SEP + " End stops it")
-                .setRow(100);
+                .buttonsAfterLines();
         spec.buttonLeft(
                         "do:boost:1.25:30",
                         UltraStyle.confirm(UltraStyle.boostPreset("1.25", "30")),
@@ -95,7 +95,7 @@ public final class UltraProgressionScreens {
         for (String line : ProgressionGuiApi.linesForPage(player, "economy")) {
             spec.line(line);
         }
-        spec.setRow(120);
+        spec.buttonsAfterLines();
         String toggle = staffFree
                 ? UltraStyle.confirm("Staff free costs " + UltraStyle.SEP + " ON")
                 : UltraStyle.dim("Staff free costs " + UltraStyle.SEP + " OFF");

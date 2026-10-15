@@ -271,6 +271,37 @@ def main() -> int:
         errors.append(
             "UltraScreenSpec must grow panel toward PANEL_MAX_H and shift buttons for dense body text"
         )
+    body_block = ""
+    if "int bodyMaxH" in spec_text_full and "boolean scrollBody" in spec_text_full:
+        body_block = spec_text_full.split("int bodyMaxH", 1)[1].split("boolean scrollBody", 1)[0]
+    if "BODY_MIN_H" in body_block or "bodyBottom - bodyTop" not in body_block:
+        errors.append(
+            "UltraScreenSpec bodyMaxH must cap at the button boundary "
+            "(bodyBottom - bodyTop), not a minimum body height"
+        )
+    if "buttonsAfterLines" not in spec_text_full or "24 + lineCount" not in spec_text_full:
+        errors.append(
+            "UltraScreenSpec must place button rows from line count (buttonsAfterLines)"
+        )
+    for screen_name in (
+        "UltraCharacterScreens.java",
+        "UltraDifficultyScreens.java",
+        "UltraPrestigeScreens.java",
+        "UltraRivalScreens.java",
+        "UltraSparScreens.java",
+        "UltraProgressionScreens.java",
+        "UltraWeightShopScreens.java",
+        "UltraSkillCheckScreens.java",
+    ):
+        screen_text = (ULTRA / screen_name).read_text(encoding="utf-8")
+        if "buttonsAfterLines" not in screen_text:
+            errors.append(f"{screen_name} must place buttons with buttonsAfterLines")
+        if (
+            "setRow(UltraStyle." in screen_text
+            or ".setRow(100)" in screen_text
+            or "setRow(120)" in screen_text
+        ):
+            errors.append(f"{screen_name} must not hardcode body setRow offsets")
     if 'titleAlign' not in spec_text_full or "TITLE_ALIGN" not in spec_text_full:
         errors.append("UltraScreenSpec must emit layoutJson.titleAlign from UltraStyle.TITLE_ALIGN")
     if "textField" not in spec_text_full or "inputsJson" not in PACKET.read_text(encoding="utf-8"):

@@ -109,8 +109,12 @@ public final class UltraCharacterScreens {
         boolean monkeyFormModel = "true".equals(ph.get("head_bones_form_model_blocked"));
         UltraScreenSpec spec = base(player, "main", "home", true)
                 .labelValue("Race", ph.getOrDefault("current_race", "-"))
-                .labelValue("Class", ph.getOrDefault("current_class", "-"))
-                .setRow(UltraStyle.CONTENT_ROW_TABS + 90);
+                .labelValue("Class", ph.getOrDefault("current_class", "-"));
+        if (monkeyFormModel) {
+            spec.line(UltraStyle.DIM
+                    + "Not available for Monkey - this race uses a form model.");
+        }
+        spec.buttonsAfterLines();
 
         if (canRace) {
             spec.buttonLeft("page:race:0", UltraStyle.confirm("Change race"), UltraStyle.STYLE_CONFIRM);
@@ -139,10 +143,6 @@ public final class UltraCharacterScreens {
             spec.buttonRight("page:reskin", UltraStyle.dim("Reskin"), UltraStyle.STYLE_DIM);
         }
         spec.rowGap();
-        if (monkeyFormModel) {
-            spec.line(UltraStyle.DIM
-                    + "Not available for Monkey - this race uses a form model.");
-        }
 
         spec.footerBackToMain();
         spec.send(player);
@@ -169,7 +169,7 @@ public final class UltraCharacterScreens {
                 .labelValue("Keep 0%", "Free");
         // Cost is on labelValue; body lines keep the keep-% note / skills / cooldown.
         appendCompactLines(spec, CharacterServicesGuiApi.linesForPage(player, "race"), 3, true);
-        spec.setRow(UltraStyle.CONTENT_ROW + 80);
+        spec.buttonsAfterLines();
         int placed = 0;
         for (int i = from; i < to; i++) {
             String card = cards.get(i);
@@ -281,7 +281,7 @@ public final class UltraCharacterScreens {
         // Cost/Keep are on labelValue; body keeps pricing note + carry-over + preview.
         appendCompactLines(
                 spec, CharacterServicesGuiApi.linesForPage(player, "race_confirm:" + confirmArg), 6, true);
-        spec.setRow(UltraStyle.CONTENT_ROW + 90);
+        spec.buttonsAfterLines();
         int[] keepSteps = CharacterServicesConfig.preservationSteps();
         int placed = 0;
         for (int keep : keepSteps) {
@@ -337,7 +337,7 @@ public final class UltraCharacterScreens {
                         "Classes",
                         total + (pages > 1 ? (" page " + (pg + 1) + "/" + pages) : ""));
         appendCompactLines(spec, CharacterServicesGuiApi.linesForPage(player, "class"), 3);
-        spec.setRow(UltraStyle.CONTENT_ROW + 80);
+        spec.buttonsAfterLines();
         int placed = 0;
         for (int i = from; i < to; i++) {
             String card = cards.get(i);
@@ -402,7 +402,7 @@ public final class UltraCharacterScreens {
                 .line(UltraStyle.LABEL + "Confirm class change");
         appendCompactLines(
                 spec, CharacterServicesGuiApi.linesForPage(player, "class_confirm:" + id), 4);
-        spec.setRow(UltraStyle.CONTENT_ROW + 90);
+        spec.buttonsAfterLines();
         spec.button(
                         "do:class_confirm:" + id,
                         UltraStyle.confirm("Confirm & pay"),
@@ -416,7 +416,7 @@ public final class UltraCharacterScreens {
         UltraScreenSpec spec = sub(player, "reskin", false)
                 .line(UltraStyle.LABEL + "Change hair, colors, and other cosmetics.");
         appendCompactLines(spec, CharacterServicesGuiApi.linesForPage(player, "reskin"), 4);
-        spec.setRow(UltraStyle.CONTENT_ROW + 80);
+        spec.buttonsAfterLines();
         spec.button("page:reskin_confirm", UltraStyle.confirm("Review cost"), UltraStyle.STYLE_CONFIRM)
                 .rowGap();
         spec.footerBackHome("Character Home");
@@ -429,15 +429,16 @@ public final class UltraCharacterScreens {
         appendCompactLines(spec, CharacterServicesGuiApi.linesForPage(player, "reskin_confirm"), 5);
         String pre = com.dbzlegacy.adaptivedifficulty.character.CharacterServicesSystem.reskinPrecheck(player);
         boolean ready = pre == null || pre.isBlank();
-        spec.setRow(UltraStyle.CONTENT_ROW + 90);
+        if (!ready) {
+            spec.line(UltraStyle.danger(UltraStyle.plain(pre)));
+        }
+        spec.buttonsAfterLines();
         if (ready) {
             spec.button(
                             "do:reskin_confirm",
                             UltraStyle.confirm("Confirm & pay"),
                             UltraStyle.STYLE_CONFIRM)
                     .rowGap();
-        } else {
-            spec.line(UltraStyle.danger(UltraStyle.plain(pre)));
         }
         spec.footerBack("page:reskin", "Reskin");
         spec.send(player);
@@ -449,7 +450,7 @@ public final class UltraCharacterScreens {
                     .line(UltraStyle.LABEL + "Model customization")
                     .line(UltraStyle.DIM
                             + "Not available for Monkey - this race uses a form model.")
-                    .setRow(UltraStyle.CONTENT_ROW + 80);
+                    .buttonsAfterLines();
             spec.footerBackHome("Character Home");
             spec.send(player);
             return;
@@ -464,7 +465,7 @@ public final class UltraCharacterScreens {
         UltraScreenSpec spec = sub(player, "bones:" + pg, true)
                 .labelValue(HeadPartPieces.pageTitle(pg), "On: " + UltraStyle.plain(worn));
         appendCompactLines(spec, CharacterServicesGuiApi.linesForPage(player, "bones:" + pg), 2);
-        spec.setRow(UltraStyle.CONTENT_ROW + 80);
+        spec.buttonsAfterLines();
         List<String> cards = CharacterServicesGuiApi.headBoneCards(player, pg);
         int placed = 0;
         for (String card : cards) {
@@ -563,7 +564,7 @@ public final class UltraCharacterScreens {
                 .notice("Clears that saga's progress. This cannot be undone.");
         if (!SagaResetConfig.get().enabled) {
             spec.line(UltraStyle.danger(SagaResetService.RESET_OFF))
-                    .setRow(UltraStyle.CONTENT_ROW_TABS + 80);
+                    .buttonsAfterLines();
             spec.footerBackToMain();
             spec.send(player);
             return;
@@ -571,7 +572,7 @@ public final class UltraCharacterScreens {
         if (total == 0) {
             spec.line(UltraStyle.dim("No sagas are loaded right now."));
         }
-        spec.setRow(UltraStyle.CONTENT_ROW_TABS + 90);
+        spec.buttonsAfterLines();
         int placed = 0;
         for (int i = from; i < to; i++) {
             Offer offer = offers.get(i);
@@ -633,19 +634,12 @@ public final class UltraCharacterScreens {
         Offer offer = SagaResetService.findOffer(player, sagaId);
         UltraScreenSpec spec = sub(player, "saga_confirm:" + sagaId, false);
         appendCompactLines(spec, SagaResetService.confirmLines(player, sagaId), 6);
-        spec.setRow(UltraStyle.CONTENT_ROW + 90);
         boolean ready = offer != null
                 && offer.resettable()
                 && SagaResetConfig.get().enabled
                 && offer.id() != null
                 && !offer.id().isBlank();
-        if (ready) {
-            spec.button(
-                            "do:saga_reset:" + offer.id(),
-                            UltraStyle.danger("Confirm reset"),
-                            UltraStyle.STYLE_DANGER)
-                    .rowGap();
-        } else {
+        if (!ready) {
             String why = offer == null
                     ? SagaResetService.NOT_LOADED
                     : offer.status() == SagaResetService.Status.LOCKED
@@ -655,6 +649,14 @@ public final class UltraCharacterScreens {
                                     : SagaResetService.RESET_OFF;
             spec.line(UltraStyle.danger(why));
         }
+        spec.buttonsAfterLines();
+        if (ready) {
+            spec.button(
+                            "do:saga_reset:" + offer.id(),
+                            UltraStyle.danger("Confirm reset"),
+                            UltraStyle.STYLE_DANGER)
+                    .rowGap();
+        }
         spec.footerBack("tab:saga", "Saga list");
         spec.send(player);
     }
@@ -663,7 +665,7 @@ public final class UltraCharacterScreens {
         UltraScreenSpec spec = base(player, UltraStyle.PAGE_ANDROID_REMOVE, "android", false)
                 .line(UltraStyle.LABEL + "Remove Android forms and restore your previous look.")
                 .notice("Click again within 10 seconds. This cannot be undone.")
-                .setRow(UltraStyle.CONTENT_ROW_TABS + 80);
+                .buttonsAfterLines();
         spec.button(
                         "do:" + UltraStyle.PAGE_ANDROID_REMOVE,
                         UltraStyle.danger("Remove Android"),

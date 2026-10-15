@@ -118,7 +118,7 @@ public final class UltraPrestigeScreens {
                 spec.line(UltraStyle.dim("Need a higher level first."));
             }
         }
-        spec.setRow(UltraStyle.CONTENT_ROW_TABS + 90);
+        spec.buttonsAfterLines();
         spec.footerBackToMain();
         spec.send(player);
     }
@@ -132,7 +132,7 @@ public final class UltraPrestigeScreens {
         paintWallet(spec, ph);
         spec.line(UltraStyle.LABEL
                 + "Prestige favor - exchange current prestige on the Shop tab (loses the stat bonus).");
-        spec.setRow(UltraStyle.CONTENT_ROW_TABS + 100);
+        spec.buttonsAfterLines();
         boolean ready = "true".equalsIgnoreCase(ph.get("ready"));
         if (ready) {
             spec.button("page:confirm", UltraStyle.danger("Prestige now"), UltraStyle.STYLE_DANGER)
@@ -167,16 +167,17 @@ public final class UltraPrestigeScreens {
         if (PrestigeUniverseRoleWarn.isSupremeKai(player)) {
             spec.line(UltraStyle.danger(PrestigeUniverseRoleWarn.SUPREME_KAI));
         }
-        spec.setRow(UltraStyle.CONTENT_ROW + 110);
         boolean ready = "true".equalsIgnoreCase(ph.get("ready"));
+        if (!ready) {
+            spec.line(UltraStyle.danger("You need a higher level before you can prestige."));
+        }
+        spec.buttonsAfterLines();
         if (ready) {
             spec.button(
                             "do:confirm_now",
                             UltraStyle.danger("Confirm prestige"),
                             UltraStyle.STYLE_DANGER)
                     .rowGap();
-        } else {
-            spec.line(UltraStyle.danger("You need a higher level before you can prestige."));
         }
         spec.footerBack("page:turnin", "Prestige");
         spec.send(player);
@@ -190,7 +191,7 @@ public final class UltraPrestigeScreens {
                 .bodyPad(4);
         paintFavorBalance(spec, ph);
         spec.line(UltraStyle.LABEL + "Spend Prestige favor. Purchases survive prestige.")
-                .setRow(UltraStyle.CONTENT_ROW_TABS + 100);
+                .buttonsAfterLines();
         spec.button("page:exchange", UltraStyle.confirm("Exchange shop"), UltraStyle.STYLE_CONFIRM)
                 .rowGap();
         spec.button("page:skills", UltraStyle.confirm("Skill shop"), UltraStyle.STYLE_CONFIRM)
@@ -220,7 +221,7 @@ public final class UltraPrestigeScreens {
         spec.line(UltraStyle.danger(
                         "Exchanging prestige for Prestige favor removes the stat bonus."))
                 .line(UltraStyle.LABEL + "Bulk: 3 for 4 favor, 6 for 9, or 9 for 15.")
-                .setRow(UltraStyle.CONTENT_ROW + 100);
+                .buttonsAfterLines();
         int[] amounts = PrestigePointsSystem.TURN_IN_AMOUNTS;
         for (int i = 0; i < amounts.length; i += 2) {
             int a = amounts[i];
@@ -260,7 +261,7 @@ public final class UltraPrestigeScreens {
                 .bodyPad(4);
         paintFavorBalance(spec, ph);
         spec.line(UltraStyle.LABEL + "Skill levels - 1 favor each (Potential Unlock +2)")
-                .setRow(UltraStyle.CONTENT_ROW + 70);
+                .buttonsAfterLines();
         int placed = 0;
         for (String id : ids) {
             if (id == null || id.isBlank()) {
@@ -304,7 +305,7 @@ public final class UltraPrestigeScreens {
         paintFavorBalance(spec, ph);
         spec.line(UltraStyle.LABEL + "Difficulty tiers - buy in order, activate with coins.")
                 .labelValue("Highest owned", "T" + ph.getOrDefault("tier_highest_purchased", "0"))
-                .setRow(UltraStyle.CONTENT_ROW + 70);
+                .buttonsAfterLines();
         for (int t = 1; t <= 7; t++) {
             String label = ph.getOrDefault("tier_" + t + "_label", "T" + t);
             String cost = ph.getOrDefault("tier_" + t + "_cost", "?");
@@ -336,7 +337,7 @@ public final class UltraPrestigeScreens {
                 .bodyPad(4);
         paintFavorBalance(spec, ph);
         spec.line(UltraStyle.LABEL + "Majin / Mutant - " + formCost + " favor. One at a time.")
-                .setRow(UltraStyle.CONTENT_ROW + 80);
+                .buttonsAfterLines();
         if (majin) {
             spec.button(
                             "do:unmajin",
