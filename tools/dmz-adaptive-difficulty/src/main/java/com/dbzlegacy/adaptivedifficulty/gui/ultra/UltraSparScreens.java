@@ -12,7 +12,7 @@ import net.minecraft.server.level.ServerPlayer;
  * Sparring Ultra UI (Home / Dojo / Wars).
  * Home: Hall of Infamy, stats + last three fights, Weights, chat, staff.
  * Dojo: training-bond info, members (your dojo / mentor's dojo), Actions.
- * Wars: challenge, pending, top dojos, Hall of Chosen.
+ * Wars: challenge, pending, top dojos, and past-season Hall of Chosen lines.
  */
 public final class UltraSparScreens {
     private UltraSparScreens() {}
@@ -77,14 +77,13 @@ public final class UltraSparScreens {
             case "dojo", "roster" -> openDojo(player, "home");
             case "dojo_members", "dojo_members_own" -> openDojo(player, "members_own");
             case "dojo_members_joined" -> openDojo(player, "members_joined");
-            case "dojo_hof", "chosen", "hall_of_chosen" -> openWarsHof(player);
+            case "dojo_hof", "chosen", "hall_of_chosen", "dojo_war_hof" -> openWars(player);
             case "mentor", "actions" -> openMentor(player);
             case "pending", "invites" -> openPending(player);
             case "settings" -> openSettings(player);
             case "admin" -> openAdmin(player);
             case "wars", "dojo_war" -> openWars(player);
             case "dojo_war_pending" -> openDojoWarPending(player);
-            case "dojo_war_hof" -> openWarsHof(player);
             case "pick_apprentice" ->
                     openOnlinePick(player, "Invite apprentice", "mentor_invite", "pick_apprentice", "mentor");
             case "pick_mentor" ->
@@ -306,7 +305,7 @@ public final class UltraSparScreens {
     private static void openDojo(ServerPlayer player, String sub) {
         String key = sub == null || sub.isBlank() ? "home" : sub;
         if ("hof".equals(key)) {
-            openWarsHof(player);
+            openWars(player);
             return;
         }
         // Members is a sub-page with its own your-dojo / mentor's-dojo toggle.
@@ -575,40 +574,40 @@ public final class UltraSparScreens {
 
     private static void openWars(ServerPlayer player) {
         UltraScreenSpec spec = base("dojo_war", "wars");
-        for (String line : SparGuiApi.dojoWarLines(player)) {
-            if (line != null && !line.isBlank()) {
-                spec.line(line);
-            }
+        List<String> war = SparGuiApi.dojoWarLines(player);
+        appendBody(spec, war);
+        // Past seasons live on this tab. A separate Hall page repeated the same actions.
+        if (!disabledNotice(war)) {
+            appendBody(spec, SparGuiApi.dojoHallOfFameLines(player));
         }
         int warPending = SparGuiApi.pendingDojoWarCards(player).size();
         spec.setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
         UltraPickHelper.placePageButtons(
                 spec,
                 "pick_dojo_challenge|Challenge dojo",
-                "dojo_top_rp|Top dojos",
-                "dojo_war_hof|Hall of Chosen");
+                "dojo_top_rp|Top dojos");
         String pendingLabel = warPending > 0 ? "Requests (" + warPending + ")" : "Requests";
         spec.buttonLeft("page:dojo_war_pending", UltraStyle.confirm(pendingLabel), "confirm").rowGap();
         spec.footerBackToMain();
         spec.send(player);
     }
 
-    private static void openWarsHof(ServerPlayer player) {
-        UltraScreenSpec spec = base("dojo_war_hof", "wars")
-                .line(UltraStyle.LABEL + "Hall of Chosen - dojo war seasons");
-        for (String line : SparGuiApi.dojoHallOfFameLines(player)) {
+    private static void appendBody(UltraScreenSpec spec, List<String> lines) {
+        if (lines == null) {
+            return;
+        }
+        for (String line : lines) {
             if (line != null && !line.isBlank()) {
                 spec.line(line);
             }
         }
-        spec.setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
-        UltraPickHelper.placePageButtons(
-                spec,
-                "pick_dojo_challenge|Challenge dojo",
-                "dojo_top_rp|Top dojos",
-                "dojo_war_pending|Requests");
-        spec.footerBackToMain();
-        spec.send(player);
+    }
+
+    private static boolean disabledNotice(List<String> lines) {
+        return lines != null
+                && lines.size() == 1
+                && lines.get(0) != null
+                && lines.get(0).contains("Sparring system is disabled");
     }
 
     private static void openDojoWarPending(ServerPlayer player) {

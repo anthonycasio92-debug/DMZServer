@@ -957,8 +957,16 @@ def main() -> int:
         errors.append("UltraSparScreens stats must offer the last three fights submenu")
     if "Hall of Infamy" not in spar_home:
         errors.append("UltraSparScreens must expose Hall of Infamy (sparring HOF rename)")
-    if "dojo_war_hof|Hall of Chosen" not in spar_home:
-        errors.append("UltraSparScreens Wars must expose Hall of Chosen")
+    wars_m = re.search(
+        r"private static void openWars\b.*?^\s*private static void ",
+        spar_home,
+        re.S | re.M,
+    )
+    wars_body = wars_m.group(0) if wars_m else ""
+    if "dojoHallOfFameLines" not in wars_body:
+        errors.append("UltraSparScreens.openWars must include Hall of Chosen season lines")
+    if "dojo_war_hof|Hall of Chosen" in spar_home or "openWarsHof" in spar_home:
+        errors.append("UltraSparScreens must not keep a separate Hall of Chosen page")
     dojo_m = re.search(
         r"private static void openDojo\b.*?^\s*private static void ",
         spar_home,
