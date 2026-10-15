@@ -192,7 +192,7 @@ public final class UltraStyle {
         NOTICE_HEAD = HEADER;
         NOTICE_BODY = YELLOW;
         ACCENT_DIFFICULTY = RED;
-        ACCENT_RIVAL = DARK_PURPLE;
+        ACCENT_RIVAL = WHITE;
         ACCENT_SPAR = GOLD;
         ACCENT_PRESTIGE = AQUA;
         ACCENT_CHARACTER = GREEN;
