@@ -398,7 +398,7 @@ work; unknown sub-fields are ignored.
 | Field | Type | Required | Notes |
 |-------|------|----------|-------|
 | `schema` | number | yes | **`1`** for this document. Bump only on breaking shape changes. |
-| `subject` | string | yes | Who to draw. LM Character Services always sends **`local`** (the viewing player). Future: `uuid:<player-uuid>` for inspect. |
+| `subject` | string | yes | Who to draw. **`local`** is the viewing player. Staff inspect sends **`uuid:<player-uuid>`** from {@code AdminInspectSessions.resolveSubject} so the preview is the subject, not the staff viewer. |
 | `headBones` | object | no | Equipped DMZ `activeHeadBone` cosmetics. Omit when empty. |
 | `headBones.token` | string | yes* | Authoritative DMZ token (`+`-joined). Same string DMZ stores on the character. |
 | `headBones.pieces` | string[] | yes* | Atomic bone ids split from the token (stable shop order when known). Prefer this list when iterating geo bones. |
