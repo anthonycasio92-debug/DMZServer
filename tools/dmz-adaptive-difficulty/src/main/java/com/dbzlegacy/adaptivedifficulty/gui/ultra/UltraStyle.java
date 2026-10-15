@@ -193,7 +193,7 @@ public final class UltraStyle {
         NOTICE_BODY = YELLOW;
         ACCENT_DIFFICULTY = RED;
         ACCENT_RIVAL = WHITE;
-        ACCENT_SPAR = GOLD;
+        ACCENT_SPAR = DARK_RED;
         ACCENT_PRESTIGE = AQUA;
         ACCENT_CHARACTER = GREEN;
         ACCENT_SKILLCHECK = YELLOW;
@@ -571,7 +571,8 @@ public final class UltraStyle {
             // White, not dark purple. Purple on the gold header and yellow button face
             // does not read. Body copy on the dark panel may still use purple.
             case "rival" -> "f";
-            case "spar" -> "6";
+            // Dark red. Gold is the shared action-button color, so sparring uses its own combat accent.
+            case "spar" -> "4";
             case "prestige" -> "b";
             case "character" -> "a";
             case "skillcheck", "skills", "skillcheck_denied" -> "e";
