@@ -347,6 +347,16 @@ merge_onto_base_jar() {
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/util/StaffAccess.class" \
       "$merge/com/dbzlegacy/adaptivedifficulty/util/StaffAccess.class"
   fi
+  # Death, sparring hits, and TP awards call TpBossNotify. A base jar without it
+  # throws NoClassDefFoundError the first time those paths run.
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/util/TpBossNotify.class" ]]; then
+    mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/util"
+    rm -f "$merge/com/dbzlegacy/adaptivedifficulty/util/TpBossNotify\$"*.class
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/util/TpBossNotify.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/util/TpBossNotify.class"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/util/TpBossNotify\$"*.class \
+      "$merge/com/dbzlegacy/adaptivedifficulty/util/" 2>/dev/null || true
+  fi
   if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.class" ]]; then
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.class" \
       "$merge/com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.class"
@@ -484,6 +494,16 @@ merge_onto_base_jar() {
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/config/editor/ConfigEditor\$"*.class \
       "$merge/com/dbzlegacy/adaptivedifficulty/config/editor/" 2>/dev/null || true
   fi
+  # ConfigEditor.friendlyDescription / staffLabel call ConfigFieldHelp. Leaving it
+  # off the overlay throws NoClassDefFoundError when staff open the config editor.
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/config/editor/ConfigFieldHelp.class" ]]; then
+    mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/config/editor"
+    rm -f "$merge/com/dbzlegacy/adaptivedifficulty/config/editor/ConfigFieldHelp\$"*.class
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/config/editor/ConfigFieldHelp.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/config/editor/ConfigFieldHelp.class"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/config/editor/ConfigFieldHelp\$"*.class \
+      "$merge/com/dbzlegacy/adaptivedifficulty/config/editor/" 2>/dev/null || true
+  fi
   # Keep net/gui (Ultra channel). Strip client-only packages if a base jar ever had them.
   rm -rf "$merge/com/dbzlegacy/adaptivedifficulty/client"
   # Classes copied from this compile must ship their inner classes, and must
@@ -550,6 +570,18 @@ if ! jar tf "$JAR" | grep -q 'net/gui/LmGuiNetwork.class'; then
 fi
 if ! jar tf "$JAR" | grep -q 'gui/ultra/UltraGui.class'; then
   echo "ERROR: gui/ultra/UltraGui.class missing from $JAR" >&2
+  exit 1
+fi
+if ! jar tf "$JAR" | grep -q 'util/TpBossNotify.class'; then
+  echo "ERROR: util/TpBossNotify.class missing from $JAR (death/spar/TP notices crash)" >&2
+  exit 1
+fi
+if ! jar tf "$JAR" | grep -q 'util/TpBossNotify$Held.class'; then
+  echo "ERROR: util/TpBossNotify\$Held.class missing from $JAR" >&2
+  exit 1
+fi
+if ! jar tf "$JAR" | grep -q 'config/editor/ConfigFieldHelp.class'; then
+  echo "ERROR: config/editor/ConfigFieldHelp.class missing from $JAR (staff config editor crashes)" >&2
   exit 1
 fi
 if ! jar tf "$JAR" | grep -q 'META-INF/kaipath-ultra.txt'; then

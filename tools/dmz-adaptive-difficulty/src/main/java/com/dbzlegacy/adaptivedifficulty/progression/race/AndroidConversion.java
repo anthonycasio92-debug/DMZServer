@@ -4,6 +4,7 @@ import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.progression.DmzSkillUtil;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionConfig;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
+import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import com.dbzlegacy.adaptivedifficulty.util.LmChat;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
@@ -273,33 +274,34 @@ public final class AndroidConversion {
      */
     public static String removeConfirmed(ServerPlayer actor, ServerPlayer target) {
         if (!StaffAccess.isStaff(actor)) {
-            return "§cStaff only.";
+            return UltraStyle.DANGER + "Staff only.";
         }
         if (!ProgressionConfig.androidConversion()) {
-            return "§cAndroid tools are disabled. §7Staff: enable the android flag in /progression.";
+            return UltraStyle.DANGER + "Android tools are disabled. "
+                    + UltraStyle.GRAY + "Staff: enable the android flag in /progression.";
         }
         if (target == null) {
-            return "§cPlayer required.";
+            return UltraStyle.DANGER + "Player required.";
         }
         try {
             StatsData data = DmzProgression.stats(target);
             if (data == null) {
-                return "§c[Android] DragonMineZ data could not be loaded for §f"
-                        + target.m_7755_().getString() + "§c.";
+                return UltraStyle.DANGER + "[Android] DragonMineZ data could not be loaded for "
+                        + UltraStyle.WHITE + target.m_7755_().getString() + UltraStyle.DANGER + ".";
             }
             Status status = data.getStatus();
             if (status == null) {
-                return "§c[Android] Status could not be loaded.";
+                return UltraStyle.DANGER + "[Android] Status could not be loaded.";
             }
             if (!status.isAndroidUpgraded()) {
                 clearPending(actor.m_20148_());
-                return "§e[Android] §f" + target.m_7755_().getString()
-                        + " §7is not an upgraded Android.";
+                return UltraStyle.YELLOW + "[Android] " + UltraStyle.WHITE + target.m_7755_().getString()
+                        + " " + UltraStyle.GRAY + "is not an upgraded Android.";
             }
             clearPending(actor.m_20148_());
             return doRemove(target, data, false);
         } catch (Throwable t) {
-            return "§c[Android Remove Error] §f" + t;
+            return UltraStyle.DANGER + "[Android Remove Error] " + UltraStyle.WHITE + t;
         }
     }
 
