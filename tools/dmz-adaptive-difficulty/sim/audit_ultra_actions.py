@@ -1359,6 +1359,8 @@ def main() -> int:
     spec_fit = (ULTRA / "UltraScreenSpec.java").read_text(encoding="utf-8")
     if "clipPlain" not in spec_fit:
         errors.append("UltraScreenSpec must clipPlain before fitAsciiLabel so buttons do not grow ...")
+    if 'addProperty("portraitFrame"' in spec_fit:
+        errors.append("UltraScreenSpec must not emit playerModel.portraitFrame (no preview border)")
     rival_ui = (ULTRA / "UltraRivalScreens.java").read_text(encoding="utf-8")
     chal_m = re.search(
         r"private static void openChallenge\b.*?^\s*private static void ",

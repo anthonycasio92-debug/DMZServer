@@ -156,8 +156,8 @@ public final class UltraStyle {
      */
     public static final String PANEL_FRAME = "legacymechanics:panel";
     /**
-     * Player-model portrait frame enable token ({@code playerModel.portraitFrame}). Same
-     * enable rule as {@link #PANEL_FRAME}.
+     * Portrait frame enable token. <b>Not emitted</b> — a non-empty
+     * {@code playerModel.portraitFrame} draws a border around the character preview.
      */
     public static final String PORTRAIT_FRAME = "legacymechanics:portrait";
 

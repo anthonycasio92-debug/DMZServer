@@ -393,7 +393,7 @@ only requires a single Minecraft color code.
 | `width`, `height` | number | Bounds for the preview |
 | `scale` | number | Entity scale (default `1.0`) |
 | `rotate` | boolean | Slow turntable when `true` |
-| `portraitFrame` | string | Optional RL; non-empty valid RL enables preview frame chrome. LM emits `legacymechanics:portrait`. Advertised + honored on KaiPath **1.3.17**. |
+| `portraitFrame` | string | Optional RL; non-empty valid RL enables preview frame chrome. LM omits this so the model has no border. Advertised + honored on KaiPath **1.3.17**. |
 | `parts` | object | Optional cosmetics snapshot — see below |
 
 **Backward compatible:** clients that do not know `playerModel` ignore it; the rest of the

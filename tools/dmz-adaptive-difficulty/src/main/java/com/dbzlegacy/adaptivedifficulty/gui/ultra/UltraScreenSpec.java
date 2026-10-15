@@ -832,8 +832,7 @@ public final class UltraScreenSpec {
                     pm.add("subject", playerModel.parts.get("subject"));
                 }
             }
-            // Enable portrait chrome when the client honors portraitFrame (1.3.13+).
-            pm.addProperty("portraitFrame", UltraStyle.PORTRAIT_FRAME);
+            // Omit portraitFrame so the preview has no border. A non-empty id enables KaiPath chrome.
             layout.add("playerModel", pm);
         }
         return new GuiOpenPacket(

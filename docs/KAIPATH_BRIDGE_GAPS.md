@@ -61,7 +61,7 @@ A kit client that also advertises `icon` reports `pendingNext=none`. Omitting an
 | `buttonSkin` (`legacymechanics:button`) | Honors (RL → boolean skinned paint) | **Not emitted** — skinned path draws flat squares |
 | `layoutJson.frame` (`legacymechanics:panel`) | Honors (RL → boolean border) | **Emits** |
 | `inputsJson` `type=paged_book` (advertise `pagedBook`) | Honors (`BookWidget`) | **Emits** (Staff Admin help book) |
-| `playerModel.portraitFrame` | Honors + **advertised** | **Emits** when playerModel present |
+| `playerModel.portraitFrame` | Honors + **advertised** | **Omitted** — a non-empty id draws a preview border |
 | `layoutJson.palette` | Honors | Optional (accent already covers tint) |
 
 ## Pitfalls & traps (read before KaiPath release)
