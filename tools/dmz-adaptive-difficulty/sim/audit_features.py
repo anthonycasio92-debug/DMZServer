@@ -2412,13 +2412,31 @@ def main() -> int:
     check("fusion reset class is copied into the forge jar",
           "FusionCooldownReset" in read(ROOT / "tools/dmz-adaptive-difficulty/build.sh"))
 
-    print("\n=== Fusion unfuse bonus clear retired (read-gate only) ===")
+    print("\n=== Fusion unfuse deletes FusionBonus (read-gate stays) ===")
     fusion_mixins = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/resources/legacymechanics.mixins.json")
     fusion_clear_path = ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/FusionUnfuseBonusClearMixin.java"
-    check("FusionUnfuseBonusClearMixin removed (read-gate replaced unfuse cleanup)",
-          not fusion_clear_path.is_file()
-          and '"FusionUnfuseBonusClearMixin"' not in fusion_mixins
-          and "FusionUnfuseBonusClearMixin" not in build_sh)
+    fusion_clear = fusion_clear_path.read_text(encoding="utf-8") if fusion_clear_path.is_file() else ""
+    check("unfuse mixin deletes FusionBonus on FusionLogic.endFusion",
+          fusion_clear_path.is_file()
+          and '"FusionUnfuseBonusClearMixin"' in fusion_mixins
+          and "FusionUnfuseBonusClearMixin" in build_sh
+          and 'targets = "com.dragonminez.server.util.FusionLogic"' in fusion_clear
+          and 'method = "endFusion"' in fusion_clear
+          and fusion_clear.count('method = "endFusion"') >= 2
+          and '@At("HEAD")' in fusion_clear
+          and '@At("TAIL")' in fusion_clear
+          and "getFusionPartnerUUID" in fusion_clear
+          and "removeAllBonuses" in fusion_clear
+          and "removeBonusSplit" in fusion_clear
+          and "FusionBonusOwner.runRaw" in fusion_clear
+          and "StatsSyncS2C" in fusion_clear
+          and "ZENKAI_PREFIX = \"Zenkai_\"" in fusion_clear
+          and "ASSIMILATION_PREFIX = \"Assimilation_\"" in fusion_clear
+          and "ABSORPTION_PREFIX = \"Absorption_\"" in fusion_clear
+          and "racialKey(name)" in fusion_clear
+          and "clearBonusSplit" not in fusion_clear
+          and "clearBonus(" not in fusion_clear
+          and "clearAll(" not in fusion_clear)
     fusion_gate = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/FusionBonusReadGateMixin.java")
     check("fusion bonus is ignored on read when the player is not fused",
           "status.isFused()" in read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/progression/FusionBonusOwner.java")
