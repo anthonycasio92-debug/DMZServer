@@ -19,6 +19,9 @@ import net.minecraft.network.FriendlyByteBuf;
 public final class UltraGuiActionPacket {
     public static final int ACTION_ID_MAX = 192;
 
+    /** Typed text-field values from {@code inputsJson} bindInput / Enter submit. */
+    public static final int ARGS_JSON_MAX = 2048;
+
     private final String screenId;
     private final String actionId;
     private final String argsJson;
@@ -26,7 +29,7 @@ public final class UltraGuiActionPacket {
     public UltraGuiActionPacket(String screenId, String actionId, String argsJson) {
         this.screenId = trim(screenId, 64);
         this.actionId = trim(actionId, ACTION_ID_MAX);
-        this.argsJson = trim(argsJson == null ? "{}" : argsJson, 512);
+        this.argsJson = trim(argsJson == null ? "{}" : argsJson, ARGS_JSON_MAX);
     }
 
     public String screenId() {
@@ -42,13 +45,16 @@ public final class UltraGuiActionPacket {
     }
 
     public static void encode(UltraGuiActionPacket msg, FriendlyByteBuf buf) {
-        buf.writeUtf(msg.screenId);
-        buf.writeUtf(msg.actionId);
-        buf.writeUtf(msg.argsJson);
+        UltraGuiOpenPacket.writeUtf8(buf, msg.screenId);
+        UltraGuiOpenPacket.writeUtf8(buf, msg.actionId);
+        UltraGuiOpenPacket.writeUtf8(buf, msg.argsJson);
     }
 
     public static UltraGuiActionPacket decode(FriendlyByteBuf buf) {
-        return new UltraGuiActionPacket(buf.readUtf(), buf.readUtf(), buf.readUtf());
+        return new UltraGuiActionPacket(
+                UltraGuiOpenPacket.readUtf8(buf),
+                UltraGuiOpenPacket.readUtf8(buf),
+                UltraGuiOpenPacket.readUtf8(buf));
     }
 
     private static String trim(String value, int max) {

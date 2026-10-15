@@ -1,5 +1,7 @@
 package com.example.ultragui;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import java.nio.charset.StandardCharsets;
 import net.minecraft.network.FriendlyByteBuf;
 
@@ -8,7 +10,13 @@ import net.minecraft.network.FriendlyByteBuf;
  * namespace, mod id, or game-content strings are embedded in encode/decode. The Forge channel
  * ({@code <modid>:gui}) is chosen at registration time; this class only serializes fields.
  *
- * <p>Copy into your mod and rename the package. Depends only on Minecraft {@link FriendlyByteBuf}.
+ * <p>Copy into your mod and rename the package. Depends on Minecraft {@link FriendlyByteBuf}
+ * and Gson (already on the Forge compile classpath) for layout sanitizing.
+ *
+ * <p>Every server codec in this kit writes strings through {@link #writeUtf8} and varints
+ * through {@code m_130130_} / {@code m_130242_}. Those SRG names are what this repo's
+ * LegacyMechanics sources and {@code tools/ultra-gui-kit/stubs} compile against. On a Mojmap
+ * Forge MDK the same two methods are {@code writeVarInt} / {@code readVarInt}.
  *
  * <p>Field order (protocol {@link UltraGuiChannel#PROTOCOL_VERSION}):
  *
@@ -29,6 +37,12 @@ import net.minecraft.network.FriendlyByteBuf;
  * <p>Missing trailing fields use defaults. Bytes after the last understood field are ignored.
  */
 public final class UltraGuiOpenPacket {
+    /**
+     * Max layoutJson chars on the wire. Must stay valid JSON — cutting with {@code substring}
+     * makes KaiPath drop the object and default {@code titleAlign} to left.
+     */
+    public static final int LAYOUT_JSON_MAX = 4096;
+
     private final String screenId;
     private final String title;
     private final String pageId;
@@ -87,7 +101,14 @@ public final class UltraGuiOpenPacket {
         this.buttonsJson = blankTo(trim(buttonsJson, 8192), "[]");
         this.panelWidth = panelWidth > 0 ? panelWidth : UltraGuiChannel.DEFAULT_PANEL_WIDTH;
         this.panelHeight = panelHeight > 0 ? panelHeight : UltraGuiChannel.DEFAULT_PANEL_HEIGHT;
-        this.layoutJson = trim(layoutJson, 4096);
+        // Keep valid JSON and always force titleAlign=center (KaiPath left-defaults otherwise).
+        this.layoutJson =
+                sanitizeLayoutJson(
+                        layoutJson == null || layoutJson.isBlank()
+                                ? defaultLayoutJson(this.panelWidth, this.panelHeight)
+                                : layoutJson,
+                        this.panelWidth,
+                        this.panelHeight);
         this.inputsJson = blankTo(trim(inputsJson, 4096), "[]");
     }
 
@@ -143,8 +164,8 @@ public final class UltraGuiOpenPacket {
         writeUtf8(buf, msg.activeTab);
         writeUtf8(buf, msg.linesJson);
         writeUtf8(buf, msg.buttonsJson);
-        buf.writeVarInt(msg.panelWidth);
-        buf.writeVarInt(msg.panelHeight);
+        buf.m_130130_(msg.panelWidth);
+        buf.m_130130_(msg.panelHeight);
         writeUtf8(buf, msg.layoutJson == null ? "" : msg.layoutJson);
         writeUtf8(buf, msg.inputsJson == null ? "[]" : msg.inputsJson);
     }
@@ -162,13 +183,13 @@ public final class UltraGuiOpenPacket {
         String layoutJson = "";
         String inputsJson = "[]";
         if (buf.isReadable()) {
-            panelWidth = buf.readVarInt();
+            panelWidth = buf.m_130242_();
             if (panelWidth <= 0) {
                 panelWidth = UltraGuiChannel.DEFAULT_PANEL_WIDTH;
             }
         }
         if (buf.isReadable()) {
-            panelHeight = buf.readVarInt();
+            panelHeight = buf.m_130242_();
             if (panelHeight <= 0) {
                 panelHeight = UltraGuiChannel.DEFAULT_PANEL_HEIGHT;
             }
@@ -214,24 +235,80 @@ public final class UltraGuiOpenPacket {
         }
     }
 
-    /** Length-prefixed UTF-8 — never platform default charset. */
+    /**
+     * Length-prefixed UTF-8 — same wire shape as {@code FriendlyByteBuf.writeUtf}, charset always
+     * {@link StandardCharsets#UTF_8}. Shared by the open, action, and features codecs.
+     */
     static void writeUtf8(FriendlyByteBuf buf, String value) {
         String s = value == null ? "" : value;
         byte[] utf8 = s.getBytes(StandardCharsets.UTF_8);
-        buf.writeVarInt(utf8.length);
+        buf.m_130130_(utf8.length);
         buf.writeBytes(utf8);
     }
 
+    /** Inverse of {@link #writeUtf8}; empty when the buffer ends early. */
     static String readUtf8(FriendlyByteBuf buf) {
         if (buf == null || !buf.isReadable()) {
             return "";
         }
-        int len = buf.readVarInt();
+        int len = buf.m_130242_();
         if (len < 0 || len > buf.readableBytes()) {
             return "";
         }
         byte[] utf8 = new byte[len];
         buf.readBytes(utf8);
         return new String(utf8, StandardCharsets.UTF_8);
+    }
+
+    /**
+     * Ensures layoutJson stays parseable and always carries {@code titleAlign=center}. When the
+     * payload is oversized, drop optional {@code playerModel.parts} then {@code playerModel}
+     * rather than cutting mid-JSON.
+     */
+    public static String sanitizeLayoutJson(String layoutJson, int w, int h) {
+        String fallback = defaultLayoutJson(w, h);
+        if (layoutJson == null || layoutJson.isBlank()) {
+            return fallback;
+        }
+        try {
+            JsonObject o = JsonParser.parseString(layoutJson).getAsJsonObject();
+            o.addProperty("titleAlign", "center");
+            String out = o.toString();
+            if (out.length() <= LAYOUT_JSON_MAX) {
+                return out;
+            }
+            if (o.has("playerModel") && o.get("playerModel").isJsonObject()) {
+                JsonObject pm = o.getAsJsonObject("playerModel");
+                if (pm.has("parts")) {
+                    pm.remove("parts");
+                    out = o.toString();
+                    if (out.length() <= LAYOUT_JSON_MAX) {
+                        return out;
+                    }
+                }
+                o.remove("playerModel");
+                out = o.toString();
+                if (out.length() <= LAYOUT_JSON_MAX) {
+                    return out;
+                }
+            }
+            return fallback;
+        } catch (Throwable ignored) {
+            return fallback;
+        }
+    }
+
+    private static String defaultLayoutJson(int w, int h) {
+        return "{\"panelWidth\":"
+                + w
+                + ",\"panelHeight\":"
+                + h
+                + ",\"width\":"
+                + w
+                + ",\"height\":"
+                + h
+                + ",\"center\":true,\"margin\":"
+                + UltraGuiChannel.DEFAULT_MARGIN
+                + ",\"titleAlign\":\"center\"}";
     }
 }

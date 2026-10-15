@@ -107,6 +107,16 @@ public final class GuiOpenPacketRoundTripTest {
         assertEq("action.screenId", action.screenId(), adecoded.screenId());
         assertEq("action.actionId", action.actionId(), adecoded.actionId());
         assertEq("action.argsJson", action.argsJson(), adecoded.argsJson());
+        String longArgs = "{\"v\":\"" + "x".repeat(1500) + "\"}";
+        GuiActionPacket longAction = new GuiActionPacket("hub", "ping", longArgs);
+        if (longAction.argsJson().length() <= 512 || longAction.argsJson().length() != longArgs.length()) {
+            fail("client args cap must keep a 1500-char text-field payload, got "
+                    + longAction.argsJson().length());
+        }
+        GuiActionPacket capped = new GuiActionPacket("hub", "ping", "y".repeat(3000));
+        if (capped.argsJson().length() != 2048) {
+            fail("client args cap must be 2048, got " + capped.argsJson().length());
+        }
 
         if (!LmGuiNetwork.accepts("1") || !LmGuiNetwork.accepts("2") || !LmGuiNetwork.accepts("")) {
             fail("accepts() must tolerate any remote protocol");

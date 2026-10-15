@@ -1,6 +1,6 @@
 {
   "channel": "myshop:gui",
-  "note": "Zero partner-mod imports. Exercises chrome + fixedFooter. Prefer fail-open enable tokens (minecraft: / legacymechanics:) so DMZUltra is not required — see KAIPATH_BRIDGE_GAPS pitfalls.",
+  "note": "Zero partner-mod imports. Buttons are style + geometry + footer + args. Panel palette and frame stay on layoutJson. playerModel has no portrait frame. fixedFooter pins the Back / Main menu row.",
   "open": {
     "screenId": "hello",
     "title": "My Shop",
@@ -13,9 +13,6 @@
         "id": "@myshop:do:ping",
         "label": "Ping",
         "style": "confirm",
-        "palette": "gold",
-        "sound": "minecraft:ui.button.click",
-        "buttonSkin": "legacymechanics:button",
         "x": 20,
         "y": 40,
         "w": 150,
@@ -27,9 +24,6 @@
         "id": "@myshop:do:danger",
         "label": "Reset",
         "style": "danger",
-        "palette": "dark_red",
-        "sound": "minecraft:ui.button.click",
-        "buttonSkin": "legacymechanics:button",
         "x": 180,
         "y": 40,
         "w": 150,
@@ -84,8 +78,7 @@
         "width": 86,
         "height": 120,
         "scale": 1.0,
-        "rotate": true,
-        "portraitFrame": "legacymechanics:portrait"
+        "rotate": true
       }
     },
     "inputsJson": [
@@ -97,7 +90,6 @@
         "w": 220,
         "h": 120,
         "page": 0,
-        "sound": "minecraft:ui.button.click",
         "pages": [
           { "title": "Welcome", "lines": ["Page one of the guide."] },
           { "title": "Tips", "lines": ["Page two.", "Use prev/next."] }
@@ -119,6 +111,7 @@
     "frame",
     "pagedBook",
     "portraitFrame",
-    "fixedFooter"
+    "fixedFooter",
+    "combined.forms.v1"
   ]
 }

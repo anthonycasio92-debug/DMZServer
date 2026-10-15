@@ -6,8 +6,12 @@ package com.example.ultragui;
  * {@link UltraGuiChannel} into <b>your</b> Forge mod (any {@code modId} — zero coupling to
  * any production partner).
  *
- * <p>JSON twin that exercises every proposed chrome field:
- * {@code BridgeFutureFieldsFixture.json}.
+ * <p>JSON twin: {@code BridgeFutureFieldsFixture.json}. Buttons use the shape
+ * LegacyMechanics actually sends: {@code id}, {@code label}, {@code style}, {@code x},
+ * {@code y}, {@code w}, {@code h}, {@code pad}, optional {@code footer}, {@code args}.
+ * Panel {@code palette} and {@code frame} stay on {@code layoutJson}. Do not put a
+ * palette, click sound, or skin on a button, and do not set a portrait frame on
+ * {@code playerModel} (a non-empty id paints a border around the preview).
  *
  * <pre>
  * // Registration (Forge) — channel = YOUR_MOD_ID:gui
@@ -32,18 +36,18 @@ package com.example.ultragui;
  *
  * // KaiPath client: UltraGuiPartners.register("myshop");
  *
- * // Open — plain ASCII; prefer fail-open chrome tokens (no DMZUltra required)
+ * // Open — plain ASCII. Button objects are style + geometry + args only.
  * String buttons = "["
  *     + "{\"id\":\"@myshop:do:ping\",\"label\":\"Ping\",\"style\":\"confirm\","
- *     + "\"palette\":\"gold\",\"sound\":\"minecraft:ui.button.click\","
- *     + "\"buttonSkin\":\"legacymechanics:button\",\"x\":20,\"y\":40,\"w\":150,\"h\":18,"
+ *     + "\"x\":20,\"y\":40,\"w\":150,\"h\":18,\"pad\":8,"
  *     + "\"args\":{\"screen\":\"hello\",\"page\":\"main\"}},"
  *     + "{\"id\":\"@myshop:nav:hub\",\"label\":\"Main menu\",\"style\":\"dim\","
- *     + "\"x\":174,\"y\":272,\"w\":150,\"h\":18,\"footer\":true}"
+ *     + "\"x\":174,\"y\":272,\"w\":150,\"h\":18,\"pad\":8,\"footer\":true,"
+ *     + "\"args\":{\"screen\":\"hello\",\"page\":\"main\"}}"
  *     + "]";
  * String inputs = "["
  *     + "{\"id\":\"@myshop:book:guide\",\"type\":\"paged_book\",\"x\":8,\"y\":70,"
- *     + "\"w\":220,\"h\":120,\"sound\":\"minecraft:ui.button.click\",\"pages\":["
+ *     + "\"w\":220,\"h\":120,\"page\":0,\"pages\":["
  *     + "{\"title\":\"Welcome\",\"lines\":[\"Page one.\"]},"
  *     + "{\"title\":\"Tips\",\"lines\":[\"Page two.\"]}]}"
  *     + "]";
@@ -51,7 +55,7 @@ package com.example.ultragui;
  *     + "\"center\":true,\"margin\":10,\"titleAlign\":\"center\","
  *     + "\"headerBottom\":42,\"palette\":\"gold\",\"frame\":\"legacymechanics:panel\","
  *     + "\"playerModel\":{\"x\":248,\"y\":60,\"width\":86,\"height\":120,"
- *     + "\"scale\":1.0,\"rotate\":true,\"portraitFrame\":\"legacymechanics:portrait\"}"
+ *     + "\"scale\":1.0,\"rotate\":true}"
  *     + "}";
  * UltraGuiOpenPacket open = new UltraGuiOpenPacket(
  *     "hello", "My Shop", "main", "[]", "", "[\"Welcome.\"]",

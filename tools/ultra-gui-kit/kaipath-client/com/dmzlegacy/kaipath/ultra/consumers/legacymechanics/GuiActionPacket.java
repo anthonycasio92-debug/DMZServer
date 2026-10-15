@@ -19,7 +19,8 @@ public final class GuiActionPacket {
     public GuiActionPacket(String screenId, String actionId, String argsJson) {
         this.screenId = GuiOpenPacket.trim(screenId, 64);
         this.actionId = GuiOpenPacket.trim(actionId, ACTION_ID_MAX);
-        this.argsJson = GuiOpenPacket.trim(argsJson == null ? "{}" : argsJson, 512);
+        // 2048 — typed text-field values from inputsJson bindInput / Enter submit.
+        this.argsJson = GuiOpenPacket.trim(argsJson == null ? "{}" : argsJson, 2048);
     }
 
     public String screenId() {

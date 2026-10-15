@@ -30,14 +30,14 @@ public final class UltraGuiFeaturesPacket {
     }
 
     public static void encode(UltraGuiFeaturesPacket msg, FriendlyByteBuf buf) {
-        buf.writeUtf(msg.featuresJson);
+        UltraGuiOpenPacket.writeUtf8(buf, msg.featuresJson);
     }
 
     public static UltraGuiFeaturesPacket decode(FriendlyByteBuf buf) {
         String json = "[]";
         if (buf.isReadable()) {
             try {
-                json = buf.readUtf();
+                json = UltraGuiOpenPacket.readUtf8(buf);
             } catch (Throwable ignored) {
                 json = "[]";
             }

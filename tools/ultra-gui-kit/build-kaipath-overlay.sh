@@ -46,6 +46,13 @@ find "$HERE/stubs" -path '*/org/apache/logging/*' -delete 2>/dev/null || true
 find "$HERE/stubs" -name '*.java' > "$OUT_DIR/stubs.list"
 javac --release 17 -d "$STUB_CLASSES" @"$OUT_DIR/stubs.list"
 
+# Server kit must compile against the same SRG stubs (one mapping for open/action/features).
+SERVER_SRC="$HERE/server"
+SERVER_CLASSES="$OUT_DIR/server-classes"
+mkdir -p "$SERVER_CLASSES"
+find "$SERVER_SRC" -name '*.java' > "$OUT_DIR/server.list"
+javac --release 17 -cp "$STUB_CLASSES:$GSON" -d "$SERVER_CLASSES" @"$OUT_DIR/server.list"
+
 find "$SRC" -name '*.java' > "$OUT_DIR/sources.list"
 CP="$STUB_CLASSES:$BASE_JAR:$GSON:$LOG4J"
 javac --release 17 -cp "$CP" -d "$CLASSES" @"$OUT_DIR/sources.list"
@@ -54,9 +61,13 @@ if [[ -d "$TEST_SRC" ]]; then
   find "$TEST_SRC" -name '*.java' > "$OUT_DIR/tests.list"
   TEST_CLASSES="$OUT_DIR/test-classes"
   mkdir -p "$TEST_CLASSES"
-  javac --release 17 -cp "$CLASSES:$CP" -d "$TEST_CLASSES" @"$OUT_DIR/tests.list"
+  javac --release 17 -cp "$CLASSES:$SERVER_CLASSES:$CP" -d "$TEST_CLASSES" @"$OUT_DIR/tests.list"
   java -cp "$TEST_CLASSES:$CLASSES:$CP" \
     com.dmzlegacy.kaipath.ultra.consumers.legacymechanics.GuiOpenPacketRoundTripTest
+  java -Dultragui.fixture="$HERE/server/BridgeFutureFieldsFixture.json" \
+    -Dultragui.sketch="$HERE/server/HelloWorldServerSketch.java" \
+    -cp "$TEST_CLASSES:$SERVER_CLASSES:$STUB_CLASSES:$GSON" \
+    com.example.ultragui.ServerKitSelfTest
 fi
 
 cp -f "$BASE_JAR" "$OUT_JAR"
