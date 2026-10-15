@@ -3,6 +3,7 @@ package com.dbzlegacy.adaptivedifficulty.gui.ultra;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.character.CosmeticHeadBoneService;
 import com.dbzlegacy.adaptivedifficulty.character.HeadPartPieces;
+import com.dbzlegacy.adaptivedifficulty.gui.AdminInspectSessions;
 import com.dragonminez.common.stats.character.Character;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -13,9 +14,9 @@ import net.minecraft.server.level.ServerPlayer;
 /**
  * Builds the optional {@code layoutJson.playerModel.parts} snapshot for KaiPath / JLDK.
  *
- * <p>Schema {@code 1} - see {@code docs/KAIPATH_GUI_PROTOCOL.md}. The client draws the local
- * player in the declared bounds and uses this object for custom body pieces (DMZ head bones,
- * worn form identity for DMZUltra FormParts, and an open {@code extras} array).
+ * <p>Schema {@code 1} - see {@code docs/KAIPATH_GUI_PROTOCOL.md}. {@code subject} is {@code local}
+ * for the viewer, or {@code uuid:<id>} for an inspect subject. The client uses that plus this
+ * object for custom body pieces (DMZ head bones, worn form identity, and an open {@code extras} array).
  */
 public final class PlayerModelParts {
     /** Current documented schema version inside {@code parts.schema}. */
@@ -24,32 +25,59 @@ public final class PlayerModelParts {
     private PlayerModelParts() {}
 
     /**
-     * Snapshot equipped cosmetics for {@code player}. Returns {@code null} when nothing useful
-     * can be serialized (caller should omit the {@code parts} field).
+     * Snapshot equipped cosmetics for the model render target. Returns {@code null} when the
+     * target is the viewer and nothing useful can be serialized (caller omits {@code parts}).
+     * While staff inspect is active the target is {@link AdminInspectSessions#resolveSubject},
+     * and {@code parts} is always sent so the client does not fall back to the local player.
      */
     public static JsonObject snapshot(ServerPlayer player) {
-        if (player == null) {
+        ServerPlayer target = renderTarget(player);
+        if (target == null) {
             return null;
         }
+        boolean other = previewsOtherPlayer(target);
         JsonObject parts = new JsonObject();
         parts.addProperty("schema", SCHEMA);
-        // Character Services always previews the viewing player.
-        parts.addProperty("subject", "local");
+        parts.addProperty("subject", other ? "uuid:" + target.m_20148_() : "local");
 
         boolean any = false;
-        JsonObject head = headBones(player);
+        JsonObject head = headBones(target);
         if (head != null) {
             parts.add("headBones", head);
             any = true;
         }
-        JsonObject form = formIdentity(player);
+        JsonObject form = formIdentity(target);
         if (form != null) {
             parts.add("form", form);
             any = true;
         }
         // Open extension slot - always present so clients can iterate without null checks.
         parts.add("extras", new JsonArray());
-        return any ? parts : null;
+        if (!any && !other) {
+            return null;
+        }
+        return parts;
+    }
+
+    /**
+     * Who the client should draw. Inspect sessions use the subject, not the staff viewer.
+     */
+    static ServerPlayer renderTarget(ServerPlayer passed) {
+        ServerPlayer viewer = UltraScreenSpec.inspectViewer();
+        if (viewer != null) {
+            ServerPlayer subject = AdminInspectSessions.resolveSubject(viewer);
+            if (subject != null) {
+                return subject;
+            }
+        }
+        return passed;
+    }
+
+    private static boolean previewsOtherPlayer(ServerPlayer target) {
+        ServerPlayer viewer = UltraScreenSpec.inspectViewer();
+        return viewer != null
+                && target != null
+                && !viewer.m_20148_().equals(target.m_20148_());
     }
 
     private static JsonObject headBones(ServerPlayer player) {

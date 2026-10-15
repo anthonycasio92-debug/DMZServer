@@ -236,6 +236,14 @@ def main() -> int:
         parts_text = parts_helper.read_text(encoding="utf-8")
         if "SCHEMA = 1" not in parts_text or "headBones" not in parts_text:
             errors.append("PlayerModelParts schema 1 must serialize headBones (+ form/extras)")
+        if "AdminInspectSessions.resolveSubject" not in parts_text:
+            errors.append(
+                "PlayerModelParts must resolve the inspect subject for the model render target"
+            )
+        if 'addProperty("subject", "local")' in parts_text and "uuid:" not in parts_text:
+            errors.append(
+                "PlayerModelParts must send uuid:<subject> while inspecting, not only local"
+            )
         if 'addProperty("parts"' not in spec_text_full and 'pm.add("parts"' not in spec_text_full:
             errors.append("UltraScreenSpec must emit optional playerModel.parts")
     if "playerModel(player, 248, 60," not in char_screens and ".playerModel(player, 248, 60," not in char_screens:
@@ -894,6 +902,27 @@ def main() -> int:
         re.S | re.M,
     )
     spar_home_body = spar_home_m.group(0) if spar_home_m else ""
+    diff_screens = (ULTRA / "UltraDifficultyScreens.java").read_text(encoding="utf-8")
+    team_m = re.search(
+        r"private static void openTeam\b.*?^\s*private static void ",
+        diff_screens,
+        re.S | re.M,
+    )
+    team_body = team_m.group(0) if team_m else ""
+    notice_m = re.search(
+        r"private static void openTeamNotice\b.*?^\s*private static void ",
+        diff_screens,
+        re.S | re.M,
+    )
+    notice_body = notice_m.group(0) if notice_m else ""
+    if "footerBackHome(\"Home\")" not in team_body and 'footerBackHome("Home")' not in team_body:
+        errors.append("UltraDifficultyScreens.openTeam must pin Back to Home + Main menu")
+    if "openFeatureLocked" in team_body:
+        errors.append(
+            "UltraDifficultyScreens.openTeam must not use the tabbed locked page (no left Back)"
+        )
+    if "footerBackHome(\"Home\")" not in notice_body and 'footerBackHome("Home")' not in notice_body:
+        errors.append("UltraDifficultyScreens.openTeamNotice must pin Back to Home + Main menu")
     if "weights|Weights" not in spar_home_body:
         errors.append("UltraSparScreens.openHome must offer Weights")
     if "labelValue(\"Session\"" in spar_home_body or "labelValue(\"Partner\"" in spar_home_body:

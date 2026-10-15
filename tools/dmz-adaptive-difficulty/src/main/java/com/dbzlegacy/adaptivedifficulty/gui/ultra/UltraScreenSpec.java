@@ -811,6 +811,10 @@ public final class UltraScreenSpec {
             pm.addProperty("rotate", playerModel.rotate);
             if (playerModel.parts != null && !playerModel.parts.entrySet().isEmpty()) {
                 pm.add("parts", playerModel.parts);
+                if (playerModel.parts.has("subject")) {
+                    // Same render target as parts.subject (local, or uuid: of the inspect subject).
+                    pm.add("subject", playerModel.parts.get("subject"));
+                }
             }
             // Enable portrait chrome when the client honors portraitFrame (1.3.13+).
             pm.addProperty("portraitFrame", UltraStyle.PORTRAIT_FRAME);

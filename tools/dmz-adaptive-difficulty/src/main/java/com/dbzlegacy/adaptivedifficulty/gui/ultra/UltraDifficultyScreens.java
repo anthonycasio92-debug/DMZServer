@@ -340,29 +340,23 @@ public final class UltraDifficultyScreens {
 
     private static void openTeam(ServerPlayer player) {
         if (!DifficultyConfig.isEnabled()) {
-            openFeatureLocked(
+            openTeamNotice(
                     player,
-                    "team",
-                    "home",
                     "Teams locked",
                     "Adaptive Difficulty is off. Ask staff to enable it before using team scaling.");
             return;
         }
         if (!SystemGate.allows(player)) {
-            openFeatureLocked(
+            openTeamNotice(
                     player,
-                    "team",
-                    "home",
                     "Teams locked",
                     "You cannot use personal difficulty yet. Ask staff to add you to the whitelist.");
             return;
         }
         PlayerDifficultyData data = DifficultyCache.data(player);
         if (data == null || !data.isPersonalEnabled()) {
-            openFeatureLocked(
+            openTeamNotice(
                     player,
-                    "team",
-                    "home",
                     "Teams locked",
                     "Turn on Personal difficulty on the Tiers tab first, then return here to pick a team mode.");
             return;
@@ -402,7 +396,25 @@ public final class UltraDifficultyScreens {
                                 : UltraStyle.dim("Personal difficulty - OFF"),
                         data.isPersonalEnabled() ? "confirm" : "dim")
                 .rowGap();
-        spec.footerBackHome("Difficulty Home");
+        // "Home" fits the footer button. "Difficulty Home" truncates to "Back to Difficulty...".
+        spec.footerBackHome("Home");
+        spec.send(player);
+    }
+
+    /**
+     * Rival teams is a sub-page (no tab row). Locked and open states both use the standard
+     * footer: contextual back on the left, main menu on the right.
+     */
+    private static void openTeamNotice(ServerPlayer player, String title, String body) {
+        UltraScreenSpec spec = sub("team")
+                .line(UltraStyle.danger(title))
+                .line(UltraStyle.LABEL + body)
+                .setRow(UltraStyle.CONTENT_ROW + 80);
+        if (DifficultyConfig.isEnabled() && SystemGate.allows(player)) {
+            spec.buttonLeft("do:toggle_personal", UltraStyle.confirm("Turn personal ON"), "confirm")
+                    .rowGap();
+        }
+        spec.footerBackHome("Home");
         spec.send(player);
     }
 
