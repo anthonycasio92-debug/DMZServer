@@ -73,6 +73,12 @@ public class LmDynamicScreen extends UltraScreen {
     /** Namespaced frame id from layoutJson.frame. */
     private String layoutFrame = "";
     private JsonObject playerModel;
+    /** When true, scale designWidth x designHeight onto the screen (config editor). */
+    private boolean fillScreen;
+    private int designW;
+    private int designH;
+    private float layoutScaleX = 1f;
+    private float layoutScaleY = 1f;
     /** Cached preview entity so inspect does not allocate a RemotePlayer every frame. */
     private LivingEntity previewEntity;
     private String previewEntityKey = "";
@@ -229,10 +235,10 @@ public class LmDynamicScreen extends UltraScreen {
             if (!"text".equalsIgnoreCase(type)) {
                 continue;
             }
-            int x = intVal(in, "x", 8);
-            int y = intVal(in, "y", cursorY - panelY);
-            int w = Math.max(40, intVal(in, "w", panelW - 16));
-            int h = Math.max(14, intVal(in, "h", 18));
+            int x = scaleX(intVal(in, "x", 8));
+            int y = scaleY(intVal(in, "y", cursorY - panelY));
+            int w = Math.max(40, scaleX(intVal(in, "w", panelW - 16)));
+            int h = Math.max(14, scaleY(intVal(in, "h", 18)));
             // Keep text fields out of the pinned footer band
             if (panelY + y + h > contentBottom) {
                 y = Math.max(0, contentBottom - panelY - h);
@@ -286,12 +292,12 @@ public class LmDynamicScreen extends UltraScreen {
             String skin = UltraBridgeChrome.buttonSkinId(b);
             String icon = iconId(b);
             boolean footer = UltraBridgeFooter.isFooter(b);
-            int x = intVal(b, "x", 8);
-            int h = Math.max(12, intVal(b, "h", 18));
+            int x = scaleX(intVal(b, "x", 8));
+            int h = Math.max(12, scaleY(intVal(b, "h", 18)));
             int y = footer
                     ? UltraBridgeFooter.pinFooterY(panelH, footerReserve, h)
-                    : intVal(b, "y", cursorY - panelY);
-            int w = Math.max(buttonMinWidth, intVal(b, "w", 150));
+                    : scaleY(intVal(b, "y", cursorY - panelY));
+            int w = Math.max(buttonMinWidth, scaleX(intVal(b, "w", 150)));
             int padBtn = intVal(b, "pad", buttonPad);
             if (padBtn < 0) {
                 padBtn = buttonPad;
@@ -412,10 +418,10 @@ public class LmDynamicScreen extends UltraScreen {
      */
     private int addPagedBook(JsonObject in, int cursorYAbs) {
         String id = str(in, "id", "");
-        int x = intVal(in, "x", 8);
-        int y = intVal(in, "y", cursorYAbs - panelY);
-        int w = Math.max(80, intVal(in, "w", panelW - 16));
-        int h = Math.max(48, intVal(in, "h", 120));
+        int x = scaleX(intVal(in, "x", 8));
+        int y = scaleY(intVal(in, "y", cursorYAbs - panelY));
+        int w = Math.max(80, scaleX(intVal(in, "w", panelW - 16)));
+        int h = Math.max(48, scaleY(intVal(in, "h", 120)));
         String sound = str(in, "sound", "");
         JsonArray pages =
                 in.has("pages") && in.get("pages").isJsonArray()
@@ -509,6 +515,9 @@ public class LmDynamicScreen extends UltraScreen {
     private void parseLayout() {
         center = true;
         margin = GuiOpenPacket.DEFAULT_MARGIN;
+        fillScreen = false;
+        designW = 0;
+        designH = 0;
         lineHeight = 14;
         lineGap = 4;
         bodyTop = 36;
@@ -611,6 +620,15 @@ public class LmDynamicScreen extends UltraScreen {
             if (o.has("playerModel") && o.get("playerModel").isJsonObject()) {
                 playerModel = o.getAsJsonObject("playerModel");
             }
+            if (o.has("fillScreen") && o.get("fillScreen").isJsonPrimitive()) {
+                fillScreen = o.get("fillScreen").getAsBoolean();
+            }
+            if (o.has("designWidth") && o.get("designWidth").isJsonPrimitive()) {
+                designW = Math.max(0, o.get("designWidth").getAsInt());
+            }
+            if (o.has("designHeight") && o.get("designHeight").isJsonPrimitive()) {
+                designH = Math.max(0, o.get("designHeight").getAsInt());
+            }
         } catch (Throwable t) {
             UltraUiBridge.LOGGER.warn("[kaipath] layoutJson parse failed — using defaults", t);
             headerBottom = hasTabsJson ? DEFAULT_HEADER_BOTTOM_TABS : DEFAULT_HEADER_BOTTOM;
@@ -618,6 +636,29 @@ public class LmDynamicScreen extends UltraScreen {
     }
 
     private void placePanel() {
+        layoutScaleX = 1f;
+        layoutScaleY = 1f;
+        if (fillScreen) {
+            int availW = Math.max(64, this.f_96543_ - margin * 2);
+            int availH = Math.max(64, this.f_96544_ - margin * 2);
+            int dw = designW > 0 ? designW : Math.max(1, panelW);
+            int dh = designH > 0 ? designH : Math.max(1, panelH);
+            panelW = availW;
+            panelH = availH;
+            panelX = margin;
+            panelY = margin;
+            layoutScaleX = panelW / (float) dw;
+            layoutScaleY = panelH / (float) dh;
+            headerBottom = Math.max(12, scaleY(headerBottom));
+            bodyTop = Math.max(0, scaleY(bodyTop));
+            bodyMaxHeight = Math.max(8, scaleY(bodyMaxHeight));
+            lineHeight = Math.max(8, scaleY(lineHeight));
+            lineGap = Math.max(0, scaleY(lineGap));
+            bodyPad = Math.max(0, scaleY(bodyPad));
+            buttonPad = Math.max(0, scaleX(buttonPad));
+            buttonMinWidth = Math.max(20, scaleX(buttonMinWidth));
+            return;
+        }
         panelW = Math.min(panelW, Math.max(64, this.f_96543_ - margin * 2));
         panelH = Math.min(panelH, Math.max(64, this.f_96544_ - margin * 2));
         if (center) {
@@ -627,6 +668,16 @@ public class LmDynamicScreen extends UltraScreen {
             panelX = margin;
             panelY = margin;
         }
+    }
+
+    /** Design-space X mapped onto the placed panel. Identity unless {@code fillScreen}. */
+    private int scaleX(int v) {
+        return Math.round(v * layoutScaleX);
+    }
+
+    /** Design-space Y mapped onto the placed panel. Identity unless {@code fillScreen}. */
+    private int scaleY(int v) {
+        return Math.round(v * layoutScaleY);
     }
 
     @Override

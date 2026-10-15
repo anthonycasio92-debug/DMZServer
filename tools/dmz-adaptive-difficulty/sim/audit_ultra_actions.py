@@ -362,6 +362,20 @@ def main() -> int:
         errors.append("UltraConfigScreens settings must use flowLabel (label above control)")
     if "PANEL_W = 480" in config_screens:
         errors.append("UltraConfigScreens must not hardcode PANEL_W = 480 (clips on small UI)")
+    if "CONFIG_PANEL_W = 400" not in config_screens or "CONFIG_PANEL_H = 220" not in config_screens:
+        errors.append("UltraConfigScreens design box must stay 400x220 so a 240-tall GUI can show it")
+    if "fillScreen" not in config_screens or "lockPanel" not in config_screens:
+        errors.append("UltraConfigScreens must fill the screen (fillScreen + lockPanel)")
+    if 'addProperty("fillScreen"' not in spec_text_full:
+        errors.append("UltraScreenSpec must emit layoutJson.fillScreen")
+    if "fillScreen" not in DOC.read_text(encoding="utf-8"):
+        errors.append("KAIPATH_GUI_PROTOCOL.md must document layoutJson.fillScreen")
+    kit = ROOT.parents[1] / (
+        "tools/ultra-gui-kit/kaipath-client/com/dmzlegacy/kaipath/ultra/"
+        "consumers/legacymechanics/LmDynamicScreen.java"
+    )
+    if not kit.is_file() or "fillScreen" not in kit.read_text(encoding="utf-8"):
+        errors.append("LmDynamicScreen must scale a fillScreen design box to the window")
     if 'do:search' not in config_screens or "rememberSearch" not in config_screens:
         errors.append("UltraConfigScreens must pin search (do:search + ConfigEditor.rememberSearch)")
     if 'do:save_all' not in config_screens or 'do:discard_all' not in config_screens or 'do:reload_module' not in config_screens:
