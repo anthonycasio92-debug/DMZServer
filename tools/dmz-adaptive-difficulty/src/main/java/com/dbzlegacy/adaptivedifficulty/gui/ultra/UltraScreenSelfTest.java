@@ -921,6 +921,7 @@ public final class UltraScreenSelfTest {
                             + " still floored at the minimum body height");
         }
         checkBodyWrap(broken);
+        checkConfigFullscreen(broken);
 
         if (broken.isEmpty()) {
             AdaptiveDifficultyMod.LOGGER.info(
@@ -930,6 +931,79 @@ public final class UltraScreenSelfTest {
                     "[{}] Ultra body cap self-check FAILED: {}", AdaptiveDifficultyMod.MOD_ID, broken);
             throw new IllegalStateException(
                     "LegacyMechanics Ultra body cap self-check failed: " + broken);
+        }
+    }
+
+    /**
+     * Config editor stays a locked 400x220 design box and asks the client to scale it.
+     * A stack of rows must not grow that box toward the compact menu cap.
+     */
+    private static void checkConfigFullscreen(List<String> broken) {
+        UltraScreenSpec grown = UltraScreenSpec.of("config").panel(400, 220).lockPanel().fillScreen().setRow(50);
+        for (int i = 0; i < 30; i++) {
+            grown.button("do:refresh", "Row " + i, "dim").rowGap();
+        }
+        GuiOpenPacket grownPkt = grown.toPacket();
+        if (grownPkt.panelWidth() != 400 || grownPkt.panelHeight() != 220) {
+            broken.add(
+                    "lockPanel grew the config design box to "
+                            + grownPkt.panelWidth()
+                            + "x"
+                            + grownPkt.panelHeight());
+        }
+        GuiOpenPacket cfg = UltraConfigScreens.layoutProbe();
+        if (cfg.panelWidth() != 400 || cfg.panelHeight() != 220) {
+            broken.add(
+                    "config editor must lock a 400x220 design box, got "
+                            + cfg.panelWidth()
+                            + "x"
+                            + cfg.panelHeight());
+        }
+        JsonObject lay = JsonParser.parseString(cfg.layoutJson()).getAsJsonObject();
+        if (!lay.has("fillScreen") || !lay.get("fillScreen").getAsBoolean()) {
+            broken.add("config editor must set layoutJson.fillScreen");
+        }
+        if (!lay.has("designWidth")
+                || !lay.has("designHeight")
+                || lay.get("designWidth").getAsInt() != 400
+                || lay.get("designHeight").getAsInt() != 220) {
+            broken.add("config fillScreen design size must match the panel");
+        }
+        String buttons = cfg.buttonsJson() == null ? "" : cfg.buttonsJson();
+        String inputs = cfg.inputsJson() == null ? "" : cfg.inputsJson();
+        if (!buttons.contains("Difficulty") || !inputs.contains("input:search")) {
+            broken.add("config probe missing the category rail or search field");
+        }
+        if (!buttons.contains("Mob Spawning") || !buttons.contains("Review")) {
+            broken.add("config probe missing the breadcrumb or review button");
+        }
+        JsonArray widgets = JsonParser.parseString(buttons).getAsJsonArray();
+        for (JsonElement el : widgets) {
+            if (el == null || !el.isJsonObject()) {
+                continue;
+            }
+            JsonObject b = el.getAsJsonObject();
+            int x = b.get("x").getAsInt();
+            int y = b.get("y").getAsInt();
+            int w = b.get("w").getAsInt();
+            int h = b.get("h").getAsInt();
+            if (x < 0 || y < 0 || x + w > cfg.panelWidth() || y + h > cfg.panelHeight()) {
+                broken.add("config control outside the design box: " + b.get("label"));
+            }
+        }
+        JsonArray fields = JsonParser.parseString(inputs).getAsJsonArray();
+        for (JsonElement el : fields) {
+            if (el == null || !el.isJsonObject()) {
+                continue;
+            }
+            JsonObject in = el.getAsJsonObject();
+            int x = in.get("x").getAsInt();
+            int y = in.get("y").getAsInt();
+            int w = in.get("w").getAsInt();
+            int h = in.get("h").getAsInt();
+            if (x < 0 || y < 0 || x + w > cfg.panelWidth() || y + h > cfg.panelHeight()) {
+                broken.add("config text field outside the design box: " + in.get("id"));
+            }
         }
     }
 

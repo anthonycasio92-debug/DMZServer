@@ -53,6 +53,13 @@ public final class UltraScreenSpec {
     private int panelHeight = UltraStyle.PANEL_H;
     private boolean centerPanel = true;
     private int panelMargin = UltraStyle.PANEL_MARGIN;
+    /**
+     * When true, {@link #toPacket()} keeps {@link #panel(int, int)} instead of growing toward
+     * {@link UltraStyle#PANEL_MAX_H}.
+     */
+    private boolean lockPanel;
+    /** When true, layoutJson asks the client to scale this design box to the screen. */
+    private boolean fillScreen;
     private PlayerModel playerModel;
     /** Lowest button top Y seen so far; used to size the body scroll region. */
     private int firstButtonY = -1;
@@ -166,6 +173,24 @@ public final class UltraScreenSpec {
 
     public UltraScreenSpec margin(int margin) {
         this.panelMargin = Math.max(0, margin);
+        return this;
+    }
+
+    /**
+     * Keep the size passed to {@link #panel(int, int)}. Packed menus still grow toward
+     * {@link UltraStyle#PANEL_MAX_H}; a locked panel does not.
+     */
+    public UltraScreenSpec lockPanel() {
+        this.lockPanel = true;
+        return this;
+    }
+
+    /**
+     * Scale this design box to the screen. The packet still sends {@link #panel(int, int)} so a
+     * client that ignores {@code fillScreen} keeps a panel that fits a small GUI.
+     */
+    public UltraScreenSpec fillScreen() {
+        this.fillScreen = true;
         return this;
     }
 
@@ -714,7 +739,11 @@ public final class UltraScreenSpec {
                                     Math.max(naturalBodyH, UltraStyle.BODY_MIN_H), maxBodyAtCap));
         }
         int height;
-        if (naturalBodyH <= 0) {
+        int buttonShift = 0;
+        if (lockPanel) {
+            // Staff config editor: the design box is the screen. Do not grow or pack it.
+            height = panelHeight;
+        } else if (naturalBodyH <= 0) {
             // Compact tile menus (hub): pack to content; lower floor than PANEL_MIN_H so
             // few tile rows are not padded with a hollow band under the last row.
             int packed = Math.max(contentBottom, bodyTop + buttonStackH);
@@ -726,24 +755,24 @@ public final class UltraScreenSpec {
                 height = Math.min(UltraStyle.PANEL_MAX_H, contentBottom);
             }
         }
-        int targetHeight = bodyTop + targetBodyH + buttonStackH;
-        if (targetHeight > height) {
-            height = Math.min(UltraStyle.PANEL_MAX_H, targetHeight);
-        }
-
-        int buttonShift = 0;
-        if (buttonTop >= 0 && targetBodyH > 0) {
-            int currentBodyRoom = Math.max(0, buttonTop - UltraStyle.BTN_GAP - bodyTop);
-            if (targetBodyH > currentBodyRoom) {
-                int need = targetBodyH - currentBodyRoom;
-                int slack = Math.max(0, height - contentBottom);
-                buttonShift = Math.min(need, slack);
-                // If still short of targetBodyH, grow panel once more (capped) then shift.
-                if (buttonShift < need && height < UltraStyle.PANEL_MAX_H) {
-                    int grow = Math.min(need - buttonShift, UltraStyle.PANEL_MAX_H - height);
-                    height += grow;
-                    slack = Math.max(0, height - contentBottom);
+        if (!lockPanel) {
+            int targetHeight = bodyTop + targetBodyH + buttonStackH;
+            if (targetHeight > height) {
+                height = Math.min(UltraStyle.PANEL_MAX_H, targetHeight);
+            }
+            if (buttonTop >= 0 && targetBodyH > 0) {
+                int currentBodyRoom = Math.max(0, buttonTop - UltraStyle.BTN_GAP - bodyTop);
+                if (targetBodyH > currentBodyRoom) {
+                    int need = targetBodyH - currentBodyRoom;
+                    int slack = Math.max(0, height - contentBottom);
                     buttonShift = Math.min(need, slack);
+                    // If still short of targetBodyH, grow panel once more (capped) then shift.
+                    if (buttonShift < need && height < UltraStyle.PANEL_MAX_H) {
+                        int grow = Math.min(need - buttonShift, UltraStyle.PANEL_MAX_H - height);
+                        height += grow;
+                        slack = Math.max(0, height - contentBottom);
+                        buttonShift = Math.min(need, slack);
+                    }
                 }
             }
         }
@@ -840,6 +869,12 @@ public final class UltraScreenSpec {
         layout.addProperty("height", height);
         layout.addProperty("center", centerPanel);
         layout.addProperty("margin", panelMargin);
+        if (fillScreen) {
+            // Opt-in. Clients that ignore these keys keep panelWidth x panelHeight.
+            layout.addProperty("fillScreen", true);
+            layout.addProperty("designWidth", panelWidth);
+            layout.addProperty("designHeight", height);
+        }
         // Always present - KaiPath must center titles when value is "center" (not left-default).
         layout.addProperty("titleAlign", UltraStyle.TITLE_ALIGN);
         boolean underTitleTabs = !tabs.isEmpty();

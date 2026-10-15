@@ -26,7 +26,8 @@ import net.minecraftforge.network.NetworkEvent;
  *   <li>body lines JSON (array)
  *   <li>buttons JSON (array of objects with {@code id}/{@code label}/{@code style}/{@code x}/
  *       {@code y}/{@code w}/{@code h}/optional {@code args})
- *   <li>panel width (GUI px) — centered dialog; KaiPath must not stretch to fullscreen
+ *   <li>panel width (GUI px) — centered dialog. Stretch only when layoutJson
+ *       {@code fillScreen} is true, scaling {@code designWidth} x {@code designHeight}
  *   <li>panel height (GUI px)
  *   <li>layout JSON ({@code panelWidth}, {@code panelHeight}, {@code width}, {@code height},
  *       {@code center}, {@code margin}, {@code titleAlign}, …)
