@@ -308,10 +308,8 @@ public final class UltraRivalScreens {
         spec.buttonsAfterLines();
         placePerChallengeButtons(spec, player);
         // 3) Challenge actions, then Spectate with Stop spectate on the same row.
-        UltraPickHelper.placePageButtons(
-                spec,
-                "pick_challenge|Send challenge",
-                "records:history|Challenge history");
+        // Records (Home) is the history page. No per-challenge opponent/result/date log is stored.
+        UltraPickHelper.placePageButtons(spec, "pick_challenge|Send challenge");
         spec.buttonLeft("page:pick_spectate", "Spectate", "normal");
         spec.buttonRight("do:spectate_stop", UltraStyle.dim("Stop spectate"), "dim").rowGap();
         spec.footerBackToMain();
@@ -415,9 +413,20 @@ public final class UltraRivalScreens {
                 .labelValue("Target", who == null || who.isBlank() ? "-" : who)
                 .notice("Removing a rival cannot be undone from this menu.")
                 .buttonsAfterLines();
+        boolean stillRival = false;
         if (arg != null && !arg.isBlank()) {
+            for (String cur : RivalGuiApi.currentRivalArgs(player)) {
+                if (arg.equalsIgnoreCase(cur)) {
+                    stillRival = true;
+                    break;
+                }
+            }
+        }
+        if (stillRival) {
             spec.buttonLeft("do:remove:" + arg, UltraStyle.danger("Remove rival"), "danger")
                     .rowGap();
+        } else if (arg != null && !arg.isBlank()) {
+            spec.line(UltraStyle.dim("Not on your rival list."));
         }
         spec.footerBack("page:actions", "Actions");
         spec.send(player);

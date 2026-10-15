@@ -1373,6 +1373,21 @@ def main() -> int:
         errors.append("Rival Challenge must pair Spectate with Stop spectate on one row")
     if "Send challenge..." in chal_body or "Spectate..." in chal_body:
         errors.append("Rival Challenge labels must not trail an ellipsis")
+    if "Challenge history" in chal_body or "records:history" in chal_body:
+        errors.append(
+            "UltraRivalScreens.openChallenge must not duplicate Records as Challenge history"
+        )
+    gui_actions = (ULTRA / "UltraGuiActions.java").read_text(encoding="utf-8")
+    reopen_m = re.search(
+        r"private static String rivalListReopen\b.*?^\s*private static String ",
+        gui_actions,
+        re.S | re.M,
+    )
+    reopen_body = reopen_m.group(0) if reopen_m else ""
+    if 'case "remove"' not in reopen_body or '"actions"' not in reopen_body:
+        errors.append("rivalListReopen must send remove back to the actions rival list")
+    if "list_detail" in reopen_body:
+        errors.append("rivalListReopen must not stay on list_detail after a list mutation")
     footer_re = re.compile(r'footerBack(?:Home)?\(\s*(?:"[^"]*"\s*,\s*)?"([^"]+)"')
     banned = (
         "Personal difficulty - ON",

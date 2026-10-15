@@ -736,6 +736,12 @@ public final class UltraGuiActions {
             return "reset";
         }
         String page = stringArg(args, "page");
+        if ("rival".equals(screen)) {
+            String refreshed = rivalListReopen(parts.action, page);
+            if (refreshed != null) {
+                return refreshed;
+            }
+        }
         if (!page.isBlank() && !"config".equals(screen) && !"spar".equals(screen) && !"sparring".equals(screen)) {
             return page;
         }
@@ -837,6 +843,25 @@ public final class UltraGuiActions {
             };
             case "admin" -> "admin";
             default -> homePage(screen);
+        };
+    }
+
+    /**
+     * Rival list mutations reopen a page that rebuilds from current data.
+     * Staying on {@code list_detail} after remove kept the old Remove button.
+     * Settings toggles return null so the current settings page refreshes in place.
+     */
+    private static String rivalListReopen(String action, String page) {
+        String act = action == null ? "" : action;
+        String current = page == null ? "" : page;
+        return switch (act) {
+            case "remove", "declare", "silent", "accept_replace" -> "actions";
+            case "accept", "decline" ->
+                    current.startsWith("requests") || current.startsWith("pending") ? current : "actions";
+            case "cancel_mutual_replace", "cancel_replace", "cancelmutualreplace" -> "requests";
+            case "challenge", "challenge_accept", "challenge_decline", "challenge_cancel",
+                    "challenge_send", "spectate", "spectate_stop" -> "challenge";
+            default -> null;
         };
     }
 
