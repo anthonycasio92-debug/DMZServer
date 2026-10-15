@@ -540,6 +540,56 @@ public final class UltraScreenSelfTest {
         if (recovered == null || !recovered.contains("\"titleAlign\":\"center\"")) {
             broken.add("sanitizeLayoutJson invalid JSON must fall back with titleAlign=center");
         }
+        if (!"8".equals(UltraStyle.readableButtonInk("normal", "5"))
+                || !"8".equals(UltraStyle.readableButtonInk("confirm", "d"))
+                || !"8".equals(UltraStyle.readableButtonInk("normal", "6"))
+                || !"8".equals(UltraStyle.readableButtonInk("confirm", "e"))) {
+            broken.add("purple/gold/yellow button ink must become dark gray on light buttons");
+        }
+        if (!"5".equals(UltraStyle.readableButtonInk("danger", "5"))
+                || !"c".equals(UltraStyle.readableButtonInk("normal", "c"))
+                || !"8".equals(UltraStyle.readableButtonInk("dim", "5"))) {
+            broken.add("readable button ink must keep danger purple, normal red, and dim gray");
+        }
+        String mark = UltraStyle.MARK;
+        List<GuiOpenPacket> rivalInk =
+                UltraScreenSpec.captureSends(() -> UltraScreenSpec.of("rival")
+                        .title("Rival")
+                        .page("home")
+                        .button("do:declare", "Declare", "confirm")
+                        .button("do:spectate", "Spectate", "normal")
+                        .send(null));
+        if (rivalInk.isEmpty()) {
+            broken.add("rival ink probe produced no packet");
+        } else {
+            String buttons = rivalInk.get(0).buttonsJson() == null ? "" : rivalInk.get(0).buttonsJson();
+            String layout = rivalInk.get(0).layoutJson() == null ? "" : rivalInk.get(0).layoutJson();
+            if (buttons.contains(mark + "5")
+                    || buttons.contains(mark + "d")
+                    || layout.contains("\"accent\":\"5\"")) {
+                broken.add("rival chrome must not use dark purple on the gold header or light buttons");
+            }
+            if (!buttons.contains(mark + "fDeclare") && !buttons.contains(mark + "8Declare")) {
+                broken.add("rival light buttons must use white or dark gray label ink");
+            }
+        }
+        List<GuiOpenPacket> sparInk =
+                UltraScreenSpec.captureSends(() -> UltraScreenSpec.of("spar")
+                        .title("Sparring")
+                        .page("main")
+                        .button("do:ping", "Spar", "confirm")
+                        .send(null));
+        if (sparInk.isEmpty()) {
+            broken.add("spar ink probe produced no packet");
+        } else {
+            String buttons = sparInk.get(0).buttonsJson() == null ? "" : sparInk.get(0).buttonsJson();
+            if (buttons.contains(mark + "6Spar") || buttons.contains(mark + "eSpar")) {
+                broken.add("spar confirm label must not use gold or yellow ink on a light button");
+            }
+            if (!buttons.contains(mark + "8Spar")) {
+                broken.add("spar confirm label must use dark gray ink");
+            }
+        }
         List<GuiOpenPacket> charPkts =
                 UltraScreenSpec.captureSends(() -> probeBuilder("character"));
         if (!charPkts.isEmpty()) {

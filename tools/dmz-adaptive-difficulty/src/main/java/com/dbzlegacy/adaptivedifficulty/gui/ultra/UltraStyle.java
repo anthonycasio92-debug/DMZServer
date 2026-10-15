@@ -397,6 +397,33 @@ public final class UltraStyle {
     }
 
     /**
+     * Label ink that stays readable on a KaiPath button.
+     *
+     * <p>Stock buttons are the light vanilla widget (yellow/gold stone). Confirm is a light
+     * fill too. Dark purple ({@code 5}), light purple ({@code d}), gold ({@code 6}), and
+     * yellow ({@code e}) disappear on that face, so they become dark gray. Dim stays dark
+     * gray. Purple is left alone on darker faces such as danger.
+     */
+    public static String readableButtonInk(String style, String accentCode) {
+        String ink = accentCode == null ? "" : accentCode.trim();
+        if (!ink.isEmpty() && ink.charAt(0) == '\u00A7' && ink.length() >= 2) {
+            ink = ink.substring(1);
+        }
+        if (!ink.isEmpty()) {
+            ink = ink.substring(0, 1).toLowerCase(java.util.Locale.ROOT);
+        }
+        String face = style == null ? "" : style.trim().toLowerCase(java.util.Locale.ROOT);
+        if (STYLE_DIM.equals(face)) {
+            return "8";
+        }
+        boolean lightFace = face.isEmpty() || STYLE_NORMAL.equals(face) || STYLE_CONFIRM.equals(face);
+        if (lightFace && ("5".equals(ink) || "d".equals(ink) || "6".equals(ink) || "e".equals(ink))) {
+            return "8";
+        }
+        return ink;
+    }
+
+    /**
      * Single-letter Minecraft color code for {@code layoutJson.accent} and per-system
      * <em>button label</em> ink ({@link #systemAccent(String)} / {@link #color(String, String)}).
      * Empty when the screen uses the shared hub gold header (no per-system tint).
@@ -411,7 +438,9 @@ public final class UltraStyle {
         String id = screenId.trim().toLowerCase();
         return switch (id) {
             case "difficulty" -> "c";
-            case "rival" -> "5";
+            // White, not dark purple. Purple on the gold header and yellow button face
+            // does not read. Body copy on the dark panel may still use purple.
+            case "rival" -> "f";
             case "spar" -> "6";
             case "prestige" -> "b";
             case "character" -> "a";

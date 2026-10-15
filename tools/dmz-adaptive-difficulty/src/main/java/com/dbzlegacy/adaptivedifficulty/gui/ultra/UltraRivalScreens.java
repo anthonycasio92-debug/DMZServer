@@ -423,7 +423,12 @@ public final class UltraRivalScreens {
             }
         }
         if (stillRival) {
-            spec.buttonLeft("do:remove:" + arg, UltraStyle.danger("Remove rival"), "danger")
+            // Silent can be upgraded from the profile. Declared and above already sent that step.
+            if ("silent".equalsIgnoreCase(RivalGuiApi.rivalStatusLabel(player, arg))) {
+                spec.button("do:declare:" + arg, UltraStyle.confirm("Declare"), "confirm")
+                        .rowGap();
+            }
+            spec.button("do:remove:" + arg, UltraStyle.danger("Remove rival"), "danger")
                     .rowGap();
         } else if (arg != null && !arg.isBlank()) {
             spec.line(UltraStyle.dim("Not on your rival list."));
@@ -559,7 +564,23 @@ public final class UltraRivalScreens {
         } else {
             pageBase = "pick_" + doAction;
         }
-        List<String> args = RivalGuiApi.onlinePlayerArgs(player);
+        List<String> args;
+        String emptyCopy;
+        if ("spectate".equals(doAction)) {
+            args = RivalGuiApi.activeChallengeArgs(player);
+            emptyCopy = "No active challenges right now";
+        } else if ("rival_pick".equals(doAction)
+                || "declare".equals(doAction)
+                || "silent".equals(doAction)) {
+            List<String> online = RivalGuiApi.onlinePlayerArgs(player);
+            args = RivalGuiApi.excludingCurrentRivals(player, online);
+            emptyCopy = online == null || online.isEmpty()
+                    ? "Nobody is available right now."
+                    : "Everyone online is already a rival.";
+        } else {
+            args = RivalGuiApi.onlinePlayerArgs(player);
+            emptyCopy = "Nobody is available right now.";
+        }
         int total = args == null ? 0 : args.size();
         int pages = Math.max(1, (total + PICK_PER_PAGE - 1) / PICK_PER_PAGE);
         int pg = Math.min(pages - 1, Math.max(0, pageIndex));
@@ -568,8 +589,13 @@ public final class UltraRivalScreens {
         UltraScreenSpec spec = sub(pg > 0 ? pageBase + ":" + pg : pageBase)
                 .line(UltraStyle.LABEL + heading)
                 .line(UltraStyle.DIM + pickExplainer(doAction))
-                .labelValue("Players", total + (pages > 1 ? (" | page " + (pg + 1) + "/" + pages) : ""))
-                .buttonsAfterLines();
+                .labelValue(
+                        "spectate".equals(doAction) ? "In a fight" : "Players",
+                        total + (pages > 1 ? (" | page " + (pg + 1) + "/" + pages) : ""));
+        if (total == 0) {
+            spec.line(UltraStyle.dim(emptyCopy));
+        }
+        spec.buttonsAfterLines();
         int placed = 0;
         for (int i = from; i < to; i++) {
             String arg = args.get(i);
@@ -610,9 +636,6 @@ public final class UltraRivalScreens {
         }
         if (placed % 2 == 1) {
             spec.rowGap();
-        }
-        if (placed == 0) {
-            spec.line(UltraStyle.dim("Nobody is available right now."));
         }
         if (pg > 0) {
             spec.buttonLeft("page:" + pageBase + ":" + (pg - 1), UltraStyle.dim("Prev"), UltraStyle.STYLE_DIM);
@@ -755,7 +778,7 @@ public final class UltraRivalScreens {
             case "rival_pick", "declare", "silent" ->
                     "Next you choose Silent, Declare, or Accept a mutual request.";
             case "challenge_pick" -> "Pick who to challenge. Next step chooses length.";
-            case "spectate" -> "Spectate an online rival fight.";
+            case "spectate" -> "Only fights that are in progress.";
             default -> "Choose an online player.";
         };
     }

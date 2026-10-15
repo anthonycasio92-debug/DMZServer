@@ -366,6 +366,8 @@ public final class UltraScreenSpec {
         } else if (accentCode.isEmpty()) {
             accentCode = UltraStyle.systemAccentCode(screenId);
         }
+        // Purple / gold / yellow ink on the light vanilla button is unreadable.
+        accentCode = UltraStyle.readableButtonInk(resolvedStyle, accentCode);
         int labelPx = UltraStyle.labelMaxWidth(width);
         String fitted = UltraStyle.fitAsciiLabel(UltraStyle.clipPlain(label, labelPx), labelPx);
         // Character startup self-test forbids section-sign / C2 in buttonsJson labels; style carries
@@ -492,7 +494,8 @@ public final class UltraScreenSpec {
 
     private void addFooterButton(String actionId, String label, int x) {
         UltraScreenIds.requireValidActionId(screenId, actionId, label);
-        String accentCode = UltraStyle.systemAccentCode(screenId);
+        String accentCode = UltraStyle.readableButtonInk(
+                UltraStyle.STYLE_DIM, UltraStyle.systemAccentCode(screenId));
         int labelPx = UltraStyle.labelMaxWidth(UltraStyle.BTN_W);
         String fitted = UltraStyle.fitAsciiLabel(UltraStyle.clipPlain(label, labelPx), labelPx);
         String wireLabel = plainWireLabel(fitted, accentCode);

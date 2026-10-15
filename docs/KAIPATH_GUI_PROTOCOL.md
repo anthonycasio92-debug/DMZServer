@@ -380,7 +380,7 @@ KaiPath default chrome. Per-system color stays on **`layoutJson.palette`** (pane
 title). Labels stay plain ASCII. Overlong labels truncate with ASCII `...`; pages scroll
 rather than squeezing buttons.
 
-**System accent map (LM example — replace with your own letters):** Difficulty `c` · Rival `5` ·
+**System accent map (LM example — replace with your own letters):** Difficulty `c` · Rival `f` ·
 Sparring `6` · Prestige `b` · Character `a` · Skill Check `e` · Staff Admin `4`. Main hub
 omits `accent` (shared gold title chrome). Another mod picks its own letters; the protocol
 only requires a single Minecraft color code.
