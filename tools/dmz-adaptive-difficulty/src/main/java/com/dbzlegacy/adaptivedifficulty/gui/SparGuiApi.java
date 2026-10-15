@@ -144,6 +144,34 @@ public final class SparGuiApi {
         return SparringSystem.statsLines(player);
     }
 
+    /** Lifetime / bond summary without Combat or full report dump (Ultra stats page). */
+    public static List<String> statsOverviewLines(ServerPlayer player) {
+        if (player == null || !DifficultyConfig.get().enableSparringSystem) {
+            return List.of("§cSparring system is disabled.");
+        }
+        return SparringSystem.statsOverviewLines(player);
+    }
+
+    /** Last-fight button cards ({@code index\tlabel}). */
+    public static List<String> recentFightCards(ServerPlayer player) {
+        if (player == null || !DifficultyConfig.get().enableSparringSystem) {
+            return List.of();
+        }
+        return SparringSystem.recentFightCards(player);
+    }
+
+    /** Full report for one recent fight (1-based index). */
+    public static List<String> recentReportLines(ServerPlayer player, int index) {
+        if (player == null || !DifficultyConfig.get().enableSparringSystem) {
+            return List.of("§cSparring system is disabled.");
+        }
+        List<String> lines = SparringSystem.recentReportLines(player, index);
+        if (lines.isEmpty()) {
+            return List.of("§7That fight report is no longer available.");
+        }
+        return lines;
+    }
+
     public static List<String> topLines(ServerPlayer player, String category) {
         if (!DifficultyConfig.get().enableSparringSystem) {
             return List.of("§cSparring system is disabled.");
@@ -202,6 +230,32 @@ public final class SparGuiApi {
         return SparringSystem.dojoMemberLines(player);
     }
 
+    public static List<String> ownedDojoMemberLines(ServerPlayer player) {
+        if (player == null || !DifficultyConfig.get().enableSparringSystem) {
+            return List.of("§cSparring system is disabled.");
+        }
+        return DojoRankings.ownedDojoMemberLines(player);
+    }
+
+    public static List<String> joinedDojoMemberLines(ServerPlayer player) {
+        if (player == null || !DifficultyConfig.get().enableSparringSystem) {
+            return List.of("§cSparring system is disabled.");
+        }
+        return DojoRankings.joinedDojoMemberLines(player);
+    }
+
+    public static boolean ownsDojo(ServerPlayer player) {
+        return player != null && DojoRankings.isDojoMaster(player);
+    }
+
+    public static boolean joinedDojo(ServerPlayer player) {
+        if (player == null) {
+            return false;
+        }
+        SparStore.MentorBond bond = SparStore.get().bond(player.m_20148_());
+        return bond != null && bond.mentorUuid != null && !bond.mentorUuid.isBlank();
+    }
+
     public static List<String> dojoMemberCards(ServerPlayer player) {
         if (player == null || !DifficultyConfig.get().enableSparringSystem) {
             return List.of();
@@ -211,7 +265,7 @@ public final class SparGuiApi {
 
     public static List<String> mentorLines(ServerPlayer player) {
         List<String> lines = new ArrayList<>();
-        lines.add("§8?? §bTraining bonds §8??");
+        lines.add("§bTraining bonds");
         if (player == null || !DifficultyConfig.get().enableSparringSystem) {
             lines.add("§cSparring system is disabled.");
             return lines;
@@ -223,7 +277,7 @@ public final class SparGuiApi {
         boolean hasApprentice = appCount > 0;
         if (hasMentor || hasApprentice) {
             if (hasMentor) {
-                lines.add("§7Your mentor §f" + blank(bond.mentorName, "?"));
+                lines.add("§7Your mentor §f" + blank(bond.mentorName, "-"));
             }
             if (hasApprentice) {
                 lines.add("§7Your apprentices §f" + appCount + "§8/§f" + SparringSystem.MAX_APPRENTICES);
@@ -242,7 +296,7 @@ public final class SparGuiApi {
             }
             lines.add("§7Streak §f" + bond.streakCurrent + " §8best §f" + bond.streakBest);
         } else {
-            lines.add("§7Invite apprentices or ask a mentor below");
+            lines.add("§7Invite apprentices or ask a mentor from Actions.");
             lines.add("§8Dojo: up to §f" + SparringSystem.MAX_APPRENTICES + " §8apprentices - one master");
             lines.add("§8Invite lasts §f1 hour §8- peers spar +"
                     + Math.round(SparCombat.DOJO_PEER_SPAR_BONUS_PCT * 100) + "% TP");
@@ -252,7 +306,7 @@ public final class SparGuiApi {
         if (pending > 0) {
             lines.add("§ePending invites §f" + pending + " §8- open Bond invites (§f1h§8)");
         } else {
-            lines.add("§8Recruit apprentice - Request a master - Bond invites - Release - Dojo home");
+            lines.add("§8Open Actions to recruit, request a master, or release.");
         }
         return lines;
     }
@@ -320,11 +374,12 @@ public final class SparGuiApi {
             boolean online = p.length > 4 && "1".equals(p[4]);
             String kind = p.length > 5 ? p[5] : "";
             String role = "mentor".equalsIgnoreCase(kind) ? "Mentor" : "Apprentice";
+            String onlineWord = online ? "online" : "offline";
             if ("IN".equals(dir)) {
-                lines.add("§a? Incoming §f" + name + (online ? " §a*" : " §8?")
+                lines.add("§aIncoming §f" + name + " §8(" + onlineWord + ")"
                         + " §8-> you as " + role);
             } else {
-                lines.add("§6? Outgoing §f" + name + (online ? " §a*" : " §8?")
+                lines.add("§6Outgoing §f" + name + " §8(" + onlineWord + ")"
                         + " §8-> them as " + role);
             }
         }

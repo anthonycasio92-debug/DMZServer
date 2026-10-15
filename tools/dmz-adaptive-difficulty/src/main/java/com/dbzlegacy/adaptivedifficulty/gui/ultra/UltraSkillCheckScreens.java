@@ -48,16 +48,19 @@ public final class UltraSkillCheckScreens {
     private static void show(ServerPlayer player, boolean staffAdmin) {
         String screenId = staffAdmin ? "skills" : "skillcheck";
         String title = staffAdmin ? "Skills" : "Skill Check";
-        List<String> lines = ProgressionGuiApi.skillsLines(player, "core");
+        // Compact skills-only list (no DMZ level / Ki / Energy header).
+        List<String> lines = ProgressionGuiApi.skillsLines(player, "skillcheck");
         UltraScreenSpec spec = UltraScreenSpec.of(screenId)
                 .title(title)
                 .page("main")
                 .activeTab("home")
-                .line(UltraStyle.LABEL + "Level, locked, unlocked, or max.");
+                .lineGap(2)
+                .bodyPad(4)
+                .line(UltraStyle.LABEL + "Your skills");
         if (skillListMissing(lines)) {
             spec.line(
                     UltraStyle.dim(
-                            "No skills are listed. Ask staff to turn skill unlock on, then open this page again."));
+                            "No skills listed. Ask staff to turn skill unlock on."));
         } else {
             for (String line : lines) {
                 if (line != null && !line.isBlank()) {
@@ -68,8 +71,10 @@ public final class UltraSkillCheckScreens {
         if (staffAdmin) {
             spec.line(UltraStyle.DIM + "Staff: /skills - Donators: /skillcheck");
         }
-        // No tabs - body starts under the title; buttons sit below the scroll region.
-        spec.setRow(Math.max(UltraStyle.CONTENT_ROW + UltraStyle.BODY_MIN_H, 200));
+        // Dense list - body grows with line count; keep footer tight under content.
+        int lineCount = 1 + (lines == null ? 0 : lines.size()) + (staffAdmin ? 1 : 0);
+        int bodyH = Math.min(UltraStyle.BODY_MIN_H, 24 + lineCount * (UltraStyle.LINE_H + 2));
+        spec.setRow(UltraStyle.CONTENT_ROW + Math.max(80, bodyH));
         spec.footerBackToMain();
         spec.send(player);
     }

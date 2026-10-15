@@ -60,6 +60,34 @@ public final class SkillUnlockService {
         return buildPageLines(player, "core");
     }
 
+    /**
+     * Ultra Skill Check home: skills only (no DMZ level / Ki / Energy header, no tip padding).
+     * One short line per skill.
+     */
+    public static List<String> skillCheckGuiLines(ServerPlayer player) {
+        List<String> out = new ArrayList<>();
+        StatsData data = DmzProgression.stats(player);
+        if (data == null) {
+            out.add("§cNo DMZ data found. Rejoin or ask staff if this keeps happening.");
+            return out;
+        }
+        Skills skills;
+        try {
+            skills = data.getSkills();
+        } catch (Throwable t) {
+            skills = null;
+        }
+        if (skills == null) {
+            out.add("§cNo skill data found. Ask staff if skill unlock is on.");
+            return out;
+        }
+        DmzSkillUtil.prepareForRead(skills);
+        appendPotentialCompact(out, player, skills);
+        LivingWorldNearbyMeditation.appendCompactLine(out, player, skills);
+        appendSagaCompact(out, player, skills);
+        return out;
+    }
+
     /** @deprecated Advanced folded into Saga — returns saga lines. */
     public static List<String> advancedLines(ServerPlayer player) {
         return buildPageLines(player, "saga");
@@ -154,6 +182,29 @@ public final class SkillUnlockService {
         }
     }
 
+    /** Single-line Potential for Ultra Skill Check (no tip rows). */
+    private static void appendPotentialCompact(List<String> out, ServerPlayer player, Skills skills) {
+        int level = skillLevel(skills, "potentialunlock");
+        boolean piccolo = PotentialProgression.hasPiccoloUnlock(player);
+        if (level >= HARD_MAX_POTENTIAL) {
+            out.add("§dPotential §f" + level + "/" + HARD_MAX_POTENTIAL + " §8· §6Max");
+            return;
+        }
+        if (level >= 10 && !piccolo) {
+            out.add("§dPotential §f" + level + "/" + HARD_MAX_POTENTIAL + " §8· §eSoft cap");
+            return;
+        }
+        int next = level + 1;
+        int required = next * 100;
+        long progress = ProgressionData.storedGetLong(player, "potentialunlock_points_to_level_" + next, 0L);
+        if (progress > required) {
+            progress = required;
+        }
+        String status = piccolo && level >= 10 ? " §8· §aPiccolo" : "";
+        out.add("§dPotential §f" + level + "/" + HARD_MAX_POTENTIAL
+                + status + " §8· §f" + progress + "/" + required);
+    }
+
     private static void appendSaga(List<String> out, ServerPlayer player, Skills skills) {
         appendSagaSkill(out, player, skills, "kicontrol", "Ki Control", "§3", 1);
         appendSagaSkill(out, player, skills, "kimanipulation", "Ki Manipulation", "§9", 10);
@@ -166,6 +217,20 @@ public final class SkillUnlockService {
         appendSagaSkill(out, player, skills, "kiprotection", "Ki Protection", "§9", 10);
         appendSagaSkill(out, player, skills, "kaioken", "Kaioken", "§c", 5);
         appendSagaSkill(out, player, skills, "fusion", "Fusion", "§d", 5);
+    }
+
+    private static void appendSagaCompact(List<String> out, ServerPlayer player, Skills skills) {
+        appendSagaSkillCompact(out, player, skills, "kicontrol", "Ki Control", "§3", 1);
+        appendSagaSkillCompact(out, player, skills, "kimanipulation", "Ki Manip", "§9", 10);
+        appendSagaSkillCompact(out, player, skills, "kisense", "Ki Sense", "§5", 10);
+        appendSagaSkillCompact(out, player, skills, "defense_penetration", "Def Pen", "§c", 10);
+        appendSagaSkillCompact(out, player, skills, "healing_reduction", "Heal Red", "§4", 10);
+        appendSagaSkillCompact(out, player, skills, "instant_transmission", "IT", "§d", 10);
+        appendSagaSkillCompact(out, player, skills, "ki_infusion", "Ki Infusion", "§b", 10);
+        appendSagaSkillCompact(out, player, skills, "kiboost", "Ki Boost", "§3", 4);
+        appendSagaSkillCompact(out, player, skills, "kiprotection", "Ki Prot", "§9", 10);
+        appendSagaSkillCompact(out, player, skills, "kaioken", "Kaioken", "§c", 5);
+        appendSagaSkillCompact(out, player, skills, "fusion", "Fusion", "§d", 5);
     }
 
     private static void appendSagaSkill(
@@ -182,6 +247,23 @@ public final class SkillUnlockService {
             out.add(color + name + "§7: §f" + level + "/" + max + " §8· §6Max");
         } else {
             out.add(color + name + "§7: §f" + level + "/" + max + " §8· §aUnlocked");
+        }
+    }
+
+    private static void appendSagaSkillCompact(
+            List<String> out, ServerPlayer player, Skills skills, String id, String name,
+            String color, int fallbackMax
+    ) {
+        int level = effectiveSkillLevel(player, skills, id);
+        int max = skillMax(skills, id, fallbackMax);
+        if (level < 1) {
+            out.add(color + name + " §f0/" + max + " §8· §cLocked");
+            return;
+        }
+        if (level >= max) {
+            out.add(color + name + " §f" + level + "/" + max + " §8· §6Max");
+        } else {
+            out.add(color + name + " §f" + level + "/" + max + " §8· §aOn");
         }
     }
 

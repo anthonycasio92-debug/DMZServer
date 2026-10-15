@@ -17,7 +17,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.common.util.LazyOptional;
 
 /**
- * Difficulty -> Weights shop. Players pick a DMZ weight type, type a weight value (1 copper per
+ * Sparring -> Weights shop. Players pick a DMZ weight type, type a weight value (1 copper per
  * point), confirm, then receive the item with {@code WeightValue} NBT via
  * {@code WeightItem.setWeight(stack, value)} (reflection; falls back to direct NBT).
  *
@@ -26,9 +26,9 @@ import net.minecraftforge.common.util.LazyOptional;
  */
 public final class UltraWeightShopScreens {
     /** Hard cap so typed values stay sane (1 copper : 1 weight). */
-    public static final int MAX_WEIGHT_VALUE = 100_000;
+    public static final int MAX_WEIGHT_VALUE = 10_000_000;
 
-    /** Digits needed to type {@link #MAX_WEIGHT_VALUE} (was hard-capped at 4 / 9999). */
+    /** Digits needed to type {@link #MAX_WEIGHT_VALUE} (was hard-capped at 4 / 9999, then 100k). */
     public static final int MAX_WEIGHT_DIGITS = String.valueOf(MAX_WEIGHT_VALUE).length();
 
     /** Curios slot id for {@code CurioType.WEIGHTS} ({@code data/.../curios/slots/weights.json}). */
@@ -76,7 +76,7 @@ public final class UltraWeightShopScreens {
     static void openShop(ServerPlayer player) {
         AncientCoinEconomy.migrateWalletToItems(player);
         UltraScreenSpec spec =
-                base("weights", "home")
+                sub("weights")
                         .line(UltraStyle.LABEL + "Training weights - 1 ancient copper per weight value.")
                         .labelValue(
                                 "Copper",
@@ -86,7 +86,7 @@ public final class UltraWeightShopScreens {
                         .labelValue("Ancient Coins", AncientCoinEconomy.inventoryBreakdown(player))
                         .labelValue("Max value", String.valueOf(MAX_WEIGHT_VALUE))
                         .line(UltraStyle.DIM + "Pick a type, type the weight value, then confirm.")
-                        .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
+                        .setRow(UltraStyle.CONTENT_ROW + UltraStyle.BODY_MIN_H);
         for (WeightOffer offer : WeightOffer.values()) {
             spec.button(
                             "page:weights_input:" + offer.id,
@@ -94,7 +94,7 @@ public final class UltraWeightShopScreens {
                             UltraStyle.STYLE_CONFIRM)
                     .rowGap();
         }
-        spec.footerBackToMain();
+        spec.footerBackHome("Spar Home");
         spec.send(player);
     }
 
@@ -106,7 +106,7 @@ public final class UltraWeightShopScreens {
         }
         AncientCoinEconomy.migrateWalletToItems(player);
         UltraScreenSpec spec =
-                base("weights_input:" + offer.id, "home")
+                sub("weights_input:" + offer.id)
                         .line(UltraStyle.LABEL + offer.label)
                         .labelValue(
                                 "Copper",
@@ -116,7 +116,7 @@ public final class UltraWeightShopScreens {
                         .labelValue("Ancient Coins", AncientCoinEconomy.inventoryBreakdown(player))
                         .labelValue("Price", "1 copper per weight value")
                         .labelValue("Max value", String.valueOf(MAX_WEIGHT_VALUE))
-                        .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
+                        .setRow(UltraStyle.CONTENT_ROW + UltraStyle.BODY_MIN_H);
 
         if (!UltraClientFeatures.hasTextInput(player)) {
             spec.line(UltraStyle.danger("Typed weight entry needs a newer KaiPath client."))
@@ -133,7 +133,7 @@ public final class UltraWeightShopScreens {
                 .textField(
                         INPUT_ID,
                         "",
-                        "e.g. 50000",
+                        "e.g. 500000",
                         UltraStyle.COL_L,
                         spec.row(),
                         UltraStyle.PANEL_W - UltraStyle.COL_L * 2,
@@ -161,7 +161,7 @@ public final class UltraWeightShopScreens {
         boolean free = PaidFeatureAccess.bypassAncientCoinCost(player);
         String costText = free ? "Free for staff" : AncientCoinEconomy.formatExactCost(cost);
         UltraScreenSpec spec =
-                base("weights_confirm:" + offer.id + ":" + value, "home")
+                sub("weights_confirm:" + offer.id + ":" + value)
                         .line(UltraStyle.LABEL + "Confirm weight purchase")
                         .labelValue("Type", offer.label)
                         .labelValue("Weight value", String.valueOf(value))
@@ -172,7 +172,7 @@ public final class UltraWeightShopScreens {
                                         AncientCoinEconomy.countOf(
                                                 player, AncientCoinEconomy.CoinKind.COPPER)))
                         .labelValue("Ancient Coins", AncientCoinEconomy.inventoryBreakdown(player))
-                        .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
+                        .setRow(UltraStyle.CONTENT_ROW + UltraStyle.BODY_MIN_H);
         if (!free && !AncientCoinEconomy.canAfford(player, cost)) {
             spec.line(UltraStyle.danger(AncientCoinEconomy.missingText(player, cost)))
                     .button(
@@ -197,8 +197,8 @@ public final class UltraWeightShopScreens {
     }
 
     /**
-     * Handles {@code weight_quote} / {@code weight_buy}. Returns a chat notice; may open the
-     * confirm page directly (caller should skip generic reopen for {@code weight_quote}).
+     * Handles {@code weight_quote} / {@code weight_buy}. Outcomes are stashed via
+     * {@link UltraGuiFeedback} before opening the next page (caller skips generic reopen).
      */
     public static String handleAction(
             ServerPlayer player, String action, String arg, String page, JsonObject args) {
@@ -251,31 +251,39 @@ public final class UltraWeightShopScreens {
         boolean free = PaidFeatureAccess.bypassAncientCoinCost(player);
         long charge = free ? 0L : cost;
         if (charge > 0L && !AncientCoinEconomy.canAfford(player, charge)) {
+            // Stash before open so the confirm page shows the missing-funds line.
+            UltraGuiFeedback.deliver(
+                    player, UltraStyle.dangerLine(AncientCoinEconomy.missingText(player, charge)));
             openConfirm(player, offer.id, value);
-            return UltraStyle.dangerLine(AncientCoinEconomy.missingText(player, charge));
+            return "";
         }
         ItemStack stack = ItemIds.stack(offer.itemId, 1);
         if (stack == null || stack.m_41619_()) {
             return UltraStyle.dangerLine("That weight item is not available on this server.");
         }
         if (charge > 0L && !AncientCoinEconomy.charge(player, charge)) {
+            UltraGuiFeedback.deliver(
+                    player, UltraStyle.dangerLine(AncientCoinEconomy.missingText(player, charge)));
             openConfirm(player, offer.id, value);
-            return UltraStyle.dangerLine(AncientCoinEconomy.missingText(player, charge));
+            return "";
         }
         applyWeightValue(stack, value);
         String destination = giveWeightItem(player, stack);
-        openShop(player);
         String costText = free ? "Free (staff)" : AncientCoinEconomy.formatExactCost(cost);
-        return UltraStyle.noticeLine(
-                "Bought "
-                        + offer.label
-                        + " - weight "
-                        + value
-                        + " - "
-                        + costText
-                        + " - "
-                        + destination
-                        + ".");
+        UltraGuiFeedback.deliver(
+                player,
+                UltraStyle.noticeLine(
+                        "Bought "
+                                + offer.label
+                                + " - weight "
+                                + value
+                                + " - "
+                                + costText
+                                + " - "
+                                + destination
+                                + "."));
+        openShop(player);
+        return "";
     }
 
     /**
@@ -440,13 +448,13 @@ public final class UltraWeightShopScreens {
         return null;
     }
 
-    private static UltraScreenSpec base(String page, String tab) {
-        return UltraScreenSpec.of("difficulty")
-                .title("Difficulty")
-                .page(page)
-                .activeTab(tab)
-                .tabs("home|Home", "tiers|Tiers", "summons|Summons");
+    /** Weights shop / confirm — Sparring subpages without the system tab row. */
+    private static UltraScreenSpec sub(String page) {
+        return UltraScreenSpec.of("spar")
+                .title("Sparring")
+                .page(page);
     }
+
 
     private static String argsString(JsonObject args, String key) {
         if (args == null || key == null || !args.has(key) || args.get(key).isJsonNull()) {

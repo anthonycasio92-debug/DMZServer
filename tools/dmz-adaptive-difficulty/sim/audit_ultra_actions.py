@@ -30,8 +30,6 @@ KNOWN_DO: dict[str, set[str]] = {
         "toggle_coin_chat",
         "reload",
         "syslog",
-        "weight_quote",
-        "weight_buy",
     },
     "character": {
         "reskin_confirm",
@@ -51,6 +49,7 @@ KNOWN_DO: dict[str, set[str]] = {
     },
     "prestige": {
         "confirm",
+        "confirm_now",
         "turnin",
         "skill",
         "tier",
@@ -91,11 +90,17 @@ KNOWN_DO: dict[str, set[str]] = {
         "mentor_release",
         "admin",
         "dojo_accept",
+        "dojo_decline",
         "dojo_war_cancel",
         "dojo_challenge",
+        "weight_quote",
+        "weight_buy",
+        "quote",
+        "buy_weight",
     },
     "config": {
         "open_module",
+        "select_module",
         "save_all",
         "discard_all",
         "reload_module",
@@ -105,6 +110,10 @@ KNOWN_DO: dict[str, set[str]] = {
         "step",
         "cycle",
         "undo",
+        "search",
+        "search_clear",
+        # Flow-layout setting titles (label-above-control rows) use a no-op refresh hit target.
+        "refresh",
     },
     "skillcheck": set(),
     "skills": set(),
@@ -193,10 +202,30 @@ def main() -> int:
         errors.append(
             "UltraCharacterScreens tabs must stay short (Home/Saga/Android) — long labels mojibake on KaiPath"
         )
+    if '.tabs("home|Home", "saga|Saga", "android|Android")' not in char_tabs:
+        errors.append(
+            'UltraCharacterScreens must define tabs as exact home|Home, saga|Saga, android|Android'
+        )
     for const in ("STYLE_NORMAL", "STYLE_CONFIRM", "STYLE_DANGER", "STYLE_DIM"):
         if f"{const} =" not in style:
             errors.append(f"UltraStyle must define {const} for button wire styles")
     spec_text_full = SPEC.read_text(encoding="utf-8")
+    # Tab wire labels must stay plain ASCII (no UltraStyle.color) — Character self-test.
+    tab_btn = ""
+    if "private void appendTabButtons" in spec_text_full:
+        tab_btn = spec_text_full.split("private void appendTabButtons", 1)[1].split(
+            "private ", 1
+        )[0]
+    if "UltraStyle.color(" in tab_btn:
+        errors.append(
+            "UltraScreenSpec.appendTabButtons must emit plain tab labels "
+            "(no UltraStyle.color) — Character self-test requires label=Home/Saga/Android"
+        )
+    if "plainWireLabel" not in spec_text_full:
+        errors.append(
+            "UltraScreenSpec must keep Character buttonsJson labels free of section-sign "
+            "(plainWireLabel)"
+        )
     if "playerModel" not in spec_text_full:
         errors.append("UltraScreenSpec must support optional playerModel in layoutJson")
     parts_helper = ULTRA / "PlayerModelParts.java"
@@ -215,6 +244,19 @@ def main() -> int:
             errors.append(
                 "UltraCharacterScreens playerModel y must be 60 (below tab strip; 36 clips head)"
             )
+    # Preview only on Character Home + model customize (bones) — not Saga/Android/race/class/reskin.
+    if 'base(player, "main", "home", true)' not in char_screens:
+        errors.append("UltraCharacterScreens must show playerModel on Character Home")
+    if "sub(player, \"bones:\" + pg, true)" not in char_screens and 'sub(player, "bones:0", true)' not in char_screens:
+        errors.append("UltraCharacterScreens must show playerModel on model customize (bones)")
+    if 'base(player, UltraStyle.PAGE_ANDROID_REMOVE, "android", false)' not in char_screens:
+        errors.append("UltraCharacterScreens must omit playerModel on Android Removal")
+    if "sub(player, \"race:\" + pg, false)" not in char_screens:
+        errors.append("UltraCharacterScreens must omit playerModel on race list")
+    if "sub(player, \"class:\" + pg, false)" not in char_screens:
+        errors.append("UltraCharacterScreens must omit playerModel on class list")
+    if 'sub(player, "reskin", false)' not in char_screens:
+        errors.append("UltraCharacterScreens must omit playerModel on reskin")
     if "scrollBody" not in spec_text_full:
         errors.append("UltraScreenSpec must emit scrollBody in layoutJson")
     if "buttonShift" not in spec_text_full or "targetBodyH" not in spec_text_full:
@@ -236,17 +278,31 @@ def main() -> int:
         else ""
     )
     if "textFieldRow" not in number_block:
-        errors.append("UltraConfigScreens NUMBER detail must offer textFieldRow (typed value), not only +/- steps")
+        errors.append("UltraConfigScreens NUMBER inline must offer textFieldRow (typed value), not only +/- steps")
     if "textFieldRow" not in enum_block:
-        errors.append("UltraConfigScreens ENUM detail must offer textFieldRow + Apply")
+        errors.append("UltraConfigScreens ENUM inline must offer textFieldRow + Apply")
     if "textFieldRow" not in list_block or "do:add:" not in list_block or "buttonBound" not in list_block:
         errors.append(
-            "UltraConfigScreens LIST/MAP/GROUP detail must offer textFieldRow + buttonBound Apply (do:add)"
+            "UltraConfigScreens LIST/MAP/GROUP inline must offer textFieldRow + buttonBound Apply (do:add)"
         )
     if 'dim("Back")' in list_block:
-        errors.append("UltraConfigScreens LIST/MAP/GROUP must not stack a Back button (use Entries + one Back)")
+        errors.append("UltraConfigScreens LIST/MAP/GROUP must not stack a Back button (use Open + one footer)")
     if "typedValueFromArgs" not in config_screens:
         errors.append("UltraConfigScreens set/add must log and resolve typed args via typedValueFromArgs")
+    if "placeCategoryRail" not in config_screens and "CATEGORIES" not in config_screens:
+        errors.append("UltraConfigScreens must keep a left category rail (Difficulty…Currency)")
+    if "chromeButton" not in config_screens:
+        errors.append("UltraConfigScreens category rail must use chromeButton (body packing)")
+    if "flowLabel" not in config_screens:
+        errors.append("UltraConfigScreens settings must use flowLabel (label above control)")
+    if "PANEL_W = 480" in config_screens:
+        errors.append("UltraConfigScreens must not hardcode PANEL_W = 480 (clips on small UI)")
+    if 'do:search' not in config_screens or "rememberSearch" not in config_screens:
+        errors.append("UltraConfigScreens must pin search (do:search + ConfigEditor.rememberSearch)")
+    if 'do:save_all' not in config_screens or 'do:discard_all' not in config_screens or 'do:reload_module' not in config_screens:
+        errors.append("UltraConfigScreens must keep Save all / Reload / Discard changes actions")
+    if "searchAll" not in (ROOT / "src/main/java/com/dbzlegacy/adaptivedifficulty/config/editor/ConfigEditor.java").read_text(encoding="utf-8"):
+        errors.append("ConfigEditor.searchAll must power cross-category search")
     bridge_gaps = ROOT.parent.parent / "docs" / "KAIPATH_BRIDGE_GAPS.md"
     if not bridge_gaps.is_file():
         # ROOT = .../tools/dmz-adaptive-difficulty
@@ -257,6 +313,49 @@ def main() -> int:
         errors.append("UltraHubScreens must wire STYLE_DIM for unavailable system tiles")
     if "skillcheck_denied" not in ultra_hub or "STYLE_DIM" not in ultra_hub:
         errors.append("Hub Skill Check denied tile must send STYLE_DIM")
+
+    # Staff inspect: Ultra must resolve AdminInspectSessions subject for data, send to viewer.
+    ultra_gui = (ULTRA / "UltraGui.java").read_text(encoding="utf-8")
+    ultra_actions = (ULTRA / "UltraGuiActions.java").read_text(encoding="utf-8")
+    ultra_spec = (ULTRA / "UltraScreenSpec.java").read_text(encoding="utf-8")
+    inspect_sessions = (
+        ROOT
+        / "src/main/java/com/dbzlegacy/adaptivedifficulty/gui/AdminInspectSessions.java"
+    ).read_text(encoding="utf-8")
+    if "AdminInspectSessions.resolveSubject" not in ultra_gui:
+        errors.append("UltraGui.open must resolve AdminInspectSessions subject for menu data")
+    if "bindInspectViewer" not in ultra_gui or "clearInspectViewer" not in ultra_gui:
+        errors.append("UltraGui.openUltra must bindInspectViewer so packets go to staff viewer")
+    if "AdminInspectSessions.resolveSubject" not in ultra_actions:
+        errors.append("UltraGuiActions.dispatch must resolve inspect subject for edits")
+    if "resolveActor" not in ultra_actions:
+        errors.append("UltraGuiActions.runDo must use AdminInspectSessions.resolveActor")
+    if "inspectBannerLine" not in ultra_spec or "prependInspectBanner" not in ultra_spec:
+        errors.append("UltraScreenSpec.send must prepend inspectBannerLine during inspect")
+    if "resolveActor" not in inspect_sessions:
+        errors.append("AdminInspectSessions must expose resolveActor for staff-as-self ops")
+    if "§" in inspect_sessions:
+        errors.append("AdminInspectSessions inspectBannerLine must use UltraStyle (no bare §)")
+
+    # Menu-action results paint on the reopened Ultra page (not chat).
+    feedback = ULTRA / "UltraGuiFeedback.java"
+    if not feedback.is_file():
+        errors.append("UltraGuiFeedback.java must stash menu-action results for the next Ultra open")
+    else:
+        feedback_src = feedback.read_text(encoding="utf-8")
+        if "setFromResult" not in feedback_src or "applyPending" not in feedback_src:
+            errors.append("UltraGuiFeedback must expose setFromResult + applyPending")
+        if "preferGui" not in feedback_src:
+            errors.append("UltraGuiFeedback must preferGui (guiBackend != chat)")
+    if "UltraGuiFeedback.applyPending" not in ultra_spec:
+        errors.append("UltraScreenSpec.send must applyPending UltraGuiFeedback")
+    if "UltraGuiFeedback.deliver" not in ultra_actions and "deliverFeedback(" not in ultra_actions:
+        errors.append("UltraGuiActions must deliver menu results via UltraGuiFeedback")
+    if "DmzRewards.msg" in ultra_actions:
+        errors.append("UltraGuiActions must not chat menu-action results (use UltraGuiFeedback)")
+    weight_src = (ULTRA / "UltraWeightShopScreens.java").read_text(encoding="utf-8")
+    if "UltraGuiFeedback.deliver" not in weight_src:
+        errors.append("UltraWeightShopScreens.buy must stash purchase results via UltraGuiFeedback")
 
     packet = PACKET.read_text(encoding="utf-8")
     if "panelWidth" not in packet or "layoutJson" not in packet:
@@ -480,7 +579,7 @@ def main() -> int:
     checks = [
         ("UltraHubScreens.java", "hub", KNOWN_DO["hub"]),
         ("UltraDifficultyScreens.java", "difficulty", KNOWN_DO["difficulty"]),
-        ("UltraWeightShopScreens.java", "difficulty", KNOWN_DO["difficulty"]),
+        ("UltraWeightShopScreens.java", "spar", KNOWN_DO["spar"]),
         ("UltraCharacterScreens.java", "character", KNOWN_DO["character"]),
         ("UltraPrestigeScreens.java", "prestige", KNOWN_DO["prestige"]),
         ("UltraProgressionScreens.java", "progression", KNOWN_DO["progression"]),
@@ -558,10 +657,15 @@ def main() -> int:
     if "footerBackHome(String" not in spec_src:
         errors.append("UltraScreenSpec.footerBackHome must take a destination name")
 
-    # Weight shop must accept up to MAX_WEIGHT_VALUE digits (not a stale 4-digit / 9999 cap).
+    # Weight shop must accept up to MAX_WEIGHT_VALUE digits (not a stale 4-digit / 9999 / 100k cap).
     weight_shop = (ULTRA / "UltraWeightShopScreens.java").read_text(encoding="utf-8")
-    if "MAX_WEIGHT_VALUE = 100_000" not in weight_shop and "MAX_WEIGHT_VALUE = 100000" not in weight_shop:
-        errors.append("UltraWeightShopScreens.MAX_WEIGHT_VALUE must be 100000")
+    if (
+        "MAX_WEIGHT_VALUE = 10_000_000" not in weight_shop
+        and "MAX_WEIGHT_VALUE = 10000000" not in weight_shop
+    ):
+        errors.append("UltraWeightShopScreens.MAX_WEIGHT_VALUE must be 10000000")
+    if "MAX_WEIGHT_VALUE = 100_000" in weight_shop or "MAX_WEIGHT_VALUE = 100000" in weight_shop:
+        errors.append("UltraWeightShopScreens.MAX_WEIGHT_VALUE must not remain at the old 100000 cap")
     if "s.length() > 4" in weight_shop or "length() > 4" in weight_shop:
         errors.append("UltraWeightShopScreens.parseWeightValue must not hard-cap at 4 digits (9999)")
     if "MAX_WEIGHT_DIGITS" not in weight_shop:
@@ -630,8 +734,24 @@ def main() -> int:
         m = re.search(pattern, spec_text, re.S)
         if m is None:
             errors.append(f"UltraScreenSpec.{method} not found")
-        elif "nav:refresh" in m.group(1) or "Refresh" in m.group(1):
+            continue
+        body = m.group(1)
+        if "nav:refresh" in body or "Refresh" in body:
             errors.append(f"UltraScreenSpec.{method} must not include Refresh / nav:refresh")
+        if method == "footerBackToMain":
+            # Tabbed pages: right Main menu only — no left Back.
+            if "BACK_TO_MAIN" in body:
+                errors.append(
+                    "UltraScreenSpec.footerBackToMain must use MAIN_MENU (not BACK_TO_MAIN)"
+                )
+            if "MAIN_MENU" not in body or '"nav:hub"' not in body:
+                errors.append(
+                    "UltraScreenSpec.footerBackToMain must place nav:hub + MAIN_MENU on the right"
+                )
+            if "backTo(" in body or "COL_L" in body:
+                errors.append(
+                    "UltraScreenSpec.footerBackToMain must not place a left Back button"
+                )
 
     # Tabs are hub-style buttons under the title line; tabsJson stays empty for every screen.
     self_test_path = ULTRA / "UltraScreenSelfTest.java"
@@ -660,8 +780,14 @@ def main() -> int:
         errors.append("UltraPrestigeScreens must expose shop hub + Skills/Tiers/Effects submenus")
     if "page:skills" not in prestige or "page:tiers" not in prestige or "page:effects" not in prestige:
         errors.append("UltraPrestigeScreens shop hub must link page:skills / page:tiers / page:effects")
-    if "skills_p" not in prestige or "skillsPageId" not in prestige:
-        errors.append("UltraPrestigeScreens skill shop must paginate via skills_pN page ids")
+    if "page:exchange" not in prestige or "openExchange" not in prestige:
+        errors.append("UltraPrestigeScreens must put exchange shop under Shop (page:exchange)")
+    if "openConfirm" not in prestige or "do:confirm_now" not in prestige:
+        errors.append("UltraPrestigeScreens must use GUI confirm subpage (do:confirm_now)")
+    if 'do:confirm"' in prestige and "page:confirm" not in prestige:
+        errors.append("UltraPrestigeScreens Prestige now must open confirm page (not chat do:confirm)")
+    if "SKILLS_PER_PAGE" in prestige or "Next skills page" in prestige:
+        errors.append("UltraPrestigeScreens skill shop must be single-page (no skills_p pagination)")
     if 'buttonLeft("open:prestige"' in prestige or 'buttonRight("tab:shop"' in prestige:
         errors.append(
             "UltraPrestigeScreens must not use open:prestige / tab:shop for skill-shop Prev/Next "
@@ -670,7 +796,7 @@ def main() -> int:
     if re.search(r'"page:skills:\d+"', prestige):
         errors.append(
             "UltraPrestigeScreens must not emit page:skills:N buttons "
-            "(use page:skills_pN - nested colons are fragile)"
+            "(nested colons are fragile)"
         )
     if "do:tier:" not in prestige or "do:majin" not in prestige or "do:mutant" not in prestige:
         errors.append("UltraPrestigeScreens must wire do:tier / do:majin / do:mutant favor buys")
@@ -678,11 +804,21 @@ def main() -> int:
         errors.append('UltraPrestigeScreens must label wallet "Lifetime prestiges" (not Completed)')
     if "Completed prestiges" in prestige:
         errors.append('UltraPrestigeScreens must not use "Completed prestiges"')
+    if "Current prestige amount" not in prestige or "Prestige favor" not in prestige:
+        errors.append(
+            "UltraPrestigeScreens must use Current prestige amount / Prestige favor wording"
+        )
+    if "paintFavorBalance" not in prestige:
+        errors.append("UltraPrestigeScreens shops must use favor-only header (paintFavorBalance)")
     if "PrestigeUniverseRoleWarn" not in prestige:
         errors.append(
             "UltraPrestigeScreens must warn GoD / Supreme Kai via PrestigeUniverseRoleWarn "
-            "before Prestige now"
+            "on the confirm subpage"
         )
+    if "confirmFromGui" not in (
+        ROOT / "src/main/java/com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigeSystem.java"
+    ).read_text(encoding="utf-8"):
+        errors.append("PrestigeSystem must expose confirmFromGui for Ultra confirm subpage")
     role_warn = (
         ROOT
         / "src/main/java/com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigeUniverseRoleWarn.java"
@@ -726,8 +862,56 @@ def main() -> int:
         errors.append(
             "UltraWeightShopScreens.openShop must not stack page:main Back with footerBack*"
         )
-    if "footerBackToMain()" not in shop_body:
-        errors.append("UltraWeightShopScreens.openShop must use footerBackToMain (weights tab home)")
+    if "footerBackHome(\"Spar Home\")" not in shop_body and 'footerBackHome("Spar Home")' not in shop_body:
+        errors.append(
+            'UltraWeightShopScreens.openShop is a Sparring subpage — use '
+            'footerBackHome("Spar Home") (no system tabs)'
+        )
+    if 'of("spar")' not in weight_shop and 'of("sparring")' not in weight_shop:
+        errors.append('UltraWeightShopScreens must emit screenId spar (moved off Difficulty)')
+    if "footerBackToMain()" in shop_body:
+        errors.append(
+            "UltraWeightShopScreens.openShop must not use footerBackToMain "
+            "(subpage keeps Back + Main menu)"
+        )
+    difficulty_home = (ULTRA / "UltraDifficultyScreens.java").read_text(encoding="utf-8")
+    home_m = re.search(
+        r"private static void openHome\b.*?^\s*private static void ",
+        difficulty_home,
+        re.S | re.M,
+    )
+    home_body = home_m.group(0) if home_m else ""
+    if "Combat rating" in home_body or "Title score" in home_body:
+        errors.append("UltraDifficultyScreens.openHome must not show Combat rating / Title score")
+    if "weights|Weights" in home_body or '"weights|' in home_body:
+        errors.append("UltraDifficultyScreens.openHome must not offer Weights (moved to Sparring)")
+    if "stats|CR|staff" not in difficulty_home and "stats|Combat Rating|staff" not in difficulty_home:
+        errors.append("UltraDifficultyScreens must expose staff-only Combat Rating tab (stats|CR|staff)")
+    spar_home = (ULTRA / "UltraSparScreens.java").read_text(encoding="utf-8")
+    spar_home_m = re.search(
+        r"private static void openHome\b.*?^\s*private static void ",
+        spar_home,
+        re.S | re.M,
+    )
+    spar_home_body = spar_home_m.group(0) if spar_home_m else ""
+    if "weights|Weights" not in spar_home_body:
+        errors.append("UltraSparScreens.openHome must offer Weights")
+    if "labelValue(\"Session\"" in spar_home_body or "labelValue(\"Partner\"" in spar_home_body:
+        errors.append("UltraSparScreens.openHome must not show Session/Partner (staff Admin only)")
+    if "mentor|Mentor bonds" not in spar_home_body and "mentor|Actions" not in spar_home_body:
+        errors.append("UltraSparScreens.openHome must offer Mentor bonds / Actions entry")
+    if "settings|Chat settings" not in spar_home_body:
+        errors.append("UltraSparScreens.openHome must offer Chat settings")
+    if "fight_report:" not in spar_home and "recentFightCards" not in spar_home:
+        errors.append("UltraSparScreens must offer clickable fight reports from stats")
+    if "Hall of Infamy" not in spar_home:
+        errors.append("UltraSparScreens must expose Hall of Infamy (sparring HOF rename)")
+    if "Hall of Chosen" not in spar_home:
+        errors.append("UltraSparScreens must expose Hall of Chosen (dojo HOF rename)")
+    if 'dojo|Home' in spar_home:
+        errors.append("UltraSparScreens Dojo tab must not keep a Home button")
+    if "§8??" in (ULTRA.parent / "SparGuiApi.java").read_text(encoding="utf-8"):
+        errors.append("SparGuiApi must not use ?? decorative sparring headers")
     rival = (ULTRA / "UltraRivalScreens.java").read_text(encoding="utf-8")
     if 'confirm("Reload")' in rival and 'confirm("Reload data")' not in rival:
         errors.append('UltraRivalScreens staff admin must label refresh "Reload data"')
@@ -807,8 +991,28 @@ def main() -> int:
         errors.append(
             "UltraRivalScreens must confirm Accept their declare (not silent Declare→Accept)"
         )
-    if "Silent (private)" not in rival and "Tiers: Silent" not in rival:
-        errors.append("UltraRivalScreens Home must explain Silent/Declared/Mutual/Nemesis tiers")
+    # Home is status-only (RP/tier/nemesis/mutual); Silent/Declare/Accept live on Actions pick→type.
+    if "nemesisNames" not in home_body or "mutualNames" not in home_body:
+        errors.append("UltraRivalScreens.openHome must show Nemesis and Mutual names")
+    if "Wins" in home_body or "Losses" in home_body:
+        errors.append("UltraRivalScreens.openHome must not show Wins/Losses (Challenge tab)")
+    if "Tiers: Silent" in home_body or "Nemesis rises from challenge deaths" in home_body:
+        errors.append("UltraRivalScreens.openHome must not explain tiers or Nemesis challenge deaths")
+    if "rival_type:" not in rival or "rival_pick" not in rival or "placeRivalListButtons" not in rival:
+        errors.append(
+            "UltraRivalScreens Actions must consolidate Silent/Declare/Requests via pick→rival_type "
+            "and show the rival list"
+        )
+    if "Silent (private)" not in rival:
+        errors.append("UltraRivalScreens rival_type must offer Silent (private)")
+    challenge_m = re.search(
+        r"private static void openChallenge\b.*?^\s*private static void ",
+        rival,
+        re.S | re.M,
+    )
+    challenge_body = challenge_m.group(0) if challenge_m else ""
+    if 'labelValue("Wins"' not in challenge_body or 'labelValue("Losses"' not in challenge_body:
+        errors.append("UltraRivalScreens.openChallenge must show Wins and Losses")
     if "cancel_mutual_replace" not in rival or "replace_confirm:" not in rival:
         errors.append("UltraRivalScreens mutual swap needs Decline instead + replace_confirm step")
     if "demote" not in rival.lower() or "Mutual to Declared" not in rival:
@@ -860,8 +1064,8 @@ def main() -> int:
     admin_tile = re.search(r'new HubTile\(\s*"admin"[\s\S]*?true\)', hub)
     if not admin_tile or "STYLE_NORMAL" not in admin_tile.group(0):
         errors.append("UltraHubScreens Staff Admin tile must use STYLE_NORMAL + accent (not danger)")
-    if "hubTileAccentCode" not in hub:
-        errors.append("UltraHubScreens must send hubTileAccentCode on tiles")
+    if "hubTileAccentCode" not in hub and "systemAccent" not in hub:
+        errors.append("UltraHubScreens must color tiles via hubTileAccentCode / systemAccent")
     # Hub: yellow/confirm means selected — nothing is selected on the hub.
     open_main = hub.split("private static void openMain", 1)[-1].split(
         "private static void openAdmin", 1
@@ -918,6 +1122,20 @@ def main() -> int:
     skill_ui = (ULTRA / "UltraSkillCheckScreens.java").read_text(encoding="utf-8")
     if ".tabs(" in skill_ui:
         errors.append("UltraSkillCheckScreens must not call .tabs() (no tab bar)")
+    if 'skillsLines(player, "core")' in skill_ui:
+        errors.append(
+            "UltraSkillCheckScreens must use compact skillcheck lines "
+            "(not coreLines with DMZ/Ki/Energy header)"
+        )
+    if "skillcheck" not in skill_ui and "skillCheckGuiLines" not in skill_ui:
+        errors.append("UltraSkillCheckScreens must load skillcheck/compact skill lines")
+    if ".lineGap(" not in skill_ui:
+        errors.append("UltraSkillCheckScreens must tighten lineGap for dense skill list")
+    unlock = (ROOT / "src/main/java/com/dbzlegacy/adaptivedifficulty/progression/shop/SkillUnlockService.java").read_text(
+        encoding="utf-8"
+    )
+    if "skillCheckGuiLines" not in unlock:
+        errors.append("SkillUnlockService must expose skillCheckGuiLines (skills-only Ultra home)")
 
     print("=== Ultra action / panel audit ===")
     for e in errors:

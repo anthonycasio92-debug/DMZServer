@@ -75,7 +75,7 @@ public final class CharacterServicesGuiApi {
         String p = page == null || page.isBlank() ? "main" : page.toLowerCase(Locale.ROOT);
         List<String> lines = new ArrayList<>();
         if (!CharacterServicesConfig.get().enabled) {
-            lines.add("§cCharacter Services are disabled.");
+            lines.add("§cCharacter Services are turned off on this server.");
             return lines;
         }
         if ("race".equals(p)) {
@@ -88,13 +88,14 @@ public final class CharacterServicesGuiApi {
                 return lines;
             }
             lines.add("§7Choose the race you want to become.");
-            lines.add("§7Use §f0% §7for a free full wipe (stats wiped; head-part unlocks and coins kept).");
+            lines.add(costLine(player, CharacterServicesSystem.raceAmountDue(player, 100)));
+            lines.add("§8Listed cost is for keeping §f100%§8. §f0%§8 keep is free - pick keep % on the next screen.");
             if (CharacterServicesConfig.get().raceChange.keepSkillsOnRaceChange) {
                 lines.add("§7You keep ki skills, techniques, and shared form progress.");
             } else {
                 lines.add("§7Ki skills, techniques, and shared form progress reset with this race.");
             }
-            lines.add("§8Race-only form ladders reset when the new race does not use them.");
+            lines.add("§8Forms that only belong to your old race reset if the new race cannot use them.");
             lines.add(CharacterServicesSystem.cooldownLine(player, "race"));
             return lines;
         }
@@ -108,7 +109,7 @@ public final class CharacterServicesGuiApi {
                 return lines;
             }
             lines.add("§7Pick a new fighting class for your §fcurrent race§7.");
-            lines.add("§7Only classes from your race's DMZ stats are listed.");
+            lines.add("§7Only classes that fit your current race are listed.");
             lines.add(CharacterServicesConfig.get().classChange.preserveBaseStats
                     ? "§7Your base combat stats stay - class skills and progression reset."
                     : "§7Class skills and progression reset.");
@@ -161,7 +162,7 @@ public final class CharacterServicesGuiApi {
             lines.add("§7Level, stats, race, and class stay locked during the session.");
             lines.add(costLine(player, CharacterServicesSystem.reskinAmountDue(player)));
             lines.add(CharacterServicesSystem.reskinCostExplanation(player));
-            lines.add("§8You'll be charged Ancient Coins when you confirm on the next screen. Cancelling the editor does not refund them.");
+            lines.add("§8Coins are charged when you confirm. Closing the editor does not refund them.");
             lines.add(CharacterServicesSystem.cooldownLine(player, "reskin"));
             String block = CharacterServicesSystem.reskinPrecheck(player);
             if (block != null && !block.isBlank()) {
@@ -176,10 +177,10 @@ public final class CharacterServicesGuiApi {
             lines.add(costLine(player, CharacterServicesSystem.raceAmountDue(player, pct)));
             if (pct > 0) {
                 lines.add(CharacterServicesConfig.get().raceChange.levelCostMultiplier
-                        ? "§8Scales with your DMZ level"
-                        : "§8Flat cost (server default)");
+                        ? "§8Price scales with your level"
+                        : "§8Fixed price for everyone");
             } else {
-                lines.add("§8Free - full wipe, then DMZ class & look setup");
+                lines.add("§8Free - full wipe, then pick class and look");
             }
             return lines;
         }
@@ -187,26 +188,33 @@ public final class CharacterServicesGuiApi {
             String[] bits = p.split(":", 3);
             int pct = parsePct(bits.length > 2 ? bits[2] : "0");
             String race = bits.length > 1 ? bits[1] : "?";
+            // Cost early: Ultra appendCompactLines truncates; chest GUI reads the full list.
             lines.add("§7You are becoming §f" + title(race) + "§7.");
-            lines.add("§7Head-part unlocks carry over; same class kept when the new race has it.");
-            lines.add("§7If not, the editor opens so you can pick a class at no extra cost.");
-            lines.add("§7Keeping §f" + pct + "% §7of eligible stats:");
-            lines.addAll(CharacterServicesSystem.statPreviewLines(player, pct));
+            lines.add("§7Keeping §f" + pct + "% §7of eligible stats.");
             lines.add(costLine(player, CharacterServicesSystem.raceAmountDue(player, pct)));
-            lines.add("§8Pay-up OK | change returned");
-            lines.add("§cStaff cannot auto-revert this for you.");
+            if (pct > 0) {
+                lines.add(CharacterServicesConfig.get().raceChange.levelCostMultiplier
+                        ? "§8Price scales with your level"
+                        : "§8Fixed price for everyone");
+            } else {
+                lines.add("§8Free - full wipe, then pick class and look");
+            }
+            lines.add("§7Purchased looks carry over. Your class stays if the new race has it.");
+            lines.add("§7If not, the editor opens so you can pick a class at no extra cost.");
+            lines.addAll(CharacterServicesSystem.statPreviewLines(player, pct));
+            lines.add("§8If the change fails, your coins are returned when possible.");
+            lines.add("§cStaff cannot undo this for you.");
             return lines;
         }
         if (p.startsWith("class_confirm:")) {
             String cls = p.substring("class_confirm:".length());
             lines.add("§7New class: §f" + FightingClassLabels.display(cls));
             lines.add(costLine(player, CharacterServicesSystem.classAmountDue(player)));
-            lines.add("§8Pay-up OK | change returned");
+            lines.add("§8If the change fails, your coins are returned when possible.");
             lines.add("§8Class skills and progression will reset.");
             return lines;
         }
-        lines.add("§7Rebuild your character without starting from zero.");
-        lines.add("§7Race | class | reskin | model customization.");
+        lines.add("§7Change race, class, look, or model pieces without starting over.");
         return lines;
     }
 
@@ -286,9 +294,9 @@ public final class CharacterServicesGuiApi {
         if (copperCost <= 0L) {
             if (CharacterServicesAccess.bypassCost(player)) {
                 if (DifficultyConfig.get().staffFreeAncientCoinCosts && StaffAccess.isStaff(player)) {
-                    return "§7Cost §afree §8(staff waived)";
+                    return "§7Cost §afree §8(staff - no charge)";
                 }
-                return "§7Cost §afree §8(cost waived)";
+                return "§7Cost §afree §8(no charge for your account)";
             }
             return "§7Cost §afree";
         }

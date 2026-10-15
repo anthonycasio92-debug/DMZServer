@@ -5,6 +5,7 @@ import com.dbzlegacy.adaptivedifficulty.config.editor.ConfigEditor;
 import com.dbzlegacy.adaptivedifficulty.net.gui.UltraClientFeatures;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import com.google.gson.JsonElement;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -12,12 +13,41 @@ import java.util.UUID;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Staff config editor - Ultra dialog parity with {@code CnpcConfigEditor}:
- * module list -> field pages -> detail toggles / steps / enum cycle -> Save all.
- * Edits stay in memory until Save all; rival/spar record files stay closed.
+ * Staff config editor — search-first functional layout.
+ *
+ * <p>Left category rail + pinned search + inline setting controls + pinned Save / Reload /
+ * Discard band. Edits stay in memory until Save all (existing {@link ConfigEditor} drafts).
+ * Rival/spar record files stay closed.
  */
 public final class UltraConfigScreens {
-    private static final int PAGE_SIZE = 6;
+    /** Settings shown per page (inline controls are dense). */
+    private static final int PAGE_SIZE = 2;
+
+    /**
+     * Fit the default Ultra dialog width so small GUI scales do not clip a 480px panel.
+     * Left category rail is chrome (does not clamp body packing); main column is flow layout.
+     */
+    private static final int PANEL_W = UltraStyle.PANEL_W;
+    private static final int SIDE_X = 8;
+    /** Matches {@link UltraStyle#BTN_MIN_W} — client never shrinks buttons below that. */
+    private static final int SIDE_W = UltraStyle.BTN_MIN_W;
+    private static final int MAIN_X = SIDE_X + SIDE_W + 8;
+    private static final int MAIN_W = PANEL_W - MAIN_X - UltraStyle.PANEL_MARGIN;
+    /** Extra gap under a setting label before its control (avoids text/button overlap). */
+    private static final int LABEL_CTRL_GAP = 4;
+    /** Min clear space between two controls on one row before we stack instead. */
+    private static final int CTRL_GAP = 8;
+
+    /** Categories always shown in the left rail (user-facing order). */
+    private static final String[][] CATEGORIES = {
+        {"difficulty", "Difficulty"},
+        {"progression", "Progression"},
+        {"character-services", "Character"},
+        {"saga", "Saga"},
+        {"rival", "Rival"},
+        {"sparring", "Sparring"},
+        {"currency", "Currency"},
+    };
 
     private UltraConfigScreens() {}
 
@@ -29,233 +59,360 @@ public final class UltraConfigScreens {
             UltraHubScreens.open(player, "main");
             return;
         }
-        String raw = page == null || page.isBlank() ? "modules" : page.trim();
+        String raw = page == null || page.isBlank() ? "edit:difficulty:0:" : page.trim();
         String lower = raw.toLowerCase(Locale.ROOT);
-        if (lower.startsWith("list:")) {
-            openList(player, raw);
-            return;
-        }
-        if (lower.startsWith("detail:")) {
-            openDetail(player, raw);
-            return;
-        }
-        if (lower.startsWith("module:")) {
-            String id = raw.substring("module:".length()).trim();
-            openList(player, listPage(id.isBlank() ? "difficulty" : id, 0, ""));
-            return;
-        }
         if ("review".equals(lower) || lower.startsWith("review:")) {
             openReview(player);
             return;
         }
-        openModules(player);
-    }
-
-    private static void openModules(ServerPlayer player) {
-        int dirty = ConfigEditor.dirtyCount(player.m_20148_());
-        UltraScreenSpec spec = UltraScreenSpec.of("config")
-                .title("Config Editor")
-                .page("modules")
-                .activeTab("home")
-                .line(UltraStyle.LABEL + "Edits stay in memory until Save all.")
-                .labelValue("Unsaved changes", String.valueOf(dirty))
-                .setRow(UltraStyle.CONTENT_ROW + 70);
-        int placed = 0;
-        for (ConfigEditor.ModuleLink link : ConfigEditor.moduleLinks()) {
-            if (placed >= 12 || link == null) {
-                continue;
-            }
-            String label = link.open()
-                    ? link.label() + " (" + link.fields() + ")"
-                    : UltraStyle.dim(link.label() + " - closed");
-            String action = link.open()
-                    ? "page:" + listPage(link.id(), 0, "")
-                    : "do:open_module:" + link.id();
-            if (placed % 2 == 0) {
-                spec.buttonLeft(action, label, link.open() ? "normal" : "dim");
-            } else {
-                spec.buttonRight(action, label, link.open() ? "normal" : "dim");
-                spec.rowGap();
-            }
-            placed++;
-        }
-        if (placed % 2 == 1) {
-            spec.rowGap();
-        }
-        spec.buttonLeft("page:review", UltraStyle.confirm("Review changes"), "confirm")
-                .buttonRight("do:save_all", UltraStyle.confirm("Save all"), "confirm")
-                .rowGap();
-        spec.buttonLeft("do:discard_all", UltraStyle.danger("Discard all"), "danger")
-                .rowGap();
-        spec.footerBackToMain();
-        spec.send(player);
-    }
-
-    private static void openList(ServerPlayer player, String page) {
-        String module = part(page, 1);
-        if (module.isBlank()) {
-            module = "difficulty";
-        }
-        int pageNumber = Math.max(0, number(part(page, 2)));
-        String path = part(page, 3);
-        ConfigEditor.EditorTab tab = ConfigEditor.tab(module);
-        if (tab == null) {
-            openModules(player);
+        // Legacy drill-down pages → search-first editor.
+        if ("modules".equals(lower) || "main".equals(lower) || "list".equals(lower)) {
+            openEditor(player, "difficulty", 0, "");
             return;
         }
+        if (lower.startsWith("module:")) {
+            String id = raw.substring("module:".length()).trim();
+            openEditor(player, id.isBlank() ? "difficulty" : id, 0, "");
+            return;
+        }
+        if (lower.startsWith("list:")) {
+            openEditor(player, part(raw, 1), Math.max(0, number(part(raw, 2))), part(raw, 3));
+            return;
+        }
+        if (lower.startsWith("detail:")) {
+            String module = part(raw, 1);
+            String fieldPath = part(raw, 3);
+            String parent = ConfigEditor.parentPath(fieldPath);
+            openEditor(player, module.isBlank() ? "difficulty" : module, 0, parent);
+            return;
+        }
+        if (lower.startsWith("edit:")) {
+            openEditor(player, part(raw, 1), Math.max(0, number(part(raw, 2))), part(raw, 3));
+            return;
+        }
+        openEditor(player, "difficulty", 0, "");
+    }
+
+    private static void openEditor(ServerPlayer player, String moduleId, int pageNumber, String path) {
+        String module = moduleId == null || moduleId.isBlank() ? "difficulty" : moduleId.trim();
+        ConfigEditor.EditorTab tab = ConfigEditor.tab(module);
+        if (tab == null) {
+            module = "difficulty";
+            tab = ConfigEditor.tab(module);
+        }
         UUID uuid = player.m_20148_();
-        List<ConfigEditor.Entry> fields = ConfigEditor.visibleFields(module, path, ConfigEditor.search(uuid));
-        int pages = fields.isEmpty() ? 1 : (fields.size() + PAGE_SIZE - 1) / PAGE_SIZE;
-        int current = Math.min(pageNumber, Math.max(0, pages - 1));
+        String query = ConfigEditor.search(uuid);
+        boolean searching = query != null && !query.isBlank();
+        String groupPath = path == null ? "" : path;
+
+        List<Row> rows = new ArrayList<>();
+        if (searching) {
+            for (ConfigEditor.SearchHit hit : ConfigEditor.searchAll(query)) {
+                if (hit == null || hit.entry() == null) {
+                    continue;
+                }
+                rows.add(new Row(hit.moduleId(), hit.moduleLabel(), hit.entry(), true));
+            }
+        } else if (tab != null) {
+            for (ConfigEditor.Entry entry : ConfigEditor.visibleFields(module, groupPath, "")) {
+                if (entry == null) {
+                    continue;
+                }
+                rows.add(new Row(module, tab.label(), entry, false));
+            }
+        }
+
+        int pages = rows.isEmpty() ? 1 : (rows.size() + PAGE_SIZE - 1) / PAGE_SIZE;
+        int current = Math.min(Math.max(0, pageNumber), Math.max(0, pages - 1));
         int from = current * PAGE_SIZE;
-        int to = Math.min(fields.size(), from + PAGE_SIZE);
+        int to = Math.min(rows.size(), from + PAGE_SIZE);
+        int dirty = ConfigEditor.dirtyCount(uuid);
+
         UltraScreenSpec spec = UltraScreenSpec.of("config")
-                .title("Config - " + tab.label())
-                .page(listPage(module, current, path))
-                .activeTab("home")
-                .labelValue("Module", tab.label())
-                .labelValue("File", tab.fileName() == null ? "-" : tab.fileName())
-                .labelValue("Unsaved (all)", String.valueOf(ConfigEditor.dirtyCount(uuid)))
-                .labelValue("Page", (current + 1) + "/" + pages);
-        if (!tab.editable()) {
-            spec.line(UltraStyle.dim("This module is closed - player records are not edited here."));
-        }
-        for (int i = from; i < to; i++) {
-            ConfigEditor.Entry entry = fields.get(i);
-            if (entry == null) {
-                continue;
+                .title("Config Editor")
+                .page(editPage(module, current, groupPath))
+                .panel(PANEL_W, UltraStyle.PANEL_MAX_H)
+                .lineGap(2)
+                .bodyPad(4)
+                .labelValue("Unsaved", String.valueOf(dirty));
+        if (searching) {
+            spec.labelValue("Search", shortVal(query));
+        } else if (tab != null) {
+            spec.labelValue("Category", tab.label());
+            if (!groupPath.isBlank()) {
+                spec.labelValue("Group", ConfigEditor.displayName(leaf(groupPath)));
             }
-            boolean dirty = ConfigEditor.dirty(uuid, module, entry.path());
-            String value = ConfigEditor.shownValue(uuid, module, entry.path());
-            String name = ConfigEditor.displayName(leaf(entry.path()));
-            String mark = dirty ? "* " : "";
-            spec.line(UltraStyle.LABEL + mark + name + " " + UltraStyle.VALUE + shortVal(value));
         }
+        // Header copy lives in the body band. Category rail is chrome (left) so it does not
+        // clamp body packing. Search + settings use main-column flow (label above control).
+        int railTop = UltraStyle.CONTENT_ROW;
+        placeCategoryRail(spec, module, searching, railTop);
+        int mainTop = UltraStyle.CONTENT_ROW;
+        placeSearchRow(spec, player, query, mainTop);
+        if (tab != null && !tab.editable() && !searching) {
+            flowLabel(spec, "This category is closed - player records are not edited here.");
+        }
+        if (!searching && !groupPath.isBlank()) {
+            String parent = ConfigEditor.parentPath(groupPath);
+            spec.button(
+                            "page:" + editPage(module, 0, parent),
+                            UltraStyle.dim("Up one group"),
+                            UltraStyle.STYLE_DIM,
+                            MAIN_X,
+                            spec.row(),
+                            Math.min(160, MAIN_W))
+                    .rowGap();
+        }
+
         if (from >= to) {
-            spec.line(UltraStyle.dim("No fields on this page."));
+            flowLabel(
+                    spec,
+                    searching ? "No settings match that search." : "No settings in this category.");
         }
-        spec.setRow(UltraStyle.CONTENT_ROW + UltraStyle.BODY_MIN_H);
         for (int i = from; i < to; i++) {
-            ConfigEditor.Entry entry = fields.get(i);
-            if (entry == null) {
-                continue;
-            }
-            String name = ConfigEditor.displayName(leaf(entry.path()));
-            String action = "page:" + detailPage(module, current, entry.path());
-            if ((i - from) % 2 == 0) {
-                spec.buttonLeft(action, name, "normal");
-            } else {
-                spec.buttonRight(action, name, "normal");
-                spec.rowGap();
-            }
+            Row row = rows.get(i);
+            appendSetting(spec, player, uuid, row);
         }
-        if ((to - from) % 2 == 1) {
-            spec.rowGap();
-        }
+
         if (current > 0) {
-            spec.buttonLeft("page:" + listPage(module, current - 1, path), UltraStyle.dim("Prev"), "dim");
+            spec.button(
+                    "page:" + editPage(module, current - 1, groupPath),
+                    UltraStyle.dim("Prev"),
+                    UltraStyle.STYLE_DIM,
+                    MAIN_X,
+                    spec.row(),
+                    80);
         }
         if (current + 1 < pages) {
-            spec.buttonRight("page:" + listPage(module, current + 1, path), UltraStyle.dim("Next"), "dim");
+            spec.button(
+                    "page:" + editPage(module, current + 1, groupPath),
+                    UltraStyle.LABEL + "Next",
+                    UltraStyle.STYLE_NORMAL,
+                    MAIN_X + 90,
+                    spec.row(),
+                    80);
         }
         if (current > 0 || current + 1 < pages) {
             spec.rowGap();
         }
-        spec.buttonLeft("do:reload_module:" + module, UltraStyle.confirm("Reload module"), "confirm")
-                .buttonRight("do:save_all", UltraStyle.confirm("Save all"), "confirm")
-                .rowGap();
-        // One Back only via footer (nav:home).
-        spec.footerBackHome("Config Home");
+
+        placeActionFooter(spec);
+        spec.footerBackToMain();
         spec.send(player);
     }
 
-    private static void openDetail(ServerPlayer player, String page) {
-        String module = part(page, 1);
-        int listPageNum = Math.max(0, number(part(page, 2)));
-        String path = part(page, 3);
-        ConfigEditor.EditorTab tab = ConfigEditor.tab(module);
-        if (tab == null || !tab.editable() || path.isEmpty()) {
-            openList(player, listPage(module.isBlank() ? "difficulty" : module, 0, ""));
+    private static void placeCategoryRail(
+            UltraScreenSpec spec, String activeModule, boolean searching, int startY) {
+        int y = startY;
+        for (String[] cat : CATEGORIES) {
+            String id = cat[0];
+            String label = cat[1];
+            boolean active = !searching && id.equalsIgnoreCase(activeModule);
+            String style = active ? UltraStyle.STYLE_CONFIRM : UltraStyle.STYLE_DIM;
+            String text = active ? UltraStyle.confirm(label) : UltraStyle.dim(label);
+            // Chrome: left rail must not set firstButtonY or body text collapses onto controls.
+            spec.chromeButton("do:select_module:" + id, text, style, SIDE_X, y, SIDE_W);
+            y += UltraStyle.BTN_H + 2;
+        }
+    }
+
+    private static void placeSearchRow(
+            UltraScreenSpec spec, ServerPlayer player, String query, int y) {
+        noteIfTextInputMissing(spec, player);
+        spec.setRow(y);
+        String inputId = "input:search";
+        // Full main-column width; Search then Clear stacked so small widths never overlap.
+        spec.textFieldRow(inputId, query == null ? "" : query, "Search settings...", MAIN_X, MAIN_W);
+        spec.rowGap(LABEL_CTRL_GAP);
+        spec.buttonBound(
+                        "do:search",
+                        UltraStyle.confirm("Search"),
+                        UltraStyle.STYLE_CONFIRM,
+                        MAIN_X,
+                        spec.row(),
+                        MAIN_W,
+                        inputId)
+                .rowGap();
+        spec.button(
+                        "do:search_clear",
+                        UltraStyle.dim("Clear"),
+                        UltraStyle.STYLE_DIM,
+                        MAIN_X,
+                        spec.row(),
+                        MAIN_W)
+                .rowGap();
+    }
+
+    private static void placeActionFooter(UltraScreenSpec spec) {
+        // Pinned action band above nav footer — stacked for small UI (no side-by-side squeeze).
+        spec.button(
+                        "do:save_all",
+                        UltraStyle.confirm("Save all"),
+                        UltraStyle.STYLE_CONFIRM,
+                        MAIN_X,
+                        spec.row(),
+                        MAIN_W)
+                .rowGap();
+        spec.button(
+                        "do:reload_module",
+                        UltraStyle.LABEL + "Reload disk",
+                        UltraStyle.STYLE_NORMAL,
+                        MAIN_X,
+                        spec.row(),
+                        MAIN_W)
+                .rowGap();
+        spec.button(
+                        "do:discard_all",
+                        UltraStyle.danger("Discard changes"),
+                        UltraStyle.STYLE_DANGER,
+                        MAIN_X,
+                        spec.row(),
+                        MAIN_W)
+                .rowGap();
+    }
+
+    /**
+     * Setting title/description as a main-column flow row (not body {@code line}), so the label
+     * sits above its control instead of scrolling in a band that overlaps buttons.
+     */
+    private static void flowLabel(UltraScreenSpec spec, String text) {
+        if (spec == null || text == null || text.isBlank()) {
             return;
         }
-        UUID uuid = player.m_20148_();
-        ConfigEditor.Kind kind = ConfigEditor.kindOf(module, path);
+        spec.button(
+                        "do:refresh",
+                        UltraStyle.LABEL + UltraStyle.plain(text),
+                        UltraStyle.STYLE_DIM,
+                        MAIN_X,
+                        spec.row(),
+                        MAIN_W)
+                .rowGap(LABEL_CTRL_GAP);
+    }
+
+    private static void appendSetting(
+            UltraScreenSpec spec, ServerPlayer player, UUID uuid, Row row) {
+        ConfigEditor.Entry entry = row.entry();
+        String module = row.moduleId();
+        String path = entry.path();
+        boolean dirty = ConfigEditor.dirty(uuid, module, path);
         String name = ConfigEditor.displayName(leaf(path));
-        String value = ConfigEditor.shownValue(uuid, module, path);
         String raw = ConfigEditor.effectiveRaw(uuid, module, path);
-        UltraScreenSpec spec = UltraScreenSpec.of("config")
-                .title("Config - " + name)
-                .page(detailPage(module, listPageNum, path))
-                .activeTab("home")
-                .labelValue("Field", name)
-                .labelValue("Type", ConfigEditor.typeName(module, path))
-                .labelValue("Value", shortVal(value))
-                .labelValue("Default", shortVal(ConfigEditor.defaultText(module, path)))
-                .line(UltraStyle.LABEL
-                        + ConfigEditor.friendlyDescription(module, path, raw == null ? "" : raw));
+        String value = ConfigEditor.shownValue(uuid, module, path);
+        String desc = ConfigEditor.friendlyDescription(module, path, raw == null ? "" : raw);
+        String crumb = row.searchHit() ? (row.moduleLabel() + " > " + name) : name;
+        String mark = dirty ? "* " : "";
+        // Label on top, control below — flow rows, never body lines mixed with absolute buttons.
+        flowLabel(spec, mark + crumb);
+        String shortD = shortDesc(desc);
+        if (shortD != null && !shortD.isBlank() && !shortD.equals("-")) {
+            flowLabel(spec, shortD);
+        }
         String invalid = ConfigEditor.invalidMessage(uuid, module, path);
         if (invalid != null && !invalid.isBlank()) {
-            spec.line(UltraStyle.danger(invalid));
+            flowLabel(spec, UltraStyle.plain(invalid));
         }
-        if (kind == ConfigEditor.Kind.ENUM) {
-            spec.line(UltraStyle.LABEL + "Options: " + UltraStyle.VALUE
-                    + String.join(", ", ConfigEditor.enumNames(module, path)));
+        ConfigEditor.EditorTab moduleTab = ConfigEditor.tab(module);
+        if (moduleTab == null || !moduleTab.editable()) {
+            flowLabel(spec, "Closed - " + shortVal(value));
+            return;
         }
-        spec.setRow(UltraStyle.CONTENT_ROW + UltraStyle.BODY_MIN_H);
+        appendInlineControl(spec, player, module, path, entry.kind(), value, raw);
+        if (dirty) {
+            spec.button(
+                            "do:undo:" + module + "|" + encodePath(path),
+                            UltraStyle.dim("Undo"),
+                            UltraStyle.STYLE_DIM,
+                            MAIN_X,
+                            spec.row(),
+                            Math.min(80, MAIN_W))
+                    .rowGap();
+        }
+    }
+
+    /**
+     * Inline control for one setting. Case labels stay for audits that require typed
+     * {@code textFieldRow} + Apply on NUMBER / ENUM / LIST. Controls stack under the label;
+     * side-by-side only when the main column has room (see {@link #fitsRow}).
+     */
+    private static void appendInlineControl(
+            UltraScreenSpec spec,
+            ServerPlayer player,
+            String module,
+            String path,
+            ConfigEditor.Kind kind,
+            String value,
+            String raw) {
         String encoded = encodePath(path);
         switch (kind) {
             case BOOLEAN -> {
                 boolean on = "ON".equalsIgnoreCase(value) || "true".equalsIgnoreCase(raw);
-                spec.buttonLeft(
+                spec.button(
                                 "do:toggle:" + module + "|" + encoded,
-                                on ? UltraStyle.confirm("Toggle - ON") : UltraStyle.dim("Toggle - OFF"),
-                                on ? "confirm" : "dim")
+                                on ? UltraStyle.confirm("On") : UltraStyle.dim("Off"),
+                                on ? UltraStyle.STYLE_CONFIRM : UltraStyle.STYLE_DIM,
+                                MAIN_X,
+                                spec.row(),
+                                Math.min(100, MAIN_W))
                         .rowGap();
             }
             case NUMBER -> {
-                // Direct typing is the critical path; +/- steps stay as shortcuts.
                 noteIfTextInputMissing(spec, player);
                 String inputId = "input:" + module + "|" + encoded;
-                spec.textFieldRow(
-                                inputId,
-                                value == null ? "" : value,
-                                "Type a number...")
-                        .rowGap();
+                spec.textFieldRow(inputId, value == null ? "" : value, "Type a number...", MAIN_X, MAIN_W);
+                spec.rowGap(LABEL_CTRL_GAP);
+                // Apply on its own row; +/- share a row only when width allows.
                 spec.buttonBound(
                                 "do:set:" + module + "|" + encoded,
                                 UltraStyle.confirm("Apply"),
                                 UltraStyle.STYLE_CONFIRM,
+                                MAIN_X,
+                                spec.row(),
+                                MAIN_W,
                                 inputId)
                         .rowGap();
-                spec.buttonLeft(
-                                "do:step:" + module + "|" + encoded + "|-1",
-                                UltraStyle.dim("-"),
-                                UltraStyle.STYLE_DIM)
-                        .buttonRight(
-                                "do:step:" + module + "|" + encoded + "|1",
-                                UltraStyle.dim("+"),
-                                UltraStyle.STYLE_DIM)
-                        .rowGap();
+                placeStepPair(spec, module, encoded);
             }
             case ENUM -> {
                 noteIfTextInputMissing(spec, player);
                 String inputId = "input:" + module + "|" + encoded;
-                spec.textFieldRow(
-                                inputId,
-                                value == null ? "" : value,
-                                "Type an option...")
-                        .rowGap();
-                spec.buttonBound(
-                                "do:set:" + module + "|" + encoded,
-                                UltraStyle.confirm("Apply"),
-                                UltraStyle.STYLE_CONFIRM,
-                                inputId)
-                        .rowGap();
-                spec.buttonLeft(
-                                "do:cycle:" + module + "|" + encoded,
-                                UltraStyle.confirm("Next value"),
-                                UltraStyle.STYLE_CONFIRM)
-                        .rowGap();
+                spec.textFieldRow(inputId, value == null ? "" : value, "Type an option...", MAIN_X, MAIN_W);
+                spec.rowGap(LABEL_CTRL_GAP);
+                if (fitsRow(90, 90)) {
+                    spec.buttonBound(
+                                    "do:set:" + module + "|" + encoded,
+                                    UltraStyle.confirm("Apply"),
+                                    UltraStyle.STYLE_CONFIRM,
+                                    MAIN_X,
+                                    spec.row(),
+                                    90,
+                                    inputId)
+                            .button(
+                                    "do:cycle:" + module + "|" + encoded,
+                                    UltraStyle.confirm("Next"),
+                                    UltraStyle.STYLE_CONFIRM,
+                                    MAIN_X + 90 + CTRL_GAP,
+                                    spec.row(),
+                                    90)
+                            .rowGap();
+                } else {
+                    spec.buttonBound(
+                                    "do:set:" + module + "|" + encoded,
+                                    UltraStyle.confirm("Apply"),
+                                    UltraStyle.STYLE_CONFIRM,
+                                    MAIN_X,
+                                    spec.row(),
+                                    MAIN_W,
+                                    inputId)
+                            .rowGap();
+                    spec.button(
+                                    "do:cycle:" + module + "|" + encoded,
+                                    UltraStyle.confirm("Next"),
+                                    UltraStyle.STYLE_CONFIRM,
+                                    MAIN_X,
+                                    spec.row(),
+                                    MAIN_W)
+                            .rowGap();
+                }
             }
             case LIST, MAP, GROUP -> {
                 ConfigEditor.AddMode addMode = ConfigEditor.addMode(module, path);
@@ -265,51 +422,88 @@ public final class UltraConfigScreens {
                     String placeholder = addMode == ConfigEditor.AddMode.KEY_AND_VALUE
                             ? "Type key=value..."
                             : "Type a new entry...";
-                    spec.line(UltraStyle.dim("Lists and maps: add one entry at a time in the field below."))
-                            .textFieldRow(inputId, "", placeholder)
-                            .rowGap();
+                    spec.textFieldRow(inputId, "", placeholder, MAIN_X, MAIN_W);
+                    spec.rowGap(LABEL_CTRL_GAP);
                     spec.buttonBound(
                                     "do:add:" + module + "|" + encoded,
                                     UltraStyle.confirm("Apply"),
                                     UltraStyle.STYLE_CONFIRM,
+                                    MAIN_X,
+                                    spec.row(),
+                                    MAIN_W,
                                     inputId)
                             .rowGap();
-                } else {
-                    spec.line(UltraStyle.dim("Open entries to edit settings in this group."));
                 }
-                // Browse children (detail keeps one parent-list Back below).
-                spec.buttonLeft(
-                                "page:" + listPage(module, listPageNum, path),
-                                UltraStyle.dim("Entries"),
-                                UltraStyle.STYLE_DIM)
+                // Open nested entries in the same editor (no detail sub-page).
+                spec.button(
+                                "page:" + editPage(module, 0, path),
+                                UltraStyle.LABEL + "Open (" + shortVal(value) + ")",
+                                UltraStyle.STYLE_NORMAL,
+                                MAIN_X,
+                                spec.row(),
+                                MAIN_W)
                         .rowGap();
             }
             case TEXT -> {
                 noteIfTextInputMissing(spec, player);
                 String inputId = "input:" + module + "|" + encoded;
-                spec.textFieldRow(
-                                inputId,
-                                value == null ? "" : value,
-                                "Type a value...")
-                        .rowGap();
+                spec.textFieldRow(inputId, value == null ? "" : value, "Type a value...", MAIN_X, MAIN_W);
+                spec.rowGap(LABEL_CTRL_GAP);
                 spec.buttonBound(
                                 "do:set:" + module + "|" + encoded,
                                 UltraStyle.confirm("Apply"),
                                 UltraStyle.STYLE_CONFIRM,
+                                MAIN_X,
+                                spec.row(),
+                                MAIN_W,
                                 inputId)
                         .rowGap();
             }
-            default -> spec.line(UltraStyle.dim("This field type has no Ultra editor yet."));
+            default -> flowLabel(spec, "This field type has no Ultra editor yet.");
         }
-        if (ConfigEditor.dirty(uuid, module, path)) {
-            spec.buttonLeft("do:undo:" + module + "|" + encoded, UltraStyle.dim("Undo field"), "dim")
+    }
+
+    private static void placeStepPair(UltraScreenSpec spec, String module, String encoded) {
+        int stepW = UltraStyle.BTN_MIN_W;
+        if (fitsRow(stepW, stepW)) {
+            spec.button(
+                            "do:step:" + module + "|" + encoded + "|-1",
+                            UltraStyle.dim("-"),
+                            UltraStyle.STYLE_DIM,
+                            MAIN_X,
+                            spec.row(),
+                            stepW)
+                    .button(
+                            "do:step:" + module + "|" + encoded + "|1",
+                            UltraStyle.dim("+"),
+                            UltraStyle.STYLE_DIM,
+                            MAIN_X + stepW + CTRL_GAP,
+                            spec.row(),
+                            stepW)
                     .rowGap();
+            return;
         }
-        spec.button("do:save_all", UltraStyle.confirm("Save all"), "confirm").rowGap();
-        spec.footerBack(
-                "page:" + listPage(module, listPageNum, ConfigEditor.parentPath(path)),
-                "Field list");
-        spec.send(player);
+        spec.button(
+                        "do:step:" + module + "|" + encoded + "|-1",
+                        UltraStyle.dim("-"),
+                        UltraStyle.STYLE_DIM,
+                        MAIN_X,
+                        spec.row(),
+                        MAIN_W)
+                .rowGap();
+        spec.button(
+                        "do:step:" + module + "|" + encoded + "|1",
+                        UltraStyle.dim("+"),
+                        UltraStyle.STYLE_DIM,
+                        MAIN_X,
+                        spec.row(),
+                        MAIN_W)
+                .rowGap();
+    }
+
+    /** True when {@code leftW + gap + rightW} fits in the main column. */
+    private static boolean fitsRow(int leftW, int rightW) {
+        return leftW + CTRL_GAP + rightW <= MAIN_W;
     }
 
     private static void openReview(ServerPlayer player) {
@@ -317,7 +511,7 @@ public final class UltraConfigScreens {
         UltraScreenSpec spec = UltraScreenSpec.of("config")
                 .title("Config - Review")
                 .page("review")
-                .activeTab("home")
+                .panel(PANEL_W, UltraStyle.PANEL_MAX_H)
                 .labelValue("Pending", String.valueOf(pending == null ? 0 : pending.size()));
         if (pending == null || pending.isEmpty()) {
             spec.line(UltraStyle.dim("No unsaved changes."));
@@ -334,11 +528,9 @@ public final class UltraConfigScreens {
         }
         spec.setRow(UltraStyle.CONTENT_ROW + UltraStyle.BODY_MIN_H);
         // Stack Confirm above Discard - side-by-side is a misclick wipe risk.
-        // Confirm first so the safe primary action is above the destructive one.
         spec.button("do:save_all", UltraStyle.confirm("Confirm save"), "confirm").rowGap();
         spec.button("do:discard_all", UltraStyle.danger("Discard all"), "danger").rowGap();
-        // One Back only via footer (nav:home).
-        spec.footerBackHome("Config Home");
+        spec.footerBack("page:edit:difficulty:0:", "Config Editor");
         spec.send(player);
     }
 
@@ -385,10 +577,27 @@ public final class UltraConfigScreens {
                 String module = !a.isBlank() ? a : moduleFromPage(page);
                 String error = ConfigEditor.reloadModule(uuid, module);
                 yield error == null
-                        ? UltraStyle.noticeLine("Reloaded " + module + ".")
+                        ? UltraStyle.noticeLine("Reloaded " + module + " from disk.")
                         : UltraStyle.dangerLine(error);
             }
-            case "open_module" -> "";
+            case "select_module", "open_module" -> {
+                ConfigEditor.rememberSearch(uuid, "");
+                yield "";
+            }
+            case "search" -> {
+                String typed = typedValueFromArgs(args, "search");
+                if (typed == null) {
+                    typed = a;
+                }
+                ConfigEditor.rememberSearch(uuid, typed == null ? "" : typed);
+                yield typed == null || typed.isBlank()
+                        ? UltraStyle.noticeLine("Search cleared.")
+                        : UltraStyle.noticeLine("Showing matches for \"" + shortVal(typed) + "\".");
+            }
+            case "search_clear" -> {
+                ConfigEditor.rememberSearch(uuid, "");
+                yield UltraStyle.noticeLine("Search cleared.");
+            }
             case "toggle" -> {
                 String[] parts = splitModulePath(a);
                 if (parts == null) {
@@ -536,12 +745,8 @@ public final class UltraConfigScreens {
         return path.replace("%7C", "|");
     }
 
-    private static String listPage(String module, int page, String path) {
-        return "list:" + module + ":" + page + ":" + (path == null ? "" : path);
-    }
-
-    private static String detailPage(String module, int listPage, String path) {
-        return "detail:" + module + ":" + listPage + ":" + (path == null ? "" : path);
+    private static String editPage(String module, int page, String path) {
+        return "edit:" + module + ":" + page + ":" + (path == null ? "" : path);
     }
 
     private static String part(String page, int index) {
@@ -576,6 +781,14 @@ public final class UltraConfigScreens {
         return plain.length() <= 24 ? plain : plain.substring(0, 23) + "...";
     }
 
+    private static String shortDesc(String value) {
+        if (value == null || value.isBlank()) {
+            return "";
+        }
+        String plain = UltraStyle.plain(value);
+        return plain.length() <= 72 ? plain : plain.substring(0, 71) + "...";
+    }
+
     private static String moduleFromPage(String page) {
         if (page == null || page.isBlank()) {
             return "difficulty";
@@ -583,7 +796,8 @@ public final class UltraConfigScreens {
         String p = page.trim();
         if (p.regionMatches(true, 0, "module:", 0, 7)
                 || p.regionMatches(true, 0, "list:", 0, 5)
-                || p.regionMatches(true, 0, "detail:", 0, 7)) {
+                || p.regionMatches(true, 0, "detail:", 0, 7)
+                || p.regionMatches(true, 0, "edit:", 0, 5)) {
             String id = part(p, 1);
             return id.isBlank() ? "difficulty" : id;
         }
@@ -677,4 +891,6 @@ public final class UltraConfigScreens {
         spec.line(UltraStyle.danger("Typed fields need KaiPath 1.3.9 or newer."))
                 .line(UltraStyle.DIM + "Until then use Toggle / Next value / +/- step buttons.");
     }
+
+    private record Row(String moduleId, String moduleLabel, ConfigEditor.Entry entry, boolean searchHit) {}
 }

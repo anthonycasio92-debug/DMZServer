@@ -1065,6 +1065,10 @@ public final class ProgressionGuiApi {
         if ("page".equals(act) || "refresh".equals(act)) {
             return "";
         }
+        if ("confirm_now".equals(act) || "confirm_gui".equals(act)) {
+            // Ultra confirm subpage already showed warnings - purchase without chat double-click.
+            return PrestigeSystem.confirmFromGui(player);
+        }
         if ("confirm".equals(act) || "buy".equals(act) || "purchase".equals(act)) {
             return PrestigeSystem.confirmOrPrompt(player);
         }
@@ -1501,6 +1505,9 @@ public final class ProgressionGuiApi {
                     "§e/skills §7- every tracked skill on one page",
                     "§e/skillcheck §7- Donator Skill Check"
             );
+        }
+        if ("skillcheck".equals(p) || "check".equals(p) || "compact".equals(p)) {
+            return SkillUnlockService.skillCheckGuiLines(player);
         }
         return SkillUnlockService.coreLines(player);
     }

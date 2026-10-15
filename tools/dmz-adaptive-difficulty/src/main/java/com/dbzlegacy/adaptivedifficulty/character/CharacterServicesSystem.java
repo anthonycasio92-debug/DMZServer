@@ -63,21 +63,21 @@ public final class CharacterServicesSystem {
     public static String blockReason(ServerPlayer player, boolean cosmetic) {
         CharacterServicesConfig cfg = CharacterServicesConfig.get();
         if (!cfg.enabled) {
-            return "§cCharacter services are disabled.";
+            return "§cCharacter Services are turned off on this server.";
         }
         if (!CharacterServicesAccess.canUseServices(player)) {
-            return "§cYou do not have access to Character Services.";
+            return "§cYou do not have permission for Character Services. Ask staff if you need access.";
         }
         StatsData data = DmzProgression.stats(player);
         if (data == null) {
-            return "§cCharacter data is not ready yet. Try again in a moment.";
+            return "§cYour character is still loading. Wait a moment and try again.";
         }
         Status status = data.getStatus();
         if (cfg.restrictions.blockWhileDead && status != null && !status.isAlive()) {
-            return "§cYou cannot modify your character while dead.";
+            return "§cYou can't change your character while dead. Respawn first.";
         }
         if (cfg.restrictions.blockWhileSparring && inActiveSpar(player)) {
-            return "§cYou cannot modify your character during an active spar.";
+            return "§cYou can't change your character during a spar. Finish the fight first.";
         }
         return "";
     }
@@ -228,18 +228,18 @@ public final class CharacterServicesSystem {
     public static String reskinCostExplanation(ServerPlayer player) {
         CharacterServicesConfig.Reskin rs = CharacterServicesConfig.get().reskin;
         if (CharacterServicesAccess.bypassCost(player)) {
-            return "§8Cost bypass active for your account";
+            return "§8No charge for your account";
         }
         if (!rs.levelCostMultiplier) {
-            return "§8Fixed price (not level-scaled)";
+            return "§8Fixed price for everyone";
         }
         long base = rs.baseCostCopper;
         long pay = reskinCost(player);
         int lvl = DmzProgression.tierScalingDmzLevel(player);
         if (pay <= base) {
-            return "§8Scales with DMZ level (§f" + lvl + "§8) | currently at base price";
+            return "§8Price scales with level (§f" + lvl + "§8) - you are at the base price";
         }
-        return "§8Scales with DMZ level (§f" + lvl + "§8) | list base §f"
+        return "§8Price scales with level (§f" + lvl + "§8) - base §f"
                 + formatCost(base) + " §8-> you pay §f" + formatCost(pay);
     }
 
@@ -266,7 +266,7 @@ public final class CharacterServicesSystem {
 
     public static String cooldownLine(ServerPlayer player, String kind) {
         if (CharacterServicesAccess.bypassCooldown(player)) {
-            return "§aReady whenever you are §8(staff waived)";
+            return "§aReady whenever you are §8(no cooldown for your account)";
         }
         CharacterServicesStore.PlayerRecord rec =
                 CharacterServicesStore.get().record(player.m_20148_().toString());
@@ -307,22 +307,22 @@ public final class CharacterServicesSystem {
             return block;
         }
         if (!CharacterServicesAccess.canRaceChange(player)) {
-            return "§cYou cannot change race.";
+            return "§cYou do not have permission to change race. Ask staff if you need access.";
         }
         CharacterServicesConfig cfg = CharacterServicesConfig.get();
         if (!cfg.raceChange.enabled) {
-            return "§cRace change is disabled.";
+            return "§cRace change is turned off on this server.";
         }
         if (!isValidPreservation(preservationPercent)) {
-            return "§cInvalid preservation percentage.";
+            return "§cPick how much of your stats to keep, then confirm again.";
         }
         String raceId = normalizeId(targetRace);
         if (raceId.isEmpty() || !isRaceAvailable(raceId)) {
-            return "§cThat race is currently unavailable.";
+            return "§cThat race is not available right now. Pick another from the list.";
         }
         String currentRace = DmzProgression.race(player);
         if (raceId.equalsIgnoreCase(currentRace)) {
-            return "§cYou are already that race.";
+            return "§cYou are already that race. Pick a different one.";
         }
         if (!CharacterServicesAccess.bypassRaceLock(player)) {
             String lock = RaceLock.selectBlockReason(player, raceId);
@@ -333,7 +333,7 @@ public final class CharacterServicesSystem {
         if (!CharacterServicesAccess.bypassCooldown(player)) {
             long left = cooldownRemaining(player, "race");
             if (left > 0L) {
-                return "§cYou must wait §f" + formatDuration(left) + " §cbefore another race change.";
+                return "§cRace change is on cooldown. Try again in §f" + formatDuration(left) + "§c.";
             }
         }
         releaseTransformation(player);
@@ -345,7 +345,7 @@ public final class CharacterServicesSystem {
 
         StatsData data = DmzProgression.stats(player);
         if (data == null) {
-            return "§cCharacter data unavailable.";
+            return "§cYour character is still loading. Wait a moment and try again.";
         }
         boolean fullWipe = preservationPercent <= 0;
         TransferableStats before = null;
@@ -353,7 +353,7 @@ public final class CharacterServicesSystem {
         if (!fullWipe) {
             before = captureStats(player);
             if (before == null) {
-                return "§cCould not read your stats.";
+                return "§cCould not read your stats. Wait a moment and try again.";
             }
             target = before.scaled(preservationPercent);
         }
@@ -366,7 +366,7 @@ public final class CharacterServicesSystem {
             Character ch = data.getCharacter();
             if (ch == null) {
                 refund(player, cost);
-                return "§cCharacter data unavailable.";
+                return "§cYour character is still loading. Wait a moment and try again.";
             }
             AbsorptionWipeHelper.wipe(player, "CharacterServicesSystem.executeRaceChange");
             GodKiWipeHelper.wipe(player, "CharacterServicesSystem.executeRaceChange");
@@ -456,7 +456,7 @@ public final class CharacterServicesSystem {
             if (fullWipe) {
                 return "§aOpening character setup for §f" + titleCase(raceId)
                         + "§a. §7Pick your class and appearance - free full wipe."
-                        + " §7Purchased model pieces stay unlocked."
+                        + " §7Purchased looks stay unlocked."
                         + paid;
             }
             if (openedFreeClassPicker) {
@@ -467,7 +467,7 @@ public final class CharacterServicesSystem {
                         + (cfg.raceChange.keepSkillsOnRaceChange
                                 ? " §7Ki skills and shared form progress kept."
                                 : "")
-                        + " §7Head part unlocks are kept."
+                        + " §7Purchased looks stay unlocked."
                         + paid;
             }
             boolean keepSkills = cfg.raceChange.keepSkillsOnRaceChange;
@@ -482,14 +482,15 @@ public final class CharacterServicesSystem {
                     if (label == null || label.isBlank() || "Not set".equals(label)) {
                         label = titleCase(cls);
                     }
-                    classNote = " §7Fighting class §f" + label + " §7(" + raceId + " stats).";
+                    classNote = " §7Fighting class §f" + label + " §7(" + titleCase(raceId)
+                            + " stats).";
                 }
             }
             return "§aRace changed to §f" + titleCase(raceId)
                     + "§a. Eligible stats preserved at §f" + preservationPercent + "%§a."
                     + classNote
                     + kept
-                    + " §7Head part unlocks are kept."
+                    + " §7Purchased looks stay unlocked."
                     + paid;
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.error(
@@ -499,7 +500,7 @@ public final class CharacterServicesSystem {
                     t.toString());
             refund(player, cost);
             audit(player, "Race Change", currentRace, raceId, preservationPercent, cost, false);
-            return "§cThe character change could not be completed. Payment was refunded when possible.";
+            return "§cRace change failed. Your coins were returned when possible. Try again or ask staff.";
         }
     }
 
@@ -509,25 +510,25 @@ public final class CharacterServicesSystem {
             return block;
         }
         if (!CharacterServicesAccess.canClassChange(player)) {
-            return "§cYou cannot change class.";
+            return "§cYou do not have permission to change class. Ask staff if you need access.";
         }
         CharacterServicesConfig.ClassChange cc = CharacterServicesConfig.get().classChange;
         if (!cc.enabled) {
-            return "§cClass change is disabled.";
+            return "§cClass change is turned off on this server.";
         }
         String classId = normalizeId(targetClass);
         String race = DmzProgression.race(player);
         if (classId.isEmpty()) {
-            return "§cThat class is not available for your race.";
+            return "§cThat class is not available for your race. Pick another from the list.";
         }
         String current = DmzProgression.fightingClass(player);
         if (classId.equalsIgnoreCase(current)) {
-            return "§cYou are already that class.";
+            return "§cYou are already that class. Pick a different one.";
         }
         if (!CharacterServicesAccess.bypassCooldown(player)) {
             long left = cooldownRemaining(player, "class");
             if (left > 0L) {
-                return "§cYou must wait §f" + formatDuration(left) + " §cbefore another class change.";
+                return "§cClass change is on cooldown. Try again in §f" + formatDuration(left) + "§c.";
             }
         }
         releaseTransformation(player);
@@ -539,10 +540,10 @@ public final class CharacterServicesSystem {
 
         StatsData data = DmzProgression.stats(player);
         if (data == null) {
-            return "§cCharacter data unavailable.";
+            return "§cYour character is still loading. Wait a moment and try again.";
         }
         if (!DmzClassCommandApply.isValidClass(data, classId)) {
-            return "§cThat class is not available for your race.";
+            return "§cThat class is not available for your race. Pick another from the list.";
         }
         TransferableStats before = cc.preserveBaseStats ? captureStats(player) : null;
         float[] resourceSnapshot = data.snapshotMultiplierResources();
@@ -555,7 +556,7 @@ public final class CharacterServicesSystem {
             Character ch = data.getCharacter();
             if (ch == null) {
                 refund(player, cost);
-                return "§cCharacter data unavailable.";
+                return "§cYour character is still loading. Wait a moment and try again.";
             }
             String committed =
                     RaceChangeClassMapper.commitFightingClassForRace(data, race, classId, current);
@@ -583,7 +584,7 @@ public final class CharacterServicesSystem {
         } catch (Throwable t) {
             refund(player, cost);
             audit(player, "Class Change", current, classId, 100, cost, false);
-            return "§cThe character change could not be completed. Payment was refunded when possible.";
+            return "§cClass change failed. Your coins were returned when possible. Try again or ask staff.";
         }
     }
 
@@ -597,16 +598,16 @@ public final class CharacterServicesSystem {
             return block;
         }
         if (!CharacterServicesAccess.canReskin(player)) {
-            return "§cYou cannot reskin.";
+            return "§cYou do not have permission to reskin. Ask staff if you need access.";
         }
         CharacterServicesConfig.Reskin rs = CharacterServicesConfig.get().reskin;
         if (!rs.enabled) {
-            return "§cReskin is disabled.";
+            return "§cReskin is turned off on this server.";
         }
         if (!CharacterServicesAccess.bypassCooldown(player)) {
             long left = cooldownRemaining(player, "reskin");
             if (left > 0L) {
-                return "§cYou must wait §f" + formatDuration(left) + " §cbefore another reskin.";
+                return "§cReskin is on cooldown. Try again in §f" + formatDuration(left) + "§c.";
             }
         }
         long cost = reskinAmountDue(player);
@@ -662,7 +663,7 @@ public final class CharacterServicesSystem {
             ReskinSessionGuard.clear(player);
             refund(player, cost);
             audit(player, "Reskin", "", "", 0, cost, false);
-            return "§cCould not open the appearance editor. Payment was refunded when possible.";
+            return "§cCould not open the appearance editor. Your coins were returned when possible. Try again or ask staff.";
         }
     }
 

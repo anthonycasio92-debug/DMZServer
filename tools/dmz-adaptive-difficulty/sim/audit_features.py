@@ -268,6 +268,14 @@ def main() -> int:
         "Character playerModel y=60 (below tab strip)",
         "248, 60, 86, 120" in char_ultra,
     )
+    check(
+        "Character playerModel only on Home + model customize",
+        'base(player, "main", "home", true)' in char_ultra
+        and ("sub(player, \"bones:\" + pg, true)" in char_ultra or 'sub(player, "bones:0", true)' in char_ultra)
+        and 'base(player, UltraStyle.PAGE_ANDROID_REMOVE, "android", false)' in char_ultra
+        and "sub(player, \"race:\" + pg, false)" in char_ultra
+        and 'sub(player, "reskin", false)' in char_ultra,
+    )
     parts_helper = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/ultra/PlayerModelParts.java")
     check(
         "playerModel.parts schema 1 helper",

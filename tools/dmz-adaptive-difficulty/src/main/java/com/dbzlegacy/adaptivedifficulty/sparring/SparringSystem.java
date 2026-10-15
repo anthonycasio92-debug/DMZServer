@@ -1025,8 +1025,6 @@ public final class SparringSystem {
 
     public static List<String> statsLines(ServerPlayer player) {
         List<String> lines = new ArrayList<>();
-        SparStore.MentorBond bond = SparStore.get().bond(player.m_20148_());
-        SparStore.LeaderboardEntry lb = SparStore.get().leaderboard.get(player.m_20148_().toString());
         List<SparStore.RecentSession> recent = SparStore.get().recentFor(player.m_20148_().toString());
         if (recent.isEmpty()) {
             lines.add("§7No finished spars yet");
@@ -1039,10 +1037,22 @@ public final class SparringSystem {
                 i++;
             }
         }
-        lines.add("§bMentor Bond");
-        lines.add("§8  - §7Mentor TP chat §f"
-                + (SparStore.get().mentorTpMessagesOn(player.m_20148_()) ? "ON" : "OFF")
-                + " §8(Spar → Mentor TP toggle)");
+        lines.addAll(statsOverviewLines(player));
+        return lines;
+    }
+
+    /**
+     * Compact lifetime / bond summary for Ultra stats (no Combat block, no full report dump).
+     * Fight details open via {@link #recentReportLines}.
+     */
+    public static List<String> statsOverviewLines(ServerPlayer player) {
+        List<String> lines = new ArrayList<>();
+        if (player == null) {
+            return lines;
+        }
+        SparStore.MentorBond bond = SparStore.get().bond(player.m_20148_());
+        SparStore.LeaderboardEntry lb = SparStore.get().leaderboard.get(player.m_20148_().toString());
+        lines.add("§bTraining bonds");
         lines.add("§8  - §7Mentor §f"
                 + (bond.mentorName == null || bond.mentorName.isBlank() ? "none" : bond.mentorName));
         int apps = bond.apprenticeCount();
@@ -1050,11 +1060,9 @@ public final class SparringSystem {
             lines.add("§8  - §7Apprentices §fnone");
         } else {
             lines.add("§8  - §7Apprentices §f" + apps + "§8/§f" + MAX_APPRENTICES
-                    + " §8— §f" + bond.apprenticeNamesSummary());
+                    + " §8- §f" + bond.apprenticeNamesSummary());
         }
         lines.add("§8  - §7Streak §f" + bond.streakCurrent + " §8(best " + bond.streakBest + ")");
-        lines.add("§6Combat (after Overhaul)");
-        lines.addAll(LmOverhaulScaledCombat.compactLines(DmzProgression.stats(player)));
         if (lb != null) {
             lines.add("§eLifetime");
             lines.add("§8  - §7Total TP §a" + DmzRewards.formatWhole(lb.totalTp));
@@ -1062,7 +1070,49 @@ public final class SparringSystem {
                     + " §8| best combo §f" + lb.highestCombo);
             lines.add("§8  - §7Best payout §a" + DmzRewards.formatWhole(lb.bestPayout)
                     + " §8| perfects §f" + lb.perfectSessions);
+        } else {
+            lines.add("§7No lifetime spar stats yet.");
         }
+        return lines;
+    }
+
+    /**
+     * Button labels for the last finished spars ({@code index\tlabel}, 1-based index).
+     * Cap matches {@link SparStore#RECENT_SESSION_LIMIT}.
+     */
+    public static List<String> recentFightCards(ServerPlayer player) {
+        List<String> out = new ArrayList<>();
+        if (player == null) {
+            return out;
+        }
+        List<SparStore.RecentSession> recent = SparStore.get().recentFor(player.m_20148_().toString());
+        int i = 1;
+        for (SparStore.RecentSession r : recent) {
+            if (r == null || i > SparStore.RECENT_SESSION_LIMIT) {
+                continue;
+            }
+            String who = r.partnerName == null || r.partnerName.isBlank() ? "unknown" : r.partnerName;
+            who = who.replace('\t', ' ').replace('\n', ' ');
+            String when = r.endedAt > 0L ? formatEndedAgo(r.endedAt) : "";
+            String label = "vs " + who + (when.isBlank() ? "" : " (" + when + ")");
+            out.add(i + "\t" + label);
+            i++;
+        }
+        return out;
+    }
+
+    /** Full report lines for one recent spar (1-based index), or empty if missing. */
+    public static List<String> recentReportLines(ServerPlayer player, int index) {
+        List<String> lines = new ArrayList<>();
+        if (player == null || index < 1) {
+            return lines;
+        }
+        List<SparStore.RecentSession> recent = SparStore.get().recentFor(player.m_20148_().toString());
+        if (index > recent.size()) {
+            return lines;
+        }
+        SparStore.RecentSession r = recent.get(index - 1);
+        appendRecentReport(lines, index, r);
         return lines;
     }
 
@@ -1071,8 +1121,8 @@ public final class SparringSystem {
         if (lines == null || r == null) {
             return;
         }
-        String who = r.partnerName == null || r.partnerName.isBlank() ? "?" : r.partnerName;
-        String perfect = r.perfect ? " §6★ Perfect" : "";
+        String who = r.partnerName == null || r.partnerName.isBlank() ? "unknown" : r.partnerName;
+        String perfect = r.perfect ? " §6Perfect" : "";
         lines.add("§6Spar Report #" + index + " §8vs §f" + who);
         lines.add("§8  - §7TP §a+" + DmzRewards.formatWhole(r.tp));
         lines.add("§8  - §7Time §f" + formatDuration(r.durationMs));
@@ -1124,7 +1174,7 @@ public final class SparringSystem {
             case "time" -> "Time";
             default -> "Training points";
         };
-        lines.add("§6§lSparring leaderboard §8— §f" + label);
+        lines.add("§6§lHall of Infamy §8- §f" + label);
         List<Map.Entry<String, SparStore.LeaderboardEntry>> entries =
                 new ArrayList<>(SparStore.get().leaderboard.entrySet());
         entries.sort((a, b) -> {

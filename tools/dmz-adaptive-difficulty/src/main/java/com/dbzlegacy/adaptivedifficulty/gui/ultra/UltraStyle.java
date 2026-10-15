@@ -37,8 +37,9 @@ public final class UltraStyle {
     public static final String NOTICE_BODY;
 
     /**
-     * Per-system accent inks (body/chat lines that allow section-sign). Hub tiles / tabs /
-     * titles cannot embed these in labels — use {@link #systemAccentCode(String)} on the wire.
+     * Per-system accent inks (body/chat lines and button label prefixes via
+     * {@link #systemAccent(String)}). Titles stay plain ASCII — use
+     * {@link #systemAccentCode(String)} on {@code layoutJson.accent}.
      */
     public static final String ACCENT_DIFFICULTY;
     public static final String ACCENT_RIVAL;
@@ -113,14 +114,17 @@ public final class UltraStyle {
      * {@link #TAB_ROW_Y}; client title + divider must stay strictly above this line.
      */
     public static final int HEADER_BOTTOM_TABS = TAB_ROW_Y;
-    /** Y where the body starts when a tab button row is present. */
-    public static final int BODY_TOP_TABS = TAB_ROW_Y + BTN_H + BTN_GAP;
+    /** Y where the body starts when a tab button row is present (tab bottom + 8px). */
+    public static final int BODY_TOP_TABS = TAB_ROW_Y + BTN_H + 8;
     /** Minimum body scroll region height so lines stay readable. */
     public static final int BODY_MIN_H = 140;
-    /** Default content row after title (no tabs) — hub home tiles. */
-    public static final int CONTENT_ROW = 40;
-    /** Default content row after title + tab button row. */
-    public static final int CONTENT_ROW_TABS = TAB_ROW_Y + BTN_H + BTN_GAP;
+    /**
+     * Default content row after title (no tabs) — hub home tiles.
+     * {@link #HEADER_BOTTOM} ({@code 42}) + 8px gap so the first row clears the divider.
+     */
+    public static final int CONTENT_ROW = 50;
+    /** Default content row after title + tab button row (tab bottom + 8px). */
+    public static final int CONTENT_ROW_TABS = TAB_ROW_Y + BTN_H + 8;
     /** Title alignment in layoutJson: {@code center} or {@code left}. */
     public static final String TITLE_ALIGN = "center";
 
@@ -134,18 +138,14 @@ public final class UltraStyle {
     public static final String STYLE_DIM = "dim";
 
     /**
-     * Button click sound (KaiPath {@code sound} wire — registered SoundEvent RL).
-     *
-     * <p>Uses vanilla {@code minecraft:ui.button.click} so click feedback works when the
-     * player has KaiPath but not DMZUltra. KaiPath looks the id up in
-     * {@code BuiltInRegistries.SOUND_EVENT} and no-ops if missing — it never crashes.
+     * Optional button click sound RL. <b>Not emitted</b> on GuiOpen buttons — KaiPath
+     * default click is used. Kept for callers that still pass the constant into Button.
      */
     public static final String SOUND_CONFIRM = "minecraft:ui.button.click";
     /**
-     * Button chrome skin enable token. KaiPath 1.3.13 only checks that the string is a
-     * valid {@code ns:path}; it does <b>not</b> load a texture from that RL. A non-empty
-     * value flips {@code ChromeButton} into tinted outline paint. Namespace is LM's own
-     * so absence of DMZUltra cannot be misread as a missing asset.
+     * Optional button chrome skin enable token. <b>Not emitted</b> — a non-empty
+     * {@code buttonSkin} flips KaiPath into the skinned (flat square) path instead of
+     * default chrome. Constant retained for layout/docs reference only.
      */
     public static final String BUTTON_SKIN = "legacymechanics:button";
     /**
@@ -283,8 +283,9 @@ public final class UltraStyle {
     public static final int CHAR_W_EST = 6;
 
     /**
-     * Truncate for buttons. Returns plain ASCII only — KaiPath button {@code style} carries
-     * color; section-sign prefixes mojibake as stray A/E glyphs on some clients.
+     * Truncate for buttons to plain ASCII width. Callers that want per-system ink should
+     * re-apply {@link #color(String, String)} / {@link #systemAccent(String)} after fitting
+     * (see {@code UltraScreenSpec} button emission).
      */
     public static String buttonLabel(String styled) {
         return fitAsciiLabel(styled, 28 * CHAR_W_EST);
@@ -292,7 +293,7 @@ public final class UltraStyle {
 
     /**
      * Plain ASCII label clipped to {@code maxWidthPx} with an ASCII {@code ...} ellipsis.
-     * Prefer this over letting the client truncate.
+     * Strips section-sign for width math — re-apply ink with {@link #color} after fitting.
      */
     public static String fitAsciiLabel(String styled, int maxWidthPx) {
         if (styled == null) {
@@ -358,11 +359,12 @@ public final class UltraStyle {
     }
 
     /**
-     * Single-letter Minecraft color code for {@code layoutJson.accent} / button {@code accent}.
+     * Single-letter Minecraft color code for {@code layoutJson.accent} and per-system
+     * <em>button label</em> ink ({@link #systemAccent(String)} / {@link #color(String, String)}).
      * Empty when the screen uses the shared hub gold header (no per-system tint).
      *
-     * <p>Labels stay plain ASCII — KaiPath mojibakes section-sign in title/button text.
-     * JLDK paints title chrome and active-tab highlight from this code.
+     * <p>Titles stay plain ASCII (layout accent paints the chrome). Button chrome stays
+     * default — identity is the colored label text, not {@code buttonSkin}/wire accent.
      */
     public static String systemAccentCode(String screenId) {
         if (screenId == null || screenId.isBlank()) {
@@ -370,12 +372,12 @@ public final class UltraStyle {
         }
         String id = screenId.trim().toLowerCase();
         return switch (id) {
-            case "difficulty", "weights" -> "c";
+            case "difficulty" -> "c";
             case "rival" -> "5";
             case "spar" -> "6";
             case "prestige" -> "b";
             case "character" -> "a";
-            case "skillcheck", "skills" -> "e";
+            case "skillcheck", "skills", "skillcheck_denied" -> "e";
             case "admin", "config", "progression" -> "4";
             // Main hub title keeps shared HEADER/GOLD chrome — no per-system accent override.
             case "hub" -> "";
@@ -394,20 +396,7 @@ public final class UltraStyle {
 
     /** Hub tile accent letter for a system id ({@code difficulty}, {@code admin}, …). */
     public static String hubTileAccentCode(String system) {
-        if (system == null || system.isBlank()) {
-            return "";
-        }
-        String s = system.trim().toLowerCase();
-        return switch (s) {
-            case "difficulty" -> "c";
-            case "rival" -> "5";
-            case "spar" -> "6";
-            case "prestige" -> "b";
-            case "character" -> "a";
-            case "skillcheck", "skills", "skillcheck_denied" -> "e";
-            case "admin" -> "4";
-            default -> "";
-        };
+        return systemAccentCode(system);
     }
 
     /**

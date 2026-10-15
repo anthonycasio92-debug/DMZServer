@@ -48,18 +48,18 @@ public final class CosmeticHeadBoneService {
      */
     public static String previewBone(ServerPlayer player, String boneId) {
         if (!canUse(player)) {
-            return "§cHead bone shop is unavailable.";
+            return "§cModel customization is unavailable right now. Try again later or ask staff.";
         }
         if (boneId == null || boneId.isBlank()) {
-            return "§cPick a head part.";
+            return "§cPick a look from the list.";
         }
         String bone = boneId.trim().toLowerCase(Locale.ROOT);
         if (!CosmeticHeadBoneCatalog.isKnown(bone)) {
-            return "§cUnknown head part.";
+            return "§cThat look is not available. Pick another from the list.";
         }
         Character ch = DmzProgression.character(player);
         if (ch == null) {
-            return "§cCharacter data unavailable.";
+            return "§cYour character is still loading. Wait a moment and try again.";
         }
         String base = PREVIEW_STASH.putIfAbsent(player.m_20148_(), activeBone(player));
         if (base == null) {
@@ -75,7 +75,7 @@ public final class CosmeticHeadBoneService {
             }
             return "";
         } catch (Throwable t) {
-            return "§cCould not preview that head part.";
+            return "§cCould not preview that look. Try again or pick another.";
         }
     }
 
@@ -503,14 +503,14 @@ public final class CosmeticHeadBoneService {
 
     public static String executeUnlock(ServerPlayer player, String boneId) {
         if (!canUse(player)) {
-            return "§cHead bone shop is unavailable.";
+            return "§cModel customization is unavailable right now. Try again later or ask staff.";
         }
         if (boneId == null || boneId.isBlank()) {
-            return "§cPick a head part.";
+            return "§cPick a look from the list.";
         }
         String bone = boneId.trim().toLowerCase(Locale.ROOT);
         if (!CosmeticHeadBoneCatalog.isKnown(bone)) {
-            return "§cUnknown head part.";
+            return "§cThat look is not available. Pick another from the list.";
         }
         if (hasUnlock(player, bone)) {
             return executeEquip(player, bone);
@@ -641,27 +641,27 @@ public final class CosmeticHeadBoneService {
 
     public static String executeRaceDefaultHeadBone(ServerPlayer player) {
         if (!canUse(player)) {
-            return "§cHead bone shop is unavailable.";
+            return "§cModel customization is unavailable right now. Try again later or ask staff.";
         }
         String bone = raceDefaultHeadBoneId(player);
-        return applyHeadBoneDirect(player, bone, "§aSet race default head part §f");
+        return applyHeadBoneDirect(player, bone, "§aSet race default look: §f");
     }
 
     public static String executeUnequipHeadBone(ServerPlayer player) {
         if (!canUse(player)) {
-            return "§cHead bone shop is unavailable.";
+            return "§cModel customization is unavailable right now. Try again later or ask staff.";
         }
         String bone = unequipHeadBoneId(player);
         if (bone.isEmpty()) {
-            return applyHeadBoneDirect(player, "", "§aUnequipped extra model pieces.");
+            return applyHeadBoneDirect(player, "", "§aCleared extra head parts.");
         }
-        return applyHeadBoneDirect(player, bone, "§aUnequipped to §f");
+        return applyHeadBoneDirect(player, bone, "§aCleared extras - now §f");
     }
 
     private static String applyHeadBoneDirect(ServerPlayer player, String bone, String prefix) {
         Character ch = DmzProgression.character(player);
         if (ch == null) {
-            return "§cCharacter data unavailable.";
+            return "§cYour character is still loading. Wait a moment and try again.";
         }
         discardPreview(player);
         try {
@@ -678,22 +678,23 @@ public final class CosmeticHeadBoneService {
             }
             return prefix + label + "§a.";
         } catch (Throwable t) {
-            return "§cCould not update head part.";
+            return "§cCould not update your look. Try again or ask staff.";
         }
     }
 
     public static String executeEquip(ServerPlayer player, String boneId) {
         if (!canUse(player)) {
-            return "§cHead bone shop is unavailable.";
+            return "§cModel customization is unavailable right now. Try again later or ask staff.";
         }
         if (boneId == null || boneId.isBlank()) {
-            return "§cPick a head part.";
+            return "§cPick a look from the list.";
         }
         String bone = boneId.trim().toLowerCase(Locale.ROOT);
         if (!isBoneAllowed(player, bone)) {
             long cost = unlockCost(player, bone);
             return "§cUnlock §f" + CosmeticHeadBoneCatalog.prettyId(bone)
-                    + " §cfirst (§f" + CharacterServicesSystem.formatCost(cost) + "§c).";
+                    + " §cfirst for §f" + CharacterServicesSystem.formatCost(cost)
+                    + " §cAncient Coins, then turn it on.";
         }
         restorePreview(player);
         List<String> next = new ArrayList<>(HeadPartPieces.fragments(activeBone(player)));
@@ -712,14 +713,14 @@ public final class CosmeticHeadBoneService {
     /** Turn one atomic part on (paying if it is locked) or off. Other worn parts stay. */
     public static String executeToggle(ServerPlayer player, String boneId) {
         if (!canUse(player)) {
-            return "§cHead bone shop is unavailable.";
+            return "§cModel customization is unavailable right now. Try again later or ask staff.";
         }
         if (boneId == null || boneId.isBlank()) {
-            return "§cPick a head part.";
+            return "§cPick a look from the list.";
         }
         String bone = boneId.trim().toLowerCase(Locale.ROOT);
         if (!HeadPartPieces.isAtomic(bone) || CosmeticHeadBoneCatalog.get(bone) == null) {
-            return "§cUnknown head part.";
+            return "§cThat look is not available. Pick another from the list.";
         }
         restorePreview(player);
         boolean on = HeadPartPieces.fragments(activeBone(player)).contains(bone);
@@ -776,7 +777,7 @@ public final class CosmeticHeadBoneService {
     private static String applyJoined(ServerPlayer player, String token, String message) {
         Character ch = DmzProgression.character(player);
         if (ch == null) {
-            return "§cCharacter data unavailable.";
+            return "§cYour character is still loading. Wait a moment and try again.";
         }
         discardPreview(player);
         try {
@@ -786,7 +787,7 @@ public final class CosmeticHeadBoneService {
             RaceHeadBoneSync.syncClient(player);
             return message;
         } catch (Throwable t) {
-            return "§cCould not update model customization.";
+            return "§cCould not update your look. Try again or ask staff.";
         }
     }
 
@@ -794,15 +795,15 @@ public final class CosmeticHeadBoneService {
     private static String applyActiveOnly(ServerPlayer player, String bone) {
         Character ch = DmzProgression.character(player);
         if (ch == null) {
-            return "§cCharacter data unavailable.";
+            return "§cYour character is still loading. Wait a moment and try again.";
         }
         try {
             String normalized = bone == null ? "" : bone.trim().toLowerCase(Locale.ROOT);
             ch.setActiveHeadBone(normalized);
             RaceHeadBoneSync.syncClient(player);
-            return "§7Restored your previous head part.";
+            return "§7Restored your previous look.";
         } catch (Throwable t) {
-            return "§cCould not restore that head part.";
+            return "§cCould not restore your previous look. Try again or ask staff.";
         }
     }
 }

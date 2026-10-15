@@ -528,7 +528,7 @@ public final class DojoRankings {
         Map<String, SparStore.DojoEntry> board = season == null || season.leaderboard == null
                 ? Map.of()
                 : season.leaderboard;
-        lines.add("§6§lDojo Top §8— §f" + cat
+        lines.add("§6§lDojo Top §8- §f" + cat
                 + (season != null ? " §8S#" + season.seasonId : ""));
         List<Map.Entry<String, SparStore.DojoEntry>> sorted = sortedEntries(board, cat, limit);
         int i = 1;
@@ -544,7 +544,7 @@ public final class DojoRankings {
             i++;
         }
         if (i == 1) {
-            lines.add("§7No dojo rankings yet — spar across dojos!");
+            lines.add("§7No dojo rankings yet - spar across dojos!");
         }
         return lines;
     }
@@ -578,7 +578,7 @@ public final class DojoRankings {
 
     public static List<String> hallOfFameLines() {
         List<String> lines = new ArrayList<>();
-        lines.add("§6§lDojo Hall of Fame");
+        lines.add("§6§lHall of Chosen");
         List<SparStore.DojoSeasonRecord> hof = SparStore.get().dojoHallOfFame;
         if (hof == null || hof.isEmpty()) {
             lines.add("§7No past seasons yet.");
@@ -603,10 +603,60 @@ public final class DojoRankings {
     }
 
     public static List<String> memberLines(ServerPlayer player) {
+        return memberLinesForKey(homeDojoKey(player), "Dojo members");
+    }
+
+    /** Contribution lines for the dojo the player owns (master), or empty guidance. */
+    public static List<String> ownedDojoMemberLines(ServerPlayer player) {
+        if (player == null || !isDojoMaster(player)) {
+            List<String> lines = new ArrayList<>();
+            lines.add("§6Your dojo");
+            lines.add("§7You do not own a dojo yet. Recruit apprentices to start one.");
+            return lines;
+        }
+        String key = player.m_20148_().toString().toLowerCase(Locale.ROOT);
+        return memberLinesForKey(key, "Your dojo");
+    }
+
+    /** Contribution / roster lines for the dojo the player joined (has a mentor). */
+    public static List<String> joinedDojoMemberLines(ServerPlayer player) {
+        if (player == null) {
+            return List.of();
+        }
+        SparStore.MentorBond bond = SparStore.get().bond(player.m_20148_());
+        if (bond == null || bond.mentorUuid == null || bond.mentorUuid.isBlank()) {
+            List<String> lines = new ArrayList<>();
+            lines.add("§6Joined dojo");
+            lines.add("§7You are not in a mentor's dojo. Request a master from Actions.");
+            return lines;
+        }
+        String key = bond.mentorUuid.trim().toLowerCase(Locale.ROOT);
+        List<String> lines = memberLinesForKey(key, "Joined dojo");
+        // Roster roles from membership cards (mentor + peers).
+        for (String card : SparringSystem.membershipDojoCards(player)) {
+            if (card == null || card.isBlank()) {
+                continue;
+            }
+            String[] p = card.split("\t", -1);
+            if (p.length < 3) {
+                continue;
+            }
+            String role = p[0] == null ? "" : p[0].trim();
+            String name = p[2] == null || p[2].isBlank() ? p[1] : p[2].trim();
+            String roleLabel = switch (role.toLowerCase(Locale.ROOT)) {
+                case "mentor" -> "Master";
+                case "you" -> "You";
+                default -> "Apprentice";
+            };
+            lines.add("§8  - §7" + roleLabel + " §f" + blank(name, "-"));
+        }
+        return lines;
+    }
+
+    private static List<String> memberLinesForKey(String key, String heading) {
         List<String> lines = new ArrayList<>();
-        lines.add("§8── §6Dojo Members §8──");
-        String key = homeDojoKey(player);
-        if (key == null) {
+        lines.add("§6" + (heading == null || heading.isBlank() ? "Dojo members" : heading));
+        if (key == null || key.isBlank()) {
             lines.add("§7Join a dojo to see contributions.");
             return lines;
         }
@@ -623,10 +673,10 @@ public final class DojoRankings {
             if (m == null) {
                 continue;
             }
-            lines.add("§e#" + rank + " §f" + blank(m.name, "?")
+            lines.add("§e#" + rank + " §f" + blank(m.name, "-")
                     + " §7" + (int) m.rpContributed + " RP"
-                    + " §8· §a" + m.wins + "W §c" + m.losses + "L"
-                    + " §8· §f" + DmzRewards.formatWhole(m.tp) + " TP");
+                    + " §8| §a" + m.wins + "W §c" + m.losses + "L"
+                    + " §8| §f" + DmzRewards.formatWhole(m.tp) + " TP");
             rank++;
             if (rank > 10) {
                 break;
@@ -665,17 +715,17 @@ public final class DojoRankings {
 
     public static List<String> infoLines(ServerPlayer player) {
         List<String> lines = new ArrayList<>();
-        lines.add("§8── §6Dojo Rankings §8──");
+        lines.add("§6Dojo rankings");
         ensureSeason();
         SparStore.DojoSeason season = SparStore.get().dojoSeason;
         if (season != null) {
             long left = Math.max(0L, SEASON_MS - (System.currentTimeMillis() - season.startedAt));
-            lines.add("§7Season §f#" + season.seasonId + " §8· §7" + (left / 86_400_000L) + " days left");
+            lines.add("§7Season §f#" + season.seasonId + " §8| §7" + (left / 86_400_000L) + " days left");
         }
         String key = homeDojoKey(player);
         if (key == null) {
             lines.add("§7Join a dojo to compete on the ladder.");
-            lines.add("§8Invite apprentices or ask a mentor.");
+            lines.add("§8Invite apprentices or ask a mentor from Actions.");
             return lines;
         }
         SparStore.DojoProfile prof = profile(key);
@@ -689,9 +739,9 @@ public final class DojoRankings {
         SparStore.DojoEntry e = entry(key);
         if (e != null) {
             lines.add("§7Season RP §f" + (int) e.seasonRp
-                    + " §8· §a" + e.wins + "W §c" + e.losses + "L §7" + e.draws + "D");
+                    + " §8| §a" + e.wins + "W §c" + e.losses + "L §7" + e.draws + "D");
             lines.add("§7Spar TP §f" + DmzRewards.formatWhole(e.totalTp)
-                    + " §8· §7" + e.sessions + " rival-dojo spars");
+                    + " §8| §7" + e.sessions + " rival-dojo spars");
         }
         int rank = dojoRank(key, "rp");
         if (rank > 0) {
@@ -699,13 +749,13 @@ public final class DojoRankings {
         }
         if (isDojoMaster(player)) {
             lines.add("§8Rename: §7/spar dojo name <your name>");
-            lines.add("§8Banner & wars: §7Dojo Rankings → Dojo War");
+            lines.add("§8Wars: §7Sparring → Wars tab");
         }
         SparStore.DojoChallenge pending = SparStore.get().dojoChallenges.get(
                 player.m_20148_().toString().toLowerCase(Locale.ROOT));
         if (pending != null && pending.expiresAt > System.currentTimeMillis() && !pending.active) {
             lines.add("§eChallenge from §f" + blank(pending.fromDojoName, "?")
-                    + " §8— accept in Dojo War");
+                    + " §8- accept in Dojo War");
         }
         SparStore.DojoChallenge active = activeChallengeFor(key);
         if (active != null) {
@@ -713,7 +763,7 @@ public final class DojoRankings {
                     ? active.toDojoName
                     : active.fromDojoName;
             lines.add("§6§lActive war §fvs " + blank(rival, "?")
-                    + " §8(2× RP)");
+                    + " §8(2x RP)");
             lines.add("§8Their members show in Noea tracking.");
         }
         return lines;
@@ -722,28 +772,27 @@ public final class DojoRankings {
     /** Lore for the Dojo War actions hub (masters manage declare / accept / banner). */
     public static List<String> warInfoLines(ServerPlayer player) {
         List<String> lines = new ArrayList<>();
-        lines.add("§8── §cDojo War §8──");
+        lines.add("§cDojo wars");
         if (player == null) {
             lines.add("§cUnavailable.");
             return lines;
         }
         if (!isDojoMaster(player)) {
             lines.add("§7Only dojo masters manage wars.");
-            lines.add("§8Your mentor master accepts challenges.");
+            lines.add("§8Your mentor accepts challenges for the dojo.");
             return lines;
         }
         String key = homeDojoKey(player);
-        lines.add("§7Challenge rival dojos for §f2× season RP§7.");
-        lines.add("§8Wars run 24 hours once accepted.");
-        lines.add("§8Their members show in Noea tracking.");
+        lines.add("§7Challenge another dojo for §f2x season RP§7.");
+        lines.add("§8Wars run 24 hours once accepted. Challenges work while offline.");
         SparStore.DojoChallenge pending = SparStore.get().dojoChallenges.get(
                 player.m_20148_().toString().toLowerCase(Locale.ROOT));
         if (pending != null && pending.expiresAt > System.currentTimeMillis() && !pending.active) {
-            lines.add("§eIncoming challenge §f" + blank(pending.fromDojoName, "?"));
-            lines.add("§8Open §7Pending §8to accept or decline");
+            lines.add("§eIncoming challenge §f" + blank(pending.fromDojoName, "-"));
+            lines.add("§8Open Pending requests to accept or deny.");
         }
         if (pendingDojoWarCount(player) > 0) {
-            lines.add("§7Pending wars §f" + pendingDojoWarCount(player));
+            lines.add("§7Pending requests §f" + pendingDojoWarCount(player));
         }
         if (key != null) {
             SparStore.DojoChallenge active = activeChallengeFor(key);
@@ -751,7 +800,7 @@ public final class DojoRankings {
                 String rival = key.equalsIgnoreCase(active.fromDojoUuid)
                         ? active.toDojoName
                         : active.fromDojoName;
-                lines.add("§6§lActive war §fvs " + blank(rival, "?"));
+                lines.add("§6Active war §fvs " + blank(rival, "-"));
             }
         }
         return lines;
@@ -983,7 +1032,7 @@ public final class DojoRankings {
         SparStore.get().markDirty();
         broadcast(LmChat.ok("Dojo", "§6§lDOJO WAR §f" + c.fromDojoName
                 + " §7vs §f" + c.toDojoName
-                + " §8— spars vs that dojo earn 2× ranking points. Their members show in Noea tracking."));
+                + " §8- spars vs that dojo earn 2x ranking points. Their members show in Noea tracking."));
         return "§aDojo war accepted! §7Spars vs §f" + c.fromDojoName + " §anow earn double ranking points.";
     }
 
