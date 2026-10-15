@@ -1114,8 +1114,9 @@ def main() -> int:
         if "if (!StaffAccess.isStaff(player))" in flush_fn
         else ""
     )
-    check("player TP line is simple +TP (label) subtitle",
-          "ScreenNotify.subtitleOnly" in flush_fn
+    check("player TP line is simple +TP (label) boss bar",
+          "TpBossNotify.show" in flush_fn
+          and "ScreenNotify.subtitleOnly" not in flush_fn
           and "formatWhole(pending)" in flush_fn
           and "activeBonusTags" not in player_half)
     check("staff TP subtitle is trimmed (no full stack tags)",
@@ -1125,9 +1126,10 @@ def main() -> int:
           and "TP_SUBTITLE_MAX_CHARS" in spar_c147)
     check("staffStackTags API still exists for other callers",
           "staffStackTags(" in spar_c147 and "burstLabel(" in spar_c147)
-    check("momentum notice is subtitle",
-          "ScreenNotify.subtitleOnly" in spar_c147
+    check("momentum notice is boss bar",
+          "TpBossNotify.show" in spar_c147
           and "Momentum " in spar_c147
+          and "ScreenNotify.subtitleOnly" not in spar_c147
           and 'LmChat.note("Spar"' not in spar_c147)
 
     print("\n=== Mentor Actions GUI (2.3.146) ===")
@@ -1230,10 +1232,16 @@ def main() -> int:
     check("LmChat TAG_ALIASES", "TAG_ALIASES" in lmchat and 'systemName' in lmchat)
     check("LmChat ok/fail/tp helpers", 'ok(String' in lmchat and 'fail(String' in lmchat and 'tp(String' in lmchat)
     check("LmChat open-tip normalize", "normalizeOpenTip" in lmchat)
-    check("awardTp TP notice is subtitle",
-          "ScreenNotify.subtitleOnly" in rewards
+    check("awardTp TP notice is boss bar",
+          "TpBossNotify.show" in rewards
           and "lm.tp.grant.subtitle" in rewards
+          and "ScreenNotify.subtitleOnly" not in rewards
           and "LmChat.tp(resolveTpSystem" not in rewards)
+    death_tp_ui = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/tp/DeathTpPenalty.java")
+    check("death TP announcement is a boss bar",
+          "TpBossNotify.show" in death_tp_ui
+          and "flashBar" in death_tp_ui
+          and "ScreenNotify" not in death_tp_ui)
     check("GuiChat mirrors aliases", "TAG_ALIASES" in guichat and "normalizeOpenTip" in guichat)
     check("Mentor invite uses LmChat.tip", 'LmChat.tip("/spar"' in spar_sys)
     check("Perfect Training tagged", 'LmChat.tagged("Spar"' in spar_sys and "Perfect Training" in spar_sys)

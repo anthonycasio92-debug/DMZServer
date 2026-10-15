@@ -58,11 +58,11 @@ public final class DmzRewards {
                 );
             }
             if (showMessage) {
-                // Subtitle only — chat TP lines clutter the fight feed.
+                // Boss bar — chat TP lines clutter the fight feed, titles cover the screen.
                 String why = reason == null || reason.isBlank() ? "" : " (" + reason + ")";
                 String system = resolveTpSystem(prefix);
                 String line = system + " +" + formatWhole(grant) + " TP" + why;
-                ScreenNotify.subtitleOnly(
+                TpBossNotify.show(
                         player, line, ChatFormatting.GREEN, "lm.tp.grant.subtitle", 1_500L);
             }
             return true;

@@ -396,6 +396,7 @@ public final class DifficultyEvents {
             } catch (Throwable ignored) {
             }
             com.dbzlegacy.adaptivedifficulty.progression.tp.DeathTpPenalty.onLogout(player);
+            com.dbzlegacy.adaptivedifficulty.util.TpBossNotify.onLogout(player);
             // Flush player AD data only — do NOT clear active tier on disconnect.
             DifficultyCache.save(player);
             DifficultyCache.remove(player.m_20148_());

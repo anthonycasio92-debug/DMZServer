@@ -127,6 +127,7 @@ public final class ProgressionSystem {
         }
         try {
             DeathTpPenalty.pulse(server, tick);
+            com.dbzlegacy.adaptivedifficulty.util.TpBossNotify.pulse(server, tick);
         } catch (Throwable ignored) {
         }
         if (ProgressionConfig.masterEnabled()) {
