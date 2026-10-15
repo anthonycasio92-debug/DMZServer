@@ -769,8 +769,7 @@ public class LmDynamicScreen extends UltraScreen {
         if (mc == null || mc.f_91074_ == null) {
             return;
         }
-        // Stock 1.3.17 always drew Minecraft.player. Inspect sends subject uuid:<id>
-        // (top-level or parts.subject). Draw that player, not the staff viewer.
+        // playerModel.subject (or parts.subject) names who to draw. local is this client.
         LivingEntity entity = previewEntity(mc, playerModel, parts);
         if (entity == null) {
             UltraUiAccess.fillRect(g, theme(), panelX + pmX, panelY + pmY, pmW, pmH, 0x33000000);
@@ -803,8 +802,8 @@ public class LmDynamicScreen extends UltraScreen {
     }
 
     /**
-     * Who {@code playerModel} names. {@code local} (or blank) is the viewing player.
-     * Staff inspect sends {@code uuid:<id>} on {@code playerModel.subject} or {@code parts.subject}.
+     * Who {@code playerModel} names. {@code local} (or blank) is the viewing player. A UUID, or
+     * {@code uuid:<id>}, is another player. Top-level {@code subject} wins over {@code parts.subject}.
      */
     static String previewSubjectToken(JsonObject model, JsonObject parts) {
         return InspectPreviewSubjects.token(model, parts);
@@ -822,22 +821,13 @@ public class LmDynamicScreen extends UltraScreen {
 
     /**
      * Resolve a tracked player by uuid, then a client-only {@code RemotePlayer} with that
-     * profile. Fall back to the local player only when the token is {@code local} or the
-     * uuid cannot be parsed — never substitute the viewer for a different subject.
+     * player's tab-list profile (skin). {@code local} is the viewing player. A different UUID
+     * never falls back to the viewer.
      */
     private static LivingEntity lookupPreviewEntity(Minecraft mc, String token) {
         LivingEntity local = mc.f_91074_;
-        if (token == null || token.isBlank() || "local".equalsIgnoreCase(token)) {
-            return local;
-        }
-        String id = token;
-        if (id.regionMatches(true, 0, "uuid:", 0, 5)) {
-            id = id.substring(5).trim();
-        }
-        UUID uuid;
-        try {
-            uuid = UUID.fromString(id);
-        } catch (IllegalArgumentException e) {
+        UUID uuid = InspectPreviewSubjects.playerId(token);
+        if (uuid == null) {
             return local;
         }
         UUID localId = entityUuid(local);
@@ -854,20 +844,23 @@ public class LmDynamicScreen extends UltraScreen {
                 return living;
             }
         }
-        return fakeRemotePlayer(level, uuid);
+        return fakeRemotePlayer(mc, level, uuid);
     }
 
-    private static LivingEntity fakeRemotePlayer(Object level, UUID uuid) {
+    private static LivingEntity fakeRemotePlayer(Minecraft mc, Object level, UUID uuid) {
         if (level == null || uuid == null) {
             return null;
         }
         try {
-            Class<?> profiles = Class.forName("com.mojang.authlib.GameProfile");
-            Object profile = profiles.getConstructor(UUID.class, String.class).newInstance(uuid, "player");
+            Object profile = tabProfile(mc, uuid);
+            if (profile == null) {
+                Class<?> profiles = Class.forName("com.mojang.authlib.GameProfile");
+                profile = profiles.getConstructor(UUID.class, String.class).newInstance(uuid, "player");
+            }
             Class<?> remote = Class.forName("net.minecraft.client.player.RemotePlayer");
             for (Constructor<?> ctor : remote.getDeclaredConstructors()) {
                 Class<?>[] params = ctor.getParameterTypes();
-                if (params.length == 2 && params[1].isAssignableFrom(profiles)) {
+                if (params.length == 2 && params[1].isInstance(profile)) {
                     ctor.setAccessible(true);
                     Object entity = ctor.newInstance(level, profile);
                     if (entity instanceof LivingEntity living) {
@@ -879,6 +872,22 @@ public class LmDynamicScreen extends UltraScreen {
             return null;
         }
         return null;
+    }
+
+    /** Tab-list profile carries the skin textures. A blank profile does not. */
+    private static Object tabProfile(Minecraft mc, UUID uuid) {
+        if (mc == null || uuid == null) {
+            return null;
+        }
+        Object conn = invokeNoArg(mc, "m_91403_");
+        if (conn == null) {
+            return null;
+        }
+        Object info = invoke(conn, "m_104949_", new Class<?>[] {UUID.class}, new Object[] {uuid});
+        if (info == null) {
+            return null;
+        }
+        return invokeNoArg(info, "m_105312_");
     }
 
     private static UUID entityUuid(Object entity) {

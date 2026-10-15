@@ -848,7 +848,7 @@ public final class UltraScreenSpec {
             if (playerModel.parts != null && !playerModel.parts.entrySet().isEmpty()) {
                 pm.add("parts", playerModel.parts);
                 if (playerModel.parts.has("subject")) {
-                    // Same render target as parts.subject (local, or uuid: of the inspect subject).
+                    // Protocol field. parts.subject is the same token (local, or a player uuid).
                     pm.add("subject", playerModel.parts.get("subject"));
                 }
             }

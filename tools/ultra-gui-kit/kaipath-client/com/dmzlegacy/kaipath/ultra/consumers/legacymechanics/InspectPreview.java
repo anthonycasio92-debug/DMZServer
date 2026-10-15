@@ -7,10 +7,13 @@ import java.util.UUID;
 import net.minecraft.client.gui.GuiGraphics;
 
 /**
- * Stock KaiPath 1.3.17 {@code LmDynamicScreen.renderPreview} always draws
- * {@code Minecraft.player}. LegacyMechanics already sends {@code playerModel.subject}
- * ({@code uuid:<id>}) for an inspect subject. This hook is injected at the start of that
- * method: when the token names someone else, draw that player and skip the local-player path.
+ * Bridge renderer for {@code layoutJson.playerModel.subject}.
+ *
+ * <p>Stock {@code renderPreview} always draws {@code Minecraft.player}. This runs first so any
+ * mod can name another player. {@code local} leaves the stock path (the viewer's model, skin,
+ * and synced parts). A UUID draws that player — tracked entity when the client has them, otherwise
+ * a remote player with their tab-list profile so the skin still loads — and does not substitute
+ * the viewer.
  */
 public final class InspectPreview {
     private InspectPreview() {}
@@ -33,7 +36,7 @@ public final class InspectPreview {
         } catch (Throwable t) {
             return false;
         }
-        UUID subjectId = subjectId(token);
+        UUID subjectId = InspectPreviewSubjects.playerId(token);
         if (subjectId == null) {
             return false;
         }
@@ -62,21 +65,6 @@ public final class InspectPreview {
         Method layout = packet.getClass().getMethod("layoutJson");
         Object json = layout.invoke(packet);
         return json instanceof String s ? s : "";
-    }
-
-    private static UUID subjectId(String token) {
-        if (token == null || token.isBlank() || "local".equalsIgnoreCase(token)) {
-            return null;
-        }
-        String id = token;
-        if (id.regionMatches(true, 0, "uuid:", 0, 5)) {
-            id = id.substring(5).trim();
-        }
-        try {
-            return UUID.fromString(id);
-        } catch (IllegalArgumentException e) {
-            return null;
-        }
     }
 
     private static Object resolve(Object mc, Object local, UUID id) throws Exception {
