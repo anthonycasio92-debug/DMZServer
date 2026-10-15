@@ -5,6 +5,8 @@ import com.dbzlegacy.adaptivedifficulty.character.CharacterServicesSystem;
 import com.dbzlegacy.adaptivedifficulty.character.CosmeticHeadBoneService;
 import com.dbzlegacy.adaptivedifficulty.character.HeadPartPieces;
 import com.dbzlegacy.adaptivedifficulty.gui.CharacterServicesGuiApi;
+import com.dbzlegacy.adaptivedifficulty.gui.RivalGuiApi;
+import com.dbzlegacy.adaptivedifficulty.progression.race.AndroidConversion;
 import com.dbzlegacy.adaptivedifficulty.quest.SagaResetConfig;
 import com.dbzlegacy.adaptivedifficulty.quest.SagaResetService;
 import com.dbzlegacy.adaptivedifficulty.quest.SagaResetService.Offer;
@@ -12,10 +14,13 @@ import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
 import net.minecraft.server.level.ServerPlayer;
 
 /** Character Services - Home / Saga Reset / Android Removal (+ race, class, model pages). */
 public final class UltraCharacterScreens {
+    private static final int ANDROID_PICK_PER_PAGE = 8;
+
     private UltraCharacterScreens() {}
 
     public static void open(ServerPlayer player, String page) {
@@ -38,6 +43,22 @@ public final class UltraCharacterScreens {
         }
         if (lower.startsWith("bones:") || "bones".equals(lower)) {
             openBones(player, parseBonePage(lower));
+            return;
+        }
+        if (isStaffAndroidPage(lower)) {
+            if (!staffMayEditOthers(player)) {
+                openAndroidRemove(player);
+                return;
+            }
+            if (lower.startsWith("android_confirm:")) {
+                openAndroidConfirm(player, p.substring("android_confirm:".length()).trim());
+                return;
+            }
+            if (lower.startsWith("android_target:")) {
+                openAndroidTarget(player, p.substring("android_target:".length()).trim());
+                return;
+            }
+            openAndroidStaff(player, parseStaffListPage(p));
             return;
         }
         if (lower.startsWith("race:") || "race".equals(lower)) {
@@ -685,8 +706,212 @@ public final class UltraCharacterScreens {
             spec.button("do:android", UltraStyle.confirm("Convert to Android"), UltraStyle.STYLE_CONFIRM)
                     .rowGap();
         }
+        if (staffMayEditOthers(player) && CharacterServicesConfig.get().enabled) {
+            spec.button(
+                            "page:android_staff",
+                            UltraStyle.LABEL + "Another player",
+                            UltraStyle.STYLE_NORMAL)
+                    .rowGap();
+        }
         spec.footerBackToMain();
         spec.send(player);
+    }
+
+    /**
+     * Staff picker, target actions, and named confirm pages. {@code page:} is not staff-gated
+     * in {@link UltraGuiActions#requiresStaff}, so these routes refuse non-staff here.
+     */
+    static boolean isStaffAndroidPage(String page) {
+        String lower = page == null ? "" : page.toLowerCase(Locale.ROOT);
+        return lower.equals("android_staff")
+                || lower.startsWith("android_staff:")
+                || lower.startsWith("android_target:")
+                || lower.startsWith("android_confirm:");
+    }
+
+    private static void openAndroidStaff(ServerPlayer player, int pageIndex) {
+        ServerPlayer viewer = actingViewer(player);
+        List<String> args = RivalGuiApi.onlinePlayerArgs(viewer);
+        int total = args == null ? 0 : args.size();
+        int pages = Math.max(1, (total + ANDROID_PICK_PER_PAGE - 1) / ANDROID_PICK_PER_PAGE);
+        int pg = Math.min(pages - 1, Math.max(0, pageIndex));
+        int from = pg * ANDROID_PICK_PER_PAGE;
+        int to = Math.min(total, from + ANDROID_PICK_PER_PAGE);
+        String pageId = pg > 0 ? "android_staff:" + pg : "android_staff";
+        UltraScreenSpec spec = sub(player, pageId, false)
+                .line(UltraStyle.LABEL + "Another player's Android")
+                .line(UltraStyle.dim("Staff only. Confirm before convert or remove."))
+                .labelValue(
+                        "Online",
+                        total + (pages > 1 ? " | page " + (pg + 1) + "/" + pages : ""));
+        if (total == 0) {
+            spec.line(UltraStyle.dim("Nobody else is online right now."));
+        }
+        spec.buttonsAfterLines();
+        int placed = 0;
+        for (int i = from; i < to; i++) {
+            String arg = args.get(i);
+            String canonical = canonicalUuidArg(arg);
+            if (canonical == null) {
+                continue;
+            }
+            String name = UltraStyle.buttonText(playerName(viewer, canonical));
+            String action = "page:android_target:" + canonical;
+            if (placed % 2 == 0) {
+                spec.buttonLeft(action, UltraStyle.confirm(name), UltraStyle.STYLE_CONFIRM);
+            } else {
+                spec.buttonRight(action, UltraStyle.confirm(name), UltraStyle.STYLE_CONFIRM);
+                spec.rowGap();
+            }
+            placed++;
+        }
+        if (placed % 2 == 1) {
+            spec.rowGap();
+        }
+        if (pg > 0) {
+            spec.buttonLeft(
+                    "page:android_staff:" + (pg - 1), UltraStyle.dim("Prev"), UltraStyle.STYLE_DIM);
+        }
+        if (pg + 1 < pages) {
+            if (pg > 0) {
+                spec.buttonRight(
+                        "page:android_staff:" + (pg + 1),
+                        UltraStyle.LABEL + "Next",
+                        UltraStyle.STYLE_NORMAL);
+            } else {
+                spec.buttonLeft(
+                        "page:android_staff:" + (pg + 1),
+                        UltraStyle.LABEL + "Next",
+                        UltraStyle.STYLE_NORMAL);
+            }
+            spec.rowGap();
+        } else if (pg > 0) {
+            spec.rowGap();
+        }
+        spec.footerBack("tab:android", "Android");
+        spec.send(player);
+    }
+
+    private static void openAndroidTarget(ServerPlayer player, String targetArg) {
+        String canonical = canonicalUuidArg(targetArg);
+        if (canonical == null) {
+            openAndroidStaff(player, 0);
+            return;
+        }
+        ServerPlayer viewer = actingViewer(player);
+        String name = playerName(viewer, canonical);
+        ServerPlayer target = RivalGuiApi.resolveOnline(viewer, canonical);
+        String state;
+        if (target == null) {
+            state = "Offline";
+        } else if (AndroidConversion.isAndroidUpgraded(target)) {
+            state = "Upgraded Android";
+        } else {
+            state = "Not an Android";
+        }
+        UltraScreenSpec spec = sub(player, "android_target:" + canonical, false)
+                .line(UltraStyle.LABEL + "Android tools for " + name)
+                .labelValue("Player", name)
+                .labelValue("Status", state)
+                .buttonsAfterLines();
+        spec.button(
+                        "page:android_confirm:convert:" + canonical,
+                        UltraStyle.confirm("Convert Android"),
+                        UltraStyle.STYLE_CONFIRM)
+                .rowGap();
+        spec.button(
+                        "page:android_confirm:remove:" + canonical,
+                        UltraStyle.danger("Remove Android"),
+                        UltraStyle.STYLE_DANGER)
+                .rowGap();
+        spec.footerBack("page:android_staff", "Players");
+        spec.send(player);
+    }
+
+    private static void openAndroidConfirm(ServerPlayer player, String rest) {
+        String raw = rest == null ? "" : rest.trim();
+        boolean convert;
+        String targetArg;
+        if (raw.regionMatches(true, 0, "convert:", 0, 8)) {
+            convert = true;
+            targetArg = raw.substring(8).trim();
+        } else if (raw.regionMatches(true, 0, "remove:", 0, 7)) {
+            convert = false;
+            targetArg = raw.substring(7).trim();
+        } else {
+            openAndroidStaff(player, 0);
+            return;
+        }
+        String canonical = canonicalUuidArg(targetArg);
+        if (canonical == null) {
+            openAndroidStaff(player, 0);
+            return;
+        }
+        String name = playerName(actingViewer(player), canonical);
+        String page = "android_confirm:" + (convert ? "convert:" : "remove:") + canonical;
+        UltraScreenSpec spec = sub(player, page, false)
+                .line(UltraStyle.LABEL + (convert ? "Convert Android" : "Remove Android"))
+                .labelValue("Player", name)
+                .line(UltraStyle.LABEL
+                        + (convert
+                                ? "Convert " + name + " to Android?"
+                                : "Remove the Android upgrade from " + name + "?"))
+                .notice(convert
+                        ? "This deletes Super forms and Legendary forms. It cannot be undone."
+                        : "Form skills are restored. Race, stats, and progression stay.");
+        spec.buttonsAfterLines();
+        spec.button(
+                        "do:android_staff:" + (convert ? "convert:" : "remove:") + canonical,
+                        convert
+                                ? UltraStyle.confirm("Confirm convert")
+                                : UltraStyle.danger("Confirm remove"),
+                        convert ? UltraStyle.STYLE_CONFIRM : UltraStyle.STYLE_DANGER)
+                .rowGap();
+        String backToPlayer = "page:android_target:" + canonical;
+        spec.footerBack(backToPlayer, "Player");
+        spec.send(player);
+    }
+
+    private static ServerPlayer actingViewer(ServerPlayer fallback) {
+        ServerPlayer viewer = UltraScreenSpec.inspectViewer();
+        return viewer != null ? viewer : fallback;
+    }
+
+    /** Staff gate uses the clicking viewer, including while inspecting another player. */
+    private static boolean staffMayEditOthers(ServerPlayer fallback) {
+        return StaffAccess.isStaff(actingViewer(fallback));
+    }
+
+    private static int parseStaffListPage(String page) {
+        String raw = page == null ? "" : page.trim();
+        int colon = raw.indexOf(':');
+        if (colon < 0 || colon + 1 >= raw.length()) {
+            return 0;
+        }
+        try {
+            return Math.max(0, Integer.parseInt(raw.substring(colon + 1).trim()));
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    private static String canonicalUuidArg(String arg) {
+        if (arg == null || !arg.regionMatches(true, 0, "uuid:", 0, 5)) {
+            return null;
+        }
+        try {
+            return "uuid:" + UUID.fromString(arg.substring(5).trim());
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    private static String playerName(ServerPlayer viewer, String uuidArg) {
+        String shown = UltraStyle.plain(RivalGuiApi.displayPickerArg(viewer, uuidArg));
+        if (shown == null || shown.isBlank()) {
+            return "Unknown player";
+        }
+        return shown;
     }
 
     /** Append up to {@code max} non-blank lines; skip Ultra intro duplicates. */

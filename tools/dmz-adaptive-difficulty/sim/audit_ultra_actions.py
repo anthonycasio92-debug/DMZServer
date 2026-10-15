@@ -46,6 +46,7 @@ KNOWN_DO: dict[str, set[str]] = {
         "saga_reset",
         "android_remove",
         "android",
+        "android_staff",
     },
     "prestige": {
         "confirm",
@@ -259,6 +260,22 @@ def main() -> int:
         errors.append("UltraCharacterScreens must show playerModel on model customize (bones)")
     if 'base(player, UltraStyle.PAGE_ANDROID_REMOVE, "android", false)' not in char_screens:
         errors.append("UltraCharacterScreens must omit playerModel on Android Removal")
+    if "page:android_staff" not in char_screens:
+        errors.append("UltraCharacterScreens must offer a staff Another player picker")
+    if '"Convert Android"' not in char_screens or '"Remove Android"' not in char_screens:
+        errors.append("staff android target page must offer Convert Android and Remove Android")
+    if 'labelValue("Player"' not in char_screens:
+        errors.append("staff android confirm page must name the target player")
+    if "isStaffAndroidPage" not in char_screens or "staffMayEditOthers" not in char_screens:
+        errors.append("staff android pages must be gated inside UltraCharacterScreens.open")
+    gui_actions = (ULTRA / "UltraGuiActions.java").read_text(encoding="utf-8")
+    if '"android_staff"' not in gui_actions or "applyAndroidStaff" not in gui_actions:
+        errors.append("UltraGuiActions must gate and apply android_staff")
+    if "removeConfirmed" not in (
+        ROOT
+        / "src/main/java/com/dbzlegacy/adaptivedifficulty/progression/race/AndroidConversion.java"
+    ).read_text(encoding="utf-8"):
+        errors.append("AndroidConversion.removeConfirmed must apply a staff confirm without the 10s click")
     if "sub(player, \"race:\" + pg, false)" not in char_screens:
         errors.append("UltraCharacterScreens must omit playerModel on race list")
     if "sub(player, \"class:\" + pg, false)" not in char_screens:

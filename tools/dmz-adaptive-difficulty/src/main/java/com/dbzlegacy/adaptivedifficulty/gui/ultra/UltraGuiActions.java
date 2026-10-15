@@ -8,6 +8,7 @@ import com.dbzlegacy.adaptivedifficulty.gui.MechanicsGuiApi;
 import com.dbzlegacy.adaptivedifficulty.gui.ProgressionGuiApi;
 import com.dbzlegacy.adaptivedifficulty.gui.RivalGuiApi;
 import com.dbzlegacy.adaptivedifficulty.gui.SparGuiApi;
+import com.dbzlegacy.adaptivedifficulty.progression.race.AndroidConversion;
 import com.dbzlegacy.adaptivedifficulty.quest.SagaResetService;
 import com.dbzlegacy.adaptivedifficulty.service.DifficultyActions;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
@@ -436,7 +437,8 @@ public final class UltraGuiActions {
                     "cnpcmigrate",
                     "guitest_ack",
                     // Staff convert only - android_remove stays player-facing.
-                    "android" -> true;
+                    "android",
+                    "android_staff" -> true;
             default -> false;
         };
     }
@@ -613,6 +615,17 @@ public final class UltraGuiActions {
             return UltraStyle.dangerLine("That menu action is not available.");
         }
         String act = action.toLowerCase(Locale.ROOT).trim();
+        // Staff picker confirm. The page already named the target, so apply immediately.
+        if ("android_staff".equals(act)) {
+            if (!StaffAccess.isStaff(viewer)) {
+                AdaptiveDifficultyMod.LOGGER.warn(
+                        "[{}] Ultra android staff action denied for non-staff viewer={}",
+                        AdaptiveDifficultyMod.MOD_ID,
+                        safeName(viewer));
+                return UltraStyle.dangerLine("That menu action is not available.");
+            }
+            return applyAndroidStaff(viewer, arg);
+        }
         // Staff convert only - Removal stays available to players. Staff gate = viewer.
         if ("android".equals(act)) {
             if (!StaffAccess.isStaff(viewer)) {
@@ -659,6 +672,50 @@ public final class UltraGuiActions {
         }
         String msg = CharacterServicesGuiApi.handleDo(data, action, arg, page);
         return msg == null ? "" : msg;
+    }
+
+    /**
+     * {@code arg} is {@code convert:uuid:…} or {@code remove:uuid:…} from the named confirm page.
+     * Calls conversion directly so the page confirm is the only confirmation.
+     */
+    private static String applyAndroidStaff(ServerPlayer viewer, String arg) {
+        String raw = arg == null ? "" : arg.trim();
+        boolean convert;
+        String targetArg;
+        if (raw.regionMatches(true, 0, "convert:", 0, 8)) {
+            convert = true;
+            targetArg = raw.substring(8).trim();
+        } else if (raw.regionMatches(true, 0, "remove:", 0, 7)) {
+            convert = false;
+            targetArg = raw.substring(7).trim();
+        } else {
+            return UltraStyle.dangerLine("Choose Convert Android or Remove Android first.");
+        }
+        ServerPlayer target = RivalGuiApi.resolveOnline(viewer, targetArg);
+        if (target == null) {
+            return UltraStyle.dangerLine("That player is not online.");
+        }
+        if (convert) {
+            String msg = AndroidConversion.convert(target);
+            return msg == null ? "" : msg;
+        }
+        String msg = AndroidConversion.removeConfirmed(viewer, target);
+        return msg == null ? "" : msg;
+    }
+
+    /** After a staff confirm, land on that player's action page so the result is visible. */
+    private static String androidStaffReopen(String arg) {
+        String raw = arg == null ? "" : arg.trim();
+        String target = "";
+        if (raw.regionMatches(true, 0, "convert:", 0, 8)) {
+            target = raw.substring(8).trim();
+        } else if (raw.regionMatches(true, 0, "remove:", 0, 7)) {
+            target = raw.substring(7).trim();
+        }
+        if (target.isBlank()) {
+            return "android_staff";
+        }
+        return "android_target:" + target;
     }
 
     /**
@@ -734,6 +791,9 @@ public final class UltraGuiActions {
         if (("character".equals(screen) || "saga".equals(screen))
                 && ("saga_reset".equals(parts.action) || "saga".equals(parts.action))) {
             return "reset";
+        }
+        if ("character".equals(screen) && "android_staff".equals(parts.action)) {
+            return androidStaffReopen(parts.arg);
         }
         String page = stringArg(args, "page");
         if ("rival".equals(screen)) {
@@ -823,6 +883,7 @@ public final class UltraGuiActions {
                 default -> homePage(screen);
             };
             case "character" -> switch (parts.action == null ? "" : parts.action) {
+                case "android_staff" -> androidStaffReopen(parts.arg);
                 case "android_remove", "android" -> UltraStyle.PAGE_ANDROID_REMOVE;
                 case "race_confirm" -> "race:0";
                 case "class_confirm" -> "class:0";

@@ -6,6 +6,7 @@ import com.dbzlegacy.adaptivedifficulty.progression.ProgressionConfig;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import com.dbzlegacy.adaptivedifficulty.util.LmChat;
+import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import com.dragonminez.common.config.ConfigManager;
 import com.dragonminez.common.config.RaceCharacterConfig;
 import com.dragonminez.common.stats.StatsData;
@@ -162,7 +163,8 @@ public final class AndroidConversion {
                 return "§c[Android] Missing character/status/skills data.";
             }
             if (status.isAndroidUpgraded()) {
-                return "§c[Android] §fYou are already an Android.";
+                return "§c[Android] §f" + player.m_7755_().getString()
+                        + " §7is already an upgraded Android.";
             }
             String raceName = raceName(character);
             if (raceName.isBlank()) {
@@ -252,13 +254,50 @@ public final class AndroidConversion {
                 return doRemove(target, data, false);
             }
 
-            PENDING_REMOVE.put(actor.m_20148_(), new PendingRemove(target.m_20148_(), now + CONFIRM_MS));
+            PENDING_REMOVE.put(
+                    actor.m_20148_(), new PendingRemove(target.m_20148_(), now + CONFIRM_MS));
             String who = target.m_20148_().equals(actor.m_20148_())
                     ? "yourself"
                     : "§f" + target.m_7755_().getString();
             return "§6[Android] §cWarning: §7This will remove the Android upgrade from " + who + "§7.\n"
                     + "§7Race, stats, skills, and progression stay — form skills are restored.\n"
                     + "§eConfirm again within 10 seconds.";
+        } catch (Throwable t) {
+            return "§c[Android Remove Error] §f" + t;
+        }
+    }
+
+    /**
+     * Staff menu confirm already named the target. Apply removal now — do not arm the
+     * 10-second second click in {@link #remove}.
+     */
+    public static String removeConfirmed(ServerPlayer actor, ServerPlayer target) {
+        if (!StaffAccess.isStaff(actor)) {
+            return "§cStaff only.";
+        }
+        if (!ProgressionConfig.androidConversion()) {
+            return "§cAndroid tools are disabled. §7Staff: enable the android flag in /progression.";
+        }
+        if (target == null) {
+            return "§cPlayer required.";
+        }
+        try {
+            StatsData data = DmzProgression.stats(target);
+            if (data == null) {
+                return "§c[Android] DragonMineZ data could not be loaded for §f"
+                        + target.m_7755_().getString() + "§c.";
+            }
+            Status status = data.getStatus();
+            if (status == null) {
+                return "§c[Android] Status could not be loaded.";
+            }
+            if (!status.isAndroidUpgraded()) {
+                clearPending(actor.m_20148_());
+                return "§e[Android] §f" + target.m_7755_().getString()
+                        + " §7is not an upgraded Android.";
+            }
+            clearPending(actor.m_20148_());
+            return doRemove(target, data, false);
         } catch (Throwable t) {
             return "§c[Android Remove Error] §f" + t;
         }

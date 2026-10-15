@@ -421,6 +421,32 @@ public final class UltraScreenSelfTest {
         if (UltraGuiActions.requiresStaff("difficulty", "do:activate:1")) {
             broken.add("difficulty activate must stay player-facing");
         }
+        if (!UltraGuiActions.requiresStaff(
+                "character", "do:android_staff:convert:uuid:00000000-0000-0000-0000-000000000001")) {
+            broken.add("android staff convert must require staff");
+        }
+        if (!UltraGuiActions.requiresStaff(
+                "character", "do:android_staff:remove:uuid:00000000-0000-0000-0000-000000000001")) {
+            broken.add("android staff remove must require staff");
+        }
+        if (UltraGuiActions.requiresStaff("character", "do:android_remove")) {
+            broken.add("android_remove must stay player-facing");
+        }
+        if (!UltraGuiActions.requiresStaff("character", "do:android")) {
+            broken.add("self android convert must stay staff-only");
+        }
+        if (!UltraCharacterScreens.isStaffAndroidPage("android_staff")
+                || !UltraCharacterScreens.isStaffAndroidPage("android_staff:1")
+                || !UltraCharacterScreens.isStaffAndroidPage(
+                        "android_target:uuid:00000000-0000-0000-0000-000000000001")
+                || !UltraCharacterScreens.isStaffAndroidPage(
+                        "android_confirm:remove:uuid:00000000-0000-0000-0000-000000000001")) {
+            broken.add("staff android pages must be recognized for the opener gate");
+        }
+        if (UltraCharacterScreens.isStaffAndroidPage("android_remove")
+                || UltraCharacterScreens.isStaffAndroidPage("android")) {
+            broken.add("player android tab must not be treated as the staff picker");
+        }
         if (broken.isEmpty()) {
             AdaptiveDifficultyMod.LOGGER.info(
                     "[{}] Ultra staff gate self-check OK", AdaptiveDifficultyMod.MOD_ID);
