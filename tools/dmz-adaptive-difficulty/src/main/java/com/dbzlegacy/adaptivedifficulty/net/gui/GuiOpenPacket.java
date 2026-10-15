@@ -312,7 +312,14 @@ public final class GuiOpenPacket {
             }
             if (o.has("playerModel") && o.get("playerModel").isJsonObject()) {
                 JsonObject pm = o.getAsJsonObject("playerModel");
-                if (pm.has("parts")) {
+                if (pm.has("parts") && pm.get("parts").isJsonObject()) {
+                    JsonObject parts = pm.getAsJsonObject("parts");
+                    // Keep who to draw after cosmetics are dropped. Stock clients that
+                    // ignore subject still render; clients that honor it must not fall back
+                    // to the local player just because parts was oversized.
+                    if (!pm.has("subject") && parts.has("subject") && !parts.get("subject").isJsonNull()) {
+                        pm.add("subject", parts.get("subject"));
+                    }
                     pm.remove("parts");
                     out = o.toString();
                     if (out.length() <= LAYOUT_JSON_MAX) {

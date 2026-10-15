@@ -150,6 +150,28 @@ public final class GuiOpenPacketRoundTripTest {
                 fail("missing advertise feature: " + feat);
             }
         }
+        com.google.gson.JsonObject inspectModel =
+                com.google.gson.JsonParser.parseString(
+                                "{\"subject\":\"uuid:11111111-1111-1111-1111-111111111111\","
+                                        + "\"parts\":{\"subject\":\"local\"}}")
+                        .getAsJsonObject();
+        if (!"uuid:11111111-1111-1111-1111-111111111111"
+                .equals(
+                        LmDynamicScreen.previewSubjectToken(
+                                inspectModel, inspectModel.getAsJsonObject("parts")))) {
+            fail("top-level playerModel.subject must name the inspect preview");
+        }
+        com.google.gson.JsonObject partsOnly =
+                com.google.gson.JsonParser.parseString(
+                                "{\"subject\":\"uuid:22222222-2222-2222-2222-222222222222\"}")
+                        .getAsJsonObject();
+        if (!"uuid:22222222-2222-2222-2222-222222222222"
+                .equals(LmDynamicScreen.previewSubjectToken(new com.google.gson.JsonObject(), partsOnly))) {
+            fail("parts.subject must name the inspect preview when the top-level field is absent");
+        }
+        if (!"local".equals(LmDynamicScreen.previewSubjectToken(new com.google.gson.JsonObject(), null))) {
+            fail("a missing subject must stay the local player");
+        }
 
         // fixedFooter layout helpers (pure JSON — no Screen init)
         com.google.gson.JsonArray noFooter = com.google.gson.JsonParser.parseString(

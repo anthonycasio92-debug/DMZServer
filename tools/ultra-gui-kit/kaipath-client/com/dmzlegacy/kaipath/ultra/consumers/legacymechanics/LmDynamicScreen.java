@@ -8,12 +8,14 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
@@ -71,6 +73,9 @@ public class LmDynamicScreen extends UltraScreen {
     /** Namespaced frame id from layoutJson.frame. */
     private String layoutFrame = "";
     private JsonObject playerModel;
+    /** Cached preview entity so inspect does not allocate a RemotePlayer every frame. */
+    private LivingEntity previewEntity;
+    private String previewEntityKey = "";
     private final List<String> bodyLines = new ArrayList<>();
     /** input id → live EditBox (for bindInput / Enter → args.value). */
     private final Map<String, EditBox> textInputs = new LinkedHashMap<>();
@@ -764,7 +769,13 @@ public class LmDynamicScreen extends UltraScreen {
         if (mc == null || mc.f_91074_ == null) {
             return;
         }
-        LivingEntity entity = mc.f_91074_;
+        // Stock 1.3.17 always drew Minecraft.player. Inspect sends subject uuid:<id>
+        // (top-level or parts.subject). Draw that player, not the staff viewer.
+        LivingEntity entity = previewEntity(mc, playerModel, parts);
+        if (entity == null) {
+            UltraUiAccess.fillRect(g, theme(), panelX + pmX, panelY + pmY, pmW, pmH, 0x33000000);
+            return;
+        }
         int centerX = panelX + pmX + pmW / 2;
         int centerY = panelY + pmY + pmH;
         int scale = Math.max(8, Math.round(30f * Math.max(0.1f, pmScale)));
@@ -788,6 +799,127 @@ public class LmDynamicScreen extends UltraScreen {
         if (!renderEntityPreview(g, centerX, centerY, scale, lookX, lookY, entity)) {
             UltraUiAccess.fillRect(
                     g, theme(), panelX + pmX, panelY + pmY, pmW, pmH, 0x33000000);
+        }
+    }
+
+    /**
+     * Who {@code playerModel} names. {@code local} (or blank) is the viewing player.
+     * Staff inspect sends {@code uuid:<id>} on {@code playerModel.subject} or {@code parts.subject}.
+     */
+    static String previewSubjectToken(JsonObject model, JsonObject parts) {
+        String top = str(model, "subject", "");
+        if (top != null && !top.isBlank()) {
+            return top.trim();
+        }
+        if (parts != null) {
+            String nested = str(parts, "subject", "");
+            if (nested != null && !nested.isBlank()) {
+                return nested.trim();
+            }
+        }
+        return "local";
+    }
+
+    private LivingEntity previewEntity(Minecraft mc, JsonObject model, JsonObject parts) {
+        String token = previewSubjectToken(model, parts);
+        if (previewEntity != null && token.equals(previewEntityKey)) {
+            return previewEntity;
+        }
+        previewEntityKey = token;
+        previewEntity = lookupPreviewEntity(mc, token);
+        return previewEntity;
+    }
+
+    /**
+     * Resolve a tracked player by uuid, then a client-only {@code RemotePlayer} with that
+     * profile. Fall back to the local player only when the token is {@code local} or the
+     * uuid cannot be parsed — never substitute the viewer for a different subject.
+     */
+    private static LivingEntity lookupPreviewEntity(Minecraft mc, String token) {
+        LivingEntity local = mc.f_91074_;
+        if (token == null || token.isBlank() || "local".equalsIgnoreCase(token)) {
+            return local;
+        }
+        String id = token;
+        if (id.regionMatches(true, 0, "uuid:", 0, 5)) {
+            id = id.substring(5).trim();
+        }
+        UUID uuid;
+        try {
+            uuid = UUID.fromString(id);
+        } catch (IllegalArgumentException e) {
+            return local;
+        }
+        UUID localId = entityUuid(local);
+        if (localId != null && localId.equals(uuid)) {
+            return local;
+        }
+        Object level = invokeNoArg(local, "m_9236_");
+        if (level != null) {
+            Object found = invoke(level, "m_46003_", new Class<?>[] {UUID.class}, new Object[] {uuid});
+            if (!(found instanceof LivingEntity)) {
+                found = invoke(level, "getPlayerByUUID", new Class<?>[] {UUID.class}, new Object[] {uuid});
+            }
+            if (found instanceof LivingEntity living) {
+                return living;
+            }
+        }
+        return fakeRemotePlayer(level, uuid);
+    }
+
+    private static LivingEntity fakeRemotePlayer(Object level, UUID uuid) {
+        if (level == null || uuid == null) {
+            return null;
+        }
+        try {
+            Class<?> profiles = Class.forName("com.mojang.authlib.GameProfile");
+            Object profile = profiles.getConstructor(UUID.class, String.class).newInstance(uuid, "player");
+            Class<?> remote = Class.forName("net.minecraft.client.player.RemotePlayer");
+            for (Constructor<?> ctor : remote.getDeclaredConstructors()) {
+                Class<?>[] params = ctor.getParameterTypes();
+                if (params.length == 2 && params[1].isAssignableFrom(profiles)) {
+                    ctor.setAccessible(true);
+                    Object entity = ctor.newInstance(level, profile);
+                    if (entity instanceof LivingEntity living) {
+                        return living;
+                    }
+                }
+            }
+        } catch (Throwable ignored) {
+            return null;
+        }
+        return null;
+    }
+
+    private static UUID entityUuid(Object entity) {
+        Object id = invokeNoArg(entity, "m_20148_");
+        if (!(id instanceof UUID)) {
+            id = invokeNoArg(entity, "getUUID");
+        }
+        return id instanceof UUID uuid ? uuid : null;
+    }
+
+    private static Object invokeNoArg(Object target, String name) {
+        if (target == null || name == null) {
+            return null;
+        }
+        try {
+            Method method = target.getClass().getMethod(name);
+            return method.invoke(target);
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    private static Object invoke(Object target, String name, Class<?>[] types, Object[] args) {
+        if (target == null || name == null) {
+            return null;
+        }
+        try {
+            Method method = target.getClass().getMethod(name, types);
+            return method.invoke(target, args);
+        } catch (Throwable ignored) {
+            return null;
         }
     }
 
