@@ -206,6 +206,11 @@ public final class UltraSparScreens {
                 String[] p = card.split("\t", 2);
                 String idx = p[0] == null ? "" : p[0].trim();
                 String label = p.length > 1 && p[1] != null && !p[1].isBlank() ? p[1].trim() : ("Fight " + idx);
+                int paren = label.indexOf(" (");
+                if (paren > 0) {
+                    label = label.substring(0, paren);
+                }
+                label = UltraStyle.buttonText(label);
                 if (idx.isBlank()) {
                     continue;
                 }
@@ -390,10 +395,10 @@ public final class UltraSparScreens {
         spec.setRow(UltraStyle.CONTENT_ROW + UltraStyle.BODY_MIN_H);
         UltraPickHelper.placePageButtons(
                 spec,
-                "pick_apprentice|Recruit apprentice...",
-                "pick_mentor|Request a master...",
+                "pick_apprentice|Recruit",
+                "pick_mentor|Request master",
                 "pending|Bond invites",
-                "pick_release|Release apprentice...");
+                "pick_release|Release");
         spec.buttonLeft(
                         "page:pick_confirm:mentor|mentor|leave",
                         UltraStyle.danger("Leave mentor"),
@@ -485,7 +490,7 @@ public final class UltraSparScreens {
             spec.button("do:mentor_decline:" + picker, UltraStyle.danger("Decline"), "danger")
                     .rowGap();
         }
-        spec.footerBack("page:pending", "Pending invites");
+        spec.footerBack("page:pending", "Invites");
         spec.send(player);
     }
 
@@ -579,11 +584,10 @@ public final class UltraSparScreens {
         spec.setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
         UltraPickHelper.placePageButtons(
                 spec,
-                "pick_dojo_challenge|Challenge another dojo...",
+                "pick_dojo_challenge|Challenge dojo",
                 "dojo_top_rp|Top dojos",
                 "dojo_war_hof|Hall of Chosen");
-        String pendingLabel =
-                warPending > 0 ? "Pending requests (" + warPending + ")" : "Pending requests";
+        String pendingLabel = warPending > 0 ? "Requests (" + warPending + ")" : "Requests";
         spec.buttonLeft("page:dojo_war_pending", UltraStyle.confirm(pendingLabel), "confirm").rowGap();
         spec.footerBackToMain();
         spec.send(player);
@@ -600,9 +604,9 @@ public final class UltraSparScreens {
         spec.setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
         UltraPickHelper.placePageButtons(
                 spec,
-                "pick_dojo_challenge|Challenge another dojo...",
+                "pick_dojo_challenge|Challenge dojo",
                 "dojo_top_rp|Top dojos",
-                "dojo_war_pending|Pending requests");
+                "dojo_war_pending|Requests");
         spec.footerBackToMain();
         spec.send(player);
     }
@@ -691,7 +695,7 @@ public final class UltraSparScreens {
             spec.button("do:dojo_accept:" + picker, UltraStyle.confirm("Accept"), "confirm").rowGap();
             spec.button("do:dojo_decline:" + picker, UltraStyle.danger("Deny"), "danger").rowGap();
         }
-        spec.footerBack("page:dojo_war_pending", "Pending requests");
+        spec.footerBack("page:dojo_war_pending", "Requests");
         spec.send(player);
     }
 

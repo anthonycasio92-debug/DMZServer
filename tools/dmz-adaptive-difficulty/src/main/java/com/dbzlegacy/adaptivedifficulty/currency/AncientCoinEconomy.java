@@ -237,6 +237,23 @@ public final class AncientCoinEconomy {
         return copper + "× Copper";
     }
 
+    /**
+     * Short price for a menu button, e.g. {@code 128 Netherite} or {@code free}.
+     * Stays within 13 glyphs at the 128-coin cap so it can share a button with a short prefix.
+     */
+    public static String compactCost(long copperCost) {
+        if (copperCost <= 0L) {
+            return "free";
+        }
+        long normalized = normalizeCost(copperCost);
+        CoinKind kind = preferredKind(normalized);
+        long n = normalized / kind.copperValue;
+        if (n <= 0L) {
+            return "free";
+        }
+        return n + " " + kind.display;
+    }
+
     /** Format a tier activation cost as an exact coin shopping list. */
     public static String formatExactCost(long copperCost) {
         if (copperCost <= 0L) {

@@ -192,8 +192,8 @@ public final class UltraDifficultyScreens {
                 .buttonRight(
                         "do:toggle_personal",
                         data.isPersonalEnabled()
-                                ? UltraStyle.confirm("Personal difficulty - ON")
-                                : UltraStyle.dim("Personal difficulty - OFF"),
+                                ? UltraStyle.confirm("Personal ON")
+                                : UltraStyle.dim("Personal OFF"),
                         data.isPersonalEnabled() ? "confirm" : "dim")
                 .rowGap();
         spec.footerBackToMain();
@@ -264,9 +264,10 @@ public final class UltraDifficultyScreens {
                 .line(UltraStyle.LABEL
                         + "Different bosses unlock at different tiers - open a boss for its requirements.")
                 .line(UltraStyle.DIM + "Select a boss, then confirm.")
+                .labelValue("Cost", cost)
                 .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
         // Boss list: ready state only — per-boss requirements live on the confirm page.
-        String dragonLabel = ready ? ("End Dragon - Ready - " + cost) : "End Dragon - locked";
+        String dragonLabel = ready ? "End Dragon" : "Dragon locked";
         spec.buttonLeft(
                         "page:end_dragon",
                         ready ? UltraStyle.confirm(dragonLabel) : UltraStyle.dim(dragonLabel),
@@ -294,7 +295,7 @@ public final class UltraDifficultyScreens {
             spec.button("do:summon_end_dragon", UltraStyle.confirm("Confirm summon"), "confirm").rowGap();
         } else {
             spec.line(UltraStyle.dim("Select End Dragon first - clear the notes above, then return."))
-                    .button("do:summon_end_dragon", UltraStyle.dim("Confirm summon - locked"), "dim")
+                    .button("do:summon_end_dragon", UltraStyle.dim("Summon locked"), "dim")
                     .rowGap();
         }
         spec.footerBack("page:summons", "Summons");
@@ -392,8 +393,8 @@ public final class UltraDifficultyScreens {
                 .buttonRight(
                         "do:toggle_personal",
                         data.isPersonalEnabled()
-                                ? UltraStyle.confirm("Personal difficulty - ON")
-                                : UltraStyle.dim("Personal difficulty - OFF"),
+                                ? UltraStyle.confirm("Personal ON")
+                                : UltraStyle.dim("Personal OFF"),
                         data.isPersonalEnabled() ? "confirm" : "dim")
                 .rowGap();
         // "Home" fits the footer button. "Difficulty Home" truncates to "Back to Difficulty...".
@@ -440,8 +441,8 @@ public final class UltraDifficultyScreens {
             boolean earned = TitleSystem.has(player, t);
             boolean on = t.id != null && t.id.equals(active);
             String label = on
-                    ? UltraStyle.confirm(t.display + " - equipped")
-                    : (earned ? t.display : UltraStyle.dim(t.display + " - locked"));
+                    ? UltraStyle.confirm(t.display + " on")
+                    : (earned ? t.display : UltraStyle.dim(t.display + " lock"));
             String style = on ? "confirm" : (earned ? "normal" : "dim");
             String action = "page:title_detail:" + t.id;
             if (placed % 2 == 0) {
@@ -485,7 +486,7 @@ public final class UltraDifficultyScreens {
                         sense ? "confirm" : "dim")
                 .buttonRight("do:clear_title", UltraStyle.danger("Unequip title"), "danger")
                 .rowGap();
-        spec.footerBackHome("Difficulty Home");
+        spec.footerBackHome("Home");
         spec.send(player);
     }
 
@@ -566,7 +567,7 @@ public final class UltraDifficultyScreens {
         if (StaffAccess.isStaff(player)) {
             spec.buttonLeft("page:stats", UltraStyle.dim("Staff details"), "dim").rowGap();
         }
-        spec.footerBackHome("Difficulty Home");
+        spec.footerBackHome("Home");
         spec.send(player);
     }
 
@@ -635,7 +636,7 @@ public final class UltraDifficultyScreens {
         spec.buttonLeft("open:admin", UltraStyle.danger("LM Staff Admin"), "danger")
                 .buttonRight("page:eventlog", UltraStyle.dim("Event log"), "dim")
                 .rowGap();
-        spec.footerBackHome("Difficulty Home");
+        spec.footerBackHome("Home");
         spec.send(player);
     }
 

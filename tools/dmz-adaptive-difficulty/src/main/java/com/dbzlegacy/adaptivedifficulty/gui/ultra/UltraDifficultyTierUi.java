@@ -59,32 +59,34 @@ public final class UltraDifficultyTierUi {
             return UltraStyle.DIM + "-";
         }
         if (activeTier == t) {
-            return UltraStyle.confirm("Tier " + t + " - active");
+            return UltraStyle.confirm("T" + t + " on");
         }
-        // Downgrade first - never show a coin cost for a weaker tier.
+        // Downgrade to Tier is free (- Free). Button reads "T# free".
         if (activeTier > 0 && t < activeTier) {
             if (unlocked || eligible) {
-                return UltraStyle.confirm("Downgrade to Tier " + t + " - Free");
+                return UltraStyle.confirm("T" + t + " free");
             }
-            return UltraStyle.dim("Tier " + t + " - locked");
+            return UltraStyle.dim("T" + t + " lock");
         }
         if (!unlocked) {
             if (eligible) {
-                return UltraStyle.confirm(
-                        "Unlock T"
-                                + t
-                                + " - "
-                                + UltraStyle.plain(
-                                        formatActivationCost(
-                                                player, UnlockTier.byId(t), activeTier)));
+                return UltraStyle.confirm("T" + t + " " + buttonPrice(player, t, activeTier));
             }
-            return UltraStyle.dim("Tier " + t + " - locked");
+            return UltraStyle.dim("T" + t + " lock");
         }
-        return UltraStyle.LABEL
-                + "Switch T"
-                + t
-                + " - "
-                + UltraStyle.plain(formatActivationCost(player, UnlockTier.byId(t), activeTier));
+        return UltraStyle.LABEL + "T" + t + " " + buttonPrice(player, t, activeTier);
+    }
+
+    /** Coin price that fits beside {@code T#} on a standard button. */
+    private static String buttonPrice(ServerPlayer player, int t, int activeTier) {
+        if (PaidFeatureAccess.bypassAncientCoinCost(player)) {
+            return "free";
+        }
+        if (activeTier > 0 && t < activeTier) {
+            return "free";
+        }
+        return AncientCoinEconomy.compactCost(
+                AncientCoinEconomy.activationCost(UnlockTier.byId(t), player, activeTier));
     }
 
     public static boolean tierButtonEnabled(int t, int activeTier, boolean unlocked, boolean eligible) {

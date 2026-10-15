@@ -1210,6 +1210,51 @@ def main() -> int:
     if "skillCheckGuiLines" not in unlock:
         errors.append("SkillUnlockService must expose skillCheckGuiLines (skills-only Ultra home)")
 
+    spec_fit = (ULTRA / "UltraScreenSpec.java").read_text(encoding="utf-8")
+    if "clipPlain" not in spec_fit:
+        errors.append("UltraScreenSpec must clipPlain before fitAsciiLabel so buttons do not grow ...")
+    rival_ui = (ULTRA / "UltraRivalScreens.java").read_text(encoding="utf-8")
+    chal_m = re.search(
+        r"private static void openChallenge\b.*?^\s*private static void ",
+        rival_ui,
+        re.S | re.M,
+    )
+    chal_body = chal_m.group(0) if chal_m else ""
+    if (
+        'buttonLeft("page:pick_spectate"' not in chal_body
+        or 'buttonRight("do:spectate_stop"' not in chal_body
+    ):
+        errors.append("Rival Challenge must pair Spectate with Stop spectate on one row")
+    if "Send challenge..." in chal_body or "Spectate..." in chal_body:
+        errors.append("Rival Challenge labels must not trail an ellipsis")
+    footer_re = re.compile(r'footerBack(?:Home)?\(\s*(?:"[^"]*"\s*,\s*)?"([^"]+)"')
+    banned = (
+        "Personal difficulty - ON",
+        "Personal difficulty - OFF",
+        "Confirm summon - locked",
+        "Challenge another dojo",
+        "Prestige now - need higher level",
+        "Buy Majin - remove Mutant",
+        "Drop a Mutual to accept",
+    )
+    for path in sorted(ULTRA.glob("Ultra*.java")):
+        text = path.read_text(encoding="utf-8")
+        for m in footer_re.finditer(text):
+            dest = m.group(1)
+            if len("Back to " + dest) > 22:
+                errors.append(f"{path.name} footer {dest!r} exceeds the 22-glyph button")
+        for phrase in banned:
+            for line in text.splitlines():
+                if phrase not in line:
+                    continue
+                if not any(
+                    tok in line
+                    for tok in ("button(", "buttonLeft", "buttonRight", "placePageButtons")
+                ):
+                    continue
+                errors.append(f"{path.name} still uses long button copy {phrase!r}")
+                break
+
     print("=== Ultra action / panel audit ===")
     for e in errors:
         print(f"  FAIL  {e}")

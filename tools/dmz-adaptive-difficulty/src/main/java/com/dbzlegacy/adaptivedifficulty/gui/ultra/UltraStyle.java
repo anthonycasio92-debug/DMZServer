@@ -295,9 +295,43 @@ public final class UltraStyle {
         return fitAsciiLabel(styled, 28 * CHAR_W_EST);
     }
 
+    /** Plain glyphs that fit a standard {@link #BTN_W} button (pad included). */
+    public static int standardButtonChars() {
+        return Math.max(1, labelMaxWidth(BTN_W) / CHAR_W_EST);
+    }
+
+    /** True when {@code text} fits a standard button with no clipping. */
+    public static boolean fitsButton(String text) {
+        return plain(wireText(text == null ? "" : text)).length() <= standardButtonChars();
+    }
+
+    /**
+     * Leading glyphs that fit {@code maxWidthPx}. No ellipsis — menu copy should already be
+     * short enough; this only guards dynamic names so the wire never grows a {@code ...}.
+     */
+    public static String clipPlain(String styled, int maxWidthPx) {
+        String text = plain(wireText(styled));
+        if (text.isEmpty()) {
+            return "";
+        }
+        int maxPx = Math.max(CHAR_W_EST, maxWidthPx);
+        int maxChars = Math.max(1, maxPx / CHAR_W_EST);
+        if (text.length() <= maxChars) {
+            return text;
+        }
+        return text.substring(0, maxChars).trim();
+    }
+
+    /** {@link #clipPlain} for a standard {@link #BTN_W} button. */
+    public static String buttonText(String text) {
+        return clipPlain(text, labelMaxWidth(BTN_W));
+    }
+
     /**
      * Plain ASCII label clipped to {@code maxWidthPx} with an ASCII {@code ...} ellipsis.
      * Strips section-sign for width math — re-apply ink with {@link #color} after fitting.
+     * Callers should pass copy that already fits; this remains for the startup self-test
+     * and any label that still overruns after {@link #clipPlain}.
      */
     public static String fitAsciiLabel(String styled, int maxWidthPx) {
         if (styled == null) {
