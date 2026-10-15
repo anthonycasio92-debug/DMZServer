@@ -187,7 +187,36 @@ public final class CharacterServicesSystem {
 
     public static long raceCost(ServerPlayer player, int preservationPercent) {
         long base = CharacterServicesConfig.get().raceCostCopper(preservationPercent);
-        return payableCost(player, base, CharacterServicesConfig.get().raceChange.levelCostMultiplier);
+        if (base <= 0L) {
+            return 0L;
+        }
+        boolean useLevel = CharacterServicesConfig.get().raceChange.levelCostMultiplier;
+        if (!useLevel) {
+            return AncientCoinEconomy.normalizeCost(base);
+        }
+        long scaled = scaledCost(player, base, true);
+        // Shared tier level mult can be thousands× at high DMZ. normalizeCost then hard-caps
+        // at 128× Netherite, so every keep-% collapses to the same charge. Compress against
+        // the scaled 100% price so the preservation ladder stays distinct under the cap.
+        long base100 = Math.max(1L, CharacterServicesConfig.get().raceCostCopper(100));
+        long scaled100 = scaledCost(player, base100, true);
+        scaled = compressRaceScaledUnderCap(scaled, scaled100);
+        return AncientCoinEconomy.normalizeCost(scaled);
+    }
+
+    /**
+     * When {@code scaled100} exceeds the payable Ancient Coin ceiling, scale {@code scaled}
+     * by {@code cap / scaled100} so keep-% prices stay proportional. Package-visible for sim.
+     */
+    static long compressRaceScaledUnderCap(long scaled, long scaled100) {
+        if (scaled <= 0L) {
+            return 0L;
+        }
+        long cap = AncientCoinEconomy.maxNormalizedCost();
+        if (scaled100 > cap && scaled100 > 0L) {
+            return Math.max(1L, Math.round(scaled * ((double) cap / (double) scaled100)));
+        }
+        return scaled;
     }
 
     /**

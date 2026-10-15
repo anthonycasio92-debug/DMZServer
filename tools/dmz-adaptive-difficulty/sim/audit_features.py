@@ -1088,6 +1088,7 @@ def main() -> int:
     race_api = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/CharacterServicesGuiApi.java")
     race_confirm = race_api.split('p.startsWith("race_confirm:")', 1)[1].split('p.startsWith("class_confirm:")', 1)[0] if 'p.startsWith("race_confirm:")' in race_api else ""
     race_exec = race_sys.split("public static String executeRaceChange", 1)[1].split("public static String executeClassChange", 1)[0] if "public static String executeRaceChange" in race_sys else ""
+    race_cost_fn = race_sys.split("public static long raceCost(", 1)[1].split("static long compressRaceScaledUnderCap", 1)[0] if "public static long raceCost(" in race_sys else ""
     check("missing preservation percent is interpolated, not the 100% price",
           "lookupPreservationCopper" in race_cfg
           and "The 100% price is not a stand-in" in race_cfg
@@ -1095,6 +1096,12 @@ def main() -> int:
           and 'get(String.valueOf(100))' not in race_cfg
           and "raceAmountDue(player, pct)" in race_confirm
           and "raceAmountDue(player, preservationPercent)" in race_exec)
+    check("raceCost compresses under maxNormalizedCost so keep-% stay distinct",
+          "compressRaceScaledUnderCap" in race_sys
+          and "maxNormalizedCost()" in race_sys
+          and "raceCostCopper(100)" in race_cost_fn
+          and "payableCost(player, base," not in race_cost_fn
+          and "compressRaceScaledUnderCap(scaled, scaled100)" in race_cost_fn)
 
     print("\n=== Spar TP lines player/staff (2.3.147) ===")
     spar_c147 = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparCombat.java")
