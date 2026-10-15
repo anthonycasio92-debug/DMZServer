@@ -343,7 +343,7 @@ public final class UltraSparScreens {
 
     /**
      * Dojo members sub-page. The toggle is always available, including when the player
-     * owns neither dojo — each side still shows its heading and a path into Actions.
+     * owns neither dojo. Recruit and request stay on the Dojo tab.
      */
     private static void openDojoMembers(ServerPlayer player, String key) {
         boolean own = "members_own".equals(key);
@@ -377,10 +377,6 @@ public final class UltraSparScreens {
                         own ? UltraStyle.dim("Your mentor's dojo") : UltraStyle.confirm("Your mentor's dojo"),
                         own ? "dim" : "confirm")
                 .rowGap();
-        boolean onThisSide = own ? SparGuiApi.ownsDojo(player) : SparGuiApi.joinedDojo(player);
-        if (!onThisSide) {
-            spec.button("page:mentor", UltraStyle.confirm("Actions"), "confirm").rowGap();
-        }
         spec.footerBack("page:dojo", "Dojo");
         spec.send(player);
     }

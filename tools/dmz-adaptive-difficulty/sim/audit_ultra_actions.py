@@ -1118,8 +1118,11 @@ def main() -> int:
     members_body = members_m.group(0) if members_m else ""
     if "Your dojo" not in members_body or "Your mentor's dojo" not in members_body:
         errors.append("UltraSparScreens Dojo members must toggle your dojo and your mentor's dojo")
-    if "page:mentor" not in members_body:
-        errors.append("UltraSparScreens Dojo members must keep an Actions path when a side is empty")
+    if "page:mentor" in members_body or "Actions" in members_body:
+        errors.append(
+            "UltraSparScreens Dojo members must not duplicate Actions "
+            "(Actions stays on the Dojo tab)"
+        )
     if 'dojo|Home' in spar_home:
         errors.append("UltraSparScreens Dojo tab must not keep a Home button")
     if "§8??" in (ULTRA.parent / "SparGuiApi.java").read_text(encoding="utf-8"):
