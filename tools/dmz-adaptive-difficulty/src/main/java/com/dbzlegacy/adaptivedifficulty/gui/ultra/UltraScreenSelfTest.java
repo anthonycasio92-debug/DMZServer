@@ -600,12 +600,22 @@ public final class UltraScreenSelfTest {
             broken.add("spar ink probe produced no packet");
         } else {
             String buttons = sparInk.get(0).buttonsJson() == null ? "" : sparInk.get(0).buttonsJson();
-            if (buttons.contains(mark + "6Spar") || buttons.contains(mark + "eSpar")) {
-                broken.add("spar confirm label must not use gold or yellow ink on a light button");
+            if (buttons.contains(mark + "6Spar")
+                    || buttons.contains(mark + "eSpar")
+                    || buttons.contains(mark + "4Spar")) {
+                broken.add("spar confirm label must not use gold, yellow, or staff dark red");
             }
-            if (!buttons.contains(mark + "8Spar")) {
-                broken.add("spar confirm label must use dark gray ink");
+            if (!buttons.contains(mark + "3Spar")) {
+                broken.add("spar confirm label must use dark aqua ink");
             }
+            String sparLayout = sparInk.get(0).layoutJson() == null ? "" : sparInk.get(0).layoutJson();
+            if (!sparLayout.contains("\"accent\":\"3\"") || sparLayout.contains("\"accent\":\"4\"")) {
+                broken.add("spar title accent must be dark aqua, not staff dark red");
+            }
+        }
+        if (!"3".equals(UltraStyle.systemAccentCode("spar"))
+                || !"4".equals(UltraStyle.systemAccentCode("admin"))) {
+            broken.add("spar accent must stay dark aqua and admin accent dark red");
         }
         String[] systems = {"character", "difficulty", "progression", "prestige", "spar", "rival"};
         java.util.Set<String> icons = new java.util.LinkedHashSet<>();
@@ -623,7 +633,8 @@ public final class UltraScreenSelfTest {
             broken.add("normalizeIcon must accept a texture path");
         }
         if (!"".equals(UltraStyle.normalizeIcon("not-an-rl"))
-                || !"".equals(UltraStyle.normalizeIcon(""))) {
+                || !"".equals(UltraStyle.normalizeIcon(""))
+                || !"".equals(UltraStyle.normalizeIcon("mine/craft:iron_sword"))) {
             broken.add("normalizeIcon must drop ids that are not namespace:path");
         }
         String tabJson = UltraScreenSpec.tabEntryJson("home", "Home", UltraStyle.systemIcon("difficulty"));
@@ -978,6 +989,30 @@ public final class UltraScreenSelfTest {
         }
         if (!token.equals(tokenJoined.toString()) || split.size() < 2) {
             broken.add("a token wider than the box must continue on the next line");
+        }
+        String mark = UltraStyle.MARK;
+        String midWord = "He" + mark + "cllo";
+        List<String> midLines = UltraStyle.wrapBody(midWord, fit);
+        String midJoined = String.join("", midLines);
+        if (!"Hello".equals(UltraStyle.plain(midJoined)) || !midJoined.contains(mark + "c")) {
+            broken.add("wrap must keep a color change in the middle of a word: " + midJoined);
+        }
+        int midAt = midJoined.indexOf(mark + "c");
+        if (midAt < 0 || !"He".equals(UltraStyle.plain(midJoined.substring(0, midAt)))) {
+            broken.add("mid-word color must stay after the leading glyphs: " + midJoined);
+        }
+        String wide = "1234" + mark + "c567890";
+        List<String> wideLines = UltraStyle.wrapBody(wide, UltraStyle.BODY_GLYPH_PX * 4);
+        if (wideLines.size() < 2) {
+            broken.add("colored token must wrap when it is wider than the box");
+        } else if (!wideLines.get(1).startsWith(mark + "c")) {
+            broken.add("wrapped continuation must repeat the active color: " + wideLines);
+        }
+        String lone = "Ends" + mark;
+        List<String> loneLines = UltraStyle.wrapBody(lone, fit);
+        String loneJoined = String.join("", loneLines);
+        if (!"Ends".equals(loneJoined) || loneJoined.indexOf(mark.charAt(0)) >= 0) {
+            broken.add("a trailing section-sign with no format code must be dropped: " + loneJoined);
         }
         GuiOpenPacket packet =
                 UltraScreenSpec.of("character")
