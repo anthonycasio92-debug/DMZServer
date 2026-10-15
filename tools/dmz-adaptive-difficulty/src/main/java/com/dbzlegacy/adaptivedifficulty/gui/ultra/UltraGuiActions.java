@@ -821,7 +821,7 @@ public final class UltraGuiActions {
                         page != null && (page.startsWith("titles_p") || page.startsWith("titles:"))
                                 ? page
                                 : "titles_p0";
-                case "toggle_coin_chat" -> "settings";
+                case "toggle_coin_chat" -> "main";
                 case "reload", "reloadconfig" -> "admin";
                 case "syslog" -> "eventlog";
                 default -> page.isBlank() ? homePage(screen) : page;

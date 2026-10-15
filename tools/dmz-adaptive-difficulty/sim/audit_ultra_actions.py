@@ -260,6 +260,15 @@ def main() -> int:
         errors.append("UltraCharacterScreens must show playerModel on model customize (bones)")
     if 'base(player, UltraStyle.PAGE_ANDROID_REMOVE, "android", false)' not in char_screens:
         errors.append("UltraCharacterScreens must omit playerModel on Android Removal")
+    diff_screens = (ULTRA / "UltraDifficultyScreens.java").read_text(encoding="utf-8")
+    if "Coin settings" in diff_screens or "openSettings" in diff_screens:
+        errors.append("Difficulty must not keep a Coin settings submenu")
+    if '"Coin messages: ON"' not in diff_screens or '"Coin messages: OFF"' not in diff_screens:
+        errors.append("Difficulty home must toggle Coin messages: ON/OFF directly")
+    if 'case "toggle_coin_chat" -> "settings"' in (
+        ULTRA / "UltraGuiActions.java"
+    ).read_text(encoding="utf-8"):
+        errors.append("toggle_coin_chat must reopen Difficulty home, not the removed settings page")
     if "page:android_staff" not in char_screens:
         errors.append("UltraCharacterScreens must offer a staff Another player picker")
     if '"Convert Android"' not in char_screens or '"Remove Android"' not in char_screens:

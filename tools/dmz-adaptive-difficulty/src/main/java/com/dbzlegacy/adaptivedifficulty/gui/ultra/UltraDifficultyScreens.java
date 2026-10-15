@@ -25,7 +25,7 @@ import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Difficulty - Home / Tiers / Summons (plus staff-only Combat Rating tab). Sub-pages cover
- * teams, titles, coin settings, and staff tools. Weights live under Sparring.
+ * teams, titles, and staff tools. Coin messages are a home-page toggle. Weights live under Sparring.
  */
 public final class UltraDifficultyScreens {
     /** Titles shown per list page (enum can grow past this). */
@@ -73,7 +73,7 @@ public final class UltraDifficultyScreens {
             case "end_dragon", "dragon", "summon_dragon", "summon_confirm" -> openSummonConfirm(player);
             case "team", "teams" -> openTeam(player);
             case "titles", "title", "titles_p0" -> openTitles(player, 0);
-            case "settings", "coins" -> openSettings(player);
+            case "settings", "coins" -> openHome(player);
             case "stats", "statistics", "details", "cr", "combat_rating" -> openStats(player);
             case "admin", "staff" -> openStaffAdmin(player);
             case "eventlog", "event_log", "logs", "syslog" -> openEventLog(player);
@@ -116,8 +116,8 @@ public final class UltraDifficultyScreens {
                 .labelValue("Ancient Coins", AncientCoinEconomy.inventoryBreakdown(player))
                 .line(UltraStyle.LABEL + "Where you stand, your titles, and rival teams.")
                 .buttonsAfterLines();
-        UltraPickHelper.placePageButtons(
-                spec, "titles|Titles", "team|Rival teams", "settings|Coin settings");
+        UltraPickHelper.placePageButtons(spec, "titles|Titles", "team|Rival teams");
+        placeCoinMessageToggle(spec, data != null && data.isCoinDropChat());
         if (StaffAccess.isStaff(player)) {
             UltraPickHelper.placePageButtons(spec, "admin|Server tools");
         }
@@ -397,6 +397,17 @@ public final class UltraDifficultyScreens {
      * Difficulty on/off. OFF is dim (dark gray), never confirm. This is not a team mode.
      * The Rival teams mode page does not show it; Personal / Threshold / Full team stay there.
      */
+    /** One toggle on Difficulty home. No coin submenu. */
+    private static void placeCoinMessageToggle(UltraScreenSpec spec, boolean on) {
+        spec.button(
+                        "do:toggle_coin_chat",
+                        on
+                                ? UltraStyle.confirm("Coin messages: ON")
+                                : UltraStyle.dim("Coin messages: OFF"),
+                        on ? UltraStyle.STYLE_CONFIRM : UltraStyle.STYLE_DIM)
+                .rowGap();
+    }
+
     private static void placeDifficultyToggle(UltraScreenSpec spec, boolean enabled) {
         if (enabled) {
             spec.buttonRight(
@@ -555,30 +566,6 @@ public final class UltraDifficultyScreens {
         return UltraStyle.plain(title.requirementTip())
                 .replace("DMZ ", "Level ")
                 .replace(" or Prestige ", " or prestige ");
-    }
-
-    private static void openSettings(ServerPlayer player) {
-        PlayerDifficultyData data = DifficultyCache.data(player);
-        boolean coinChat = data != null && data.isCoinDropChat();
-        UltraScreenSpec spec = sub("settings")
-                .line(UltraStyle.LABEL + "Ancient Coin settings")
-                .labelValue("Ancient Coins", AncientCoinEconomy.inventoryBreakdown(player))
-                .line(UltraStyle.LABEL + "Coin drop messages in chat.")
-                .labelValue("Coin messages", coinChat ? "On" : "Off")
-                .line(UltraStyle.DIM + "Earn coins from scaled kills and tier play.")
-                .buttonsAfterLines();
-        spec.button(
-                        "do:toggle_coin_chat",
-                        coinChat
-                                ? UltraStyle.confirm("Coin messages - ON")
-                                : UltraStyle.dim("Coin messages - OFF"),
-                        coinChat ? "confirm" : "dim")
-                .rowGap();
-        if (StaffAccess.isStaff(player)) {
-            spec.buttonLeft("page:stats", UltraStyle.danger("Staff details"), "danger").rowGap();
-        }
-        spec.footerBackHome("Home");
-        spec.send(player);
     }
 
     private static void openStats(ServerPlayer player) {
