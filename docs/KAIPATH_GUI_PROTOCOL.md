@@ -68,7 +68,7 @@ Every button object in `buttonsJson`:
 | `accent` | no | string | Single-letter color code (optional). LM does **not** emit per-button `accent` — title / activeTab use `layoutJson.accent` only. |
 | `palette` | no | string | Named theme on a button (optional). LM leaves this off buttons — panel-level `layoutJson.palette` only. |
 | `tint` | no | string | Optional body fill on a button. LM does **not** emit this; buttons use KaiPath default chrome. |
-| `icon` | no | string | Optional mark beside the label. **Shipped on KaiPath 1.3.22** (`UltraBridgeIcon`). See [Icon values](#icon-values). Unknown or blank ids are ignored; the button still works. LM emits this on system hub tiles and on that system’s tab buttons. |
+| `icon` | no | string | Optional mark beside the label. **Shipped on KaiPath 1.3.22** (`UltraBridgeIcon`). See [Icon values](#icon-values). Unknown or blank ids are ignored; the button still works. LM leaves this blank — system menus do not use vanilla item icons, and no custom gear textures ship with the client. |
 | `args` | recommended | object | Opaque JSON echoed to the server |
 
 ```json
@@ -139,18 +139,9 @@ KaiPath **1.3.22** advertises feature id `icon` and resolves the string with `Ul
 
 Blank, missing, or malformed values are omitted. An unknown id does not hide the button or tab. LM normalizes the string to lowercase before sending.
 
-LM system marks (vanilla item ids, present on a stock 1.20.1 client):
+LM does not send `icon` on hub tiles or tab buttons. Vanilla items (swords, totems, stars) are not the gear marks those menus use, and the client has no per-system gear textures to bind. The field stays in the protocol so other mods can set it.
 
-| System | `icon` |
-|--------|--------|
-| Character Services | `minecraft:player_head` |
-| Difficulty | `minecraft:iron_sword` |
-| Progression | `minecraft:experience_bottle` |
-| Prestige | `minecraft:nether_star` |
-| Sparring | `minecraft:golden_sword` |
-| Rival | `minecraft:totem_of_undying` |
-
-Any mod on the bridge may set `icon` on its own buttons and tabs. LM leaves `tabsJson` empty and paints tabs as buttons under the title, so those tab buttons carry `icon`. Partners that use the tab strip put the same field on each `tabsJson` entry.
+Any mod on the bridge may set `icon` on its own buttons and tabs. LM leaves `tabsJson` empty and paints tabs as buttons under the title. Partners that use the tab strip put the same field on each `tabsJson` entry.
 
 KaiPath **1.3.1** ignores `style`: all buttons render identically (no green/red/dim
 distinction).

@@ -96,18 +96,13 @@ public final class UltraScreenSelfTest {
                             .tabs("home|Home")
                             .line("self-test")
                             .buttonLeft("open:difficulty", "Difficulty", "normal")
-                            .icon(UltraStyle.systemIcon("difficulty"))
                             .buttonRight("open:rival", "Rival", "normal")
-                            .icon(UltraStyle.systemIcon("rival"))
                             .rowGap()
                             .buttonLeft("open:spar", "Sparring", "normal")
-                            .icon(UltraStyle.systemIcon("spar"))
                             .buttonRight("open:prestige", "Prestige", "normal")
-                            .icon(UltraStyle.systemIcon("prestige"))
                             .rowGap()
                             .buttonLeft("open:skillcheck", "Skill Check", "confirm")
-                            .buttonRight("open:character", "Character", "confirm")
-                            .icon(UltraStyle.systemIcon("character"));
+                            .buttonRight("open:character", "Character", "confirm");
                     case "admin" -> UltraScreenSpec.of("admin")
                             .title("Staff Admin")
                             .page("admin")
@@ -116,7 +111,6 @@ public final class UltraScreenSelfTest {
                             .line("self-test")
                             .button("do:reload", "Reload", "confirm")
                             .buttonLeft("open:progression", "Progression", "normal")
-                            .icon(UltraStyle.systemIcon("progression"))
                             .buttonRight("open:config", "Config", "normal")
                             .footerBackToMain();
                     case "difficulty" -> UltraScreenSpec.of("difficulty")
@@ -131,7 +125,7 @@ public final class UltraScreenSelfTest {
                             .title("Rival")
                             .page("home")
                             .activeTab("home")
-                            .tabs("home|Home", "actions|Actions", "challenge|Challenge")
+                            .tabs("home|Home", "actions|Rival", "challenge|Challenge", "info|Info")
                             .line("self-test")
                             .footerBackToMain();
                     case "spar" -> UltraScreenSpec.of("spar")
@@ -521,12 +515,8 @@ public final class UltraScreenSelfTest {
             if (buttons.contains("nav:refresh") || buttons.contains("Refresh")) {
                 broken.add("hub: must not show Refresh");
             }
-            if (!buttons.contains("\"icon\":\"" + UltraStyle.systemIcon("difficulty") + "\"")
-                    || !buttons.contains("\"icon\":\"" + UltraStyle.systemIcon("rival") + "\"")
-                    || !buttons.contains("\"icon\":\"" + UltraStyle.systemIcon("spar") + "\"")
-                    || !buttons.contains("\"icon\":\"" + UltraStyle.systemIcon("prestige") + "\"")
-                    || !buttons.contains("\"icon\":\"" + UltraStyle.systemIcon("character") + "\"")) {
-                broken.add("hub: system tiles must emit distinct icon ids");
+            if (buttons.contains("\"icon\":\"minecraft:")) {
+                broken.add("hub: system tiles must not emit vanilla item icons");
             }
             if (buttons.contains("\"icon\":\"\"") || buttons.contains("not-an-rl")) {
                 broken.add("hub: blank or invalid icon ids must be omitted");
@@ -617,15 +607,10 @@ public final class UltraScreenSelfTest {
                 || !"4".equals(UltraStyle.systemAccentCode("admin"))) {
             broken.add("spar accent must stay dark aqua and admin accent dark red");
         }
-        String[] systems = {"character", "difficulty", "progression", "prestige", "spar", "rival"};
-        java.util.Set<String> icons = new java.util.LinkedHashSet<>();
+        String[] systems = {"character", "difficulty", "progression", "prestige", "spar", "rival", "hub"};
         for (String system : systems) {
-            String icon = UltraStyle.systemIcon(system);
-            if (icon.isBlank() || !icons.add(icon)) {
-                broken.add("system icons must be distinct and non-blank: " + system);
-            }
-            if (!icon.equals(UltraStyle.normalizeIcon(icon))) {
-                broken.add("system icon must already be a normalized namespace:path: " + system);
+            if (!UltraStyle.systemIcon(system).isBlank()) {
+                broken.add("system icons must stay blank (no vanilla item marks): " + system);
             }
         }
         if (!"minecraft:textures/item/iron_sword.png"
@@ -637,22 +622,39 @@ public final class UltraScreenSelfTest {
                 || !"".equals(UltraStyle.normalizeIcon("mine/craft:iron_sword"))) {
             broken.add("normalizeIcon must drop ids that are not namespace:path");
         }
-        String tabJson = UltraScreenSpec.tabEntryJson("home", "Home", UltraStyle.systemIcon("difficulty"));
+        String tabJson = UltraScreenSpec.tabEntryJson("home", "Home", "minecraft:emerald");
         if (tabJson == null
-                || !tabJson.contains("\"icon\":\"" + UltraStyle.systemIcon("difficulty") + "\"")
+                || !tabJson.contains("\"icon\":\"minecraft:emerald\"")
                 || !tabJson.contains("\"id\":\"home\"")) {
-            broken.add("tabEntryJson must include id and icon");
+            broken.add("tabEntryJson must include id and an explicit icon");
         }
-        if (UltraScreenSpec.tabEntryJson("home", "Home", "not-an-rl").contains("\"icon\"")) {
-            broken.add("tabEntryJson must omit an invalid icon");
+        if (UltraScreenSpec.tabEntryJson("home", "Home", UltraStyle.systemIcon("difficulty")).contains("\"icon\"")
+                || UltraScreenSpec.tabEntryJson("home", "Home", "not-an-rl").contains("\"icon\"")) {
+            broken.add("tabEntryJson must omit a blank or invalid icon");
         }
         List<GuiOpenPacket> progInk =
                 UltraScreenSpec.captureSends(() -> probeBuilder("progression"));
         if (progInk.isEmpty()
                 || progInk.get(0).buttonsJson() == null
-                || !progInk.get(0).buttonsJson().contains(
-                        "\"icon\":\"" + UltraStyle.systemIcon("progression") + "\"")) {
-            broken.add("progression: tab buttons must carry the progression icon");
+                || progInk.get(0).buttonsJson().contains("\"icon\":\"minecraft:")) {
+            broken.add("progression: tab buttons must not carry a vanilla item icon");
+        }
+        List<GuiOpenPacket> footerInk =
+                UltraScreenSpec.captureSends(() -> UltraScreenSpec.of("rival")
+                        .title("Rivals")
+                        .page("home")
+                        .footerBackHome("Rival Home")
+                        .send(null));
+        if (footerInk.isEmpty() || footerInk.get(0).buttonsJson() == null) {
+            broken.add("footer probe produced no packet");
+        } else {
+            String footerButtons = footerInk.get(0).buttonsJson();
+            if (!footerButtonStyle(footerButtons, "Main menu").equals("normal")) {
+                broken.add("Main menu footer button must use style normal");
+            }
+            if (!footerButtonStyle(footerButtons, "Back to Rival Home").equals("dim")) {
+                broken.add("Back footer button must stay dim");
+            }
         }
         if (!"End Dimension Strength".equals(ConfigEditor.staffLabel("enableEndDimensionStrength"))) {
             broken.add("config label must read End Dimension Strength, not the raw field id");
@@ -720,8 +722,8 @@ public final class UltraScreenSelfTest {
             if (buttons.indexOf('\u00A7') >= 0 || buttons.indexOf('\u00C2') >= 0) {
                 broken.add("character: buttonsJson still has section-sign or C2 mojibake bytes");
             }
-            if (!buttons.contains("\"icon\":\"" + UltraStyle.systemIcon("character") + "\"")) {
-                broken.add("character: tab buttons must carry the character icon");
+            if (buttons.contains("\"icon\":\"minecraft:")) {
+                broken.add("character: tab buttons must not carry a vanilla item icon");
             }
             String fit = UltraStyle.fitAsciiLabel("Android Removal", UltraStyle.labelMaxWidth(102));
             if (fit.indexOf('\u00E2') >= 0 || fit.indexOf('\u2026') >= 0) {
@@ -853,7 +855,7 @@ public final class UltraScreenSelfTest {
                         .title("Rivals")
                         .page("actions")
                         .activeTab("actions")
-                        .tabs("home|Home", "actions|Actions", "challenge|Challenge")
+                        .tabs("home|Home", "actions|Rival", "challenge|Challenge", "info|Info")
                         .line("Your rivals.")
                         .line("Pending invites: 1")
                         .setRow(UltraStyle.CONTENT_ROW_TABS + 70)
@@ -1103,6 +1105,24 @@ public final class UltraScreenSelfTest {
         if (linesJson.contains("...")) {
             broken.add("race confirm packet still ellipsizes body copy");
         }
+    }
+
+    private static String footerButtonStyle(String buttonsJson, String labelContains) {
+        if (buttonsJson == null || buttonsJson.isBlank() || labelContains == null) {
+            return "";
+        }
+        JsonArray arr = JsonParser.parseString(buttonsJson).getAsJsonArray();
+        for (JsonElement el : arr) {
+            if (el == null || !el.isJsonObject()) {
+                continue;
+            }
+            JsonObject o = el.getAsJsonObject();
+            String label = o.has("label") ? o.get("label").getAsString() : "";
+            if (UltraStyle.plain(label).contains(labelContains)) {
+                return o.has("style") ? o.get("style").getAsString() : "";
+            }
+        }
+        return "";
     }
 
     private static void checkBodyCap(

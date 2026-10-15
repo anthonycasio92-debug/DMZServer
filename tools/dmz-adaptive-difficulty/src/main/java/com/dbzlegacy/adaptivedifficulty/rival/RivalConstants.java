@@ -56,7 +56,10 @@ public final class RivalConstants {
     public static final int CH_MIN_MINUTES = 1;
     public static final int CH_MAX_MINUTES = 10;
     public static final long CH_BETWEEN_COOLDOWN_MS = 2L * 60L * 1000L;
+    /** In-fight “too far” warning. Sending or accepting a challenge is not range-limited. */
     public static final double CH_MAX_DISTANCE = 64.0;
+    /** On accept, the challenged player is placed this many blocks in front of the challenger. */
+    public static final double CH_ACCEPT_FRONT_BLOCKS = 10.0;
     public static final long CH_TICK_MS = 250L;
     public static final long CH_PENDING_RESOLVE_MS = 75L;
     public static final long CH_BROADCAST_SCORE_MS = 15_000L;

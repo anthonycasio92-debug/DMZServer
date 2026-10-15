@@ -12,9 +12,13 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Official rival challenges: requests, countdown, HP-lost scoring, win/lose/draw payouts.
@@ -192,9 +196,6 @@ public final class RivalChallengeManager {
         if (now - toRec.lastChallengeEndAt < RivalConstants.CH_BETWEEN_COOLDOWN_MS) {
             return "§c" + to.m_7755_().getString() + " is on challenge cooldown.";
         }
-        if (distance(from, to) > RivalConstants.CH_MAX_DISTANCE) {
-            return "§cGet within " + (int) RivalConstants.CH_MAX_DISTANCE + " blocks to challenge.";
-        }
         if (isInChallenge(from.m_20148_()) || getRequestInvolving(from.m_20148_()) != null) {
             return "§cYou already have a pending or active challenge.";
         }
@@ -225,7 +226,7 @@ public final class RivalChallengeManager {
         RivalStore.get().saveIfNeeded(now);
         DmzRewards.msg(to, LmChat.note("Challenge", "§e" + req.fromName
                 + " §7challenged you for §f" + mins + "§7 min!"));
-        DmzRewards.msg(to, LmChat.tip("/rival", "→ Actions → Review requests"));
+        DmzRewards.msg(to, LmChat.tip("/rival", "→ Rival"));
         return "§aChallenge sent to §f" + req.toName + "§a (" + mins + " min).";
     }
 
@@ -271,6 +272,7 @@ public final class RivalChallengeManager {
             return "§cYou are on challenge cooldown.";
         }
         dropRequest(req.id);
+        teleportInFrontOf(challenger, player);
         RivalChallenge ch = new RivalChallenge();
         ch.id = "ch-" + NEXT_ID.getAndIncrement();
         ch.a = req.from;
@@ -397,17 +399,6 @@ public final class RivalChallengeManager {
                 if (now >= ch.countdownUntil) {
                     if (a == null || b == null) {
                         endChallenge(server, ch, a != null ? ch.a : ch.b, a == null ? ch.a : ch.b, false, "disconnect");
-                        continue;
-                    }
-                    if (distance(a, b) > RivalConstants.CH_MAX_DISTANCE) {
-                        if (now - ch.lastBroadcastAt >= 3_000L) {
-                            ch.lastBroadcastAt = now;
-                            String need = "§cGet within " + (int) RivalConstants.CH_MAX_DISTANCE
-                                    + " blocks to start the fight!";
-                            DmzRewards.msg(a, LmChat.fail("Challenge", need));
-                            DmzRewards.msg(b, LmChat.fail("Challenge", need));
-                        }
-                        ch.countdownUntil = now + 2_000L;
                         continue;
                     }
                     ch.status = RivalChallenge.Phase.ACTIVE;
@@ -1013,6 +1004,70 @@ public final class RivalChallengeManager {
         for (ServerPlayer p : server.m_6846_().m_11314_()) {
             DmzRewards.msg(p, LmChat.tagged("Rival", text));
         }
+    }
+
+    /**
+     * Place the accepting player {@link RivalConstants#CH_ACCEPT_FRONT_BLOCKS} blocks in front
+     * of the challenger, facing them. Works across dimensions. A blocked spot steps up or down
+     * a few blocks; if nothing is clear, the raw offset is still used.
+     */
+    private static void teleportInFrontOf(ServerPlayer challenger, ServerPlayer acceptor) {
+        if (challenger == null || acceptor == null) {
+            return;
+        }
+        if (!(challenger.m_9236_() instanceof ServerLevel level)) {
+            return;
+        }
+        float yaw = challenger.m_146908_();
+        double rad = Math.toRadians(yaw);
+        double x = challenger.m_20185_() - Math.sin(rad) * RivalConstants.CH_ACCEPT_FRONT_BLOCKS;
+        double z = challenger.m_20189_() + Math.cos(rad) * RivalConstants.CH_ACCEPT_FRONT_BLOCKS;
+        double y = standFeetY(level, x, challenger.m_20186_(), z);
+        try {
+            acceptor.m_8999_(level, x, y, z, yaw + 180.0f, 0.0f);
+            acceptor.m_20256_(new Vec3(0.0, 0.0, 0.0));
+            acceptor.f_19789_ = 0.0f;
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] rival accept teleport failed challenger={} acceptor={}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    challenger.m_7755_().getString(),
+                    acceptor.m_7755_().getString(),
+                    t);
+        }
+    }
+
+    private static double standFeetY(ServerLevel level, double x, double preferY, double z) {
+        int base = (int) Math.floor(preferY);
+        if (feetClear(level, x, base, z)) {
+            return base;
+        }
+        for (int d = 1; d <= 6; d++) {
+            if (feetClear(level, x, base + d, z)) {
+                return base + d;
+            }
+            if (feetClear(level, x, base - d, z)) {
+                return base - d;
+            }
+        }
+        return preferY;
+    }
+
+    private static boolean feetClear(ServerLevel level, double x, int feetY, double z) {
+        BlockPos feet = BlockPos.m_274561_(x, feetY, z);
+        return passable(level.m_8055_(feet))
+                && passable(level.m_8055_(feet.m_7494_()))
+                && supportive(level.m_8055_(feet.m_7495_()));
+    }
+
+    /** Air and non-occluding blocks (plants, water) can be stood in. */
+    private static boolean passable(BlockState state) {
+        return state != null && (state.m_60795_() || !state.m_60815_());
+    }
+
+    /** Full occluding block under the feet. */
+    private static boolean supportive(BlockState state) {
+        return state != null && !state.m_60795_() && state.m_60815_();
     }
 
     private static double distance(LivingEntity a, LivingEntity b) {

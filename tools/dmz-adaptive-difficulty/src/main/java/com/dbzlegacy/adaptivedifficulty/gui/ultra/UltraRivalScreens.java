@@ -10,7 +10,7 @@ import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Rival system - CNPC parity via page: navigation and arg-bearing do: buttons.
- * Tabs: Home (status) / Actions (list + declare flow) / Challenge (W/L + duels).
+ * Tabs: Home / Rival (list + picker) / Challenge (W/L + duels) / Info (RP, tier, nemesis).
  */
 public final class UltraRivalScreens {
     /** Online player pickers: two-up rows; page so large servers never truncate. */
@@ -66,7 +66,8 @@ public final class UltraRivalScreens {
             }
         }
         switch (p) {
-            case "actions", "action" -> openActions(player);
+            case "actions", "action", "rival" -> openActions(player);
+            case "info", "information" -> openInfo(player);
             case "challenge", "challenges" -> openChallenge(player);
             case "list" -> openList(player);
             case "top", "leaderboard" -> openTop(player);
@@ -88,7 +89,7 @@ public final class UltraRivalScreens {
                 .title("Rivals")
                 .page(page)
                 .activeTab(tab)
-                .tabs("home|Home", "actions|Actions", "challenge|Challenge");
+                .tabs("home|Home", "actions|Rival", "challenge|Challenge", "info|Info");
     }
 
     /** Subpage: no tab row — dual footer (Back + Main menu). */
@@ -100,8 +101,22 @@ public final class UltraRivalScreens {
 
 
     private static void openHome(ServerPlayer player) {
-        Map<String, String> ph = RivalGuiApi.placeholders(player);
         UltraScreenSpec spec = base("home", "home")
+                .line(UltraStyle.LABEL + "Leaderboard, records, and TP chat.")
+                .buttonsAfterLines();
+        UltraPickHelper.placePageButtons(
+                spec, "top|Leaderboard", "records|Records", "settings|TP Chat");
+        if (StaffAccess.isStaff(player)) {
+            spec.buttonLeft("page:admin", UltraStyle.danger("Staff Admin"), "danger").rowGap();
+        }
+        spec.footerBackToMain();
+        spec.send(player);
+    }
+
+    /** Standing (RP, tier, nemesis, mutual) lives on Info, not Home. */
+    private static void openInfo(ServerPlayer player) {
+        Map<String, String> ph = RivalGuiApi.placeholders(player);
+        UltraScreenSpec spec = base("info", "info")
                 .labelValue("Current RP", ph.getOrDefault("rp", "0"))
                 .labelValue("Rival tier", ph.getOrDefault("tier", "-"))
                 .labelValue("Nemesis", RivalGuiApi.nemesisNames(player))
@@ -110,11 +125,6 @@ public final class UltraRivalScreens {
                         "Mutual slots",
                         ph.getOrDefault("mutual", "0") + "/" + ph.getOrDefault("mutual_max", "0"))
                 .buttonsAfterLines();
-        UltraPickHelper.placePageButtons(
-                spec, "top|Leaderboard", "records|Records", "settings|Settings");
-        if (StaffAccess.isStaff(player)) {
-            spec.buttonLeft("page:admin", UltraStyle.danger("Staff Admin"), "danger").rowGap();
-        }
         spec.footerBackToMain();
         spec.send(player);
     }
@@ -146,7 +156,7 @@ public final class UltraRivalScreens {
         spec.send(player);
     }
 
-    /** Current rivals on Actions — tap for profile / remove. */
+    /** Current rivals on the Rival tab — tap for profile / remove. */
     private static void placeRivalListButtons(UltraScreenSpec spec, ServerPlayer player) {
         List<String> cards = RivalGuiApi.currentRivalCards(player);
         int placed = 0;
@@ -191,7 +201,7 @@ public final class UltraRivalScreens {
         }
     }
 
-    /** Incoming declare Accept/Decline on Actions — stacked to avoid misclicks. */
+    /** Incoming declare Accept/Decline on the Rival tab — stacked to avoid misclicks. */
     private static void placeIncomingDeclareButtons(UltraScreenSpec spec, ServerPlayer player) {
         List<String> incoming = RivalGuiApi.pendingIncomingDeclareArgs(player);
         if (incoming == null || incoming.isEmpty()) {
@@ -402,7 +412,7 @@ public final class UltraRivalScreens {
         if (placed == 0) {
             spec.line(UltraStyle.dim("No rivals on your list yet."));
         }
-        spec.footerBack("page:actions", "Actions");
+        spec.footerBack("page:actions", "Rival");
         spec.send(player);
     }
 
@@ -433,7 +443,7 @@ public final class UltraRivalScreens {
         } else if (arg != null && !arg.isBlank()) {
             spec.line(UltraStyle.dim("Not on your rival list."));
         }
-        spec.footerBack("page:actions", "Actions");
+        spec.footerBack("page:actions", "Rival");
         spec.send(player);
     }
 
@@ -523,7 +533,7 @@ public final class UltraRivalScreens {
         if (placed == 0) {
             spec.line(UltraStyle.dim("No incoming declare requests right now."));
         }
-        spec.footerBack("page:actions", "Actions");
+        spec.footerBack("page:actions", "Rival");
         spec.send(player);
     }
 
@@ -658,7 +668,7 @@ public final class UltraRivalScreens {
         }
         spec.footerBack(
                 "page:" + ("challenge".equals(tab) ? "challenge" : "actions"),
-                "challenge".equals(tab) ? "Challenge" : "Actions");
+                "challenge".equals(tab) ? "Challenge" : "Rival");
         spec.send(player);
     }
 
@@ -745,7 +755,7 @@ public final class UltraRivalScreens {
         }
         // Escape hatch — do not trap the player on this page.
         spec.button("do:cancel_mutual_replace", UltraStyle.dim("Decline instead"), "dim").rowGap();
-        spec.footerBack("page:actions", "Actions");
+        spec.footerBack("page:actions", "Rival");
         spec.send(player);
     }
 

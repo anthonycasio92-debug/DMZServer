@@ -964,8 +964,9 @@ public final class UltraGuiActions {
                 default -> "main";
             };
             case "rival" -> switch (t) {
-                case "actions" -> "actions";
+                case "actions", "rival" -> "actions";
                 case "challenge" -> "challenge";
+                case "info", "information" -> "info";
                 default -> "home";
             };
             case "spar", "sparring" -> switch (t) {

@@ -77,7 +77,7 @@ public final class UltraSparScreens {
             case "dojo", "roster" -> openDojo(player, "home");
             case "dojo_members", "dojo_members_own" -> openDojo(player, "members_own");
             case "dojo_members_joined" -> openDojo(player, "members_joined");
-            case "dojo_hof", "chosen", "hall_of_chosen", "dojo_war_hof" -> openWars(player);
+            case "dojo_hof", "chosen", "hall_of_chosen", "dojo_war_hof" -> openHallOfChosen(player);
             case "mentor", "actions" -> openMentor(player);
             case "pending", "invites" -> openPending(player);
             case "settings" -> openSettings(player);
@@ -177,7 +177,7 @@ public final class UltraSparScreens {
                 "infamy|Hall of Infamy",
                 "stats|Your stats",
                 "weights|Weights",
-                "settings|Chat settings");
+                "settings|TP Chat");
         if (StaffAccess.isStaff(player)) {
             spec.buttonLeft("page:admin", UltraStyle.danger("Staff Admin"), "danger").rowGap();
         }
@@ -307,7 +307,7 @@ public final class UltraSparScreens {
     private static void openDojo(ServerPlayer player, String sub) {
         String key = sub == null || sub.isBlank() ? "home" : sub;
         if ("hof".equals(key)) {
-            openWars(player);
+            openHallOfChosen(player);
             return;
         }
         // Members is a sub-page with its own your-dojo / mentor's-dojo toggle.
@@ -557,7 +557,7 @@ public final class UltraSparScreens {
                 .buttonsAfterLines();
         spec.buttonLeft(
                         "do:tpmsg:toggle",
-                        tpOn ? UltraStyle.confirm("TP - ON") : UltraStyle.dim("TP - OFF"),
+                        tpOn ? UltraStyle.confirm("TP Chat - ON") : UltraStyle.dim("TP Chat - OFF"),
                         tpOn ? "confirm" : "dim")
                 .buttonRight(
                         "do:mentor_tpmsg:toggle",
@@ -574,19 +574,31 @@ public final class UltraSparScreens {
         UltraScreenSpec spec = base("dojo_war", "wars");
         List<String> war = SparGuiApi.dojoWarLines(player);
         appendBody(spec, war);
-        // Past seasons live on this tab. A separate Hall page repeated the same actions.
-        if (!disabledNotice(war)) {
-            appendBody(spec, SparGuiApi.dojoHallOfFameLines(player));
-        }
         int warPending = SparGuiApi.pendingDojoWarCards(player).size();
         spec.buttonsAfterLines();
         UltraPickHelper.placePageButtons(
                 spec,
                 "pick_dojo_challenge|Challenge dojo",
-                "dojo_top_rp|Top dojos");
+                "dojo_top_rp|Top dojos",
+                "dojo_hof|Hall of Chosen");
         String pendingLabel = warPending > 0 ? "Requests (" + warPending + ")" : "Requests";
         spec.buttonLeft("page:dojo_war_pending", UltraStyle.confirm(pendingLabel), "confirm").rowGap();
         spec.footerBackToMain();
+        spec.send(player);
+    }
+
+    /** Past seasons. Same kind of page as Top dojos — not body copy on Wars. */
+    private static void openHallOfChosen(ServerPlayer player) {
+        UltraScreenSpec spec = sub("dojo_hof");
+        List<String> lines = SparGuiApi.dojoHallOfFameLines(player);
+        if (lines == null || lines.isEmpty()) {
+            spec.line(UltraStyle.LABEL + "Hall of Chosen");
+            spec.line(UltraStyle.dim("No past seasons yet."));
+        } else {
+            appendBody(spec, lines);
+        }
+        spec.buttonsAfterLines();
+        spec.footerBack("page:dojo_war", "Wars");
         spec.send(player);
     }
 
@@ -599,13 +611,6 @@ public final class UltraSparScreens {
                 spec.line(line);
             }
         }
-    }
-
-    private static boolean disabledNotice(List<String> lines) {
-        return lines != null
-                && lines.size() == 1
-                && lines.get(0) != null
-                && lines.get(0).contains("Sparring system is disabled");
     }
 
     private static void openDojoWarPending(ServerPlayer player) {

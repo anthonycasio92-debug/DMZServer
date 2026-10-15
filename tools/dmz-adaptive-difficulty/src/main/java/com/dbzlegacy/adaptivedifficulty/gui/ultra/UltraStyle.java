@@ -633,24 +633,17 @@ public final class UltraStyle {
     }
 
     /**
-     * Vanilla item id drawn beside a system’s hub tile and tab buttons.
-     * KaiPath 1.3.22 {@code UltraBridgeIcon} resolves item registry ids and texture paths
-     * ({@code namespace:path}). Empty when the screen has no system mark.
+     * Optional bridge {@code icon} for a system hub tile or tab.
+     *
+     * <p>KaiPath 1.3.22 can draw an item id or a texture path, but this menu’s marks are
+     * gears, not vanilla items. No custom gear textures ship with the client, so LM leaves
+     * the field blank. Other mods may still set {@code icon} on their own buttons.
      */
     public static String systemIcon(String system) {
-        if (system == null || system.isBlank()) {
+        if (system == null) {
             return "";
         }
-        String id = system.trim().toLowerCase(java.util.Locale.ROOT);
-        return switch (id) {
-            case "character" -> "minecraft:player_head";
-            case "difficulty" -> "minecraft:iron_sword";
-            case "progression" -> "minecraft:experience_bottle";
-            case "prestige" -> "minecraft:nether_star";
-            case "spar", "sparring" -> "minecraft:golden_sword";
-            case "rival" -> "minecraft:totem_of_undying";
-            default -> "";
-        };
+        return "";
     }
 
     /**
