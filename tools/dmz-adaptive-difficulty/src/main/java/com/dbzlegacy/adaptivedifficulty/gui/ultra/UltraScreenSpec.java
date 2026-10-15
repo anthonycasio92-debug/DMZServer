@@ -223,9 +223,10 @@ public final class UltraScreenSpec {
     }
 
     /**
-     * Tab row entries as {@code id|Label} or {@code id|Label|style}.
-     * Optional style: {@code danger}/{@code staff} for staff-only tabs (always red);
-     * otherwise active tabs are confirm (yellow) and inactive tabs are dim (dark).
+     * Tab row entries as {@code id|Label}, {@code id|Label|style}, or
+     * {@code id|Label|style|icon}. Optional style: {@code danger}/{@code staff} for staff-only
+     * tabs. Optional {@code icon} is an item id or texture path; when omitted, the system icon
+     * for this screen is used. Tabs are painted as buttons (tabsJson stays empty).
      */
     public UltraScreenSpec tabs(String... idLabelPairs) {
         tabs.clear();
@@ -245,7 +246,8 @@ public final class UltraScreenSpec {
                     ? parts[1].trim()
                     : id;
             String styleHint = parts.length > 2 && parts[2] != null ? parts[2].trim() : "";
-            tabs.add(new Tab(id, label, styleHint));
+            String icon = parts.length > 3 && parts[3] != null ? parts[3].trim() : "";
+            tabs.add(new Tab(id, label, styleHint, icon));
         }
         // Content starts below title + tab button row (under the header line).
         if (!tabs.isEmpty() && nextRow < UltraStyle.CONTENT_ROW_TABS) {
@@ -403,7 +405,42 @@ public final class UltraScreenSpec {
                 accentCode,
                 false,
                 UltraStyle.SOUND_CONFIRM,
-                UltraStyle.BUTTON_SKIN));
+                UltraStyle.BUTTON_SKIN,
+                ""));
+        return this;
+    }
+
+    /**
+     * Optional {@code icon} on the button just added. Item id ({@code minecraft:iron_sword})
+     * or texture path ({@code modid:textures/item/foo.png}). Blank or invalid values are omitted.
+     */
+    public UltraScreenSpec icon(String iconId) {
+        if (buttons.isEmpty()) {
+            return this;
+        }
+        String norm = UltraStyle.normalizeIcon(iconId);
+        if (norm.isEmpty()) {
+            return this;
+        }
+        int last = buttons.size() - 1;
+        Button b = buttons.get(last);
+        buttons.set(
+                last,
+                new Button(
+                        b.actionId,
+                        b.label,
+                        b.style,
+                        b.x,
+                        b.y,
+                        b.w,
+                        b.h,
+                        b.pad,
+                        b.bindInput,
+                        b.accent,
+                        b.footer,
+                        b.sound,
+                        b.buttonSkin,
+                        norm));
         return this;
     }
 
@@ -530,7 +567,8 @@ public final class UltraScreenSpec {
                         accentCode,
                         true,
                         UltraStyle.SOUND_CONFIRM,
-                        UltraStyle.BUTTON_SKIN));
+                        UltraStyle.BUTTON_SKIN,
+                        ""));
     }
 
     /**
@@ -761,7 +799,8 @@ public final class UltraScreenSpec {
                             b.accent,
                             true,
                             b.sound,
-                            b.buttonSkin),
+                            b.buttonSkin,
+                            b.icon),
                     0,
                     height);
         }
@@ -981,6 +1020,10 @@ public final class UltraScreenSpec {
             o.addProperty("w", tabW);
             o.addProperty("h", UltraStyle.BTN_H);
             o.addProperty("pad", UltraStyle.BTN_PAD);
+            String icon = tab.icon == null || tab.icon.isBlank()
+                    ? UltraStyle.systemIcon(screenId)
+                    : tab.icon;
+            putIcon(o, icon);
             // No sound/buttonSkin — buttonSkin forces KaiPath skinned (flat) chrome.
             JsonObject args = new JsonObject();
             args.addProperty("screen", screenId);
@@ -1059,7 +1102,32 @@ public final class UltraScreenSpec {
      * @param styleHint optional {@code danger}/{@code staff} (or blank). Ids {@code admin}/
      *     {@code staff}/{@code stats} are treated as staff-only even without a hint.
      */
-    private record Tab(String id, String label, String styleHint) {
+    /**
+     * {@code tabsJson} entry. LM does not send this strip (KaiPath would draw a second tab row
+     * in the title chrome). Partners that do use the strip may copy this shape, including
+     * optional {@code icon}.
+     */
+    public static String tabEntryJson(String id, String label, String icon) {
+        JsonObject o = new JsonObject();
+        String tabId = id == null ? "" : id.trim();
+        o.addProperty("id", tabId);
+        o.addProperty("label", label == null || label.isBlank() ? tabId : label.trim());
+        putIcon(o, icon);
+        return o.toString();
+    }
+
+    /** Omit {@code icon} when the value is blank or not {@code namespace:path}. */
+    private static void putIcon(JsonObject o, String icon) {
+        if (o == null) {
+            return;
+        }
+        String norm = UltraStyle.normalizeIcon(icon);
+        if (!norm.isEmpty()) {
+            o.addProperty("icon", norm);
+        }
+    }
+
+    private record Tab(String id, String label, String styleHint, String icon) {
         boolean staffOnly() {
             String hint = styleHint == null ? "" : styleHint.trim().toLowerCase();
             if ("danger".equals(hint) || "staff".equals(hint)) {
@@ -1089,6 +1157,7 @@ public final class UltraScreenSpec {
         o.addProperty("w", b.w);
         o.addProperty("h", b.h);
         o.addProperty("pad", b.pad);
+        putIcon(o, b.icon);
         if (b.footer) {
             o.addProperty("footer", true);
         }
@@ -1118,7 +1187,8 @@ public final class UltraScreenSpec {
             String accent,
             boolean footer,
             String sound,
-            String buttonSkin) {}
+            String buttonSkin,
+            String icon) {}
 
     private record Input(
             String id,

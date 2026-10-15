@@ -68,7 +68,7 @@ Every button object in `buttonsJson`:
 | `accent` | no | string | Single-letter color code (optional). LM does **not** emit per-button `accent` — title / activeTab use `layoutJson.accent` only. |
 | `palette` | no | string | Named theme on a button (optional). LM leaves this off buttons — panel-level `layoutJson.palette` only. |
 | `tint` | no | string | Optional body fill on a button. LM does **not** emit this; buttons use KaiPath default chrome. |
-| `icon` | no | string | Optional `namespace:path` (item or texture id). The client draws a mark beside the label. Unknown or blank ids are ignored; the button still works. LM does **not** emit yet. Advertise feature id `icon`. Not on KaiPath 1.3.17 (`pendingNext`). |
+| `icon` | no | string | Optional mark beside the label. **Shipped on KaiPath 1.3.22** (`UltraBridgeIcon`). See [Icon values](#icon-values). Unknown or blank ids are ignored; the button still works. LM emits this on system hub tiles and on that system’s tab buttons. |
 | `args` | recommended | object | Opaque JSON echoed to the server |
 
 ```json
@@ -128,6 +128,30 @@ player-facing labels.
 
 Unknown style values → fall back to `normal`. Missing `style` → `normal`.
 
+#### Icon values
+
+KaiPath **1.3.22** advertises feature id `icon` and resolves the string with `UltraBridgeIcon`. Two forms, both `namespace:path` (one colon):
+
+| Form | Example | Client behavior |
+|------|---------|-----------------|
+| Item registry id | `minecraft:iron_sword` | Draws that item’s icon. The id must exist in the client item registry. |
+| Texture path | `minecraft:textures/item/iron_sword.png` | Binds that texture (`modid:path/to/texture.png`). |
+
+Blank, missing, or malformed values are omitted. An unknown id does not hide the button or tab. LM normalizes the string to lowercase before sending.
+
+LM system marks (vanilla item ids, present on a stock 1.20.1 client):
+
+| System | `icon` |
+|--------|--------|
+| Character Services | `minecraft:player_head` |
+| Difficulty | `minecraft:iron_sword` |
+| Progression | `minecraft:experience_bottle` |
+| Prestige | `minecraft:nether_star` |
+| Sparring | `minecraft:golden_sword` |
+| Rival | `minecraft:totem_of_undying` |
+
+Any mod on the bridge may set `icon` on its own buttons and tabs. LM leaves `tabsJson` empty and paints tabs as buttons under the title, so those tab buttons carry `icon`. Partners that use the tab strip put the same field on each `tabsJson` entry.
+
 KaiPath **1.3.1** ignores `style`: all buttons render identically (no green/red/dim
 distinction).
 
@@ -139,7 +163,7 @@ distinction).
 | Meaning | Id of the **currently open** tab |
 | Client must | Visually distinguish that tab from the others (highlight / selected state) |
 
-`tabsJson` entries use `{id,label}` and may include optional `icon` (`namespace:path`, same rules as buttons). Match `activeTab` against the tab’s **unqualified**
+`tabsJson` entries use `{id,label}` and may include optional `icon` (item id or texture path — same rules as buttons; **shipped on KaiPath 1.3.22**). Match `activeTab` against the tab’s **unqualified**
 key when the server sends keys like `tiers`, or against the full `id` when that is what
 `activeTab` contains. LM builders set `activeTab` to the short key (e.g. `home`, `tiers`).
 
@@ -174,15 +198,15 @@ Known optional feature ids:
 | `portraitFrame` | `playerModel.portraitFrame` enable token (**advertised on 1.3.17**) |
 | `fixedFooter` | Button `footer:true` pinned chrome (**shipped on KaiPath 1.3.17**) |
 | `combined.forms.v1` | One preview combines the base entity with optional `playerModel.parts.headBones` and `playerModel.parts.form` string ids. The strings are generic (race, group, form, stack). Any mod may send its own ids. A client that lacks the feature still draws the entity and ignores `parts.form`. |
-| `icon` | Optional button/tab `icon`. **Not** advertised by KaiPath 1.3.17. LM logs `pendingNext=icon` until the client sends it. |
+| `icon` | Optional button/tab `icon` (item id or texture path). **Advertised by KaiPath 1.3.22.** A client that omits it is `missingShipped=icon`, not `pendingNext`. |
 
-Advertise (KaiPath **1.3.17** — fifteen ids; see [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md)):
+Advertise (KaiPath **1.3.22** — sixteen ids; the first fifteen shipped on 1.3.17; see [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md)):
 
 ```json
-["style","activeTab","titleAlign","playerModel","textInput","headerBottom","accent","palette","sound","buttonSkin","frame","pagedBook","portraitFrame","fixedFooter","combined.forms.v1"]
+["style","activeTab","titleAlign","playerModel","textInput","headerBottom","accent","palette","sound","buttonSkin","frame","pagedBook","portraitFrame","fixedFooter","combined.forms.v1","icon"]
 ```
 
-The reference kit (`tools/ultra-gui-kit/`) also advertises `"icon"` after `combined.forms.v1`. Stock 1.3.17 does not. A missing `icon` advertisement is info (`pendingNext`), not a shipped-client warning.
+`icon` is no longer pending. Stock 1.3.17 stops before it and is reported as a shipped-client gap.
 
 **Spelling split:** GuiFeatures advertise uses camelCase **`pagedBook`**; the widget `type` string is snake_case **`paged_book`**.
 

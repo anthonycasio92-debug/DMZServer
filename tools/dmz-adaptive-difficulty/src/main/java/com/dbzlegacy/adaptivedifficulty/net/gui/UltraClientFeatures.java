@@ -34,13 +34,13 @@ import net.minecraft.server.level.ServerPlayer;
  *   <li>{@link #FEATURE_PAGED_BOOK} — {@code inputsJson} type {@code paged_book}
  *   <li>{@link #FEATURE_PORTRAIT_FRAME} — {@code playerModel.portraitFrame}
  *   <li>{@link #FEATURE_COMBINED_FORMS} — {@code playerModel.parts.form} on one preview
+ *   <li>{@link #FEATURE_ICON} — optional button/tab {@code icon} (item id or texture path)
  * </ul>
  *
  * <p>Clients that never send {@link GuiFeaturesPacket} are treated as the KaiPath <b>1.3.1
- * baseline</b>: dynamic layout/buttons only. KaiPath <b>1.3.17</b> (recommended) advertises
- * the fifteen ids above. {@link #FEATURE_ICON} is the next optional (button/tab {@code icon});
- * it is {@link #PENDING_NEXT} until a client advertises it. LM {@code footer:true} emission
- * matches 1.3.17 — no wire change.
+ * baseline</b>: dynamic layout/buttons only. KaiPath <b>1.3.17</b> advertises the fifteen
+ * chrome ids. KaiPath <b>1.3.22</b> (recommended) also advertises {@link #FEATURE_ICON}.
+ * {@link #PENDING_NEXT} is empty. LM {@code footer:true} emission matches 1.3.17.
  */
 public final class UltraClientFeatures {
     public static final String FEATURE_STYLE = "style";
@@ -84,7 +84,7 @@ public final class UltraClientFeatures {
      * Generic — any mod may send form string ids. Not a DMZ-only channel.
      */
     public static final String FEATURE_COMBINED_FORMS = "combined.forms.v1";
-    /** Normalized id for optional button/tab {@code icon} (not on KaiPath 1.3.17). */
+    /** Normalized id for optional button/tab {@code icon} (advertised on KaiPath 1.3.22). */
     public static final String FEATURE_ICON = "icon";
 
     /** Wire / doc spelling for {@link #FEATURE_PALETTE}. */
@@ -104,7 +104,7 @@ public final class UltraClientFeatures {
     /** Wire / doc spelling for {@link #FEATURE_ICON}. */
     public static final String FEATURE_ICON_DOC = "icon";
 
-    /** Optional features the LM bridge expects a fully conforming 1.3.17 client to advertise. */
+    /** Optional features the LM bridge expects a fully conforming 1.3.22 client to advertise. */
     public static final Set<String> EXPECTED_OPTIONAL =
             Set.of(
                     FEATURE_STYLE,
@@ -121,11 +121,12 @@ public final class UltraClientFeatures {
                     FEATURE_FRAME,
                     FEATURE_PAGED_BOOK,
                     FEATURE_PORTRAIT_FRAME,
-                    FEATURE_COMBINED_FORMS);
+                    FEATURE_COMBINED_FORMS,
+                    FEATURE_ICON);
 
     /**
-     * Features KaiPath <b>1.3.17</b> already advertises/honors. Missing any of these is a real
-     * client gap (wrong jar / old client).
+     * Features KaiPath <b>1.3.22</b> already advertises/honors (1.3.17 chrome plus {@code icon}).
+     * Missing any of these is a real client gap (wrong jar / old client).
      */
     public static final Set<String> SHIPPED_ON_RECOMMENDED =
             Set.of(
@@ -143,13 +144,14 @@ public final class UltraClientFeatures {
                     FEATURE_FRAME,
                     FEATURE_PAGED_BOOK,
                     FEATURE_PORTRAIT_FRAME,
-                    FEATURE_COMBINED_FORMS);
+                    FEATURE_COMBINED_FORMS,
+                    FEATURE_ICON);
 
     /**
-     * Not advertised by KaiPath 1.3.17. Guitest reports these as {@code pendingNext=} (info),
-     * not a shipped-client warning. {@code icon} is the button/tab icon field.
+     * Optional ids the next KaiPath release might add. Empty: {@code icon} shipped on 1.3.22.
+     * Guitest reports these as {@code pendingNext=} (info), not a shipped-client warning.
      */
-    public static final Set<String> PENDING_NEXT = Set.of(FEATURE_ICON);
+    public static final Set<String> PENDING_NEXT = Set.of();
 
     private static final Map<UUID, State> BY_PLAYER = new ConcurrentHashMap<>();
 
@@ -282,10 +284,13 @@ public final class UltraClientFeatures {
         if (state == null || !state.has(FEATURE_COMBINED_FORMS)) {
             missing.add(FEATURE_COMBINED_FORMS_DOC);
         }
+        if (state == null || !state.has(FEATURE_ICON)) {
+            missing.add(FEATURE_ICON_DOC);
+        }
         return missing;
     }
 
-    /** Optional ids not yet on KaiPath 1.3.17. Currently {@code icon}. */
+    /** Optional ids not yet advertised by the recommended KaiPath jar. Currently none. */
     public static List<String> missingPending(State state) {
         List<String> missing = new ArrayList<>();
         for (String feature : PENDING_NEXT) {
@@ -409,8 +414,8 @@ public final class UltraClientFeatures {
     }
 
     /**
-     * Log when 1.3.17-shipped features are missing (real gap). {@link #PENDING_NEXT} gaps
-     * ({@code icon} on stock 1.3.17) log at info.
+     * Log when 1.3.22-shipped features are missing (real gap). {@link #PENDING_NEXT} gaps
+     * log at info. {@code icon} is shipped, so a client that omits it warns with the rest.
      */
     public static void warnMissingOptionalFeatures(ServerPlayer player, String context) {
         if (player == null) {
@@ -424,7 +429,7 @@ public final class UltraClientFeatures {
         String ctx = context == null ? "?" : context;
         if (!shippedGaps.isEmpty()) {
             AdaptiveDifficultyMod.LOGGER.warn(
-                    "[{}] Ultra client gap (pre-1.3.17 features) player={} kaipathVersion={} "
+                    "[{}] Ultra client gap (shipped features through 1.3.22) player={} kaipathVersion={} "
                             + "context={} advertised={} features={} missingShipped={} — {}",
                     AdaptiveDifficultyMod.MOD_ID,
                     safeName(player),
@@ -437,7 +442,7 @@ public final class UltraClientFeatures {
         }
         if (!pending.isEmpty()) {
             AdaptiveDifficultyMod.LOGGER.info(
-                    "[{}] Ultra pending after KaiPath 1.3.17 player={} kaipathVersion={} "
+                    "[{}] Ultra pending after KaiPath 1.3.22 player={} kaipathVersion={} "
                             + "context={} pending={}",
                     AdaptiveDifficultyMod.MOD_ID,
                     safeName(player),

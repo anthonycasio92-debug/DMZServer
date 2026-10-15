@@ -50,7 +50,7 @@ Generic, not DMZ-only. One preview combines the base entity, optional `parts.hea
 
 ### `icon`
 
-Optional `namespace:path` on a button or tab. Draw a mark beside the label (the kit uses an 8px square; a full client may blit the item when the id resolves). Unknown or blank ids are ignored and the control still works. Advertise `icon`. Stock 1.3.17 does not, so LM reports `pendingNext=icon`.
+Optional item id (`minecraft:iron_sword`) or texture path (`modid:path/to/texture.png`) on a button or tab. KaiPath **1.3.22** advertises `icon` and resolves it with `UltraBridgeIcon`. Unknown or blank ids are ignored and the control still works. LM emits per-system icons and treats a missing advertisement as `missingShipped=icon`.
 
 ### Partner discovery
 

@@ -1,14 +1,14 @@
 # Ultra bridge gap matrix (LM ↔ KaiPath)
 
-**LM 4.6.155** (live) + **KaiPath 1.3.17** (recommended). Official KaiPath updates are owned by the KaiPath mod developer.
+**LM 4.6.195** + **KaiPath 1.3.22** (recommended). Official KaiPath updates are owned by the KaiPath mod developer.
 
 **At a glance:** Bridge chrome gaps closed on **1.3.17** — `fixedFooter` pins `footer:true`; `portraitFrame` is advertised. LM wire already matched (`footer:true`); guitest tracks `FEATURE_FIXED_FOOTER` as shipped. JLDK one-pager: [`KAIPATH_JLDK_CLIENT_BRIEF.md`](KAIPATH_JLDK_CLIENT_BRIEF.md).
 
-Advertise set (1.3.17):
+Advertise set (1.3.22; `icon` added after the 1.3.17 fifteen):
 
 ```text
 style, activeTab, titleAlign, playerModel, textInput, headerBottom, accent,
-palette, sound, buttonSkin, frame, pagedBook, portraitFrame, fixedFooter, combined.forms.v1
+palette, sound, buttonSkin, frame, pagedBook, portraitFrame, fixedFooter, combined.forms.v1, icon
 ```
 
 ## Open bridge gaps (KaiPath next)
@@ -16,17 +16,22 @@ palette, sound, buttonSkin, frame, pagedBook, portraitFrame, fixedFooter, combin
 | Gap | Owner | LM status | KaiPath 1.3.17 | Notes |
 |-----|-------|-----------|---------------|-------|
 | **Title vertical centering** | **JLDK-only** | N/A (no field) | Confirm | Centers via `(headerBottom - 2 - 9) / 2`. Confirm gear-icon band alignment on all themes. No protocol field. |
-| **`icon` field** | **JLDK** (kit done) | Tracked as `pendingNext=icon` | Not advertised | Optional `namespace:path` on buttons and tabs. Unknown or blank ids are ignored. Reference kit advertises and draws an 8px mark. |
 | **Partner auto-discovery** | **JLDK** (kit done) | Ships `META-INF/kaipath-ultra.txt` | Manual list today | Seed `legacymechanics`, then marker jars under `mods/` and `config/kaipath-ultra-partners.txt`. A new mod does not need a KaiPath release. |
 | **`slider` / `toggle`** | Later | Not on the wire | Reserved | Booleans stay styled buttons; numbers stay text + steppers. |
 
-`/lm admin guitest` on stock KaiPath **1.3.17**:
+`/lm admin guitest` on KaiPath **1.3.22** (advertises `icon`):
 
 ```text
-missingShipped=none pendingNext=icon
+missingShipped=none pendingNext=none
 ```
 
-A kit client that also advertises `icon` reports `pendingNext=none`. Omitting any of the fifteen shipped ids (including `palette`, `sound`, `buttonSkin`, `frame`, `pagedBook`, `portraitFrame`, `combined.forms.v1`) warns as `missingShipped`.
+A 1.3.17 client that stops before `icon` reports `missingShipped=icon`. Omitting any shipped id (including `palette`, `sound`, `buttonSkin`, `frame`, `pagedBook`, `portraitFrame`, `combined.forms.v1`, `icon`) warns as `missingShipped`.
+
+## Closed on KaiPath 1.3.22
+
+| Gap | Notes |
+|-----|-------|
+| **`icon`** | Advertised. `UltraBridgeIcon` resolves an item id (`minecraft:iron_sword`) or a texture path (`modid:path/to/texture.png`). Unknown ids are ignored. LM emits per-system icons on hub tiles and tab buttons. |
 
 ## Closed on KaiPath 1.3.17
 
@@ -102,7 +107,7 @@ LM Ultra copy prefers ASCII. Pre-fit labels with ASCII `...`. Stock KaiPath `fit
 
 ### 7. Pending vs shipped diagnostics
 
-Missing `SHIPPED_ON_RECOMMENDED` → warn (wrong/old jar). Missing `PENDING_NEXT` → info (`pendingNext=`). On stock **1.3.17**, `missingShipped=none` and `pendingNext=icon`. `FEATURE_FIXED_FOOTER` and the seven chrome ids (`palette`, `sound`, `buttonSkin`, `frame`, `pagedBook`, `portraitFrame`, `combined.forms.v1`) are shipped. Do not put `icon` in the shipped set until official KaiPath advertises it.
+Missing `SHIPPED_ON_RECOMMENDED` → warn (wrong/old jar). Missing `PENDING_NEXT` → info (`pendingNext=`). On KaiPath **1.3.22**, `missingShipped=none` and `pendingNext=none`. `icon` is in the shipped set. `PENDING_NEXT` is empty.
 
 ### 8. Older clients without textInput
 
@@ -140,9 +145,9 @@ Booleans stay styled buttons; numbers stay text + ± steppers. Not a KaiPath blo
 | Chrome defaults safe without DMZUltra | **Done** (default button chrome; frame/portrait tokens) |
 | Track `FEATURE_FIXED_FOOTER` as shipped on 1.3.17 | **Done** |
 | Track `palette` / `sound` / `buttonSkin` / `frame` / `pagedBook` / `portraitFrame` / `combined.forms.v1` as shipped | **Done** |
-| Track `icon` as `PENDING_NEXT` (not a 1.3.17 warning) | **Done** |
+| Track `icon` as shipped on KaiPath 1.3.22 | **Done** |
 | Ship `META-INF/kaipath-ultra.txt` (`legacymechanics`) | **Done** |
-| Recommend KaiPath **1.3.17** | **Done** |
+| Recommend KaiPath **1.3.22** | **Done** |
 | `inputsJson` `slider` / `toggle` | **Deferred** |
 
 ## JLDK / KaiPath (client) checklist
@@ -160,7 +165,7 @@ Booleans stay styled buttons; numbers stay text + ± steppers. Not a KaiPath blo
 | Advertise `portraitFrame` + `fixedFooter` | **Done** |
 | Honor `footer:true` / `fixedFooter` | **Done** |
 | Document `combined.forms.v1` as generic form strings on one preview | **Kit docs done** — merge with the client |
-| Optional button/tab `icon` (`namespace:path`; unknown ids ignored) | **Kit done** — not on 1.3.17 |
+| Optional button/tab `icon` (item id or texture path; unknown ids ignored) | **Done** on 1.3.22 |
 | Partner discovery (`META-INF/kaipath-ultra.txt` + config list) | **Kit done** — 1.3.17 still uses a manual partner list |
 | Title vertical center | Confirm gear-band alignment |
 | `slider` / `toggle` widgets | Reserved — workarounds exist |
