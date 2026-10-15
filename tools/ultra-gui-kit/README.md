@@ -53,7 +53,7 @@ headerBottom / accent / palette / sound / buttonSkin / frame / paged_book / port
 3. Keep advertise camelCase **`pagedBook`**; widget type snake_case **`paged_book`**
 4. Title vertical centering in the header band (no new field) — confirm gear-icon alignment
 5. Partner discovery: [`UltraGuiPartners.discoverAndRegister`](kaipath-client/com/dmzlegacy/kaipath/ultra/consumers/UltraGuiPartners.java) (seed + jar marker + config file)
-6. Optional button/tab `icon` (`namespace:path`). Unknown ids are ignored. Advertise `icon`.
+6. Optional button/tab `icon` — item id (`minecraft:emerald`) or texture path (`modid:path/to/texture.png`). Unknown ids are ignored. KaiPath 1.3.22 advertises `icon`.
 7. `combined.forms.v1` is generic: one preview draws the entity plus `playerModel.parts.form` string ids. LM's `headBones` / system accent letters are examples — other mods replace them.
 8. **ASCII `fitLabel`** — `UltraWidgetReflect.fitLabel` must use `...` (not mojibaked `…`). See [`FITLABEL_ASCII.md`](kaipath-client/com/dmzlegacy/kaipath/ultra/internal/FITLABEL_ASCII.md)
 
@@ -77,7 +77,7 @@ UltraGuiConsumerRegistry.advertiseFeatures(
         + "\"icon\"]");
 ```
 
-`"icon"` is kit-only. Official KaiPath 1.3.17 stops at `combined.forms.v1`.
+`"icon"` shipped on official KaiPath 1.3.22 (item id or texture path). 1.3.17 stops at `combined.forms.v1`.
 
 ```java
 // Client boot (wired via LmUltraConsumer.bootstrap):

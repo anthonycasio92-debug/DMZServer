@@ -8,7 +8,9 @@ package com.example.ultragui;
  *
  * <p>JSON twin: {@code BridgeFutureFieldsFixture.json}. Buttons use the shape
  * LegacyMechanics actually sends: {@code id}, {@code label}, {@code style}, {@code x},
- * {@code y}, {@code w}, {@code h}, {@code pad}, optional {@code footer}, {@code args}.
+ * {@code y}, {@code w}, {@code h}, {@code pad}, optional {@code footer}, optional {@code icon},
+ * {@code args}. {@code icon} is an item id ({@code minecraft:emerald}) or a texture path
+ * ({@code minecraft:textures/item/emerald.png}). KaiPath 1.3.22 resolves either.
  * Panel {@code palette} and {@code frame} stay on {@code layoutJson}. Do not put a
  * palette, click sound, or skin on a button, and do not set a portrait frame on
  * {@code playerModel} (a non-empty id paints a border around the preview).
@@ -39,6 +41,7 @@ package com.example.ultragui;
  * // Open — plain ASCII. Button objects are style + geometry + args only.
  * String buttons = "["
  *     + "{\"id\":\"@myshop:do:ping\",\"label\":\"Ping\",\"style\":\"confirm\","
+ *     + "\"icon\":\"minecraft:emerald\","
  *     + "\"x\":20,\"y\":40,\"w\":150,\"h\":18,\"pad\":8,"
  *     + "\"args\":{\"screen\":\"hello\",\"page\":\"main\"}},"
  *     + "{\"id\":\"@myshop:nav:hub\",\"label\":\"Main menu\",\"style\":\"dim\","

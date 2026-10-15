@@ -96,13 +96,18 @@ public final class UltraScreenSelfTest {
                             .tabs("home|Home")
                             .line("self-test")
                             .buttonLeft("open:difficulty", "Difficulty", "normal")
+                            .icon(UltraStyle.systemIcon("difficulty"))
                             .buttonRight("open:rival", "Rival", "normal")
+                            .icon(UltraStyle.systemIcon("rival"))
                             .rowGap()
                             .buttonLeft("open:spar", "Sparring", "normal")
+                            .icon(UltraStyle.systemIcon("spar"))
                             .buttonRight("open:prestige", "Prestige", "normal")
+                            .icon(UltraStyle.systemIcon("prestige"))
                             .rowGap()
                             .buttonLeft("open:skillcheck", "Skill Check", "confirm")
-                            .buttonRight("open:character", "Character", "confirm");
+                            .buttonRight("open:character", "Character", "confirm")
+                            .icon(UltraStyle.systemIcon("character"));
                     case "admin" -> UltraScreenSpec.of("admin")
                             .title("Staff Admin")
                             .page("admin")
@@ -111,6 +116,7 @@ public final class UltraScreenSelfTest {
                             .line("self-test")
                             .button("do:reload", "Reload", "confirm")
                             .buttonLeft("open:progression", "Progression", "normal")
+                            .icon(UltraStyle.systemIcon("progression"))
                             .buttonRight("open:config", "Config", "normal")
                             .footerBackToMain();
                     case "difficulty" -> UltraScreenSpec.of("difficulty")
@@ -515,6 +521,16 @@ public final class UltraScreenSelfTest {
             if (buttons.contains("nav:refresh") || buttons.contains("Refresh")) {
                 broken.add("hub: must not show Refresh");
             }
+            if (!buttons.contains("\"icon\":\"" + UltraStyle.systemIcon("difficulty") + "\"")
+                    || !buttons.contains("\"icon\":\"" + UltraStyle.systemIcon("rival") + "\"")
+                    || !buttons.contains("\"icon\":\"" + UltraStyle.systemIcon("spar") + "\"")
+                    || !buttons.contains("\"icon\":\"" + UltraStyle.systemIcon("prestige") + "\"")
+                    || !buttons.contains("\"icon\":\"" + UltraStyle.systemIcon("character") + "\"")) {
+                broken.add("hub: system tiles must emit distinct icon ids");
+            }
+            if (buttons.contains("\"icon\":\"\"") || buttons.contains("not-an-rl")) {
+                broken.add("hub: blank or invalid icon ids must be omitted");
+            }
             if (hubPkts.get(0).layoutJson() == null
                     || !hubPkts.get(0).layoutJson().contains("scrollBody")) {
                 broken.add("hub: layoutJson missing scrollBody / shared body metrics");
@@ -591,6 +607,42 @@ public final class UltraScreenSelfTest {
                 broken.add("spar confirm label must use dark gray ink");
             }
         }
+        String[] systems = {"character", "difficulty", "progression", "prestige", "spar", "rival"};
+        java.util.Set<String> icons = new java.util.LinkedHashSet<>();
+        for (String system : systems) {
+            String icon = UltraStyle.systemIcon(system);
+            if (icon.isBlank() || !icons.add(icon)) {
+                broken.add("system icons must be distinct and non-blank: " + system);
+            }
+            if (!icon.equals(UltraStyle.normalizeIcon(icon))) {
+                broken.add("system icon must already be a normalized namespace:path: " + system);
+            }
+        }
+        if (!"minecraft:textures/item/iron_sword.png"
+                .equals(UltraStyle.normalizeIcon("Minecraft:textures/item/iron_sword.png"))) {
+            broken.add("normalizeIcon must accept a texture path");
+        }
+        if (!"".equals(UltraStyle.normalizeIcon("not-an-rl"))
+                || !"".equals(UltraStyle.normalizeIcon(""))) {
+            broken.add("normalizeIcon must drop ids that are not namespace:path");
+        }
+        String tabJson = UltraScreenSpec.tabEntryJson("home", "Home", UltraStyle.systemIcon("difficulty"));
+        if (tabJson == null
+                || !tabJson.contains("\"icon\":\"" + UltraStyle.systemIcon("difficulty") + "\"")
+                || !tabJson.contains("\"id\":\"home\"")) {
+            broken.add("tabEntryJson must include id and icon");
+        }
+        if (UltraScreenSpec.tabEntryJson("home", "Home", "not-an-rl").contains("\"icon\"")) {
+            broken.add("tabEntryJson must omit an invalid icon");
+        }
+        List<GuiOpenPacket> progInk =
+                UltraScreenSpec.captureSends(() -> probeBuilder("progression"));
+        if (progInk.isEmpty()
+                || progInk.get(0).buttonsJson() == null
+                || !progInk.get(0).buttonsJson().contains(
+                        "\"icon\":\"" + UltraStyle.systemIcon("progression") + "\"")) {
+            broken.add("progression: tab buttons must carry the progression icon");
+        }
         if (!"End Dimension Strength".equals(ConfigEditor.staffLabel("enableEndDimensionStrength"))) {
             broken.add("config label must read End Dimension Strength, not the raw field id");
         }
@@ -656,6 +708,9 @@ public final class UltraScreenSelfTest {
             // No section-sign / mojibake leftovers in any button label.
             if (buttons.indexOf('\u00A7') >= 0 || buttons.indexOf('\u00C2') >= 0) {
                 broken.add("character: buttonsJson still has section-sign or C2 mojibake bytes");
+            }
+            if (!buttons.contains("\"icon\":\"" + UltraStyle.systemIcon("character") + "\"")) {
+                broken.add("character: tab buttons must carry the character icon");
             }
             String fit = UltraStyle.fitAsciiLabel("Android Removal", UltraStyle.labelMaxWidth(102));
             if (fit.indexOf('\u00E2') >= 0 || fit.indexOf('\u2026') >= 0) {

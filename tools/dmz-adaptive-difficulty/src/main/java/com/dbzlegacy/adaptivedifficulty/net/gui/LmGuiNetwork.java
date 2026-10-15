@@ -53,11 +53,10 @@ public final class LmGuiNetwork {
     public static final String KAIPATH_DYNAMIC_UI_VERSION = "1.3.1";
 
     /**
-     * Current recommended/released KaiPath for Ultra (live). Ships style, activeTab,
-     * titleAlign, playerModel, textInput, headerBottom, accent, fixedFooter (+ palette/sound/
-     * buttonSkin/frame/pagedBook/portraitFrame). LM {@code footer:true} matches 1.3.17.
+     * Current recommended/released KaiPath for Ultra (live). 1.3.17 chrome plus {@code icon}
+     * (item id or texture path on buttons and tabs), advertised on <b>1.3.22</b>.
      */
-    public static final String KAIPATH_RECOMMENDED_VERSION = "1.3.17";
+    public static final String KAIPATH_RECOMMENDED_VERSION = "1.3.22";
 
     /**
      * Optional channel: clients without KaiPath omit it. Accept missing so those players

@@ -1,11 +1,11 @@
 {
   "channel": "myshop:gui",
-  "note": "Zero partner-mod imports. Buttons are style + geometry + footer + args. Panel palette and frame stay on layoutJson. playerModel has no portrait frame. fixedFooter pins the Back / Main menu row.",
+  "note": "Zero partner-mod imports. Buttons are style + geometry + footer + optional icon + args. icon is an item id (minecraft:emerald) or a texture path (modid:path/to/texture.png), shipped on KaiPath 1.3.22. Panel palette and frame stay on layoutJson. playerModel has no portrait frame. fixedFooter pins the Back / Main menu row. tabsJson shows the same icon field for mods that use the tab strip; LM itself paints tabs as buttons.",
   "open": {
     "screenId": "hello",
     "title": "My Shop",
     "pageId": "main",
-    "tabsJson": "[]",
+    "tabsJson": "[{\"id\":\"home\",\"label\":\"Home\",\"icon\":\"minecraft:emerald\"}]",
     "activeTab": "",
     "linesJson": "[\"Welcome to the multi-mod bridge fixture.\"]",
     "buttonsJson": [
@@ -13,6 +13,7 @@
         "id": "@myshop:do:ping",
         "label": "Ping",
         "style": "confirm",
+        "icon": "minecraft:emerald",
         "x": 20,
         "y": 40,
         "w": 150,
@@ -112,6 +113,7 @@
     "pagedBook",
     "portraitFrame",
     "fixedFooter",
-    "combined.forms.v1"
+    "combined.forms.v1",
+    "icon"
   ]
 }

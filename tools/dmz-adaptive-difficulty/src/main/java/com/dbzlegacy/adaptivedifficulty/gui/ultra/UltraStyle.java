@@ -598,6 +598,68 @@ public final class UltraStyle {
     }
 
     /**
+     * Vanilla item id drawn beside a system’s hub tile and tab buttons.
+     * KaiPath 1.3.22 {@code UltraBridgeIcon} resolves item registry ids and texture paths
+     * ({@code namespace:path}). Empty when the screen has no system mark.
+     */
+    public static String systemIcon(String system) {
+        if (system == null || system.isBlank()) {
+            return "";
+        }
+        String id = system.trim().toLowerCase(java.util.Locale.ROOT);
+        return switch (id) {
+            case "character" -> "minecraft:player_head";
+            case "difficulty" -> "minecraft:iron_sword";
+            case "progression" -> "minecraft:experience_bottle";
+            case "prestige" -> "minecraft:nether_star";
+            case "spar", "sparring" -> "minecraft:golden_sword";
+            case "rival" -> "minecraft:totem_of_undying";
+            default -> "";
+        };
+    }
+
+    /**
+     * Normalize a bridge {@code icon}. Accepts an item id ({@code minecraft:iron_sword}) or a
+     * texture path ({@code minecraft:textures/item/iron_sword.png}). Blank values and strings
+     * that are not a single {@code namespace:path} are dropped so the control still renders.
+     */
+    public static String normalizeIcon(String raw) {
+        if (raw == null) {
+            return "";
+        }
+        String trimmed = raw.trim();
+        int colon = trimmed.indexOf(':');
+        if (colon <= 0 || colon >= trimmed.length() - 1 || colon != trimmed.lastIndexOf(':')) {
+            return "";
+        }
+        String ns = trimmed.substring(0, colon).toLowerCase(java.util.Locale.ROOT);
+        String path = trimmed.substring(colon + 1).toLowerCase(java.util.Locale.ROOT);
+        if (!iconToken(ns) || !iconToken(path)) {
+            return "";
+        }
+        return ns + ":" + path;
+    }
+
+    private static boolean iconToken(String token) {
+        if (token == null || token.isEmpty() || token.length() > 128) {
+            return false;
+        }
+        for (int i = 0; i < token.length(); i++) {
+            char c = token.charAt(i);
+            boolean ok = (c >= 'a' && c <= 'z')
+                    || (c >= '0' && c <= '9')
+                    || c == '_'
+                    || c == '-'
+                    || c == '.'
+                    || c == '/';
+            if (!ok) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
      * Generic {@code layoutJson.palette} / button {@code palette} color <em>name</em> for a
      * screen. Empty when the shared hub gold chrome applies. Not DMZUltra Theme enum names.
      */
