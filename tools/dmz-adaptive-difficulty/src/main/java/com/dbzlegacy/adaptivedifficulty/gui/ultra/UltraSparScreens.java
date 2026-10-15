@@ -10,8 +10,8 @@ import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Sparring Ultra UI (Home / Dojo / Wars).
- * Home: rankings, stats + fight reports, mentor Actions, Weights, chat, staff.
- * Dojo: training-bond info, members (own/joined toggle), Hall of Chosen.
+ * Home: Hall of Infamy, stats + last three fights, Weights, chat, staff.
+ * Dojo: training-bond info, members (your dojo / mentor's dojo), Actions.
  * Wars: challenge, pending, top dojos, Hall of Chosen.
  */
 public final class UltraSparScreens {
@@ -77,7 +77,7 @@ public final class UltraSparScreens {
             case "dojo", "roster" -> openDojo(player, "home");
             case "dojo_members", "dojo_members_own" -> openDojo(player, "members_own");
             case "dojo_members_joined" -> openDojo(player, "members_joined");
-            case "dojo_hof", "chosen", "hall_of_chosen" -> openDojo(player, "hof");
+            case "dojo_hof", "chosen", "hall_of_chosen" -> openWarsHof(player);
             case "mentor", "actions" -> openMentor(player);
             case "pending", "invites" -> openPending(player);
             case "settings" -> openSettings(player);
@@ -166,19 +166,17 @@ public final class UltraSparScreens {
     }
 
     /**
-     * Home hub: rankings, stats (with fight reports), mentor Actions, Weights, chat, staff.
-     * Session/partner text is staff-only (Admin); Combat overhaul lines stay out of Ultra.
+     * Home hub: Hall of Infamy, stats (last three fights), Weights, chat, staff.
+     * Mentor bonds live under Dojo → Actions. Session/partner text is staff-only.
      */
     private static void openHome(ServerPlayer player) {
         UltraScreenSpec spec = base("main", "home")
-                .line(UltraStyle.LABEL + "Rankings, your spars, training bonds, and weights.")
+                .line(UltraStyle.LABEL + "Hall of Infamy, your stats, and weights.")
                 .setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
         UltraPickHelper.placePageButtons(
                 spec,
-                "top|Rankings",
                 "infamy|Hall of Infamy",
                 "stats|Your stats",
-                "mentor|Mentor bonds",
                 "weights|Weights",
                 "settings|Chat settings");
         if (StaffAccess.isStaff(player)) {
@@ -200,7 +198,7 @@ public final class UltraSparScreens {
         if (fights == null || fights.isEmpty()) {
             spec.line(UltraStyle.dim("No finished spars yet. Fight someone, then check back."));
         } else {
-            spec.line(UltraStyle.LABEL + "Last fights - open a report:");
+            spec.line(UltraStyle.LABEL + "Last three fights:");
             for (String card : fights) {
                 if (card == null || card.isBlank()) {
                     continue;
@@ -302,18 +300,20 @@ public final class UltraSparScreens {
 
     private static void openDojo(ServerPlayer player, String sub) {
         String key = sub == null || sub.isBlank() ? "home" : sub;
-        // Default members view: owned dojo if master, else joined.
-        if ("members".equals(key)) {
-            key = SparGuiApi.ownsDojo(player) ? "members_own" : "members_joined";
+        if ("hof".equals(key)) {
+            openWarsHof(player);
+            return;
         }
-        String page = switch (key) {
-            case "members_own" -> "dojo_members_own";
-            case "members_joined" -> "dojo_members_joined";
-            case "hof" -> "dojo_hof";
-            default -> "dojo";
-        };
+        // Members is a sub-page with its own your-dojo / mentor's-dojo toggle.
+        if ("members".equals(key) || "members_own".equals(key) || "members_joined".equals(key)) {
+            if ("members".equals(key)) {
+                key = SparGuiApi.ownsDojo(player) ? "members_own" : "members_joined";
+            }
+            openDojoMembers(player, key);
+            return;
+        }
         Map<String, String> ph = SparGuiApi.placeholders(player);
-        UltraScreenSpec spec = base(page, "dojo");
+        UltraScreenSpec spec = base("dojo", "dojo");
         if (!"true".equalsIgnoreCase(ph.get("system_enabled"))) {
             spec.line(UltraStyle.danger("Sparring is turned off. Ask staff to enable it."))
                     .setRow(UltraStyle.CONTENT_ROW_TABS + 80);
@@ -321,76 +321,61 @@ public final class UltraSparScreens {
             spec.send(player);
             return;
         }
-        switch (key) {
-            case "members_own" -> {
-                for (String line : SparGuiApi.ownedDojoMemberLines(player)) {
-                    if (line != null && !line.isBlank()) {
-                        spec.line(line);
-                    }
-                }
-            }
-            case "members_joined" -> {
-                for (String line : SparGuiApi.joinedDojoMemberLines(player)) {
-                    if (line != null && !line.isBlank()) {
-                        spec.line(line);
-                    }
-                }
-            }
-            case "hof" -> {
-                for (String line : SparGuiApi.linesForPage(player, "dojo_hof")) {
-                    if (line != null && !line.isBlank()) {
-                        spec.line(line);
-                    }
-                }
-            }
-            default -> {
-                // Training bonds info instead of active spar session text.
-                for (String line : SparGuiApi.mentorLines(player)) {
-                    if (line != null && !line.isBlank()) {
-                        spec.line(line);
-                    }
-                }
+        for (String line : SparGuiApi.mentorLines(player)) {
+            if (line != null && !line.isBlank()) {
+                spec.line(line);
             }
         }
         spec.setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
-        boolean owns = SparGuiApi.ownsDojo(player);
-        boolean joined = SparGuiApi.joinedDojo(player);
-        if ("members_own".equals(key) || "members_joined".equals(key)) {
-            if (owns && joined) {
-                if ("members_own".equals(key)) {
-                    UltraPickHelper.placePageButtons(
-                            spec,
-                            "dojo_members_joined|Show joined dojo",
-                            "dojo_hof|Hall of Chosen",
-                            "mentor|Actions");
-                } else {
-                    UltraPickHelper.placePageButtons(
-                            spec,
-                            "dojo_members_own|Show your dojo",
-                            "dojo_hof|Hall of Chosen",
-                            "mentor|Actions");
-                }
-            } else {
-                UltraPickHelper.placePageButtons(
-                        spec,
-                        owns ? "dojo_members_own|Dojo members" : "dojo_members_joined|Dojo members",
-                        "dojo_hof|Hall of Chosen",
-                        "mentor|Actions");
-            }
-        } else if ("hof".equals(key)) {
-            UltraPickHelper.placePageButtons(
-                    spec,
-                    owns ? "dojo_members_own|Dojo members" : "dojo_members_joined|Dojo members",
-                    "dojo_hof|Hall of Chosen",
-                    "mentor|Actions");
-        } else {
-            UltraPickHelper.placePageButtons(
-                    spec,
-                    owns ? "dojo_members_own|Dojo members" : "dojo_members_joined|Dojo members",
-                    "dojo_hof|Hall of Chosen",
-                    "mentor|Actions");
-        }
+        UltraPickHelper.placePageButtons(
+                spec,
+                "dojo_members|Dojo members",
+                "mentor|Actions");
         spec.footerBackToMain();
+        spec.send(player);
+    }
+
+    /**
+     * Dojo members sub-page. The toggle is always available, including when the player
+     * owns neither dojo — each side still shows its heading and a path into Actions.
+     */
+    private static void openDojoMembers(ServerPlayer player, String key) {
+        boolean own = "members_own".equals(key);
+        String page = own ? "dojo_members_own" : "dojo_members_joined";
+        Map<String, String> ph = SparGuiApi.placeholders(player);
+        UltraScreenSpec spec = sub(page);
+        if (!"true".equalsIgnoreCase(ph.get("system_enabled"))) {
+            spec.line(UltraStyle.danger("Sparring is turned off. Ask staff to enable it."))
+                    .setRow(UltraStyle.CONTENT_ROW + 80);
+            spec.footerBack("page:dojo", "Dojo");
+            spec.send(player);
+            return;
+        }
+        List<String> lines = own
+                ? SparGuiApi.ownedDojoMemberLines(player)
+                : SparGuiApi.joinedDojoMemberLines(player);
+        if (lines != null) {
+            for (String line : lines) {
+                if (line != null && !line.isBlank()) {
+                    spec.line(line);
+                }
+            }
+        }
+        spec.setRow(UltraStyle.CONTENT_ROW + UltraStyle.BODY_MIN_H);
+        spec.buttonLeft(
+                        "page:dojo_members_own",
+                        own ? UltraStyle.confirm("Your dojo") : UltraStyle.dim("Your dojo"),
+                        own ? "confirm" : "dim")
+                .buttonRight(
+                        "page:dojo_members_joined",
+                        own ? UltraStyle.dim("Your mentor's dojo") : UltraStyle.confirm("Your mentor's dojo"),
+                        own ? "dim" : "confirm")
+                .rowGap();
+        boolean onThisSide = own ? SparGuiApi.ownsDojo(player) : SparGuiApi.joinedDojo(player);
+        if (!onThisSide) {
+            spec.button("page:mentor", UltraStyle.confirm("Actions"), "confirm").rowGap();
+        }
+        spec.footerBack("page:dojo", "Dojo");
         spec.send(player);
     }
 
@@ -414,7 +399,7 @@ public final class UltraSparScreens {
                         UltraStyle.danger("Leave mentor"),
                         "danger")
                 .rowGap();
-        spec.footerBackHome("Spar Home");
+        spec.footerBack("page:dojo", "Dojo");
         spec.send(player);
     }
 

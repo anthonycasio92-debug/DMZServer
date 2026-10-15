@@ -898,16 +898,46 @@ def main() -> int:
         errors.append("UltraSparScreens.openHome must offer Weights")
     if "labelValue(\"Session\"" in spar_home_body or "labelValue(\"Partner\"" in spar_home_body:
         errors.append("UltraSparScreens.openHome must not show Session/Partner (staff Admin only)")
-    if "mentor|Mentor bonds" not in spar_home_body and "mentor|Actions" not in spar_home_body:
-        errors.append("UltraSparScreens.openHome must offer Mentor bonds / Actions entry")
+    if "mentor|Mentor bonds" in spar_home_body or "top|Rankings" in spar_home_body:
+        errors.append("UltraSparScreens.openHome must not offer Mentor bonds or a Rankings label")
+    if "infamy|Hall of Infamy" not in spar_home_body:
+        errors.append("UltraSparScreens.openHome must label the board Hall of Infamy")
+    if "stats|Your stats" not in spar_home_body:
+        errors.append("UltraSparScreens.openHome must offer Your stats")
+    if "admin|Staff Admin" not in spar_home:
+        errors.append("UltraSparScreens.openHome must offer staff Admin")
     if "settings|Chat settings" not in spar_home_body:
         errors.append("UltraSparScreens.openHome must offer Chat settings")
     if "fight_report:" not in spar_home and "recentFightCards" not in spar_home:
         errors.append("UltraSparScreens must offer clickable fight reports from stats")
+    if "Last three fights" not in spar_home:
+        errors.append("UltraSparScreens stats must offer the last three fights submenu")
     if "Hall of Infamy" not in spar_home:
         errors.append("UltraSparScreens must expose Hall of Infamy (sparring HOF rename)")
-    if "Hall of Chosen" not in spar_home:
-        errors.append("UltraSparScreens must expose Hall of Chosen (dojo HOF rename)")
+    if "dojo_war_hof|Hall of Chosen" not in spar_home:
+        errors.append("UltraSparScreens Wars must expose Hall of Chosen")
+    dojo_m = re.search(
+        r"private static void openDojo\b.*?^\s*private static void ",
+        spar_home,
+        re.S | re.M,
+    )
+    dojo_body = dojo_m.group(0) if dojo_m else ""
+    if "dojo_hof|Hall of Chosen" in dojo_body:
+        errors.append("UltraSparScreens Dojo tab must not duplicate Hall of Chosen")
+    if "dojo_members|Dojo members" not in dojo_body:
+        errors.append("UltraSparScreens Dojo tab must offer Dojo members")
+    if "mentor|Actions" not in dojo_body:
+        errors.append("UltraSparScreens Dojo tab must offer Actions")
+    members_m = re.search(
+        r"private static void openDojoMembers\b.*?^\s*private static void ",
+        spar_home,
+        re.S | re.M,
+    )
+    members_body = members_m.group(0) if members_m else ""
+    if "Your dojo" not in members_body or "Your mentor's dojo" not in members_body:
+        errors.append("UltraSparScreens Dojo members must toggle your dojo and your mentor's dojo")
+    if "page:mentor" not in members_body:
+        errors.append("UltraSparScreens Dojo members must keep an Actions path when a side is empty")
     if 'dojo|Home' in spar_home:
         errors.append("UltraSparScreens Dojo tab must not keep a Home button")
     if "§8??" in (ULTRA.parent / "SparGuiApi.java").read_text(encoding="utf-8"):

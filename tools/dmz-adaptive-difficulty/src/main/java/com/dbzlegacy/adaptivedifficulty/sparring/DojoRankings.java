@@ -612,7 +612,8 @@ public final class DojoRankings {
         if (player == null || !isDojoMaster(player)) {
             List<String> lines = new ArrayList<>();
             lines.add(UltraStyle.GOLD + "Your dojo");
-            lines.add(UltraStyle.LABEL + "You do not own a dojo yet. Recruit apprentices to start one.");
+            lines.add(UltraStyle.LABEL + "You do not own a dojo yet.");
+            lines.add(UltraStyle.DIM + "Recruit apprentices from Actions to start one.");
             return lines;
         }
         String key = player.m_20148_().toString().toLowerCase(Locale.ROOT);
@@ -622,17 +623,22 @@ public final class DojoRankings {
     /** Contribution / roster lines for the dojo the player joined (has a mentor). */
     public static List<String> joinedDojoMemberLines(ServerPlayer player) {
         if (player == null) {
-            return List.of();
+            List<String> lines = new ArrayList<>();
+            lines.add(UltraStyle.GOLD + "Your mentor's dojo");
+            lines.add(UltraStyle.LABEL + "You are not in a mentor's dojo.");
+            lines.add(UltraStyle.DIM + "Request a master from Actions.");
+            return lines;
         }
         SparStore.MentorBond bond = SparStore.get().bond(player.m_20148_());
         if (bond == null || bond.mentorUuid == null || bond.mentorUuid.isBlank()) {
             List<String> lines = new ArrayList<>();
-            lines.add(UltraStyle.GOLD + "Joined dojo");
-            lines.add(UltraStyle.LABEL + "You are not in a mentor's dojo. Request a master from Actions.");
+            lines.add(UltraStyle.GOLD + "Your mentor's dojo");
+            lines.add(UltraStyle.LABEL + "You are not in a mentor's dojo.");
+            lines.add(UltraStyle.DIM + "Request a master from Actions.");
             return lines;
         }
         String key = bond.mentorUuid.trim().toLowerCase(Locale.ROOT);
-        List<String> lines = memberLinesForKey(key, "Joined dojo");
+        List<String> lines = memberLinesForKey(key, "Your mentor's dojo");
         // Roster roles from membership cards (mentor + peers).
         for (String card : SparringSystem.membershipDojoCards(player)) {
             if (card == null || card.isBlank()) {
