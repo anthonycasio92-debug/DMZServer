@@ -7,7 +7,7 @@ import com.dbzlegacy.adaptivedifficulty.progression.race.AndroidConversion;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalChallengeManager;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
-import com.dbzlegacy.adaptivedifficulty.util.ScreenNotify;
+import com.dbzlegacy.adaptivedifficulty.util.TpBossNotify;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import net.minecraft.ChatFormatting;
 import com.dragonminez.common.stats.StatsData;
@@ -58,10 +58,10 @@ public final class SparCombat {
     public static final float MAX_STREAK_MULTIPLIER = 1.25f;
     public static final long MOMENTUM_DURATION_MS = 10_000L;
     public static final boolean SHOW_MOMENTUM_MESSAGES = true;
-    /** Extra ScreenNotify anti-spam on top of the 2s TP burst batch window. */
+    /** Extra anti-spam on top of the 2s TP burst batch window. */
     private static final long TP_SUBTITLE_CD_MS = 1_500L;
     private static final String TP_SUBTITLE_CD_KEY = "lm.spar.tp.subtitle";
-    /** Keep staff TP subtitles short enough to read mid-fight. */
+    /** Keep staff TP boss-bar text short enough to read mid-fight. */
     private static final int TP_SUBTITLE_MAX_CHARS = 64;
 
     private static final int[] MOMENTUM_THRESHOLDS = {5, 10, 15, 20, 30, 40};
@@ -801,10 +801,10 @@ public final class SparCombat {
             return;
         }
         String label = burstLabel(rt, pendingMelee, pendingKi, pendingClash);
-        // Players: clean +TP (label). Staff: short mom/combo + m/k/c + session (subtitle space).
-        String subtitle;
+        // Players: clean +TP (label). Staff: short mom/combo + m/k/c + session.
+        String line;
         if (!StaffAccess.isStaff(player)) {
-            subtitle = "+" + DmzRewards.formatWhole(pending) + " TP (" + label + ")";
+            line = "+" + DmzRewards.formatWhole(pending) + " TP (" + label + ")";
         } else {
             TrainingValues a = liveValues(player);
             TrainingValues b = null;
@@ -814,13 +814,12 @@ public final class SparCombat {
                     b = liveValues(partner);
                 }
             }
-            subtitle = staffTpSubtitle(rt, pending, label, pendingMelee, pendingKi, pendingClash, a, b);
+            line = staffTpSubtitle(rt, pending, label, pendingMelee, pendingKi, pendingClash, a, b);
         }
-        ScreenNotify.subtitleOnly(
-                player, subtitle, ChatFormatting.GREEN, TP_SUBTITLE_CD_KEY, TP_SUBTITLE_CD_MS);
+        TpBossNotify.show(player, line, ChatFormatting.GREEN, TP_SUBTITLE_CD_KEY, TP_SUBTITLE_CD_MS);
     }
 
-    /** Compact staff TP line — full stack tags are too long for subtitles. */
+    /** Compact staff TP line — full stack tags are too long for the boss bar. */
     private static String staffTpSubtitle(
             SparPlayerRuntime rt,
             int pending,
@@ -875,9 +874,13 @@ public final class SparCombat {
         }
         rt.momentumTier = tier;
         rt.sessionMaxMom = Math.max(rt.sessionMaxMom, tier);
-        if (SHOW_MOMENTUM_MESSAGES && player != null && tier > oldTier && tier > 0) {
+        if (SHOW_MOMENTUM_MESSAGES
+                && player != null
+                && tier > oldTier
+                && tier > 0
+                && SparStore.get().tpMessagesOn(player.m_20148_())) {
             float mult = MOMENTUM_MULTIPLIERS[Math.min(tier, MOMENTUM_MULTIPLIERS.length) - 1];
-            ScreenNotify.subtitleOnly(
+            TpBossNotify.show(
                     player,
                     "Momentum " + tier + " (x" + formatMult(mult) + " TP)",
                     ChatFormatting.YELLOW,

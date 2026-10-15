@@ -2,7 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.progression.tp;
 
 import com.dbzlegacy.adaptivedifficulty.util.LmChat;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
-import com.dbzlegacy.adaptivedifficulty.util.ScreenNotify;
+import com.dbzlegacy.adaptivedifficulty.util.TpBossNotify;
 import com.dragonminez.common.init.MainEffects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -105,7 +105,7 @@ public final class DeathTpPenalty {
                 "TP",
                 "§cDeath penalty §7is still on. §c" + EFFECT_LABEL
                         + " §7for §f" + remainingLabel(player) + "§7."));
-        ScreenNotify.hint(player, EFFECT_LABEL, remainingLabel(player), "", 0L);
+        flashBar(player, remainingLabel(player));
     }
 
     public static void pulse(MinecraftServer server, int tick) {
@@ -183,7 +183,7 @@ public final class DeathTpPenalty {
                 ? "§cDeath penalty refreshed. §7" + EFFECT_LABEL + " §7stays for §f10 minutes§7."
                 : "§cDeath penalty. §c" + EFFECT_LABEL + " §7for §f10 minutes§7.";
         msg(player, LmChat.note("TP", body));
-        ScreenNotify.hint(player, EFFECT_LABEL, "10 minutes", "", 0L);
+        flashBar(player, "10 minutes");
     }
 
     /** What the player who is actually on screen sees, including a copied timer. */
@@ -192,7 +192,15 @@ public final class DeathTpPenalty {
                 "TP",
                 "§cDeath penalty. §c" + EFFECT_LABEL + " §7for §f"
                         + remainingLabel(player) + "§7."));
-        ScreenNotify.hint(player, EFFECT_LABEL, remainingLabel(player), "", 0L);
+        flashBar(player, remainingLabel(player));
+    }
+
+    /** Penalty announcement. The duration bar stays; this one hides itself. */
+    private static void flashBar(ServerPlayer player, String detail) {
+        String text = detail == null || detail.isBlank()
+                ? EFFECT_LABEL
+                : EFFECT_LABEL + " - " + detail;
+        TpBossNotify.show(player, text, ChatFormatting.RED, "", 0L);
     }
 
     public static String remainingLabel(ServerPlayer player) {
