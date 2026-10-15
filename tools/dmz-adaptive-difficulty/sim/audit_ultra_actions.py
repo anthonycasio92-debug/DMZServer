@@ -937,6 +937,29 @@ def main() -> int:
         )
     if "footerBackHome(\"Home\")" not in notice_body and 'footerBackHome("Home")' not in notice_body:
         errors.append("UltraDifficultyScreens.openTeamNotice must pin Back to Home + Main menu")
+    diff_home_m = re.search(
+        r"private static void openHome\b.*?^\s*private static void ",
+        diff_screens,
+        re.S | re.M,
+    )
+    diff_home_body = diff_home_m.group(0) if diff_home_m else ""
+    if "eventlog|Event log" in diff_home_body:
+        errors.append("Difficulty home must not list Event log (submenu of Server tools)")
+    staff_m = re.search(
+        r"private static void openStaffAdmin\b.*?^\s*private static void ",
+        diff_screens,
+        re.S | re.M,
+    )
+    staff_body = staff_m.group(0) if staff_m else ""
+    if "page:eventlog" not in staff_body:
+        errors.append("Server tools must keep the Event log submenu")
+    if 'UltraStyle.confirm("Turn personal ON")' in diff_screens:
+        errors.append("Personal difficulty OFF must use dim, not confirm/gold")
+    if 'UltraStyle.dim("Personal OFF")' not in diff_screens:
+        errors.append("Personal difficulty OFF toggle must be dim")
+    spec_src = (ULTRA / "UltraScreenSpec.java").read_text(encoding="utf-8")
+    if 'STYLE_DIM.equals(resolvedStyle)' not in spec_src or 'accentCode = "8"' not in spec_src:
+        errors.append("Dim button labels must stay dark gray (not the system accent)")
     if "weights|Weights" not in spar_home_body:
         errors.append("UltraSparScreens.openHome must offer Weights")
     if "labelValue(\"Session\"" in spar_home_body or "labelValue(\"Partner\"" in spar_home_body:

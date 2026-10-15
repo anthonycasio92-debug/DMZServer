@@ -119,7 +119,7 @@ public final class UltraDifficultyScreens {
         UltraPickHelper.placePageButtons(
                 spec, "titles|Titles", "team|Rival teams", "settings|Coin settings");
         if (StaffAccess.isStaff(player)) {
-            UltraPickHelper.placePageButtons(spec, "admin|Server tools", "eventlog|Event log");
+            UltraPickHelper.placePageButtons(spec, "admin|Server tools");
         }
         spec.footerBackToMain();
         spec.send(player);
@@ -151,7 +151,7 @@ public final class UltraDifficultyScreens {
                     .line(UltraStyle.LABEL + "Turn personal ON, then pick a tier.")
                     .line(UltraStyle.DIM + "Activation cost scales with your level.")
                     .setRow(UltraStyle.CONTENT_ROW_TABS + 90);
-            spec.buttonLeft("do:toggle_personal", UltraStyle.confirm("Turn personal ON"), "confirm")
+            spec.buttonLeft("do:toggle_personal", UltraStyle.dim("Personal OFF"), "dim")
                     .rowGap();
             spec.footerBackToMain();
             spec.send(player);
@@ -246,7 +246,7 @@ public final class UltraDifficultyScreens {
                 .line(UltraStyle.LABEL + body)
                 .setRow(UltraStyle.CONTENT_ROW_TABS + 80);
         if (DifficultyConfig.isEnabled() && SystemGate.allows(player)) {
-            spec.buttonLeft("do:toggle_personal", UltraStyle.confirm("Turn personal ON"), "confirm")
+            spec.buttonLeft("do:toggle_personal", UltraStyle.dim("Personal OFF"), "dim")
                     .rowGap();
         }
         spec.footerBackToMain();
@@ -375,21 +375,21 @@ public final class UltraDifficultyScreens {
                         "do:mode:personal",
                         mode == TeamMode.PERSONAL_ONLY
                                 ? UltraStyle.confirm("Personal - on")
-                                : "Personal",
-                        mode == TeamMode.PERSONAL_ONLY ? "confirm" : "normal")
+                                : UltraStyle.dim("Personal"),
+                        mode == TeamMode.PERSONAL_ONLY ? "confirm" : "dim")
                 .buttonRight(
                         "do:mode:threshold",
                         mode == TeamMode.THRESHOLD_BONUS_ONLY
                                 ? UltraStyle.confirm("Threshold - on")
-                                : "Threshold",
-                        mode == TeamMode.THRESHOLD_BONUS_ONLY ? "confirm" : "normal")
+                                : UltraStyle.dim("Threshold"),
+                        mode == TeamMode.THRESHOLD_BONUS_ONLY ? "confirm" : "dim")
                 .rowGap();
         spec.buttonLeft(
                         "do:mode:full",
                         mode == TeamMode.FULL_TEAM_SCALING
                                 ? UltraStyle.confirm("Full team - on")
-                                : "Full team",
-                        mode == TeamMode.FULL_TEAM_SCALING ? "confirm" : "normal")
+                                : UltraStyle.dim("Full team"),
+                        mode == TeamMode.FULL_TEAM_SCALING ? "confirm" : "dim")
                 .buttonRight(
                         "do:toggle_personal",
                         data.isPersonalEnabled()
@@ -412,7 +412,7 @@ public final class UltraDifficultyScreens {
                 .line(UltraStyle.LABEL + body)
                 .setRow(UltraStyle.CONTENT_ROW + 80);
         if (DifficultyConfig.isEnabled() && SystemGate.allows(player)) {
-            spec.buttonLeft("do:toggle_personal", UltraStyle.confirm("Turn personal ON"), "confirm")
+            spec.buttonLeft("do:toggle_personal", UltraStyle.dim("Personal OFF"), "dim")
                     .rowGap();
         }
         spec.footerBackHome("Home");
@@ -649,13 +649,20 @@ public final class UltraDifficultyScreens {
                 .line(UltraStyle.LABEL + "Unified system event log")
                 .line(UltraStyle.DIM + "Use the toggles, or typed: /lm admin syslog ...")
                 .setRow(UltraStyle.CONTENT_ROW + 90);
-        spec.buttonLeft("do:syslog:status", UltraStyle.confirm("Status"), "confirm")
-                .buttonRight("do:syslog:on", UltraStyle.confirm("Turn ON"), "confirm")
+        boolean logOn = DifficultyConfig.get().enableSystemTelemetry;
+        spec.buttonLeft("do:syslog:status", UltraStyle.dim("Status"), "dim")
+                .buttonRight(
+                        "do:syslog:on",
+                        logOn ? UltraStyle.confirm("Log ON") : UltraStyle.dim("Turn ON"),
+                        logOn ? "confirm" : "dim")
                 .rowGap();
-        spec.buttonLeft("do:syslog:off", UltraStyle.danger("Turn OFF"), "danger")
+        spec.buttonLeft(
+                        "do:syslog:off",
+                        logOn ? UltraStyle.danger("Turn OFF") : UltraStyle.dim("Log OFF"),
+                        logOn ? "danger" : "dim")
                 .buttonRight("do:syslog:flush", UltraStyle.dim("Flush"), "dim")
                 .rowGap();
-        spec.footerBack("page:admin", "Staff Admin");
+        spec.footerBack("page:admin", "Server tools");
         spec.send(player);
     }
 
