@@ -1139,11 +1139,8 @@ public final class ConfigEditor {
         if (value == null) {
             return "empty";
         }
-        String text = String.valueOf(value).replace('\n', ' ');
-        if (text.length() > 40) {
-            return text.substring(0, 39) + "...";
-        }
-        return text;
+        // Full text. Config menus wrap it; an ellipsis here cut the default mid-word.
+        return String.valueOf(value).replace('\n', ' ');
     }
 
     public static LastChange lastChange(String moduleId, String path) {

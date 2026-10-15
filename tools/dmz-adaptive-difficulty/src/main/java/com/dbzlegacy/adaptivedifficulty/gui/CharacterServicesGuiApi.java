@@ -188,7 +188,7 @@ public final class CharacterServicesGuiApi {
             String[] bits = p.split(":", 3);
             int pct = parsePct(bits.length > 2 ? bits[2] : "0");
             String race = bits.length > 1 ? bits[1] : "?";
-            // Cost early: Ultra appendCompactLines truncates; chest GUI reads the full list.
+            // Cost stays near the top. Ultra also pins it; the chest GUI reads this list as-is.
             lines.add("§7You are becoming §f" + title(race) + "§7.");
             lines.add("§7Keeping §f" + pct + "% §7of eligible stats.");
             lines.add(costLine(player, CharacterServicesSystem.raceAmountDue(player, pct)));

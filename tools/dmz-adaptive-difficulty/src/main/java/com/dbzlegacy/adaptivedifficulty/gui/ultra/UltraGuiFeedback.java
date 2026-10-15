@@ -18,7 +18,6 @@ import net.minecraft.server.level.ServerPlayer;
  */
 public final class UltraGuiFeedback {
     private static final long TTL_MS = 45_000L;
-    private static final int MAX_LINES = 6;
 
     private static final Map<UUID, Entry> PENDING = new ConcurrentHashMap<>();
 
@@ -78,9 +77,6 @@ public final class UltraGuiFeedback {
                 ok = false;
             }
             lines.add(plain);
-            if (lines.size() >= MAX_LINES) {
-                break;
-            }
         }
         if (lines.isEmpty()) {
             return;

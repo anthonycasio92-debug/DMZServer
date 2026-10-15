@@ -40,7 +40,8 @@ public final class UltraConfigScreens {
     private static final int CTRL_GAP = 8;
     /**
      * Glyphs that fit a main-column flow button ({@link #MAIN_W} minus pad).
-     * Longer setting names and descriptions are cut on a word boundary.
+     * Longer descriptions wrap onto the next row. A single token wider than the row
+     * continues on the next row instead of being cut off.
      */
     private static final int FLOW_CHARS = 38;
 
@@ -197,14 +198,11 @@ public final class UltraConfigScreens {
                     continue;
                 }
                 String count = section.count() == 1 ? "1 setting" : section.count() + " settings";
-                spec.button(
-                                "page:" + editPage(module, 0, section.openPath()),
-                                UltraStyle.LABEL + clipWords(section.title() + " (" + count + ")", FLOW_CHARS),
-                                UltraStyle.STYLE_NORMAL,
-                                MAIN_X,
-                                spec.row(),
-                                MAIN_W)
-                        .rowGap();
+                flowAction(
+                        spec,
+                        "page:" + editPage(module, 0, section.openPath()),
+                        section.title() + " (" + count + ")",
+                        UltraStyle.STYLE_NORMAL);
             }
         } else if (from >= to) {
             flowLabel(
@@ -317,38 +315,54 @@ public final class UltraConfigScreens {
     /**
      * Setting title/description as a main-column flow row (not body {@code line}), so the label
      * sits above its control instead of scrolling in a band that overlaps buttons.
+     * Text longer than one row wraps onto more rows. Nothing is dropped.
      */
     private static void flowLabel(UltraScreenSpec spec, String text) {
-        if (spec == null || text == null || text.isBlank()) {
-            return;
-        }
-        spec.button(
-                        "do:refresh",
-                        UltraStyle.LABEL + clipWords(UltraStyle.plain(text), FLOW_CHARS),
-                        UltraStyle.STYLE_DIM,
-                        MAIN_X,
-                        spec.row(),
-                        MAIN_W)
-                .rowGap(LABEL_CTRL_GAP);
+        flowText(spec, text);
     }
 
-    /** Up to three flow rows so a one-line description is not cut off mid-sentence. */
+    /** Wrap the full description. Overflow becomes more rows; nothing is dropped. */
     private static void flowText(UltraScreenSpec spec, String text) {
+        paintWrappedRows(spec, "do:refresh", text, UltraStyle.STYLE_DIM, LABEL_CTRL_GAP);
+    }
+
+    /** Same wrap as {@link #flowText}, but each row keeps {@code action} and {@code style}. */
+    private static void flowAction(UltraScreenSpec spec, String action, String text, String style) {
+        paintWrappedRows(spec, action, text, style, UltraStyle.BTN_GAP);
+    }
+
+    private static void paintWrappedRows(
+            UltraScreenSpec spec, String action, String text, String style, int gap) {
         if (spec == null || text == null || text.isBlank()) {
             return;
         }
         String rest = UltraStyle.plain(text).trim();
-        for (int i = 0; i < 3 && !rest.isEmpty(); i++) {
+        while (!rest.isEmpty()) {
+            String chunk;
             if (rest.length() <= FLOW_CHARS) {
-                flowLabel(spec, rest);
-                return;
+                chunk = rest;
+                rest = "";
+            } else {
+                int at = flowBreak(rest, FLOW_CHARS);
+                chunk = rest.substring(0, at).trim();
+                rest = rest.substring(at).trim();
+                if (chunk.isEmpty()) {
+                    break;
+                }
             }
-            String cut = rest.substring(0, FLOW_CHARS);
-            int sp = cut.lastIndexOf(' ');
-            int at = sp >= FLOW_CHARS / 2 ? sp : FLOW_CHARS;
-            flowLabel(spec, rest.substring(0, at).trim());
-            rest = rest.substring(at).trim();
+            spec.button(action, UltraStyle.LABEL + chunk, style, MAIN_X, spec.row(), MAIN_W)
+                    .rowGap(gap);
         }
+    }
+
+    /** Last space in the window, or {@code max} when one token is wider than the row. */
+    private static int flowBreak(String text, int max) {
+        int limit = Math.min(max, text.length());
+        int space = text.lastIndexOf(' ', limit - 1);
+        if (space > 0 && space < text.length()) {
+            return space;
+        }
+        return Math.max(1, limit);
     }
 
     private static void appendSetting(
@@ -373,9 +387,9 @@ public final class UltraConfigScreens {
         flowText(spec, desc);
         String now = value == null ? "" : value;
         String def = ConfigEditor.defaultShown(module, path);
-        flowLabel(spec, "Now: " + clipWords(now, 28));
+        flowText(spec, "Now: " + now);
         if (def != null && !def.isBlank() && !"group".equalsIgnoreCase(def)) {
-            flowLabel(spec, "Default: " + clipWords(def, 24));
+            flowText(spec, "Default: " + def);
         }
         String invalid = ConfigEditor.invalidMessage(uuid, module, path);
         if (invalid != null && !invalid.isBlank()) {
@@ -383,7 +397,7 @@ public final class UltraConfigScreens {
         }
         ConfigEditor.EditorTab moduleTab = ConfigEditor.tab(module);
         if (moduleTab == null || !moduleTab.editable()) {
-            flowLabel(spec, "Closed - " + shortVal(value));
+            flowText(spec, "Closed - " + (value == null ? "" : UltraStyle.plain(value)));
             return;
         }
         appendInlineControl(spec, player, module, path, entry.kind(), value, raw);
@@ -590,21 +604,13 @@ public final class UltraConfigScreens {
         } else {
             spec.line(UltraStyle.LABEL + "These edits are not saved yet.");
             spec.line(UltraStyle.DIM + "Confirm save writes them. Discard throws them away.");
-            int shown = 0;
             for (ConfigEditor.PendingChange change : pending) {
                 if (change == null) {
                     continue;
                 }
-                if (shown >= 12) {
-                    break;
-                }
                 spec.line(UltraStyle.LABEL + change.name());
                 spec.line(UltraStyle.DIM + "Now " + prettyRaw(change.before())
                         + " -> " + UltraStyle.VALUE + prettyRaw(change.after()));
-                shown++;
-            }
-            if (count > shown) {
-                spec.line(UltraStyle.DIM + "And " + (count - shown) + " more.");
             }
         }
         spec.buttonsAfterLines();
@@ -708,7 +714,7 @@ public final class UltraConfigScreens {
                 ConfigEditor.rememberSearch(uuid, typed == null ? "" : typed);
                 yield typed == null || typed.isBlank()
                         ? UltraStyle.noticeLine("Search cleared.")
-                        : UltraStyle.noticeLine("Showing matches for \"" + shortVal(typed) + "\".");
+                        : UltraStyle.noticeLine("Showing matches for \"" + typed + "\".");
             }
             case "search_clear" -> {
                 ConfigEditor.rememberSearch(uuid, "");
@@ -900,7 +906,7 @@ public final class UltraConfigScreens {
         }
         String cut = text.substring(0, max);
         int sp = cut.lastIndexOf(' ');
-        if (sp >= max / 2) {
+        if (sp > 0) {
             return cut.substring(0, sp).trim();
         }
         return cut.trim();

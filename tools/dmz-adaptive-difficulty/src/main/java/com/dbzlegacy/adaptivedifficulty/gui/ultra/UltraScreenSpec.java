@@ -256,10 +256,27 @@ public final class UltraScreenSpec {
 
     public UltraScreenSpec line(String text) {
         if (text != null && !text.isBlank()) {
-            // Strip fancy punctuation / mojibake at the wire boundary.
-            lines.add(UltraStyle.wireText(text));
+            // wireText strips mojibake; wrapBody then breaks on spaces so fitLabel
+            // never cuts the text box mid-word. Extra lines scroll.
+            addWrapped(lines.size(), UltraStyle.wireText(text));
         }
         return this;
+    }
+
+    /** Pixel width of the body text box for the panel and player model set so far. */
+    private int bodyFitPx() {
+        int modelX = playerModel == null ? -1 : playerModel.x;
+        return UltraStyle.bodyTextFitPx(panelWidth, modelX);
+    }
+
+    /** Insert word-wrapped body lines at {@code index}. Extra lines scroll; none are dropped. */
+    private void addWrapped(int index, String text) {
+        List<String> wrapped = UltraStyle.wrapBody(text, bodyFitPx());
+        if (wrapped.isEmpty()) {
+            return;
+        }
+        int at = Math.max(0, Math.min(index, lines.size()));
+        lines.addAll(at, wrapped);
     }
 
     public UltraScreenSpec labelValue(String label, String value) {
@@ -889,7 +906,9 @@ public final class UltraScreenSpec {
             if (line == null || line.isBlank()) {
                 continue;
             }
-            lines.add(at++, UltraStyle.wireText(line));
+            int before = lines.size();
+            addWrapped(at, line);
+            at += lines.size() - before;
         }
     }
 
@@ -912,7 +931,7 @@ public final class UltraScreenSpec {
         if (!plain.startsWith("inspecting")) {
             return;
         }
-        lines.add(0, UltraStyle.wireText(banner));
+        addWrapped(0, banner);
     }
 
     /**

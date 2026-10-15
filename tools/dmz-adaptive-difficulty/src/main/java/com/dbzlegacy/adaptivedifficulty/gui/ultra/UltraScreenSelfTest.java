@@ -854,6 +854,7 @@ public final class UltraScreenSelfTest {
                             + packedBody
                             + " still floored at the minimum body height");
         }
+        checkBodyWrap(broken);
 
         if (broken.isEmpty()) {
             AdaptiveDifficultyMod.LOGGER.info(
@@ -863,6 +864,80 @@ public final class UltraScreenSelfTest {
                     "[{}] Ultra body cap self-check FAILED: {}", AdaptiveDifficultyMod.MOD_ID, broken);
             throw new IllegalStateException(
                     "LegacyMechanics Ultra body cap self-check failed: " + broken);
+        }
+    }
+
+    /** Long body copy wraps on spaces and still scrolls; KaiPath must not ellipsize it. */
+    private static void checkBodyWrap(List<String> broken) {
+        String sentence = "Purchased looks carry over. Your class stays if the new race has it.";
+        int fit = UltraStyle.bodyTextFitPx(UltraStyle.PANEL_W, -1);
+        List<String> wrapped = UltraStyle.wrapBody(sentence, fit);
+        if (wrapped.size() < 2) {
+            broken.add("race confirm copy must wrap instead of one clipped line");
+        }
+        StringBuilder joined = new StringBuilder();
+        int budget = Math.max(8, fit / UltraStyle.BODY_GLYPH_PX);
+        for (String line : wrapped) {
+            String plain = UltraStyle.plain(line);
+            if (plain.length() > budget) {
+                broken.add("wrapped body line exceeds the text box: " + plain);
+            }
+            if (plain.endsWith("...") || plain.contains("...")) {
+                broken.add("wrapped body line must not use an ellipsis: " + plain);
+            }
+            if (joined.length() > 0) {
+                joined.append(' ');
+            }
+            joined.append(plain);
+        }
+        if (!sentence.equals(joined.toString())) {
+            broken.add("wrap dropped words: " + joined);
+        }
+        int narrow = UltraStyle.bodyTextFitPx(UltraStyle.PANEL_W, 248);
+        String monkey = "Not available for Monkey - this race uses a form model.";
+        List<String> besideModel = UltraStyle.wrapBody(monkey, narrow);
+        int narrowBudget = Math.max(8, narrow / UltraStyle.BODY_GLYPH_PX);
+        StringBuilder monkeyJoined = new StringBuilder();
+        for (String line : besideModel) {
+            String plain = UltraStyle.plain(line);
+            if (plain.length() > narrowBudget) {
+                broken.add("model-side body line exceeds the text box: " + plain);
+            }
+            if (monkeyJoined.length() > 0) {
+                monkeyJoined.append(' ');
+            }
+            monkeyJoined.append(plain);
+        }
+        if (!monkey.equals(monkeyJoined.toString())) {
+            broken.add("model-side wrap dropped words: " + monkeyJoined);
+        }
+        String token = "X".repeat(budget + 12);
+        List<String> split = UltraStyle.wrapBody(token, fit);
+        StringBuilder tokenJoined = new StringBuilder();
+        for (String line : split) {
+            String plain = UltraStyle.plain(line);
+            if (plain.length() > budget) {
+                broken.add("oversized token still exceeds the text box");
+            }
+            tokenJoined.append(plain);
+        }
+        if (!token.equals(tokenJoined.toString()) || split.size() < 2) {
+            broken.add("a token wider than the box must continue on the next line");
+        }
+        GuiOpenPacket packet =
+                UltraScreenSpec.of("character")
+                        .title("Character Services")
+                        .page("race_confirm")
+                        .line(UltraStyle.LABEL + sentence)
+                        .line(UltraStyle.LABEL + "Staff cannot undo this for you.")
+                        .toPacket();
+        String linesJson = packet.linesJson() == null ? "" : packet.linesJson();
+        if (!linesJson.contains("Purchased looks carry over.")
+                || !linesJson.contains("Staff cannot undo this for you.")) {
+            broken.add("race confirm packet dropped wrapped body copy");
+        }
+        if (linesJson.contains("...")) {
+            broken.add("race confirm packet still ellipsizes body copy");
         }
     }
 
