@@ -490,6 +490,9 @@ merge_onto_base_jar() {
   # not keep a stale base-jar inner the new bytecode no longer emits.
   sync_overlaid_inners "$OUT" "$merge"
   cp "$RES/META-INF/mods.toml" "$merge/META-INF/mods.toml"
+  if [[ -f "$RES/META-INF/kaipath-ultra.txt" ]]; then
+    cp "$RES/META-INF/kaipath-ultra.txt" "$merge/META-INF/kaipath-ultra.txt"
+  fi
   if [[ -d "$RES/data" ]]; then
     mkdir -p "$merge/data"
     cp -a "$RES/data/." "$merge/data/"
@@ -517,6 +520,7 @@ else
     cd "$OUT"
     jar cvmf "$RES/META-INF/MANIFEST.MF" "$JAR" $(find com -name '*.class') \
       -C "$RES" META-INF/mods.toml \
+      -C "$RES" META-INF/kaipath-ultra.txt \
       -C "$RES" pack.mcmeta \
       -C "$RES" legacymechanics.mixins.json \
       -C "$RES" legacymechanics.refmap.json
@@ -548,6 +552,10 @@ if ! jar tf "$JAR" | grep -q 'gui/ultra/UltraGui.class'; then
   echo "ERROR: gui/ultra/UltraGui.class missing from $JAR" >&2
   exit 1
 fi
+if ! jar tf "$JAR" | grep -q 'META-INF/kaipath-ultra.txt'; then
+  echo "ERROR: META-INF/kaipath-ultra.txt missing from $JAR (KaiPath partner discovery)" >&2
+  exit 1
+fi
 python3 "$HERE/sim/audit_jar_inner_classes.py" "$JAR"
 python3 - "$JAR" << 'PY'
 import sys, zipfile
@@ -561,6 +569,7 @@ required = (
     "com/dbzlegacy/adaptivedifficulty/net/gui/GuiOpenPacket.class",
     "com/dbzlegacy/adaptivedifficulty/net/gui/GuiActionPacket.class",
     "com/dbzlegacy/adaptivedifficulty/gui/ultra/UltraGui.class",
+    "META-INF/kaipath-ultra.txt",
 )
 with zipfile.ZipFile(jar) as zf:
     names = set(zf.namelist())

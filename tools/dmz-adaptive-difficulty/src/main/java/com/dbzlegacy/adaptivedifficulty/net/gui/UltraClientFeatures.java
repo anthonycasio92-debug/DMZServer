@@ -27,13 +27,20 @@ import net.minecraft.server.level.ServerPlayer;
  *   <li>{@link #FEATURE_HEADER_BOTTOM} — {@code layoutJson.headerBottom} (title+divider above tabs)
  *   <li>{@link #FEATURE_ACCENT} — {@code layoutJson.accent} (panel/title/activeTab; buttons emit no color keys)
  *   <li>{@link #FEATURE_FIXED_FOOTER} — button {@code footer:true} pinned chrome
+ *   <li>{@link #FEATURE_PALETTE} — {@code layoutJson.palette} named theme
+ *   <li>{@link #FEATURE_SOUND} — button {@code sound} click id
+ *   <li>{@link #FEATURE_BUTTON_SKIN} — button {@code buttonSkin} chrome enable token
+ *   <li>{@link #FEATURE_FRAME} — {@code layoutJson.frame} panel border enable token
+ *   <li>{@link #FEATURE_PAGED_BOOK} — {@code inputsJson} type {@code paged_book}
+ *   <li>{@link #FEATURE_PORTRAIT_FRAME} — {@code playerModel.portraitFrame}
+ *   <li>{@link #FEATURE_COMBINED_FORMS} — {@code playerModel.parts.form} on one preview
  * </ul>
  *
  * <p>Clients that never send {@link GuiFeaturesPacket} are treated as the KaiPath <b>1.3.1
  * baseline</b>: dynamic layout/buttons only. KaiPath <b>1.3.17</b> (recommended) advertises
- * style/activeTab/titleAlign/playerModel/{@link #FEATURE_TEXT_INPUT}/{@link #FEATURE_HEADER_BOTTOM}/
- * {@link #FEATURE_ACCENT}/{@link #FEATURE_FIXED_FOOTER} (plus palette/sound/buttonSkin/frame/
- * pagedBook/portraitFrame). LM {@code footer:true} emission matches 1.3.17 — no wire change.
+ * the fifteen ids above. {@link #FEATURE_ICON} is the next optional (button/tab {@code icon});
+ * it is {@link #PENDING_NEXT} until a client advertises it. LM {@code footer:true} emission
+ * matches 1.3.17 — no wire change.
  */
 public final class UltraClientFeatures {
     public static final String FEATURE_STYLE = "style";
@@ -60,8 +67,44 @@ public final class UltraClientFeatures {
     public static final String FEATURE_ACCENT_DOC = "accent";
     /** Wire / doc spelling for {@link #FEATURE_FIXED_FOOTER}. */
     public static final String FEATURE_FIXED_FOOTER_DOC = "fixedFooter";
+    /** Normalized id for {@code layoutJson.palette}. */
+    public static final String FEATURE_PALETTE = "palette";
+    /** Normalized id for button {@code sound}. */
+    public static final String FEATURE_SOUND = "sound";
+    /** Normalized id for button {@code buttonSkin}. */
+    public static final String FEATURE_BUTTON_SKIN = "buttonskin";
+    /** Normalized id for {@code layoutJson.frame}. */
+    public static final String FEATURE_FRAME = "frame";
+    /** Normalized id for advertise {@code pagedBook} ({@code inputsJson} type {@code paged_book}). */
+    public static final String FEATURE_PAGED_BOOK = "pagedbook";
+    /** Normalized id for {@code playerModel.portraitFrame}. */
+    public static final String FEATURE_PORTRAIT_FRAME = "portraitframe";
+    /**
+     * One preview can combine the base entity with {@code playerModel.parts.form}.
+     * Generic — any mod may send form string ids. Not a DMZ-only channel.
+     */
+    public static final String FEATURE_COMBINED_FORMS = "combined.forms.v1";
+    /** Normalized id for optional button/tab {@code icon} (not on KaiPath 1.3.17). */
+    public static final String FEATURE_ICON = "icon";
 
-    /** Optional features the LM bridge expects a fully conforming client to advertise. */
+    /** Wire / doc spelling for {@link #FEATURE_PALETTE}. */
+    public static final String FEATURE_PALETTE_DOC = "palette";
+    /** Wire / doc spelling for {@link #FEATURE_SOUND}. */
+    public static final String FEATURE_SOUND_DOC = "sound";
+    /** Wire / doc spelling for {@link #FEATURE_BUTTON_SKIN}. */
+    public static final String FEATURE_BUTTON_SKIN_DOC = "buttonSkin";
+    /** Wire / doc spelling for {@link #FEATURE_FRAME}. */
+    public static final String FEATURE_FRAME_DOC = "frame";
+    /** Wire / doc spelling for {@link #FEATURE_PAGED_BOOK}. */
+    public static final String FEATURE_PAGED_BOOK_DOC = "pagedBook";
+    /** Wire / doc spelling for {@link #FEATURE_PORTRAIT_FRAME}. */
+    public static final String FEATURE_PORTRAIT_FRAME_DOC = "portraitFrame";
+    /** Wire / doc spelling for {@link #FEATURE_COMBINED_FORMS}. */
+    public static final String FEATURE_COMBINED_FORMS_DOC = "combined.forms.v1";
+    /** Wire / doc spelling for {@link #FEATURE_ICON}. */
+    public static final String FEATURE_ICON_DOC = "icon";
+
+    /** Optional features the LM bridge expects a fully conforming 1.3.17 client to advertise. */
     public static final Set<String> EXPECTED_OPTIONAL =
             Set.of(
                     FEATURE_STYLE,
@@ -71,7 +114,14 @@ public final class UltraClientFeatures {
                     FEATURE_TEXT_INPUT,
                     FEATURE_HEADER_BOTTOM,
                     FEATURE_ACCENT,
-                    FEATURE_FIXED_FOOTER);
+                    FEATURE_FIXED_FOOTER,
+                    FEATURE_PALETTE,
+                    FEATURE_SOUND,
+                    FEATURE_BUTTON_SKIN,
+                    FEATURE_FRAME,
+                    FEATURE_PAGED_BOOK,
+                    FEATURE_PORTRAIT_FRAME,
+                    FEATURE_COMBINED_FORMS);
 
     /**
      * Features KaiPath <b>1.3.17</b> already advertises/honors. Missing any of these is a real
@@ -86,14 +136,20 @@ public final class UltraClientFeatures {
                     FEATURE_TEXT_INPUT,
                     FEATURE_HEADER_BOTTOM,
                     FEATURE_ACCENT,
-                    FEATURE_FIXED_FOOTER);
+                    FEATURE_FIXED_FOOTER,
+                    FEATURE_PALETTE,
+                    FEATURE_SOUND,
+                    FEATURE_BUTTON_SKIN,
+                    FEATURE_FRAME,
+                    FEATURE_PAGED_BOOK,
+                    FEATURE_PORTRAIT_FRAME,
+                    FEATURE_COMBINED_FORMS);
 
     /**
-     * Reserved for the next KaiPath gap after the recommended release. Empty on <b>1.3.17</b>
-     * ({@code fixedFooter} + {@code portraitFrame} advertise shipped). Guitest reports leftovers
-     * as {@code pendingNext=} (info).
+     * Not advertised by KaiPath 1.3.17. Guitest reports these as {@code pendingNext=} (info),
+     * not a shipped-client warning. {@code icon} is the button/tab icon field.
      */
-    public static final Set<String> PENDING_NEXT = Set.of();
+    public static final Set<String> PENDING_NEXT = Set.of(FEATURE_ICON);
 
     private static final Map<UUID, State> BY_PLAYER = new ConcurrentHashMap<>();
 
@@ -205,10 +261,31 @@ public final class UltraClientFeatures {
         if (state == null || !state.has(FEATURE_FIXED_FOOTER)) {
             missing.add(FEATURE_FIXED_FOOTER_DOC);
         }
+        if (state == null || !state.has(FEATURE_PALETTE)) {
+            missing.add(FEATURE_PALETTE_DOC);
+        }
+        if (state == null || !state.has(FEATURE_SOUND)) {
+            missing.add(FEATURE_SOUND_DOC);
+        }
+        if (state == null || !state.has(FEATURE_BUTTON_SKIN)) {
+            missing.add(FEATURE_BUTTON_SKIN_DOC);
+        }
+        if (state == null || !state.has(FEATURE_FRAME)) {
+            missing.add(FEATURE_FRAME_DOC);
+        }
+        if (state == null || !state.has(FEATURE_PAGED_BOOK)) {
+            missing.add(FEATURE_PAGED_BOOK_DOC);
+        }
+        if (state == null || !state.has(FEATURE_PORTRAIT_FRAME)) {
+            missing.add(FEATURE_PORTRAIT_FRAME_DOC);
+        }
+        if (state == null || !state.has(FEATURE_COMBINED_FORMS)) {
+            missing.add(FEATURE_COMBINED_FORMS_DOC);
+        }
         return missing;
     }
 
-    /** Gaps still expected after the recommended KaiPath (none on 1.3.17). */
+    /** Optional ids not yet on KaiPath 1.3.17. Currently {@code icon}. */
     public static List<String> missingPending(State state) {
         List<String> missing = new ArrayList<>();
         for (String feature : PENDING_NEXT) {
@@ -241,6 +318,30 @@ public final class UltraClientFeatures {
         }
         if (FEATURE_FIXED_FOOTER.equals(key)) {
             return FEATURE_FIXED_FOOTER_DOC;
+        }
+        if (FEATURE_PALETTE.equals(key)) {
+            return FEATURE_PALETTE_DOC;
+        }
+        if (FEATURE_SOUND.equals(key)) {
+            return FEATURE_SOUND_DOC;
+        }
+        if (FEATURE_BUTTON_SKIN.equals(key)) {
+            return FEATURE_BUTTON_SKIN_DOC;
+        }
+        if (FEATURE_FRAME.equals(key)) {
+            return FEATURE_FRAME_DOC;
+        }
+        if (FEATURE_PAGED_BOOK.equals(key)) {
+            return FEATURE_PAGED_BOOK_DOC;
+        }
+        if (FEATURE_PORTRAIT_FRAME.equals(key)) {
+            return FEATURE_PORTRAIT_FRAME_DOC;
+        }
+        if (FEATURE_COMBINED_FORMS.equals(key)) {
+            return FEATURE_COMBINED_FORMS_DOC;
+        }
+        if (FEATURE_ICON.equals(key)) {
+            return FEATURE_ICON_DOC;
         }
         return feature == null ? "" : feature;
     }
@@ -284,6 +385,24 @@ public final class UltraClientFeatures {
                 lines.add(
                         "footer buttons may scroll with body "
                                 + "(button footer:true / fixedFooter not pinned)");
+            } else if (FEATURE_PALETTE.equals(key)) {
+                lines.add("named palette themes ignored (layoutJson.palette not applied)");
+            } else if (FEATURE_SOUND.equals(key)) {
+                lines.add("button sound ids ignored (button sound not played)");
+            } else if (FEATURE_BUTTON_SKIN.equals(key)) {
+                lines.add("buttonSkin enable token ignored (default chrome only)");
+            } else if (FEATURE_FRAME.equals(key)) {
+                lines.add("panel frame ignored (layoutJson.frame not painted)");
+            } else if (FEATURE_PAGED_BOOK.equals(key)) {
+                lines.add("paged book widgets not mounted (inputsJson type paged_book ignored)");
+            } else if (FEATURE_PORTRAIT_FRAME.equals(key)) {
+                lines.add("player preview frame ignored (playerModel.portraitFrame not painted)");
+            } else if (FEATURE_COMBINED_FORMS.equals(key)) {
+                lines.add(
+                        "worn form not drawn on the preview "
+                                + "(playerModel.parts.form / combined.forms.v1 ignored)");
+            } else if (FEATURE_ICON.equals(key)) {
+                lines.add("button and tab icon ids ignored (icon field not drawn)");
             }
         }
         return lines;
@@ -291,7 +410,7 @@ public final class UltraClientFeatures {
 
     /**
      * Log when 1.3.17-shipped features are missing (real gap). {@link #PENDING_NEXT} gaps
-     * (none on 1.3.17) log at info.
+     * ({@code icon} on stock 1.3.17) log at info.
      */
     public static void warnMissingOptionalFeatures(ServerPlayer player, String context) {
         if (player == null) {
