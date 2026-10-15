@@ -427,7 +427,7 @@ ids. A client that does not advertise the feature still draws the entity and ign
 | Field | Type | Required | Notes |
 |-------|------|----------|-------|
 | `schema` | number | yes | **`1`** for this document. Bump only on breaking shape changes. |
-| `subject` | string | yes | Who to draw. **`local`** is the viewing player. Staff inspect sends **`uuid:<player-uuid>`** from {@code AdminInspectSessions.resolveSubject} so the preview is the subject, not the staff viewer. |
+| `subject` | string | yes | Who to draw. **`local`** is the viewing player. Staff inspect sends **`uuid:<player-uuid>`** from {@code AdminInspectSessions.resolveSubject} so the preview is the subject, not the staff viewer. Stock KaiPath 1.3.17 ignores this field and always draws `Minecraft.player`. `mods/kaipath-1.3.17-inspect-subject.jar` (built by `tools/ultra-gui-kit/patch-inspect-preview.sh`) reads it. The client mod has to be that jar — the dedicated server's copy does not paint the preview. |
 | `headBones` | object | no | Equipped DMZ `activeHeadBone` cosmetics. Omit when empty. |
 | `headBones.token` | string | yes* | Authoritative DMZ token (`+`-joined). Same string DMZ stores on the character. |
 | `headBones.pieces` | string[] | yes* | Atomic bone ids split from the token (stable shop order when known). Prefer this list when iterating geo bones. |
