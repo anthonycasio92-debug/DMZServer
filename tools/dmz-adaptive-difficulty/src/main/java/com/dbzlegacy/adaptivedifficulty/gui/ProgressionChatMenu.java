@@ -3,6 +3,7 @@ package com.dbzlegacy.adaptivedifficulty.gui;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionModuleCatalog;
 import com.dbzlegacy.adaptivedifficulty.progression.tp.GlobalTpBoost;
+import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import java.util.List;
 import java.util.Locale;
@@ -161,7 +162,9 @@ public final class ProgressionChatMenu {
         boolean on = DifficultyConfig.get().staffFreeAncientCoinCosts;
         send(player, Component.m_237113_(""));
         send(player, btn(
-                on ? "§e[Turn staff free costs OFF]" : "§a[Turn staff free costs ON]",
+                on
+                        ? UltraStyle.YELLOW + "[Staff free costs ON]"
+                        : UltraStyle.dim("[Staff free costs OFF]"),
                 "/prog do toggle_staff_free_coins " + (on ? "off" : "on") + " economy",
                 "Applies to all LM Ancient Coin charges"));
         send(player, btn("§7« Back", "/prog do page main", "Go up one level"));

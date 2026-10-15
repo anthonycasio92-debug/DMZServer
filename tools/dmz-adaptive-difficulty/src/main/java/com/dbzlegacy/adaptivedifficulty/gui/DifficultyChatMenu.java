@@ -152,8 +152,8 @@ public final class DifficultyChatMenu {
         MutableComponent toggles = Component.m_237113_(UltraStyle.LABEL)
                 .m_7220_(btn(
                         personalOn
-                                ? UltraStyle.YELLOW + "[Turn Difficulty OFF]"
-                                : UltraStyle.confirm("[Turn Difficulty ON]"),
+                                ? UltraStyle.YELLOW + "[Difficulty ON]"
+                                : UltraStyle.dim("[Difficulty OFF]"),
                         "/difficulty do toggle_personal 0 main",
                         personalOn
                                 ? "Turn OFF — no scaling, kill coins, AI pressure, or tier buys · your summoned dragon despawns"
