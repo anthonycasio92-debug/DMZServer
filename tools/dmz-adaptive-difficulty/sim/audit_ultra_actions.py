@@ -1046,10 +1046,16 @@ def main() -> int:
     staff_body = staff_m.group(0) if staff_m else ""
     if "page:eventlog" not in staff_body:
         errors.append("Server tools must keep the Event log submenu")
-    if 'UltraStyle.confirm("Turn personal ON")' in diff_screens:
-        errors.append("Personal difficulty OFF must use dim, not confirm/gold")
-    if 'UltraStyle.dim("Personal OFF")' not in diff_screens:
-        errors.append("Personal difficulty OFF toggle must be dim")
+    if "do:toggle_personal" in team_body:
+        errors.append("Rival teams mode page must not offer the difficulty toggle")
+    if "do:mode:personal" not in team_body or "do:mode:threshold" not in team_body or "do:mode:full" not in team_body:
+        errors.append("Rival teams page must keep Personal, Threshold, and Full team")
+    if "Personal ON" in diff_screens or "Personal OFF" in diff_screens:
+        errors.append("Difficulty toggle must say Difficulty: ON/OFF, not Personal")
+    if 'UltraStyle.confirm("Difficulty: OFF")' in diff_screens or 'UltraStyle.confirm("Turn personal ON")' in diff_screens:
+        errors.append("Difficulty OFF must use dim, not confirm/gold")
+    if 'UltraStyle.dim("Difficulty: OFF")' not in diff_screens or "STYLE_DIM" not in diff_screens:
+        errors.append("Difficulty OFF toggle must be dim")
     if 'dim("Staff details")' in diff_screens:
         errors.append("Staff details must be danger/red, not dim")
     if 'danger("Staff details")' not in diff_screens:

@@ -147,12 +147,12 @@ public final class UltraDifficultyScreens {
         PlayerDifficultyData data = DifficultyCache.data(player);
         if (data == null || !data.isPersonalEnabled()) {
             UltraScreenSpec spec = base(player, "tiers", "tiers")
-                    .line(UltraStyle.LABEL + "Your personal difficulty is off.")
-                    .line(UltraStyle.LABEL + "Turn personal ON, then pick a tier.")
+                    .line(UltraStyle.LABEL + "Difficulty is off.")
+                    .line(UltraStyle.LABEL + "Turn Difficulty on, then pick a tier.")
                     .line(UltraStyle.DIM + "Activation cost scales with your level.")
                     .buttonsAfterLines();
-            spec.buttonLeft("do:toggle_personal", UltraStyle.dim("Personal OFF"), "dim")
-                    .rowGap();
+            placeDifficultyToggle(spec, false);
+            spec.rowGap();
             spec.footerBackToMain();
             spec.send(player);
             return;
@@ -188,14 +188,9 @@ public final class UltraDifficultyScreens {
             placeTierButton(spec, player, data, max, active, t + 1, false);
             spec.rowGap();
         }
-        spec.buttonLeft("do:lower_tier:0", UltraStyle.danger("Clear active tier"), "danger")
-                .buttonRight(
-                        "do:toggle_personal",
-                        data.isPersonalEnabled()
-                                ? UltraStyle.confirm("Personal ON")
-                                : UltraStyle.dim("Personal OFF"),
-                        data.isPersonalEnabled() ? "confirm" : "dim")
-                .rowGap();
+        spec.buttonLeft("do:lower_tier:0", UltraStyle.danger("Clear active tier"), "danger");
+        placeDifficultyToggle(spec, data.isPersonalEnabled());
+        spec.rowGap();
         spec.footerBackToMain();
         spec.send(player);
     }
@@ -246,8 +241,8 @@ public final class UltraDifficultyScreens {
                 .line(UltraStyle.LABEL + body)
                 .buttonsAfterLines();
         if (DifficultyConfig.isEnabled() && SystemGate.allows(player)) {
-            spec.buttonLeft("do:toggle_personal", UltraStyle.dim("Personal OFF"), "dim")
-                    .rowGap();
+            placeDifficultyToggle(spec, false);
+            spec.rowGap();
         }
         spec.footerBackToMain();
         spec.send(player);
@@ -361,7 +356,7 @@ public final class UltraDifficultyScreens {
             openTeamNotice(
                     player,
                     "Teams locked",
-                    "Turn on Personal difficulty on the Tiers tab first, then return here to pick a team mode.");
+                    "Turn Difficulty on, then return here to pick a team mode.");
             return;
         }
         TeamMode mode = data.getTeamMode();
@@ -391,17 +386,29 @@ public final class UltraDifficultyScreens {
                         mode == TeamMode.FULL_TEAM_SCALING
                                 ? UltraStyle.confirm("Full team - on")
                                 : UltraStyle.dim("Full team"),
-                        mode == TeamMode.FULL_TEAM_SCALING ? "confirm" : "dim")
-                .buttonRight(
-                        "do:toggle_personal",
-                        data.isPersonalEnabled()
-                                ? UltraStyle.confirm("Personal ON")
-                                : UltraStyle.dim("Personal OFF"),
-                        data.isPersonalEnabled() ? "confirm" : "dim")
+                        mode == TeamMode.FULL_TEAM_SCALING ? UltraStyle.STYLE_CONFIRM : UltraStyle.STYLE_DIM)
                 .rowGap();
         // "Home" fits the footer button. "Difficulty Home" truncates to "Back to Difficulty...".
         spec.footerBackHome("Home");
         spec.send(player);
+    }
+
+    /**
+     * Difficulty on/off. OFF is dim (dark gray), never confirm. This is not a team mode.
+     * The Rival teams mode page does not show it; Personal / Threshold / Full team stay there.
+     */
+    private static void placeDifficultyToggle(UltraScreenSpec spec, boolean enabled) {
+        if (enabled) {
+            spec.buttonRight(
+                    "do:toggle_personal",
+                    UltraStyle.confirm("Difficulty: ON"),
+                    UltraStyle.STYLE_CONFIRM);
+            return;
+        }
+        spec.buttonLeft(
+                "do:toggle_personal",
+                UltraStyle.dim("Difficulty: OFF"),
+                UltraStyle.STYLE_DIM);
     }
 
     /**
@@ -414,8 +421,8 @@ public final class UltraDifficultyScreens {
                 .line(UltraStyle.LABEL + body)
                 .buttonsAfterLines();
         if (DifficultyConfig.isEnabled() && SystemGate.allows(player)) {
-            spec.buttonLeft("do:toggle_personal", UltraStyle.dim("Personal OFF"), "dim")
-                    .rowGap();
+            placeDifficultyToggle(spec, false);
+            spec.rowGap();
         }
         spec.footerBackHome("Home");
         spec.send(player);
