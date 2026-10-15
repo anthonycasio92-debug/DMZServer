@@ -96,6 +96,12 @@ public final class ConfigEditor {
     /** Fields that share a prefix inside one tab. */
     public record FieldGroup(String name, List<Entry> fields) {}
 
+    /** One staff section inside a module. {@code openPath} is a field path or a {@code ~Section} key. */
+    public record SectionLink(String title, String openPath, int count) {}
+
+    /** Page paths that start with this are a named section, not a nested field. */
+    public static final String SECTION_PREFIX = "~";
+
     /** One unsaved edit, newest first when listed. */
     public record PendingChange(String name, String before, String after) {}
 
@@ -573,7 +579,7 @@ public final class ConfigEditor {
             buckets.computeIfAbsent("Other", key -> new ArrayList<>()).addAll(other);
         }
         List<String> order = new ArrayList<>();
-        for (String fixed : List.of("Spawning", "Scaling", "Drops")) {
+        for (String fixed : SECTION_ORDER) {
             if (buckets.containsKey(fixed)) {
                 order.add(fixed);
             }
@@ -1057,8 +1063,14 @@ public final class ConfigEditor {
         List<PendingChange> out = new ArrayList<>();
         for (int i = drafts.size() - 1; i >= 0; i--) {
             Draft draft = drafts.get(i);
-            out.add(new PendingChange(
-                    displayName(leafName(draft.path())), beforeText(draft), afterText(draft)));
+            EditorTab moduleTab = tab(draft.moduleId());
+            String moduleLabel = moduleTab == null ? draft.moduleId() : moduleTab.label();
+            String section = sectionTitle(draft.moduleId(), draft.path());
+            String label = staffLabel(draft.path());
+            String name = section.isBlank() || section.equalsIgnoreCase(label)
+                    ? moduleLabel + " > " + label
+                    : moduleLabel + " > " + section + " > " + label;
+            out.add(new PendingChange(name, beforeText(draft), afterText(draft)));
         }
         return out;
     }
@@ -1076,34 +1088,34 @@ public final class ConfigEditor {
         };
     }
 
-    /** One plain-English line from the field name, its type, and the current value. */
+    /** One plain-English line for what this setting does. The current value is shown separately. */
     public static String description(String moduleId, String path) {
         return friendlyDescription(moduleId, path, currentText(moduleId, path));
     }
 
     public static String friendlyDescription(String moduleId, String path, String current) {
-        String name = displayName(leafName(path));
+        return ConfigFieldHelp.describe(moduleId, path);
+    }
+
+    /** Default value, formatted the same way as {@link #shownValue}. */
+    public static String defaultShown(String moduleId, String path) {
         Kind kind = kindOf(moduleId, path);
-        String shown = current == null || current.isBlank() ? "empty" : current.trim();
-        if (shown.length() > 32) {
-            shown = shown.substring(0, 31) + "...";
+        if (kind == Kind.BOOLEAN) {
+            return truth(defaultText(moduleId, path)) ? "ON" : "OFF";
         }
-        String leaf = leafName(path).toLowerCase(Locale.ROOT);
-        if (leaf.contains("chance") && kind == Kind.NUMBER) {
-            String odds = oddsPhrase(current);
-            String line = "Chance (0-1) that a mob drops " + dropSubject(name) + ". Currently " + shown;
-            return odds.isEmpty() ? line + "." : line + " - " + odds + ".";
+        if (kind == Kind.GROUP) {
+            return "";
         }
-        return switch (kind) {
-            case BOOLEAN -> "Turns " + name + " on or off. Currently " + (truth(shown) ? "on" : "off") + ".";
-            case NUMBER -> "Number used for " + name + ". Currently " + shown + ".";
-            case TEXT -> "Text for " + name + ". Currently " + shown + ".";
-            case ENUM -> "Which " + name + " is selected. Currently " + shown + ".";
-            case LIST -> "The list of " + name + ". Currently " + shown + ".";
-            case MAP -> "Named values for " + name + ". Currently " + shown + ".";
-            case GROUP -> "Settings grouped under " + name + ". Currently " + shown + ".";
-            default -> "Setting for " + name + ". Currently " + shown + ".";
-        };
+        return defaultText(moduleId, path);
+    }
+
+    public static void rememberEditorPage(UUID player, String page) {
+        session(player).editorPage = page == null ? "" : page;
+    }
+
+    public static String editorPage(UUID player) {
+        String page = session(player).editorPage;
+        return page == null || page.isBlank() ? "edit:difficulty:0:" : page;
     }
 
     public static String defaultText(String moduleId, String path) {
@@ -1309,43 +1321,252 @@ public final class ConfigEditor {
         return "That entry can't be removed here.";
     }
 
-    private static String groupName(String path) {
-        String leaf = leafName(path);
-        String lower = leaf.toLowerCase(Locale.ROOT);
-        String body = lower.startsWith("enable") ? lower.substring("enable".length()) : lower;
-        if (body.contains("spawn")) {
-            return "Spawning";
-        }
-        if (lower.contains("scaling") || lower.contains("multiplier") || lower.contains("curve")) {
-            return "Scaling";
-        }
-        if (lower.contains("drop") || lower.contains("coin") || lower.contains("reward")) {
-            return "Drops";
-        }
-        String token = firstCamelToken(leaf);
-        if (token.isEmpty()) {
-            return "Other";
-        }
-        return Character.toUpperCase(token.charAt(0)) + token.substring(1).toLowerCase(Locale.ROOT);
+    private static final List<String> SECTION_ORDER = List.of(
+            "Master switch",
+            "Access",
+            "Player Scaling",
+            "Mob Spawning",
+            "Boss Behavior",
+            "Elites and Mutations",
+            "Unlock Tiers",
+            "Ability Tiers",
+            "The End",
+            "Rivals",
+            "Sparring",
+            "Meditation",
+            "Combat Systems",
+            "Prestige and Skills",
+            "Tips",
+            "Rewards",
+            "Ancient Coins",
+            "Class Counters",
+            "Combat Rating",
+            "Mob AI",
+            "Telemetry",
+            "Saga Costs",
+            "Server",
+            "One-time Migrations",
+            "Other");
+
+    public static boolean isSectionPath(String path) {
+        return path != null && path.startsWith(SECTION_PREFIX);
     }
 
-    private static String firstCamelToken(String leaf) {
+    /** Breadcrumb section for one field, such as {@code The End} or {@code Race Change}. */
+    public static String sectionTitle(String moduleId, String path) {
+        if (path == null || path.isBlank()) {
+            return "";
+        }
+        if (isSectionPath(path)) {
+            return path.substring(SECTION_PREFIX.length());
+        }
+        String parent = parentPath(path);
+        if (!parent.isEmpty()) {
+            return staffLabel(parent);
+        }
+        return sectionForLeaf(moduleId, leafName(path));
+    }
+
+    /** Plain label. {@code enableEndDimensionStrength} becomes {@code End Dimension Strength}. */
+    public static String staffLabel(String path) {
+        return ConfigFieldHelp.label(path);
+    }
+
+    /**
+     * Sections on the module root. Nested configs (character, combat) use each group as a
+     * section. Flat configs (difficulty) bucket fields by what they control.
+     */
+    public static List<SectionLink> sections(String moduleId) {
+        List<Entry> kids = children(moduleId, "");
+        if (kids.isEmpty()) {
+            return List.of();
+        }
+        int containers = 0;
+        for (Entry entry : kids) {
+            if (entry.kind() == Kind.GROUP || entry.kind() == Kind.MAP) {
+                containers++;
+            }
+        }
+        boolean nested = containers >= 2 && containers * 2 >= kids.size();
+        Map<String, int[]> counts = new LinkedHashMap<>();
+        Map<String, String> open = new LinkedHashMap<>();
+        if (nested) {
+            for (Entry entry : kids) {
+                String title = staffLabel(entry.path());
+                counts.computeIfAbsent(title, key -> new int[1])[0]++;
+                open.putIfAbsent(title, entry.path());
+            }
+        } else {
+            for (Entry entry : kids) {
+                String title = sectionForLeaf(moduleId, leafName(entry.path()));
+                counts.computeIfAbsent(title, key -> new int[1])[0]++;
+                open.putIfAbsent(title, SECTION_PREFIX + title);
+            }
+        }
+        List<String> order = new ArrayList<>();
+        if (nested) {
+            order.addAll(open.keySet());
+        } else {
+            for (String fixed : SECTION_ORDER) {
+                if (counts.containsKey(fixed)) {
+                    order.add(fixed);
+                }
+            }
+            for (String key : counts.keySet()) {
+                if (!order.contains(key)) {
+                    order.add(key);
+                }
+            }
+        }
+        List<SectionLink> out = new ArrayList<>();
+        for (String title : order) {
+            out.add(new SectionLink(title, open.get(title), counts.get(title)[0]));
+        }
+        return out;
+    }
+
+    /** Root fields that belong in one named section. */
+    public static List<Entry> fieldsInSection(String moduleId, String section) {
+        List<Entry> out = new ArrayList<>();
+        if (section == null || section.isBlank()) {
+            return out;
+        }
+        for (Entry entry : children(moduleId, "")) {
+            if (section.equals(sectionForLeaf(moduleId, leafName(entry.path())))) {
+                out.add(entry);
+            }
+        }
+        return out;
+    }
+
+    static String sectionForLeaf(String moduleId, String leaf) {
         String name = leaf == null ? "" : leaf;
-        if (name.startsWith("enable") && name.length() > 6 && Character.isUpperCase(name.charAt(6))) {
-            name = name.substring(6);
+        String lower = name.toLowerCase(Locale.ROOT);
+        if ("saga".equals(moduleId)) {
+            return "enabled".equals(lower) ? "Master switch" : "Saga Costs";
         }
-        StringBuilder token = new StringBuilder();
-        for (int i = 0; i < name.length(); i++) {
-            char c = name.charAt(i);
-            if (i > 0 && Character.isUpperCase(c)) {
-                break;
-            }
-            if (c == '_' || c == ' ') {
-                break;
-            }
-            token.append(c);
+        if (lower.contains("migrated")) {
+            return "One-time Migrations";
         }
-        return token.toString();
+        if (lower.contains("whitelist")) {
+            return "Access";
+        }
+        if (lower.contains("telemetry")) {
+            return "Telemetry";
+        }
+        if (lower.contains("ancientcoin") || lower.contains("stafffree")) {
+            return "Ancient Coins";
+        }
+        if (lower.startsWith("unlocktier") || lower.startsWith("tiercost")) {
+            return "Unlock Tiers";
+        }
+        if (lower.startsWith("tier")) {
+            return "Ability Tiers";
+        }
+        if (lower.contains("boss")) {
+            return "Boss Behavior";
+        }
+        if (lower.contains("elite") || lower.contains("mutation") || lower.contains("rarity")) {
+            return "Elites and Mutations";
+        }
+        if (lower.contains("end") || lower.contains("dragon")) {
+            return "The End";
+        }
+        if (lower.contains("rival")) {
+            return "Rivals";
+        }
+        if (lower.contains("spar")) {
+            return "Sparring";
+        }
+        if (lower.contains("meditation")) {
+            return "Meditation";
+        }
+        if (lower.contains("lmtip")) {
+            return "Tips";
+        }
+        if (lower.contains("skillcheck")
+                || lower.contains("skillunlock")
+                || lower.contains("playerstat")
+                || "enableprestigesystem".equals(lower)
+                || lower.contains("overhaul")) {
+            return "Prestige and Skills";
+        }
+        if (lower.contains("potential")
+                || "enableprogression".equals(lower)
+                || lower.contains("globaltp")
+                || lower.contains("bioandroid")
+                || lower.contains("racelock")
+                || lower.contains("yardrat")
+                || lower.contains("spiritualist")
+                || lower.contains("androidconversion")
+                || lower.contains("kiweapon")
+                || lower.contains("piercing")
+                || lower.contains("dotextra")
+                || lower.contains("apothic")
+                || lower.contains("shadowdummy")) {
+            return "Combat Systems";
+        }
+        if (lower.contains("counter")
+                || lower.contains("specialization")
+                || lower.contains("defenset")
+                || lower.contains("weakstat")
+                || lower.contains("tankdamage")
+                || lower.contains("strongstat")) {
+            return "Class Counters";
+        }
+        if (lower.contains("combatrating")) {
+            return "Combat Rating";
+        }
+        if (lower.contains("adaptive") || lower.contains("evolution")) {
+            return "Mob AI";
+        }
+        if (lower.contains("nearbyscale")
+                || "maxscaledmobsperplayer".equals(lower)
+                || "mobscaleradius".equals(lower)) {
+            return "Mob Spawning";
+        }
+        if (lower.contains("reward") || lower.contains("coindrop")) {
+            return "Rewards";
+        }
+        if (lower.contains("scaling")
+                || lower.contains("multiplier")
+                || lower.contains("curve")
+                || lower.contains("health")
+                || lower.contains("damage")
+                || lower.contains("defense")
+                || lower.contains("mobscale")
+                || lower.contains("area")
+                || lower.contains("hardcap")
+                || lower.contains("referencemax")
+                || lower.contains("maxmove")
+                || lower.contains("maxarmor")
+                || lower.contains("maxdamage")
+                || lower.contains("maxform")
+                || lower.contains("maxlive")
+                || lower.contains("transformscale")
+                || lower.contains("movement")
+                || lower.contains("dmz")
+                || lower.contains("contribution")
+                || lower.contains("teambonus")
+                || lower.contains("levelmultiplier")
+                || "scalehostileonly".equals(lower)
+                || lower.contains("deathreset")
+                || lower.contains("team")) {
+            return "Player Scaling";
+        }
+        if ("enabled".equals(lower)
+                || lower.contains("admin")
+                || lower.contains("gui")
+                || lower.contains("vanilla")
+                || lower.contains("dimension")
+                || lower.contains("cnpc")) {
+            return "Server";
+        }
+        return "Other";
+    }
+
+    private static String groupName(String path) {
+        return sectionForLeaf("", leafName(path));
     }
 
     private static String chanceError(String moduleId, String path, String raw) {
@@ -1400,37 +1621,6 @@ public final class ConfigEditor {
         }
         int tab = key.indexOf('\t');
         return tab < 0 ? key : key.substring(0, tab);
-    }
-
-    private static String dropSubject(String display) {
-        String lower = display == null ? "" : display.toLowerCase(Locale.ROOT);
-        if (lower.contains("ancient") && lower.contains("coin")) {
-            return "Ancient Coins";
-        }
-        if (lower.contains("coin")) {
-            return "coins";
-        }
-        String trimmed = display == null ? "" : display.replace(" Chance", "").replace(" Drop", "").trim();
-        return trimmed.isEmpty() ? "a reward" : trimmed;
-    }
-
-    private static String oddsPhrase(String raw) {
-        if (raw == null || raw.isBlank()) {
-            return "";
-        }
-        try {
-            double value = Double.parseDouble(raw.trim());
-            if (value <= 0 || value > 1) {
-                return "";
-            }
-            int kills = (int) Math.round(1.0 / value);
-            if (kills <= 1) {
-                return "about every kill";
-            }
-            return "about 1 in " + kills + " kills";
-        } catch (NumberFormatException ignored) {
-            return "";
-        }
     }
 
     private static String beforeText(Draft draft) {
@@ -1692,6 +1882,7 @@ public final class ConfigEditor {
 
     private static final class Session {
         private String search = "";
+        private String editorPage = "";
         private String banner = "";
         private BannerTone tone = BannerTone.NONE;
         private final List<Draft> drafts = new ArrayList<>();
