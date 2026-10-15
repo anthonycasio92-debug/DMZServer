@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Patch stock KaiPath so Character Services draws an inspect subject.
-# Stock 1.3.17 renderPreview always passes Minecraft.player to InventoryScreen.
+# Stock 1.3.17 and 1.3.19 renderPreview always pass Minecraft.player to InventoryScreen.
 # This leaves that path in place and returns early when playerModel.subject is another uuid.
 #
 # Usage: bash tools/ultra-gui-kit/patch-inspect-preview.sh
@@ -17,7 +17,9 @@ STUBS="$OUT/stubs"
 CLASSES="$OUT/classes"
 PATCH_CLASSES="$OUT/patch"
 TEST_CLASSES="$OUT/test"
-OUT_JAR="$ROOT/mods/kaipath-1.3.17-inspect-subject.jar"
+BASE_NAME="$(basename "$BASE_JAR" .jar)"
+BASE_VERSION="${BASE_NAME#kaipath-}"
+OUT_JAR="$ROOT/mods/kaipath-${BASE_VERSION}-inspect-subject.jar"
 
 if [[ ! -f "$BASE_JAR" ]]; then
   echo "Missing base KaiPath jar: $BASE_JAR" >&2
