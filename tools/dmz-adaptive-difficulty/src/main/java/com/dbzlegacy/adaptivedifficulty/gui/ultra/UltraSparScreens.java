@@ -179,7 +179,7 @@ public final class UltraSparScreens {
                 "weights|Weights",
                 "settings|Chat settings");
         if (StaffAccess.isStaff(player)) {
-            UltraPickHelper.placePageButtons(spec, "admin|Staff Admin");
+            spec.buttonLeft("page:admin", UltraStyle.danger("Staff Admin"), "danger").rowGap();
         }
         spec.footerBackToMain();
         spec.send(player);
@@ -823,7 +823,7 @@ public final class UltraSparScreens {
                 .labelValue("Partner", partner == null || partner.isBlank() ? "none" : partner)
                 .setRow(UltraStyle.CONTENT_ROW + 80);
         spec.buttonLeft("do:admin:save", UltraStyle.confirm("Save data"), "confirm")
-                .buttonRight("do:admin:status", UltraStyle.dim("Show status"), "dim")
+                .buttonRight("do:admin:status", UltraStyle.danger("Show status"), "danger")
                 .rowGap();
         spec.footerBackHome("Spar Home");
         spec.send(player);

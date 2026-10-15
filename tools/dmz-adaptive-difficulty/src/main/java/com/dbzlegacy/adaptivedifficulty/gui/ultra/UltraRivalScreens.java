@@ -113,7 +113,7 @@ public final class UltraRivalScreens {
         UltraPickHelper.placePageButtons(
                 spec, "top|Leaderboard", "records|Records", "settings|Settings");
         if (StaffAccess.isStaff(player)) {
-            UltraPickHelper.placePageButtons(spec, "admin|Staff Admin");
+            spec.buttonLeft("page:admin", UltraStyle.danger("Staff Admin"), "danger").rowGap();
         }
         spec.footerBackToMain();
         spec.send(player);
@@ -759,7 +759,7 @@ public final class UltraRivalScreens {
         spec.buttonLeft("do:admin:save", UltraStyle.confirm("Save data"), "confirm")
                 .buttonRight("do:admin:refresh", UltraStyle.confirm("Reload data"), "confirm")
                 .rowGap();
-        spec.button("do:admin:status", UltraStyle.dim("Status"), "dim").rowGap();
+        spec.button("do:admin:status", UltraStyle.danger("Status"), "danger").rowGap();
         spec.footerBackHome("Rival Home");
         spec.send(player);
     }

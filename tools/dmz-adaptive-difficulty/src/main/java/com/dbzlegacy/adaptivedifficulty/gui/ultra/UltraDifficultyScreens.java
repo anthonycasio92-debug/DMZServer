@@ -565,7 +565,7 @@ public final class UltraDifficultyScreens {
                         coinChat ? "confirm" : "dim")
                 .rowGap();
         if (StaffAccess.isStaff(player)) {
-            spec.buttonLeft("page:stats", UltraStyle.dim("Staff details"), "dim").rowGap();
+            spec.buttonLeft("page:stats", UltraStyle.danger("Staff details"), "danger").rowGap();
         }
         spec.footerBackHome("Home");
         spec.send(player);
@@ -631,10 +631,10 @@ public final class UltraDifficultyScreens {
                 .line(UltraStyle.DIM + "Reload config, event log, and LM Staff Admin hub")
                 .setRow(UltraStyle.CONTENT_ROW + 90);
         spec.buttonLeft("do:reload", UltraStyle.confirm("Reload LM config"), "confirm")
-                .buttonRight("page:stats", UltraStyle.dim("Staff details"), "dim")
+                .buttonRight("page:stats", UltraStyle.danger("Staff details"), "danger")
                 .rowGap();
         spec.buttonLeft("open:admin", UltraStyle.danger("LM Staff Admin"), "danger")
-                .buttonRight("page:eventlog", UltraStyle.dim("Event log"), "dim")
+                .buttonRight("page:eventlog", UltraStyle.danger("Event log"), "danger")
                 .rowGap();
         spec.footerBackHome("Home");
         spec.send(player);
@@ -650,7 +650,7 @@ public final class UltraDifficultyScreens {
                 .line(UltraStyle.DIM + "Use the toggles, or typed: /lm admin syslog ...")
                 .setRow(UltraStyle.CONTENT_ROW + 90);
         boolean logOn = DifficultyConfig.get().enableSystemTelemetry;
-        spec.buttonLeft("do:syslog:status", UltraStyle.dim("Status"), "dim")
+        spec.buttonLeft("do:syslog:status", UltraStyle.danger("Status"), "danger")
                 .buttonRight(
                         "do:syslog:on",
                         logOn ? UltraStyle.confirm("Log ON") : UltraStyle.dim("Turn ON"),

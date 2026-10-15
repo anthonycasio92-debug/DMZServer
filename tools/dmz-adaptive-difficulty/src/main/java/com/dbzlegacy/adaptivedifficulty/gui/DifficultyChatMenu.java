@@ -170,7 +170,7 @@ public final class DifficultyChatMenu {
         send(player, toggles);
         if (isStaff(player)) {
             send(player, btn(
-                    UltraStyle.dim("[Staff details]"),
+                    UltraStyle.danger("[Staff details]"),
                     "/difficulty do page stats",
                     "Staff breakdown"));
         }

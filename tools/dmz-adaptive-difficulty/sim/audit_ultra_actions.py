@@ -957,6 +957,13 @@ def main() -> int:
         errors.append("Personal difficulty OFF must use dim, not confirm/gold")
     if 'UltraStyle.dim("Personal OFF")' not in diff_screens:
         errors.append("Personal difficulty OFF toggle must be dim")
+    if 'dim("Staff details")' in diff_screens:
+        errors.append("Staff details must be danger/red, not dim")
+    if 'danger("Staff details")' not in diff_screens:
+        errors.append("Difficulty menus must offer Staff details in danger/red")
+    chat_menu = (ULTRA.parent / "DifficultyChatMenu.java").read_text(encoding="utf-8")
+    if 'dim("[Staff details]")' in chat_menu or "danger(\"[Staff details]\")" not in chat_menu:
+        errors.append("Difficulty chat Staff details must be danger/red")
     spec_src = (ULTRA / "UltraScreenSpec.java").read_text(encoding="utf-8")
     if 'STYLE_DIM.equals(resolvedStyle)' not in spec_src or 'accentCode = "8"' not in spec_src:
         errors.append("Dim button labels must stay dark gray (not the system accent)")
@@ -970,8 +977,10 @@ def main() -> int:
         errors.append("UltraSparScreens.openHome must label the board Hall of Infamy")
     if "stats|Your stats" not in spar_home_body:
         errors.append("UltraSparScreens.openHome must offer Your stats")
-    if "admin|Staff Admin" not in spar_home:
-        errors.append("UltraSparScreens.openHome must offer staff Admin")
+    if 'danger("Staff Admin")' not in spar_home_body or '"danger"' not in spar_home_body:
+        errors.append("UltraSparScreens.openHome Staff Admin must be danger/red")
+    if "admin|Staff Admin" in spar_home_body:
+        errors.append("UltraSparScreens.openHome must not use the default Staff Admin button")
     if "settings|Chat settings" not in spar_home_body:
         errors.append("UltraSparScreens.openHome must offer Chat settings")
     if "fight_report:" not in spar_home and "recentFightCards" not in spar_home:
@@ -1032,6 +1041,10 @@ def main() -> int:
     )
     home_body = home_m.group(0) if home_m else ""
     actions_body = actions_m.group(0) if actions_m else ""
+    if 'danger("Staff Admin")' not in home_body:
+        errors.append("UltraRivalScreens.openHome Staff Admin must be danger/red")
+    if "admin|Staff Admin" in home_body:
+        errors.append("UltraRivalScreens.openHome must not use the default Staff Admin button")
     if "challenge_accept" in home_body or "challenge_decline" in home_body:
         errors.append("UltraRivalScreens.openHome must not duplicate challenge Accept/Decline")
     if "challenge_accept" in actions_body or "challenge_decline" in actions_body:
