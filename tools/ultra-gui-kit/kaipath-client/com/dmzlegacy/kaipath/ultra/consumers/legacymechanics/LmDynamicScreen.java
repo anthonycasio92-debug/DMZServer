@@ -27,7 +27,8 @@ import net.minecraft.world.entity.LivingEntity;
  * field 11 {@code inputsJson} (text + {@code paged_book}), button {@code style} /
  * {@code palette} / {@code accent} / {@code sound} / {@code buttonSkin} / {@code icon},
  * {@code layoutJson.headerBottom} / {@code frame}, optional {@code layoutJson.playerModel}
- * (including {@code parts.form} when {@code combined.forms.v1} is advertised),
+ * (including {@code parts.form} when {@code combined.forms.v1} is advertised and
+ * {@code parts.bodyParts} when {@code bodyParts} is advertised),
  * and button {@code footer:true} ({@code fixedFooter}).
  *
  * <p>No hardcoded screen/tab/button lists. Works for <b>any</b> partner mod — clicks echo on
@@ -795,7 +796,15 @@ public class LmDynamicScreen extends UltraScreen {
             UltraUiAccess.fillRect(g, theme(), fx, fy, 2, fh, edge);
             UltraUiAccess.fillRect(g, theme(), fx + fw - 2, fy, 2, fh, edge);
         }
-        if (!renderEntityPreview(g, centerX, centerY, scale, lookX, lookY, entity)) {
+        // bodyParts attach while the entity renderer asks DMZUltra FormParts for a look.
+        BodyPartPreview.begin(entity, parts);
+        boolean drew;
+        try {
+            drew = renderEntityPreview(g, centerX, centerY, scale, lookX, lookY, entity);
+        } finally {
+            BodyPartPreview.end();
+        }
+        if (!drew) {
             UltraUiAccess.fillRect(
                     g, theme(), panelX + pmX, panelY + pmY, pmW, pmH, 0x33000000);
         }

@@ -48,6 +48,12 @@ The client renders what the server sends — **no hardcoded screen/tab/button/ac
 
 Generic, not DMZ-only. One preview combines the base entity, optional `parts.headBones`, and optional `parts.form` string ids (`race`, `group`, `form`, `stackGroup`, `stackForm`). Any mod may send its own ids. LM fills them from DMZ. A client that lacks the feature still draws the entity and ignores `parts.form`. `headBones` and the DMZUltra FormParts notes are an LM example — other mods replace them.
 
+### `bodyParts`
+
+Advertise `bodyParts`. `playerModel.parts.bodyParts` is an array of `{ "id", "source", "slot" }`. Standard slots: `tail`, `wings`, `horns`, `ears`, `extra_arms`. When DMZUltra is installed, load its FormParts catalog and attach each known id to the preview entity (`part.<id>` on `dmzultra:geo/entity/form_parts.geo.json`). LM's race tail is `{ "id": "saiyan_tail", "source": "dmzultra", "slot": "tail" }` and uses the `tail_fur` mesh. The same path accepts any other mod's ids: look up `assets/<source>/form_parts/forms.json`. If that mod is absent, or the id is not in the catalog, skip the piece and still draw the base entity. Keep `parts.form` for clients that do not advertise `bodyParts`.
+
+Reference: `BodyPartWire`, `BodyPartPreview`, and `FormPartsPreviewMixin` (optional mixin — do not apply it when `com.dmzultra.client.forms.FormParts` is missing). Register `kaipath-bodyparts.mixins.json` from the kit.
+
 ### `icon`
 
 Optional `namespace:path` on a button or tab. Draw a mark beside the label (the kit uses an 8px square; a full client may blit the item when the id resolves). Unknown or blank ids are ignored and the control still works. Advertise `icon`. Stock 1.3.17 does not, so LM reports `pendingNext=icon`.

@@ -16,6 +16,9 @@ ROOT="$(cd "$HERE/../.." && pwd)"
 BASE_JAR="${KAIPATH_BASE_JAR:-$ROOT/mods/kaipath-1.3.13.jar}"
 GSON="$ROOT/libraries/com/google/code/gson/gson/2.10.1/gson-2.10.1.jar"
 LOG4J="$ROOT/libraries/org/apache/logging/log4j/log4j-api/2.19.0/log4j-api-2.19.0.jar"
+MIXIN="$ROOT/libraries/org/spongepowered/mixin/0.8.5/mixin-0.8.5.jar"
+ASM="$ROOT/libraries/org/ow2/asm/asm/9.8/asm-9.8.jar"
+ASM_TREE="$ROOT/libraries/org/ow2/asm/asm-tree/9.8/asm-tree-9.8.jar"
 OUT_DIR="$HERE/build"
 CLASSES="$OUT_DIR/classes"
 STUB_CLASSES="$OUT_DIR/stub-classes"
@@ -54,14 +57,14 @@ find "$SERVER_SRC" -name '*.java' > "$OUT_DIR/server.list"
 javac --release 17 -cp "$STUB_CLASSES:$GSON" -d "$SERVER_CLASSES" @"$OUT_DIR/server.list"
 
 find "$SRC" -name '*.java' > "$OUT_DIR/sources.list"
-CP="$STUB_CLASSES:$BASE_JAR:$GSON:$LOG4J"
-javac --release 17 -cp "$CP" -d "$CLASSES" @"$OUT_DIR/sources.list"
+CP="$STUB_CLASSES:$BASE_JAR:$GSON:$LOG4J:$MIXIN:$ASM:$ASM_TREE"
+javac --release 17 -proc:none -cp "$CP" -d "$CLASSES" @"$OUT_DIR/sources.list"
 
 if [[ -d "$TEST_SRC" ]]; then
   find "$TEST_SRC" -name '*.java' > "$OUT_DIR/tests.list"
   TEST_CLASSES="$OUT_DIR/test-classes"
   mkdir -p "$TEST_CLASSES"
-  javac --release 17 -cp "$CLASSES:$SERVER_CLASSES:$CP" -d "$TEST_CLASSES" @"$OUT_DIR/tests.list"
+  javac --release 17 -proc:none -cp "$CLASSES:$SERVER_CLASSES:$CP" -d "$TEST_CLASSES" @"$OUT_DIR/tests.list"
   java -cp "$TEST_CLASSES:$CLASSES:$CP" \
     com.dmzlegacy.kaipath.ultra.consumers.legacymechanics.GuiOpenPacketRoundTripTest
   java -Dultragui.fixture="$HERE/server/BridgeFutureFieldsFixture.json" \
@@ -91,6 +94,18 @@ for line in text.splitlines():
         lines.append(line)
 if not seen:
     lines.append(f"Implementation-Version: {version}")
+rewritten = []
+for line in lines:
+    if line.startswith("MixinConfigs:"):
+        configs = [part.strip() for part in line.split(":", 1)[1].split(",") if part.strip()]
+        if "kaipath-bodyparts.mixins.json" not in configs:
+            configs.append("kaipath-bodyparts.mixins.json")
+        rewritten.append("MixinConfigs: " + ",".join(configs))
+    else:
+        rewritten.append(line)
+if not any(line.startswith("MixinConfigs:") for line in rewritten):
+    rewritten.append("MixinConfigs: kaipath.mixins.json,kaipath-bodyparts.mixins.json")
+lines = rewritten
 if not lines or lines[-1] != "":
     lines.append("")
 path.write_text("\r\n".join(lines), encoding="utf-8")
@@ -107,6 +122,9 @@ if command -v zip >/dev/null 2>&1; then
 fi
 
 jar uf "$OUT_JAR" -C "$CLASSES" com/dmzlegacy/kaipath/ultra/consumers/
+jar uf "$OUT_JAR" -C "$CLASSES" com/dmzlegacy/kaipath/mixin/FormPartsPreviewMixin.class
+jar uf "$OUT_JAR" -C "$CLASSES" com/dmzlegacy/kaipath/mixin/BodyPartMixinPlugin.class
+jar uf "$OUT_JAR" -C "$HERE" kaipath-bodyparts.mixins.json
 
 # Fix stock fitLabel mojibake ellipsis (â€¦ → ...) that shows as weird A/E glyphs.
 FIT_CLASS_DIR="$OUT_DIR/fitlabel-patch"
@@ -170,7 +188,7 @@ if ! grep -q 'inputsJson' "$OUT_DIR/GuiOpenPacket.javap.txt"; then
 fi
 
 # Confirm advertise tokens are in the registry class bytes
-for token in textInput fixedFooter portraitFrame; do
+for token in textInput fixedFooter portraitFrame bodyParts; do
   if ! strings "$OUT_JAR" | grep -q "$token"; then
     if ! (cd "$OUT_DIR" && jar xf "$OUT_JAR" com/dmzlegacy/kaipath/ultra/consumers/UltraGuiConsumerRegistry.class \
       && strings com/dmzlegacy/kaipath/ultra/consumers/UltraGuiConsumerRegistry.class | grep -q "$token"); then

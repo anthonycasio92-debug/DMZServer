@@ -559,6 +559,11 @@ def main() -> int:
                 "SHIPPED_ON_RECOMMENDED must not include FEATURE_ICON "
                 "(not advertised by KaiPath 1.3.17)"
             )
+        if "FEATURE_BODY_PARTS" in shipped_block:
+            errors.append(
+                "SHIPPED_ON_RECOMMENDED must not include FEATURE_BODY_PARTS "
+                "(not advertised by KaiPath 1.3.17)"
+            )
         pending_decl = "public static final Set<String> PENDING_NEXT"
         if pending_decl not in feat_text:
             errors.append("UltraClientFeatures must declare public PENDING_NEXT set")
@@ -581,6 +586,11 @@ def main() -> int:
         if pending_block and "FEATURE_ICON" not in pending_block:
             errors.append(
                 "PENDING_NEXT must include FEATURE_ICON (button/tab icon, not on 1.3.17)"
+            )
+        if pending_block and "FEATURE_BODY_PARTS" not in pending_block:
+            errors.append(
+                "PENDING_NEXT must include FEATURE_BODY_PARTS "
+                "(playerModel.parts.bodyParts, not on KaiPath 1.3.17)"
             )
         if "headerBottom" not in feat_text or 'FEATURE_ACCENT_DOC = "accent"' not in feat_text:
             errors.append("UltraClientFeatures must expose headerBottom/accent doc spellings")

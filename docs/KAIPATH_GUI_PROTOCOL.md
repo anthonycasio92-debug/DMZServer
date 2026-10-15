@@ -174,6 +174,7 @@ Known optional feature ids:
 | `portraitFrame` | `playerModel.portraitFrame` enable token (**advertised on 1.3.17**) |
 | `fixedFooter` | Button `footer:true` pinned chrome (**shipped on KaiPath 1.3.17**) |
 | `combined.forms.v1` | One preview combines the base entity with optional `playerModel.parts.headBones` and `playerModel.parts.form` string ids. The strings are generic (race, group, form, stack). Any mod may send its own ids. A client that lacks the feature still draws the entity and ignores `parts.form`. |
+| `bodyParts` | `playerModel.parts.bodyParts` — explicit pieces (`id`, `source`, `slot`) attached to that same preview. Any mod may send its own ids. A client that lacks the feature still draws the entity and ignores the array. Unknown ids are skipped. |
 | `icon` | Optional button/tab `icon`. **Not** advertised by KaiPath 1.3.17. LM logs `pendingNext=icon` until the client sends it. |
 
 Advertise (KaiPath **1.3.17** — fifteen ids; see [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md)):
@@ -182,7 +183,7 @@ Advertise (KaiPath **1.3.17** — fifteen ids; see [`KAIPATH_BRIDGE_GAPS.md`](KA
 ["style","activeTab","titleAlign","playerModel","textInput","headerBottom","accent","palette","sound","buttonSkin","frame","pagedBook","portraitFrame","fixedFooter","combined.forms.v1"]
 ```
 
-The reference kit (`tools/ultra-gui-kit/`) also advertises `"icon"` after `combined.forms.v1`. Stock 1.3.17 does not. A missing `icon` advertisement is info (`pendingNext`), not a shipped-client warning.
+The reference kit (`tools/ultra-gui-kit/`) also advertises `"bodyParts"` and `"icon"` after `combined.forms.v1`. Stock 1.3.17 does not. A missing `bodyParts` or `icon` advertisement is info (`pendingNext`), not a shipped-client warning. Clients that never advertise `bodyParts` still draw the base entity.
 
 **Spelling split:** GuiFeatures advertise uses camelCase **`pagedBook`**; the widget `type` string is snake_case **`paged_book`**.
 
@@ -319,6 +320,9 @@ platform-default charset causes mojibake on accents (é/à).
         "stackGroup": "",
         "stackForm": ""
       },
+      "bodyParts": [
+        { "id": "saiyan_tail", "source": "dmzultra", "slot": "tail" }
+      ],
       "extras": []
     }
   }
@@ -411,10 +415,10 @@ Any mod may send this so the client can draw extra pieces on the same preview. O
 whole `parts` object when nothing extra is equipped. Clients that only honor bounds still
 work; unknown sub-fields are ignored.
 
-**LM example — replace with your own.** The `headBones` shape and the DMZUltra FormParts
-notes below are how LegacyMechanics fills the generic fields from DMZ. Another mod omits
-`headBones` and sends its own `form` string ids (or its own `extras` kinds). Do not treat
-those DMZ names as required protocol.
+**LM example — replace with your own.** The `headBones` shape, the form ids, and the
+`saiyan_tail` entry below are how LegacyMechanics fills the generic fields from DMZ.
+Another mod omits `headBones` and sends its own `bodyParts` ids (any `source` mod id).
+Do not treat those DMZ names as required protocol.
 
 ##### `combined.forms.v1`
 
@@ -441,7 +445,41 @@ ids. A client that does not advertise the feature still draws the entity and ign
 | `form.form` | string | no | Active form name. |
 | `form.stackGroup` | string | no | Stack form group (empty when none). |
 | `form.stackForm` | string | no | Stack form name (empty when none). |
+| `bodyParts` | array | no | Explicit pieces to attach. Omit when empty. Each entry is `{ "id", "source", "slot" }`. See below. |
 | `extras` | array | no | Open extension list. Each entry is `{ "kind": string, "id": string, … }`. Unknown `kind` values **must** be ignored. LM currently sends `[]`. |
+
+##### `playerModel.parts.bodyParts`
+
+Any mod may send this array. The client attaches each known piece to the same preview
+entity. `form` stays on the wire for older clients that only understand form string ids.
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `id` | string | yes | Piece id in the `source` mod's catalog. Not an LM-only token. |
+| `source` | string | yes | Mod id that owns the model (`dmzultra`, `myshop`, …). |
+| `slot` | string | yes | Where it anchors. Standard slots: `tail`, `wings`, `horns`, `ears`, `extra_arms`. Other values (including `body`) still attach by `id` when the catalog knows the piece. |
+
+Example (LM — a Saiyan who still has the race tail):
+
+```json
+{ "id": "saiyan_tail", "source": "dmzultra", "slot": "tail" }
+```
+
+Wings use the same shape with the catalog piece id, for example
+`{ "id": "wings_feather", "source": "dmzultra", "slot": "wings" }`.
+
+**Client rules:**
+
+- When `source` is `dmzultra` and that mod is installed, load its FormParts catalog
+  (`assets/dmzultra/form_parts/forms.json`) and the model
+  `dmzultra:geo/entity/form_parts.geo.json`. Bones are named `part.<id>`.
+- `saiyan_tail` is the race tail. Its DMZUltra mesh is `tail_fur` (`part.tail_fur`).
+  If the preview entity already draws that race tail from its own character, do not
+  stack a second one.
+- Another mod's ids resolve the same way against `assets/<source>/form_parts/forms.json`
+  when that mod is installed. Ids that are not in the loaded catalog are skipped.
+- If the source mod is absent, or every id is unknown, draw the base entity and do not
+  throw. `form` is unchanged.
 
 \* When `headBones` is present, both `token` and `pieces` are required. `pieces` may be empty
 only if `token` is empty (do not send `headBones` in that case).
@@ -459,8 +497,11 @@ only if `token` is empty (do not send `headBones` in that case).
 3. If `parts.form` is present **and** the client advertises `combined.forms.v1`, draw those
    form string ids on the same preview. LM resolves them through DMZUltra FormParts; another
    mod resolves its own catalog. Missing the feature: skip `parts.form`.
-4. Iterate `parts.extras`; skip unknown `kind`s.
-5. If `parts` is missing entirely, draw the local player with whatever the client already
+4. If `parts.bodyParts` is present **and** the client advertises `bodyParts`, attach each
+   entry whose `source` catalog contains that `id`. Skip unknown ids and missing source
+   mods. Do not replace the base entity when the array is empty or fully unknown.
+5. Iterate `parts.extras`; skip unknown `kind`s.
+6. If `parts` is missing entirely, draw the local player with whatever the client already
    knows from entity sync (no server cosmetics hint).
 
 **`extras` entry shape (forward-compatible):**

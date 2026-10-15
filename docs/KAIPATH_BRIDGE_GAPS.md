@@ -102,7 +102,7 @@ LM Ultra copy prefers ASCII. Pre-fit labels with ASCII `...`. Stock KaiPath `fit
 
 ### 7. Pending vs shipped diagnostics
 
-Missing `SHIPPED_ON_RECOMMENDED` → warn (wrong/old jar). Missing `PENDING_NEXT` → info (`pendingNext=`). On stock **1.3.17**, `missingShipped=none` and `pendingNext=icon`. `FEATURE_FIXED_FOOTER` and the seven chrome ids (`palette`, `sound`, `buttonSkin`, `frame`, `pagedBook`, `portraitFrame`, `combined.forms.v1`) are shipped. Do not put `icon` in the shipped set until official KaiPath advertises it.
+Missing `SHIPPED_ON_RECOMMENDED` → warn (wrong/old jar). Missing `PENDING_NEXT` → info (`pendingNext=`). On stock **1.3.17**, `missingShipped=none` and `pendingNext` lists `icon` and `bodyParts`. `FEATURE_FIXED_FOOTER` and the seven chrome ids (`palette`, `sound`, `buttonSkin`, `frame`, `pagedBook`, `portraitFrame`, `combined.forms.v1`) are shipped. Do not put `icon` or `bodyParts` in the shipped set until official KaiPath advertises them.
 
 ### 8. Older clients without textInput
 
@@ -110,7 +110,7 @@ Pre-1.3.9 ignores field 11. LM Weights / Config show an explicit danger line whe
 
 ### 9. Player model custom parts
 
-`playerModel.parts` is generic. `headBones` and the DMZUltra FormParts notes in the protocol are an **LM example — replace with your own**. `combined.forms.v1` means one preview can also draw `parts.form` string ids. Clients that lack the feature still draw the entity and ignore `parts.form`. Unknown `extras.kind` values must be ignored.
+`playerModel.parts` is generic. `headBones`, form ids, and the `saiyan_tail` note in the protocol are an **LM example — replace with your own**. `combined.forms.v1` means one preview can also draw `parts.form` string ids. `bodyParts` is the explicit piece list (`id`, `source`, `slot`). Clients that lack either feature still draw the entity and ignore the field they do not know. Unknown piece ids and unknown `extras.kind` values must be ignored. `bodyParts` is `pendingNext` until a client advertises it (same treatment as `icon`).
 
 ### 10. Slider / toggle deferred
 

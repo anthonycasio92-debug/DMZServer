@@ -95,6 +95,11 @@ package net.minecraft.client.player;
 import net.minecraft.world.entity.LivingEntity;
 public class LocalPlayer extends LivingEntity {}
 """,
+    "net/minecraft/client/player/AbstractClientPlayer.java": """
+package net.minecraft.client.player;
+import net.minecraft.world.entity.LivingEntity;
+public class AbstractClientPlayer extends LivingEntity {}
+""",
     "net/minecraft/client/multiplayer/ClientPacketListener.java": """
 package net.minecraft.client.multiplayer;
 import net.minecraft.network.Connection;

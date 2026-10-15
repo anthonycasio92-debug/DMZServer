@@ -1,0 +1,563 @@
+{
+  "source": "dmzultra",
+  "catalog": "assets/dmzultra/form_parts/forms.json",
+  "note": "Form key is race/group/form, the same key DMZUltra FormParts.of builds. Piece ids are FormParts catalog ids.",
+  "pieces": [
+    "ankle_fins",
+    "ankle_flame",
+    "ankle_ring",
+    "antennae",
+    "antlers",
+    "arm_blade",
+    "arm_fins",
+    "arm_wraps",
+    "back_crystals",
+    "back_spines",
+    "bracer",
+    "brow_gem",
+    "brow_spikes",
+    "cape",
+    "cape_ragged",
+    "cat_ears",
+    "chest_orb",
+    "claws",
+    "collar_high",
+    "crest_fin",
+    "cuffs",
+    "diadem",
+    "dorsal_fin",
+    "ear_fins",
+    "flame_crown",
+    "gauntlet",
+    "gear_wheel",
+    "greave",
+    "hair_spikes",
+    "halo_clock",
+    "halo_disc",
+    "halo_ring",
+    "halo_shards",
+    "headband",
+    "horns_great",
+    "horns_nub",
+    "horns_ram",
+    "horns_swept",
+    "knee_spike",
+    "mandala",
+    "mane",
+    "orbit_rings",
+    "pauldron",
+    "sash",
+    "scarf",
+    "shoulder_crystal",
+    "shoulder_gear",
+    "shoulder_guard",
+    "shoulder_spikes",
+    "spirit_orbs",
+    "star_crown",
+    "tabard",
+    "tail_dragon",
+    "tail_fur",
+    "tail_lion",
+    "tail_spade",
+    "tail_stinger",
+    "third_eye",
+    "usekh",
+    "whiskers",
+    "wing_cases",
+    "wings_bat",
+    "wings_bat_small",
+    "wings_feather",
+    "wings_insect",
+    "wings_light",
+    "wrist_flame",
+    "wrist_ring"
+  ],
+  "forms": {
+    "human/fistforms/limitbreaker": [
+      "headband",
+      "arm_wraps",
+      "wrist_flame"
+    ],
+    "human/fistforms/beyondhuman": [
+      "headband",
+      "arm_wraps",
+      "wrist_flame",
+      "scarf"
+    ],
+    "human/fistforms/transcendent": [
+      "headband",
+      "arm_wraps",
+      "wrist_flame",
+      "ankle_flame",
+      "sash"
+    ],
+    "human/fistforms/godfist": [
+      "headband",
+      "gauntlet",
+      "wrist_flame",
+      "ankle_flame",
+      "sash",
+      "brow_gem"
+    ],
+    "human/fistforms/divinemartialist": [
+      "gauntlet",
+      "wrist_flame",
+      "ankle_flame",
+      "tabard",
+      "brow_gem",
+      "halo_disc",
+      "mandala"
+    ],
+    "human/sageforms/spiritbombsage": [
+      "spirit_orbs",
+      "halo_ring",
+      "arm_wraps",
+      "sash",
+      "wrist_ring"
+    ],
+    "human/sageforms/craneascendant": [
+      "third_eye",
+      "wings_feather",
+      "halo_disc",
+      "sash",
+      "arm_wraps"
+    ],
+    "namekian/elderforms/awakenednamekian": [
+      "ear_fins"
+    ],
+    "namekian/elderforms/ascendednamekian": [
+      "ear_fins",
+      "shoulder_guard"
+    ],
+    "namekian/elderforms/primalnamekian": [
+      "ear_fins",
+      "shoulder_guard",
+      "back_spines",
+      "arm_fins"
+    ],
+    "namekian/elderforms/dragonnamekian": [
+      "ear_fins",
+      "shoulder_guard",
+      "back_spines",
+      "arm_fins",
+      "antlers",
+      "whiskers",
+      "tail_dragon"
+    ],
+    "namekian/elderforms/divinenamekian": [
+      "ear_fins",
+      "shoulder_guard",
+      "back_spines",
+      "antlers",
+      "whiskers",
+      "tail_dragon",
+      "halo_disc",
+      "mandala"
+    ],
+    "namekian/dragonforms/guruawakening": [
+      "ear_fins",
+      "shoulder_guard",
+      "diadem",
+      "cape"
+    ],
+    "namekian/dragonforms/porungaascendant": [
+      "antlers",
+      "whiskers",
+      "tail_dragon",
+      "back_spines",
+      "arm_fins",
+      "shoulder_spikes",
+      "claws"
+    ],
+    "frostdemon/glacierforms/truefrost": [
+      "shoulder_crystal"
+    ],
+    "frostdemon/glacierforms/absolutefrost": [
+      "back_crystals",
+      "arm_blade"
+    ],
+    "frostdemon/glacierforms/emperorfrost": [
+      "back_crystals",
+      "arm_blade",
+      "halo_shards"
+    ],
+    "frostdemon/glacierforms/divinefrost": [
+      "back_crystals",
+      "arm_blade",
+      "halo_shards",
+      "halo_disc",
+      "wings_light"
+    ],
+    "frostdemon/glacierforms/eternalfrost": [
+      "shoulder_crystal",
+      "back_crystals",
+      "arm_blade",
+      "halo_shards",
+      "knee_spike",
+      "mandala"
+    ],
+    "frostdemon/emperorforms/frozensovereign": [
+      "cape",
+      "collar_high",
+      "back_crystals",
+      "greave",
+      "bracer"
+    ],
+    "frostdemon/emperorforms/hellfireemperor": [
+      "horns_great",
+      "wings_bat",
+      "shoulder_spikes",
+      "wrist_flame",
+      "ankle_flame"
+    ],
+    "bioandroid/coreforms/bioperfected": [
+      "chest_orb"
+    ],
+    "bioandroid/coreforms/superperfectbio": [
+      "chest_orb",
+      "back_spines"
+    ],
+    "bioandroid/coreforms/bioascension": [
+      "chest_orb",
+      "back_spines",
+      "arm_blade"
+    ],
+    "bioandroid/coreforms/evolutionarycore": [
+      "chest_orb",
+      "wings_insect",
+      "tail_stinger",
+      "arm_blade",
+      "halo_ring"
+    ],
+    "bioandroid/coreforms/absolutebio": [
+      "chest_orb",
+      "wings_insect",
+      "tail_stinger",
+      "arm_blade",
+      "shoulder_spikes",
+      "orbit_rings"
+    ],
+    "bioandroid/geneticforms/imperfectgenesis": [
+      "back_spines",
+      "arm_fins"
+    ],
+    "bioandroid/geneticforms/absoluteperfection": [
+      "chest_orb",
+      "wings_insect",
+      "tail_stinger",
+      "arm_blade",
+      "shoulder_spikes",
+      "halo_shards"
+    ],
+    "bioandroid/genomealien/alienstrain1": [
+      "antennae"
+    ],
+    "bioandroid/genomealien/alienstrain2": [
+      "antennae",
+      "star_crown"
+    ],
+    "bioandroid/genomealien/alienstrain3": [
+      "antennae",
+      "star_crown",
+      "orbit_rings"
+    ],
+    "bioandroid/genomedemon/demonstrain1": [
+      "horns_nub"
+    ],
+    "bioandroid/genomedemon/demonstrain2": [
+      "horns_swept",
+      "tail_spade"
+    ],
+    "bioandroid/genomedemon/demonstrain3": [
+      "horns_great",
+      "tail_spade",
+      "wings_bat_small"
+    ],
+    "bioandroid/genomefrostdemon/frostdemonstrain1": [
+      "shoulder_crystal"
+    ],
+    "bioandroid/genomefrostdemon/frostdemonstrain2": [
+      "shoulder_crystal",
+      "back_crystals"
+    ],
+    "bioandroid/genomefrostdemon/frostdemonstrain3": [
+      "shoulder_crystal",
+      "back_crystals",
+      "halo_shards"
+    ],
+    "bioandroid/genomehuman/humanstrain1": [
+      "arm_wraps"
+    ],
+    "bioandroid/genomehuman/humanstrain2": [
+      "arm_wraps",
+      "wrist_flame",
+      "sash"
+    ],
+    "bioandroid/genomehuman/humanstrain3": [
+      "arm_wraps",
+      "wrist_flame",
+      "sash",
+      "mandala"
+    ],
+    "bioandroid/genomemajin/majinstrain1": [
+      "cuffs"
+    ],
+    "bioandroid/genomemajin/majinstrain2": [
+      "cuffs",
+      "cape"
+    ],
+    "bioandroid/genomemajin/majinstrain3": [
+      "cuffs",
+      "cape",
+      "horns_nub",
+      "halo_ring"
+    ],
+    "bioandroid/genomenamekian/namekianstrain1": [
+      "ear_fins"
+    ],
+    "bioandroid/genomenamekian/namekianstrain2": [
+      "ear_fins",
+      "shoulder_guard",
+      "back_spines"
+    ],
+    "bioandroid/genomenamekian/namekianstrain3": [
+      "ear_fins",
+      "shoulder_guard",
+      "back_spines",
+      "antlers",
+      "whiskers"
+    ],
+    "bioandroid/genomesaiyan/saiyanstrain1": [
+      "tail_fur"
+    ],
+    "bioandroid/genomesaiyan/saiyanstrain2": [
+      "tail_fur",
+      "wrist_flame"
+    ],
+    "bioandroid/genomesaiyan/saiyanstrain3": [
+      "tail_fur",
+      "wrist_flame",
+      "ankle_flame",
+      "flame_crown"
+    ],
+    "bioandroid/genomesphinxian/sphinxianstrain1": [
+      "tail_lion",
+      "claws"
+    ],
+    "bioandroid/genomesphinxian/sphinxianstrain2": [
+      "tail_lion",
+      "claws",
+      "usekh"
+    ],
+    "bioandroid/genomesphinxian/sphinxianstrain3": [
+      "tail_lion",
+      "claws",
+      "usekh",
+      "wings_feather",
+      "halo_disc"
+    ],
+    "bioandroid/genometaimujin/taimujinstrain1": [
+      "wrist_ring"
+    ],
+    "bioandroid/genometaimujin/taimujinstrain2": [
+      "wrist_ring",
+      "halo_clock"
+    ],
+    "bioandroid/genometaimujin/taimujinstrain3": [
+      "wrist_ring",
+      "halo_clock",
+      "gear_wheel"
+    ],
+    "majin/miraforms/majinawakening": [
+      "cuffs"
+    ],
+    "majin/miraforms/puremajin": [
+      "cuffs",
+      "cape"
+    ],
+    "majin/miraforms/chaosmajin": [
+      "cuffs",
+      "cape_ragged",
+      "shoulder_spikes"
+    ],
+    "majin/miraforms/demonicmajin": [
+      "cuffs",
+      "cape_ragged",
+      "horns_swept",
+      "shoulder_spikes",
+      "tail_spade"
+    ],
+    "majin/miraforms/divinemajin": [
+      "cuffs",
+      "diadem",
+      "halo_ring",
+      "mandala",
+      "wings_light"
+    ],
+    "majin/chaosforms/rampagemajin": [
+      "horns_nub",
+      "shoulder_spikes",
+      "back_spines",
+      "claws"
+    ],
+    "majin/chaosforms/absorbedascendant": [
+      "horns_ram",
+      "cape_ragged",
+      "chest_orb",
+      "claws",
+      "shoulder_spikes"
+    ],
+    "demon/abyssforms/demonawakening": [
+      "horns_nub"
+    ],
+    "demon/abyssforms/highdemon": [
+      "horns_swept",
+      "claws"
+    ],
+    "demon/abyssforms/demongod": [
+      "horns_swept",
+      "claws",
+      "tail_spade",
+      "wings_bat_small"
+    ],
+    "demon/abyssforms/abyssaldemon": [
+      "horns_great",
+      "claws",
+      "tail_spade",
+      "wings_bat",
+      "shoulder_spikes"
+    ],
+    "demon/abyssforms/demonsovereign": [
+      "horns_great",
+      "brow_spikes",
+      "claws",
+      "tail_spade",
+      "wings_bat",
+      "shoulder_spikes",
+      "chest_orb"
+    ],
+    "demon/infernalforms/demonrealmlord": [
+      "horns_ram",
+      "collar_high",
+      "cape",
+      "pauldron",
+      "bracer",
+      "diadem"
+    ],
+    "demon/infernalforms/infernalflame": [
+      "horns_great",
+      "wings_bat",
+      "tail_spade",
+      "shoulder_spikes",
+      "wrist_flame",
+      "ankle_flame",
+      "flame_crown"
+    ],
+    "sphinxian/crownforms/sphinxawakening": [
+      "cat_ears",
+      "tail_lion"
+    ],
+    "sphinxian/crownforms/royalsphinxian": [
+      "cat_ears",
+      "tail_lion",
+      "usekh",
+      "diadem"
+    ],
+    "sphinxian/crownforms/celestialsphinxian": [
+      "cat_ears",
+      "tail_lion",
+      "usekh",
+      "diadem",
+      "wings_feather"
+    ],
+    "sphinxian/crownforms/sphinxianascendant": [
+      "cat_ears",
+      "tail_lion",
+      "usekh",
+      "diadem",
+      "wings_feather",
+      "halo_disc",
+      "bracer"
+    ],
+    "sphinxian/crownforms/eternalsphinxian": [
+      "cat_ears",
+      "tail_lion",
+      "usekh",
+      "diadem",
+      "wings_feather",
+      "halo_disc",
+      "bracer",
+      "greave",
+      "tabard"
+    ],
+    "sphinxian/predatorforms/eclipseprowler": [
+      "cat_ears",
+      "tail_lion",
+      "claws",
+      "shoulder_spikes",
+      "back_spines"
+    ],
+    "sphinxian/predatorforms/solarlion": [
+      "cat_ears",
+      "tail_lion",
+      "claws",
+      "mane",
+      "halo_disc",
+      "wrist_flame"
+    ],
+    "taimujin/eonforms/temporalawakening": [
+      "wrist_ring"
+    ],
+    "taimujin/eonforms/timewalker": [
+      "wrist_ring",
+      "halo_clock"
+    ],
+    "taimujin/eonforms/temporalascendant": [
+      "wrist_ring",
+      "halo_clock",
+      "shoulder_gear"
+    ],
+    "taimujin/eonforms/chronowarrior": [
+      "wrist_ring",
+      "ankle_ring",
+      "halo_clock",
+      "shoulder_gear",
+      "gear_wheel"
+    ],
+    "taimujin/eonforms/eternaltaimujin": [
+      "wrist_ring",
+      "ankle_ring",
+      "halo_clock",
+      "shoulder_gear",
+      "gear_wheel",
+      "orbit_rings"
+    ],
+    "taimujin/chronoforms/pureprogress": [
+      "halo_clock",
+      "wrist_ring",
+      "ankle_ring",
+      "orbit_rings"
+    ],
+    "taimujin/chronoforms/chronozenith": [
+      "halo_clock",
+      "gear_wheel",
+      "shoulder_gear",
+      "orbit_rings",
+      "wings_light"
+    ],
+    "alien/cosmosforms/eventhorizon": [
+      "antennae",
+      "orbit_rings",
+      "chest_orb",
+      "halo_shards"
+    ],
+    "alien/cosmosforms/starforged": [
+      "antennae",
+      "star_crown",
+      "chest_orb",
+      "wings_light",
+      "mandala",
+      "shoulder_crystal"
+    ]
+  }
+}

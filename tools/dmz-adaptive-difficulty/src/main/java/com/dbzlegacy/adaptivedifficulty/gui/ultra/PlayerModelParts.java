@@ -17,7 +17,9 @@ import net.minecraft.server.level.ServerPlayer;
  * <p>Schema {@code 1} - see {@code docs/KAIPATH_GUI_PROTOCOL.md}. {@code subject} is the bridge
  * field any mod may set: {@code local} for the viewing player, or {@code uuid:<id>} for someone
  * else. KaiPath draws that player's model, skin, and parts. This object also carries custom
- * body pieces (DMZ head bones, worn form identity, and an open {@code extras} array).
+ * body pieces (DMZ head bones, worn form identity, explicit {@code bodyParts}, and an
+ * open {@code extras} array). {@code form} stays even when {@code bodyParts} is sent so
+ * older clients that only know the form ids keep working.
  */
 public final class PlayerModelParts {
     /** Current documented schema version inside {@code parts.schema}. */
@@ -50,6 +52,11 @@ public final class PlayerModelParts {
         JsonObject form = formIdentity(target);
         if (form != null) {
             parts.add("form", form);
+            any = true;
+        }
+        JsonArray body = bodyParts(target);
+        if (body != null && !body.isEmpty()) {
+            parts.add("bodyParts", body);
             any = true;
         }
         // Open extension slot - always present so clients can iterate without null checks.
@@ -119,8 +126,62 @@ public final class PlayerModelParts {
     }
 
     /**
+     * Explicit pieces for {@code parts.bodyParts}. Resolves the worn form (and stack form)
+     * through {@link BodyPartCatalog}, which mirrors DMZUltra FormParts. Also names
+     * {@code saiyan_tail} when the character still has the race tail. Empty when nothing
+     * applies. Never throws — a missing catalog still reports the race tail.
+     */
+    private static JsonArray bodyParts(ServerPlayer player) {
+        JsonArray out = new JsonArray();
+        try {
+            Character ch = null;
+            try {
+                ch = DmzProgression.character(player);
+            } catch (Throwable ignored) {
+            }
+            String race = safe(DmzProgression.race(player));
+            String group = "";
+            String form = "";
+            String stackGroup = "";
+            String stackForm = "";
+            boolean tail = false;
+            if (ch != null) {
+                try {
+                    tail = ch.isHasSaiyanTail();
+                } catch (Throwable ignored) {
+                }
+                try {
+                    group = safe(ch.getActiveFormGroup());
+                    form = safe(ch.getActiveForm());
+                } catch (Throwable ignored) {
+                }
+                try {
+                    stackGroup = safe(ch.getActiveStackFormGroup());
+                    stackForm = safe(ch.getActiveStackForm());
+                } catch (Throwable ignored) {
+                }
+            }
+            for (BodyPartCatalog.Part part :
+                    BodyPartCatalog.resolve(race, group, form, stackGroup, stackForm, tail)) {
+                if (part == null || part.id() == null || part.id().isBlank()) {
+                    continue;
+                }
+                JsonObject entry = new JsonObject();
+                entry.addProperty("id", part.id());
+                entry.addProperty("source", part.source());
+                entry.addProperty("slot", part.slot());
+                out.add(entry);
+            }
+        } catch (Throwable ignored) {
+            return new JsonArray();
+        }
+        return out;
+    }
+
+    /**
      * Worn form identity so the client can attach DMZUltra {@code FormParts} (client-only
-     * catalog keyed by form). Omitted when the player is fully base / unknown.
+     * catalog keyed by form). Omitted when the player is fully base / unknown. Kept even
+     * when {@link #bodyParts} is present.
      */
     private static JsonObject formIdentity(ServerPlayer player) {
         Character ch = null;

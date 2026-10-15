@@ -55,7 +55,9 @@ package com.example.ultragui;
  *     + "\"center\":true,\"margin\":10,\"titleAlign\":\"center\","
  *     + "\"headerBottom\":42,\"palette\":\"gold\",\"frame\":\"legacymechanics:panel\","
  *     + "\"playerModel\":{\"x\":248,\"y\":60,\"width\":86,\"height\":120,"
- *     + "\"scale\":1.0,\"rotate\":true}"
+ *     + "\"scale\":1.0,\"rotate\":true,"
+ *     + "\"parts\":{\"schema\":1,\"subject\":\"local\",\"bodyParts\":["
+ *     + "{\"id\":\"shop_tail\",\"source\":\"myshop\",\"slot\":\"tail\"}]}}"
  *     + "}";
  * UltraGuiOpenPacket open = new UltraGuiOpenPacket(
  *     "hello", "My Shop", "main", "[]", "", "[\"Welcome.\"]",

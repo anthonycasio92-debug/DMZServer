@@ -11,6 +11,7 @@ public final class GuiOpenPacketRoundTripTest {
     private GuiOpenPacketRoundTripTest() {}
 
     public static void main(String[] args) {
+        BodyPartWireTest.main(args);
         String inputs =
                 "[{\"id\":\"weight_value\",\"type\":\"text\",\"x\":8,\"y\":80,\"w\":200,\"h\":18,"
                         + "\"value\":\"50\",\"placeholder\":\"Weight\",\"maxLength\":8,"
@@ -144,6 +145,7 @@ public final class GuiOpenPacketRoundTripTest {
                     "portraitFrame",
                     "fixedFooter",
                     "combined.forms.v1",
+                    "bodyParts",
                     "icon"
                 }) {
             if (!UltraGuiConsumerRegistry.ADVERTISED_FEATURES_JSON.contains(feat)) {
