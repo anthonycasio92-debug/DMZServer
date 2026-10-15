@@ -1,5 +1,8 @@
 package com.dbzlegacy.adaptivedifficulty.gui.ultra;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Section-sign colors KaiPath renders. Matches CNPC Ultra standards.
  *
@@ -287,10 +290,137 @@ public final class UltraStyle {
     public static final int CHAR_W_EST = 6;
 
     /**
+     * Widest default-font advance we budget for body copy. KaiPath {@code fitLabel} appends
+     * {@code ...} (and can cut mid-word) when a line is wider than the text box. Wrapping at
+     * this advance keeps every line inside that box.
+     */
+    public static final int BODY_GLYPH_PX = 8;
+
+    /** Horizontal inset KaiPath uses for the body list ({@code panelWidth - 16}). */
+    public static final int BODY_LIST_INSET = 16;
+
+    /** Pixels {@code fitLabel} keeps clear of the list edge ({@code listWidth - 6}). */
+    public static final int BODY_FIT_INSET = 6;
+
+    /**
      * Truncate for buttons to plain ASCII width. Callers that want per-system ink should
      * re-apply {@link #color(String, String)} / {@link #systemAccent(String)} after fitting
      * (see {@code UltraScreenSpec} button emission).
      */
+    /**
+     * Pixel width KaiPath's body text box passes to {@code fitLabel}. When a player model
+     * sits in the body ({@code modelX > 16}), the list stops at the model's left edge.
+     */
+    public static int bodyTextFitPx(int panelWidth, int modelX) {
+        int panel = Math.max(PANEL_MIN_W, panelWidth);
+        int listW = Math.max(1, panel - BODY_LIST_INSET);
+        if (modelX > 16) {
+            listW = Math.max(1, Math.min(listW, modelX - BODY_LIST_INSET));
+        }
+        return Math.max(BODY_GLYPH_PX, listW - BODY_FIT_INSET);
+    }
+
+    /**
+     * Wrap {@code styled} onto as many body lines as it needs. Breaks on spaces. A single
+     * token wider than the box continues on the next line so the client never hides the tail.
+     * Color codes stay on each line and do not count toward the width.
+     */
+    public static List<String> wrapBody(String styled, int fitPx) {
+        int budget = Math.max(8, Math.max(BODY_GLYPH_PX, fitPx) / BODY_GLYPH_PX);
+        String text = wireText(styled == null ? "" : styled);
+        List<String> out = new ArrayList<>();
+        if (text.isBlank()) {
+            return out;
+        }
+        String active = "";
+        String wordColor = "";
+        StringBuilder word = new StringBuilder();
+        List<String[]> words = new ArrayList<>();
+        for (int i = 0; i <= text.length(); i++) {
+            boolean end = i == text.length();
+            char c = end ? '\n' : text.charAt(i);
+            if (!end && c == MARK.charAt(0) && i + 1 < text.length()) {
+                active = text.substring(i, i + 2);
+                i++;
+                continue;
+            }
+            if (c == ' ' || c == '\n') {
+                if (word.length() > 0) {
+                    words.add(new String[] {wordColor, word.toString()});
+                    word.setLength(0);
+                }
+                if (c == '\n') {
+                    flushWrapped(words, budget, out);
+                    words.clear();
+                }
+                continue;
+            }
+            if (word.length() == 0) {
+                wordColor = active;
+            }
+            word.append(c);
+        }
+        return out;
+    }
+
+    private static void flushWrapped(List<String[]> words, int budget, List<String> out) {
+        StringBuilder line = new StringBuilder();
+        int plain = 0;
+        String lineColor = "";
+        for (String[] word : words) {
+            String color = word[0] == null ? "" : word[0];
+            String text = word[1] == null ? "" : word[1];
+            int from = 0;
+            while (from < text.length()) {
+                int gap = plain == 0 ? 0 : 1;
+                int room = budget - plain - gap;
+                int remaining = text.length() - from;
+                if (plain > 0 && remaining > room) {
+                    pushWrapped(out, line);
+                    line.setLength(0);
+                    plain = 0;
+                    lineColor = "";
+                    continue;
+                }
+                if (room <= 0) {
+                    pushWrapped(out, line);
+                    line.setLength(0);
+                    plain = 0;
+                    lineColor = "";
+                    continue;
+                }
+                int take = Math.min(remaining, room);
+                if (gap > 0) {
+                    line.append(' ');
+                }
+                if (!color.isEmpty() && !color.equals(lineColor)) {
+                    line.append(color);
+                }
+                line.append(text, from, from + take);
+                plain += gap + take;
+                lineColor = color;
+                from += take;
+                if (from < text.length()) {
+                    pushWrapped(out, line);
+                    line.setLength(0);
+                    plain = 0;
+                    lineColor = "";
+                }
+            }
+        }
+        pushWrapped(out, line);
+    }
+
+    private static void pushWrapped(List<String> out, StringBuilder line) {
+        if (line.length() == 0) {
+            return;
+        }
+        String text = line.toString().stripTrailing();
+        if (!plain(text).isEmpty()) {
+            out.add(text);
+        }
+    }
+
     public static String buttonLabel(String styled) {
         return fitAsciiLabel(styled, 28 * CHAR_W_EST);
     }
