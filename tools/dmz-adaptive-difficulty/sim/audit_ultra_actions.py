@@ -615,7 +615,21 @@ def main() -> int:
     if ".footerBackToMain()" in hub:
         errors.append(
             "UltraHubScreens must not call .footerBackToMain() "
-            "(hub main has no back; admin uses explicit nav:hub)"
+            "(hub main has no back; Staff Admin uses footerBack to the hub)"
+        )
+    admin_m = re.search(
+        r"private static void openAdmin\b.*?^\s*private static void ",
+        hub,
+        re.S | re.M,
+    )
+    admin_body = admin_m.group(0) if admin_m else ""
+    if 'footerBack("nav:hub", "Home")' not in admin_body and "footerBack(\"nav:hub\", \"Home\")" not in admin_body:
+        errors.append(
+            "UltraHubScreens.openAdmin must pin Back to Home and Main menu (footerBack nav:hub)"
+        )
+    if "BACK_TO_MAIN" in admin_body:
+        errors.append(
+            "UltraHubScreens.openAdmin must not use a lone Back to main menu content button"
         )
     # Hub main packet shape: of("hub") builder path must not emit nav:hub.
     if 'UltraScreenSpec.of("hub")' in hub:

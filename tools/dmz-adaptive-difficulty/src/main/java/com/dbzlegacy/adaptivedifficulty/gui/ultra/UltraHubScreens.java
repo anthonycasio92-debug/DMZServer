@@ -120,15 +120,8 @@ public final class UltraHubScreens {
         spec.buttonLeft("open:progression", "Progression panel", UltraStyle.STYLE_NORMAL)
                 .buttonRight("open:config", "Config editor", UltraStyle.STYLE_NORMAL)
                 .rowGap();
-        // Hub admin is not a system-home tab — keep explicit nav:hub (audit forbids footerBackToMain here).
-        spec.setRow(spec.row() + UltraStyle.BTN_GAP)
-                .button(
-                        "nav:hub",
-                        UltraStyle.BACK_TO_MAIN,
-                        UltraStyle.STYLE_DIM,
-                        UltraStyle.COL_L,
-                        spec.row(),
-                        UltraStyle.BTN_W);
+        // Sub-page of the hub. nav:home would reopen this page (homePage is "admin").
+        spec.footerBack("nav:hub", "Home");
         spec.send(player);
     }
 
