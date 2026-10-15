@@ -54,27 +54,63 @@ public final class RivalChallengeManager {
     /** Names of players in a live or countdown challenge, for the spectate picker. */
     public java.util.List<String> activeFighterNames() {
         java.util.List<String> names = new java.util.ArrayList<>();
-        for (RivalChallenge ch : activeById.values()) {
-            if (ch == null || ch.status == RivalChallenge.Phase.ENDED) {
-                continue;
-            }
-            if (ch.status != RivalChallenge.Phase.ACTIVE && ch.status != RivalChallenge.Phase.COUNTDOWN) {
-                continue;
-            }
-            if (ch.nameA != null && !ch.nameA.isBlank() && !names.contains(ch.nameA)) {
-                names.add(ch.nameA);
-            }
-            if (ch.nameB != null && !ch.nameB.isBlank() && !names.contains(ch.nameB)) {
-                names.add(ch.nameB);
+        for (String[] row : activeFighterRows()) {
+            if (row[1] != null && !row[1].isBlank() && !names.contains(row[1])) {
+                names.add(row[1]);
             }
         }
         return names;
     }
 
+    /**
+     * Spectate picker args ({@code uuid:…}) for fighters in a live or countdown challenge.
+     * Pending requests are not included. Sorted by display name.
+     */
+    public java.util.List<String> activeFighterArgs() {
+        java.util.List<String[]> rows = activeFighterRows();
+        rows.sort((a, b) -> String.CASE_INSENSITIVE_ORDER.compare(a[1], b[1]));
+        java.util.List<String> out = new java.util.ArrayList<>(rows.size());
+        for (String[] row : rows) {
+            out.add(row[0]);
+        }
+        return out;
+    }
+
+    private java.util.List<String[]> activeFighterRows() {
+        java.util.List<String[]> rows = new java.util.ArrayList<>();
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        for (RivalChallenge ch : activeById.values()) {
+            if (!isLiveChallenge(ch)) {
+                continue;
+            }
+            addFighterRow(rows, seen, ch.a, ch.nameA);
+            addFighterRow(rows, seen, ch.b, ch.nameB);
+        }
+        return rows;
+    }
+
+    private static boolean isLiveChallenge(RivalChallenge ch) {
+        return ch != null
+                && ch.status != RivalChallenge.Phase.ENDED
+                && (ch.status == RivalChallenge.Phase.ACTIVE || ch.status == RivalChallenge.Phase.COUNTDOWN);
+    }
+
+    private static void addFighterRow(
+            java.util.List<String[]> rows, java.util.Set<String> seen, java.util.UUID id, String name) {
+        if (id == null) {
+            return;
+        }
+        String key = id.toString();
+        if (!seen.add(key)) {
+            return;
+        }
+        String shown = name == null || name.isBlank() ? key : name;
+        rows.add(new String[] {"uuid:" + key, shown});
+    }
+
     public RivalChallenge anyActive() {
         for (RivalChallenge ch : activeById.values()) {
-            if (ch != null && ch.status != RivalChallenge.Phase.ENDED
-                    && (ch.status == RivalChallenge.Phase.ACTIVE || ch.status == RivalChallenge.Phase.COUNTDOWN)) {
+            if (isLiveChallenge(ch)) {
                 return ch;
             }
         }

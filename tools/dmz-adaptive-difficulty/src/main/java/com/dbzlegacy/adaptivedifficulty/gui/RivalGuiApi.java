@@ -329,6 +329,111 @@ public final class RivalGuiApi {
         return out;
     }
 
+    /**
+     * Online players who are not already on {@code viewer}'s rival list.
+     * The add-rival picker uses this so Silent / Declare never offers a current rival.
+     */
+    public static List<String> excludingCurrentRivals(ServerPlayer viewer, List<String> onlineArgs) {
+        List<String> out = new ArrayList<>();
+        if (onlineArgs == null || onlineArgs.isEmpty()) {
+            return out;
+        }
+        java.util.Set<String> current = currentRivalKeys(viewer);
+        for (String arg : onlineArgs) {
+            if (arg == null || arg.isBlank()) {
+                continue;
+            }
+            String trimmed = arg.trim();
+            if (current.contains(trimmed.toLowerCase(Locale.ROOT))) {
+                continue;
+            }
+            if (trimmed.regionMatches(true, 0, "uuid:", 0, 5)
+                    && current.contains(trimmed.substring(5).trim().toLowerCase(Locale.ROOT))) {
+                continue;
+            }
+            String shown = UltraStyle.plain(displayPickerArg(viewer, trimmed));
+            if (!shown.isBlank() && current.contains(shown.toLowerCase(Locale.ROOT))) {
+                continue;
+            }
+            out.add(arg);
+        }
+        return out;
+    }
+
+    /**
+     * Players in a live or countdown challenge, as {@code uuid:…} args.
+     * The viewer is left out. Pending requests are not a fight yet.
+     */
+    public static List<String> activeChallengeArgs(ServerPlayer viewer) {
+        List<String> out = new ArrayList<>();
+        String self = viewer == null ? "" : "uuid:" + viewer.m_20148_();
+        for (String arg : RivalChallengeManager.get().activeFighterArgs()) {
+            if (arg == null || arg.isBlank()) {
+                continue;
+            }
+            if (!self.isBlank() && self.equalsIgnoreCase(arg.trim())) {
+                continue;
+            }
+            out.add(arg);
+        }
+        return out;
+    }
+
+    /**
+     * Status label on the viewer's current rival list ({@code Silent}, {@code Declared}, …).
+     * Blank when {@code pickerArg} is not on that list.
+     */
+    public static String rivalStatusLabel(ServerPlayer viewer, String pickerArg) {
+        if (viewer == null || pickerArg == null || pickerArg.isBlank()) {
+            return "";
+        }
+        String want = pickerArg.trim();
+        String wantUuid = want.regionMatches(true, 0, "uuid:", 0, 5)
+                ? want.substring(5).trim()
+                : "";
+        for (String card : currentRivalCards(viewer)) {
+            if (card == null || card.isBlank()) {
+                continue;
+            }
+            String[] p = card.split("\t", -1);
+            if (p.length < 3) {
+                continue;
+            }
+            String uuid = p[0] == null ? "" : p[0].trim();
+            String name = p[1] == null ? "" : p[1].trim();
+            boolean match = (!wantUuid.isBlank() && wantUuid.equalsIgnoreCase(uuid))
+                    || want.equalsIgnoreCase(name)
+                    || want.equalsIgnoreCase("uuid:" + uuid);
+            if (match) {
+                return p[2] == null ? "" : p[2].trim();
+            }
+        }
+        return "";
+    }
+
+    private static java.util.Set<String> currentRivalKeys(ServerPlayer viewer) {
+        java.util.Set<String> keys = new java.util.HashSet<>();
+        for (String card : currentRivalCards(viewer)) {
+            if (card == null || card.isBlank()) {
+                continue;
+            }
+            String[] p = card.split("\t", -1);
+            if (p.length < 2) {
+                continue;
+            }
+            String uuid = p[0] == null ? "" : p[0].trim();
+            String name = p[1] == null ? "" : p[1].trim();
+            if (!uuid.isBlank()) {
+                keys.add(uuid.toLowerCase(Locale.ROOT));
+                keys.add(("uuid:" + uuid).toLowerCase(Locale.ROOT));
+            }
+            if (!name.isBlank()) {
+                keys.add(name.toLowerCase(Locale.ROOT));
+            }
+        }
+        return keys;
+    }
+
     /** Mutual / Nemesis rivals only — for Mutual slot replace pickers. */
     public static List<String> mutualRivalArgs(ServerPlayer player) {
         List<String> out = new ArrayList<>();
