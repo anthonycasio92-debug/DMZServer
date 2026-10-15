@@ -88,7 +88,8 @@ public final class CharacterServicesGuiApi {
                 return lines;
             }
             lines.add("§7Choose the race you want to become.");
-            lines.add("§7Use §f0% §7for a free full wipe (stats wipe; purchased looks and coins stay).");
+            lines.add(costLine(player, CharacterServicesSystem.raceAmountDue(player, 100)));
+            lines.add("§8Listed cost is for keeping §f100%§8. §f0%§8 keep is free - pick keep % on the next screen.");
             if (CharacterServicesConfig.get().raceChange.keepSkillsOnRaceChange) {
                 lines.add("§7You keep ki skills, techniques, and shared form progress.");
             } else {
@@ -187,12 +188,20 @@ public final class CharacterServicesGuiApi {
             String[] bits = p.split(":", 3);
             int pct = parsePct(bits.length > 2 ? bits[2] : "0");
             String race = bits.length > 1 ? bits[1] : "?";
+            // Cost early: Ultra appendCompactLines truncates; chest GUI reads the full list.
             lines.add("§7You are becoming §f" + title(race) + "§7.");
+            lines.add("§7Keeping §f" + pct + "% §7of eligible stats.");
+            lines.add(costLine(player, CharacterServicesSystem.raceAmountDue(player, pct)));
+            if (pct > 0) {
+                lines.add(CharacterServicesConfig.get().raceChange.levelCostMultiplier
+                        ? "§8Price scales with your level"
+                        : "§8Fixed price for everyone");
+            } else {
+                lines.add("§8Free - full wipe, then pick class and look");
+            }
             lines.add("§7Purchased looks carry over. Your class stays if the new race has it.");
             lines.add("§7If not, the editor opens so you can pick a class at no extra cost.");
-            lines.add("§7Keeping §f" + pct + "% §7of eligible stats:");
             lines.addAll(CharacterServicesSystem.statPreviewLines(player, pct));
-            lines.add(costLine(player, CharacterServicesSystem.raceAmountDue(player, pct)));
             lines.add("§8If the change fails, your coins are returned when possible.");
             lines.add("§cStaff cannot undo this for you.");
             return lines;

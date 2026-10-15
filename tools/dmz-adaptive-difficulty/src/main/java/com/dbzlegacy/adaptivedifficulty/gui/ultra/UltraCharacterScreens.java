@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.gui.ultra;
 
 import com.dbzlegacy.adaptivedifficulty.character.CharacterServicesConfig;
+import com.dbzlegacy.adaptivedifficulty.character.CharacterServicesSystem;
 import com.dbzlegacy.adaptivedifficulty.character.CosmeticHeadBoneService;
 import com.dbzlegacy.adaptivedifficulty.character.HeadPartPieces;
 import com.dbzlegacy.adaptivedifficulty.gui.CharacterServicesGuiApi;
@@ -159,10 +160,15 @@ public final class UltraCharacterScreens {
         int pg = Math.min(pages - 1, Math.max(0, page));
         int from = pg * RACES_PER_PAGE;
         int to = Math.min(total, from + RACES_PER_PAGE);
+        long keep100Cost = CharacterServicesSystem.raceAmountDue(player, 100);
+        String keep100Text = keep100Cost <= 0L ? "Free" : CharacterServicesSystem.formatCost(keep100Cost);
         UltraScreenSpec spec = sub(player, "race:" + pg, false)
                 .line(UltraStyle.LABEL + "Choose your new race.")
-                .labelValue("Races", total + (pages > 1 ? (" page " + (pg + 1) + "/" + pages) : ""));
-        appendCompactLines(spec, CharacterServicesGuiApi.linesForPage(player, "race"), 3);
+                .labelValue("Races", total + (pages > 1 ? (" page " + (pg + 1) + "/" + pages) : ""))
+                .labelValue("Cost (keep 100%)", keep100Text)
+                .labelValue("Keep 0%", "Free");
+        // Cost is on labelValue; body lines keep the keep-% note / skills / cooldown.
+        appendCompactLines(spec, CharacterServicesGuiApi.linesForPage(player, "race"), 3, true);
         spec.setRow(UltraStyle.CONTENT_ROW + 80);
         int placed = 0;
         for (int i = from; i < to; i++) {
@@ -263,18 +269,28 @@ public final class UltraCharacterScreens {
             }
         }
         String confirmArg = raceId + ":" + selected;
+        long due = CharacterServicesSystem.raceAmountDue(player, selected);
+        String costText = due <= 0L ? "Free" : CharacterServicesSystem.formatCost(due);
+        String raceLabel = raceId.isBlank() ? "?" : raceId;
         UltraScreenSpec spec = sub(player, "race_confirm:" + confirmArg, false)
-                .line(UltraStyle.LABEL + "Confirm race change");
+                .line(UltraStyle.LABEL + "Confirm race change")
+                .labelValue("Race", raceLabel)
+                .labelValue("Keep", selected + "%")
+                .labelValue("Cost", costText);
+        // Cost/Keep are on labelValue; body keeps pricing note + carry-over + preview.
         appendCompactLines(
-                spec, CharacterServicesGuiApi.linesForPage(player, "race_confirm:" + confirmArg), 6);
+                spec, CharacterServicesGuiApi.linesForPage(player, "race_confirm:" + confirmArg), 6, true);
         spec.setRow(UltraStyle.CONTENT_ROW + 90);
         int[] keepSteps = CharacterServicesConfig.preservationSteps();
         int placed = 0;
         for (int keep : keepSteps) {
             String action = "page:race_confirm:" + raceId + ":" + keep;
+            long keepDue = CharacterServicesSystem.raceAmountDue(player, keep);
+            String keepPrice = keepDue <= 0L ? "free" : CharacterServicesSystem.formatCost(keepDue);
+            String keepLabel = "Keep " + keep + "% - " + keepPrice;
             String label = keep == selected
-                    ? UltraStyle.confirm("Keep " + keep + "%")
-                    : UltraStyle.LABEL + "Keep " + keep + "%";
+                    ? UltraStyle.confirm(keepLabel)
+                    : UltraStyle.LABEL + keepLabel;
             String style = keep == selected ? UltraStyle.STYLE_CONFIRM : UltraStyle.STYLE_NORMAL;
             if (placed % 2 == 0) {
                 spec.buttonLeft(action, label, style);
@@ -287,9 +303,10 @@ public final class UltraCharacterScreens {
         if (placed % 2 == 1) {
             spec.rowGap();
         }
+        String confirmLabel = due <= 0L ? "Confirm (free)" : "Confirm & pay - " + costText;
         spec.button(
                         "do:race_confirm:" + confirmArg,
-                        UltraStyle.confirm("Confirm & pay"),
+                        UltraStyle.confirm(confirmLabel),
                         UltraStyle.STYLE_CONFIRM)
                 .rowGap();
         spec.footerBack("page:race:0", "Race list");
@@ -641,6 +658,15 @@ public final class UltraCharacterScreens {
 
     /** Append up to {@code max} non-blank lines; skip Ultra intro duplicates. */
     private static void appendCompactLines(UltraScreenSpec spec, List<String> lines, int max) {
+        appendCompactLines(spec, lines, max, false);
+    }
+
+    /**
+     * @param skipCost when true, omit {@code Cost ...} body lines (Ultra already shows Cost via
+     *     {@code labelValue}, e.g. race select / confirm)
+     */
+    private static void appendCompactLines(
+            UltraScreenSpec spec, List<String> lines, int max, boolean skipCost) {
         if (spec == null || lines == null || max <= 0) {
             return;
         }
@@ -659,7 +685,8 @@ public final class UltraCharacterScreens {
                     || lower.startsWith("pick a new fighting class")
                     || lower.startsWith("opens the appearance editor")
                     || lower.startsWith("race | class")
-                    || lower.startsWith("rebuild your character")) {
+                    || lower.startsWith("rebuild your character")
+                    || (skipCost && lower.startsWith("cost "))) {
                 continue;
             }
             spec.line(UltraStyle.LABEL + plain);
