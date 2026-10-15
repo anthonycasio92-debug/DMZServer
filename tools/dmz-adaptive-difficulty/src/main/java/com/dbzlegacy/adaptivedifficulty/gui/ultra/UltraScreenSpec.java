@@ -834,6 +834,8 @@ public final class UltraScreenSpec {
         ServerPlayer viewer = inspectViewer();
         ServerPlayer dest = viewer != null ? viewer : player;
         prependInspectBanner(viewer != null ? viewer : player);
+        // Pending do: results (purchases, confirms, errors) — viewer-scoped during inspect.
+        UltraGuiFeedback.applyPending(this, dest);
         GuiOpenPacket packet = toPacket();
         List<GuiOpenPacket> probe = PROBE.get();
         if (probe != null) {
@@ -844,6 +846,29 @@ public final class UltraScreenSpec {
             return;
         }
         LmGuiNetwork.sendOpen(dest, packet);
+    }
+
+    /**
+     * Insert styled body lines after the inspect banner (if any). Used by
+     * {@link UltraGuiFeedback} so action outcomes appear at the top of the reopened page.
+     */
+    void prependBodyLines(List<String> styledLines) {
+        if (styledLines == null || styledLines.isEmpty()) {
+            return;
+        }
+        int at = 0;
+        if (!lines.isEmpty()) {
+            String first = UltraStyle.plain(lines.get(0)).toLowerCase(Locale.ROOT);
+            if (first.startsWith("inspecting")) {
+                at = 1;
+            }
+        }
+        for (String line : styledLines) {
+            if (line == null || line.isBlank()) {
+                continue;
+            }
+            lines.add(at++, UltraStyle.wireText(line));
+        }
     }
 
     /** First body line while staff is inspecting another player. */

@@ -197,8 +197,8 @@ public final class UltraWeightShopScreens {
     }
 
     /**
-     * Handles {@code weight_quote} / {@code weight_buy}. Returns a chat notice; may open the
-     * confirm page directly (caller should skip generic reopen for {@code weight_quote}).
+     * Handles {@code weight_quote} / {@code weight_buy}. Outcomes are stashed via
+     * {@link UltraGuiFeedback} before opening the next page (caller skips generic reopen).
      */
     public static String handleAction(
             ServerPlayer player, String action, String arg, String page, JsonObject args) {
@@ -251,31 +251,39 @@ public final class UltraWeightShopScreens {
         boolean free = PaidFeatureAccess.bypassAncientCoinCost(player);
         long charge = free ? 0L : cost;
         if (charge > 0L && !AncientCoinEconomy.canAfford(player, charge)) {
+            // Stash before open so the confirm page shows the missing-funds line.
+            UltraGuiFeedback.deliver(
+                    player, UltraStyle.dangerLine(AncientCoinEconomy.missingText(player, charge)));
             openConfirm(player, offer.id, value);
-            return UltraStyle.dangerLine(AncientCoinEconomy.missingText(player, charge));
+            return "";
         }
         ItemStack stack = ItemIds.stack(offer.itemId, 1);
         if (stack == null || stack.m_41619_()) {
             return UltraStyle.dangerLine("That weight item is not available on this server.");
         }
         if (charge > 0L && !AncientCoinEconomy.charge(player, charge)) {
+            UltraGuiFeedback.deliver(
+                    player, UltraStyle.dangerLine(AncientCoinEconomy.missingText(player, charge)));
             openConfirm(player, offer.id, value);
-            return UltraStyle.dangerLine(AncientCoinEconomy.missingText(player, charge));
+            return "";
         }
         applyWeightValue(stack, value);
         String destination = giveWeightItem(player, stack);
-        openShop(player);
         String costText = free ? "Free (staff)" : AncientCoinEconomy.formatExactCost(cost);
-        return UltraStyle.noticeLine(
-                "Bought "
-                        + offer.label
-                        + " - weight "
-                        + value
-                        + " - "
-                        + costText
-                        + " - "
-                        + destination
-                        + ".");
+        UltraGuiFeedback.deliver(
+                player,
+                UltraStyle.noticeLine(
+                        "Bought "
+                                + offer.label
+                                + " - weight "
+                                + value
+                                + " - "
+                                + costText
+                                + " - "
+                                + destination
+                                + "."));
+        openShop(player);
+        return "";
     }
 
     /**

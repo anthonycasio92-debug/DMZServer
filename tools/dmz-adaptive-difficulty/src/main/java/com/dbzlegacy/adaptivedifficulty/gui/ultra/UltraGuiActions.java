@@ -4,14 +4,12 @@ import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.gui.AdminInspectSessions;
 import com.dbzlegacy.adaptivedifficulty.gui.CharacterServicesGuiApi;
 import com.dbzlegacy.adaptivedifficulty.gui.DifficultyTeamGuiApi;
-import com.dbzlegacy.adaptivedifficulty.gui.GuiNotice;
 import com.dbzlegacy.adaptivedifficulty.gui.MechanicsGuiApi;
 import com.dbzlegacy.adaptivedifficulty.gui.ProgressionGuiApi;
 import com.dbzlegacy.adaptivedifficulty.gui.RivalGuiApi;
 import com.dbzlegacy.adaptivedifficulty.gui.SparGuiApi;
 import com.dbzlegacy.adaptivedifficulty.quest.SagaResetService;
 import com.dbzlegacy.adaptivedifficulty.service.DifficultyActions;
-import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -89,10 +87,12 @@ public final class UltraGuiActions {
                     args,
                     safeName(player),
                     t);
-            DmzRewards.msg(
+            // Unexpected errors: show on hub (menu context) rather than chat.
+            deliverFeedback(
                     player,
                     UltraStyle.dangerLine(
                             "Something went wrong. Try again, or ask staff if it keeps happening."));
+            UltraGui.openHub(player, "main");
         }
     }
 
@@ -237,12 +237,7 @@ public final class UltraGuiActions {
                 // Config drafts are staff-scoped — always the viewer.
                 String msg =
                         UltraConfigScreens.handleAction(viewer, "set", payload, inputPage, args);
-                if (msg != null && !msg.isBlank()) {
-                    String notice = GuiNotice.noticeBody(msg);
-                    if (notice != null && !notice.isBlank()) {
-                        DmzRewards.msg(viewer, notice);
-                    }
-                }
+                deliverFeedback(viewer, msg);
                 UltraGui.open(viewer, safeScreen, inputPage);
                 return;
             }
@@ -250,10 +245,7 @@ public final class UltraGuiActions {
                     && ("weight_value".equals(payload) || inputPage.startsWith("weights_input:"))) {
                 String msg = UltraWeightShopScreens.handleInputSubmit(data, inputPage, args);
                 if (msg != null && !msg.isBlank()) {
-                    String notice = GuiNotice.noticeBody(msg);
-                    if (notice != null && !notice.isBlank()) {
-                        DmzRewards.msg(viewer, notice);
-                    }
+                    deliverFeedback(viewer, msg);
                     // Validation failed - stay on the input page (always Sparring now).
                     UltraGui.open(viewer, "spar", inputPage);
                 }
@@ -265,13 +257,14 @@ public final class UltraGuiActions {
                     AdaptiveDifficultyMod.MOD_ID,
                     safeScreen,
                     payload);
-            DmzRewards.msg(viewer, UltraStyle.dangerLine("That text field is not available."));
+            deliverFeedback(viewer, UltraStyle.dangerLine("That text field is not available."));
+            UltraGui.open(viewer, safeScreen, homePage(safeScreen));
             return;
         }
 
         // Hub dim tile when the player lacks Skill Check access.
         if ("do:skillcheck_denied".equals(action) || "skillcheck_denied".equals(action)) {
-            DmzRewards.msg(
+            deliverFeedback(
                     viewer,
                     UltraStyle.noticeLine(
                             "Skill Check is a donator perk - ask staff if you want access."));
@@ -287,9 +280,9 @@ public final class UltraGuiActions {
                     safeName(viewer),
                     rawActionId,
                     safeScreen);
-            DmzRewards.msg(
-                    viewer,
-                    UltraStyle.noticeLine("Ultra guitest: click reached the server."));
+            deliverFeedback(
+                    viewer, UltraStyle.noticeLine("Ultra guitest: click reached the server."));
+            UltraGui.open(viewer, "admin", "admin");
             return;
         }
 
@@ -301,9 +294,8 @@ public final class UltraGuiActions {
                     safeScreen,
                     rawActionId,
                     action);
-            DmzRewards.msg(
-                    viewer,
-                    UltraStyle.dangerLine("That menu action is not available."));
+            deliverFeedback(viewer, UltraStyle.dangerLine("That menu action is not available."));
+            UltraGui.open(viewer, safeScreen, homePage(safeScreen));
             return;
         }
         // Prefer arg encoded in the action id (do:action:arg...); fall back to argsJson.
@@ -314,18 +306,21 @@ public final class UltraGuiActions {
         }
 
         String msg = runDo(viewer, data, safeScreen, parts.action, args, rawActionId);
-        if (msg != null && !msg.isBlank()) {
-            String notice = GuiNotice.noticeBody(msg);
-            if (notice != null && !notice.isBlank()) {
-                DmzRewards.msg(viewer, notice);
-            }
+        // Race full-wipe / free class picker opens the DMZ editor - do not fight it with Ultra.
+        if ("character".equals(safeScreen)
+                && "race_confirm".equals(parts.action)
+                && opensExternalEditor(msg)) {
+            return;
         }
-        // These handlers open the next page themselves - skip generic reopen.
-        if ("saga_confirm".equals(parts.action)
-                || "weight_quote".equals(parts.action)
-                || "quote".equals(parts.action)
-                || "weight_buy".equals(parts.action)
-                || "buy_weight".equals(parts.action)) {
+        deliverFeedback(viewer, msg);
+        // These handlers open the next page themselves when they return blank.
+        // Non-blank means they did not open a page — fall through so feedback paints.
+        if (("saga_confirm".equals(parts.action)
+                        || "weight_quote".equals(parts.action)
+                        || "quote".equals(parts.action)
+                        || "weight_buy".equals(parts.action)
+                        || "buy_weight".equals(parts.action))
+                && (msg == null || msg.isBlank())) {
             return;
         }
         // Mutual slots full after Accept/Declare — land on the replace picker (not Requests/Actions).
@@ -340,6 +335,21 @@ public final class UltraGuiActions {
                 viewer,
                 safeScreen,
                 reopen == null || reopen.isBlank() ? homePage(safeScreen) : reopen);
+    }
+
+    /** Menu-action outcomes go on the next Ultra page (or chat when guiBackend=chat). */
+    private static void deliverFeedback(ServerPlayer viewer, String msg) {
+        UltraGuiFeedback.deliver(viewer, msg);
+    }
+
+    /** True when race change opened the DMZ creation / class-pick editor. */
+    private static boolean opensExternalEditor(String msg) {
+        if (msg == null || msg.isBlank()) {
+            return false;
+        }
+        String plain = UltraStyle.plain(msg).toLowerCase(Locale.ROOT);
+        return plain.contains("opening character setup")
+                || plain.contains("choose a new class");
     }
 
     /** True when action already uses a protocol verb. */
@@ -450,8 +460,8 @@ public final class UltraGuiActions {
                 action,
                 rawActionId);
         if (player != null) {
-            DmzRewards.msg(
-                    player, UltraStyle.dangerLine("That menu action is not available."));
+            deliverFeedback(player, UltraStyle.dangerLine("That menu action is not available."));
+            UltraGui.openHub(player, "main");
         }
         return true;
     }

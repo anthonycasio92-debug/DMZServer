@@ -317,6 +317,26 @@ def main() -> int:
     if "§" in inspect_sessions:
         errors.append("AdminInspectSessions inspectBannerLine must use UltraStyle (no bare §)")
 
+    # Menu-action results paint on the reopened Ultra page (not chat).
+    feedback = ULTRA / "UltraGuiFeedback.java"
+    if not feedback.is_file():
+        errors.append("UltraGuiFeedback.java must stash menu-action results for the next Ultra open")
+    else:
+        feedback_src = feedback.read_text(encoding="utf-8")
+        if "setFromResult" not in feedback_src or "applyPending" not in feedback_src:
+            errors.append("UltraGuiFeedback must expose setFromResult + applyPending")
+        if "preferGui" not in feedback_src:
+            errors.append("UltraGuiFeedback must preferGui (guiBackend != chat)")
+    if "UltraGuiFeedback.applyPending" not in ultra_spec:
+        errors.append("UltraScreenSpec.send must applyPending UltraGuiFeedback")
+    if "UltraGuiFeedback.deliver" not in ultra_actions and "deliverFeedback(" not in ultra_actions:
+        errors.append("UltraGuiActions must deliver menu results via UltraGuiFeedback")
+    if "DmzRewards.msg" in ultra_actions:
+        errors.append("UltraGuiActions must not chat menu-action results (use UltraGuiFeedback)")
+    weight_src = (ULTRA / "UltraWeightShopScreens.java").read_text(encoding="utf-8")
+    if "UltraGuiFeedback.deliver" not in weight_src:
+        errors.append("UltraWeightShopScreens.buy must stash purchase results via UltraGuiFeedback")
+
     packet = PACKET.read_text(encoding="utf-8")
     if "panelWidth" not in packet or "layoutJson" not in packet:
         errors.append("GuiOpenPacket must carry panelWidth/panelHeight/layoutJson")
