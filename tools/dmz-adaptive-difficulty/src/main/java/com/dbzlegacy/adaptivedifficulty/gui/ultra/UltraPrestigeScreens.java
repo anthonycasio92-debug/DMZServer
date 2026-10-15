@@ -140,7 +140,7 @@ public final class UltraPrestigeScreens {
         } else {
             spec.button(
                             "page:confirm",
-                            UltraStyle.dim("Prestige now - need higher level"),
+                            UltraStyle.dim("Need higher level"),
                             UltraStyle.STYLE_DIM)
                     .rowGap();
         }
@@ -225,16 +225,24 @@ public final class UltraPrestigeScreens {
         for (int i = 0; i < amounts.length; i += 2) {
             int a = amounts[i];
             String gainA = ph.getOrDefault("turnin_" + a + "_points", "0");
-            String labelA = held >= a
-                    ? UltraStyle.confirm("Exchange " + a + " (+" + gainA + " favor)")
-                    : UltraStyle.dim("Exchange " + a + " - need " + a);
+            String rawA = held >= a
+                    ? "Exchange " + a + " (+" + gainA + " favor)"
+                    : "Exchange " + a + " - need " + a;
+            if (!UltraStyle.fitsButton(rawA)) {
+                rawA = held >= a ? "Exchange " + a : "Need " + a;
+            }
+            String labelA = held >= a ? UltraStyle.confirm(rawA) : UltraStyle.dim(rawA);
             spec.buttonLeft("do:turnin:" + a, labelA, held >= a ? "confirm" : "dim");
             if (i + 1 < amounts.length) {
                 int b = amounts[i + 1];
                 String gainB = ph.getOrDefault("turnin_" + b + "_points", "0");
-                String labelB = held >= b
-                        ? UltraStyle.confirm("Exchange " + b + " (+" + gainB + " favor)")
-                        : UltraStyle.dim("Exchange " + b + " - need " + b);
+                String rawB = held >= b
+                        ? "Exchange " + b + " (+" + gainB + " favor)"
+                        : "Exchange " + b + " - need " + b;
+                if (!UltraStyle.fitsButton(rawB)) {
+                    rawB = held >= b ? "Exchange " + b : "Need " + b;
+                }
+                String labelB = held >= b ? UltraStyle.confirm(rawB) : UltraStyle.dim(rawB);
                 spec.buttonRight("do:turnin:" + b, labelB, held >= b ? "confirm" : "dim");
             }
             spec.rowGap();
@@ -261,19 +269,18 @@ public final class UltraPrestigeScreens {
             String label = ph.getOrDefault("skill_" + id + "_label", id);
             int bought = parseInt(ph.get("skill_" + id), 0);
             int max = parseInt(ph.get("skill_" + id + "_max"), 0);
-            String cost = ph.getOrDefault("skill_" + id + "_cost", "1");
-            String caption = label + " " + bought + "/" + (max > 0 ? max : "?") + " - " + cost;
             boolean maxed = max > 0 && bought >= max;
+            String caption = skillCaption(label, bought, max, maxed);
             String action = "do:skill:" + id;
             if (placed % 2 == 0) {
                 spec.buttonLeft(
                         action,
-                        maxed ? UltraStyle.dim(caption + " - max") : UltraStyle.confirm(caption),
+                        maxed ? UltraStyle.dim(caption) : UltraStyle.confirm(caption),
                         maxed ? "dim" : "confirm");
             } else {
                 spec.buttonRight(
                         action,
-                        maxed ? UltraStyle.dim(caption + " - max") : UltraStyle.confirm(caption),
+                        maxed ? UltraStyle.dim(caption) : UltraStyle.confirm(caption),
                         maxed ? "dim" : "confirm");
                 spec.rowGap();
             }
@@ -304,24 +311,13 @@ public final class UltraPrestigeScreens {
             boolean owned = "true".equalsIgnoreCase(ph.get("tier_" + t + "_owned"));
             boolean canBuy = "true".equalsIgnoreCase(ph.get("tier_" + t + "_can_buy"));
             String action = "do:tier:" + t;
-            if (owned) {
-                spec.button(
-                                action,
-                                UltraStyle.dim("T" + t + " " + label + " - owned"),
-                                UltraStyle.STYLE_DIM)
-                        .rowGap();
-            } else if (canBuy) {
-                spec.button(
-                                action,
-                                UltraStyle.confirm("T" + t + " " + label + " - " + cost + " favor"),
-                                UltraStyle.STYLE_CONFIRM)
-                        .rowGap();
+            String tail = owned ? "owned" : (canBuy ? cost : "lock");
+            String withName = "T" + t + " " + label + " " + tail;
+            String caption = UltraStyle.fitsButton(withName) ? withName : ("T" + t + " " + tail);
+            if (owned || !canBuy) {
+                spec.button(action, UltraStyle.dim(caption), UltraStyle.STYLE_DIM).rowGap();
             } else {
-                spec.button(
-                                action,
-                                UltraStyle.dim("T" + t + " " + label + " - locked"),
-                                UltraStyle.STYLE_DIM)
-                        .rowGap();
+                spec.button(action, UltraStyle.confirm(caption), UltraStyle.STYLE_CONFIRM).rowGap();
             }
         }
         spec.footerBack("page:shop", "Shop");
@@ -344,43 +340,63 @@ public final class UltraPrestigeScreens {
         if (majin) {
             spec.button(
                             "do:unmajin",
-                            UltraStyle.danger("Remove Majin (+" + formCost + " favor)"),
+                            UltraStyle.danger("Remove Majin"),
                             UltraStyle.STYLE_DANGER)
                     .rowGap();
         } else if (majinCan) {
             spec.button(
                             "do:majin",
-                            UltraStyle.confirm("Buy Majin (" + formCost + " favor)"),
+                            UltraStyle.confirm("Buy Majin"),
                             UltraStyle.STYLE_CONFIRM)
                     .rowGap();
         } else {
             spec.button(
                             "do:majin",
-                            UltraStyle.dim("Buy Majin - remove Mutant first"),
+                            UltraStyle.dim("Need Mutant off"),
                             UltraStyle.STYLE_DIM)
                     .rowGap();
         }
         if (mutant) {
             spec.button(
                             "do:unmutant",
-                            UltraStyle.danger("Remove Mutant (+" + formCost + " favor)"),
+                            UltraStyle.danger("Remove Mutant"),
                             UltraStyle.STYLE_DANGER)
                     .rowGap();
         } else if (mutantCan) {
             spec.button(
                             "do:mutant",
-                            UltraStyle.confirm("Buy Mutant (" + formCost + " favor)"),
+                            UltraStyle.confirm("Buy Mutant"),
                             UltraStyle.STYLE_CONFIRM)
                     .rowGap();
         } else {
             spec.button(
                             "do:mutant",
-                            UltraStyle.dim("Buy Mutant - remove Majin first"),
+                            UltraStyle.dim("Need Majin off"),
                             UltraStyle.STYLE_DIM)
                     .rowGap();
         }
         spec.footerBack("page:shop", "Shop");
         spec.send(player);
+    }
+
+    /** Skill button: short name plus level. Drops the max tag when the full caption would clip. */
+    private static String skillCaption(String label, int bought, int max, boolean maxed) {
+        String name = switch (label == null ? "" : label) {
+            case "Instant Transmission" -> "Transmit";
+            case "Defense Penetration" -> "Def Pen";
+            case "Potential Unlock" -> "Potential";
+            case "Ki Manipulation" -> "Ki Manip";
+            case "Healing Reduction" -> "Heal Cut";
+            case "Ki Protection" -> "Ki Prot";
+            default -> label == null || label.isBlank() ? "Skill" : label;
+        };
+        String prog = bought + "/" + (max > 0 ? max : "?");
+        String withMax = name + " " + prog + (maxed ? " max" : "");
+        if (UltraStyle.fitsButton(withMax)) {
+            return withMax;
+        }
+        String base = name + " " + prog;
+        return UltraStyle.fitsButton(base) ? base : UltraStyle.buttonText(name);
     }
 
     private static String[] shopSkillIds(Map<String, String> ph) {

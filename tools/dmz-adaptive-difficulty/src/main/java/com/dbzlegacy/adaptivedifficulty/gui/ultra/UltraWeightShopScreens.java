@@ -183,7 +183,12 @@ public final class UltraWeightShopScreens {
         } else {
             spec.button(
                             "do:weight_buy:" + offer.id + ":" + value,
-                            UltraStyle.confirm("Buy - " + costText),
+                            UltraStyle.confirm(
+                                    free
+                                            ? "Confirm"
+                                            : UltraStyle.buttonText(
+                                                    "Buy "
+                                                            + AncientCoinEconomy.compactCost(cost))),
                             UltraStyle.STYLE_CONFIRM)
                     .rowGap();
             spec.buttonLeft(

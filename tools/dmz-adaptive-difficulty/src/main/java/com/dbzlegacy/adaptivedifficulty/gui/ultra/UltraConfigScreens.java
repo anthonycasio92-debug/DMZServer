@@ -37,11 +37,16 @@ public final class UltraConfigScreens {
     private static final int LABEL_CTRL_GAP = 4;
     /** Min clear space between two controls on one row before we stack instead. */
     private static final int CTRL_GAP = 8;
+    /**
+     * Glyphs that fit a main-column flow button ({@link #MAIN_W} minus pad).
+     * Longer setting names and descriptions are cut on a word boundary.
+     */
+    private static final int FLOW_CHARS = 38;
 
     /** Categories always shown in the left rail (user-facing order). */
     private static final String[][] CATEGORIES = {
         {"difficulty", "Difficulty"},
-        {"progression", "Progression"},
+        {"progression", "Progress"},
         {"character-services", "Character"},
         {"saga", "Saga"},
         {"rival", "Rival"},
@@ -281,7 +286,7 @@ public final class UltraConfigScreens {
         }
         spec.button(
                         "do:refresh",
-                        UltraStyle.LABEL + UltraStyle.plain(text),
+                        UltraStyle.LABEL + clipWords(UltraStyle.plain(text), FLOW_CHARS),
                         UltraStyle.STYLE_DIM,
                         MAIN_X,
                         spec.row(),
@@ -437,7 +442,7 @@ public final class UltraConfigScreens {
                 // Open nested entries in the same editor (no detail sub-page).
                 spec.button(
                                 "page:" + editPage(module, 0, path),
-                                UltraStyle.LABEL + "Open (" + shortVal(value) + ")",
+                                UltraStyle.LABEL + "Open " + shortVal(value),
                                 UltraStyle.STYLE_NORMAL,
                                 MAIN_X,
                                 spec.row(),
@@ -778,15 +783,31 @@ public final class UltraConfigScreens {
             return "-";
         }
         String plain = UltraStyle.plain(value);
-        return plain.length() <= 24 ? plain : plain.substring(0, 23) + "...";
+        return clipWords(plain, 16);
     }
 
     private static String shortDesc(String value) {
         if (value == null || value.isBlank()) {
             return "";
         }
-        String plain = UltraStyle.plain(value);
-        return plain.length() <= 72 ? plain : plain.substring(0, 71) + "...";
+        return clipWords(UltraStyle.plain(value), FLOW_CHARS);
+    }
+
+    /** Keep the longest leading words that fit {@code max} glyphs. No ellipsis. */
+    private static String clipWords(String plain, int max) {
+        if (plain == null || plain.isBlank() || max <= 0) {
+            return "";
+        }
+        String text = plain.trim();
+        if (text.length() <= max) {
+            return text;
+        }
+        String cut = text.substring(0, max);
+        int sp = cut.lastIndexOf(' ');
+        if (sp >= max / 2) {
+            return cut.substring(0, sp).trim();
+        }
+        return cut.trim();
     }
 
     private static String moduleFromPage(String page) {

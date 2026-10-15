@@ -127,14 +127,15 @@ public final class UltraRivalScreens {
                 .setRow(UltraStyle.CONTENT_ROW_TABS + 70);
         placeRivalListButtons(spec, player);
         placeIncomingDeclareButtons(spec, player);
-        UltraPickHelper.placePageButtons(spec, "pick_rival|Choose a player...");
+        UltraPickHelper.placePageButtons(spec, "pick_rival|Pick player");
         if (RivalGuiApi.needsMutualReplacePick(player)) {
             String pending = RivalGuiApi.pendingMutualAcceptName(player);
             String pendingPlain =
                     pending == null || pending.isBlank() ? "them" : UltraStyle.plain(pending);
+            spec.line(UltraStyle.LABEL + "Free a Mutual slot to accept " + pendingPlain);
             spec.button(
                             "page:pick_replace_mutual",
-                            UltraStyle.danger("Drop a Mutual to accept " + pendingPlain),
+                            UltraStyle.danger("Drop Mutual"),
                             "danger")
                     .rowGap();
         }
@@ -167,7 +168,7 @@ public final class UltraRivalScreens {
                     shown = name.isBlank() ? "-" : name;
                 }
                 String plain = UltraStyle.plain(shown);
-                String labelText = status.isBlank() ? plain : plain + " (" + status + ")";
+                String labelText = rivalListLabel(plain, status);
                 String action = "page:list_detail:" + arg;
                 String label = UltraStyle.confirm(labelText);
                 if (placed % 2 == 0) {
@@ -203,12 +204,47 @@ public final class UltraRivalScreens {
                 shown = "-";
             }
             String plain = UltraStyle.plain(shown);
-            spec.button("do:accept:" + arg, UltraStyle.confirm("Accept " + plain), "confirm")
-                    .rowGap();
-            spec.button("do:decline:" + arg, UltraStyle.danger("Decline " + plain), "danger")
-                    .rowGap();
+            stackAcceptDecline(spec, "do:accept:" + arg, "do:decline:" + arg, plain);
             placed++;
         }
+    }
+
+    /** Accept above Decline. Long names stay on a line so the buttons stay short. */
+    private static void stackAcceptDecline(
+            UltraScreenSpec spec, String acceptId, String declineId, String plain) {
+        String who = plain == null || plain.isBlank() ? "them" : plain;
+        String accept = "Accept " + who;
+        String decline = "Decline " + who;
+        if (!UltraStyle.fitsButton(accept) || !UltraStyle.fitsButton(decline)) {
+            spec.line(UltraStyle.LABEL + who);
+            accept = "Accept";
+            decline = "Decline";
+        }
+        spec.button(acceptId, UltraStyle.confirm(accept), "confirm").rowGap();
+        spec.button(declineId, UltraStyle.danger(decline), "danger").rowGap();
+    }
+
+    /** Name plus a short status tag when {@code Name (Status)} would clip. */
+    private static String rivalListLabel(String plain, String status) {
+        String name = plain == null || plain.isBlank() ? "-" : plain;
+        if (status == null || status.isBlank()) {
+            return UltraStyle.buttonText(name);
+        }
+        String full = name + " (" + status + ")";
+        if (UltraStyle.fitsButton(full)) {
+            return full;
+        }
+        String tag = switch (status.toLowerCase(java.util.Locale.ROOT)) {
+            case "nemesis" -> "Nem";
+            case "mutual" -> "Mut";
+            case "declared" -> "Dec";
+            case "silent" -> "Sil";
+            case "pending" -> "Pen";
+            case "past" -> "Past";
+            default -> status.length() <= 4 ? status : status.substring(0, 3);
+        };
+        String compact = name + " " + tag;
+        return UltraStyle.fitsButton(compact) ? compact : UltraStyle.buttonText(name);
     }
 
     /**
@@ -245,7 +281,7 @@ public final class UltraRivalScreens {
             spec.button("do:declare:" + arg, UltraStyle.confirm("Declare (send invite)"), "confirm")
                     .rowGap();
         }
-        spec.footerBack("page:pick_rival", "Choose a player");
+        spec.footerBack("page:pick_rival", "Players");
         spec.send(player);
     }
 
@@ -268,13 +304,13 @@ public final class UltraRivalScreens {
         }
         spec.setRow(UltraStyle.CONTENT_ROW_TABS + UltraStyle.BODY_MIN_H);
         placePerChallengeButtons(spec, player);
-        // 3) Start a new challenge
+        // 3) Challenge actions, then Spectate with Stop spectate on the same row.
         UltraPickHelper.placePageButtons(
                 spec,
-                "pick_challenge|Send challenge...",
-                "pick_spectate|Spectate...",
+                "pick_challenge|Send challenge",
                 "records:history|Challenge history");
-        spec.button("do:spectate_stop", UltraStyle.dim("Stop spectate"), "dim").rowGap();
+        spec.buttonLeft("page:pick_spectate", "Spectate", "normal");
+        spec.buttonRight("do:spectate_stop", UltraStyle.dim("Stop spectate"), "dim").rowGap();
         spec.footerBackToMain();
         spec.send(player);
     }
@@ -307,20 +343,20 @@ public final class UltraRivalScreens {
             }
             String plain = UltraStyle.plain(shown);
             if ("IN".equalsIgnoreCase(dir)) {
-                spec.button(
-                                "do:challenge_accept:" + picker,
-                                UltraStyle.confirm("Accept " + plain),
-                                "confirm")
-                        .rowGap();
-                spec.button(
-                                "do:challenge_decline:" + picker,
-                                UltraStyle.danger("Decline " + plain),
-                                "danger")
-                        .rowGap();
+                stackAcceptDecline(
+                        spec,
+                        "do:challenge_accept:" + picker,
+                        "do:challenge_decline:" + picker,
+                        plain);
             } else {
+                String cancel = "Cancel " + plain;
+                if (!UltraStyle.fitsButton(cancel)) {
+                    spec.line(UltraStyle.LABEL + plain);
+                    cancel = "Cancel";
+                }
                 spec.button(
                                 "do:challenge_cancel:" + picker,
-                                UltraStyle.danger("Cancel vs " + plain),
+                                UltraStyle.danger(cancel),
                                 "danger")
                         .rowGap();
             }
@@ -463,10 +499,7 @@ public final class UltraRivalScreens {
                 }
                 String plain = UltraStyle.plain(shown);
                 // Stack Accept above Decline per player — side-by-side is a misclick risk.
-                spec.button("do:accept:" + arg, UltraStyle.confirm("Accept " + plain), "confirm")
-                        .rowGap();
-                spec.button("do:decline:" + arg, UltraStyle.danger("Decline " + plain), "danger")
-                        .rowGap();
+                stackAcceptDecline(spec, "do:accept:" + arg, "do:decline:" + arg, plain);
                 placed++;
             }
         }
@@ -631,7 +664,7 @@ public final class UltraRivalScreens {
             spec.button("do:accept:" + arg, UltraStyle.confirm("Accept mutual rivalry"), "confirm")
                     .rowGap();
         }
-        spec.footerBack("page:pick_rival", "Choose a player");
+        spec.footerBack("page:pick_rival", "Players");
         spec.send(player);
     }
 

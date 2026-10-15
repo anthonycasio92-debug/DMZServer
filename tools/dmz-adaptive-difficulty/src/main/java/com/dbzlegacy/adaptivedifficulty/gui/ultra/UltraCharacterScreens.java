@@ -187,10 +187,11 @@ public final class UltraCharacterScreens {
             String label;
             String style;
             if (current) {
-                label = UltraStyle.dim(name + " (you)");
+                String you = name + " (you)";
+                label = UltraStyle.dim(UltraStyle.fitsButton(you) ? you : UltraStyle.buttonText(name));
                 style = UltraStyle.STYLE_DIM;
             } else {
-                label = UltraStyle.confirm(name);
+                label = UltraStyle.confirm(UltraStyle.buttonText(name));
                 style = UltraStyle.STYLE_CONFIRM;
             }
             if (placed % 2 == 0) {
@@ -286,8 +287,13 @@ public final class UltraCharacterScreens {
         for (int keep : keepSteps) {
             String action = "page:race_confirm:" + raceId + ":" + keep;
             long keepDue = CharacterServicesSystem.raceAmountDue(player, keep);
-            String keepPrice = keepDue <= 0L ? "free" : CharacterServicesSystem.formatCost(keepDue);
-            String keepLabel = "Keep " + keep + "% - " + keepPrice;
+            String keepPrice = keepDue <= 0L
+                    ? "free"
+                    : com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy.compactCost(keepDue);
+            String keepLabel = keep + "% " + keepPrice;
+            if (!UltraStyle.fitsButton(keepLabel)) {
+                keepLabel = "Keep " + keep + "%";
+            }
             String label = keep == selected
                     ? UltraStyle.confirm(keepLabel)
                     : UltraStyle.LABEL + keepLabel;
@@ -303,7 +309,12 @@ public final class UltraCharacterScreens {
         if (placed % 2 == 1) {
             spec.rowGap();
         }
-        String confirmLabel = due <= 0L ? "Confirm (free)" : "Confirm & pay - " + costText;
+        String confirmLabel = due <= 0L
+                ? "Confirm"
+                : "Pay " + com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy.compactCost(due);
+        if (!UltraStyle.fitsButton(confirmLabel)) {
+            confirmLabel = "Confirm";
+        }
         spec.button(
                         "do:race_confirm:" + confirmArg,
                         UltraStyle.confirm(confirmLabel),
@@ -344,10 +355,11 @@ public final class UltraCharacterScreens {
             String label;
             String style;
             if (current) {
-                label = UltraStyle.dim(name + " (you)");
+                String you = name + " (you)";
+                label = UltraStyle.dim(UltraStyle.fitsButton(you) ? you : UltraStyle.buttonText(name));
                 style = UltraStyle.STYLE_DIM;
             } else {
-                label = UltraStyle.confirm(name);
+                label = UltraStyle.confirm(UltraStyle.buttonText(name));
                 style = UltraStyle.STYLE_CONFIRM;
             }
             if (placed % 2 == 0) {
@@ -470,15 +482,16 @@ public final class UltraCharacterScreens {
             String label;
             String style;
             if ("E".equals(state)) {
-                label = UltraStyle.confirm(name + " (on)");
+                String on = name + " on";
+                label = UltraStyle.confirm(UltraStyle.fitsButton(on) ? on : UltraStyle.buttonText(name));
                 style = UltraStyle.STYLE_CONFIRM;
             } else if ("L".equals(state)) {
-                String cost = p.length > 3 ? p[3].trim() : "";
-                label = UltraStyle.dim(name + (cost.isBlank() ? " (locked)" : " " + cost));
+                String locked = name + " lock";
+                label = UltraStyle.dim(UltraStyle.fitsButton(locked) ? locked : UltraStyle.buttonText(name));
                 style = UltraStyle.STYLE_DIM;
                 action = "do:bone_unlock:" + id;
             } else {
-                label = UltraStyle.LABEL + name;
+                label = UltraStyle.LABEL + UltraStyle.buttonText(name);
                 style = UltraStyle.STYLE_NORMAL;
             }
             if (placed % 2 == 0) {
@@ -569,10 +582,18 @@ public final class UltraCharacterScreens {
             String label;
             String style;
             if (offer.resettable()) {
-                label = UltraStyle.confirm("Reset " + offer.name());
+                label = UltraStyle.confirm(UltraStyle.buttonText("Reset " + offer.name()));
                 style = UltraStyle.STYLE_CONFIRM;
             } else {
-                label = UltraStyle.dim(offer.name() + " (" + offer.statusLabel() + ")");
+                String state = switch (offer.status()) {
+                    case COMPLETED -> "done";
+                    case IN_PROGRESS -> "active";
+                    case LOCKED -> "locked";
+                    case NOT_STARTED -> "new";
+                };
+                String caption = offer.name() + " " + state;
+                label = UltraStyle.dim(
+                        UltraStyle.fitsButton(caption) ? caption : UltraStyle.buttonText(offer.name()));
                 style = UltraStyle.STYLE_DIM;
             }
             if (placed % 2 == 0) {

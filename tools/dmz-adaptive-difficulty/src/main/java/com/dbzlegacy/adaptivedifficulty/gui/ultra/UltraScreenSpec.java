@@ -362,7 +362,8 @@ public final class UltraScreenSpec {
         if (accentCode.isEmpty()) {
             accentCode = UltraStyle.systemAccentCode(screenId);
         }
-        String fitted = UltraStyle.fitAsciiLabel(label, UltraStyle.labelMaxWidth(width));
+        int labelPx = UltraStyle.labelMaxWidth(width);
+        String fitted = UltraStyle.fitAsciiLabel(UltraStyle.clipPlain(label, labelPx), labelPx);
         // Character startup self-test forbids section-sign / C2 in buttonsJson labels; style carries
         // confirm/dim/danger. Other screens may still bake UltraStyle.color ink into labels.
         String wireLabel = plainWireLabel(fitted, accentCode);
@@ -471,8 +472,8 @@ public final class UltraScreenSpec {
     private void addFooterButton(String actionId, String label, int x) {
         UltraScreenIds.requireValidActionId(screenId, actionId, label);
         String accentCode = UltraStyle.systemAccentCode(screenId);
-        String fitted =
-                UltraStyle.fitAsciiLabel(label, UltraStyle.labelMaxWidth(UltraStyle.BTN_W));
+        int labelPx = UltraStyle.labelMaxWidth(UltraStyle.BTN_W);
+        String fitted = UltraStyle.fitAsciiLabel(UltraStyle.clipPlain(label, labelPx), labelPx);
         String wireLabel = plainWireLabel(fitted, accentCode);
         footerButtons.add(
                 new Button(
@@ -931,8 +932,8 @@ public final class UltraScreenSpec {
             // Plain ASCII only — startup self-test requires exact "Home"/"Saga"/"Android"
             // (no section-sign/accent prefixes). Active state is style=normal vs dim; title tint stays
             // on layoutJson.accent.
-            String fitted =
-                    UltraStyle.fitAsciiLabel(tab.label, UltraStyle.labelMaxWidth(tabW));
+            int tabPx = UltraStyle.labelMaxWidth(tabW);
+            String fitted = UltraStyle.fitAsciiLabel(UltraStyle.clipPlain(tab.label, tabPx), tabPx);
             String label = UltraStyle.plain(fitted);
             String style = tabStyle(tab, active);
             JsonObject o = new JsonObject();
