@@ -162,7 +162,7 @@ Known optional feature ids:
 | `style` | Button `style` values above |
 | `activeTab` | GuiOpenPacket field 5 highlight |
 | `titleAlign` | `layoutJson.titleAlign` (`center` / `left`) |
-| `playerModel` | `layoutJson.playerModel` entity preview |
+| `playerModel` | `layoutJson.playerModel` entity preview, including `subject` (`local` or a player UUID) |
 | `textInput` | GuiOpenPacket field 11 `inputsJson` text fields + `bindInput` |
 | `headerBottom` | `layoutJson.headerBottom` / `tabsUnderTitle` |
 | `accent` | `layoutJson.accent` + button/tab `accent` |
@@ -304,6 +304,7 @@ platform-default charset causes mojibake on accents (é/à).
     "height": 120,
     "scale": 1.0,
     "rotate": true,
+    "subject": "local",
     "parts": {
       "schema": 1,
       "subject": "local",
@@ -393,13 +394,16 @@ only requires a single Minecraft color code.
 | `width`, `height` | number | Bounds for the preview |
 | `scale` | number | Entity scale (default `1.0`) |
 | `rotate` | boolean | Slow turntable when `true` |
+| `subject` | string | Who to draw. **`local`** (or omitted) is the player who has the screen open. Another player is their UUID (`550e8400-e29b-41d4-a716-446655440000`) or the same id as **`uuid:<uuid>`**. Any mod may set this. The client draws that player's model, skin, and synced parts. It must not substitute the viewer when the UUID is someone else. |
 | `portraitFrame` | string | Optional RL; non-empty valid RL enables preview frame chrome. LM omits this so the model has no border. Advertised + honored on KaiPath **1.3.17**. |
-| `parts` | object | Optional cosmetics snapshot — see below |
+| `parts` | object | Optional cosmetics snapshot for that subject — see below |
 
 **Backward compatible:** clients that do not know `playerModel` ignore it; the rest of the
-layout still works. JLDK implements the entity rendering; the server declares position, size,
-and (when present) equipped custom parts. Screen builders opt in per screen (LM Character
-Services uses it; others default off).
+layout still works. Clients that draw `playerModel` but do not know `subject` keep drawing
+the local player. KaiPath **1.3.20** honors `subject` for every partner mod on the bridge,
+not only LegacyMechanics. The server declares position, size, who to draw, and (when
+present) equipped custom parts. Screen builders opt in per screen (LM Character Services
+uses it; others default off).
 
 ##### `playerModel.parts` (optional, schema 1)
 
@@ -427,7 +431,7 @@ ids. A client that does not advertise the feature still draws the entity and ign
 | Field | Type | Required | Notes |
 |-------|------|----------|-------|
 | `schema` | number | yes | **`1`** for this document. Bump only on breaking shape changes. |
-| `subject` | string | yes | Who to draw. **`local`** is the viewing player. Staff inspect sends **`uuid:<player-uuid>`** from {@code AdminInspectSessions.resolveSubject} so the preview is the subject, not the staff viewer. Stock KaiPath 1.3.17 and 1.3.19 ignore this field and always draw `Minecraft.player`. `bash tools/ultra-gui-kit/patch-inspect-preview.sh` writes `mods/<base>-inspect-subject.jar` (pass `KAIPATH_BASE_JAR` for the jar players actually run). That client jar reads `subject`. The dedicated server's copy does not paint the preview. |
+| `subject` | string | no | Same token as top-level `playerModel.subject`. Use it when the cosmetics snapshot and the render target travel together. Top-level `subject` wins when both are set. **`local`** is the viewing player. A UUID or **`uuid:<uuid>`** is another player. |
 | `headBones` | object | no | Equipped DMZ `activeHeadBone` cosmetics. Omit when empty. |
 | `headBones.token` | string | yes* | Authoritative DMZ token (`+`-joined). Same string DMZ stores on the character. |
 | `headBones.pieces` | string[] | yes* | Atomic bone ids split from the token (stable shop order when known). Prefer this list when iterating geo bones. |
@@ -444,8 +448,11 @@ only if `token` is empty (do not send `headBones` in that case).
 
 **Client render contract (JLDK):**
 
-1. Draw the subject player entity inside `x/y/width/height` at `scale`, with turntable when
-   `rotate` is true.
+1. Resolve `playerModel.subject` (else `parts.subject`, else `local`). Draw that player inside
+   `x/y/width/height` at `scale`, with turntable when `rotate` is true. Use the tracked player
+   when the client has them, so their skin and synced parts render. If they are not loaded,
+   draw a remote player from their tab-list profile so the skin still loads. Do not draw the
+   viewer in place of a different UUID.
 2. If `parts.headBones` is present, apply those pieces. LM's example is DMZ
    `activeHeadBone` (split `token` on `+`, or iterate `pieces`). Other mods replace or omit
    this object.

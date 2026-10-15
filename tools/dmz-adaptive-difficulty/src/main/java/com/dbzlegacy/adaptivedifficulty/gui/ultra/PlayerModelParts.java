@@ -14,9 +14,10 @@ import net.minecraft.server.level.ServerPlayer;
 /**
  * Builds the optional {@code layoutJson.playerModel.parts} snapshot for KaiPath / JLDK.
  *
- * <p>Schema {@code 1} - see {@code docs/KAIPATH_GUI_PROTOCOL.md}. {@code subject} is {@code local}
- * for the viewer, or {@code uuid:<id>} for an inspect subject. The client uses that plus this
- * object for custom body pieces (DMZ head bones, worn form identity, and an open {@code extras} array).
+ * <p>Schema {@code 1} - see {@code docs/KAIPATH_GUI_PROTOCOL.md}. {@code subject} is the bridge
+ * field any mod may set: {@code local} for the viewing player, or {@code uuid:<id>} for someone
+ * else. KaiPath draws that player's model, skin, and parts. This object also carries custom
+ * body pieces (DMZ head bones, worn form identity, and an open {@code extras} array).
  */
 public final class PlayerModelParts {
     /** Current documented schema version inside {@code parts.schema}. */

@@ -18,6 +18,20 @@ public final class InspectPreviewSubjectTest {
                         "{\"playerModel\":{\"parts\":{\"subject\":\"uuid:" + uuid + "\"}}}");
         check("uuid:" + uuid, nested, "parts.subject is used when the top-level key is absent");
 
+        String bare =
+                InspectPreviewSubjects.tokenFromLayout(
+                        "{\"playerModel\":{\"subject\":\"" + uuid + "\"}}");
+        check(uuid, bare, "a bare player uuid is a subject");
+        if (!uuid.equals(String.valueOf(InspectPreviewSubjects.playerId(bare)))) {
+            throw new AssertionError("bare uuid did not parse");
+        }
+        if (!uuid.equals(String.valueOf(InspectPreviewSubjects.playerId("uuid:" + uuid)))) {
+            throw new AssertionError("uuid: prefix did not parse");
+        }
+        if (InspectPreviewSubjects.playerId("local") != null) {
+            throw new AssertionError("local must mean the viewing player");
+        }
+
         String local =
                 InspectPreviewSubjects.tokenFromLayout(
                         "{\"playerModel\":{\"x\":1,\"subject\":\"local\"}}");
