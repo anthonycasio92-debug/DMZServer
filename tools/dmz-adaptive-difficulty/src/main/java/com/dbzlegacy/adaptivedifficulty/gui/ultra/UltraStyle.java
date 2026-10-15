@@ -158,12 +158,6 @@ public final class UltraStyle {
      * {@link #BUTTON_SKIN}; draws a tinted border via {@code GuiGraphics}, no texture bind.
      */
     public static final String PANEL_FRAME = "legacymechanics:panel";
-    /**
-     * Portrait frame enable token. <b>Not emitted</b> — a non-empty
-     * {@code playerModel.portraitFrame} draws a border around the character preview.
-     */
-    public static final String PORTRAIT_FRAME = "legacymechanics:portrait";
-
     static {
         // Unicode escape keeps the mark out of other sources; static-init prevents folding.
         MARK = "\u00A7";
@@ -193,7 +187,7 @@ public final class UltraStyle {
         NOTICE_BODY = YELLOW;
         ACCENT_DIFFICULTY = RED;
         ACCENT_RIVAL = WHITE;
-        ACCENT_SPAR = DARK_RED;
+        ACCENT_SPAR = DARK_AQUA;
         ACCENT_PRESTIGE = AQUA;
         ACCENT_CHARACTER = GREEN;
         ACCENT_SKILLCHECK = YELLOW;
@@ -323,7 +317,8 @@ public final class UltraStyle {
     /**
      * Wrap {@code styled} onto as many body lines as it needs. Breaks on spaces. A single
      * token wider than the box continues on the next line so the client never hides the tail.
-     * Color codes stay on each line and do not count toward the width.
+     * Color codes stay attached to the glyphs they color, including a change in the middle of
+     * a word, and do not count toward the width. A section-sign with no format code is dropped.
      */
     public static List<String> wrapBody(String styled, int fitPx) {
         int budget = Math.max(8, Math.max(BODY_GLYPH_PX, fitPx) / BODY_GLYPH_PX);
@@ -333,21 +328,26 @@ public final class UltraStyle {
             return out;
         }
         String active = "";
-        String wordColor = "";
-        StringBuilder word = new StringBuilder();
-        List<String[]> words = new ArrayList<>();
+        String bufColor = "";
+        StringBuilder buf = new StringBuilder();
+        List<String[]> segs = new ArrayList<>();
+        List<List<String[]>> words = new ArrayList<>();
         for (int i = 0; i <= text.length(); i++) {
             boolean end = i == text.length();
             char c = end ? '\n' : text.charAt(i);
-            if (!end && c == MARK.charAt(0) && i + 1 < text.length()) {
-                active = text.substring(i, i + 2);
-                i++;
+            if (!end && c == MARK.charAt(0)) {
+                if (i + 1 < text.length() && isFormatCode(text.charAt(i + 1))) {
+                    closeSeg(segs, bufColor, buf);
+                    active = text.substring(i, i + 2);
+                    i++;
+                }
                 continue;
             }
             if (c == ' ' || c == '\n') {
-                if (word.length() > 0) {
-                    words.add(new String[] {wordColor, word.toString()});
-                    word.setLength(0);
+                closeSeg(segs, bufColor, buf);
+                if (!segs.isEmpty()) {
+                    words.add(segs);
+                    segs = new ArrayList<>();
                 }
                 if (c == '\n') {
                     flushWrapped(words, budget, out);
@@ -355,27 +355,61 @@ public final class UltraStyle {
                 }
                 continue;
             }
-            if (word.length() == 0) {
-                wordColor = active;
+            if (buf.length() == 0) {
+                bufColor = active;
             }
-            word.append(c);
+            buf.append(c);
         }
         return out;
     }
 
-    private static void flushWrapped(List<String[]> words, int budget, List<String> out) {
+    /** Minecraft formatting code after a section-sign ({@code 0-9}, {@code a-f}, {@code k-o}, {@code r}). */
+    private static boolean isFormatCode(char c) {
+        char lower = c >= 'A' && c <= 'Z' ? (char) (c + 32) : c;
+        return (lower >= '0' && lower <= '9')
+                || (lower >= 'a' && lower <= 'f')
+                || (lower >= 'k' && lower <= 'o')
+                || lower == 'r';
+    }
+
+    private static void closeSeg(List<String[]> segs, String color, StringBuilder buf) {
+        if (buf == null || buf.length() == 0) {
+            return;
+        }
+        segs.add(new String[] {color == null ? "" : color, buf.toString()});
+        buf.setLength(0);
+    }
+
+    private static int visibleFrom(List<String[]> word, int seg, int off) {
+        int n = 0;
+        for (int i = seg; i < word.size(); i++) {
+            String text = word.get(i)[1];
+            n += text.length() - (i == seg ? off : 0);
+        }
+        return n;
+    }
+
+    private static void flushWrapped(List<List<String[]>> words, int budget, List<String> out) {
         StringBuilder line = new StringBuilder();
         int plain = 0;
         String lineColor = "";
-        for (String[] word : words) {
-            String color = word[0] == null ? "" : word[0];
-            String text = word[1] == null ? "" : word[1];
-            int from = 0;
-            while (from < text.length()) {
-                int gap = plain == 0 ? 0 : 1;
+        for (List<String[]> word : words) {
+            int seg = 0;
+            int off = 0;
+            boolean started = false;
+            while (seg < word.size()) {
+                String[] part = word.get(seg);
+                String color = part[0] == null ? "" : part[0];
+                String text = part[1] == null ? "" : part[1];
+                if (off >= text.length()) {
+                    seg++;
+                    off = 0;
+                    continue;
+                }
+                int gap = !started && plain > 0 ? 1 : 0;
                 int room = budget - plain - gap;
-                int remaining = text.length() - from;
-                if (plain > 0 && remaining > room) {
+                int remaining = visibleFrom(word, seg, off);
+                if (!started && plain > 0 && remaining > room && remaining <= budget) {
                     pushWrapped(out, line);
                     line.setLength(0);
                     plain = 0;
@@ -389,22 +423,22 @@ public final class UltraStyle {
                     lineColor = "";
                     continue;
                 }
-                int take = Math.min(remaining, room);
+                int take = Math.min(text.length() - off, room);
                 if (gap > 0) {
                     line.append(' ');
                 }
-                if (!color.isEmpty() && !color.equals(lineColor)) {
-                    line.append(color);
+                String ink = color.isEmpty() ? lineColor : color;
+                if (!ink.isEmpty() && !ink.equals(lineColor)) {
+                    line.append(ink);
                 }
-                line.append(text, from, from + take);
+                line.append(text, off, off + take);
                 plain += gap + take;
-                lineColor = color;
-                from += take;
-                if (from < text.length()) {
-                    pushWrapped(out, line);
-                    line.setLength(0);
-                    plain = 0;
-                    lineColor = "";
+                lineColor = ink;
+                off += take;
+                started = true;
+                if (off >= text.length()) {
+                    seg++;
+                    off = 0;
                 }
             }
         }
@@ -571,8 +605,9 @@ public final class UltraStyle {
             // White, not dark purple. Purple on the gold header and yellow button face
             // does not read. Body copy on the dark panel may still use purple.
             case "rival" -> "f";
-            // Dark red. Gold is the shared action-button color, so sparring uses its own combat accent.
-            case "spar" -> "4";
+            // Dark aqua. Gold is the shared action color and dark red is staff, so sparring
+            // keeps its own combat accent.
+            case "spar" -> "3";
             case "prestige" -> "b";
             case "character" -> "a";
             case "skillcheck", "skills", "skillcheck_denied" -> "e";
@@ -634,13 +669,23 @@ public final class UltraStyle {
         }
         String ns = trimmed.substring(0, colon).toLowerCase(java.util.Locale.ROOT);
         String path = trimmed.substring(colon + 1).toLowerCase(java.util.Locale.ROOT);
-        if (!iconToken(ns) || !iconToken(path)) {
+        if (!iconNamespace(ns) || !iconPath(path)) {
             return "";
         }
         return ns + ":" + path;
     }
 
-    private static boolean iconToken(String token) {
+    /** Minecraft namespace: no slash. */
+    private static boolean iconNamespace(String token) {
+        return iconToken(token, false);
+    }
+
+    /** Texture or item path. Slashes are allowed here only. */
+    private static boolean iconPath(String token) {
+        return iconToken(token, true);
+    }
+
+    private static boolean iconToken(String token, boolean allowSlash) {
         if (token == null || token.isEmpty() || token.length() > 128) {
             return false;
         }
@@ -651,7 +696,7 @@ public final class UltraStyle {
                     || c == '_'
                     || c == '-'
                     || c == '.'
-                    || c == '/';
+                    || (allowSlash && c == '/');
             if (!ok) {
                 return false;
             }

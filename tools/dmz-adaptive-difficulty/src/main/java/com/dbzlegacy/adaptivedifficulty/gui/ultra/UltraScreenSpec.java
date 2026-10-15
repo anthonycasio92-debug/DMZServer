@@ -379,7 +379,7 @@ public final class UltraScreenSpec {
         }
         String accentCode = normalizeAccent(accent);
         if (UltraStyle.STYLE_DIM.equals(resolvedStyle)) {
-            // OFF / unavailable stays dark gray. System accent (spar dark red, skill yellow)
+            // OFF / unavailable stays dark gray. System accent (spar dark aqua, skill yellow)
             // must not paint a disabled toggle as active.
             accentCode = "8";
         } else if (accentCode.isEmpty()) {
