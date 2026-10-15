@@ -165,10 +165,12 @@ public final class UltraCharacterScreens {
         UltraScreenSpec spec = sub(player, "race:" + pg, false)
                 .line(UltraStyle.LABEL + "Choose your new race.")
                 .labelValue("Races", total + (pages > 1 ? (" page " + (pg + 1) + "/" + pages) : ""))
-                .labelValue("Cost (keep 100%)", keep100Text)
                 .labelValue("Keep 0%", "Free");
-        // Cost is on labelValue; body lines keep the keep-% note / skills / cooldown.
+        // Body list is capped. The keep-100 price is pinned below so the cap cannot drop it.
         appendCompactLines(spec, CharacterServicesGuiApi.linesForPage(player, "race"), 3, true);
+        spec.line(UltraStyle.dim(
+                "Keeping everything costs " + keep100Text
+                        + " - exact cost shown on the next page."));
         spec.buttonsAfterLines();
         int placed = 0;
         for (int i = from; i < to; i++) {
@@ -276,11 +278,12 @@ public final class UltraCharacterScreens {
         UltraScreenSpec spec = sub(player, "race_confirm:" + confirmArg, false)
                 .line(UltraStyle.LABEL + "Confirm race change")
                 .labelValue("Race", raceLabel)
-                .labelValue("Keep", selected + "%")
-                .labelValue("Cost", costText);
-        // Cost/Keep are on labelValue; body keeps pricing note + carry-over + preview.
+                .labelValue("Keep", selected + "%");
+        // Legacy race_confirm is 14 lines and appendCompactLines keeps 6, so a cost
+        // buried in that list never renders. Pin it under the body, above Keep-%.
         appendCompactLines(
                 spec, CharacterServicesGuiApi.linesForPage(player, "race_confirm:" + confirmArg), 6, true);
+        spec.line(UltraStyle.labelValue("Cost", costText));
         spec.buttonsAfterLines();
         int[] keepSteps = CharacterServicesConfig.preservationSteps();
         int placed = 0;
@@ -331,12 +334,16 @@ public final class UltraCharacterScreens {
         int pg = Math.min(pages - 1, Math.max(0, page));
         int from = pg * DISCOVERY_PER_PAGE;
         int to = Math.min(total, from + DISCOVERY_PER_PAGE);
+        long classDue = CharacterServicesSystem.classAmountDue(player);
+        String classCost = classDue <= 0L ? "Free" : CharacterServicesSystem.formatCost(classDue);
         UltraScreenSpec spec = sub(player, "class:" + pg, false)
                 .line(UltraStyle.LABEL + "Pick a class for your current race.")
                 .labelValue(
                         "Classes",
                         total + (pages > 1 ? (" page " + (pg + 1) + "/" + pages) : ""));
-        appendCompactLines(spec, CharacterServicesGuiApi.linesForPage(player, "class"), 3);
+        // Class list is 5 lines and the cap is 3, so the cost (line 4) never renders.
+        appendCompactLines(spec, CharacterServicesGuiApi.linesForPage(player, "class"), 3, true);
+        spec.line(UltraStyle.labelValue("Cost", classCost));
         spec.buttonsAfterLines();
         int placed = 0;
         for (int i = from; i < to; i++) {
@@ -398,10 +405,13 @@ public final class UltraCharacterScreens {
 
     private static void openClassConfirm(ServerPlayer player, String classId) {
         String id = classId == null ? "" : classId.trim();
+        long classDue = CharacterServicesSystem.classAmountDue(player);
+        String classCost = classDue <= 0L ? "Free" : CharacterServicesSystem.formatCost(classDue);
         UltraScreenSpec spec = sub(player, "class_confirm:" + id, false)
                 .line(UltraStyle.LABEL + "Confirm class change");
         appendCompactLines(
-                spec, CharacterServicesGuiApi.linesForPage(player, "class_confirm:" + id), 4);
+                spec, CharacterServicesGuiApi.linesForPage(player, "class_confirm:" + id), 4, true);
+        spec.line(UltraStyle.labelValue("Cost", classCost));
         spec.buttonsAfterLines();
         spec.button(
                         "do:class_confirm:" + id,
@@ -685,8 +695,8 @@ public final class UltraCharacterScreens {
     }
 
     /**
-     * @param skipCost when true, omit {@code Cost ...} body lines (Ultra already shows Cost via
-     *     {@code labelValue}, e.g. race select / confirm)
+     * @param skipCost when true, omit {@code Cost ...} body lines. Those lines sit past the cap
+     *     and are pinned separately with {@link UltraStyle#labelValue}.
      */
     private static void appendCompactLines(
             UltraScreenSpec spec, List<String> lines, int max, boolean skipCost) {
