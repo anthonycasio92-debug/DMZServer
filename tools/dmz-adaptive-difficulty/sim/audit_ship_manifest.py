@@ -347,8 +347,10 @@ def main() -> int:
           "§8· §cLocked" in unlock
           and "§8· §aUnlocked" in unlock
           and "§8· §6Max" in unlock
-          and "SOFT CAP" in unlock
-          and "Spar with other players" in unlock)
+          and "Spar with other players" in unlock
+          and "toward 30" in unlock
+          and "SOFT CAP" not in unlock
+          and "Piccolo" not in unlock)
 
     print("\n--- § rival ---")
     rival_api = read(SRC / "gui/RivalGuiApi.java")

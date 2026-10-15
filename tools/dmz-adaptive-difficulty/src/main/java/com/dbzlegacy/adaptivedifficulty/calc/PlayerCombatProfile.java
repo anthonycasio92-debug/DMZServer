@@ -584,7 +584,7 @@ public final class PlayerCombatProfile {
             base = hardCap;
         }
         // Skill sponge: Ki Infusion (+2.5%/lvl outgoing in DMZ) → packs need more HP.
-        // Potential Unlock raises form access — mild extra sponge while transformed.
+        // Potential Unlock is linear through 30: +4% transformed sponge at 10, +12% at 30.
         double skillHp = 1.0
                 + Math.min(0.22, kiInfusionLevel * 0.022)
                 + (kiInfusionActive ? 0.06 : 0.0)
