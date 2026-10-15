@@ -396,6 +396,26 @@ def main() -> int:
     if "UltraGuiFeedback.deliver" not in weight_src:
         errors.append("UltraWeightShopScreens.buy must stash purchase results via UltraGuiFeedback")
 
+    character = (ULTRA / "UltraCharacterScreens.java").read_text(encoding="utf-8")
+    if "Keeping everything costs " not in character or "exact cost shown on the next page." not in character:
+        errors.append("race select must pin a dim keep-100 cost line outside appendCompactLines")
+    if character.count('UltraStyle.labelValue("Cost"') < 2:
+        errors.append("race confirm and class pages must pin Cost via UltraStyle.labelValue")
+    if "classAmountDue" not in character or "raceAmountDue" not in character:
+        errors.append("pinned costs must use CharacterServicesSystem amount helpers")
+    # Ambient / event feedback has no menu. Do not route it through Ultra.
+    java_root = ROOT / "src/main/java/com/dbzlegacy/adaptivedifficulty"
+    for rel in (
+        "rival/RivalProximity.java",
+        "progression/tp/DeathTpPenalty.java",
+        "title/TitleSense.java",
+        "util/DmzRewards.java",
+        "rival/RivalInstinct.java",
+    ):
+        ambient = (java_root / rel).read_text(encoding="utf-8")
+        if "UltraGuiFeedback" in ambient or "UltraScreenSpec" in ambient:
+            errors.append(rel + " is ambient; leave its feedback in chat or the boss bar")
+
     packet = PACKET.read_text(encoding="utf-8")
     if "panelWidth" not in packet or "layoutJson" not in packet:
         errors.append("GuiOpenPacket must carry panelWidth/panelHeight/layoutJson")

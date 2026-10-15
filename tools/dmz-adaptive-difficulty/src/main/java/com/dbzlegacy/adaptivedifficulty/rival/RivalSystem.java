@@ -452,6 +452,7 @@ public final class RivalSystem {
     ) {
         ServerPlayer online = onlineByUuid(player.m_20194_(), them.uuid);
         if (online != null) {
+            // The other player has no menu open. The actor's result is the return line.
             DmzRewards.msg(online, LmChat.card(
                     "Rival Mutual",
                     "/rival",
@@ -461,14 +462,6 @@ public final class RivalSystem {
                             : "§a" + me.name + " accepted your rivalry — Mutual!",
                     "§8Both ways. Full rivalry benefits."));
         }
-        DmzRewards.msg(player, LmChat.card(
-                "Rival Mutual",
-                "/rival",
-                null,
-                dualSilent
-                        ? "§aAccepted §f" + them.name + " §a— Declared → Mutual!"
-                        : "§aAccepted rivalry with §f" + them.name + " §a— Mutual!",
-                "§8Both ways. Full rivalry benefits."));
     }
 
     private static boolean needsMutualSlot(RivalPlayerRecord record, String newUuid) {
@@ -1199,13 +1192,7 @@ public final class RivalSystem {
         bToA.expiresAt = expire;
         store.declareRequests.put(them.uuid + ">" + me.uuid, bToA);
 
-        DmzRewards.msg(actor, LmChat.card(
-                "Rival Declared",
-                "/rival",
-                "→ Actions → Pending → Accept Mutual",
-                "§7Rival   §e" + them.name,
-                "§8You both silently rivaled each other.",
-                "§8Both must Accept to become Mutual."));
+        // Actor sees the returned line on the Ultra page (or command chat). Target has no menu.
         DmzRewards.msg(target, LmChat.card(
                 "Rival Declared",
                 "/rival",

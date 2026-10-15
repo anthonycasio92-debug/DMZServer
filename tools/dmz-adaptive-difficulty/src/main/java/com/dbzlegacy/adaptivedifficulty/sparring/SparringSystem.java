@@ -1541,10 +1541,16 @@ public final class SparringSystem {
         bindMentor(mentor, apprentice);
         SparStore.get().invites.remove(player.m_20148_().toString());
         SparStore.get().markDirty();
-        DmzRewards.msg(mentor, LmChat.ok("Mentor", "You are now mentoring " + UltraStyle.VALUE + apprentice.m_7755_().getString()
-                + " " + UltraStyle.DIM + "(" + mentorBond.apprenticeCount() + "/" + MAX_APPRENTICES + ")"));
-        DmzRewards.msg(apprentice, LmChat.ok("Mentor", "Your mentor is now " + UltraStyle.VALUE + mentor.m_7755_().getString()));
-        return UltraStyle.GREEN + "Mentor bond created.";
+        String mentoring = "You are now mentoring " + UltraStyle.VALUE + apprentice.m_7755_().getString()
+                + " " + UltraStyle.DIM + "(" + mentorBond.apprenticeCount() + "/" + MAX_APPRENTICES + ")";
+        String mentored = "Your mentor is now " + UltraStyle.VALUE + mentor.m_7755_().getString();
+        // The player who clicked already gets the return line on the menu. The other person does not.
+        if (player == mentor) {
+            DmzRewards.msg(apprentice, LmChat.ok("Mentor", mentored));
+            return UltraStyle.GREEN + mentoring;
+        }
+        DmzRewards.msg(mentor, LmChat.ok("Mentor", mentoring));
+        return UltraStyle.GREEN + mentored;
     }
 
     public static String mentorDecline(ServerPlayer player) {
