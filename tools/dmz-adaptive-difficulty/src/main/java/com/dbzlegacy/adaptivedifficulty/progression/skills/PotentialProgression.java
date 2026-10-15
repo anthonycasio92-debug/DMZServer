@@ -23,14 +23,12 @@ import net.minecraft.world.entity.projectile.Projectile;
  * Port of {@code Potential.js} — PvP hit/block progress into {@code potentialunlock}.
  * <p>
  * Script parity: movement gate + warnings, method streak (check-before-increment),
- * gravity/weight/prestige multipliers, soft-cap 10 (Piccolo skill-saga unlock),
- * hard max 30, mentor TP.
+ * gravity/weight/prestige multipliers, hard max 30, mentor TP.
+ * Natural sparring runs the same {@code next * 100} point curve through level 30.
  */
 public final class PotentialProgression {
     private static final String SKILL = "potentialunlock";
-    private static final String PICCOLO_UNLOCK_KEY = "potential_piccolo_unlocked";
     private static final int HARD_MAX = 30;
-    private static final int NATURAL_CAP = 10;
     private static final int MAX_SAME_STREAK = 5;
     private static final long DUP_WINDOW_MS = 500L;
     private static final int MAX_POINTS_PER_HIT = 30;
@@ -45,7 +43,6 @@ public final class PotentialProgression {
     private static final double MIN_MOVE = 2.0;
     private static final long MOVE_VALID_MS = 5000L;
     private static final long MOVE_WARN_CD_MS = 10_000L;
-    private static final long CAP_MSG_CD_MS = 10_000L;
 
     private PotentialProgression() {}
 
@@ -112,16 +109,11 @@ public final class PotentialProgression {
         if (skills == null) {
             return;
         }
-        // Soft-cap at 10 until Piccolo skill-saga unlock; hard max 30 afterward.
+        // Natural sparring continues through the hard max of 30.
         DmzSkillUtil.ensureRegistered(skills, SKILL, HARD_MAX);
         int current = DmzSkillUtil.level(skills, SKILL);
         resetIfNeeded(player, current);
         if (current >= HARD_MAX) {
-            return;
-        }
-        // Natural soft-stop: at exactly 10, no more points until Piccolo unlock (or already 11+).
-        if (current == NATURAL_CAP && !hasPiccoloUnlock(player)) {
-            tellSoftCap(player);
             return;
         }
         if (!hasMovedEnough(player)) {
@@ -169,16 +161,6 @@ public final class PotentialProgression {
         DmzSkillUtil.sync(player);
         potentialSubtitle(player, "Increased to level " + confirmed + ".", ChatFormatting.YELLOW, 0L);
         giveMentorLevelUpTp(player, playerData, other, otherData);
-        if (confirmed == NATURAL_CAP) {
-            potentialSubtitle(player, "You have reached level 10.", ChatFormatting.YELLOW, 0L);
-            if (!hasPiccoloUnlock(player)) {
-                potentialSubtitle(
-                        player,
-                        "Tip · /skillcheck Beat Piccolo in the skill saga to keep raising Potential toward 30.",
-                        ChatFormatting.YELLOW,
-                        0L);
-            }
-        }
         SystemTelemetry.log("progression", "potential_level", player, other,
                 Map.of("level", confirmed, "method", method));
     }
@@ -377,81 +359,6 @@ public final class PotentialProgression {
         }
     }
 
-    private static void tellSoftCap(ServerPlayer player) {
-        long now = System.currentTimeMillis();
-        long next = ProgressionData.tempGetLong(player, "potential_softcap_message_cooldown", 0L);
-        if (now < next) {
-            return;
-        }
-        ProgressionData.tempPut(player, "potential_softcap_message_cooldown", now + CAP_MSG_CD_MS);
-        potentialSubtitle(player, "Potential is soft-capped at level 10.", ChatFormatting.YELLOW, 0L);
-        potentialSubtitle(
-                player,
-                "Tip · /skillcheck Beat Piccolo in the skill saga to keep raising it toward 30.",
-                ChatFormatting.YELLOW,
-                0L);
-    }
-
-    /** True once Piccolo skill-saga unlock is earned (or Potential already past 10). */
-    public static boolean hasPiccoloUnlock(ServerPlayer player) {
-        if (player == null) {
-            return false;
-        }
-        if (ProgressionData.storedGetBool(player, PICCOLO_UNLOCK_KEY)) {
-            return true;
-        }
-        // Already past softcap (prestige shop / admin) — treat as unlocked.
-        try {
-            var data = DmzProgression.stats(player);
-            Skills skills = data == null ? null : data.getSkills();
-            if (DmzSkillUtil.level(skills, SKILL) > NATURAL_CAP) {
-                markPiccoloUnlock(player, false);
-                return true;
-            }
-        } catch (Throwable ignored) {
-        }
-        // Retroactive: any completed Piccolo quest counts.
-        try {
-            var data = DmzProgression.stats(player);
-            if (data != null) {
-                var quest = data.getPlayerQuestData();
-                if (quest != null) {
-                    for (String id : quest.getCompletedQuestIds()) {
-                        if (id != null && id.toLowerCase(java.util.Locale.ROOT).contains("piccolo")) {
-                            markPiccoloUnlock(player, false);
-                            return true;
-                        }
-                    }
-                }
-            }
-        } catch (Throwable ignored) {
-        }
-        return false;
-    }
-
-    /**
-     * Grant Potential soft-cap unlock (Piccolo skill-saga). Idempotent.
-     *
-     * @param announce when true, tell the player if this is the first unlock.
-     */
-    public static boolean markPiccoloUnlock(ServerPlayer player, boolean announce) {
-        if (player == null) {
-            return false;
-        }
-        if (ProgressionData.storedGetBool(player, PICCOLO_UNLOCK_KEY)) {
-            return false;
-        }
-        ProgressionData.storedPutBool(player, PICCOLO_UNLOCK_KEY, true);
-        if (announce) {
-            potentialSubtitle(
-                    player,
-                    "Piccolo falls - your Potential can grow past 10 toward 30.",
-                    ChatFormatting.GREEN,
-                    0L);
-        }
-        return true;
-    }
-
     /** Potential notices are subtitles only (no chat). */
     private static void potentialSubtitle(
             ServerPlayer player, String body, ChatFormatting color, long cooldownMs
@@ -465,46 +372,5 @@ public final class PotentialProgression {
                 color,
                 cooldownMs > 0L ? "lm.potential.subtitle" : "",
                 cooldownMs);
-    }
-
-    /** Killer defeated a Piccolo master / saga foe — unlock Potential soft-cap. */
-    public static void onPossiblePiccoloDefeat(ServerPlayer killer, net.minecraft.world.entity.Entity dead) {
-        if (killer == null || dead == null || !isPiccoloSkillSagaFoe(dead)) {
-            return;
-        }
-        markPiccoloUnlock(killer, true);
-    }
-
-    /** Quest key / id mentioning Piccolo completed. */
-    public static void onQuestCompleted(ServerPlayer player, String questKey) {
-        if (player == null || questKey == null) {
-            return;
-        }
-        if (questKey.toLowerCase(java.util.Locale.ROOT).contains("piccolo")) {
-            markPiccoloUnlock(player, true);
-        }
-    }
-
-    private static boolean isPiccoloSkillSagaFoe(net.minecraft.world.entity.Entity dead) {
-        if (dead == null) {
-            return false;
-        }
-        try {
-            String cn = dead.getClass().getName();
-            String simple = dead.getClass().getSimpleName();
-            String lower = (cn + " " + simple).toLowerCase(java.util.Locale.ROOT);
-            if (lower.contains("masterpiccolo") || lower.contains("master_piccolo")) {
-                return true;
-            }
-            if (!lower.contains("piccolo")) {
-                return false;
-            }
-            return lower.contains("master")
-                    || lower.contains("saga")
-                    || dead instanceof com.dragonminez.common.init.entities.MastersEntity
-                    || dead instanceof com.dragonminez.common.init.entities.sagas.DBSagasEntity;
-        } catch (Throwable ignored) {
-            return false;
-        }
     }
 }

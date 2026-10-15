@@ -8,7 +8,6 @@ import com.dbzlegacy.adaptivedifficulty.progression.DmzSkillUtil;
 import com.dbzlegacy.adaptivedifficulty.progression.InvestedStrength;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionData;
 import com.dbzlegacy.adaptivedifficulty.progression.skills.LivingWorldNearbyMeditation;
-import com.dbzlegacy.adaptivedifficulty.progression.skills.PotentialProgression;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import com.dragonminez.common.stats.StatsData;
@@ -156,47 +155,28 @@ public final class SkillUnlockService {
 
     private static void appendPotential(List<String> out, ServerPlayer player, Skills skills) {
         int level = skillLevel(skills, "potentialunlock");
-        boolean piccolo = PotentialProgression.hasPiccoloUnlock(player);
         if (level >= HARD_MAX_POTENTIAL) {
             out.add("§dPotential Unlock§7: §6§lMAX§r §7(" + level + "/" + HARD_MAX_POTENTIAL + ")");
             tip(out, "You're fully unlocked — Potential can't go any higher.");
             return;
         }
-        if (level >= 10 && !piccolo) {
-            out.add("§dPotential Unlock§7: §f" + level + "/" + HARD_MAX_POTENTIAL
-                    + " §8· §eSOFT CAP");
-            tip(out, "You've hit the soft cap. Beat Piccolo in the skill saga to push toward 30.");
-            return;
-        }
         int next = level + 1;
         int required = next * 100;
         long progress = ProgressionData.storedGetLong(player, "potentialunlock_points_to_level_" + next, 0L);
         if (progress > required) {
             progress = required;
         }
-        String status = piccolo && level >= 10 ? " §8· §aPiccolo" : "";
         out.add("§dPotential Unlock§7: §f" + level + "/" + HARD_MAX_POTENTIAL
-                + status + " §8· §f" + progress + "/" + required);
-        if (level < 10) {
-            tip(out, "Spar with other players — you'll soft-cap at 10 until Piccolo.");
-        } else {
-            tip(out, "Keep sparring to work your way up to 30.");
-        }
+                + " §8· §f" + progress + "/" + required);
+        tip(out, "Spar with other players to raise Potential toward 30.");
     }
 
     /** Single-line Potential for Ultra Skill Check (no tip rows). */
     private static void appendPotentialCompact(List<String> out, ServerPlayer player, Skills skills) {
         int level = skillLevel(skills, "potentialunlock");
-        boolean piccolo = PotentialProgression.hasPiccoloUnlock(player);
         if (level >= HARD_MAX_POTENTIAL) {
             out.add(UltraStyle.LIGHT_PURPLE + "Potential " + UltraStyle.VALUE + level + "/"
                     + HARD_MAX_POTENTIAL + " " + UltraStyle.DIM + "- " + UltraStyle.GOLD + "Max");
-            return;
-        }
-        if (level >= 10 && !piccolo) {
-            out.add(UltraStyle.LIGHT_PURPLE + "Potential " + UltraStyle.VALUE + level + "/"
-                    + HARD_MAX_POTENTIAL + " " + UltraStyle.DIM + "- " + UltraStyle.YELLOW
-                    + "Soft cap");
             return;
         }
         int next = level + 1;
@@ -205,11 +185,8 @@ public final class SkillUnlockService {
         if (progress > required) {
             progress = required;
         }
-        String status = piccolo && level >= 10
-                ? " " + UltraStyle.DIM + "- " + UltraStyle.GREEN + "Piccolo"
-                : "";
         out.add(UltraStyle.LIGHT_PURPLE + "Potential " + UltraStyle.VALUE + level + "/"
-                + HARD_MAX_POTENTIAL + status + " " + UltraStyle.DIM + "- " + UltraStyle.VALUE
+                + HARD_MAX_POTENTIAL + " " + UltraStyle.DIM + "- " + UltraStyle.VALUE
                 + progress + "/" + required);
     }
 

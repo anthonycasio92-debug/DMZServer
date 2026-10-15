@@ -108,6 +108,7 @@ Runtime guards for unknown races: NaN/absurd form&stat clamps, race-tagged basel
 - Stock tier costs (copper-value bases): T1 **1× Copper** · T2 5 · T3 15 · T4 50 · T5 150 · T6 500 · T7 1500. Level scaling is exponential in **absolute** DMZ level from 1 → `tierCostLevelAnchor` (**150000**): T1 at level 1 stays **1× Copper**, T7 at level 150k is **100× Netherite** (`tierCostT7TargetCopper` = 10_000_000). Progress clamps at the anchor. Higher tiers are always ≥ ~25% more than the previous tier’s cost for the same player. Buy prices / unlock gates use a **base-form** DMZ level — transforming must not change the cost.
 - Saga/quest entities are exempt by class (`DBSagasEntity`) and by tags (`dmz_quest_*` / `dmz_saga_id`). Vanilla cage spawners, SDD Advanced Spawner mobs (`sdd_spawner` / `sdd_boss`), the Ender Dragon, and **slime/magma cube split children** are also never AD-converted. Transform forms keep quest HP — AD never rolls them back to the entity-default 300 max health.
 - **God forms:** hit-cap blends soft↔live HP and pulls live-offense pressure so transforms cannot out-tank packs after DMZ DEF. T4+ also pierces DMZ’s hard cancel (`flatMit ≥ dmg×2.5`) using live `getFlatMitigation()` (DEF form), with a LivingDamageEvent safety net that restores tier-scaled landing damage if a hit is still zeroed (SSJB knockback-with-0-damage fix).
+- **Potential Unlock:** sparring raises the skill through level 30. Each next level costs `level * 100` points (5,500 to reach 10, 46,500 to reach 30). While transformed, pack HP sponge adds `level / 30 * 12%` (4% at 10, 12% at 30). Mentor TP stays based on character level.
 ### Bugfix (2.3.159)
 - GUI coherence: Skill Check cleanup + Skills frame/center; Prestige hub slot matches Spar
 
@@ -118,7 +119,7 @@ Runtime guards for unknown races: NaN/absurd form&stat clamps, race-tagged basel
 - Prestige skill floors reapply after prestige/reset (longer window + continuous pulse + race-lock)
 
 ### Bugfix (2.3.156)
-- Skill Check: human tips (no formulas); Potential soft-cap 10 until Piccolo skill saga, then to 30
+- Skill Check: human tips (no formulas); Potential Unlock sparring progresses through level 30
 
 ### Bugfix (2.3.155)
 - Difficulty GUI: merge Buy Tier + Lower Tier into one **Tiers** menu (buy / lower / reset)

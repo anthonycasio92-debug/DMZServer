@@ -1026,8 +1026,10 @@ def main() -> int:
           "§8· §cLocked" in skill_unlock
           and "§8· §aUnlocked" in skill_unlock
           and "§8· §6Max" in skill_unlock
-          and "SOFT CAP" in skill_unlock
-          and "Spar with other players" in skill_unlock)
+          and "Spar with other players" in skill_unlock
+          and "toward 30" in skill_unlock
+          and "SOFT CAP" not in skill_unlock
+          and "Piccolo" not in skill_unlock)
     check("GUI skill status footer helper", "skillStatusFooter" in read(gui_root / "GuiLoreChunks.java"))
 
     print("\n=== Spar TP message toggle (2.3.54) ===")
