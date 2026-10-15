@@ -31,7 +31,7 @@ A 1.3.17 client that stops before `icon` reports `missingShipped=icon`. Omitting
 
 | Gap | Notes |
 |-----|-------|
-| **`icon`** | Advertised. `UltraBridgeIcon` resolves an item id (`minecraft:iron_sword`) or a texture path (`modid:path/to/texture.png`). Unknown ids are ignored. LM emits per-system icons on hub tiles and tab buttons. |
+| **`icon`** | Advertised. `UltraBridgeIcon` resolves an item id (`minecraft:iron_sword`) or a texture path (`modid:path/to/texture.png`). Unknown ids are ignored. LM leaves the field blank (no vanilla item marks; no custom gear textures). Other mods may set it. |
 
 ## Closed on KaiPath 1.3.17
 

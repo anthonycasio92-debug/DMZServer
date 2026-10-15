@@ -250,8 +250,8 @@ public final class UltraScreenSpec {
     /**
      * Tab row entries as {@code id|Label}, {@code id|Label|style}, or
      * {@code id|Label|style|icon}. Optional style: {@code danger}/{@code staff} for staff-only
-     * tabs. Optional {@code icon} is an item id or texture path; when omitted, the system icon
-     * for this screen is used. Tabs are painted as buttons (tabsJson stays empty).
+     * tabs. Optional {@code icon} is an item id or texture path. When omitted, LM sends no
+     * icon (no per-system gear texture). Tabs are painted as buttons (tabsJson stays empty).
      */
     public UltraScreenSpec tabs(String... idLabelPairs) {
         tabs.clear();
@@ -563,18 +563,23 @@ public final class UltraScreenSpec {
             String leftActionId, String leftLabel, String rightActionId, String rightLabel) {
         // Footer Y is resolved in toPacket against final panel height; placeholder 0.
         if (leftActionId != null && !leftActionId.isBlank()) {
-            addFooterButton(leftActionId, leftLabel, UltraStyle.COL_L);
+            addFooterButton(leftActionId, leftLabel, UltraStyle.COL_L, UltraStyle.STYLE_DIM);
         }
         if (rightActionId != null && !rightActionId.isBlank()) {
-            addFooterButton(rightActionId, rightLabel, UltraStyle.COL_R);
+            // Main menu stays a normal button. Dim chrome reads as disabled.
+            addFooterButton(rightActionId, rightLabel, UltraStyle.COL_R, UltraStyle.STYLE_NORMAL);
         }
         return this;
     }
 
-    private void addFooterButton(String actionId, String label, int x) {
+    private void addFooterButton(String actionId, String label, int x, String style) {
         UltraScreenIds.requireValidActionId(screenId, actionId, label);
-        String accentCode = UltraStyle.readableButtonInk(
-                UltraStyle.STYLE_DIM, UltraStyle.systemAccentCode(screenId));
+        String face = UltraStyle.STYLE_DIM.equals(style) ? UltraStyle.STYLE_DIM : UltraStyle.STYLE_NORMAL;
+        String accentCode = UltraStyle.readableButtonInk(face, UltraStyle.systemAccentCode(screenId));
+        // White or unset ink disappears on the light normal face. Dark gray stays readable.
+        if (UltraStyle.STYLE_NORMAL.equals(face) && (accentCode.isEmpty() || "f".equals(accentCode))) {
+            accentCode = "8";
+        }
         int labelPx = UltraStyle.labelMaxWidth(UltraStyle.BTN_W);
         String fitted = UltraStyle.fitAsciiLabel(UltraStyle.clipPlain(label, labelPx), labelPx);
         String wireLabel = plainWireLabel(fitted, accentCode);
@@ -582,7 +587,7 @@ public final class UltraScreenSpec {
                 new Button(
                         qualifyAction(actionId),
                         wireLabel,
-                        UltraStyle.STYLE_DIM,
+                        face,
                         x,
                         0,
                         UltraStyle.BTN_W,

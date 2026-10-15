@@ -118,7 +118,6 @@ public final class UltraHubScreens {
         spec.button("do:reload", UltraStyle.confirm("Reload LM config"), UltraStyle.STYLE_CONFIRM)
                 .rowGap();
         spec.buttonLeft("open:progression", "Progression panel", UltraStyle.STYLE_NORMAL)
-                .icon(UltraStyle.systemIcon("progression"))
                 .buttonRight("open:config", "Config editor", UltraStyle.STYLE_NORMAL)
                 .rowGap();
         // Sub-page of the hub. nav:home would reopen this page (homePage is "admin").
@@ -175,7 +174,6 @@ public final class UltraHubScreens {
         } else {
             spec.buttonRight(action, styled, style, accent);
         }
-        spec.icon(UltraStyle.systemIcon(system));
     }
 
     private static String actionFor(String system) {
