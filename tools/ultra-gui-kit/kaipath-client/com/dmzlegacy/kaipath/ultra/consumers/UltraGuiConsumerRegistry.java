@@ -31,16 +31,14 @@ public final class UltraGuiConsumerRegistry {
      * Features this reference client honors on <b>every</b> registered {@code <modid>:gui}
      * channel — keep in sync with {@code LmDynamicScreen} + {@code GuiOpenPacket} UTF-8 decode.
      *
-     * <p>Released KaiPath <b>1.3.13</b> advertises through {@code pagedBook} (+ {@code
-     * combined.forms.v1}) but not {@code portraitFrame}/{@code fixedFooter}. This kit advertises
-     * and honors the full set (incl. {@code footer:true} via {@code UltraBridgeFooter}) so partner
-     * {@code pendingNext} clears after merge into the next official jar. Partners that do not
-     * understand an id ignore it.
+     * <p>KaiPath <b>1.3.17</b> advertises fifteen ids through {@code combined.forms.v1}. This kit
+     * also advertises {@code icon} (optional button/tab mark). Partners that do not understand an
+     * id ignore it. {@code footer:true} is honored via {@code UltraBridgeFooter}.
      */
     public static final String ADVERTISED_FEATURES_JSON =
             "[\"style\",\"activeTab\",\"titleAlign\",\"playerModel\",\"textInput\","
                     + "\"headerBottom\",\"accent\",\"palette\",\"sound\",\"buttonSkin\",\"frame\","
-                    + "\"pagedBook\",\"portraitFrame\",\"fixedFooter\",\"combined.forms.v1\"]";
+                    + "\"pagedBook\",\"portraitFrame\",\"fixedFooter\",\"combined.forms.v1\",\"icon\"]";
 
     private static final Map<String, BoundChannel> CHANNELS = new ConcurrentHashMap<>();
 

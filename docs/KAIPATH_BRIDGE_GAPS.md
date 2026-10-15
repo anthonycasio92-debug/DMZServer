@@ -16,12 +16,17 @@ palette, sound, buttonSkin, frame, pagedBook, portraitFrame, fixedFooter, combin
 | Gap | Owner | LM status | KaiPath 1.3.17 | Notes |
 |-----|-------|-----------|---------------|-------|
 | **Title vertical centering** | **JLDK-only** | N/A (no field) | Confirm | Centers via `(headerBottom - 2 - 9) / 2`. Confirm gear-icon band alignment on all themes. No protocol field. |
+| **`icon` field** | **JLDK** (kit done) | Tracked as `pendingNext=icon` | Not advertised | Optional `namespace:path` on buttons and tabs. Unknown or blank ids are ignored. Reference kit advertises and draws an 8px mark. |
+| **Partner auto-discovery** | **JLDK** (kit done) | Ships `META-INF/kaipath-ultra.txt` | Manual list today | Seed `legacymechanics`, then marker jars under `mods/` and `config/kaipath-ultra-partners.txt`. A new mod does not need a KaiPath release. |
+| **`slider` / `toggle`** | Later | Not on the wire | Reserved | Booleans stay styled buttons; numbers stay text + steppers. |
 
-`/lm admin guitest` on KaiPath **1.3.17**:
+`/lm admin guitest` on stock KaiPath **1.3.17**:
 
 ```text
-missingShipped=none pendingNext=none
+missingShipped=none pendingNext=icon
 ```
+
+A kit client that also advertises `icon` reports `pendingNext=none`. Omitting any of the fifteen shipped ids (including `palette`, `sound`, `buttonSkin`, `frame`, `pagedBook`, `portraitFrame`, `combined.forms.v1`) warns as `missingShipped`.
 
 ## Closed on KaiPath 1.3.17
 
@@ -38,7 +43,8 @@ missingShipped=none pendingNext=none
 | Button `style` (`confirm` / `danger` / `dim` / `normal`) | **Done** (1.3.7+) |
 | `activeTab` highlight | **Done** (tint from `accent` on 1.3.13) |
 | `layoutJson.titleAlign` | **Done** |
-| `layoutJson.playerModel` (+ `parts` schema 1) | **Done** |
+| `layoutJson.playerModel` (+ `parts` schema 1) | **Done** — `headBones` / DMZUltra notes are an LM example; other mods replace them |
+| `combined.forms.v1` | **Done** (generic) — one preview = base entity + optional `parts.form` string ids. Not DMZ-only. |
 | `textInput` / EditBox / `bindInput` → `args.value` | **Done** (1.3.9+) |
 | `layoutJson.headerBottom` / `tabsUnderTitle` | **Done** (1.3.13) |
 | `layoutJson.accent` + button/tab `accent` | **Done** (1.3.13 via `UltraBridgeChrome`) |
@@ -96,7 +102,7 @@ LM Ultra copy prefers ASCII. Pre-fit labels with ASCII `...`. Stock KaiPath `fit
 
 ### 7. Pending vs shipped diagnostics
 
-Missing `SHIPPED_ON_RECOMMENDED` → warn (wrong/old jar). Missing `PENDING_NEXT` → info (`pendingNext=`). On **1.3.17**, `pendingNext=none` (`FEATURE_FIXED_FOOTER` is shipped).
+Missing `SHIPPED_ON_RECOMMENDED` → warn (wrong/old jar). Missing `PENDING_NEXT` → info (`pendingNext=`). On stock **1.3.17**, `missingShipped=none` and `pendingNext=icon`. `FEATURE_FIXED_FOOTER` and the seven chrome ids (`palette`, `sound`, `buttonSkin`, `frame`, `pagedBook`, `portraitFrame`, `combined.forms.v1`) are shipped. Do not put `icon` in the shipped set until official KaiPath advertises it.
 
 ### 8. Older clients without textInput
 
@@ -104,7 +110,7 @@ Pre-1.3.9 ignores field 11. LM Weights / Config show an explicit danger line whe
 
 ### 9. Player model custom parts
 
-`playerModel.parts` schema v1 is LM-side; verify part types render on the client preview.
+`playerModel.parts` is generic. `headBones` and the DMZUltra FormParts notes in the protocol are an **LM example — replace with your own**. `combined.forms.v1` means one preview can also draw `parts.form` string ids. Clients that lack the feature still draw the entity and ignore `parts.form`. Unknown `extras.kind` values must be ignored.
 
 ### 10. Slider / toggle deferred
 
@@ -133,6 +139,9 @@ Booleans stay styled buttons; numbers stay text + ± steppers. Not a KaiPath blo
 | Emit `frame` / `paged_book` (not button `sound`/`buttonSkin`) | **Done** — omit buttonSkin (flat skinned chrome) |
 | Chrome defaults safe without DMZUltra | **Done** (default button chrome; frame/portrait tokens) |
 | Track `FEATURE_FIXED_FOOTER` as shipped on 1.3.17 | **Done** |
+| Track `palette` / `sound` / `buttonSkin` / `frame` / `pagedBook` / `portraitFrame` / `combined.forms.v1` as shipped | **Done** |
+| Track `icon` as `PENDING_NEXT` (not a 1.3.17 warning) | **Done** |
+| Ship `META-INF/kaipath-ultra.txt` (`legacymechanics`) | **Done** |
 | Recommend KaiPath **1.3.17** | **Done** |
 | `inputsJson` `slider` / `toggle` | **Deferred** |
 
@@ -150,8 +159,11 @@ Booleans stay styled buttons; numbers stay text + ± steppers. Not a KaiPath blo
 | `sound` / `buttonSkin` / `frame` / `paged_book` | **Done** |
 | Advertise `portraitFrame` + `fixedFooter` | **Done** |
 | Honor `footer:true` / `fixedFooter` | **Done** |
+| Document `combined.forms.v1` as generic form strings on one preview | **Kit docs done** — merge with the client |
+| Optional button/tab `icon` (`namespace:path`; unknown ids ignored) | **Kit done** — not on 1.3.17 |
+| Partner discovery (`META-INF/kaipath-ultra.txt` + config list) | **Kit done** — 1.3.17 still uses a manual partner list |
 | Title vertical center | Confirm gear-band alignment |
-| `slider` / `toggle` widgets | When LM ships types |
+| `slider` / `toggle` widgets | Reserved — workarounds exist |
 
 ## Reserved (later): `inputsJson` slider / toggle
 

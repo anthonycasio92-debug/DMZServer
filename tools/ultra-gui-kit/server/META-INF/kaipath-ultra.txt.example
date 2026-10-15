@@ -1,0 +1,5 @@
+# Copy to META-INF/kaipath-ultra.txt inside your mod jar.
+# The first non-comment line is your Forge mod id.
+# KaiPath registers <modid>:gui when it finds this file under mods/.
+# Leave every line commented to fall back to modId in META-INF/mods.toml.
+yourmodid

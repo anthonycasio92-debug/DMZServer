@@ -5,7 +5,7 @@ playerModel / textInput / headerBottom / accent / palette / sound / buttonSkin /
 paged_book / **fixedFooter** / **portraitFrame** (advertised). LM emits button **`footer:true`**
 (unchanged wire — matches 1.3.17).
 
-**Open gaps:** confirm title vertical centering in the gear-icon band only.
+**Open gaps:** confirm title vertical centering in the gear-icon band. Merge from this kit: optional `icon`, partner auto-discovery, and the `combined.forms.v1` note below. `slider` / `toggle` stay reserved.
 
 Full matrix + pitfalls: [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md).
 
@@ -38,28 +38,47 @@ The client renders what the server sends — **no hardcoded screen/tab/button/ac
 | `palette` / `frame` / `paged_book` (button `sound`/`buttonSkin` omitted by LM) | yes |
 | `playerModel.portraitFrame` | paints + **advertised** |
 | Button `footer:true` / `fixedFooter` | pins + auto spacing + **advertised** |
-| GuiFeaturesPacket | yes — see gap matrix advertise set |
+| GuiFeaturesPacket | yes — fifteen ids through `combined.forms.v1` |
 | Verbatim GuiAction echo | yes |
 | Any `screenId` | yes |
 
-## Remaining (confirm only)
+## Merge from the reference kit
+
+### `combined.forms.v1`
+
+Generic, not DMZ-only. One preview combines the base entity, optional `parts.headBones`, and optional `parts.form` string ids (`race`, `group`, `form`, `stackGroup`, `stackForm`). Any mod may send its own ids. LM fills them from DMZ. A client that lacks the feature still draws the entity and ignores `parts.form`. `headBones` and the DMZUltra FormParts notes are an LM example — other mods replace them.
+
+### `icon`
+
+Optional `namespace:path` on a button or tab. Draw a mark beside the label (the kit uses an 8px square; a full client may blit the item when the id resolves). Unknown or blank ids are ignored and the control still works. Advertise `icon`. Stock 1.3.17 does not, so LM reports `pendingNext=icon`.
+
+### Partner discovery
+
+Do not keep a hardcoded partner list that only contains `legacymechanics`. At client boot, before the network registry locks:
+
+1. Seed `legacymechanics`.
+2. Scan `mods/*.jar` for `META-INF/kaipath-ultra.txt` (first non-comment line is the mod id; empty marker falls back to `mods.toml` `modId`).
+3. Read `config/kaipath-ultra-partners.txt` (one id per line).
+
+Register `<id>:gui` for each discovered id. `UltraGuiPartners.discoverAndRegister()` is the reference.
 
 ### Title vertical centering
 
 1.3.13+ centers in the header band via `(headerBottom - 2 - 9) / 2`. Confirm alignment
 between the gear icons on all themes. No new protocol field.
 
-## Advertise (1.3.17)
+## Advertise (1.3.17, plus kit `icon`)
 
 ```java
 UltraGuiConsumerRegistry.advertiseFeatures(
     "legacymechanics:gui",
     "[\"style\",\"activeTab\",\"titleAlign\",\"playerModel\",\"textInput\","
         + "\"headerBottom\",\"accent\",\"palette\",\"sound\",\"buttonSkin\","
-        + "\"frame\",\"pagedBook\",\"portraitFrame\",\"fixedFooter\",\"combined.forms.v1\"]");
+        + "\"frame\",\"pagedBook\",\"portraitFrame\",\"fixedFooter\",\"combined.forms.v1\","
+        + "\"icon\"]");
 ```
 
-LM guitest: `missingShipped=none pendingNext=none`.
+Stock 1.3.17 stops before `"icon"`. LM guitest on that jar: `missingShipped=none pendingNext=icon`. A merged kit client: `pendingNext=none`.
 
 ## Pitfalls (must-read)
 
@@ -73,5 +92,5 @@ Full list: [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md) § Pitfalls & trap
 
 ## Deferred (not blocking)
 
-- `inputsJson` types `slider` / `toggle` — reserved in the gap matrix.
-- Full DMZUltra geo application of `playerModel.parts` beyond the entity preview.
+- `inputsJson` types `slider` / `toggle` — reserved. Styled buttons and text/steppers are the workarounds.
+- Full DMZUltra geo application of `playerModel.parts` beyond the entity preview. That geo is LM-specific; other mods supply their own part ids.

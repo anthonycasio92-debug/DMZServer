@@ -14,7 +14,7 @@ protocol. KaiPath registers one client consumer per partner mod id.
 | Who you are | What to pull |
 |-------------|--------------|
 | **Any server mod author** | [`server/`](server/) — copy codecs + channel helper; rename package to yours |
-| **KaiPath / JLDK** | [`kaipath-client/`](kaipath-client/) — merge into the next official KaiPath release; add partner mod ids to [`UltraGuiPartners`](kaipath-client/com/dmzlegacy/kaipath/ultra/consumers/UltraGuiPartners.java) |
+| **KaiPath / JLDK** | [`kaipath-client/`](kaipath-client/) — merge into the next official KaiPath release. Partners are discovered; do not hardcode each new mod id |
 
 **Server mods do not ship or deploy KaiPath updates.** The KaiPath mod developer owns the official jar. This kit is the handoff for what to merge.
 
@@ -27,7 +27,7 @@ protocol. KaiPath registers one client consumer per partner mod id.
    - msg 0 = open (`UltraGuiOpenPacket`)
    - msg 1 = action (`UltraGuiActionPacket`)
    - msg 2 = features (`UltraGuiFeaturesPacket`, optional C→S)
-3. Ask JLDK / KaiPath to add your Forge mod id to `UltraGuiPartners.DEFAULT_PARTNERS` (or call `UltraGuiPartners.register("yourmod")` on the client).
+3. Ship `META-INF/kaipath-ultra.txt` in your mod jar. The first non-comment line is your Forge mod id (see [`server/META-INF/kaipath-ultra.txt.example`](server/META-INF/kaipath-ultra.txt.example)). An empty marker falls back to `modId` in `mods.toml`. Players can also list ids in `config/kaipath-ultra-partners.txt`. KaiPath discovers these at client boot — a new mod does not need a KaiPath release. `legacymechanics` is only the built-in seed.
 4. Send opens with `style` + `activeTab` (+ `inputsJson` / `playerModel` / `headerBottom` / `palette` when needed). Prefer plain ASCII labels; tint via `palette` / `style`.
 5. Handle clicks verbatim (`actionId` + `argsJson` echoed from the button).
 6. For chrome (`sound`, `buttonSkin`, `frame`, `paged_book`, `portraitFrame`), prefer fail-open tokens (`minecraft:ui.button.click`, `legacymechanics:*`) — see pitfalls. Never bundle client asset files into your server jar.
@@ -52,8 +52,10 @@ headerBottom / accent / palette / sound / buttonSkin / frame / paged_book / port
 2. Advertise **`portraitFrame`** + **`fixedFooter`** on every registered channel
 3. Keep advertise camelCase **`pagedBook`**; widget type snake_case **`paged_book`**
 4. Title vertical centering in the header band (no new field) — confirm gear-icon alignment
-5. Multi-mod partner list: [`UltraGuiPartners`](kaipath-client/com/dmzlegacy/kaipath/ultra/consumers/UltraGuiPartners.java)
-6. **ASCII `fitLabel`** — `UltraWidgetReflect.fitLabel` must use `...` (not mojibaked `…`). See [`FITLABEL_ASCII.md`](kaipath-client/com/dmzlegacy/kaipath/ultra/internal/FITLABEL_ASCII.md)
+5. Partner discovery: [`UltraGuiPartners.discoverAndRegister`](kaipath-client/com/dmzlegacy/kaipath/ultra/consumers/UltraGuiPartners.java) (seed + jar marker + config file)
+6. Optional button/tab `icon` (`namespace:path`). Unknown ids are ignored. Advertise `icon`.
+7. `combined.forms.v1` is generic: one preview draws the entity plus `playerModel.parts.form` string ids. LM's `headBones` / system accent letters are examples — other mods replace them.
+8. **ASCII `fitLabel`** — `UltraWidgetReflect.fitLabel` must use `...` (not mojibaked `…`). See [`FITLABEL_ASCII.md`](kaipath-client/com/dmzlegacy/kaipath/ultra/internal/FITLABEL_ASCII.md)
 
 ### Pitfalls (must-read before release)
 
@@ -71,14 +73,15 @@ UltraGuiConsumerRegistry.advertiseFeatures(
     "legacymechanics:gui",
     "[\"style\",\"activeTab\",\"titleAlign\",\"playerModel\",\"textInput\","
         + "\"headerBottom\",\"accent\",\"palette\",\"sound\",\"buttonSkin\","
-        + "\"frame\",\"pagedBook\",\"portraitFrame\",\"fixedFooter\",\"combined.forms.v1\"]");
+        + "\"frame\",\"pagedBook\",\"portraitFrame\",\"fixedFooter\",\"combined.forms.v1\","
+        + "\"icon\"]");
 ```
 
+`"icon"` is kit-only. Official KaiPath 1.3.17 stops at `combined.forms.v1`.
+
 ```java
-// Client boot (already wired via LmUltraConsumer.bootstrap):
-UltraGuiPartners.registerDefaults();
-// Or ad-hoc:
-UltraGuiPartners.register("legacymechanics", "myshop", "otheremod");
+// Client boot (wired via LmUltraConsumer.bootstrap):
+UltraGuiPartners.discoverAndRegister();
 ```
 
 Optional local compile check (does **not** replace the official KaiPath release process):

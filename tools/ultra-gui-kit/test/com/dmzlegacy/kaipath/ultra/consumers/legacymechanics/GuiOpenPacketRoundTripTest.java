@@ -133,7 +133,8 @@ public final class GuiOpenPacketRoundTripTest {
                     "pagedBook",
                     "portraitFrame",
                     "fixedFooter",
-                    "combined.forms.v1"
+                    "combined.forms.v1",
+                    "icon"
                 }) {
             if (!UltraGuiConsumerRegistry.ADVERTISED_FEATURES_JSON.contains(feat)) {
                 fail("missing advertise feature: " + feat);
@@ -193,6 +194,28 @@ public final class GuiOpenPacketRoundTripTest {
             fail("ADVERTISED_FEATURES_JSON must not embed a mod id");
         }
 
+        com.google.gson.JsonObject iconGood = new com.google.gson.JsonObject();
+        iconGood.addProperty("icon", "Minecraft:Diamond");
+        if (!"minecraft:diamond".equals(LmDynamicScreen.iconId(iconGood))) {
+            fail("iconId should lowercase a valid namespace:path");
+        }
+        com.google.gson.JsonObject iconBad = new com.google.gson.JsonObject();
+        iconBad.addProperty("icon", "not-an-rl");
+        if (!"".equals(LmDynamicScreen.iconId(iconBad))) {
+            fail("iconId must ignore ids without a namespace");
+        }
+        if (!"".equals(LmDynamicScreen.iconId(new com.google.gson.JsonObject()))) {
+            fail("iconId must ignore a missing icon field");
+        }
+
+        try {
+            assertPartnerDiscovery();
+        } catch (RuntimeException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            fail("partner discovery: " + ex.getMessage());
+        }
+
         // fitLabel ASCII patcher must rewrite mojibake ellipsis constants
         try {
             java.nio.file.Path patcher =
@@ -209,7 +232,59 @@ public final class GuiOpenPacketRoundTripTest {
         }
 
         System.out.println(
-                "GuiOpenPacketRoundTripTest OK (11 fields + multi-mod partners + advertise)");
+                "GuiOpenPacketRoundTripTest OK (11 fields + discovery + icon + advertise)");
+    }
+
+    private static void assertPartnerDiscovery() throws java.io.IOException {
+        java.nio.file.Path tmp = java.nio.file.Files.createTempDirectory("kaipath-partners");
+        try {
+            java.nio.file.Path mods = tmp.resolve("mods");
+            java.nio.file.Files.createDirectories(mods);
+            java.nio.file.Path config = tmp.resolve("kaipath-ultra-partners.txt");
+            java.nio.file.Files.writeString(config, "# comment\ntownyplus  # extra\n\nnot an id!\n");
+            writeTinyJar(mods.resolve("myshop.jar"), "META-INF/kaipath-ultra.txt", "myshop\n");
+            writeTinyJar(
+                    mods.resolve("fromtoml.jar"),
+                    "META-INF/kaipath-ultra.txt",
+                    "# empty marker\n",
+                    "META-INF/mods.toml",
+                    "modId=\"otheremod\"\n");
+            writeTinyJar(mods.resolve("nomarker.jar"), "META-INF/mods.toml", "modId=\"ignoredmod\"\n");
+            java.util.List<String> ids = UltraGuiPartners.discoverIds(config, mods);
+            for (String need : new String[] {"legacymechanics", "myshop", "townyplus", "otheremod"}) {
+                if (!ids.contains(need)) {
+                    fail("discoverIds missing " + need + " got " + ids);
+                }
+            }
+            if (ids.contains("ignoredmod")) {
+                fail("discoverIds accepted a jar without the marker: " + ids);
+            }
+        } finally {
+            deleteTree(tmp);
+        }
+    }
+
+    private static void writeTinyJar(java.nio.file.Path jar, String... nameThenBytes) throws java.io.IOException {
+        try (java.util.zip.ZipOutputStream zip =
+                new java.util.zip.ZipOutputStream(java.nio.file.Files.newOutputStream(jar))) {
+            for (int i = 0; i + 1 < nameThenBytes.length; i += 2) {
+                zip.putNextEntry(new java.util.zip.ZipEntry(nameThenBytes[i]));
+                zip.write(nameThenBytes[i + 1].getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                zip.closeEntry();
+            }
+        }
+    }
+
+    private static void deleteTree(java.nio.file.Path root) throws java.io.IOException {
+        if (root == null || !java.nio.file.Files.exists(root)) {
+            return;
+        }
+        try (java.util.stream.Stream<java.nio.file.Path> walk = java.nio.file.Files.walk(root)) {
+            java.util.List<java.nio.file.Path> paths = walk.sorted(java.util.Comparator.reverseOrder()).toList();
+            for (java.nio.file.Path path : paths) {
+                java.nio.file.Files.deleteIfExists(path);
+            }
+        }
     }
 
     private static void assertEq(String name, String expected, String actual) {

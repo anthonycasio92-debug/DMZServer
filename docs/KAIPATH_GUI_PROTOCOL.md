@@ -68,6 +68,7 @@ Every button object in `buttonsJson`:
 | `accent` | no | string | Single-letter color code (optional). LM does **not** emit per-button `accent` — title / activeTab use `layoutJson.accent` only. |
 | `palette` | no | string | Named theme on a button (optional). LM leaves this off buttons — panel-level `layoutJson.palette` only. |
 | `tint` | no | string | Optional body fill on a button. LM does **not** emit this; buttons use KaiPath default chrome. |
+| `icon` | no | string | Optional `namespace:path` (item or texture id). The client draws a mark beside the label. Unknown or blank ids are ignored; the button still works. LM does **not** emit yet. Advertise feature id `icon`. Not on KaiPath 1.3.17 (`pendingNext`). |
 | `args` | recommended | object | Opaque JSON echoed to the server |
 
 ```json
@@ -138,7 +139,7 @@ distinction).
 | Meaning | Id of the **currently open** tab |
 | Client must | Visually distinguish that tab from the others (highlight / selected state) |
 
-`tabsJson` entries use `{id,label}`. Match `activeTab` against the tab’s **unqualified**
+`tabsJson` entries use `{id,label}` and may include optional `icon` (`namespace:path`, same rules as buttons). Match `activeTab` against the tab’s **unqualified**
 key when the server sends keys like `tiers`, or against the full `id` when that is what
 `activeTab` contains. LM builders set `activeTab` to the short key (e.g. `home`, `tiers`).
 
@@ -172,12 +173,16 @@ Known optional feature ids:
 | `pagedBook` | Advertise spelling (camelCase) for `inputsJson` **`type=paged_book`** (snake_case on the wire) |
 | `portraitFrame` | `playerModel.portraitFrame` enable token (**advertised on 1.3.17**) |
 | `fixedFooter` | Button `footer:true` pinned chrome (**shipped on KaiPath 1.3.17**) |
+| `combined.forms.v1` | One preview combines the base entity with optional `playerModel.parts.headBones` and `playerModel.parts.form` string ids. The strings are generic (race, group, form, stack). Any mod may send its own ids. A client that lacks the feature still draws the entity and ignores `parts.form`. |
+| `icon` | Optional button/tab `icon`. **Not** advertised by KaiPath 1.3.17. LM logs `pendingNext=icon` until the client sends it. |
 
-Advertise (KaiPath **1.3.17** — see [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md)):
+Advertise (KaiPath **1.3.17** — fifteen ids; see [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md)):
 
 ```json
 ["style","activeTab","titleAlign","playerModel","textInput","headerBottom","accent","palette","sound","buttonSkin","frame","pagedBook","portraitFrame","fixedFooter","combined.forms.v1"]
 ```
+
+The reference kit (`tools/ultra-gui-kit/`) also advertises `"icon"` after `combined.forms.v1`. Stock 1.3.17 does not. A missing `icon` advertisement is info (`pendingNext`), not a shipped-client warning.
 
 **Spelling split:** GuiFeatures advertise uses camelCase **`pagedBook`**; the widget `type` string is snake_case **`paged_book`**.
 
@@ -204,6 +209,13 @@ new ResourceLocation(YOUR_MOD_ID, "gui")  // → "mymod:gui"
 ```
 
 Protocol `"1"`. Message 0 open, 1 action, 2 features (optional).
+
+KaiPath discovers partner mods. It always seeds `legacymechanics`, then:
+
+1. Every jar under `mods/` that contains `META-INF/kaipath-ultra.txt`. The first non-comment line is the Forge mod id. An empty marker falls back to `modId` in `META-INF/mods.toml`.
+2. Extra ids in `config/kaipath-ultra-partners.txt` (one id per line, `#` comments).
+
+A new server mod does not need a KaiPath release. Copy [`tools/ultra-gui-kit/server/META-INF/kaipath-ultra.txt.example`](../tools/ultra-gui-kit/server/META-INF/kaipath-ultra.txt.example) into your jar as `META-INF/kaipath-ultra.txt`.
 
 ### 2. GuiOpenPacket (S→C) — 11 fields
 
@@ -368,9 +380,10 @@ KaiPath default chrome. Per-system color stays on **`layoutJson.palette`** (pane
 title). Labels stay plain ASCII. Overlong labels truncate with ASCII `...`; pages scroll
 rather than squeezing buttons.
 
-**System accent map (LM):** Difficulty `c` · Rival `5` · Sparring `6` · Prestige `b` ·
-Character `a` · Skill Check `e` · Staff Admin `4`. Main hub omits `accent` (shared gold
-title chrome).
+**System accent map (LM example — replace with your own letters):** Difficulty `c` · Rival `5` ·
+Sparring `6` · Prestige `b` · Character `a` · Skill Check `e` · Staff Admin `4`. Main hub
+omits `accent` (shared gold title chrome). Another mod picks its own letters; the protocol
+only requires a single Minecraft color code.
 
 #### `playerModel` (optional, client-rendered)
 
@@ -390,10 +403,26 @@ Services uses it; others default off).
 
 ##### `playerModel.parts` (optional, schema 1)
 
-LM sends this so the client can draw **custom body pieces** on top of / instead of a bare
-Steve preview — DMZ head bones today, DMZUltra form accessories next. Omit the whole
-`parts` object when nothing is equipped / unavailable. Clients that only honor bounds still
+Any mod may send this so the client can draw extra pieces on the same preview. Omit the
+whole `parts` object when nothing extra is equipped. Clients that only honor bounds still
 work; unknown sub-fields are ignored.
+
+**LM example — replace with your own.** The `headBones` shape and the DMZUltra FormParts
+notes below are how LegacyMechanics fills the generic fields from DMZ. Another mod omits
+`headBones` and sends its own `form` string ids (or its own `extras` kinds). Do not treat
+those DMZ names as required protocol.
+
+##### `combined.forms.v1`
+
+Advertising `combined.forms.v1` means the client draws **one** preview that combines:
+
+1. the base entity,
+2. optional `parts.headBones`,
+3. optional `parts.form` string ids (`race`, `group`, `form`, `stackGroup`, `stackForm`).
+
+The strings are generic. LM fills them from DMZ transformations; another mod sends its own
+ids. A client that does not advertise the feature still draws the entity and ignores
+`parts.form`. This is not a second storage map and not a DMZ-only channel.
 
 | Field | Type | Required | Notes |
 |-------|------|----------|-------|
@@ -402,7 +431,7 @@ work; unknown sub-fields are ignored.
 | `headBones` | object | no | Equipped DMZ `activeHeadBone` cosmetics. Omit when empty. |
 | `headBones.token` | string | yes* | Authoritative DMZ token (`+`-joined). Same string DMZ stores on the character. |
 | `headBones.pieces` | string[] | yes* | Atomic bone ids split from the token (stable shop order when known). Prefer this list when iterating geo bones. |
-| `form` | object | no | Worn transformation identity so the client can attach **DMZUltra FormParts** (client-side catalog keyed by form). Omit when fully base. |
+| `form` | object | no | Worn identity string ids. LM fills these from DMZ so a client can attach form pieces. Another mod sends its own ids. Omit when fully base. |
 | `form.race` | string | no | Race id (lowercase), e.g. `saiyan`. |
 | `form.group` | string | no | Active form group. |
 | `form.form` | string | no | Active form name. |
@@ -417,10 +446,12 @@ only if `token` is empty (do not send `headBones` in that case).
 
 1. Draw the subject player entity inside `x/y/width/height` at `scale`, with turntable when
    `rotate` is true.
-2. If `parts.headBones` is present, apply those geo bones the same way DMZ applies
-   `activeHeadBone` (split `token` on `+`, or iterate `pieces`).
-3. If `parts.form` is present, resolve DMZUltra FormParts for that race/group/form (and
-   stack, when set) and draw them with the preview.
+2. If `parts.headBones` is present, apply those pieces. LM's example is DMZ
+   `activeHeadBone` (split `token` on `+`, or iterate `pieces`). Other mods replace or omit
+   this object.
+3. If `parts.form` is present **and** the client advertises `combined.forms.v1`, draw those
+   form string ids on the same preview. LM resolves them through DMZUltra FormParts; another
+   mod resolves its own catalog. Missing the feature: skip `parts.form`.
 4. Iterate `parts.extras`; skip unknown `kind`s.
 5. If `parts` is missing entirely, draw the local player with whatever the client already
    knows from entity sync (no server cosmetics hint).

@@ -23,8 +23,9 @@ import net.minecraft.world.entity.LivingEntity;
 /**
  * Renders whatever the server sends in {@link GuiOpenPacket} — title, tabs, lines, buttons,
  * field 11 {@code inputsJson} (text + {@code paged_book}), button {@code style} /
- * {@code palette} / {@code accent} / {@code sound} / {@code buttonSkin},
- * {@code layoutJson.headerBottom} / {@code frame}, optional {@code layoutJson.playerModel},
+ * {@code palette} / {@code accent} / {@code sound} / {@code buttonSkin} / {@code icon},
+ * {@code layoutJson.headerBottom} / {@code frame}, optional {@code layoutJson.playerModel}
+ * (including {@code parts.form} when {@code combined.forms.v1} is advertised),
  * and button {@code footer:true} ({@code fixedFooter}).
  *
  * <p>No hardcoded screen/tab/button lists. Works for <b>any</b> partner mod — clicks echo on
@@ -142,7 +143,8 @@ public class LmDynamicScreen extends UltraScreen {
             String tabAccent = str(tab, "accent", isActive ? tabHighlightAccent : "");
             String tabPalette = str(tab, "palette", isActive ? tabHighlightPalette : "");
             String tabSound = str(tab, "sound", "");
-            if (isActive || !tabAccent.isBlank() || !tabPalette.isBlank()) {
+            String tabIcon = iconId(tab);
+            if (isActive || !tabAccent.isBlank() || !tabPalette.isBlank() || !tabIcon.isBlank()) {
                 tabChrome.add(
                         new StyledChrome(
                                 tabX,
@@ -152,7 +154,8 @@ public class LmDynamicScreen extends UltraScreen {
                                 "normal",
                                 tabAccent,
                                 tabPalette,
-                                ""));
+                                "",
+                                tabIcon));
             }
             String actionId = id;
             JsonObject tabArgs = new JsonObject();
@@ -276,6 +279,7 @@ public class LmDynamicScreen extends UltraScreen {
             String palette = UltraBridgeChrome.normalizePalette(str(b, "palette", ""));
             String sound = str(b, "sound", "");
             String skin = UltraBridgeChrome.buttonSkinId(b);
+            String icon = iconId(b);
             boolean footer = UltraBridgeFooter.isFooter(b);
             int x = intVal(b, "x", 8);
             int h = Math.max(12, intVal(b, "h", 18));
@@ -308,9 +312,10 @@ public class LmDynamicScreen extends UltraScreen {
             if (!style.equals("normal")
                     || !accent.isBlank()
                     || !palette.isBlank()
-                    || !skin.isBlank()) {
+                    || !skin.isBlank()
+                    || !icon.isBlank()) {
                 buttonChrome.add(
-                        new StyledChrome(absX, absY, absW, absH, style, accent, palette, skin));
+                        new StyledChrome(absX, absY, absW, absH, style, accent, palette, skin, icon));
             }
             String actionId = id;
             JsonObject args = argsObj;
@@ -438,7 +443,7 @@ public class LmDynamicScreen extends UltraScreen {
         int absY = panelY + y;
         int listH = Math.max(20, h - 22);
         buttonChrome.add(
-                new StyledChrome(absX, absY, w, h, "dim", "", layoutPalette, ""));
+                new StyledChrome(absX, absY, w, h, "dim", "", layoutPalette, "", ""));
         addThemedList(absX + 2, absY + 2, Math.max(1, w - 4), listH, lines);
         int navY = absY + h - 18;
         int navW = Math.max(40, (w - 8) / 2);
@@ -681,7 +686,8 @@ public class LmDynamicScreen extends UltraScreen {
             fill = 0x40222222;
             bar = UltraBridgeChrome.resolveTintArgb(layoutPalette, layoutAccent);
         }
-        if (fill == 0 && bar == 0) {
+        boolean hasIcon = c.icon != null && !c.icon.isBlank();
+        if (fill == 0 && bar == 0 && !hasIcon) {
             return;
         }
         if (fill != 0) {
@@ -690,6 +696,48 @@ public class LmDynamicScreen extends UltraScreen {
         if (bar != 0) {
             UltraUiAccess.fillRect(g, theme(), c.x, c.y, 3, c.h, bar);
         }
+        // icon is an item/texture id. Unknown ids still reserve a mark so the button stays usable.
+        if (hasIcon) {
+            int mark = bar != 0 ? bar : 0xFF888888;
+            int size = Math.min(8, Math.max(4, c.h - 4));
+            int iy = c.y + Math.max(0, (c.h - size) / 2);
+            UltraUiAccess.fillRect(g, theme(), c.x + 4, iy, size, size, mark);
+        }
+    }
+
+    /** Optional {@code icon} field: {@code namespace:path}. Blank or invalid → ignored. */
+    static String iconId(JsonObject obj) {
+        String raw = str(obj, "icon", "").trim();
+        int colon = raw.indexOf(':');
+        if (colon <= 0 || colon >= raw.length() - 1 || raw.indexOf(':') != raw.lastIndexOf(':')) {
+            return "";
+        }
+        String ns = raw.substring(0, colon);
+        String path = raw.substring(colon + 1);
+        if (!rlToken(ns) || !rlToken(path)) {
+            return "";
+        }
+        return ns.toLowerCase(Locale.ROOT) + ":" + path.toLowerCase(Locale.ROOT);
+    }
+
+    private static boolean rlToken(String token) {
+        if (token == null || token.isEmpty() || token.length() > 128) {
+            return false;
+        }
+        for (int i = 0; i < token.length(); i++) {
+            char c = token.charAt(i);
+            boolean ok = (c >= 'a' && c <= 'z')
+                    || (c >= 'A' && c <= 'Z')
+                    || (c >= '0' && c <= '9')
+                    || c == '_'
+                    || c == '-'
+                    || c == '.'
+                    || c == '/';
+            if (!ok) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private void drawPlayerModel(GuiGraphics g, int mouseX, int mouseY, float tick) {
@@ -907,7 +955,8 @@ public class LmDynamicScreen extends UltraScreen {
      * @param accent letter color code (compat; empty when palette set)
      * @param palette generic color name (preferred over accent)
      * @param skin optional {@code buttonSkin} id (chrome strength cue until texture blit)
+     * @param icon optional {@code namespace:path} drawn as a mark; unknown ids do not hide the button
      */
     private record StyledChrome(
-            int x, int y, int w, int h, String style, String accent, String palette, String skin) {}
+            int x, int y, int w, int h, String style, String accent, String palette, String skin, String icon) {}
 }

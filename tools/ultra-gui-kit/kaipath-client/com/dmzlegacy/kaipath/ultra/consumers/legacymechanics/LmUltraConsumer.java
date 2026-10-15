@@ -2,7 +2,7 @@ package com.dmzlegacy.kaipath.ultra.consumers.legacymechanics;
 
 import com.dmzlegacy.kaipath.ultra.UltraUiBridge;
 import com.dmzlegacy.kaipath.ultra.consumers.UltraGuiPartners;
-import net.minecraftforge.api.distmarker.Dist;
+import java.util.List;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 
 /**
@@ -12,8 +12,9 @@ import net.minecraftforge.fml.loading.FMLEnvironment;
  * the dynamic screen are shared across every {@code <modid>:gui} channel. Server mods never
  * own the client channel; KaiPath does.
  *
- * <p>To add another mod: put its Forge mod id in {@link UltraGuiPartners#DEFAULT_PARTNERS}
- * (or call {@link UltraGuiPartners#register(String...)} before/after bootstrap).
+ * <p>Partners are discovered from {@link UltraGuiPartners#MARKER_ENTRY} inside mod jars and
+ * from {@code config/kaipath-ultra-partners.txt}. A new server mod does not need a KaiPath
+ * release. {@link UltraGuiPartners#register(String...)} still works for tests.
  */
 public final class LmUltraConsumer {
     private static boolean bootstrapped;
@@ -27,9 +28,9 @@ public final class LmUltraConsumer {
         bootstrapped = true;
         // Do NOT skip when a partner mod jar is also on the client — they register no client channel.
         LmScreens.registerDefaults();
-        UltraGuiPartners.registerDefaults();
+        List<String> partners = UltraGuiPartners.discoverAndRegister();
         UltraUiBridge.LOGGER.info(
-                "[kaipath] Ultra GUI consumers ready partners={} (dynamic, multi-mod registry)",
-                String.join(",", UltraGuiPartners.DEFAULT_PARTNERS));
+                "[kaipath] Ultra GUI consumers ready partners={} (discovered, multi-mod registry)",
+                String.join(",", partners));
     }
 }
