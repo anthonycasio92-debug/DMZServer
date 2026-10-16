@@ -27,6 +27,7 @@
     "noea.NoeaAbsorptionBonusGateMixin",
     "noea.NoeaTravelSafetyCorpseFixMixin",
     "noea.HakaiDestroyerGateMixin",
+    "noea.DestroyerStoryAssignMixin",
     "FusionBonusReadGateMixin",
     "FusionUnfuseBonusClearMixin",
     "KaiPathLmConsumerBootstrapMixin"
