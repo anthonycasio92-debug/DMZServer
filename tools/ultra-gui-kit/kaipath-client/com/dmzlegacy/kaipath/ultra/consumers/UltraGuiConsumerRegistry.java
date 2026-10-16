@@ -1,8 +1,10 @@
 package com.dmzlegacy.kaipath.ultra.consumers;
 
 import com.dmzlegacy.kaipath.ultra.UltraUiBridge;
+import com.dmzlegacy.kaipath.ultra.consumers.legacymechanics.BodyPartPreview;
 import com.dmzlegacy.kaipath.ultra.consumers.legacymechanics.GuiActionPacket;
 import com.dmzlegacy.kaipath.ultra.consumers.legacymechanics.GuiFeaturesPacket;
+import com.dmzlegacy.kaipath.ultra.consumers.legacymechanics.GuiModelSyncPacket;
 import com.dmzlegacy.kaipath.ultra.consumers.legacymechanics.GuiOpenPacket;
 import com.dmzlegacy.kaipath.ultra.consumers.legacymechanics.LmScreens;
 import java.util.Map;
@@ -10,6 +12,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.network.NetworkDirection;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
@@ -32,15 +36,19 @@ public final class UltraGuiConsumerRegistry {
      * channel — keep in sync with {@code LmDynamicScreen} + {@code GuiOpenPacket} UTF-8 decode.
      *
      * <p>KaiPath <b>1.3.17</b> advertises fifteen ids through {@code combined.forms.v1}. This kit
-     * also advertises {@code bodyParts} (explicit preview pieces) and {@code icon} (optional
-     * button/tab mark). Partners that do not understand an id ignore it. {@code footer:true}
-     * is honored via {@code UltraBridgeFooter}.
+     * also advertises {@code bodyParts} (explicit preview pieces), {@code icon} (optional
+     * button/tab mark), and {@code bodyPartsSync} (message 3 world model sync). Partners that do
+     * not understand an id ignore it. {@code footer:true} is honored via {@code UltraBridgeFooter}.
+     *
+     * <p>{@code bodyPartsSync} is advertised <b>because message 3 is registered below</b> —
+     * never advertise an id for an unregistered message (an unregistered message id from the
+     * server aborts the connection).
      */
     public static final String ADVERTISED_FEATURES_JSON =
             "[\"style\",\"activeTab\",\"titleAlign\",\"playerModel\",\"textInput\","
                     + "\"headerBottom\",\"accent\",\"palette\",\"sound\",\"buttonSkin\",\"frame\","
                     + "\"pagedBook\",\"portraitFrame\",\"fixedFooter\",\"combined.forms.v1\","
-                    + "\"bodyParts\",\"icon\"]";
+                    + "\"bodyParts\",\"icon\",\"bodyPartsSync\"]";
 
     private static final Map<String, BoundChannel> CHANNELS = new ConcurrentHashMap<>();
 
@@ -103,7 +111,15 @@ public final class UltraGuiConsumerRegistry {
                 .decoder(GuiFeaturesPacket::decode)
                 .consumerMainThread(GuiFeaturesPacket::handleClientNoop)
                 .add();
+        // Message 3 — world model sync. Registered before the advertise below: the server
+        // only sends it to clients advertising "bodyPartsSync".
+        channel.messageBuilder(GuiModelSyncPacket.class, 3, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(GuiModelSyncPacket::encode)
+                .decoder(GuiModelSyncPacket::decode)
+                .consumerMainThread(GuiModelSyncPacket::handle)
+                .add();
         CHANNELS.put(channelId, bound);
+        ensureLogoutHook();
         UltraUiBridge.LOGGER.info(
                 "[kaipath] Ultra GUI consumer registered channel={} protocol={} featuresJson={}",
                 channelId,
@@ -111,6 +127,36 @@ public final class UltraGuiConsumerRegistry {
                 ADVERTISED_FEATURES_JSON);
         // Best-effort advertise now; also call advertiseFeatures after the server channel is present.
         advertiseFeatures(channelId, ADVERTISED_FEATURES_JSON);
+    }
+
+    private static boolean LOGOUT_HOOK_REGISTERED;
+
+    /**
+     * Drop the server-synced world state when the player leaves a world (contract: state is
+     * per-session; the next login re-syncs). Registered once per JVM.
+     */
+    private static void ensureLogoutHook() {
+        synchronized (UltraGuiConsumerRegistry.class) {
+            if (LOGOUT_HOOK_REGISTERED) {
+                return;
+            }
+            LOGOUT_HOOK_REGISTERED = true;
+            try {
+                MinecraftForge.EVENT_BUS.addListener(UltraGuiConsumerRegistry::onLoggingOut);
+            } catch (Throwable t) {
+                UltraUiBridge.LOGGER.warn(
+                        "[kaipath] logout hook not registered ({}); call BodyPartPreview.clearSync() on disconnect",
+                        t.toString());
+            }
+        }
+    }
+
+    private static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+        try {
+            BodyPartPreview.clearSync();
+        } catch (Throwable ignored) {
+            // cache is best-effort
+        }
     }
 
     public static boolean isRegistered(String channelId) {

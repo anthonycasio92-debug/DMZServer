@@ -15,6 +15,7 @@ public final class ServerKitSelfTest {
         sanitizeKeepsJson();
         actionCap();
         featuresRoundTrip();
+        modelSyncRoundTrip();
         sketchAndFixture();
         System.out.println("ServerKitSelfTest OK");
     }
@@ -112,6 +113,65 @@ public final class ServerKitSelfTest {
         eq("features", json, decoded.featuresJson());
     }
 
+    private static void modelSyncRoundTrip() {
+        String parts = "{\"schema\":1,\"subject\":\"local\",\"bodyParts\":["
+                + "{\"id\":\"saiyan_tail\",\"source\":\"dmzultra\",\"slot\":\"tail\"}],\"extras\":[]}";
+        UltraGuiModelSyncPacket msg =
+                new UltraGuiModelSyncPacket(parts, UltraGuiModelSyncPacket.REASON_LOGIN);
+        FriendlyByteBuf buf = new FriendlyByteBuf();
+        UltraGuiModelSyncPacket.encode(msg, buf);
+        UltraGuiModelSyncPacket decoded = UltraGuiModelSyncPacket.decode(buf);
+        eq("modelSync.parts", parts, decoded.partsJson());
+        eq("modelSync.reason", "login", decoded.reason());
+
+        // A 1-field payload (no reason field) decodes with an empty reason.
+        FriendlyByteBuf shortBuf = new FriendlyByteBuf();
+        UltraGuiOpenPacket.writeUtf8(shortBuf, parts);
+        eq("modelSync.missingReason", "", UltraGuiModelSyncPacket.decode(shortBuf).reason());
+
+        // Reason token is capped for diagnostics.
+        UltraGuiModelSyncPacket longReason =
+                new UltraGuiModelSyncPacket(parts, "x".repeat(100));
+        if (longReason.reason().length() != 32) {
+            fail("modelSync reason cap expected 32 got " + longReason.reason().length());
+        }
+
+        // Oversized payloads degrade: drop headBones, then form — never a mid-JSON cut.
+        StringBuilder both = new StringBuilder("{\"schema\":1,\"subject\":\"local\",");
+        both.append("\"headBones\":{\"token\":\"").append("a".repeat(3000)).append("\"},");
+        both.append("\"form\":{\"race\":\"").append("b".repeat(9000)).append("\"},");
+        both.append("\"bodyParts\":[],\"extras\":[]}");
+        String dropped = UltraGuiModelSyncPacket.sanitizePartsJson(both.toString());
+        if (dropped.length() > UltraGuiModelSyncPacket.PARTS_JSON_MAX) {
+            fail("degraded parts still too long: " + dropped.length());
+        }
+        JsonObject dropOb = JsonParser.parseString(dropped).getAsJsonObject();
+        if (dropOb.has("headBones") || dropOb.has("form")) {
+            fail("oversized parts must drop headBones then form: " + dropped.substring(0, 80));
+        }
+        if (!"local".equals(dropOb.get("subject").getAsString())) {
+            fail("degraded parts must keep the subject");
+        }
+
+        // Nothing left to drop: fall back to the minimal empty-parts object.
+        StringBuilder huge = new StringBuilder("{\"schema\":1,\"subject\":\"local\",\"bodyParts\":[");
+        huge.append("{\"id\":\"x\",\"source\":\"y\",\"pad\":\"").append("c".repeat(9000)).append("\"}],");
+        huge.append("\"extras\":[]}");
+        JsonObject fallback = JsonParser.parseString(
+                UltraGuiModelSyncPacket.sanitizePartsJson(huge.toString())).getAsJsonObject();
+        if (!fallback.get("bodyParts").isJsonArray()
+                || !fallback.getAsJsonArray("bodyParts").isEmpty()) {
+            fail("unshrinkable parts must degrade to the empty fallback");
+        }
+
+        // Garbage falls back too.
+        JsonObject garbage = JsonParser.parseString(
+                UltraGuiModelSyncPacket.sanitizePartsJson("{not-json")).getAsJsonObject();
+        if (!garbage.get("bodyParts").isJsonArray()) {
+            fail("garbage parts must degrade to the empty fallback");
+        }
+    }
+
     private static void sketchAndFixture() throws Exception {
         Path fixture = Path.of(System.getProperty("ultragui.fixture", ""));
         Path sketch = Path.of(System.getProperty("ultragui.sketch", ""));
@@ -149,6 +209,7 @@ public final class ServerKitSelfTest {
         }
         boolean forms = false;
         boolean bodyParts = false;
+        boolean bodyPartsSync = false;
         for (JsonElement el : root.getAsJsonArray("advertiseFeatures")) {
             if ("combined.forms.v1".equals(el.getAsString())) {
                 forms = true;
@@ -156,12 +217,33 @@ public final class ServerKitSelfTest {
             if ("bodyParts".equals(el.getAsString())) {
                 bodyParts = true;
             }
+            if ("bodyPartsSync".equals(el.getAsString())) {
+                bodyPartsSync = true;
+            }
         }
         if (!forms) {
             fail("fixture advertiseFeatures missing combined.forms.v1");
         }
         if (!bodyParts) {
             fail("fixture advertiseFeatures missing bodyParts");
+        }
+        if (!bodyPartsSync) {
+            fail("fixture advertiseFeatures missing bodyPartsSync");
+        }
+        // Message 3 fixture: gated world model sync twin.
+        if (!sketchText.contains("UltraGuiModelSyncPacket")) {
+            fail("HelloWorld must show message-3 registration");
+        }
+        if (!sketchText.contains("bodyPartsSync")) {
+            fail("HelloWorld must gate message 3 on the bodyPartsSync advertisement");
+        }
+        JsonObject modelSync = root.getAsJsonObject("modelSync");
+        if (modelSync == null
+                || modelSync.get("messageId").getAsInt() != 3
+                || !"bodyPartsSync".equals(modelSync.get("gate").getAsString())
+                || !modelSync.has("partsJson")
+                || !modelSync.has("reason")) {
+            fail("fixture modelSync must twin message 3 (id 3, gate bodyPartsSync, partsJson, reason)");
         }
     }
 

@@ -27,6 +27,7 @@ protocol. KaiPath registers one client consumer per partner mod id.
    - msg 0 = open (`UltraGuiOpenPacket`)
    - msg 1 = action (`UltraGuiActionPacket`)
    - msg 2 = features (`UltraGuiFeaturesPacket`, optional C→S)
+   - msg 3 = model sync (`UltraGuiModelSyncPacket`, optional S→C — **only** to clients that advertised `bodyPartsSync` via msg 2; an unregistered message id aborts the connection)
 3. Ship `META-INF/kaipath-ultra.txt` in your mod jar. The first non-comment line is your Forge mod id (see [`server/META-INF/kaipath-ultra.txt.example`](server/META-INF/kaipath-ultra.txt.example)). An empty marker falls back to `modId` in `mods.toml`. Players can also list ids in `config/kaipath-ultra-partners.txt`. KaiPath discovers these at client boot — a new mod does not need a KaiPath release. `legacymechanics` is only the built-in seed.
 4. Send opens with `style` + `activeTab` (+ `inputsJson` / `playerModel` / `headerBottom` / `palette` when needed). Prefer plain ASCII labels; tint via `palette` / `style`.
 5. Handle clicks verbatim (`actionId` + `argsJson` echoed from the button).
@@ -57,6 +58,7 @@ headerBottom / accent / palette / sound / buttonSkin / frame / paged_book / port
 7. `combined.forms.v1` is generic: one preview draws the entity plus `playerModel.parts.form` string ids. LM's `headBones` / system accent letters are examples — other mods replace them.
 8. **ASCII `fitLabel`** — `UltraWidgetReflect.fitLabel` must use `...` (not mojibaked `…`). See [`FITLABEL_ASCII.md`](kaipath-client/com/dmzlegacy/kaipath/ultra/internal/FITLABEL_ASCII.md)
 9. **`bodyParts`** — `playerModel.parts.bodyParts` is `{ "id", "source", "slot" }`. Standard slots: `tail`, `wings`, `horns`, `ears`, `extra_arms`. When DMZUltra is installed, `BodyPartPreview` loads its FormParts catalog and `FormPartsPreviewMixin` attaches known pieces to the preview entity. Unknown ids and a missing source mod are skipped; the base entity still draws. Advertise `bodyParts`. Register [`kaipath-bodyparts.mixins.json`](kaipath-bodyparts.mixins.json) (optional — it does not apply when FormParts is absent). LM example: `{ "id": "saiyan_tail", "source": "dmzultra", "slot": "tail" }` maps to the `tail_fur` mesh.
+10. **`bodyPartsSync`** (message 3) — register `GuiModelSyncPacket` as S→C message 3 and advertise `bodyPartsSync` **only** in the same release. `FormPartsPreviewMixin` already asks [`BodyPartPreview.meshesFor`](kaipath-client/com/dmzlegacy/kaipath/ultra/consumers/legacymechanics/BodyPartPreview.java) for **every** player — the menu preview overrides for its subject, everyone else reads the world cache fed by message 3 (`BodyPartPreview.applySync`). Snapshots **replace** (never merge); an empty `bodyParts` array clears all extra pieces; `clearSync()` runs on `ClientPlayerNetworkEvent.LoggingOut`. The server guarantees a single tail-slot entry per payload; the kit mirrors that defensively. Message 3 is **feature-gated** — a server must never send it to a client that did not advertise `bodyPartsSync` (KaiPath ≤ 1.3.29 has messages 0–2 only). Wire: `docs/KAIPATH_GUI_PROTOCOL.md` § GuiModelSyncPacket.
 
 ### Pitfalls (must-read before release)
 
@@ -75,10 +77,10 @@ UltraGuiConsumerRegistry.advertiseFeatures(
     "[\"style\",\"activeTab\",\"titleAlign\",\"playerModel\",\"textInput\","
         + "\"headerBottom\",\"accent\",\"palette\",\"sound\",\"buttonSkin\","
         + "\"frame\",\"pagedBook\",\"portraitFrame\",\"fixedFooter\",\"combined.forms.v1\","
-        + "\"bodyParts\",\"icon\"]");
+        + "\"bodyParts\",\"icon\",\"bodyPartsSync\"]");
 ```
 
-`"icon"` shipped on official KaiPath 1.3.22 (item id or texture path). 1.3.17 stops at `combined.forms.v1`. `"bodyParts"` shipped on official KaiPath **1.3.29** — a pre-1.3.29 client is now reported as `missingShipped=bodyParts`. A client that does not advertise `bodyParts` still draws the entity.
+`"icon"` shipped on official KaiPath 1.3.22 (item id or texture path). 1.3.17 stops at `combined.forms.v1`. `"bodyParts"` shipped on official KaiPath **1.3.29** — a pre-1.3.29 client is now reported as `missingShipped=bodyParts`. A client that does not advertise `bodyParts` still draws the entity. `"bodyPartsSync"` (message 3 world sync) is **pending on JLDK** — advertise it only once `GuiModelSyncPacket` is registered in the same release.
 
 ```java
 // Client boot (wired via LmUltraConsumer.bootstrap):

@@ -54,6 +54,20 @@ Advertise `bodyParts`. `playerModel.parts.bodyParts` is an array of `{ "id", "so
 
 Reference: `BodyPartWire`, `BodyPartPreview`, and `FormPartsPreviewMixin` (optional mixin — do not apply it when `com.dmzultra.client.forms.FormParts` is missing). Register `kaipath-bodyparts.mixins.json` from the kit.
 
+### `bodyPartsSync` (message 3 — world model sync)
+
+Advertise `bodyPartsSync` **only** when `GuiModelSyncPacket` (S→C message 3) is registered.
+The server then pushes the authoritative equipped body-parts state: once on login and after
+every equip/unequip change. On receive, **replace** — never merge — the cached world-render
+parts via `BodyPartPreview.applySync`; an empty `bodyParts` array clears all extra pieces.
+`FormPartsPreviewMixin` already consults `BodyPartPreview.meshesFor` for every player, so the
+menu preview keeps overriding for its subject while the world model uses the synced cache.
+`BodyPartPreview.clearSync()` runs on `ClientPlayerNetworkEvent.LoggingOut` (state is
+per-session). A server must never send message 3 to a client that did not advertise the id,
+and a client must never advertise it without registering the message — KaiPath ≤ 1.3.29 has
+messages 0–2 only and drops the connection on an unregistered id. Wire format:
+[`KAIPATH_GUI_PROTOCOL.md`](KAIPATH_GUI_PROTOCOL.md) § GuiModelSyncPacket.
+
 ### `icon`
 
 Optional item id (`minecraft:iron_sword`) or texture path (`modid:path/to/texture.png`) on a button or tab. KaiPath **1.3.22** advertises `icon` and resolves it with `UltraBridgeIcon`. Unknown or blank ids are ignored and the control still works. LM leaves `icon` blank (system menus are not vanilla items, and no custom gear textures ship). A client that does not advertise `icon` is `missingShipped=icon`.

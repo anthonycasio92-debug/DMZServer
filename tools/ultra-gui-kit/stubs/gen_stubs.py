@@ -88,7 +88,15 @@ public abstract class Screen {
 """,
     "net/minecraft/world/entity/LivingEntity.java": """
 package net.minecraft.world.entity;
-public class LivingEntity {}
+public class LivingEntity {
+  private final java.util.UUID id = java.util.UUID.randomUUID();
+  public java.util.UUID m_20148_() { return id; }
+}
+""",
+    "com/dmzultra/client/forms/FormParts.java": """
+package com.dmzultra.client.forms;
+/** Test-only marker: lets BodyPartPreview.piecesFor resolve the DMZUltra fallback catalog offline. */
+public class FormParts {}
 """,
     "net/minecraft/client/player/LocalPlayer.java": """
 package net.minecraft.client.player;
@@ -117,8 +125,9 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.player.LocalPlayer;
 public class Minecraft {
+  private static final Minecraft INSTANCE = new Minecraft();
   public LocalPlayer f_91074_;
-  public static Minecraft m_91087_() { return new Minecraft(); }
+  public static Minecraft m_91087_() { return INSTANCE; }
   public ClientPacketListener m_91403_() { return new ClientPacketListener(); }
   public void m_91152_(Screen screen) {}
 }
@@ -180,6 +189,32 @@ package net.minecraftforge.api.distmarker;
 public enum Dist {
   CLIENT, DEDICATED_SERVER;
   public boolean isClient() { return this == CLIENT; }
+}
+""",
+    "net/minecraftforge/eventbus/api/Event.java": """
+package net.minecraftforge.eventbus.api;
+public class Event {}
+""",
+    "net/minecraftforge/eventbus/api/EventBus.java": """
+package net.minecraftforge.eventbus.api;
+import java.util.function.Consumer;
+public class EventBus {
+  public <T extends Event> void addListener(Consumer<T> consumer) {}
+  public boolean post(Event event) { return false; }
+}
+""",
+    "net/minecraftforge/common/MinecraftForge.java": """
+package net.minecraftforge.common;
+import net.minecraftforge.eventbus.api.EventBus;
+public class MinecraftForge {
+  public static final EventBus EVENT_BUS = new EventBus();
+}
+""",
+    "net/minecraftforge/client/event/ClientPlayerNetworkEvent.java": """
+package net.minecraftforge.client.event;
+import net.minecraftforge.eventbus.api.Event;
+public class ClientPlayerNetworkEvent extends Event {
+  public static class LoggingOut extends ClientPlayerNetworkEvent {}
 }
 """,
     "net/minecraftforge/fml/loading/FMLEnvironment.java": """

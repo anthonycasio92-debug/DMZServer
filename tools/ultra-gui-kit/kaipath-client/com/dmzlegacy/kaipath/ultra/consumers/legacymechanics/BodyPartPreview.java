@@ -8,11 +8,14 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.LivingEntity;
 
 /**
@@ -23,14 +26,173 @@ import net.minecraft.world.entity.LivingEntity;
  * those meshes into the design so {@code part.<id>} bones render on that entity.
  * A missing DMZUltra install, or an id the catalog does not know, leaves the base
  * entity alone.
+ *
+ * <p>Two states feed {@link #meshesFor}:
+ *
+ * <ul>
+ *   <li><b>Menu preview</b> ({@link #begin}/{@link #end}) — ThreadLocal, overrides the
+ *       preview subject while a screen draws it.
+ *   <li><b>World sync</b> (message 3 {@code GuiModelSyncPacket}, {@link #applySync}) —
+ *       persistent per-player cache. Server-authoritative: each snapshot <b>replaces</b>
+ *       the cached parts; an empty {@code bodyParts} array clears all extra pieces.
+ *       {@link #clearSync} drops it on disconnect.
+ * </ul>
  */
 public final class BodyPartPreview {
     private static final ThreadLocal<Active> ACTIVE = new ThreadLocal<>();
     private static final ConcurrentHashMap<String, Set<String>> LOADED = new ConcurrentHashMap<>();
 
+    /** Server-synced world state (message 3), keyed by player UUID. */
+    private static final ConcurrentHashMap<UUID, WorldState> WORLD = new ConcurrentHashMap<>();
+
+    private static volatile WorldState localState = WorldState.EMPTY;
+    private static volatile UUID localId;
+
     private BodyPartPreview() {}
 
     private record Active(UUID playerId, Set<String> meshes) {}
+
+    /**
+     * Cached world parts for one subject: the raw {@code partsJson} (for future
+     * head-bone/form rendering) plus the resolved meshes. {@code noTail} is
+     * {@code meshes} minus the aliased Saiyan tail — served when the entity's race
+     * layer already draws one.
+     */
+    record WorldState(String partsJson, Set<String> meshes, Set<String> noTail, boolean aliasTailOnly) {
+        static final WorldState EMPTY = new WorldState("", Set.of(), Set.of(), false);
+    }
+
+    /** Mesh collection result shared by the menu preview and the world sync. */
+    private record Resolved(LinkedHashSet<String> meshes, Set<String> noTail, boolean aliasTailOnly) {}
+
+    /**
+     * Message 3 (world sync): replace the cached parts for the payload's subject.
+     * Server-authoritative — never merges; an empty {@code bodyParts} array clears all
+     * extra pieces. {@code subject:"local"} (or anything unrecognized) is the receiving
+     * player; {@code uuid:<id>} addresses another player.
+     */
+    public static void applySync(String partsJson, String reason) {
+        try {
+            WorldState state = stateFromParts(partsJson, BodyPartPreview::piecesFor);
+            String subject = subjectOf(partsJson);
+            if (subject.startsWith("uuid:")) {
+                try {
+                    WORLD.put(UUID.fromString(subject.substring("uuid:".length())), state);
+                } catch (Throwable ignored) {
+                    // unusable subject id — keep the previous state
+                }
+                return;
+            }
+            localState = state;
+            localId = resolveLocalId();
+        } catch (Throwable ignored) {
+            // a bad payload must not crash the network handler
+        }
+    }
+
+    /** Drop all server-synced world state (call on disconnect / session reset). */
+    public static void clearSync() {
+        WORLD.clear();
+        localState = WorldState.EMPTY;
+        localId = null;
+    }
+
+    /** The local player's cached parts JSON (empty string when none). */
+    public static String localPartsJson() {
+        WorldState state = localState;
+        return state == null ? "" : state.partsJson();
+    }
+
+    /**
+     * Parse {@code partsJson} into a world state with the same pipeline as the menu
+     * preview ({@link BodyPartWire}). Never throws. {@code catalog} maps a source mod id
+     * to its piece set (injectable for tests). Defensive mirror of the server's
+     * single-tail rule: at most one {@code slot:"tail"} entry — first wins — since a
+     * third-party server may not dedupe.
+     */
+    static WorldState stateFromParts(String partsJson, Function<String, Set<String>> catalog) {
+        if (partsJson == null || partsJson.isBlank() || catalog == null) {
+            return WorldState.EMPTY;
+        }
+        try {
+            JsonObject parts = JsonParser.parseString(partsJson).getAsJsonObject();
+            if (!parts.has("bodyParts") || !parts.get("bodyParts").isJsonArray()) {
+                return new WorldState(partsJson, Set.of(), Set.of(), false);
+            }
+            List<BodyPartWire.Entry> entries = BodyPartWire.parse(parts.getAsJsonArray("bodyParts"));
+            List<BodyPartWire.Entry> singleTail = new ArrayList<>(entries.size());
+            boolean tailKept = false;
+            for (BodyPartWire.Entry entry : entries) {
+                if (entry != null && "tail".equals(entry.slot())) {
+                    if (tailKept) {
+                        continue;
+                    }
+                    tailKept = true;
+                }
+                singleTail.add(entry);
+            }
+            Resolved resolved = collect(BodyPartWire.resolve(singleTail, catalog));
+            return new WorldState(
+                    partsJson,
+                    Set.copyOf(resolved.meshes()),
+                    resolved.noTail(),
+                    resolved.aliasTailOnly());
+        } catch (Throwable ignored) {
+            return WorldState.EMPTY;
+        }
+    }
+
+    private static String subjectOf(String partsJson) {
+        try {
+            JsonObject o = JsonParser.parseString(partsJson).getAsJsonObject();
+            if (o.has("subject") && o.get("subject").isJsonPrimitive()) {
+                return o.get("subject").getAsString().trim();
+            }
+        } catch (Throwable ignored) {
+            // fall through
+        }
+        return "local";
+    }
+
+    /** The local player's UUID, cached once per session (null while not connected). */
+    private static UUID resolveLocalId() {
+        try {
+            Minecraft mc = Minecraft.m_91087_();
+            return mc == null ? null : entityUuid(mc.f_91074_);
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    /** Map resolved models to meshes, tracking whether only the aliased tail is present. */
+    private static Resolved collect(List<BodyPartWire.Model> models) {
+        LinkedHashSet<String> meshes = new LinkedHashSet<>();
+        boolean aliasTail = false;
+        boolean directTail = false;
+        for (BodyPartWire.Model model : models) {
+            if (model == null || model.mesh() == null || model.mesh().isBlank()) {
+                continue;
+            }
+            if (BodyPartWire.SAIYAN_TAIL_MESH.equals(model.mesh())) {
+                if (model.alias()) {
+                    aliasTail = true;
+                } else {
+                    directTail = true;
+                }
+            }
+            meshes.add(model.mesh());
+        }
+        boolean aliasTailOnly = aliasTail && !directTail;
+        Set<String> noTail;
+        if (aliasTailOnly && meshes.contains(BodyPartWire.SAIYAN_TAIL_MESH)) {
+            LinkedHashSet<String> copy = new LinkedHashSet<>(meshes);
+            copy.remove(BodyPartWire.SAIYAN_TAIL_MESH);
+            noTail = Set.copyOf(copy);
+        } else {
+            noTail = meshes;
+        }
+        return new Resolved(meshes, noTail, aliasTailOnly);
+    }
 
     /** Remember the pieces for this draw. Safe to call when parts are absent. */
     public static void begin(LivingEntity entity, JsonObject parts) {
@@ -39,37 +201,22 @@ public final class BodyPartPreview {
             if (entity == null || parts == null || !parts.has("bodyParts") || !parts.get("bodyParts").isJsonArray()) {
                 return;
             }
-            List<BodyPartWire.Model> models =
-                    BodyPartWire.resolve(
-                            BodyPartWire.parse(parts.getAsJsonArray("bodyParts")), BodyPartPreview::piecesFor);
-            if (models.isEmpty()) {
+            Resolved resolved =
+                    collect(BodyPartWire.resolve(
+                            BodyPartWire.parse(parts.getAsJsonArray("bodyParts")), BodyPartPreview::piecesFor));
+            if (resolved.meshes().isEmpty()) {
                 return;
-            }
-            LinkedHashSet<String> meshes = new LinkedHashSet<>();
-            boolean aliasTail = false;
-            boolean directTail = false;
-            for (BodyPartWire.Model model : models) {
-                if (model == null || model.mesh() == null || model.mesh().isBlank()) {
-                    continue;
-                }
-                if (BodyPartWire.SAIYAN_TAIL_MESH.equals(model.mesh())) {
-                    if (model.alias()) {
-                        aliasTail = true;
-                    } else {
-                        directTail = true;
-                    }
-                }
-                meshes.add(model.mesh());
             }
             // The live player's own race layer already draws the Saiyan tail. Don't stack
             // tail_fur on top of it. A preview without that character still gets the mesh.
-            if (aliasTail && !directTail && raceTailAlreadyShown(entity)) {
-                meshes.remove(BodyPartWire.SAIYAN_TAIL_MESH);
-            }
+            Set<String> meshes =
+                    resolved.aliasTailOnly() && raceTailAlreadyShown(entity)
+                            ? resolved.noTail()
+                            : Set.copyOf(resolved.meshes());
             if (meshes.isEmpty()) {
                 return;
             }
-            ACTIVE.set(new Active(entityUuid(entity), Set.copyOf(meshes)));
+            ACTIVE.set(new Active(entityUuid(entity), meshes));
         } catch (Throwable ignored) {
             end();
         }
@@ -80,20 +227,42 @@ public final class BodyPartPreview {
     }
 
     /**
-     * Meshes to union into DMZUltra's look for this player. Empty when no preview is
-     * drawing, or the player is not the preview subject.
+     * Meshes to union into DMZUltra's look for this player. A menu preview overrides for
+     * its subject; everyone else (world render) gets the last server-synced snapshot
+     * (message 3). Empty when neither holds.
      */
     public static Set<String> meshesFor(Object player) {
         Active active = ACTIVE.get();
-        if (active == null || active.meshes == null || active.meshes.isEmpty()) {
-            return Set.of();
-        }
-        UUID want = active.playerId;
         UUID got = entityUuid(player);
-        if (want != null && got != null && !want.equals(got)) {
+        if (active != null && active.meshes != null && !active.meshes.isEmpty()) {
+            UUID want = active.playerId;
+            if (want == null || got == null || want.equals(got)) {
+                return active.meshes;
+            }
+        }
+        return worldMeshes(player, got);
+    }
+
+    /** Server-synced world state for one entity (never the menu preview). */
+    private static Set<String> worldMeshes(Object entity, UUID id) {
+        if (id == null) {
             return Set.of();
         }
-        return active.meshes;
+        UUID local = localId;
+        if (local == null) {
+            local = resolveLocalId();
+            if (local != null) {
+                localId = local;
+            }
+        }
+        WorldState state = local != null && local.equals(id) ? localState : WORLD.get(id);
+        if (state == null || state.meshes().isEmpty()) {
+            return Set.of();
+        }
+        // The entity's race layer may already draw the Saiyan tail (aliased mesh).
+        return state.aliasTailOnly() && raceTailAlreadyShown(entity)
+                ? state.noTail()
+                : state.meshes();
     }
 
     /**

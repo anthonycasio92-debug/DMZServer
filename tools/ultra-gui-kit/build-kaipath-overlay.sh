@@ -13,6 +13,12 @@
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
+# javac is a Windows binary under Git Bash: it cannot read /c/... MSYS paths.
+abs() {
+  if command -v cygpath >/dev/null 2>&1; then cygpath -m "$1"; else echo "$1"; fi
+}
+# Windows javac splits -cp on ';', Linux javac on ':'.
+if [[ -n "${WINDIR:-}" ]]; then CP_SEP=';'; else CP_SEP=':'; fi
 BASE_JAR="${KAIPATH_BASE_JAR:-$ROOT/mods/kaipath-1.3.13.jar}"
 GSON="$ROOT/libraries/com/google/code/gson/gson/2.10.1/gson-2.10.1.jar"
 LOG4J="$ROOT/libraries/org/apache/logging/log4j/log4j-api/2.19.0/log4j-api-2.19.0.jar"
@@ -46,30 +52,32 @@ mkdir -p "$CLASSES" "$STUB_CLASSES"
 python3 "$HERE/stubs/gen_stubs.py"
 # Prefer real log4j; drop stub log4j sources if present
 find "$HERE/stubs" -path '*/org/apache/logging/*' -delete 2>/dev/null || true
-find "$HERE/stubs" -name '*.java' > "$OUT_DIR/stubs.list"
-javac --release 17 -d "$STUB_CLASSES" @"$OUT_DIR/stubs.list"
+find "$(abs "$HERE/stubs")" -name '*.java' > "$OUT_DIR/stubs.list"
+javac --release 17 -encoding UTF-8 -d "$STUB_CLASSES" @"$OUT_DIR/stubs.list"
 
 # Server kit must compile against the same SRG stubs (one mapping for open/action/features).
 SERVER_SRC="$HERE/server"
 SERVER_CLASSES="$OUT_DIR/server-classes"
 mkdir -p "$SERVER_CLASSES"
-find "$SERVER_SRC" -name '*.java' > "$OUT_DIR/server.list"
-javac --release 17 -cp "$STUB_CLASSES:$GSON" -d "$SERVER_CLASSES" @"$OUT_DIR/server.list"
+find "$(abs "$SERVER_SRC")" -name '*.java' > "$OUT_DIR/server.list"
+javac --release 17 -encoding UTF-8 -cp "$(abs "$STUB_CLASSES")$CP_SEP$(abs "$GSON")" -d "$SERVER_CLASSES" @"$OUT_DIR/server.list"
 
-find "$SRC" -name '*.java' > "$OUT_DIR/sources.list"
-CP="$STUB_CLASSES:$BASE_JAR:$GSON:$LOG4J:$MIXIN:$ASM:$ASM_TREE"
-javac --release 17 -proc:none -cp "$CP" -d "$CLASSES" @"$OUT_DIR/sources.list"
+find "$(abs "$SRC")" -name '*.java' > "$OUT_DIR/sources.list"
+# Windows javac splits -cp on ';' and cannot read /c/... MSYS paths; Linux javac
+# splits on ':'. Normalize both path style and separator per platform.
+CP="$(abs "$STUB_CLASSES")$CP_SEP$(abs "$BASE_JAR")$CP_SEP$(abs "$GSON")$CP_SEP$(abs "$LOG4J")$CP_SEP$(abs "$MIXIN")$CP_SEP$(abs "$ASM")$CP_SEP$(abs "$ASM_TREE")"
+javac --release 17 -encoding UTF-8 -proc:none -cp "$CP" -d "$CLASSES" @"$OUT_DIR/sources.list"
 
 if [[ -d "$TEST_SRC" ]]; then
-  find "$TEST_SRC" -name '*.java' > "$OUT_DIR/tests.list"
+  find "$(abs "$TEST_SRC")" -name '*.java' > "$OUT_DIR/tests.list"
   TEST_CLASSES="$OUT_DIR/test-classes"
   mkdir -p "$TEST_CLASSES"
-  javac --release 17 -proc:none -cp "$CLASSES:$SERVER_CLASSES:$CP" -d "$TEST_CLASSES" @"$OUT_DIR/tests.list"
-  java -cp "$TEST_CLASSES:$CLASSES:$CP" \
+  javac --release 17 -encoding UTF-8 -proc:none -cp "$(abs "$CLASSES")$CP_SEP$(abs "$SERVER_CLASSES")$CP_SEP$CP" -d "$TEST_CLASSES" @"$OUT_DIR/tests.list"
+  java -cp "$(abs "$TEST_CLASSES")$CP_SEP$(abs "$CLASSES")$CP_SEP$CP" \
     com.dmzlegacy.kaipath.ultra.consumers.legacymechanics.GuiOpenPacketRoundTripTest
   java -Dultragui.fixture="$HERE/server/BridgeFutureFieldsFixture.json" \
     -Dultragui.sketch="$HERE/server/HelloWorldServerSketch.java" \
-    -cp "$TEST_CLASSES:$SERVER_CLASSES:$STUB_CLASSES:$GSON" \
+    -cp "$(abs "$TEST_CLASSES")$CP_SEP$(abs "$SERVER_CLASSES")$CP_SEP$(abs "$STUB_CLASSES")$CP_SEP$(abs "$GSON")" \
     com.example.ultragui.ServerKitSelfTest
 fi
 
@@ -144,8 +152,21 @@ else
   exit 1
 fi
 
-# Restore stamped MANIFEST via zip (jar uf often drops META-INF/MANIFEST.MF).
-(cd "$MANIFEST_DIR" && zip -q "$OUT_JAR" META-INF/MANIFEST.MF)
+# Restore stamped MANIFEST (jar uf often drops META-INF/MANIFEST.MF; zip is not
+# guaranteed in Git Bash, so rewrite with python3 zipfile).
+python3 - "$MANIFEST_DIR/META-INF/MANIFEST.MF" "$OUT_JAR" <<'PY'
+import os, sys, zipfile
+src, jar_path = sys.argv[1], sys.argv[2]
+data = open(src, "rb").read()
+tmp = jar_path + ".tmp"
+with zipfile.ZipFile(jar_path, "r") as zin, zipfile.ZipFile(tmp, "w") as zout:
+    for info in zin.infolist():
+        if info.filename == "META-INF/MANIFEST.MF":
+            continue
+        zout.writestr(info, zin.read(info.filename))
+    zout.writestr("META-INF/MANIFEST.MF", data)
+os.replace(tmp, jar_path)
+PY
 if ! jar tf "$OUT_JAR" | grep -q '^META-INF/MANIFEST.MF$'; then
   echo "ERROR: META-INF/MANIFEST.MF missing from $OUT_JAR" >&2
   jar tf "$OUT_JAR" | grep META-INF || true
@@ -162,7 +183,7 @@ if ! jar tf "$OUT_JAR" | grep -q '^META-INF/mods.toml$'; then
 fi
 
 for c in \
-  GuiOpenPacket GuiActionPacket GuiFeaturesPacket \
+  GuiOpenPacket GuiActionPacket GuiFeaturesPacket GuiModelSyncPacket \
   LmGuiNetwork LmScreens LmDynamicScreen LmHubScreen LmUltraConsumer \
   UltraBridgeChrome UltraBridgeFooter; do
   if ! jar tf "$OUT_JAR" | grep -q "consumers/legacymechanics/${c}.class"; then
@@ -187,25 +208,27 @@ if ! grep -q 'inputsJson' "$OUT_DIR/GuiOpenPacket.javap.txt"; then
   exit 1
 fi
 
-# Confirm advertise tokens are in the registry class bytes
-for token in textInput fixedFooter portraitFrame bodyParts; do
-  if ! strings "$OUT_JAR" | grep -q "$token"; then
-    if ! (cd "$OUT_DIR" && jar xf "$OUT_JAR" com/dmzlegacy/kaipath/ultra/consumers/UltraGuiConsumerRegistry.class \
-      && strings com/dmzlegacy/kaipath/ultra/consumers/UltraGuiConsumerRegistry.class | grep -q "$token"); then
-      echo "ERROR: UltraGuiConsumerRegistry does not embed $token advertise" >&2
-      exit 1
-    fi
-  fi
-done
+# Confirm advertise tokens are in the registry class bytes (python3 — strings is
+# not guaranteed in Git Bash).
+python3 - "$OUT_JAR" <<'PY'
+import sys, zipfile
+data = zipfile.ZipFile(sys.argv[1]).read(
+    "com/dmzlegacy/kaipath/ultra/consumers/UltraGuiConsumerRegistry.class")
+missing = [t for t in ("textInput", "fixedFooter", "portraitFrame", "bodyParts", "bodyPartsSync")
+           if t.encode() not in data]
+if missing:
+    print("ERROR: UltraGuiConsumerRegistry missing advertise tokens:", missing)
+    sys.exit(1)
+print("advertise tokens OK")
+PY
 
 echo "Built $OUT_JAR"
 jar tf "$OUT_JAR" | grep -E 'consumers/(UltraGuiConsumerRegistry|UltraGuiPartners|legacymechanics/)' | sort
-echo "Advertise: $(python3 - <<PY
-import zipfile
-z=zipfile.ZipFile("$OUT_JAR")
-data=z.read("com/dmzlegacy/kaipath/ultra/consumers/UltraGuiConsumerRegistry.class")
+echo "Advertise: $(python3 - "$(abs "$OUT_JAR")" <<'PY'
+import sys, zipfile, re
+z = zipfile.ZipFile(sys.argv[1])
+data = z.read("com/dmzlegacy/kaipath/ultra/consumers/UltraGuiConsumerRegistry.class")
 # rough extract of UTF-8 string constants containing textInput
-import re
 for m in re.findall(rb'\[[^\]]{0,200}textInput[^\]]{0,80}\]', data):
     print(m.decode("utf-8", "replace"))
     break

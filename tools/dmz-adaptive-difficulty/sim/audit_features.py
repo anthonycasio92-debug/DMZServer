@@ -2898,6 +2898,39 @@ def main() -> int:
         "GuiModelSync round-trip + oversized-sanitize self-test at startup",
         "roundTripModelSync" in net_bp and "GuiModelSyncPacket" in net_bp,
     )
+    kit_root = ROOT / "tools" / "ultra-gui-kit"
+    kit_registry = read(
+        kit_root / "kaipath-client/com/dmzlegacy/kaipath/ultra/consumers/UltraGuiConsumerRegistry.java"
+    )
+    kit_packet = read(
+        kit_root
+        / "kaipath-client/com/dmzlegacy/kaipath/ultra/consumers/legacymechanics/GuiModelSyncPacket.java"
+    )
+    kit_preview = read(
+        kit_root
+        / "kaipath-client/com/dmzlegacy/kaipath/ultra/consumers/legacymechanics/BodyPartPreview.java"
+    )
+    kit_server = read(kit_root / "server/UltraGuiModelSyncPacket.java")
+    kit_readme = read(kit_root / "README.md")
+    check(
+        "Kit registers message 3 + advertises bodyPartsSync (JLDK reference)",
+        "GuiModelSyncPacket.class, 3" in kit_registry
+        and "bodyPartsSync" in kit_registry
+        and "clearSync" in kit_registry,
+    )
+    check(
+        "Kit client packet + world cache mirror the message-3 contract",
+        "applySync" in kit_packet
+        and "applySync" in kit_preview
+        and "clearSync" in kit_preview
+        and "PARTS_JSON_MAX = 8192" in kit_packet,
+    )
+    check(
+        "Kit server codec twin + README document message 3",
+        "PARTS_JSON_MAX = 8192" in kit_server
+        and "bodyPartsSync" in kit_server
+        and "bodyPartsSync" in kit_readme,
+    )
 
     print("\n=== Summary ===")
     for w in warns:

@@ -14,7 +14,13 @@ package com.example.ultragui;
  *   <li>Message 0 = GuiOpenPacket (S→C)
  *   <li>Message 1 = GuiActionPacket (C→S)
  *   <li>Message 2 = GuiFeaturesPacket (C→S, optional)
+ *   <li>Message 3 = UltraGuiModelSyncPacket (S->C, optional, {@code bodyPartsSync} gated)
  * </ul>
+ *
+ * <p>Message ids are per-channel and shared by every partner. Ids beyond 2 are optional:
+ * only send them to clients that advertised the matching feature id via message 2
+ * ({@code bodyPartsSync} for message 3). An unregistered message id aborts the
+ * connection; KaiPath 1.3.29 and older register 0-2 only.
  *
  * <p>Examples: {@code mymod:gui}, {@code shopmod:gui}, {@code legacymechanics:gui}.
  *

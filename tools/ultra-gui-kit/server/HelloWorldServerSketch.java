@@ -35,6 +35,19 @@ package com.example.ultragui;
  * ch.messageBuilder(UltraGuiFeaturesPacket.class, 2, NetworkDirection.PLAY_TO_SERVER)
  *   .encoder(UltraGuiFeaturesPacket::encode).decoder(UltraGuiFeaturesPacket::decode)
  *   .consumerMainThread((m, ctx) -> ctx.get().setPacketHandled(true)).add();
+ * ch.messageBuilder(UltraGuiModelSyncPacket.class, 3, NetworkDirection.PLAY_TO_CLIENT)
+ *   .encoder(UltraGuiModelSyncPacket::encode).decoder(UltraGuiModelSyncPacket::decode)
+ *   .consumerMainThread((m, ctx) -> ctx.get().setPacketHandled(true)).add();
+ *
+ * // World body-parts sync (message 3): ONLY to clients that advertised "bodyPartsSync"
+ * // via message 2. Track advertisements per connection; an unregistered message id
+ * // aborts the connection (KaiPath <= 1.3.29 registers 0-2 only).
+ * if (clientFeatures.get(player).contains("bodyPartsSync")) {
+ *     String partsJson = "{\"schema\":1,\"subject\":\"local\",\"bodyParts\":["
+ *         + "{\"id\":\"saiyan_tail\",\"source\":\"dmzultra\",\"slot\":\"tail\"}],\"extras\":[]}";
+ *     ch.send(PacketDistributor.PLAYER.with(() -> player),
+ *         new UltraGuiModelSyncPacket(partsJson, UltraGuiModelSyncPacket.REASON_LOGIN));
+ * }
  *
  * // KaiPath client: UltraGuiPartners.register("myshop");
  *

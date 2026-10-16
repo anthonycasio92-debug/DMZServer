@@ -123,6 +123,14 @@
     "fixedFooter",
     "combined.forms.v1",
     "icon",
-    "bodyParts"
-  ]
+    "bodyParts",
+    "bodyPartsSync"
+  ],
+  "modelSync": {
+    "messageId": 3,
+    "direction": "server->client",
+    "gate": "bodyPartsSync",
+    "partsJson": "{\"schema\":1,\"subject\":\"local\",\"bodyParts\":[{\"id\":\"shop_tail\",\"source\":\"myshop\",\"slot\":\"tail\"}],\"extras\":[]}",
+    "reason": "login"
+  }
 }
