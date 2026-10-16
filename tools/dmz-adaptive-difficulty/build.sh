@@ -14,7 +14,7 @@ FTB="$ROOT/libraries/ftb-teams-forge-2001.3.1.jar"
 FTB_CHUNKS="$ROOT/libraries/ftb-chunks-forge-2001.3.8.jar"
 FTB_LIBRARY="$ROOT/libraries/ftb-library-forge-2001.2.13.jar"
 ARCHITECTURY="$ROOT/libraries/architectury-9.2.14-forge.jar"
-REVAMP="$ROOT/libraries/dmzrevamp-2.0.9.jar"
+REVAMP="$ROOT/libraries/dmzrevamp-2.1.1.jar"
 CNPC="$ROOT/mods/CustomNPCs-1.20.1-GBPort-Unofficial-1.20.1.20260227.jar"
 if [[ ! -f "$FTB" ]]; then
   echo "Downloading FTB Teams for compile..."
@@ -559,12 +559,17 @@ else
   echo "WARN: Base jar missing ($BASE_JAR) — full compile jar (no live ki/stamina base)" >&2
   (
     cd "$OUT"
-    jar cvmf "$RES/META-INF/MANIFEST.MF" "$JAR" $(find com -name '*.class') \
+    # Pass the com/ dir itself: recursive, and avoids the Windows 32K argv limit
+    # that $(find com -name '*.class') hits (~463 args). Adds dir entries like the base merge path.
+    jar cvmf "$RES/META-INF/MANIFEST.MF" "$JAR" com \
       -C "$RES" META-INF/mods.toml \
       -C "$RES" META-INF/kaipath-ultra.txt \
       -C "$RES" pack.mcmeta \
       -C "$RES" legacymechanics.mixins.json \
-      -C "$RES" legacymechanics.refmap.json
+      -C "$RES" legacymechanics.refmap.json \
+      -C "$RES" data \
+      -C "$RES" character-services.default.json \
+      -C "$RES" dmzultra-form-parts.json
   )
 fi
 
