@@ -398,6 +398,11 @@ merge_onto_base_jar() {
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/ProgressionConfig.class" \
       "$merge/com/dbzlegacy/adaptivedifficulty/progression/ProgressionConfig.class"
   fi
+  if [[ -d "$OUT/com/dbzlegacy/adaptivedifficulty/progression/form" ]]; then
+    mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/progression/form"
+    cp -a "$OUT/com/dbzlegacy/adaptivedifficulty/progression/form/." \
+      "$merge/com/dbzlegacy/adaptivedifficulty/progression/form/"
+  fi
   if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/progression/ProgressionModuleCatalog.class" ]]; then
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/ProgressionModuleCatalog.class" \
       "$merge/com/dbzlegacy/adaptivedifficulty/progression/ProgressionModuleCatalog.class"
@@ -523,6 +528,9 @@ merge_onto_base_jar() {
   fi
   if [[ -f "$RES/character-services.default.json" ]]; then
     cp "$RES/character-services.default.json" "$merge/character-services.default.json"
+  fi
+  if [[ -f "$RES/dmzultra-form-parts.json" ]]; then
+    cp "$RES/dmzultra-form-parts.json" "$merge/dmzultra-form-parts.json"
   fi
   if [[ ! -f "$merge/legacymechanics.mixins.json" ]]; then
     cp "$RES/legacymechanics.mixins.json" "$merge/legacymechanics.mixins.json"
