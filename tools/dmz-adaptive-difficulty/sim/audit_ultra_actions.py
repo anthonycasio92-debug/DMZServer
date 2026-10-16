@@ -925,6 +925,22 @@ def main() -> int:
         errors.append("Both footer buttons must use STYLE_NORMAL so they do not look disabled")
     if "STYLE_DIM" in footer_body:
         errors.append("Footer buttons must not use STYLE_DIM")
+    # Hint lines in these screens used to be dark-gray (UltraStyle.DIM) and read as a
+    # disabled footer. Body copy stays LABEL; STYLE_DIM remains for unavailable actions.
+    for screen_name in (
+        "UltraDifficultyScreens.java",
+        "UltraRivalScreens.java",
+        "UltraSparScreens.java",
+        "UltraCharacterScreens.java",
+        "UltraProgressionScreens.java",
+        "UltraWeightShopScreens.java",
+        "UltraSkillCheckScreens.java",
+    ):
+        screen_src = (ULTRA / screen_name).read_text(encoding="utf-8")
+        if "UltraStyle.DIM" in screen_src:
+            errors.append(
+                f"{screen_name} must not use UltraStyle.DIM (footer and hint copy stay readable)"
+            )
 
     # Tabs are hub-style buttons under the title line; tabsJson stays empty for every screen.
     self_test_path = ULTRA / "UltraScreenSelfTest.java"

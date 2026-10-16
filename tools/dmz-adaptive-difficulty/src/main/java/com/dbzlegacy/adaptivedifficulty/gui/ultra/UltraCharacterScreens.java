@@ -132,7 +132,7 @@ public final class UltraCharacterScreens {
                 .labelValue("Race", ph.getOrDefault("current_race", "-"))
                 .labelValue("Class", ph.getOrDefault("current_class", "-"));
         if (monkeyFormModel) {
-            spec.line(UltraStyle.DIM
+            spec.line(UltraStyle.LABEL
                     + "Not available for Monkey - this race uses a form model.");
         }
         spec.buttonsAfterLines();
@@ -479,7 +479,7 @@ public final class UltraCharacterScreens {
         if (CosmeticHeadBoneService.isFormModelRace(player)) {
             UltraScreenSpec spec = sub(player, "bones:0", true)
                     .line(UltraStyle.LABEL + "Model customization")
-                    .line(UltraStyle.DIM
+                    .line(UltraStyle.LABEL
                             + "Not available for Monkey - this race uses a form model.")
                     .buttonsAfterLines();
             spec.footerBackHome("Character Home");

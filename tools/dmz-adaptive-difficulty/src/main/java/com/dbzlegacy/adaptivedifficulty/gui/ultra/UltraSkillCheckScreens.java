@@ -69,7 +69,7 @@ public final class UltraSkillCheckScreens {
             }
         }
         if (staffAdmin) {
-            spec.line(UltraStyle.DIM + "Staff: /skills - Donators: /skillcheck");
+            spec.line(UltraStyle.LABEL + "Staff: /skills - Donators: /skillcheck");
         }
         // Dense list - band follows wired line count; extra skills scroll.
         spec.buttonsAfterLines();

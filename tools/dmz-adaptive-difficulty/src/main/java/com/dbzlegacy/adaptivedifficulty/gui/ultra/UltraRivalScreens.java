@@ -275,7 +275,7 @@ public final class UltraRivalScreens {
         UltraScreenSpec spec = sub("rival_type:" + arg)
                 .line(UltraStyle.LABEL + "How do you want to rival " + plain + "?")
                 .labelValue("Player", plain)
-                .line(UltraStyle.DIM
+                .line(UltraStyle.LABEL
                         + (incoming
                                 ? "They already declared you - Accept becomes Mutual."
                                 : "Silent is private. Declare sends an invite for Mutual."))
@@ -498,7 +498,7 @@ public final class UltraRivalScreens {
     private static void openRequests(ServerPlayer player) {
         UltraScreenSpec spec = sub("requests")
                 .line(UltraStyle.LABEL + "Incoming and outgoing rival requests.")
-                .line(UltraStyle.DIM + "Accept a declare to become Mutual. Decline leaves them Declared only.");
+                .line(UltraStyle.LABEL + "Accept a declare to become Mutual. Decline leaves them Declared only.");
         List<String> cards = RivalGuiApi.pendingInviteCards(player);
         if (cards != null) {
             for (String card : cards) {
@@ -598,7 +598,7 @@ public final class UltraRivalScreens {
         int to = Math.min(total, from + PICK_PER_PAGE);
         UltraScreenSpec spec = sub(pg > 0 ? pageBase + ":" + pg : pageBase)
                 .line(UltraStyle.LABEL + heading)
-                .line(UltraStyle.DIM + pickExplainer(doAction))
+                .line(UltraStyle.LABEL + pickExplainer(doAction))
                 .labelValue(
                         "spectate".equals(doAction) ? "In a fight" : "Players",
                         total + (pages > 1 ? (" | page " + (pg + 1) + "/" + pages) : ""));

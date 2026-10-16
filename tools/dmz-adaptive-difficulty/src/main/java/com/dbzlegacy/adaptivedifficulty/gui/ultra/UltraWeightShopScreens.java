@@ -85,7 +85,7 @@ public final class UltraWeightShopScreens {
                                                 player, AncientCoinEconomy.CoinKind.COPPER)))
                         .labelValue("Ancient Coins", AncientCoinEconomy.inventoryBreakdown(player))
                         .labelValue("Max value", String.valueOf(MAX_WEIGHT_VALUE))
-                        .line(UltraStyle.DIM + "Pick a type, type the weight value, then confirm.")
+                        .line(UltraStyle.LABEL + "Pick a type, type the weight value, then confirm.")
                         .buttonsAfterLines();
         for (WeightOffer offer : WeightOffer.values()) {
             spec.button(
@@ -120,7 +120,7 @@ public final class UltraWeightShopScreens {
         if (!UltraClientFeatures.hasTextInput(player)) {
             spec.line(UltraStyle.danger("Typed weight entry needs a newer KaiPath client."))
                     .line(
-                            UltraStyle.DIM
+                            UltraStyle.LABEL
                                     + "Install KaiPath 1.3.9 or newer to type weight values. "
                                     + "Until then this shop cannot take a typed value.");
             spec.buttonsAfterLines();

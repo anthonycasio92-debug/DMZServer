@@ -149,7 +149,7 @@ public final class UltraDifficultyScreens {
             UltraScreenSpec spec = base(player, "tiers", "tiers")
                     .line(UltraStyle.LABEL + "Difficulty is off.")
                     .line(UltraStyle.LABEL + "Turn Difficulty on, then pick a tier.")
-                    .line(UltraStyle.DIM + "Activation cost scales with your level.")
+                    .line(UltraStyle.LABEL + "Activation cost scales with your level.")
                     .buttonsAfterLines();
             placeDifficultyToggle(spec, false);
             spec.rowGap();
@@ -169,11 +169,11 @@ public final class UltraDifficultyScreens {
         }
         spec.labelValue("Unlocked up to", "T" + max)
                 .labelValue("Ancient Coins", AncientCoinEconomy.inventoryBreakdown(player))
-                .line(UltraStyle.DIM + "Scaled mobs can hurt other players nearby.")
-                .line(UltraStyle.DIM + "Upgrades cost Ancient Coins - downgrades are free")
-                .line(UltraStyle.DIM + "Click again within 10 seconds to confirm");
+                .line(UltraStyle.LABEL + "Scaled mobs can hurt other players nearby.")
+                .line(UltraStyle.LABEL + "Upgrades cost Ancient Coins - downgrades are free")
+                .line(UltraStyle.LABEL + "Click again within 10 seconds to confirm");
         if (!PaidFeatureAccess.bypassAncientCoinCost(player)) {
-            spec.line(UltraStyle.DIM + "Upgrade cost scales with your level");
+            spec.line(UltraStyle.LABEL + "Upgrade cost scales with your level");
         }
         UnlockTier nextLocked = UnlockTier.byId(max + 1);
         if (nextLocked != null) {
@@ -258,7 +258,7 @@ public final class UltraDifficultyScreens {
                 .line(UltraStyle.LABEL + "Each boss needs a personal difficulty tier to summon.")
                 .line(UltraStyle.LABEL
                         + "Different bosses unlock at different tiers - open a boss for its requirements.")
-                .line(UltraStyle.DIM + "Select a boss, then confirm.")
+                .line(UltraStyle.LABEL + "Select a boss, then confirm.")
                 .labelValue("Cost", cost)
                 .buttonsAfterLines();
         // Boss list: ready state only — per-boss requirements live on the confirm page.
@@ -625,7 +625,7 @@ public final class UltraDifficultyScreens {
         }
         UltraScreenSpec spec = sub("admin")
                 .line(UltraStyle.LABEL + "Server tools - typed admin: /difficulty admin")
-                .line(UltraStyle.DIM + "Reload config, event log, and LM Staff Admin hub")
+                .line(UltraStyle.LABEL + "Reload config, event log, and LM Staff Admin hub")
                 .buttonsAfterLines();
         spec.buttonLeft("do:reload", UltraStyle.confirm("Reload LM config"), "confirm")
                 .buttonRight("page:stats", UltraStyle.danger("Staff details"), "danger")
@@ -644,7 +644,7 @@ public final class UltraDifficultyScreens {
         }
         UltraScreenSpec spec = sub("eventlog")
                 .line(UltraStyle.LABEL + "Unified system event log")
-                .line(UltraStyle.DIM + "Use the toggles, or typed: /lm admin syslog ...")
+                .line(UltraStyle.LABEL + "Use the toggles, or typed: /lm admin syslog ...")
                 .buttonsAfterLines();
         boolean logOn = DifficultyConfig.get().enableSystemTelemetry;
         spec.buttonLeft("do:syslog:status", UltraStyle.danger("Status"), "danger")
