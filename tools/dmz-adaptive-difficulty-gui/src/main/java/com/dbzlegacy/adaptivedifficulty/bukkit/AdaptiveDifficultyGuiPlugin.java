@@ -1,5 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.bukkit;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 import org.bukkit.Bukkit;
@@ -53,6 +55,10 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         var progCmd = getCommand("progression");
         if (progCmd != null) {
             progCmd.setTabCompleter(progressionCommandTree);
+        }
+        var lmCmd = getCommand("lm");
+        if (lmCmd != null) {
+            lmCmd.setTabCompleter(this);
         }
 
         if (getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
@@ -850,6 +856,14 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
     }
 
     @Override
+    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        if (command == null || !"lm".equalsIgnoreCase(command.getName())) {
+            return null;
+        }
+        return completeLmMastery(args);
+    }
+
+    @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         String name = command.getName().toLowerCase();
         if ("rival".equals(name)) {
@@ -1129,6 +1143,9 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             if (args.length > 0 && "admin".equalsIgnoreCase(args[0])) {
                 return handleLmAdmin(sender, args);
             }
+            if (args.length > 0 && "mastery".equalsIgnoreCase(args[0])) {
+                return handleLmMastery(sender, args);
+            }
             sender.sendMessage("Players only.");
             return true;
         }
@@ -1180,8 +1197,153 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             }
             return true;
         }
+        if ("mastery".equals(sub)) {
+            return handleLmMastery(sender, args);
+        }
         forwardToForge(player, "lm", args);
         return true;
+    }
+
+    /**
+     * {@code /lm mastery grant-first-superform} and {@code grant-first-legendary}.
+     * Amount then name, or name then amount. Console must name a player.
+     */
+    private boolean handleLmMastery(CommandSender sender, String[] args) {
+        boolean staff = sender instanceof Player player
+                ? ForgeBridge.isStaff(player)
+                : sender.isOp() || sender.hasPermission(ForgeBridge.adminPermission());
+        if (!staff) {
+            sender.sendMessage("§cStaff only.");
+            return true;
+        }
+        if (args.length < 2) {
+            sendTry(sender, "/lm mastery grant-first-superform <amount> [player]");
+            return true;
+        }
+        String grant = args[1].toLowerCase(Locale.ROOT);
+        if (!"grant-first-superform".equals(grant) && !"grant-first-legendary".equals(grant)) {
+            sendTry(sender, "/lm mastery grant-first-superform <amount> [player]");
+            return true;
+        }
+        String self = sender instanceof Player player ? player.getName() : null;
+        ParsedMastery parsed = parseMasteryArgs(args, self);
+        if (parsed == null) {
+            String hint = self == null
+                    ? "/lm mastery " + grant + " <amount> <player>"
+                    : "/lm mastery " + grant + " <amount> [player]";
+            sendTry(sender, hint);
+            return true;
+        }
+        boolean notify = self == null || !self.equalsIgnoreCase(parsed.playerName);
+        String msg = ForgeBridge.grantFirstFormMastery(
+                parsed.playerName, parsed.amount, grant, notify);
+        if (msg != null && !msg.isBlank()) {
+            for (String line : msg.split("\n")) {
+                if (line != null && !line.isBlank()) {
+                    sender.sendMessage(line);
+                }
+            }
+        }
+        return true;
+    }
+
+    private static void sendTry(CommandSender sender, String command) {
+        sender.sendMessage("§cTry: §f" + command);
+    }
+
+    /** {@code args} is {@code mastery <grant> <token> [token]}. {@code selfName} is null from console. */
+    private static ParsedMastery parseMasteryArgs(String[] args, String selfName) {
+        if (args.length < 3) {
+            return null;
+        }
+        String first = args[2];
+        String second = args.length > 3 ? args[3] : null;
+        Double amountFirst = masteryAmount(first);
+        if (amountFirst != null) {
+            if (second == null || second.isBlank()) {
+                if (selfName == null || selfName.isBlank()) {
+                    return null;
+                }
+                return new ParsedMastery(amountFirst, selfName);
+            }
+            return new ParsedMastery(amountFirst, second);
+        }
+        Double amountSecond = masteryAmount(second);
+        if (amountSecond != null && first != null && !first.isBlank() && !isMasteryAmount(first)) {
+            return new ParsedMastery(amountSecond, first);
+        }
+        return null;
+    }
+
+    private static Double masteryAmount(String token) {
+        if (!isMasteryAmount(token)) {
+            return null;
+        }
+        return Double.parseDouble(token.trim());
+    }
+
+    private static boolean isMasteryAmount(String token) {
+        if (token == null || token.isBlank()) {
+            return false;
+        }
+        try {
+            double value = Double.parseDouble(token.trim());
+            return Double.isFinite(value) && value >= 0.01;
+        } catch (NumberFormatException ex) {
+            return false;
+        }
+    }
+
+    private List<String> completeLmMastery(String[] args) {
+        if (args == null || args.length < 2 || !"mastery".equalsIgnoreCase(args[0])) {
+            return null;
+        }
+        if (args.length == 2) {
+            return filterPrefix(
+                    List.of("grant-first-superform", "grant-first-legendary"), args[1]);
+        }
+        String grant = args[1] == null ? "" : args[1].toLowerCase(Locale.ROOT);
+        if (!"grant-first-superform".equals(grant) && !"grant-first-legendary".equals(grant)) {
+            return null;
+        }
+        if (args.length == 3 && !isMasteryAmount(args[2])) {
+            return filterPrefix(onlineNames(), args[2]);
+        }
+        if (args.length == 4 && isMasteryAmount(args[2])) {
+            return filterPrefix(onlineNames(), args[3]);
+        }
+        return List.of();
+    }
+
+    private static List<String> onlineNames() {
+        List<String> names = new ArrayList<>();
+        for (Player online : Bukkit.getOnlinePlayers()) {
+            if (online != null && online.getName() != null && !online.getName().isBlank()) {
+                names.add(online.getName());
+            }
+        }
+        return names;
+    }
+
+    private static List<String> filterPrefix(List<String> options, String partial) {
+        String prefix = partial == null ? "" : partial.toLowerCase(Locale.ROOT);
+        List<String> out = new ArrayList<>();
+        for (String option : options) {
+            if (option != null && option.toLowerCase(Locale.ROOT).startsWith(prefix)) {
+                out.add(option);
+            }
+        }
+        return out;
+    }
+
+    private static final class ParsedMastery {
+        final double amount;
+        final String playerName;
+
+        ParsedMastery(double amount, String playerName) {
+            this.amount = amount;
+            this.playerName = playerName;
+        }
     }
 
     /**
