@@ -1,6 +1,6 @@
 # Ultra bridge gap matrix (LM ↔ KaiPath)
 
-**LM 4.6.207** + **KaiPath 1.3.29** (recommended). Official KaiPath updates are owned by the KaiPath mod developer.
+**LM 4.6.208** + **KaiPath 1.3.29** (recommended). Official KaiPath updates are owned by the KaiPath mod developer.
 
 **At a glance:** Bridge chrome gaps closed on **1.3.17** — `fixedFooter` pins `footer:true`; `portraitFrame` is advertised. LM wire already matched (`footer:true`); guitest tracks `FEATURE_FIXED_FOOTER` as shipped. Custom **`bodyParts`** closed on **1.3.29** — the client advertises it and LM ships the Body Parts Shop (player-chosen pieces on model customize). JLDK one-pager: [`KAIPATH_JLDK_CLIENT_BRIEF.md`](KAIPATH_JLDK_CLIENT_BRIEF.md).
 

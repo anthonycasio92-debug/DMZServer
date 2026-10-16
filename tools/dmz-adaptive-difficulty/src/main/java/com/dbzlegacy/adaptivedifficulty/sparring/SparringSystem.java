@@ -149,7 +149,8 @@ public final class SparringSystem {
         if (!ki && isItemPunch(attacker, source)) {
             return;
         }
-        // Potions, TNT, thorns, and other player-attributed junk must not start a spar or pay TP.
+        // Potions, TNT, thorns, arrows, tridents, fireworks, and other player-attributed
+        // junk must not start a spar or pay TP.
         if (isNonCombatDamage(source, attacker)) {
             return;
         }
@@ -238,9 +239,9 @@ public final class SparringSystem {
 
     /**
      * True when a player-attributed damage source is not genuine sparring combat.
-     * Sparring TP comes from DMZ ki, true melee (held items already filtered by
-     * {@link #isItemPunch}), and weapon projectiles — never from splash or lingering
-     * potions, TNT, thorns, or magic.
+     * Sparring TP comes from DMZ ki and true melee (held items already filtered by
+     * {@link #isItemPunch}) only - never splash or lingering potions, TNT, thorns,
+     * magic, arrows, tridents, or fireworks.
      */
     private static boolean isNonCombatDamage(DamageSource source, ServerPlayer attacker) {
         try {
@@ -256,7 +257,7 @@ public final class SparringSystem {
                 type = String.valueOf(source.m_19385_()).toLowerCase(java.util.Locale.ROOT);
             } catch (Throwable ignored) {
             }
-            // Thorns pays the defender for the attacker's own hit — never score it.
+            // Thorns pays the defender for the attacker's own hit - never score it.
             if (type.contains("thorns")) {
                 return true;
             }
@@ -270,19 +271,11 @@ public final class SparringSystem {
             if (direct == attacker) {
                 return false;
             }
-            // Weapon projectiles still count. Delete this block for strict melee and ki only.
-            if (direct instanceof net.minecraft.world.entity.projectile.AbstractArrow) {
-                return false;
-            }
-            if (direct instanceof net.minecraft.world.entity.projectile.ThrownTrident) {
-                return false;
-            }
-            if (direct instanceof net.minecraft.world.entity.projectile.FireworkRocketEntity) {
-                return false;
-            }
+            // Strict melee and ki only - arrows, tridents, fireworks, and any other
+            // indirect source never start a spar or pay TP.
             return true;
         } catch (Throwable ignored) {
-            return false; // fail open — never break combat on an unexpected source
+            return false; // fail open - never break combat on an unexpected source
         }
     }
 

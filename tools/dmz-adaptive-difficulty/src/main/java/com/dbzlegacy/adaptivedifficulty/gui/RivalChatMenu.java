@@ -135,25 +135,55 @@ public final class RivalChatMenu {
         send(player, Component.m_237113_("§7Send: §e/rival challenge send <player> [min]"));
         boolean inChallenge = RivalChallengeManager.get().isInChallenge(player.m_20148_());
         boolean outgoing = false;
+        boolean namedPending = false;
+        // One named Accept/Decline (or Cancel) row per pending challenge - never a
+        // generic button that only acts on the oldest request.
         for (String card : RivalChallengeManager.get().pendingRequestCards(player)) {
             String[] parts = card.split("\t", -1);
-            if (parts.length > 2 && "OUT".equals(parts[2])) {
-                outgoing = true;
-                break;
+            if (parts.length < 3) {
+                continue;
             }
+            String uuid = parts[0] == null ? "" : parts[0].trim();
+            String name = parts[1] == null || parts[1].isBlank() ? "player" : parts[1].trim();
+            String dir = parts[2] == null ? "" : parts[2].trim();
+            if (uuid.isBlank()) {
+                continue;
+            }
+            String picker = "uuid:" + uuid;
+            if ("OUT".equals(dir)) {
+                outgoing = true;
+                send(player, Component.m_237113_("§7")
+                        .m_7220_(btn("§c[Cancel " + name + "]",
+                                "/rival do challenge_cancel " + picker,
+                                "Cancel your challenge to " + name)));
+            } else {
+                send(player, Component.m_237113_("§7")
+                        .m_7220_(btn("§a[Accept " + name + "]",
+                                "/rival do challenge_accept " + picker,
+                                "Accept " + name + "'s challenge"))
+                        .m_7220_(Component.m_237113_("  "))
+                        .m_7220_(btn("§c[Decline " + name + "]",
+                                "/rival do challenge_decline " + picker,
+                                "Decline " + name + "'s challenge")));
+            }
+            namedPending = true;
         }
-        MutableComponent row = Component.m_237113_("§7")
-                .m_7220_(btn("§a[Accept]", "/rival do challenge accept main", "Accept oldest pending"))
-                .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§c[Decline]", "/rival do challenge decline main", "Decline oldest pending"))
-                .m_7220_(Component.m_237113_("  "));
+        if (!namedPending) {
+            send(player, Component.m_237113_("§8No pending challenges."));
+        }
         if (inChallenge && !outgoing) {
-            row.m_7220_(btn("§c[Forfeit]", "/rival do challenge cancel main", "Forfeit your active challenge"));
-        } else {
-            row.m_7220_(btn("§8[Cancel request]", "/rival do challenge cancel main",
-                    "Cancel your pending challenge request"));
+            send(player, Component.m_237113_("§7")
+                    .m_7220_(btn("§c[Forfeit]", "/rival do challenge cancel main",
+                            "Forfeit your active challenge")));
+        } else if (!outgoing) {
+            send(player, Component.m_237113_("§7")
+                    .m_7220_(btn("§8[Cancel request]", "/rival do challenge cancel main",
+                            "Cancel your pending challenge request")));
+        } else if (inChallenge) {
+            send(player, Component.m_237113_("§7")
+                    .m_7220_(btn("§c[Forfeit]", "/rival do challenge cancel main",
+                            "Forfeit your active challenge")));
         }
-        send(player, row);
         send(player, btn("§7« Back", "/rival do page main", "Go up one level"));
     }
 

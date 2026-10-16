@@ -946,7 +946,7 @@ public final class UltraScreenSelfTest {
 
     /**
      * Config editor requests a panel larger than the GUI (so KaiPath 1.3.20 clamps the
-     * chrome to the window) and lays controls out in a 426x240 design box. A stack of
+     * chrome to the window) and lays controls out in a 1920x1080 design box. A stack of
      * rows must not grow the request toward the compact menu cap.
      */
     private static void checkConfigFullscreen(List<String> broken) {
@@ -985,7 +985,7 @@ public final class UltraScreenSelfTest {
                 || !lay.has("designHeight")
                 || lay.get("designWidth").getAsInt() != 1920
                 || lay.get("designHeight").getAsInt() != 1080) {
-            broken.add("config fillScreen design size must be 426x240");
+            broken.add("config fillScreen design size must be 1920x1080");
         }
         if (!lay.has("margin") || lay.get("margin").getAsInt() != 0) {
             broken.add("config editor must set margin 0 so the clamp fills the GUI");

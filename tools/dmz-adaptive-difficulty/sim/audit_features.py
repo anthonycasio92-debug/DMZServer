@@ -672,6 +672,12 @@ def main() -> int:
     check("recordRecentSession on end", "recordRecentSession" in spar_sys)
     check("statsLines individual reports", "Spar Report #" in spar_sys and "appendRecentReport" in spar_sys)
     check("statsLines no live TP this session", "TP this session" not in spar_sys)
+    check("spar TP strict melee+ki (no arrows/tridents/fireworks)",
+          "AbstractArrow" not in spar_sys
+          and "ThrownTrident" not in spar_sys
+          and "FireworkRocketEntity" not in spar_sys)
+    check("isNonCombatDamage non-melee returns true",
+          "Strict melee and ki only" in spar_sys)
 
     print("\n=== Skill Check perm gate (2.3.54) ===")
     staff_access = read(SRC / "com/dbzlegacy/adaptivedifficulty/util/StaffAccess.java")

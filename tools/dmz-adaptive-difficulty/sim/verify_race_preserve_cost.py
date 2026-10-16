@@ -131,7 +131,25 @@ def main() -> int:
     if not (low[25] < low[50] < low[100]):
         print("FAIL: low-level ladder should remain distinct")
         return 1
+
+    # Live config values (10..100 step 10): every step must charge a distinct
+    # amount at endgame mult (compression path) and mid mult (no compression).
+    steps = tuple(sorted(k for k in PRESERVATION if k > 0))
+    endgame = {p: race_cost_fixed(lookup_preservation_copper(p), base100, mult) for p in steps}
+    if len(set(endgame.values())) != len(endgame):
+        print(f"FAIL: live ladder collapses at endgame mult: {endgame}")
+        return 1
+    mid_mult = tier_cost_level_multiplier(20_000)
+    mid = {p: race_cost_fixed(lookup_preservation_copper(p), base100, mid_mult) for p in steps}
+    if len(set(mid.values())) != len(mid):
+        print(f"FAIL: live ladder collapses at mid mult {mid_mult:.3f}: {mid}")
+        return 1
+    print("\n=== LIVE CONFIG ladder (every step) ===")
+    for p in steps:
+        print(f"  {p}% -> {endgame[p]} (endgame) / {mid[p]} (mid)")
+
     print("\nPASS: 25/50/75/100% charge differently under high level mult")
+    print("PASS: live config ladder distinct for every step (endgame + mid mult)")
     return 0
 
 

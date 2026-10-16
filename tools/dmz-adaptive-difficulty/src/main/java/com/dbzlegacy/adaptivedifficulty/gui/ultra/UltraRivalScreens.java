@@ -435,8 +435,18 @@ public final class UltraRivalScreens {
         if (stillRival) {
             // Silent can be upgraded from the profile. Declared and above already sent that step.
             if ("silent".equalsIgnoreCase(RivalGuiApi.rivalStatusLabel(player, arg))) {
-                spec.button("do:declare:" + arg, UltraStyle.confirm("Declare"), "confirm")
-                        .rowGap();
+                if (RivalGuiApi.hasIncomingDeclareFrom(player, arg)) {
+                    // They already declared you - a bare Declare would silently
+                    // become Accept. Route to the confirm page that says so.
+                    spec.button(
+                                    "page:accept_confirm:" + arg,
+                                    UltraStyle.confirm("Accept their declare"),
+                                    "confirm")
+                            .rowGap();
+                } else {
+                    spec.button("do:declare:" + arg, UltraStyle.confirm("Declare"), "confirm")
+                            .rowGap();
+                }
             }
             spec.button("do:remove:" + arg, UltraStyle.danger("Remove rival"), "danger")
                     .rowGap();

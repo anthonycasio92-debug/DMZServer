@@ -2,6 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.character;
 
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.gui.ultra.BodyPartCatalog;
+import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -217,14 +218,14 @@ public final class CosmeticBodyPartService {
 
     public static String executeUnlock(ServerPlayer player, String partId) {
         if (!canUse(player)) {
-            return "§cModel customization is unavailable right now. Try again later or ask staff.";
+            return UltraStyle.DANGER + "Model customization is unavailable right now. Try again later or ask staff.";
         }
         if (partId == null || partId.isBlank()) {
-            return "§cPick a piece from the list.";
+            return UltraStyle.DANGER + "Pick a piece from the list.";
         }
         String id = partId.trim().toLowerCase(Locale.ROOT);
         if (!isPartKnown(id)) {
-            return "§cThat piece is not available. Pick another from the list.";
+            return UltraStyle.DANGER + "That piece is not available. Pick another from the list.";
         }
         if (hasUnlock(player, id)) {
             return executeToggle(player, id);
@@ -232,10 +233,10 @@ public final class CosmeticBodyPartService {
         long cost = CharacterServicesAccess.bypassCost(player) ? 0L : unlockCost(player, id);
         AncientCoinEconomy.migrateWalletToItems(player);
         if (cost > 0L && !AncientCoinEconomy.canAfford(player, cost)) {
-            return "§c" + AncientCoinEconomy.missingText(player, cost);
+            return UltraStyle.DANGER + AncientCoinEconomy.missingText(player, cost);
         }
         if (cost > 0L && !AncientCoinEconomy.charge(player, cost)) {
-            return "§c" + AncientCoinEconomy.missingText(player, cost);
+            return UltraStyle.DANGER + AncientCoinEconomy.missingText(player, cost);
         }
         CharacterServicesStore.PlayerRecord rec =
                 CharacterServicesStore.get().record(player.m_20148_().toString());
@@ -250,43 +251,47 @@ public final class CosmeticBodyPartService {
             worn.add(id);
         }
         persistEquipped(player, worn);
-        return "§aUnlocked and turned on §f" + displayName(id) + "§a.";
+        return UltraStyle.CONFIRM + "Unlocked and turned on " + UltraStyle.VALUE + displayName(id)
+                + UltraStyle.CONFIRM + ".";
     }
 
     /** Turn one piece on (paying if it is locked) or off. Other worn pieces stay. */
     public static String executeToggle(ServerPlayer player, String partId) {
         if (!canUse(player)) {
-            return "§cModel customization is unavailable right now. Try again later or ask staff.";
+            return UltraStyle.DANGER + "Model customization is unavailable right now. Try again later or ask staff.";
         }
         if (partId == null || partId.isBlank()) {
-            return "§cPick a piece from the list.";
+            return UltraStyle.DANGER + "Pick a piece from the list.";
         }
         String id = partId.trim().toLowerCase(Locale.ROOT);
         if (!isPartKnown(id)) {
-            return "§cThat piece is not available. Pick another from the list.";
+            return UltraStyle.DANGER + "That piece is not available. Pick another from the list.";
         }
         List<String> worn = new ArrayList<>(equippedParts(player));
         if (worn.contains(id)) {
             worn.remove(id);
             persistEquipped(player, worn);
-            return "§aTurned off §f" + displayName(id) + "§a.";
+            return UltraStyle.CONFIRM + "Turned off " + UltraStyle.VALUE + displayName(id)
+                    + UltraStyle.CONFIRM + ".";
         }
         if (!hasUnlock(player, id)) {
             return executeUnlock(player, id);
         }
         worn.add(id);
         persistEquipped(player, worn);
-        return "§aTurned on §f" + displayName(id) + "§a.";
+        return UltraStyle.CONFIRM + "Turned on " + UltraStyle.VALUE + displayName(id)
+                + UltraStyle.CONFIRM + ".";
     }
 
     public static String executeClear(ServerPlayer player) {
         if (!canUse(player)) {
-            return "§cModel customization is unavailable right now. Try again later or ask staff.";
+            return UltraStyle.DANGER + "Model customization is unavailable right now. Try again later or ask staff.";
         }
         if (equippedParts(player).isEmpty()) {
-            return "§7You are not wearing any custom body parts.";
+            return UltraStyle.LABEL + "You are not wearing any custom body parts.";
         }
         persistEquipped(player, List.of());
-        return "§aCleared your custom body parts. §7Unlocked pieces stay in your collection.";
+        return UltraStyle.CONFIRM + "Cleared your custom body parts. " + UltraStyle.LABEL
+                + "Unlocked pieces stay in your collection.";
     }
 }

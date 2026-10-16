@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.progression.form;
 
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
+import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle;
 import com.dbzlegacy.adaptivedifficulty.progression.DmzSkillUtil;
 import com.dbzlegacy.adaptivedifficulty.progression.form.FirstSuperformChoice.Candidate;
 import com.dragonminez.common.config.ConfigManager;
@@ -111,12 +112,15 @@ public final class FirstSuperformMastery {
         String label = chosen.label();
         if (!raised) {
             return new Outcome(true,
-                    "§e" + who + " already has §f" + format(current)
-                            + "§e mastery on §f" + label + "§e.");
+                    UltraStyle.YELLOW + who + " already has " + UltraStyle.WHITE + format(current)
+                            + UltraStyle.YELLOW + " mastery on " + UltraStyle.WHITE + label
+                            + UltraStyle.YELLOW + ".");
         }
         return new Outcome(true,
-                "§aGranted mastery on §f" + label + "§a (" + race + ") for §f" + who
-                        + "§a. Now §f" + format(target) + "§a.");
+                UltraStyle.CONFIRM + "Granted mastery on " + UltraStyle.WHITE + label
+                        + UltraStyle.CONFIRM + " (" + race + ") for " + UltraStyle.WHITE + who
+                        + UltraStyle.CONFIRM + ". Now " + UltraStyle.WHITE + format(target)
+                        + UltraStyle.CONFIRM + ".");
     }
 
     private static Candidate fromHelper(StatsData data, String race, boolean stack) {
@@ -242,7 +246,7 @@ public final class FirstSuperformMastery {
     }
 
     private static Outcome fail(String line) {
-        return new Outcome(false, "§c" + line);
+        return new Outcome(false, UltraStyle.DANGER + line);
     }
 
     private static String format(double value) {

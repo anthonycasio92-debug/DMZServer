@@ -33,6 +33,9 @@ MUST_STAY_CLEAN = [
     SRC / "gui" / "DifficultyChatMenu.java",
     SRC / "service" / "DifficultyActions.java",
     SRC / "gui" / "DifficultyTeamGuiApi.java",
+    # Cleaned 4.6.208: raw section signs routed through UltraStyle - stay clean.
+    SRC / "character" / "CosmeticBodyPartService.java",
+    SRC / "progression" / "form" / "FirstSuperformMastery.java",
 ]
 ALLOW_MARK = {(ULTRA / "UltraStyle.java").resolve()}
 
