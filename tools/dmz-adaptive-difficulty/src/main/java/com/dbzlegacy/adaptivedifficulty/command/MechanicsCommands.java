@@ -34,6 +34,9 @@ public final class MechanicsCommands {
     public void onRegister(RegisterCommandsEvent event) {
         event.getDispatcher().register(build());
         AdaptiveDifficultyMod.LOGGER.info("[{}] registered /lm", AdaptiveDifficultyMod.MOD_ID);
+        // Staff receive the full tree in ClientboundCommandsPacket. Catch a missing
+        // ArgumentTypeInfos entry at boot instead of kicking staff on login.
+        CommandTreeArgumentGuard.audit(event.getDispatcher());
     }
 
     private static LiteralArgumentBuilder<CommandSourceStack> build() {

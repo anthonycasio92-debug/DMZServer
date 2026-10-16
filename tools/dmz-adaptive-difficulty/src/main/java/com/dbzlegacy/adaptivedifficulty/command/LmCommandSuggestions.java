@@ -1,10 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.command;
 
-import com.mojang.brigadier.StringReader;
-import com.mojang.brigadier.arguments.ArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -444,11 +441,14 @@ public final class LmCommandSuggestions {
     }
 
     /**
-     * Player name that is not a number, so {@code <amount> [player]} and
-     * {@code <player> <amount>} can share one command without an ambiguous parse.
+     * Name-first player slot for mastery grants. Uses vanilla {@code brigadier:string}
+     * (word). A custom {@code ArgumentType} is not safe here: LM is server-only, and
+     * {@code ClientboundCommandsPacket} must serialize every staff command node with a
+     * type the client already knows. Amount-first still wins when the first token is a
+     * number, because {@code DoubleArgumentType} is listed first and fails on names.
      */
     public static RequiredArgumentBuilder<CommandSourceStack, String> playerWordUnlessNumber(String name) {
-        return Commands.m_82129_(name, PlayerNotNumber.INSTANCE).suggests(PLAYERS);
+        return Commands.m_82129_(name, StringArgumentType.word()).suggests(PLAYERS);
     }
 
     /** True when the token is a finite decimal, so it is an amount and not a name. */
@@ -464,29 +464,6 @@ public final class LmCommandSuggestions {
             return Double.isFinite(Double.parseDouble(trimmed));
         } catch (NumberFormatException ex) {
             return false;
-        }
-    }
-
-    /**
-     * Word argument that fails on numeric tokens. A name like {@code 100} still
-     * works in the amount-first form.
-     */
-    public static final class PlayerNotNumber implements ArgumentType<String> {
-        public static final PlayerNotNumber INSTANCE = new PlayerNotNumber();
-
-        private PlayerNotNumber() {}
-
-        @Override
-        public String parse(StringReader reader) throws CommandSyntaxException {
-            int cursor = reader.getCursor();
-            String word = StringArgumentType.word().parse(reader);
-            if (isNumericToken(word)) {
-                reader.setCursor(cursor);
-                throw CommandSyntaxException.BUILT_IN_EXCEPTIONS
-                        .dispatcherUnknownArgument()
-                        .createWithContext(reader);
-            }
-            return word;
         }
     }
 
