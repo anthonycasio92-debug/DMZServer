@@ -2289,6 +2289,20 @@ def main() -> int:
     racial_wipe = read(
         ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/character/RacialBonusWipeHelper.java"
     )
+    strike_rules = read(
+        ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/character/RacialStrikeRules.java"
+    )
+    strike_wipe = read(
+        ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/character/RacialStrikeWipe.java"
+    )
+    strike_gate = read(
+        ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/StrikeTechniqueReadGateMixin.java"
+    )
+    skill_preserve = read(
+        ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/character/RaceChangeSkillPreserve.java"
+    )
+    strike_before_return = racial_wipe.find("RacialStrikeWipe.wipe(data, from, to)")
+    bonus_early_return = racial_wipe.find("if (removed <= 0)", strike_before_return if strike_before_return >= 0 else 0)
     check("racial BonusStats splits wipe on race leave",
           "Zenkai_" in racial_wipe
           and "Assimilation_" in racial_wipe
@@ -2300,7 +2314,20 @@ def main() -> int:
           and "RacialBonusWipeHelper.wipeIfRaceChanges" in absorb_reset
           and "RacialBonusWipeHelper" in build_sh
           and 'saiyan".equals(from)' in racial_wipe
-          and '!"saiyan".equals(to)' in racial_wipe)
+          and '!"saiyan".equals(to)' in racial_wipe
+          and strike_before_return >= 0
+          and bonus_early_return > strike_before_return
+          and "dropOnRaceChange" in strike_rules
+          and "absentOnRead" in strike_rules
+          and "removeTechnique" in strike_wipe
+          and "removeSkill" in strike_wipe
+          and "RacialStrikeWipe.dropSkill" in skill_preserve
+          and "getUnlockedTechniques" in strike_gate
+          and "getSelectedTechnique" in strike_gate
+          and "StrikeTechniqueReadGateMixin" in mixins_json
+          and "StrikeTechniqueReadGateMixin" in build_sh
+          and "RacialStrikeWipe" in build_sh
+          and "RacialStrikeRules" in build_sh)
 
     print("\n=== CNPC notice color (4.6.41) ===")
     notice = read(cnpc_dir / "CnpcMenuFeedback.java")

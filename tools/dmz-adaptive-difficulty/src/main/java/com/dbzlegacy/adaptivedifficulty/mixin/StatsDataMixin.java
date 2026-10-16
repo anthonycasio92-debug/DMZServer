@@ -1,11 +1,13 @@
 package com.dbzlegacy.adaptivedifficulty.mixin;
 
+import com.dbzlegacy.adaptivedifficulty.character.RacialStrikeWipe;
 import com.dbzlegacy.adaptivedifficulty.progression.FusionBonusOwner;
 import com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulCapMath;
 import com.dbzlegacy.adaptivedifficulty.progression.PersonalLevelCapMirror;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.BonusStats;
+import com.dragonminez.common.stats.techniques.Techniques;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.fml.ModList;
 import org.spongepowered.asm.mixin.Mixin;
@@ -30,6 +32,10 @@ public abstract class StatsDataMixin {
     @Unique
     private BonusStats lm$fusionBonuses;
 
+    /** Technique bag already linked. Later reads skip the owner map. */
+    @Unique
+    private Techniques lm$strikeTechniques;
+
     /**
      * Link this stats object to the map the getter just returned.
      * One link per map instance. Do not read the getter again from here.
@@ -42,6 +48,20 @@ public abstract class StatsDataMixin {
         }
         FusionBonusOwner.remember((StatsData) (Object) this, bonuses);
         lm$fusionBonuses = bonuses;
+    }
+
+    /**
+     * Link this stats object to the technique bag the getter just returned.
+     * Do not call getTechniques again from here.
+     */
+    @Inject(method = "getTechniques", at = @At("RETURN"), remap = false)
+    private void lm$rememberStrikeOwnerOnRead(CallbackInfoReturnable<Techniques> cir) {
+        Techniques techniques = cir.getReturnValue();
+        if (techniques == null || techniques == lm$strikeTechniques) {
+            return;
+        }
+        RacialStrikeWipe.remember((StatsData) (Object) this, techniques);
+        lm$strikeTechniques = techniques;
     }
 
     @Inject(method = "getConfiguredMaxValue", at = @At("HEAD"), cancellable = true, remap = false)
