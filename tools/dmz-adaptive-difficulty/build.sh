@@ -113,7 +113,16 @@ rm -rf "$OUT"
 mkdir -p "$OUT"
 
 mapfile -t SOURCES < <(find "$SRC" -name '*.java' | sort)
-javac --release 17 -proc:none -cp "$CP" -d "$OUT" "${SOURCES[@]}"
+# Argfile keeps Windows argv under the 32K limit; javac supports @file everywhere.
+# MSYS does not path-convert @file contents, so map /c/... -> c:/... on Windows.
+SOURCES_LIST="$HERE/build/lm-sources.list"
+mkdir -p "$HERE/build"
+if [[ -n "${WINDIR:-}" ]]; then
+  printf '%s\n' "${SOURCES[@]}" | sed -E 's|^/([A-Za-z])/|\1:/|' > "$SOURCES_LIST"
+else
+  printf '%s\n' "${SOURCES[@]}" > "$SOURCES_LIST"
+fi
+javac --release 17 -encoding UTF-8 -proc:none -cp "$CP" -d "$OUT" "@$SOURCES_LIST"
 
 # Break ldc #0xC2 / operand-C2 + goto(A7) false positives in ultra callers so a
 # raw C2 A7 (§) scan only hits UltraStyle (which owns the mark in its CP).
@@ -123,7 +132,7 @@ PATCH_OUT="$HERE/build/patch-ultra"
 if [[ -f "$ASM_JAR" && -f "$PATCH_SRC" ]]; then
   rm -rf "$PATCH_OUT"
   mkdir -p "$PATCH_OUT"
-  javac --release 17 -proc:none -cp "$ASM_JAR" -d "$PATCH_OUT" "$PATCH_SRC"
+  javac --release 17 -encoding UTF-8 -proc:none -cp "$ASM_JAR" -d "$PATCH_OUT" "$PATCH_SRC"
   java -cp "$PATCH_OUT:$ASM_JAR" PatchUltraGotoFalsePositives "$OUT"
 fi
 

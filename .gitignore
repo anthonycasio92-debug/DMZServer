@@ -45,6 +45,8 @@ tools/ultra-gui-kit/stubs/org/
 
 # LM / KaiPath build & vendored client artifacts (not source)
 /mods/LegacyMechanics-*.jar
+# Live-only compile dependency (106MB exceeds GitHub's 100MB limit) — fetch from Modrinth "Dragon Block Noea".
+/mods/Noea-*.jar
 /mods/kaipath-*.jar
 
 # Local convenience copies from adaptive-difficulty build.sh
