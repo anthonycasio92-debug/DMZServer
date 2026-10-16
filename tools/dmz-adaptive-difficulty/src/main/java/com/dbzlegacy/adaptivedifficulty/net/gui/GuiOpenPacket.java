@@ -26,8 +26,9 @@ import net.minecraftforge.network.NetworkEvent;
  *   <li>body lines JSON (array)
  *   <li>buttons JSON (array of objects with {@code id}/{@code label}/{@code style}/{@code x}/
  *       {@code y}/{@code w}/{@code h}/optional {@code args})
- *   <li>panel width (GUI px) — centered dialog. Stretch only when layoutJson
- *       {@code fillScreen} is true, scaling {@code designWidth} x {@code designHeight}
+ *   <li>panel width (GUI px) — centered dialog, or a clamp request when layoutJson
+ *       {@code fillScreen} is true. Honoring clients scale {@code designWidth} x
+ *       {@code designHeight}. Clients that ignore the flag clamp this size to the GUI.
  *   <li>panel height (GUI px)
  *   <li>layout JSON ({@code panelWidth}, {@code panelHeight}, {@code width}, {@code height},
  *       {@code center}, {@code margin}, {@code titleAlign}, …)

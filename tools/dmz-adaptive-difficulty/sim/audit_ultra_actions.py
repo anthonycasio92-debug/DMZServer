@@ -362,12 +362,22 @@ def main() -> int:
         errors.append("UltraConfigScreens settings must use flowLabel (label above control)")
     if "PANEL_W = 480" in config_screens:
         errors.append("UltraConfigScreens must not hardcode PANEL_W = 480 (clips on small UI)")
-    if "CONFIG_PANEL_W = 400" not in config_screens or "CONFIG_PANEL_H = 220" not in config_screens:
-        errors.append("UltraConfigScreens design box must stay 400x220 so a 240-tall GUI can show it")
-    if "fillScreen" not in config_screens or "lockPanel" not in config_screens:
-        errors.append("UltraConfigScreens must fill the screen (fillScreen + lockPanel)")
+    if "CONFIG_DESIGN_W = 426" not in config_screens or "CONFIG_DESIGN_H = 240" not in config_screens:
+        errors.append("UltraConfigScreens design box must stay 426x240 so a 240-tall GUI can show it")
+    if "CONFIG_PANEL_W = 1920" not in config_screens or "CONFIG_PANEL_H = 1080" not in config_screens:
+        errors.append(
+            "UltraConfigScreens must request 1920x1080 so KaiPath 1.3.20 clamps the panel to the window"
+        )
+    if "SIDE_W = 148" not in config_screens:
+        errors.append("UltraConfigScreens category rail must stay 148px wide")
+    if "fillScreen(CONFIG_DESIGN_W, CONFIG_DESIGN_H)" not in config_screens or "lockPanel" not in config_screens:
+        errors.append("UltraConfigScreens must fill the screen from its own design box (fillScreen + lockPanel)")
+    if "margin(0)" not in config_screens or "center(false)" not in config_screens:
+        errors.append("UltraConfigScreens must anchor at the window (margin 0, center false)")
     if 'addProperty("fillScreen"' not in spec_text_full:
         errors.append("UltraScreenSpec must emit layoutJson.fillScreen")
+    if "public UltraScreenSpec fillScreen(int designWidth, int designHeight)" not in spec_text_full:
+        errors.append("UltraScreenSpec.fillScreen must take a design box separate from the panel request")
     if "fillScreen" not in DOC.read_text(encoding="utf-8"):
         errors.append("KAIPATH_GUI_PROTOCOL.md must document layoutJson.fillScreen")
     kit = ROOT.parents[1] / (
@@ -908,10 +918,13 @@ def main() -> int:
                     "UltraScreenSpec.footerBackToMain must not place a left Back button"
                 )
     place_footer = spec_text.split("private UltraScreenSpec placeFooter", 1)
-    if len(place_footer) < 2 or "STYLE_NORMAL" not in place_footer[1].split("private void addFooterButton", 1)[0]:
-        errors.append("Main menu footer button must use STYLE_NORMAL so it does not look disabled")
-    if len(place_footer) < 2 or "STYLE_DIM" not in place_footer[1].split("private void addFooterButton", 1)[0]:
-        errors.append("Back footer button must stay STYLE_DIM")
+    footer_body = (
+        place_footer[1].split("private int footerRightX", 1)[0] if len(place_footer) > 1 else ""
+    )
+    if footer_body.count("STYLE_NORMAL") < 2:
+        errors.append("Both footer buttons must use STYLE_NORMAL so they do not look disabled")
+    if "STYLE_DIM" in footer_body:
+        errors.append("Footer buttons must not use STYLE_DIM")
 
     # Tabs are hub-style buttons under the title line; tabsJson stays empty for every screen.
     self_test_path = ULTRA / "UltraScreenSelfTest.java"

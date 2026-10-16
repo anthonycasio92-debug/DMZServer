@@ -346,16 +346,25 @@ honor `margin`. Button `x`/`y` are panel-relative.
 #### Fullscreen design box
 
 The config editor sets `fillScreen` so the panel uses the whole GUI instead of the
-compact 350×300 dialog. `designWidth` and `designHeight` are the coordinate space the
-server laid out (currently **400×220**). Scale every button and input `x`/`y`/`w`/`h`,
-and the header/body metrics, from that box onto the panel after it has been inset by
-`margin`. Clients that do not know these keys keep the sent `panelWidth` × `panelHeight`,
-which already fits a 240-tall GUI.
+compact 350x300 dialog. `designWidth` and `designHeight` are the coordinate space the
+server laid out (currently **426x240**, the smallest auto GUI). Scale every button and
+input `x`/`y`/`w`/`h`, and the header/body metrics, from that box onto the panel after
+it has been inset by `margin`.
+
+`panelWidth` and `panelHeight` are a separate clamp request (currently **1920x1080**),
+with `margin` **0** and `center` **false**. Clients that do not know `fillScreen` keep
+that rectangle and clamp it down to the window, which fills the GUI. Controls stay
+inside the 426x240 design box so a 240-tall GUI does not clip them. The category rail
+is **148** px wide inside that box.
 
 ```json
 "fillScreen": true,
-"designWidth": 400,
-"designHeight": 220
+"panelWidth": 1920,
+"panelHeight": 1080,
+"margin": 0,
+"center": false,
+"designWidth": 426,
+"designHeight": 240
 ```
 
 #### Shared body / button metrics

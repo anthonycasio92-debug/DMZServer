@@ -14,12 +14,10 @@ import java.util.UUID;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Staff config editor, laid out as a settings panel instead of the compact menu dialog.
- *
- * <p>The design box is {@link #CONFIG_PANEL_W}x{@link #CONFIG_PANEL_H}: wide enough for a
- * category rail, a search row, and a description beside each control, and short enough to
- * fit a 240-tall GUI. {@code fillScreen} asks the client to scale that box to the window.
- * Clients that ignore the flag still get this box, centered, with every control on screen.
+ * Staff config editor. The panel request is larger than the GUI so KaiPath 1.3.20, which
+ * ignores {@code fillScreen}, clamps the chrome to the window. Controls are laid out in
+ * {@link #CONFIG_DESIGN_W}x{@link #CONFIG_DESIGN_H}, the smallest auto GUI (about 426x240),
+ * with a wide category rail. Clients that honor {@code fillScreen} scale that box up.
  *
  * <p>Sections such as {@code Difficulty > Mob Spawning} open and collapse from the index.
  * Each field shows a plain label, a one-line description, and the current value next to
@@ -28,16 +26,24 @@ import net.minecraft.server.level.ServerPlayer;
  */
 public final class UltraConfigScreens {
     /**
-     * Fills a 426x240 GUI (1440p / 4K auto scale) inside the panel margin, and most of a
-     * 480x270 GUI (1080p auto scale). Taller than this clips the save row on a 240-tall GUI.
+     * Coordinate space that fits the smallest auto GUI (1440p / 4K, about 426x240).
+     * 1080p auto scale is about 480x270; the live client clamps the panel request to
+     * that window and draws these coordinates unscaled.
      */
-    private static final int CONFIG_PANEL_W = 400;
-    private static final int CONFIG_PANEL_H = 220;
+    private static final int CONFIG_DESIGN_W = 426;
+    private static final int CONFIG_DESIGN_H = 240;
+    /**
+     * Larger than an auto GUI (and under the 2000px packet cap). KaiPath 1.3.20 clamps
+     * this down to {@code screen - margin * 2}. Margin 0 makes the clamp equal the window.
+     */
+    private static final int CONFIG_PANEL_W = 1920;
+    private static final int CONFIG_PANEL_H = 1080;
     private static final int SIDE_X = 8;
-    /** Wider than {@link UltraStyle#BTN_MIN_W} so category names stay readable. */
-    private static final int SIDE_W = 108;
-    private static final int MAIN_X = SIDE_X + SIDE_W + 8;
-    private static final int MAIN_W = CONFIG_PANEL_W - MAIN_X - UltraStyle.PANEL_MARGIN;
+    private static final int EDGE = 8;
+    /** Wider than the old 108px rail so category names stay on one line. */
+    private static final int SIDE_W = 148;
+    private static final int MAIN_X = SIDE_X + SIDE_W + EDGE;
+    private static final int MAIN_W = CONFIG_DESIGN_W - MAIN_X - EDGE;
     /** Extra gap under a wrapped flow row. */
     private static final int LABEL_CTRL_GAP = 4;
     /** Min clear space between two controls on one row before we stack instead. */
@@ -46,9 +52,13 @@ public final class UltraConfigScreens {
     private static final int ROW_STEP = UltraStyle.BTN_H + 2;
     /** First content row under the title divider. */
     private static final int SEARCH_Y = UltraStyle.CONTENT_ROW;
-    /** Main-menu footer top, matching {@link UltraScreenSpec} footer pinning. */
-    private static final int FOOTER_Y = CONFIG_PANEL_H - UltraStyle.PANEL_MARGIN - UltraStyle.BTN_H;
-    /** Review / paging row, one step above the footer. */
+    /**
+     * Live {@code pinFooterY} on a 240-tall GUI with margin 0 and an 18px footer button.
+     * Reserve is {@code 28 + buttonH + margin} (46), so the pin is {@code 240 - 46 = 194}.
+     * Review and paging use this Y, not the oversized panel height.
+     */
+    private static final int FOOTER_Y = 194;
+    /** Review / paging row, one step above the pinned footer. */
     private static final int REVIEW_Y = FOOTER_Y - ROW_STEP;
     /**
      * Glyphs that fit a main-column flow button ({@link #MAIN_W} minus pad).
@@ -1342,8 +1352,10 @@ public final class UltraConfigScreens {
                 .title(title)
                 .page(page)
                 .panel(CONFIG_PANEL_W, CONFIG_PANEL_H)
+                .center(false)
+                .margin(0)
                 .lockPanel()
-                .fillScreen()
+                .fillScreen(CONFIG_DESIGN_W, CONFIG_DESIGN_H)
                 .lineGap(2)
                 .bodyPad(4);
     }
