@@ -501,7 +501,7 @@ public final class CharacterServicesSystem {
             }
             boolean keepSkills = cfg.raceChange.keepSkillsOnRaceChange;
             String kept = keepSkills
-                    ? " §7Ki skills, techniques, and shared form progress kept."
+                    ? " §7Ki skills, learned techniques, and shared form progress kept."
                     : "";
             String classNote = "";
             if (!fullWipe) {

@@ -29,6 +29,7 @@
     "noea.HakaiDestroyerGateMixin",
     "noea.DestroyerStoryAssignMixin",
     "FusionBonusReadGateMixin",
+    "StrikeTechniqueReadGateMixin",
     "FusionUnfuseBonusClearMixin",
     "KaiPathLmConsumerBootstrapMixin"
   ],

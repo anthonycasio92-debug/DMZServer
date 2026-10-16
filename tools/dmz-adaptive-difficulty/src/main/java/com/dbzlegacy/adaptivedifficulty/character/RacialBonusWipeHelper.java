@@ -46,6 +46,10 @@ public final class RacialBonusWipeHelper {
             return;
         }
 
+        // Same call as the bonus-split strip. Strike removal is not gated on
+        // removed > 0: a human leaving for Namekian clears no Zenkai splits.
+        RacialStrikeWipe.wipe(data, from, to);
+
         int removed = 0;
         if ("saiyan".equals(from) && !"saiyan".equals(to)) {
             removed += clearPrefix(data, ZENKAI_PREFIX);

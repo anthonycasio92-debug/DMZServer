@@ -71,6 +71,13 @@ public final class RaceChangeSkillPreserve {
         Set<String> sharedForms = sharedFormGroups(oldId, newId);
 
         for (Entry entry : captured) {
+            if (entry != null && RacialStrikeWipe.dropSkill(entry.id, newId)) {
+                try {
+                    skills.removeSkill(entry.id);
+                } catch (Throwable ignored) {
+                }
+                continue;
+            }
             applyEntry(skills, entry, sharedForms);
         }
         try {
@@ -79,6 +86,9 @@ public final class RaceChangeSkillPreserve {
         }
         DmzSkillUtil.refreshMaxes(skills);
         for (Entry entry : captured) {
+            if (entry != null && RacialStrikeWipe.dropSkill(entry.id, newId)) {
+                continue;
+            }
             clampEntry(skills, entry, sharedForms);
         }
     }
