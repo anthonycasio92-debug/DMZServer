@@ -1,20 +1,23 @@
 package com.dbzlegacy.adaptivedifficulty.progression.form;
 
-import java.util.List;
 import java.util.Locale;
 
 /**
- * Picks one form to receive a quest mastery grant.
+ * Picks the one form a mastery grant writes.
  *
- * <p>Superform groups come first. Oozaru is a tail form that shares the
- * superform type, so it is skipped. A race with no superform uses its first
- * legendary form instead (Frost Demon golden, and the same shape as Legendary
- * Super Saiyan). A mutant whose legendary group is configured uses that
- * group's earliest form, so Legendary Super Saiyan is the grant target
- * instead of the regular first superform.
+ * <p>The first superform is the superform whose unlock level is 0. That is
+ * Oozaru for Saiyans, and the same rule for every other race that has a
+ * level 0 superform. A race with no level 0 superform uses its earliest
+ * superform. The first legendary form is the earliest legendary form, and
+ * it is a separate grant.
  */
 public final class FirstSuperformChoice {
     private FirstSuperformChoice() {}
+
+    public enum Kind {
+        SUPER,
+        LEGENDARY
+    }
 
     /** One configured form. {@code stack} marks a stack-form fallback. */
     public static final class Candidate {
@@ -37,28 +40,21 @@ public final class FirstSuperformChoice {
         }
     }
 
-    /**
-     * @param legendaryGroup mutant legendary group name, usually {@code legendaryforms}
-     */
-    public static Candidate select(List<Candidate> forms, boolean mutant, String legendaryGroup) {
-        if (forms == null || forms.isEmpty()) {
+    public static Candidate select(java.util.List<Candidate> forms, Kind kind) {
+        if (forms == null || forms.isEmpty() || kind == null) {
             return null;
         }
-        if (mutant) {
-            Candidate legendary = earliest(forms, legendaryGroup, false, false, true);
-            if (legendary != null) {
-                return legendary;
-            }
+        if (kind == Kind.LEGENDARY) {
+            return earliest(forms, false, false);
         }
-        Candidate superform = earliest(forms, null, true, true, false);
-        if (superform != null) {
-            return superform;
+        if (kind != Kind.SUPER) {
+            return null;
         }
-        Candidate legendary = earliest(forms, null, false, false, true);
-        if (legendary != null) {
-            return legendary;
+        Candidate levelZero = earliest(forms, true, true);
+        if (levelZero != null) {
+            return levelZero;
         }
-        return earliest(forms, null, false, false, false);
+        return earliest(forms, true, false);
     }
 
     public static boolean isSuperform(Candidate candidate) {
@@ -69,48 +65,23 @@ public final class FirstSuperformChoice {
         return candidate != null && contains(candidate.formType, "legendaryform");
     }
 
-    /** Tail form. Its group type is often {@code superforms}, which is not the superform ladder. */
-    public static boolean isOozaru(Candidate candidate) {
-        if (candidate == null) {
-            return false;
-        }
-        return contains(candidate.group, "oozaru") || contains(candidate.form, "oozaru");
-    }
-
-    public static boolean isQuestForm(Candidate candidate) {
-        return candidate != null && !candidate.stack && !isOozaru(candidate)
-                && (isSuperform(candidate) || isLegendary(candidate));
-    }
-
-    private static Candidate earliest(
-            List<Candidate> forms,
-            String groupName,
-            boolean skipOozaru,
-            boolean superOnly,
-            boolean legendaryOnly) {
+    /**
+     * @param levelZeroOnly when selecting superforms, keep unlock level 0 only
+     */
+    private static Candidate earliest(java.util.List<Candidate> forms, boolean superform, boolean levelZeroOnly) {
         Candidate best = null;
         for (Candidate candidate : forms) {
-            if (candidate == null || candidate.form.isBlank() || candidate.group.isBlank()) {
+            if (candidate == null || candidate.stack || candidate.form.isBlank() || candidate.group.isBlank()) {
                 continue;
             }
-            if (candidate.stack) {
-                if (superOnly || legendaryOnly || groupName != null) {
+            if (superform) {
+                if (!isSuperform(candidate)) {
                     continue;
                 }
-            } else if (!superOnly && !legendaryOnly && groupName == null) {
-                continue;
-            }
-            if (skipOozaru && isOozaru(candidate)) {
-                continue;
-            }
-            if (superOnly && (!isSuperform(candidate) || candidate.stack)) {
-                continue;
-            }
-            if (legendaryOnly && (!isLegendary(candidate) || candidate.stack)) {
-                continue;
-            }
-            if (groupName != null && !groupName.isBlank()
-                    && !candidate.group.equalsIgnoreCase(groupName)) {
+                if (levelZeroOnly && candidate.unlockLevel != 0) {
+                    continue;
+                }
+            } else if (!isLegendary(candidate)) {
                 continue;
             }
             if (better(candidate, best)) {

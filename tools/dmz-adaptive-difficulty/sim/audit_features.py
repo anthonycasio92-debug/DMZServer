@@ -2443,18 +2443,24 @@ def main() -> int:
     check("staff /lm mastery grant-first-superform",
           'staffLiteral("mastery")' in mech
           and '"grant-first-superform"' in mech
+          and '"grant-first-legendary"' in mech
+          and "FirstSuperformChoice.Kind.SUPER" in mech
+          and "FirstSuperformChoice.Kind.LEGENDARY" in mech
           and "FirstSuperformMastery.grant" in mech
           and "/lm mastery grant-first-superform <amount>" in mastery_help
+          and "/lm mastery grant-first-legendary <amount>" in mastery_help
           and "getRaceName" in mastery_grant
           and "getAllFormsForRace" in mastery_grant
           and "getFirstAvailableForm" in mastery_grant
           and "getFirstAvailableStackForm" in mastery_grant
           and "getSkillNameForType" in mastery_grant
           and "setMastery" in mastery_grant
+          and "unlockLevel != 0" in mastery_choice
+          and "Kind.LEGENDARY" in mastery_choice
+          and "Kind.SUPER" in mastery_choice
           and "legendaryform" in mastery_choice
           and "superform" in mastery_choice
-          and "oozaru" in mastery_choice
-          and "mutant" in mastery_choice)
+          and "Oozaru" in mastery_choice)
 
     print("\n=== Fusion unfuse deletes FusionBonus (read-gate stays) ===")
     fusion_mixins = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/resources/legacymechanics.mixins.json")

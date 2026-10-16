@@ -7,6 +7,7 @@ import com.dbzlegacy.adaptivedifficulty.gui.MechanicsMenu;
 import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
+import com.dbzlegacy.adaptivedifficulty.progression.form.FirstSuperformChoice;
 import com.dbzlegacy.adaptivedifficulty.progression.form.FirstSuperformMastery;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -154,25 +155,50 @@ public final class MechanicsCommands {
 
     private static LiteralArgumentBuilder<CommandSourceStack> masteryLiteral() {
         return CommandAccess.staffLiteral("mastery")
-                .then(Commands.m_82127_("grant-first-superform")
-                        .executes(ctx -> {
-                            LmCommandFeedback.tell(ctx.getSource(), LmCommandMessages.tryCommand(
-                                    "/lm mastery grant-first-superform <amount> [player]"));
-                            return 0;
-                        })
-                        .then(Commands.m_82129_("amount", DoubleArgumentType.doubleArg(0.01))
-                                .executes(ctx -> grantFirstSuperform(
-                                        ctx.getSource(),
-                                        DoubleArgumentType.getDouble(ctx, "amount"),
-                                        null))
-                                .then(LmCommandSuggestions.playerWord("player")
-                                        .executes(ctx -> grantFirstSuperform(
-                                                ctx.getSource(),
-                                                DoubleArgumentType.getDouble(ctx, "amount"),
-                                                StringArgumentType.getString(ctx, "player"))))));
+                .then(masteryGrant(
+                        "grant-first-superform",
+                        FirstSuperformChoice.Kind.SUPER,
+                        "Mastery was granted on your first super form."))
+                .then(masteryGrant(
+                        "grant-first-legendary",
+                        FirstSuperformChoice.Kind.LEGENDARY,
+                        "Mastery was granted on your first legendary form."));
     }
 
-    private static int grantFirstSuperform(CommandSourceStack source, double amount, String playerName) {
+    private static LiteralArgumentBuilder<CommandSourceStack> masteryGrant(
+            String name, FirstSuperformChoice.Kind kind, String notice) {
+        String usage = "/lm mastery " + name + " <amount> [player]";
+        String consoleUsage = "/lm mastery " + name + " <amount> <player>";
+        return Commands.m_82127_(name)
+                .executes(ctx -> {
+                    LmCommandFeedback.tell(ctx.getSource(), LmCommandMessages.tryCommand(usage));
+                    return 0;
+                })
+                .then(Commands.m_82129_("amount", DoubleArgumentType.doubleArg(0.01))
+                        .executes(ctx -> grantMastery(
+                                ctx.getSource(),
+                                DoubleArgumentType.getDouble(ctx, "amount"),
+                                null,
+                                kind,
+                                consoleUsage,
+                                notice))
+                        .then(LmCommandSuggestions.playerWord("player")
+                                .executes(ctx -> grantMastery(
+                                        ctx.getSource(),
+                                        DoubleArgumentType.getDouble(ctx, "amount"),
+                                        StringArgumentType.getString(ctx, "player"),
+                                        kind,
+                                        consoleUsage,
+                                        notice))));
+    }
+
+    private static int grantMastery(
+            CommandSourceStack source,
+            double amount,
+            String playerName,
+            FirstSuperformChoice.Kind kind,
+            String consoleUsage,
+            String notice) {
         if (StaffAccess.denyUnlessStaff(source) == 0) {
             return 0;
         }
@@ -180,8 +206,7 @@ public final class MechanicsCommands {
         if (playerName == null || playerName.isBlank()) {
             target = source.m_230896_();
             if (target == null) {
-                LmCommandFeedback.tell(source, LmCommandMessages.tryCommand(
-                        "/lm mastery grant-first-superform <amount> <player>"));
+                LmCommandFeedback.tell(source, LmCommandMessages.tryCommand(consoleUsage));
                 return 0;
             }
         } else {
@@ -191,11 +216,10 @@ public final class MechanicsCommands {
                 return 0;
             }
         }
-        FirstSuperformMastery.Outcome outcome = FirstSuperformMastery.grant(target, amount);
+        FirstSuperformMastery.Outcome outcome = FirstSuperformMastery.grant(target, amount, kind);
         LmCommandFeedback.tell(source, outcome.message);
         if (outcome.ok && source.m_230896_() != target) {
-            target.m_213846_(Component.m_237113_(
-                    UltraStyle.noticeLine("Mastery was granted on your first super form.")));
+            target.m_213846_(Component.m_237113_(UltraStyle.noticeLine(notice)));
         }
         return outcome.ok ? 1 : 0;
     }

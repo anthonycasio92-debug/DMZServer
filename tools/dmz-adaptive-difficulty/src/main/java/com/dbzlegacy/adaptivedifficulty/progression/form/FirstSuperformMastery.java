@@ -17,9 +17,12 @@ import java.util.Map;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Quest reward for the Frieza Saga 16 branch: mastery on the player's current
- * race's first superform, or the legendary variant when that is the race's
- * first form (including Legendary Super Saiyan for a mutant).
+ * Quest rewards for the Frieza Saga 16 branch. Each command grants one form:
+ * the race's first superform, or its first legendary form.
+ *
+ * <p>The first superform is the unlock-level 0 superform. Saiyans get Oozaru.
+ * Any other race with a level 0 superform gets that form. Races without one
+ * get their earliest superform.
  *
  * <p>Race resolution matches {@code TransformationReward.giveReward}:
  * {@code StatsProvider}/{@code StatsCapability} via {@code DmzProgression.stats},
@@ -40,7 +43,7 @@ public final class FirstSuperformMastery {
         }
     }
 
-    public static Outcome grant(ServerPlayer player, double amount) {
+    public static Outcome grant(ServerPlayer player, double amount, FirstSuperformChoice.Kind kind) {
         if (player == null) {
             return fail("Run that while logged in as a player, or name one.");
         }
@@ -74,18 +77,22 @@ public final class FirstSuperformMastery {
         if (race == null || race.isBlank()) {
             return fail("Could not read that player's race.");
         }
-        boolean mutant = hasMutant(data);
-        String legendaryGroup = legendaryGroupName();
         List<Candidate> configured = configuredForms(race);
-        Candidate dmz = fromHelper(data, race, false);
-        Candidate chosen = choose(configured, dmz, mutant, legendaryGroup);
+        Candidate chosen = FirstSuperformChoice.select(configured, kind);
         boolean stack = false;
-        if (chosen == null) {
+        if (chosen == null && kind == FirstSuperformChoice.Kind.SUPER) {
+            Candidate helper = fromHelper(data, race, false);
+            if (helper != null && helper.unlockLevel == 0 && FirstSuperformChoice.isSuperform(helper)) {
+                chosen = helper;
+            }
+        }
+        if (chosen == null && kind == FirstSuperformChoice.Kind.SUPER) {
             chosen = fromHelper(data, race, true);
             stack = chosen != null;
         }
         if (chosen == null) {
-            return fail("No superform or legendary form is set for race " + race + ".");
+            String ladder = kind == FirstSuperformChoice.Kind.LEGENDARY ? "legendary form" : "superform";
+            return fail("No " + ladder + " is set for race " + race + ".");
         }
         FormMasteries masteries = stack ? character.getStackFormMasteries() : character.getFormMasteries();
         if (masteries == null) {
@@ -110,23 +117,6 @@ public final class FirstSuperformMastery {
         return new Outcome(true,
                 "§aGranted mastery on §f" + label + "§a (" + race + ") for §f" + who
                         + "§a. Now §f" + format(target) + "§a.");
-    }
-
-    /**
-     * Mutant legendary variant wins. Otherwise DMZ
-     * {@code TransformationsHelper.getFirstAvailableForm} wins when it is a
-     * real superform or legendary form. Oozaru and other ladders fall through
-     * to the race config.
-     */
-    static Candidate choose(List<Candidate> configured, Candidate dmz, boolean mutant, String legendaryGroup) {
-        Candidate fromConfig = FirstSuperformChoice.select(configured, mutant, legendaryGroup);
-        if (mutant && fromConfig != null && FirstSuperformChoice.isLegendary(fromConfig)) {
-            return fromConfig;
-        }
-        if (dmz != null && FirstSuperformChoice.isQuestForm(dmz)) {
-            return dmz;
-        }
-        return fromConfig;
     }
 
     private static Candidate fromHelper(StatsData data, String race, boolean stack) {
@@ -249,28 +239,6 @@ public final class FirstSuperformMastery {
         } catch (Throwable ignored) {
         }
         return Double.MAX_VALUE;
-    }
-
-    private static boolean hasMutant(StatsData data) {
-        try {
-            return data.getEffects() != null && data.getEffects().hasEffect("mutant");
-        } catch (Throwable ignored) {
-            return false;
-        }
-    }
-
-    private static String legendaryGroupName() {
-        try {
-            if (ConfigManager.getServerConfig() != null
-                    && ConfigManager.getServerConfig().getMutant() != null) {
-                String name = ConfigManager.getServerConfig().getMutant().getLegendaryGroupName();
-                if (name != null && !name.isBlank()) {
-                    return name;
-                }
-            }
-        } catch (Throwable ignored) {
-        }
-        return "legendaryforms";
     }
 
     private static Outcome fail(String line) {
