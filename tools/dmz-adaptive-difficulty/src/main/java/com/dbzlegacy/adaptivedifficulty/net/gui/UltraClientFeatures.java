@@ -40,10 +40,10 @@ import net.minecraft.server.level.ServerPlayer;
  * <p>Clients that never send {@link GuiFeaturesPacket} are treated as the KaiPath <b>1.3.1
  * baseline</b>: dynamic layout/buttons only. KaiPath <b>1.3.17</b> advertises the fifteen
  * chrome ids. KaiPath <b>1.3.22</b> also advertises {@link #FEATURE_ICON}. KaiPath
- * <b>1.3.29</b> (recommended) also advertises {@link #FEATURE_BODY_PARTS}, so
- * {@link #PENDING_NEXT} is empty until a client ships the next optional id.
- * A client that lacks {@code bodyParts} still draws the base entity and ignores the array.
- * LM {@code footer:true} emission matches 1.3.17.
+ * <b>1.3.29</b> (recommended) also advertises {@link #FEATURE_BODY_PARTS}.
+ * {@link #PENDING_NEXT} currently holds {@link #FEATURE_BODY_PARTS_SYNC} (LM message 3
+ * world sync — pending on JLDK). A client that lacks {@code bodyParts} still draws the
+ * base entity and ignores the array. LM {@code footer:true} emission matches 1.3.17.
  */
 public final class UltraClientFeatures {
     public static final String FEATURE_STYLE = "style";
@@ -94,6 +94,12 @@ public final class UltraClientFeatures {
      * (not on KaiPath 1.3.17–1.3.22). Clients that omit it still draw the entity.
      */
     public static final String FEATURE_BODY_PARTS = "bodyparts";
+    /**
+     * Normalized id for GuiModelSyncPacket (message 3) — authoritative equipped body-parts
+     * state for world rendering. Not shipped on any KaiPath yet (pending on JLDK); LM only
+     * sends message 3 to clients that advertise it, so current clients are unaffected.
+     */
+    public static final String FEATURE_BODY_PARTS_SYNC = "bodypartssync";
 
     /** Wire / doc spelling for {@link #FEATURE_PALETTE}. */
     public static final String FEATURE_PALETTE_DOC = "palette";
@@ -113,6 +119,8 @@ public final class UltraClientFeatures {
     public static final String FEATURE_ICON_DOC = "icon";
     /** Wire / doc spelling for {@link #FEATURE_BODY_PARTS}. */
     public static final String FEATURE_BODY_PARTS_DOC = "bodyParts";
+    /** Wire / doc spelling for {@link #FEATURE_BODY_PARTS_SYNC}. */
+    public static final String FEATURE_BODY_PARTS_SYNC_DOC = "bodyPartsSync";
 
     /** Optional features the LM bridge expects a fully conforming 1.3.29 client to advertise. */
     public static final Set<String> EXPECTED_OPTIONAL =
@@ -161,11 +169,11 @@ public final class UltraClientFeatures {
                     FEATURE_BODY_PARTS);
 
     /**
-     * Optional ids the next KaiPath release might add. Empty since 1.3.29 shipped
-     * {@code bodyParts} (the last pending id). Guitest reports these as {@code pendingNext=}
-     * (info), not a shipped-client warning.
+     * Optional ids the next KaiPath release might add. {@code bodyPartsSync} (message 3
+     * world equipped-parts sync) pending on JLDK since LM 4.6.209. Guitest reports these
+     * as {@code pendingNext=} (info), not a shipped-client warning.
      */
-    public static final Set<String> PENDING_NEXT = Set.of();
+    public static final Set<String> PENDING_NEXT = Set.of(FEATURE_BODY_PARTS_SYNC);
 
     private static final Map<UUID, State> BY_PLAYER = new ConcurrentHashMap<>();
 
@@ -307,7 +315,7 @@ public final class UltraClientFeatures {
         return missing;
     }
 
-    /** Optional ids not yet advertised by the recommended KaiPath jar. Empty since 1.3.29. */
+    /** Optional ids not yet advertised by the recommended KaiPath jar ({@code bodyPartsSync}). */
     public static List<String> missingPending(State state) {
         List<String> missing = new ArrayList<>();
         for (String feature : PENDING_NEXT) {
@@ -367,6 +375,9 @@ public final class UltraClientFeatures {
         }
         if (FEATURE_BODY_PARTS.equals(key)) {
             return FEATURE_BODY_PARTS_DOC;
+        }
+        if (FEATURE_BODY_PARTS_SYNC.equals(key)) {
+            return FEATURE_BODY_PARTS_SYNC_DOC;
         }
         return feature == null ? "" : feature;
     }
@@ -440,7 +451,7 @@ public final class UltraClientFeatures {
     /**
      * Log when 1.3.29-shipped features are missing (real gap). {@link #PENDING_NEXT} gaps
      * log at info. {@code icon} and {@code bodyParts} are shipped, so a client that omits
-     * them warns with the rest. {@code PENDING_NEXT} is empty until a client ships more.
+     * them warns with the rest. {@code bodyPartsSync} stays pending until a client ships it.
      */
     public static void warnMissingOptionalFeatures(ServerPlayer player, String context) {
         if (player == null) {

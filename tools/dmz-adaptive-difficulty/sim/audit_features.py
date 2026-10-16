@@ -2852,10 +2852,51 @@ def main() -> int:
         '"pieces"' in json_bp,
     )
     check(
-        "KaiPath 1.3.29 bodyParts feature promotion (shipped, not pending)",
+        "KaiPath 1.3.29 bodyParts shipped; bodyPartsSync pending next",
         "FEATURE_BODY_PARTS" in feat_bp
-        and "PENDING_NEXT = Set.of()" in feat_bp
+        and "PENDING_NEXT = Set.of(FEATURE_BODY_PARTS_SYNC)" in feat_bp
+        and "FEATURE_BODY_PARTS_SYNC" in feat_bp
         and 'KAIPATH_RECOMMENDED_VERSION = "1.3.29"' in net_bp,
+    )
+    sync_pkt_bp = read(
+        SRC / "com/dbzlegacy/adaptivedifficulty/net/gui/GuiModelSyncPacket.java"
+    )
+    proto_bp = read(
+        SRC / "com/dbzlegacy/adaptivedifficulty/net/gui/UltraGuiProtocol.java"
+    )
+    head_svc_bp = read(
+        SRC / "com/dbzlegacy/adaptivedifficulty/character/CosmeticHeadBoneService.java"
+    )
+    check(
+        "GuiModelSyncPacket message 3 registered + bodyPartsSync-gated send",
+        "MSG_MODEL_SYNC = 3" in proto_bp
+        and "GuiModelSyncPacket.class, UltraGuiProtocol.MSG_MODEL_SYNC" in net_bp
+        and "supportsModelSync" in net_bp
+        and "FEATURE_BODY_PARTS_SYNC" in net_bp
+        and "onClientAdvertisement" in net_bp,
+    )
+    check(
+        "GuiModelSyncPacket reuses the playerModel parts schema (syncSnapshot)",
+        "syncSnapshot" in parts_bp
+        and "PlayerModelParts.SCHEMA" in sync_pkt_bp
+        and "bodyParts" in sync_pkt_bp,
+    )
+    check(
+        "Model sync sends on equip/unequip/clear + head-bone changes",
+        "sendModelSync" in body_svc_bp
+        and "REASON_UNEQUIP" in body_svc_bp
+        and "REASON_CLEAR" in body_svc_bp
+        and "sendModelSync" in head_svc_bp,
+    )
+    check(
+        "Single-tail rule: bodyParts never carries two SLOT_TAIL entries",
+        "tailOccupied" in parts_bp
+        and "SLOT_TAIL" in parts_bp
+        and "customTail" in parts_bp,
+    )
+    check(
+        "GuiModelSync round-trip + oversized-sanitize self-test at startup",
+        "roundTripModelSync" in net_bp and "GuiModelSyncPacket" in net_bp,
     )
 
     print("\n=== Summary ===")

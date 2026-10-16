@@ -36,6 +36,13 @@ public final class UltraGuiProtocol {
     /** Message index: GuiFeaturesPacket C→S (optional client capability advertisement). */
     public static final int MSG_FEATURES = 2;
 
+    /**
+     * Message index: GuiModelSyncPacket S→C (authoritative equipped body-parts state).
+     * Feature-gated — only sent to clients that advertise {@code bodyPartsSync} via
+     * {@link #MSG_FEATURES}; clients that never registered message 3 must never receive it.
+     */
+    public static final int MSG_MODEL_SYNC = 3;
+
     private UltraGuiProtocol() {}
 
     /** Channel location for {@code modId} → {@code modid:gui}. */

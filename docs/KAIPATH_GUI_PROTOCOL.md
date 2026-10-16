@@ -10,6 +10,7 @@ LegacyMechanics (LM).
 | Message 0 | GuiOpenPacket (server → client) |
 | Message 1 | GuiActionPacket (client → server) |
 | Message 2 | GuiFeaturesPacket (client → server, **optional**) |
+| Message 3 | GuiModelSyncPacket (server → client, **optional — `bodyPartsSync` gated**) |
 | Client renderer | KaiPath (dynamic — renders the packet, no hardcoded menus) |
 
 **Principle:** the client renders what the server sends. Packet codecs must not embed a
@@ -191,6 +192,7 @@ Known optional feature ids:
 | `combined.forms.v1` | One preview combines the base entity with optional `playerModel.parts.headBones` and `playerModel.parts.form` string ids. The strings are generic (race, group, form, stack). Any mod may send its own ids. A client that lacks the feature still draws the entity and ignores `parts.form`. |
 | `icon` | Optional button/tab `icon` (item id or texture path). **Advertised by KaiPath 1.3.22.** A client that omits it is `missingShipped=icon`, not `pendingNext`. |
 | `bodyParts` | `playerModel.parts.bodyParts` — explicit pieces (`id`, `source`, `slot`) attached to that same preview. Any mod may send its own ids. A client that lacks the feature still draws the entity and ignores the array. Unknown ids are skipped. **Advertised by KaiPath 1.3.29.** A client that omits it is `missingShipped=bodyParts`, not `pendingNext`. LM sends worn form pieces plus the player's Body Parts Shop pieces. |
+| `bodyPartsSync` | **Message 3** `GuiModelSyncPacket` — authoritative equipped body-parts state for *world* rendering (outside menus). **Not shipped on any KaiPath yet** (pending on JLDK — `pendingNext=bodyPartsSync`). LM only sends message 3 to clients that advertise this id; a client that never registered message 3 must never advertise it (unregistered message id drops the connection). See [`#GuiModelSyncPacket`](#guimodelsyncpacket-s-client--message-3). |
 
 Advertise (KaiPath **1.3.29** — seventeen ids; the first fifteen shipped on 1.3.17, `icon` on 1.3.22, `bodyParts` on 1.3.29; see [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md)):
 
@@ -213,6 +215,62 @@ LM logs a **warning** when a player’s feature set lacks expected optionals, na
 - player-visible impact (e.g. “all buttons render identically…” / “active tab is not highlighted”)
 
 `/lm admin guitest` includes the reported features in staff chat and the open packet body.
+
+### GuiModelSyncPacket (S→C) — message 3
+
+Authoritative sync of a player's equipped body parts for **world rendering** (the model the
+player walks around with), as opposed to the menu preview in `layoutJson.playerModel.parts`.
+LM ≥ **4.6.209** sends it; the client side is **pending on JLDK** (advertise `bodyPartsSync`).
+
+| | |
+|--|--|
+| Wire id | `<modid>:gui` message **3** (`UltraGuiProtocol.MSG_MODEL_SYNC`) |
+| Direction | server → client |
+| Feature gate | **Only sent to clients that advertised `bodyPartsSync`** via message 2. Clients that never registered message 3 (KaiPath ≤ 1.3.29) must not advertise it — an unregistered message id aborts the connection. `LmGuiNetwork.supportsModelSync` / `sendModelSync` enforce this server-side. |
+| Trigger: login | Once per session, ~40 ticks after the client's first `bodyPartsSync` advertisement (deferred so DMZ character data — race tail, forms — has loaded). Covers the initial state. |
+| Trigger: equip/unequip | Every Body Parts Shop change (`unlock`/`toggle`/`clear`) and every head-bone equip change — sent right after the server persists the change. |
+| Trigger: logout | Client drops its cached state for the player on disconnect (state is per-session; the next login re-syncs). |
+| Server-authoritative | The client **replaces** (never merges) its cached parts with each received snapshot. An empty `bodyParts` array clears all extra pieces. No client-side guessing. |
+
+Wire format (append-compatible — unknown trailing fields ignored):
+
+| # | Field | Type | Notes |
+|---|--------|------|--------|
+| 1 | `partsJson` | string | The playerModel **parts object** — byte-identical schema to `layoutJson.playerModel.parts` (see [playerModel parts schema](#4-layout-json)). Always valid JSON, ≤ 8192 chars (oversized payloads drop `headBones`, then `form`, then degrade to an empty-parts object — never a mid-JSON cut). |
+| 2 | `reason` | string | Trigger token: `login` / `equip` / `unequip` / `clear`. **Diagnostics only** — rendering must not depend on it. |
+
+`partsJson` field reference (same as the menu preview's `parts` — menu and world rendering
+read identical data):
+
+| Field | Type | Meaning |
+|-------|------|---------|
+| `schema` | int | Parts schema version (`1`) |
+| `subject` | string | `local` — the sync always describes the **receiving player** (no inspect redirect on this message) |
+| `headBones` | object? | `{token, pieces[]}` DMZUltra head-bone state; absent when none |
+| `form` | object? | `{race, group, form, stackGroup, stackForm}` worn-form identity; absent in base |
+| `bodyParts` | array | Explicit pieces `{id, source, slot}` — **always present** (empty array = no extras). Slot ids: `tail`, `wings`, `horns`, `ears`, `extra_arms`, `body`. LM guarantees the **single-tail rule**: the array never carries two `tail`-slot entries — a form tail beats a shop tail, and the natural `saiyan_tail` is only sent when no other tail slot is occupied. |
+| `extras` | array | Open extension slot — always present, iterate without null checks |
+
+Sample payload (Saiyan with the natural tail, no shop pieces, base form):
+
+```json
+{"schema":1,"subject":"local","bodyParts":[{"id":"saiyan_tail","source":"dmzultra","slot":"tail"}],"extras":[]}
+```
+
+After `/bodyparts clear` the server sends the authoritative empty state:
+
+```json
+{"schema":1,"subject":"local","bodyParts":[],"extras":[]}
+```
+
+Client contract (JLDK):
+
+1. Advertise `bodyPartsSync` in `GuiFeaturesPacket` **only** if message 3 is registered.
+2. On receive: parse `partsJson` with the existing parts pipeline (`BodyPartWire` /
+   `BodyPartPreview`) and **replace** the local player's cached world-render parts.
+3. Apply to the world model via the same merge used by `FormPartsPreviewMixin`
+   (`FormParts.of` + cached meshes) — the menu preview path is unchanged.
+4. Drop the cache on disconnect / dimension change reset if you key by session.
 
 ---
 

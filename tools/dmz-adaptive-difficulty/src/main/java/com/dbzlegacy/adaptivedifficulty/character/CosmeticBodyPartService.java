@@ -140,7 +140,7 @@ public final class CosmeticBodyPartService {
         return List.copyOf(out);
     }
 
-    private static void persistEquipped(ServerPlayer player, List<String> parts) {
+    private static void persistEquipped(ServerPlayer player, List<String> parts, String reason) {
         if (player == null) {
             return;
         }
@@ -149,6 +149,18 @@ public final class CosmeticBodyPartService {
         rec.equippedBodyParts = new ArrayList<>(parts == null ? List.of() : parts);
         CharacterServicesStore.get().markDirty();
         CharacterServicesStore.get().save();
+        // World sync: client re-renders with the authoritative state (bodyPartsSync only).
+        com.dbzlegacy.adaptivedifficulty.net.gui.LmGuiNetwork.sendModelSync(player, reason);
+    }
+
+    /** Persist worn pieces with the default {@code equip}/{@code clear} reason. */
+    private static void persistEquipped(ServerPlayer player, List<String> parts) {
+        persistEquipped(
+                player,
+                parts,
+                parts == null || parts.isEmpty()
+                        ? com.dbzlegacy.adaptivedifficulty.net.gui.GuiModelSyncPacket.REASON_CLEAR
+                        : com.dbzlegacy.adaptivedifficulty.net.gui.GuiModelSyncPacket.REASON_EQUIP);
     }
 
     /** Header value for the shop page: {@code none} or the worn display names. */
@@ -270,7 +282,7 @@ public final class CosmeticBodyPartService {
         List<String> worn = new ArrayList<>(equippedParts(player));
         if (worn.contains(id)) {
             worn.remove(id);
-            persistEquipped(player, worn);
+            persistEquipped(player, worn, com.dbzlegacy.adaptivedifficulty.net.gui.GuiModelSyncPacket.REASON_UNEQUIP);
             return UltraStyle.CONFIRM + "Turned off " + UltraStyle.VALUE + displayName(id)
                     + UltraStyle.CONFIRM + ".";
         }

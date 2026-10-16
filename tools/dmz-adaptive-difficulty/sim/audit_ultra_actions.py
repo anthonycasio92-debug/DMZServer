@@ -614,7 +614,9 @@ def main() -> int:
             errors.append(
                 "PENDING_NEXT must not include FEATURE_ICON (shipped on KaiPath 1.3.22)"
             )
-        if pending_block and "FEATURE_BODY_PARTS" in pending_block:
+        # Exact token — FEATURE_BODY_PARTS_SYNC (message 3 world sync, pending on
+        # JLDK) is allowed in PENDING_NEXT; only the shipped bodyParts id is not.
+        if pending_block and re.search(r"FEATURE_BODY_PARTS(?!_SYNC)", pending_block):
             errors.append(
                 "PENDING_NEXT must not include FEATURE_BODY_PARTS "
                 "(playerModel.parts.bodyParts, shipped on KaiPath 1.3.29)"

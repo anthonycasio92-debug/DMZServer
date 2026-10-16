@@ -73,6 +73,12 @@ public final class LmGuiNetwork {
     /** Players already warned this session for missing style/activeTab on GuiOpen. */
     private static final java.util.Set<java.util.UUID> FEATURE_GAP_WARNED =
             java.util.concurrent.ConcurrentHashMap.newKeySet();
+    /**
+     * Players that already received this session's initial {@link GuiModelSyncPacket}
+     * (login trigger fires once per session; equip changes always send).
+     */
+    private static final java.util.Set<java.util.UUID> MODEL_SYNCED =
+            java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     private LmGuiNetwork() {}
 
@@ -249,7 +255,8 @@ public final class LmGuiNetwork {
         }
         AdaptiveDifficultyMod.LOGGER.info(
                 "[{}] registering channel {}:{} protocol={} "
-                        + "msg0=GuiOpenPacket(S→C) msg1=GuiActionPacket(C→S) msg2=GuiFeaturesPacket(C→S)",
+                        + "msg0=GuiOpenPacket(S→C) msg1=GuiActionPacket(C→S) msg2=GuiFeaturesPacket(C→S) "
+                        + "msg3=GuiModelSyncPacket(S→C, bodyPartsSync-gated)",
                 AdaptiveDifficultyMod.MOD_ID,
                 CHANNEL_NAMESPACE,
                 CHANNEL_PATH,
@@ -271,6 +278,15 @@ public final class LmGuiNetwork {
                 .encoder(GuiFeaturesPacket::encode)
                 .decoder(GuiFeaturesPacket::decode)
                 .consumerNetworkThread(GuiFeaturesPacket::handle)
+                .add();
+        // Message 3 is registered but NEVER sent to clients that did not advertise
+        // bodyPartsSync — KaiPath ≤1.3.29 has no handler for it (unregistered id = dropped
+        // connection). sendModelSync enforces the gate.
+        CHANNEL.messageBuilder(
+                        GuiModelSyncPacket.class, UltraGuiProtocol.MSG_MODEL_SYNC, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(GuiModelSyncPacket::encode)
+                .decoder(GuiModelSyncPacket::decode)
+                .consumerMainThread(GuiModelSyncPacket::handle)
                 .add();
         validateBuilderScreenIdsAtStartup();
         UltraScreenSelfTest.runAtStartup();
@@ -407,6 +423,12 @@ public final class LmGuiNetwork {
                                 + " parsed="
                                 + parsed);
             }
+
+            // bodyPartsSync world sync: partsJson + reason survive encode→decode verbatim.
+            String syncFail = roundTripModelSync();
+            if (syncFail != null) {
+                failures.add(syncFail);
+            }
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.error(
                     "[{}] packet round-trip self-test threw",
@@ -433,10 +455,60 @@ public final class LmGuiNetwork {
         }
         AdaptiveDifficultyMod.LOGGER.info(
                 "[{}] packet round-trip self-test OK screensTested={} protocol={} "
-                        + "(BUILDER_IDS 10-field + style/activeTab + GuiActionPacket + GuiFeaturesPacket)",
+                        + "(BUILDER_IDS 10-field + style/activeTab + GuiActionPacket + "
+                        + "GuiFeaturesPacket + GuiModelSyncPacket)",
                 AdaptiveDifficultyMod.MOD_ID,
                 screensTested,
                 PROTOCOL_VERSION);
+    }
+
+    /**
+     * Assert {@link GuiModelSyncPacket} partsJson + reason survive encode→decode, and that
+     * the sanitizer keeps valid JSON (never a mid-string cut).
+     *
+     * @return null on success, failure message otherwise
+     */
+    private static String roundTripModelSync() {
+        String parts = "{\"schema\":1,\"subject\":\"local\",\"bodyParts\":["
+                + "{\"id\":\"saiyan_tail\",\"source\":\"dmzultra\",\"slot\":\"tail\"}],"
+                + "\"extras\":[]}";
+        GuiModelSyncPacket sync = new GuiModelSyncPacket(parts, GuiModelSyncPacket.REASON_EQUIP);
+        net.minecraft.network.FriendlyByteBuf buf =
+                new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+        GuiModelSyncPacket.encode(sync, buf);
+        GuiModelSyncPacket back = GuiModelSyncPacket.decode(buf);
+        if (!sync.partsJson().equals(back.partsJson())) {
+            return "GuiModelSyncPacket partsJson round-trip failed original=["
+                    + sync.partsJson()
+                    + "] decoded=["
+                    + back.partsJson()
+                    + "]";
+        }
+        if (!GuiModelSyncPacket.REASON_EQUIP.equals(back.reason())) {
+            return "GuiModelSyncPacket reason round-trip failed → " + back.reason();
+        }
+        try {
+            com.google.gson.JsonObject parsed =
+                    com.google.gson.JsonParser.parseString(back.partsJson()).getAsJsonObject();
+            if (!parsed.has("bodyParts") || !parsed.get("bodyParts").isJsonArray()) {
+                return "GuiModelSyncPacket partsJson lost bodyParts array after decode";
+            }
+        } catch (Throwable t) {
+            return "GuiModelSyncPacket partsJson is not valid JSON after round-trip: " + t;
+        }
+        // Oversized payload must degrade to valid JSON, never truncate mid-object.
+        StringBuilder filler = new StringBuilder();
+        while (filler.length() < GuiModelSyncPacket.PARTS_JSON_MAX + 100) {
+            filler.append('x');
+        }
+        String oversized = "{\"schema\":1,\"subject\":\"local\",\"pad\":\"" + filler + "\"}";
+        GuiModelSyncPacket degraded = new GuiModelSyncPacket(oversized, "login");
+        try {
+            com.google.gson.JsonParser.parseString(degraded.partsJson()).getAsJsonObject();
+        } catch (Throwable t) {
+            return "GuiModelSyncPacket oversized payload not valid JSON after sanitize: " + t;
+        }
+        return null;
     }
 
     /**
@@ -567,6 +639,73 @@ public final class LmGuiNetwork {
         }
         UltraClientFeatures.clear(player);
         FEATURE_GAP_WARNED.remove(player.m_20148_());
+        MODEL_SYNCED.remove(player.m_20148_());
+    }
+
+    /**
+     * True when the client advertised {@code bodyPartsSync} (message 3). KaiPath ≤1.3.29
+     * never advertises it and has no message-3 handler — sending would abort their
+     * connection, so this gate must guard every {@link GuiModelSyncPacket} send.
+     */
+    public static boolean supportsModelSync(ServerPlayer player) {
+        return player != null
+                && UltraClientFeatures.get(player).has(UltraClientFeatures.FEATURE_BODY_PARTS_SYNC);
+    }
+
+    /**
+     * Authoritative world sync of the player's equipped body parts
+     * ({@link GuiModelSyncPacket}, message 3). Server decides everything — the client
+     * replaces (never merges) its cached state with this snapshot. No-op unless the client
+     * advertised {@code bodyPartsSync}. Send on login (initial) and after every
+     * equip/unequip change.
+     */
+    public static void sendModelSync(ServerPlayer player, String reason) {
+        if (player == null || !supportsModelSync(player)) {
+            return;
+        }
+        try {
+            JsonObject parts = com.dbzlegacy.adaptivedifficulty.gui.ultra.PlayerModelParts
+                    .syncSnapshot(player);
+            GuiModelSyncPacket packet = new GuiModelSyncPacket(parts.toString(), reason);
+            AdaptiveDifficultyMod.LOGGER.info(
+                    "[{}] GuiModelSyncPacket → player={} reason={} partsJson={}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    safeName(player),
+                    reason,
+                    packet.partsJson());
+            CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] GuiModelSyncPacket send failed player={} reason={}: {}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    safeName(player),
+                    reason,
+                    t.toString());
+        }
+    }
+
+    /**
+     * Login trigger: when the client's first feature advertisement includes
+     * {@code bodyPartsSync}, send the initial world sync once per session. Deferred a few
+     * ticks so DMZ character data (race tail / forms) has loaded before the snapshot.
+     */
+    public static void onClientAdvertisement(ServerPlayer player) {
+        if (player == null || !supportsModelSync(player)) {
+            return;
+        }
+        if (!MODEL_SYNCED.add(player.m_20148_())) {
+            return;
+        }
+        var server = player.m_20194_();
+        if (server == null) {
+            sendModelSync(player, GuiModelSyncPacket.REASON_LOGIN);
+            return;
+        }
+        java.util.UUID id = player.m_20148_();
+        server.m_6937_(new net.minecraft.server.TickTask(server.m_129921_() + 40, () -> {
+            ServerPlayer p = server.m_6846_().m_11259_(id);
+            sendModelSync(p, GuiModelSyncPacket.REASON_LOGIN);
+        }));
     }
 
     /**

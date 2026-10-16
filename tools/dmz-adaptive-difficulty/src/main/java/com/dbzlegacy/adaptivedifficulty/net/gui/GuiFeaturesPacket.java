@@ -68,6 +68,8 @@ public final class GuiFeaturesPacket {
         Set<String> features = parseFeatures(msg.featuresJson());
         UltraClientFeatures.recordAdvertisement(player, features, msg.featuresJson());
         UltraClientFeatures.warnMissingOptionalFeatures(player, "GuiFeaturesPacket");
+        // bodyPartsSync advertisers get the initial authoritative world sync (login trigger).
+        LmGuiNetwork.onClientAdvertisement(player);
     }
 
     static Set<String> parseFeatures(String featuresJson) {

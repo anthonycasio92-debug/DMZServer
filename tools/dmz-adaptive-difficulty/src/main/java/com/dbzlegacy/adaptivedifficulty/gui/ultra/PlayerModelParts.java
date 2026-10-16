@@ -41,6 +41,37 @@ public final class PlayerModelParts {
             return null;
         }
         boolean other = previewsOtherPlayer(target);
+        JsonObject parts = build(target, other);
+        if (parts == null && !other) {
+            return null;
+        }
+        return parts;
+    }
+
+    /**
+     * Authoritative snapshot for the world-sync message ({@code GuiModelSyncPacket}) —
+     * always non-null, always {@code subject local} (the receiving player; no inspect
+     * redirect), and always carries {@code bodyParts} so an empty array clears stale
+     * client pieces (server-authoritative replace, never merge).
+     */
+    public static JsonObject syncSnapshot(ServerPlayer player) {
+        JsonObject parts = player == null ? null : build(player, false);
+        if (parts == null) {
+            parts = new JsonObject();
+            parts.addProperty("schema", SCHEMA);
+            parts.addProperty("subject", "local");
+        }
+        if (!parts.has("bodyParts")) {
+            parts.add("bodyParts", new JsonArray());
+        }
+        if (!parts.has("extras")) {
+            parts.add("extras", new JsonArray());
+        }
+        return parts;
+    }
+
+    /** Core parts object for {@code target}. Null when nothing applies and not {@code other}. */
+    private static JsonObject build(ServerPlayer target, boolean other) {
         JsonObject parts = new JsonObject();
         parts.addProperty("schema", SCHEMA);
         parts.addProperty("subject", other ? "uuid:" + target.m_20148_() : "local");
@@ -130,8 +161,11 @@ public final class PlayerModelParts {
     /**
      * Explicit pieces for {@code parts.bodyParts}. Resolves the worn form (and stack form)
      * through {@link BodyPartCatalog}, which mirrors DMZUltra FormParts. Also names
-     * {@code saiyan_tail} when the character still has the race tail. Empty when nothing
-     * applies. Never throws — a missing catalog still reports the race tail.
+     * {@code saiyan_tail} when the character still has the race tail. Single-tail rule: the
+     * array never carries two {@code SLOT_TAIL} entries — a form tail beats a shop tail, and
+     * the natural {@code saiyan_tail} is only added when no other tail slot is occupied.
+     * Empty when nothing applies. Never throws — a missing catalog still reports the race
+     * tail.
      */
     private static JsonArray bodyParts(ServerPlayer player) {
         JsonArray out = new JsonArray();
@@ -163,9 +197,22 @@ public final class PlayerModelParts {
                 } catch (Throwable ignored) {
                 }
             }
+            // Custom Body Parts Shop pieces the player turned on. Fetched first so the
+            // natural race tail can yield to an explicit shop tail (single-tail rule).
+            List<String> custom = CosmeticBodyPartService.equippedParts(player);
+            boolean customTail = false;
+            for (String customId : custom) {
+                if (customId != null
+                        && !customId.isBlank()
+                        && BodyPartCatalog.SLOT_TAIL.equals(BodyPartCatalog.slot(customId))) {
+                    customTail = true;
+                    break;
+                }
+            }
             Set<String> seen = new java.util.LinkedHashSet<>();
+            boolean tailOccupied = false;
             for (BodyPartCatalog.Part part :
-                    BodyPartCatalog.resolve(race, group, form, stackGroup, stackForm, tail)) {
+                    BodyPartCatalog.resolve(race, group, form, stackGroup, stackForm, tail && !customTail)) {
                 if (part == null || part.id() == null || part.id().isBlank()) {
                     continue;
                 }
@@ -174,21 +221,32 @@ public final class PlayerModelParts {
                 entry.addProperty("source", part.source());
                 entry.addProperty("slot", part.slot());
                 seen.add(part.id().trim().toLowerCase(Locale.ROOT));
+                if (BodyPartCatalog.SLOT_TAIL.equals(part.slot())) {
+                    tailOccupied = true;
+                }
                 out.add(entry);
             }
-            // Custom Body Parts Shop pieces the player turned on. Dedup ids the worn
-            // form already named; the KaiPath 1.3.29 preview attaches each known mesh.
-            for (String customId : CosmeticBodyPartService.equippedParts(player)) {
+            // Dedup ids the worn form already named; the KaiPath 1.3.29 preview attaches each
+            // known mesh. Single-tail rule: a shop tail yields to a form tail — the array
+            // never carries two SLOT_TAIL entries (menu preview and world sync share this path).
+            for (String customId : custom) {
                 if (customId == null
                         || customId.isBlank()
                         || !seen.add(customId.trim().toLowerCase(Locale.ROOT))) {
                     continue;
                 }
-                JsonObject custom = new JsonObject();
-                custom.addProperty("id", customId);
-                custom.addProperty("source", BodyPartCatalog.SOURCE_DMZULTRA);
-                custom.addProperty("slot", BodyPartCatalog.slot(customId));
-                out.add(custom);
+                String slot = BodyPartCatalog.slot(customId);
+                if (BodyPartCatalog.SLOT_TAIL.equals(slot) && tailOccupied) {
+                    continue;
+                }
+                if (BodyPartCatalog.SLOT_TAIL.equals(slot)) {
+                    tailOccupied = true;
+                }
+                JsonObject customEntry = new JsonObject();
+                customEntry.addProperty("id", customId);
+                customEntry.addProperty("source", BodyPartCatalog.SOURCE_DMZULTRA);
+                customEntry.addProperty("slot", slot);
+                out.add(customEntry);
             }
         } catch (Throwable ignored) {
             return new JsonArray();

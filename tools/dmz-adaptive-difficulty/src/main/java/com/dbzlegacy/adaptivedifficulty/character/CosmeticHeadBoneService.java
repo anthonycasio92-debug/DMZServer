@@ -354,6 +354,9 @@ public final class CosmeticHeadBoneService {
                 CharacterServicesStore.get().record(player.m_20148_().toString());
         rec.equippedHeadBone = bone;
         CharacterServicesStore.get().markDirty();
+        // World sync: headBones rides the same parts payload (bodyPartsSync clients only).
+        com.dbzlegacy.adaptivedifficulty.net.gui.LmGuiNetwork.sendModelSync(
+                player, com.dbzlegacy.adaptivedifficulty.net.gui.GuiModelSyncPacket.REASON_EQUIP);
     }
 
     /**
