@@ -951,7 +951,7 @@ public final class UltraScreenSelfTest {
      */
     private static void checkConfigFullscreen(List<String> broken) {
         UltraScreenSpec grown =
-                UltraScreenSpec.of("config").panel(1920, 1080).lockPanel().fillScreen(426, 240).setRow(50);
+                UltraScreenSpec.of("config").panel(1920, 1080).lockPanel().fillScreen(1920, 1080).setRow(50);
         for (int i = 0; i < 30; i++) {
             grown.button("do:refresh", "Row " + i, "dim").rowGap();
         }
@@ -965,8 +965,8 @@ public final class UltraScreenSelfTest {
         }
         JsonObject grownLay = JsonParser.parseString(grownPkt.layoutJson()).getAsJsonObject();
         if (!grownLay.has("designWidth")
-                || grownLay.get("designWidth").getAsInt() != 426
-                || grownLay.get("designHeight").getAsInt() != 240) {
+                || grownLay.get("designWidth").getAsInt() != 1920
+                || grownLay.get("designHeight").getAsInt() != 1080) {
             broken.add("lockPanel changed the fillScreen design box");
         }
         GuiOpenPacket cfg = UltraConfigScreens.layoutProbe();
@@ -983,8 +983,8 @@ public final class UltraScreenSelfTest {
         }
         if (!lay.has("designWidth")
                 || !lay.has("designHeight")
-                || lay.get("designWidth").getAsInt() != 426
-                || lay.get("designHeight").getAsInt() != 240) {
+                || lay.get("designWidth").getAsInt() != 1920
+                || lay.get("designHeight").getAsInt() != 1080) {
             broken.add("config fillScreen design size must be 426x240");
         }
         if (!lay.has("margin") || lay.get("margin").getAsInt() != 0) {

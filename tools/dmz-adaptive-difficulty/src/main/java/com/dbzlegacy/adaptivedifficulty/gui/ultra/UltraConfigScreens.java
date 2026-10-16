@@ -1355,7 +1355,7 @@ public final class UltraConfigScreens {
                 .center(false)
                 .margin(0)
                 .lockPanel()
-                .fillScreen(CONFIG_DESIGN_W, CONFIG_DESIGN_H)
+                .fillScreen(CONFIG_PANEL_W, CONFIG_PANEL_H)
                 .lineGap(2)
                 .bodyPad(4);
     }
