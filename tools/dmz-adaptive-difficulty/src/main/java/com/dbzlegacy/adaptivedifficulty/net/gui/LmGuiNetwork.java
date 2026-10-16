@@ -53,10 +53,10 @@ public final class LmGuiNetwork {
     public static final String KAIPATH_DYNAMIC_UI_VERSION = "1.3.1";
 
     /**
-     * Current recommended/released KaiPath for Ultra (live). 1.3.17 chrome plus {@code icon}
-     * (item id or texture path on buttons and tabs), advertised on <b>1.3.22</b>.
+     * Current recommended/released KaiPath for Ultra (live). 1.3.17 chrome, 1.3.22
+     * {@code icon}, and 1.3.29 {@code bodyParts} (custom pieces on the model preview).
      */
-    public static final String KAIPATH_RECOMMENDED_VERSION = "1.3.22";
+    public static final String KAIPATH_RECOMMENDED_VERSION = "1.3.29";
 
     /**
      * Optional channel: clients without KaiPath omit it. Accept missing so those players
@@ -284,7 +284,7 @@ public final class LmGuiNetwork {
                 "[{}] Ultra GUI bridge ready channel={} protocol={} — KaiPath {}+ dynamic UI "
                         + "(any screenId; no hub shim). Recommended KaiPath {}; "
                         + "optional features via GuiFeaturesPacket "
-                        + "(style/activeTab/titleAlign/playerModel; textInput still pending).",
+                        + "(style/activeTab/titleAlign/playerModel/textInput; bodyParts on 1.3.29).",
                 AdaptiveDifficultyMod.MOD_ID,
                 UltraGuiProtocol.channelId(CHANNEL_NAMESPACE),
                 PROTOCOL_VERSION,

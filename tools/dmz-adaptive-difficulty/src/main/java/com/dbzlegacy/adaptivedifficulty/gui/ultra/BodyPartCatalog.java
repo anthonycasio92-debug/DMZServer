@@ -9,6 +9,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -39,6 +40,7 @@ public final class BodyPartCatalog {
     private static final String RESOURCE = "dmzultra-form-parts.json";
 
     private static volatile Map<String, List<String>> forms = Map.of();
+    private static volatile List<String> shopPieces = List.of();
     private static volatile boolean loaded;
 
     private BodyPartCatalog() {}
@@ -103,6 +105,17 @@ public final class BodyPartCatalog {
         return forms.size();
     }
 
+    /**
+     * Piece ids the Body Parts Shop may offer — the DMZUltra FormParts piece list from the
+     * resource's top-level {@code pieces} array (mirrors the client's known meshes). Falls
+     * back to the sorted union of every form's pieces when the array is absent. Empty when
+     * the resource is missing.
+     */
+    public static List<String> shopPieceIds() {
+        ensureLoaded();
+        return shopPieces;
+    }
+
     private static void addForm(Map<String, Part> out, String race, String group, String form) {
         String key = formKey(race, group, form);
         if (key == null) {
@@ -156,6 +169,8 @@ public final class BodyPartCatalog {
             }
             try (InputStreamReader reader = new InputStreamReader(in, StandardCharsets.UTF_8)) {
                 JsonObject root = JsonParser.parseReader(reader).getAsJsonObject();
+                List<String> pieces = readShopPieces(root);
+                shopPieces = List.copyOf(pieces);
                 if (!root.has("forms") || !root.get("forms").isJsonObject()) {
                     return Map.of();
                 }
@@ -165,18 +180,54 @@ public final class BodyPartCatalog {
                         continue;
                     }
                     JsonArray arr = entry.getValue().getAsJsonArray();
-                    List<String> pieces = new ArrayList<>();
+                    List<String> formPieces = new ArrayList<>();
                     for (JsonElement el : arr) {
                         if (el != null && el.isJsonPrimitive()) {
-                            pieces.add(el.getAsString());
+                            formPieces.add(el.getAsString());
                         }
                     }
-                    map.put(entry.getKey().trim().toLowerCase(Locale.ROOT), List.copyOf(pieces));
+                    map.put(entry.getKey().trim().toLowerCase(Locale.ROOT), List.copyOf(formPieces));
                 }
                 return Map.copyOf(map);
             }
         } catch (Throwable ignored) {
             return Map.of();
         }
+    }
+
+    /** Top-level {@code pieces} array, else the sorted union of every form's pieces. */
+    private static List<String> readShopPieces(JsonObject root) {
+        LinkedHashSet<String> out = new LinkedHashSet<>();
+        if (root != null && root.has("pieces") && root.get("pieces").isJsonArray()) {
+            for (JsonElement el : root.getAsJsonArray("pieces")) {
+                if (el != null && el.isJsonPrimitive()) {
+                    String id = el.getAsString().trim().toLowerCase(Locale.ROOT);
+                    if (!id.isEmpty()) {
+                        out.add(id);
+                    }
+                }
+            }
+        }
+        if (!out.isEmpty()) {
+            return new ArrayList<>(out);
+        }
+        if (root != null && root.has("forms") && root.get("forms").isJsonObject()) {
+            for (Map.Entry<String, JsonElement> entry : root.getAsJsonObject("forms").entrySet()) {
+                if (entry.getValue() == null || !entry.getValue().isJsonArray()) {
+                    continue;
+                }
+                for (JsonElement el : entry.getValue().getAsJsonArray()) {
+                    if (el != null && el.isJsonPrimitive()) {
+                        String id = el.getAsString().trim().toLowerCase(Locale.ROOT);
+                        if (!id.isEmpty()) {
+                            out.add(id);
+                        }
+                    }
+                }
+            }
+        }
+        ArrayList<String> sorted = new ArrayList<>(out);
+        java.util.Collections.sort(sorted);
+        return sorted;
     }
 }

@@ -42,6 +42,9 @@ KNOWN_DO: dict[str, set[str]] = {
         "bone_unequip",
         "bone_preview",
         "bone_restore",
+        "bodypart_unlock",
+        "bodypart_toggle",
+        "bodypart_clear",
         "saga_confirm",
         "saga_reset",
         "android_remove",
@@ -583,10 +586,10 @@ def main() -> int:
                 "SHIPPED_ON_RECOMMENDED must include FEATURE_ICON "
                 "(advertised by KaiPath 1.3.22)"
             )
-        if "FEATURE_BODY_PARTS" in shipped_block:
+        if "FEATURE_BODY_PARTS" not in shipped_block:
             errors.append(
-                "SHIPPED_ON_RECOMMENDED must not include FEATURE_BODY_PARTS "
-                "(not advertised by KaiPath 1.3.17)"
+                "SHIPPED_ON_RECOMMENDED must include FEATURE_BODY_PARTS "
+                "(advertised by KaiPath 1.3.29)"
             )
         pending_decl = "public static final Set<String> PENDING_NEXT"
         if pending_decl not in feat_text:
@@ -611,10 +614,10 @@ def main() -> int:
             errors.append(
                 "PENDING_NEXT must not include FEATURE_ICON (shipped on KaiPath 1.3.22)"
             )
-        if pending_block and "FEATURE_BODY_PARTS" not in pending_block:
+        if pending_block and "FEATURE_BODY_PARTS" in pending_block:
             errors.append(
-                "PENDING_NEXT must include FEATURE_BODY_PARTS "
-                "(playerModel.parts.bodyParts, not on KaiPath 1.3.17)"
+                "PENDING_NEXT must not include FEATURE_BODY_PARTS "
+                "(playerModel.parts.bodyParts, shipped on KaiPath 1.3.29)"
             )
         if "headerBottom" not in feat_text or 'FEATURE_ACCENT_DOC = "accent"' not in feat_text:
             errors.append("UltraClientFeatures must expose headerBottom/accent doc spellings")
@@ -625,8 +628,8 @@ def main() -> int:
     lm_net = ROOT / "src/main/java/com/dbzlegacy/adaptivedifficulty/net/gui/LmGuiNetwork.java"
     if lm_net.is_file():
         lm_net_text = lm_net.read_text(encoding="utf-8")
-        if 'KAIPATH_RECOMMENDED_VERSION = "1.3.22"' not in lm_net_text:
-            errors.append('LmGuiNetwork.KAIPATH_RECOMMENDED_VERSION must be "1.3.22"')
+        if 'KAIPATH_RECOMMENDED_VERSION = "1.3.29"' not in lm_net_text:
+            errors.append('LmGuiNetwork.KAIPATH_RECOMMENDED_VERSION must be "1.3.29"')
     if "roundTripStyleAndActiveTab" not in net:
         errors.append("LmGuiNetwork must round-trip style + activeTab in self-test")
     if "GuiFeaturesPacket" not in net:

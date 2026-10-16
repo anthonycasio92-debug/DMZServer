@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.gui.ultra;
 
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
+import com.dbzlegacy.adaptivedifficulty.character.CosmeticBodyPartService;
 import com.dbzlegacy.adaptivedifficulty.character.CosmeticHeadBoneService;
 import com.dbzlegacy.adaptivedifficulty.character.HeadPartPieces;
 import com.dbzlegacy.adaptivedifficulty.gui.AdminInspectSessions;
@@ -9,6 +10,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
@@ -161,6 +163,7 @@ public final class PlayerModelParts {
                 } catch (Throwable ignored) {
                 }
             }
+            Set<String> seen = new java.util.LinkedHashSet<>();
             for (BodyPartCatalog.Part part :
                     BodyPartCatalog.resolve(race, group, form, stackGroup, stackForm, tail)) {
                 if (part == null || part.id() == null || part.id().isBlank()) {
@@ -170,7 +173,22 @@ public final class PlayerModelParts {
                 entry.addProperty("id", part.id());
                 entry.addProperty("source", part.source());
                 entry.addProperty("slot", part.slot());
+                seen.add(part.id().trim().toLowerCase(Locale.ROOT));
                 out.add(entry);
+            }
+            // Custom Body Parts Shop pieces the player turned on. Dedup ids the worn
+            // form already named; the KaiPath 1.3.29 preview attaches each known mesh.
+            for (String customId : CosmeticBodyPartService.equippedParts(player)) {
+                if (customId == null
+                        || customId.isBlank()
+                        || !seen.add(customId.trim().toLowerCase(Locale.ROOT))) {
+                    continue;
+                }
+                JsonObject custom = new JsonObject();
+                custom.addProperty("id", customId);
+                custom.addProperty("source", BodyPartCatalog.SOURCE_DMZULTRA);
+                custom.addProperty("slot", BodyPartCatalog.slot(customId));
+                out.add(custom);
             }
         } catch (Throwable ignored) {
             return new JsonArray();

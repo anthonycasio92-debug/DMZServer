@@ -39,8 +39,9 @@ import net.minecraft.server.level.ServerPlayer;
  *
  * <p>Clients that never send {@link GuiFeaturesPacket} are treated as the KaiPath <b>1.3.1
  * baseline</b>: dynamic layout/buttons only. KaiPath <b>1.3.17</b> advertises the fifteen
- * chrome ids. KaiPath <b>1.3.22</b> (recommended) also advertises {@link #FEATURE_ICON}.
- * {@link #FEATURE_BODY_PARTS} stays in {@link #PENDING_NEXT} until a client advertises it.
+ * chrome ids. KaiPath <b>1.3.22</b> also advertises {@link #FEATURE_ICON}. KaiPath
+ * <b>1.3.29</b> (recommended) also advertises {@link #FEATURE_BODY_PARTS}, so
+ * {@link #PENDING_NEXT} is empty until a client ships the next optional id.
  * A client that lacks {@code bodyParts} still draws the base entity and ignores the array.
  * LM {@code footer:true} emission matches 1.3.17.
  */
@@ -89,8 +90,8 @@ public final class UltraClientFeatures {
     /** Normalized id for optional button/tab {@code icon} (advertised on KaiPath 1.3.22). */
     public static final String FEATURE_ICON = "icon";
     /**
-     * Normalized id for {@code playerModel.parts.bodyParts}. Not on KaiPath 1.3.17–1.3.20.
-     * Clients that omit it still draw the entity.
+     * Normalized id for {@code playerModel.parts.bodyParts}. Shipped on KaiPath 1.3.29
+     * (not on KaiPath 1.3.17–1.3.22). Clients that omit it still draw the entity.
      */
     public static final String FEATURE_BODY_PARTS = "bodyparts";
 
@@ -113,7 +114,7 @@ public final class UltraClientFeatures {
     /** Wire / doc spelling for {@link #FEATURE_BODY_PARTS}. */
     public static final String FEATURE_BODY_PARTS_DOC = "bodyParts";
 
-    /** Optional features the LM bridge expects a fully conforming 1.3.22 client to advertise. */
+    /** Optional features the LM bridge expects a fully conforming 1.3.29 client to advertise. */
     public static final Set<String> EXPECTED_OPTIONAL =
             Set.of(
                     FEATURE_STYLE,
@@ -131,11 +132,13 @@ public final class UltraClientFeatures {
                     FEATURE_PAGED_BOOK,
                     FEATURE_PORTRAIT_FRAME,
                     FEATURE_COMBINED_FORMS,
-                    FEATURE_ICON);
+                    FEATURE_ICON,
+                    FEATURE_BODY_PARTS);
 
     /**
-     * Features KaiPath <b>1.3.22</b> already advertises/honors (1.3.17 chrome plus {@code icon}).
-     * Missing any of these is a real client gap (wrong jar / old client).
+     * Features KaiPath <b>1.3.29</b> already advertises/honors (1.3.17 chrome, 1.3.22
+     * {@code icon}, 1.3.29 {@code bodyParts}). Missing any of these is a real client gap
+     * (wrong jar / old client).
      */
     public static final Set<String> SHIPPED_ON_RECOMMENDED =
             Set.of(
@@ -154,14 +157,15 @@ public final class UltraClientFeatures {
                     FEATURE_PAGED_BOOK,
                     FEATURE_PORTRAIT_FRAME,
                     FEATURE_COMBINED_FORMS,
-                    FEATURE_ICON);
+                    FEATURE_ICON,
+                    FEATURE_BODY_PARTS);
 
     /**
-     * Optional ids the next KaiPath release might add. {@code icon} shipped on 1.3.22.
-     * {@code bodyParts} is the explicit preview-piece list and is still pending.
-     * Guitest reports these as {@code pendingNext=} (info), not a shipped-client warning.
+     * Optional ids the next KaiPath release might add. Empty since 1.3.29 shipped
+     * {@code bodyParts} (the last pending id). Guitest reports these as {@code pendingNext=}
+     * (info), not a shipped-client warning.
      */
-    public static final Set<String> PENDING_NEXT = Set.of(FEATURE_BODY_PARTS);
+    public static final Set<String> PENDING_NEXT = Set.of();
 
     private static final Map<UUID, State> BY_PLAYER = new ConcurrentHashMap<>();
 
@@ -297,10 +301,13 @@ public final class UltraClientFeatures {
         if (state == null || !state.has(FEATURE_ICON)) {
             missing.add(FEATURE_ICON_DOC);
         }
+        if (state == null || !state.has(FEATURE_BODY_PARTS)) {
+            missing.add(FEATURE_BODY_PARTS_DOC);
+        }
         return missing;
     }
 
-    /** Optional ids not yet advertised by the recommended KaiPath jar. Currently {@code bodyParts}. */
+    /** Optional ids not yet advertised by the recommended KaiPath jar. Empty since 1.3.29. */
     public static List<String> missingPending(State state) {
         List<String> missing = new ArrayList<>();
         for (String feature : PENDING_NEXT) {
@@ -431,9 +438,9 @@ public final class UltraClientFeatures {
     }
 
     /**
-     * Log when 1.3.22-shipped features are missing (real gap). {@link #PENDING_NEXT} gaps
-     * log at info. {@code icon} is shipped, so a client that omits it warns with the rest.
-     * {@code bodyParts} stays info until a client advertises it.
+     * Log when 1.3.29-shipped features are missing (real gap). {@link #PENDING_NEXT} gaps
+     * log at info. {@code icon} and {@code bodyParts} are shipped, so a client that omits
+     * them warns with the rest. {@code PENDING_NEXT} is empty until a client ships more.
      */
     public static void warnMissingOptionalFeatures(ServerPlayer player, String context) {
         if (player == null) {
@@ -447,7 +454,7 @@ public final class UltraClientFeatures {
         String ctx = context == null ? "?" : context;
         if (!shippedGaps.isEmpty()) {
             AdaptiveDifficultyMod.LOGGER.warn(
-                    "[{}] Ultra client gap (shipped features through 1.3.22) player={} kaipathVersion={} "
+                    "[{}] Ultra client gap (shipped features through 1.3.29) player={} kaipathVersion={} "
                             + "context={} advertised={} features={} missingShipped={} — {}",
                     AdaptiveDifficultyMod.MOD_ID,
                     safeName(player),
@@ -460,7 +467,7 @@ public final class UltraClientFeatures {
         }
         if (!pending.isEmpty()) {
             AdaptiveDifficultyMod.LOGGER.info(
-                    "[{}] Ultra pending after KaiPath 1.3.22 player={} kaipathVersion={} "
+                    "[{}] Ultra pending after KaiPath 1.3.29 player={} kaipathVersion={} "
                             + "context={} pending={}",
                     AdaptiveDifficultyMod.MOD_ID,
                     safeName(player),

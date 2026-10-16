@@ -156,6 +156,16 @@ public final class CharacterServicesStore {
          * Re-applied after DMZ form changes that clear {@code activeHeadBone} on the model.
          */
         public String equippedHeadBone = "";
+        /**
+         * Permanent unlocks from the custom body parts shop (DMZUltra FormParts pieces).
+         * Not cleared by race change, reskin, or class change.
+         */
+        public Set<String> unlockedBodyParts = new LinkedHashSet<>();
+        /**
+         * Custom body pieces the player chose to wear (ids from the Body Parts Shop).
+         * Sent on the KaiPath model preview via {@code playerModel.parts.bodyParts}.
+         */
+        public List<String> equippedBodyParts = new ArrayList<>();
     }
 
     private static final class Persist {

@@ -29,6 +29,7 @@ public final class CharacterServicesConfig {
     public ClassChange classChange = new ClassChange();
     public Reskin reskin = new Reskin();
     public HeadBoneShop headBoneShop = new HeadBoneShop();
+    public BodyPartShop bodyPartShop = new BodyPartShop();
 
     public static CharacterServicesConfig get() {
         return INSTANCE;
@@ -259,6 +260,18 @@ public final class CharacterServicesConfig {
         if (c.headBoneShop.excludeBones == null) {
             c.headBoneShop.excludeBones = Collections.emptyList();
         }
+        if (c.bodyPartShop == null) {
+            c.bodyPartShop = new BodyPartShop();
+        }
+        if (c.bodyPartShop.partCosts == null) {
+            c.bodyPartShop.partCosts = new LinkedHashMap<>();
+        }
+        if (c.bodyPartShop.displayNames == null) {
+            c.bodyPartShop.displayNames = new LinkedHashMap<>();
+        }
+        if (c.bodyPartShop.excludeParts == null) {
+            c.bodyPartShop.excludeParts = Collections.emptyList();
+        }
         if (c.raceChange.preservationCostCopper == null || c.raceChange.preservationCostCopper.isEmpty()) {
             c.raceChange.preservationCostCopper = defaultPreservationCosts();
         } else {
@@ -295,6 +308,7 @@ public final class CharacterServicesConfig {
         public String bypassCooldown = "legacymechanics.character.bypass.cooldown";
         public String admin = "legacymechanics.character.admin";
         public String headBones = "legacymechanics.character.headbones";
+        public String bodyParts = "legacymechanics.character.bodyparts";
     }
 
     public static final class Restrictions {
@@ -352,6 +366,34 @@ public final class CharacterServicesConfig {
             }
             String want = boneId.trim().toLowerCase(Locale.ROOT);
             for (String e : excludeBones) {
+                if (e != null && want.equals(e.trim().toLowerCase(Locale.ROOT))) {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    /**
+     * Custom body parts shop — DMZUltra FormParts pieces players pick on the model
+     * customization screen (KaiPath 1.3.29 attaches {@code playerModel.parts.bodyParts}).
+     * Pieces are shown on the KaiPath preview via the bridge wire; unlocks persist in
+     * {@link CharacterServicesStore}.
+     */
+    public static final class BodyPartShop {
+        public boolean enabled = true;
+        public long defaultUnlockCostCopper = 100_000L;
+        public boolean levelCostMultiplier = true;
+        public Map<String, Long> partCosts = new LinkedHashMap<>();
+        public Map<String, String> displayNames = new LinkedHashMap<>();
+        public java.util.List<String> excludeParts = Collections.emptyList();
+
+        public boolean isExcluded(String partId) {
+            if (partId == null || excludeParts == null) {
+                return false;
+            }
+            String want = partId.trim().toLowerCase(Locale.ROOT);
+            for (String e : excludeParts) {
                 if (e != null && want.equals(e.trim().toLowerCase(Locale.ROOT))) {
                     return true;
                 }

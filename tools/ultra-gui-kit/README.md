@@ -78,7 +78,7 @@ UltraGuiConsumerRegistry.advertiseFeatures(
         + "\"bodyParts\",\"icon\"]");
 ```
 
-`"icon"` shipped on official KaiPath 1.3.22 (item id or texture path). 1.3.17 stops at `combined.forms.v1`. `"bodyParts"` is kit-only until official KaiPath advertises it. A client that does not advertise `bodyParts` still draws the entity.
+`"icon"` shipped on official KaiPath 1.3.22 (item id or texture path). 1.3.17 stops at `combined.forms.v1`. `"bodyParts"` shipped on official KaiPath **1.3.29** — a pre-1.3.29 client is now reported as `missingShipped=bodyParts`. A client that does not advertise `bodyParts` still draws the entity.
 
 ```java
 // Client boot (wired via LmUltraConsumer.bootstrap):

@@ -2755,6 +2755,103 @@ def main() -> int:
           and "SagaResetConfig" in build_sh
           and "SagaResetService" in build_sh)
 
+    print("\n=== Ultra custom body parts shop (KaiPath 1.3.29) ===")
+    body_svc_bp = read(
+        SRC / "com/dbzlegacy/adaptivedifficulty/character/CosmeticBodyPartService.java"
+    )
+    cs_cfg_bp = read(
+        SRC / "com/dbzlegacy/adaptivedifficulty/character/CharacterServicesConfig.java"
+    )
+    cs_store_bp = read(
+        SRC / "com/dbzlegacy/adaptivedifficulty/character/CharacterServicesStore.java"
+    )
+    cs_access_bp = read(
+        SRC / "com/dbzlegacy/adaptivedifficulty/character/CharacterServicesAccess.java"
+    )
+    cs_gui_bp = read(
+        SRC / "com/dbzlegacy/adaptivedifficulty/gui/CharacterServicesGuiApi.java"
+    )
+    char_screens_bp = read(
+        SRC / "com/dbzlegacy/adaptivedifficulty/gui/ultra/UltraCharacterScreens.java"
+    )
+    parts_bp = read(
+        SRC / "com/dbzlegacy/adaptivedifficulty/gui/ultra/PlayerModelParts.java"
+    )
+    catalog_bp = read(
+        SRC / "com/dbzlegacy/adaptivedifficulty/gui/ultra/BodyPartCatalog.java"
+    )
+    feat_bp = read(
+        SRC / "com/dbzlegacy/adaptivedifficulty/net/gui/UltraClientFeatures.java"
+    )
+    net_bp = read(
+        SRC / "com/dbzlegacy/adaptivedifficulty/net/gui/LmGuiNetwork.java"
+    )
+    json_bp = read(
+        ROOT
+        / "tools"
+        / "dmz-adaptive-difficulty"
+        / "src"
+        / "main"
+        / "resources"
+        / "dmzultra-form-parts.json"
+    )
+    check(
+        "Ultra Body Parts Shop service mirrors the head-bone shop",
+        "executeUnlock" in body_svc_bp
+        and "executeToggle" in body_svc_bp
+        and "executeClear" in body_svc_bp
+        and "equippedParts" in body_svc_bp
+        and "shopPieceIds" in body_svc_bp
+        and "unlockCost" in body_svc_bp,
+    )
+    check(
+        "Ultra Body Parts Shop config block + bodyParts permission node",
+        "class BodyPartShop" in cs_cfg_bp
+        and "bodyPartShop" in cs_cfg_bp
+        and '"legacymechanics.character.bodyparts"' in cs_cfg_bp,
+    )
+    check(
+        "Ultra Body Parts Shop store fields persist unlocks + worn pieces",
+        "unlockedBodyParts" in cs_store_bp and "equippedBodyParts" in cs_store_bp,
+    )
+    check(
+        "Ultra body parts access gate canBodyPartShop",
+        "canBodyPartShop" in cs_access_bp,
+    )
+    check(
+        "Ultra body parts GUI dispatch routes unlock/toggle/clear actions",
+        '"bodypart_unlock"' in cs_gui_bp
+        and '"bodypart_toggle"' in cs_gui_bp
+        and '"bodypart_clear"' in cs_gui_bp
+        and "bodyPartCards" in cs_gui_bp,
+    )
+    check(
+        "Ultra model customize opens Body parts page (bodyparts: routing)",
+        '"bodyparts:"' in char_screens_bp
+        and "openBodyParts" in char_screens_bp
+        and 'sub(player, "bodyparts:" + pg, true)' in char_screens_bp
+        and '"page:bodyparts:0"' in char_screens_bp,
+    )
+    check(
+        "Ultra PlayerModelParts sends equipped custom pieces on bodyParts",
+        "CosmeticBodyPartService.equippedParts" in parts_bp
+        and "BodyPartCatalog.slot" in parts_bp,
+    )
+    check(
+        "Ultra BodyPartCatalog exposes the shop piece list",
+        "shopPieceIds" in catalog_bp and '"pieces"' in catalog_bp,
+    )
+    check(
+        "Ultra form-parts JSON ships the client piece list",
+        '"pieces"' in json_bp,
+    )
+    check(
+        "KaiPath 1.3.29 bodyParts feature promotion (shipped, not pending)",
+        "FEATURE_BODY_PARTS" in feat_bp
+        and "PENDING_NEXT = Set.of()" in feat_bp
+        and 'KAIPATH_RECOMMENDED_VERSION = "1.3.29"' in net_bp,
+    )
+
     print("\n=== Summary ===")
     for w in warns:
         print(f"WARN: {w}")

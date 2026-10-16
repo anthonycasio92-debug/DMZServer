@@ -19,6 +19,7 @@ public final class CharacterServicesPermissionBootstrap {
         registerNode(cfg.permissions.classChange, true, "Use class change");
         registerNode(cfg.permissions.reskin, true, "Use reskin (DMZ recustomize)");
         registerNode(cfg.permissions.headBones, true, "Use Head Parts Shop");
+        registerNode(cfg.permissions.bodyParts, true, "Use Body Parts Shop");
         registerNode(cfg.permissions.bypassCost, false, "Skip Ancient Coin charges for character services");
         registerNode(cfg.permissions.bypassCooldown, false, "Skip character service cooldowns");
         registerNode(cfg.permissions.admin, false, "Full character services admin bypass");

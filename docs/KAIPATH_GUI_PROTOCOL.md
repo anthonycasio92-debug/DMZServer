@@ -190,15 +190,15 @@ Known optional feature ids:
 | `fixedFooter` | Button `footer:true` pinned chrome (**shipped on KaiPath 1.3.17**) |
 | `combined.forms.v1` | One preview combines the base entity with optional `playerModel.parts.headBones` and `playerModel.parts.form` string ids. The strings are generic (race, group, form, stack). Any mod may send its own ids. A client that lacks the feature still draws the entity and ignores `parts.form`. |
 | `icon` | Optional button/tab `icon` (item id or texture path). **Advertised by KaiPath 1.3.22.** A client that omits it is `missingShipped=icon`, not `pendingNext`. |
-| `bodyParts` | `playerModel.parts.bodyParts` — explicit pieces (`id`, `source`, `slot`) attached to that same preview. Any mod may send its own ids. A client that lacks the feature still draws the entity and ignores the array. Unknown ids are skipped. **Not** advertised by KaiPath 1.3.22. LM logs `pendingNext=bodyParts` until the client sends it. |
+| `bodyParts` | `playerModel.parts.bodyParts` — explicit pieces (`id`, `source`, `slot`) attached to that same preview. Any mod may send its own ids. A client that lacks the feature still draws the entity and ignores the array. Unknown ids are skipped. **Advertised by KaiPath 1.3.29.** A client that omits it is `missingShipped=bodyParts`, not `pendingNext`. LM sends worn form pieces plus the player's Body Parts Shop pieces. |
 
-Advertise (KaiPath **1.3.22** — sixteen ids; the first fifteen shipped on 1.3.17; see [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md)):
+Advertise (KaiPath **1.3.29** — seventeen ids; the first fifteen shipped on 1.3.17, `icon` on 1.3.22, `bodyParts` on 1.3.29; see [`KAIPATH_BRIDGE_GAPS.md`](KAIPATH_BRIDGE_GAPS.md)):
 
 ```json
-["style","activeTab","titleAlign","playerModel","textInput","headerBottom","accent","palette","sound","buttonSkin","frame","pagedBook","portraitFrame","fixedFooter","combined.forms.v1","icon"]
+["style","activeTab","titleAlign","playerModel","textInput","headerBottom","accent","palette","sound","buttonSkin","frame","pagedBook","portraitFrame","fixedFooter","combined.forms.v1","icon","bodyParts"]
 ```
 
-`icon` is no longer pending. Stock 1.3.17 stops before it and is reported as a shipped-client gap. The reference kit (`tools/ultra-gui-kit/`) also advertises `"bodyParts"` after `icon`. Official KaiPath 1.3.22 does not. A missing `bodyParts` advertisement is info (`pendingNext`), not a shipped-client warning. Clients that never advertise `bodyParts` still draw the base entity.
+`icon` is no longer pending. Stock 1.3.17 stops before it and is reported as a shipped-client gap. The reference kit (`tools/ultra-gui-kit/`) also advertises `"bodyParts"` after `icon`, and official KaiPath 1.3.29 does too. A missing `bodyParts` advertisement (pre-1.3.29 clients) is now a shipped-client warning (`missingShipped=bodyParts`). Clients that never advertise `bodyParts` still draw the base entity.
 
 **Spelling split:** GuiFeatures advertise uses camelCase **`pagedBook`**; the widget `type` string is snake_case **`paged_book`**.
 

@@ -83,7 +83,18 @@ public final class BodyPartCatalogSelfTest {
         if (!BodyPartCatalog.resolve(null, null, null, null, null, false).isEmpty()) {
             fail("null identity should send nothing");
         }
-        System.out.println("BodyPartCatalogSelfTest OK forms=" + BodyPartCatalog.formCount());
+        List<String> shop = BodyPartCatalog.shopPieceIds();
+        if (shop.size() < 60) {
+            fail("shop piece list should mirror the DMZUltra client catalog, got " + shop.size());
+        }
+        if (!shop.contains("wings_feather") || !shop.contains("tail_fur")) {
+            fail("shop pieces should include the client meshes, got " + shop);
+        }
+        System.out.println(
+                "BodyPartCatalogSelfTest OK forms="
+                        + BodyPartCatalog.formCount()
+                        + " shopPieces="
+                        + shop.size());
     }
 
     private static void fail(String message) {

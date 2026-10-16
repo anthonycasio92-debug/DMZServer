@@ -1,7 +1,9 @@
 package com.dbzlegacy.adaptivedifficulty.gui.ultra;
 
+import com.dbzlegacy.adaptivedifficulty.character.CharacterServicesAccess;
 import com.dbzlegacy.adaptivedifficulty.character.CharacterServicesConfig;
 import com.dbzlegacy.adaptivedifficulty.character.CharacterServicesSystem;
+import com.dbzlegacy.adaptivedifficulty.character.CosmeticBodyPartService;
 import com.dbzlegacy.adaptivedifficulty.character.CosmeticHeadBoneService;
 import com.dbzlegacy.adaptivedifficulty.character.HeadPartPieces;
 import com.dbzlegacy.adaptivedifficulty.gui.CharacterServicesGuiApi;
@@ -43,6 +45,10 @@ public final class UltraCharacterScreens {
         }
         if (lower.startsWith("bones:") || "bones".equals(lower)) {
             openBones(player, parseBonePage(lower));
+            return;
+        }
+        if (lower.startsWith("bodyparts:") || "bodyparts".equals(lower)) {
+            openBodyParts(player, parseBodyPartPage(lower));
             return;
         }
         if (isStaffAndroidPage(lower)) {
@@ -546,6 +552,14 @@ public final class UltraCharacterScreens {
                         UltraStyle.danger("Clear parts"),
                         UltraStyle.STYLE_DANGER)
                 .rowGap();
+        if (CharacterServicesConfig.get().bodyPartShop.enabled
+                && CharacterServicesAccess.canBodyPartShop(player)) {
+            spec.buttonLeft(
+                            "page:bodyparts:0",
+                            UltraStyle.LABEL + "Body parts",
+                            UltraStyle.STYLE_NORMAL)
+                    .rowGap();
+        }
         if (pg > 0) {
             spec.buttonLeft(
                     "page:bones:" + (pg - 1), UltraStyle.dim("Prev"), UltraStyle.STYLE_DIM);
@@ -578,6 +592,108 @@ public final class UltraCharacterScreens {
             }
         }
         return 0;
+    }
+
+    private static int parseBodyPartPage(String page) {
+        if (page == null || page.isBlank() || "bodyparts".equals(page)) {
+            return 0;
+        }
+        if (page.startsWith("bodyparts:")) {
+            try {
+                return Integer.parseInt(page.substring("bodyparts:".length()).trim());
+            } catch (NumberFormatException ignored) {
+                return 0;
+            }
+        }
+        return 0;
+    }
+
+    /**
+     * Body Parts Shop - custom DMZUltra FormParts pieces the player wears on the KaiPath
+     * model preview. Reached from model customize; pieces ride {@code playerModel.parts.bodyParts}
+     * (KaiPath 1.3.29 attaches them via BodyPartPreview).
+     */
+    private static void openBodyParts(ServerPlayer player, int page) {
+        if (CosmeticHeadBoneService.isFormModelRace(player)) {
+            UltraScreenSpec spec = sub(player, "bodyparts:0", true)
+                    .line(UltraStyle.LABEL + "Model customization")
+                    .line(UltraStyle.LABEL
+                            + "Not available for Monkey - this race uses a form model.")
+                    .buttonsAfterLines();
+            spec.footerBack("page:bones:0", "Model");
+            spec.send(player);
+            return;
+        }
+        int pages = CosmeticBodyPartService.pageCount();
+        int pg = Math.min(pages - 1, Math.max(0, page));
+        UltraScreenSpec spec = sub(player, "bodyparts:" + pg, true)
+                .labelValue(CosmeticBodyPartService.pageTitle(pg),
+                        "On: " + UltraStyle.plain(CosmeticBodyPartService.wornLabel(player)));
+        appendCompactLines(spec, CharacterServicesGuiApi.linesForPage(player, "bodyparts:" + pg));
+        spec.buttonsAfterLines();
+        List<String> cards = CharacterServicesGuiApi.bodyPartCards(player, pg);
+        int placed = 0;
+        for (String card : cards) {
+            if (placed >= 8 || card == null || card.isBlank()) {
+                continue;
+            }
+            String[] p = card.split("\t", -1);
+            String id = p.length > 0 ? p[0].trim() : "";
+            String name = p.length > 1 ? p[1].trim() : id;
+            String state = p.length > 2 ? p[2].trim() : "";
+            if (id.isBlank()) {
+                continue;
+            }
+            String action = "do:bodypart_toggle:" + id;
+            String label;
+            String style;
+            if ("E".equals(state)) {
+                String on = name + " on";
+                label = UltraStyle.confirm(UltraStyle.fitsButton(on) ? on : UltraStyle.buttonText(name));
+                style = UltraStyle.STYLE_CONFIRM;
+            } else if ("L".equals(state)) {
+                String locked = name + " lock";
+                label = UltraStyle.dim(UltraStyle.fitsButton(locked) ? locked : UltraStyle.buttonText(name));
+                style = UltraStyle.STYLE_DIM;
+                action = "do:bodypart_unlock:" + id;
+            } else {
+                label = UltraStyle.LABEL + UltraStyle.buttonText(name);
+                style = UltraStyle.STYLE_NORMAL;
+            }
+            if (placed % 2 == 0) {
+                spec.buttonLeft(action, label, style);
+            } else {
+                spec.buttonRight(action, label, style);
+                spec.rowGap();
+            }
+            placed++;
+        }
+        if (placed % 2 == 1) {
+            spec.rowGap();
+        }
+        spec.buttonLeft(
+                        "do:bodypart_clear",
+                        UltraStyle.danger("Clear parts"),
+                        UltraStyle.STYLE_DANGER)
+                .rowGap();
+        if (pg > 0) {
+            spec.buttonLeft(
+                    "page:bodyparts:" + (pg - 1), UltraStyle.dim("Prev"), UltraStyle.STYLE_DIM);
+        }
+        if (pg + 1 < pages) {
+            if (pg > 0) {
+                spec.buttonRight(
+                        "page:bodyparts:" + (pg + 1), UltraStyle.LABEL + "Next", UltraStyle.STYLE_NORMAL);
+            } else {
+                spec.buttonLeft(
+                        "page:bodyparts:" + (pg + 1), UltraStyle.LABEL + "Next", UltraStyle.STYLE_NORMAL);
+            }
+            spec.rowGap();
+        } else if (pg > 0) {
+            spec.rowGap();
+        }
+        spec.footerBack("page:bones:0", "Model");
+        spec.send(player);
     }
 
     private static void openSagaReset(ServerPlayer player, int page) {

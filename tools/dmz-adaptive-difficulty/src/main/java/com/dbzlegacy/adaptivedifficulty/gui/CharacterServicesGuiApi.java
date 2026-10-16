@@ -3,6 +3,7 @@ package com.dbzlegacy.adaptivedifficulty.gui;
 import com.dbzlegacy.adaptivedifficulty.character.CharacterServicesAccess;
 import com.dbzlegacy.adaptivedifficulty.character.CharacterServicesConfig;
 import com.dbzlegacy.adaptivedifficulty.character.CharacterServicesSystem;
+import com.dbzlegacy.adaptivedifficulty.character.CosmeticBodyPartService;
 import com.dbzlegacy.adaptivedifficulty.character.CosmeticHeadBoneService;
 import com.dbzlegacy.adaptivedifficulty.character.FightingClassLabels;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
@@ -130,6 +131,20 @@ public final class CharacterServicesGuiApi {
             lines.add("§7A locked part charges Ancient Coins when you turn it on.");
             return lines;
         }
+        if (p.startsWith("bodyparts:") || "bodyparts".equals(p)) {
+            if (!CharacterServicesConfig.get().bodyPartShop.enabled) {
+                lines.add("§cBody parts are turned off on this server.");
+                return lines;
+            }
+            if (!CharacterServicesAccess.canBodyPartShop(player)) {
+                lines.add("§cYou do not have permission for body parts.");
+                return lines;
+            }
+            lines.add("§7Extra pieces for your KaiPath model preview - wings, horns, tails.");
+            lines.add("§7A locked piece charges Ancient Coins when you turn it on.");
+            lines.add("§7Shown on model previews; unlocked pieces stay in your collection.");
+            return lines;
+        }
         if ("reskin".equals(p)) {
             if (!CharacterServicesConfig.get().reskin.enabled) {
                 lines.add("§cReskin is turned off on this server.");
@@ -230,6 +245,10 @@ public final class CharacterServicesGuiApi {
         return CosmeticHeadBoneService.cards(player, page);
     }
 
+    public static List<String> bodyPartCards(ServerPlayer player, int page) {
+        return CosmeticBodyPartService.cards(player, page);
+    }
+
     public static String handleDo(ServerPlayer player, String action, String arg, String page) {
         if (player == null) {
             return "§cThis only works in-game - console can't use character services.";
@@ -275,6 +294,15 @@ public final class CharacterServicesGuiApi {
         }
         if ("bone_unequip".equals(act)) {
             return CosmeticHeadBoneService.executeUnequipHeadBone(player);
+        }
+        if ("bodypart_unlock".equals(act)) {
+            return CosmeticBodyPartService.executeUnlock(player, a);
+        }
+        if ("bodypart_toggle".equals(act)) {
+            return CosmeticBodyPartService.executeToggle(player, a);
+        }
+        if ("bodypart_clear".equals(act)) {
+            return CosmeticBodyPartService.executeClear(player);
         }
         return "§cSomething went wrong. Try again, or ask staff if it keeps happening.";
     }

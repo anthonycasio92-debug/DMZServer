@@ -8,7 +8,8 @@
     "bypassCost": "legacymechanics.character.bypass.cost",
     "bypassCooldown": "legacymechanics.character.bypass.cooldown",
     "admin": "legacymechanics.character.admin",
-    "headBones": "legacymechanics.character.headbones"
+    "headBones": "legacymechanics.character.headbones",
+    "bodyParts": "legacymechanics.character.bodyparts"
   },
   "restrictions": {
     "blockWhileDead": true,
@@ -78,5 +79,13 @@
       "antennas2": "Antennas (style 2)"
     },
     "excludeBones": []
+  },
+  "bodyPartShop": {
+    "enabled": true,
+    "defaultUnlockCostCopper": 100000,
+    "levelCostMultiplier": true,
+    "partCosts": {},
+    "displayNames": {},
+    "excludeParts": []
   }
 }
