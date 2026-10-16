@@ -7,6 +7,9 @@ import com.dbzlegacy.adaptivedifficulty.gui.MechanicsMenu;
 import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
+import com.dbzlegacy.adaptivedifficulty.progression.form.FirstSuperformChoice;
+import com.dbzlegacy.adaptivedifficulty.progression.form.FirstSuperformMastery;
+import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import java.util.Locale;
@@ -76,6 +79,7 @@ public final class MechanicsCommands {
                                             return open(ctx.getSource(), "logs");
                                         }))))
                 .then(fusionResetLiteral())
+                .then(masteryLiteral())
                 .then(CommandAccess.staffLiteral("admin")
                         .executes(ctx -> adminHelp(ctx.getSource()))
                         .then(Commands.m_82127_("help").executes(ctx -> adminHelp(ctx.getSource())))
@@ -147,6 +151,130 @@ public final class MechanicsCommands {
                                         ctx.getSource(),
                                         StringArgumentType.getString(ctx, "player"),
                                         StringArgumentType.getString(ctx, "kind")))));
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> masteryLiteral() {
+        return CommandAccess.staffLiteral("mastery")
+                .then(masteryGrant("grant-first-superform", FirstSuperformChoice.Kind.SUPER))
+                .then(masteryGrant("grant-first-legendary", FirstSuperformChoice.Kind.LEGENDARY));
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> masteryGrant(
+            String name, FirstSuperformChoice.Kind kind) {
+        String usage = "/lm mastery " + name + " <amount> [player]";
+        String consoleUsage = "/lm mastery " + name + " <amount> <player>";
+        return Commands.m_82127_(name)
+                .executes(ctx -> {
+                    LmCommandFeedback.tell(ctx.getSource(), LmCommandMessages.tryCommand(usage));
+                    return 0;
+                })
+                .then(Commands.m_82129_("amount", DoubleArgumentType.doubleArg(0.01))
+                        .executes(ctx -> grantMastery(
+                                ctx.getSource(),
+                                DoubleArgumentType.getDouble(ctx, "amount"),
+                                null,
+                                kind,
+                                consoleUsage))
+                        .then(LmCommandSuggestions.playerWord("player")
+                                .executes(ctx -> grantMastery(
+                                        ctx.getSource(),
+                                        DoubleArgumentType.getDouble(ctx, "amount"),
+                                        StringArgumentType.getString(ctx, "player"),
+                                        kind,
+                                        consoleUsage))))
+                .then(LmCommandSuggestions.playerWordUnlessNumber("target")
+                        .then(Commands.m_82129_("masteryAmount", DoubleArgumentType.doubleArg(0.01))
+                                .executes(ctx -> grantMastery(
+                                        ctx.getSource(),
+                                        DoubleArgumentType.getDouble(ctx, "masteryAmount"),
+                                        StringArgumentType.getString(ctx, "target"),
+                                        kind,
+                                        consoleUsage))));
+    }
+
+    /**
+     * Bukkit and console entry. Mohist owns {@code /lm}, so a named player has to
+     * resolve here when the GUI plugin calls in, and when brigadier already parsed
+     * {@code <player> <amount>} or {@code <amount> <player>}.
+     */
+    public static String grantNamed(
+            MinecraftServer server,
+            String playerName,
+            double amount,
+            String kindToken,
+            boolean notifyTarget) {
+        FirstSuperformChoice.Kind kind = kindFromToken(kindToken);
+        if (kind == null || server == null || playerName == null || playerName.isBlank()) {
+            return LmCommandMessages.tryCommand(
+                    "/lm mastery grant-first-superform <amount> <player>");
+        }
+        ServerPlayer target = onlinePlayer(server, playerName);
+        if (target == null) {
+            return LmCommandMessages.playerOffline(playerName);
+        }
+        return finishGrant(target, amount, kind, notifyTarget).message;
+    }
+
+    private static int grantMastery(
+            CommandSourceStack source,
+            double amount,
+            String playerName,
+            FirstSuperformChoice.Kind kind,
+            String consoleUsage) {
+        if (StaffAccess.denyUnlessStaff(source) == 0) {
+            return 0;
+        }
+        ServerPlayer target;
+        if (playerName == null || playerName.isBlank()) {
+            target = source.m_230896_();
+            if (target == null) {
+                LmCommandFeedback.tell(source, LmCommandMessages.tryCommand(consoleUsage));
+                return 0;
+            }
+        } else {
+            target = onlinePlayer(source.m_81377_(), playerName);
+            if (target == null) {
+                LmCommandFeedback.tell(source, LmCommandMessages.playerOffline(playerName));
+                return 0;
+            }
+        }
+        FirstSuperformMastery.Outcome outcome = finishGrant(
+                target, amount, kind, source.m_230896_() != target);
+        LmCommandFeedback.tell(source, outcome.message);
+        return outcome.ok ? 1 : 0;
+    }
+
+    private static FirstSuperformMastery.Outcome finishGrant(
+            ServerPlayer target,
+            double amount,
+            FirstSuperformChoice.Kind kind,
+            boolean notifyTarget) {
+        FirstSuperformMastery.Outcome outcome = FirstSuperformMastery.grant(target, amount, kind);
+        if (outcome.ok && notifyTarget && target != null) {
+            target.m_213846_(Component.m_237113_(UltraStyle.noticeLine(noticeFor(kind))));
+        }
+        return outcome;
+    }
+
+    private static FirstSuperformChoice.Kind kindFromToken(String token) {
+        if (token == null) {
+            return null;
+        }
+        String lower = token.toLowerCase(Locale.ROOT);
+        if (lower.contains("legendary")) {
+            return FirstSuperformChoice.Kind.LEGENDARY;
+        }
+        if (lower.contains("super")) {
+            return FirstSuperformChoice.Kind.SUPER;
+        }
+        return null;
+    }
+
+    private static String noticeFor(FirstSuperformChoice.Kind kind) {
+        if (kind == FirstSuperformChoice.Kind.LEGENDARY) {
+            return "Mastery was granted on your first legendary form.";
+        }
+        return "Mastery was granted on your first super form.";
     }
 
     private static LiteralArgumentBuilder<CommandSourceStack> fusionResetLiteral() {

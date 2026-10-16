@@ -3315,6 +3315,37 @@ public final class ForgeBridge {
     }
 
     /**
+     * Staff mastery grant for one online player
+     * ({@code /lm mastery grant-first-superform} or {@code grant-first-legendary}).
+     * Works from console or a player — Mohist Bukkit owns {@code /lm}.
+     */
+    public static String grantFirstFormMastery(
+            String playerName, double amount, String kindToken, boolean notifyTarget) {
+        try {
+            ClassLoader cl = preferredLoader();
+            Class<?> mech = loadClass(
+                    "com.dbzlegacy.adaptivedifficulty.command.MechanicsCommands", cl);
+            Class<?> serverCls = loadClass("net.minecraft.server.MinecraftServer", cl);
+            Object server = minecraftServerOrNull();
+            if (server == null) {
+                return "§cNo MinecraftServer — is the world loaded?";
+            }
+            Object msg = mech.getMethod(
+                            "grantNamed",
+                            serverCls,
+                            String.class,
+                            double.class,
+                            String.class,
+                            boolean.class)
+                    .invoke(null, server, playerName, amount, kindToken, notifyTarget);
+            return msg == null ? "§eMastery grant returned empty." : String.valueOf(msg);
+        } catch (Throwable t) {
+            resolveError = t.getClass().getSimpleName() + ": " + t.getMessage();
+            return "§cMastery grant failed: " + resolveError;
+        }
+    }
+
+    /**
      * Staff reset of character service cooldowns
      * ({@code /lm admin character cooldown clear <player> [race|class|reskin|all]}).
      */

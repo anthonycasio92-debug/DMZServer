@@ -1,7 +1,10 @@
 package com.dbzlegacy.adaptivedifficulty.command;
 
+import com.mojang.brigadier.StringReader;
+import com.mojang.brigadier.arguments.ArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -183,6 +186,9 @@ public final class LmCommandSuggestions {
                     && n >= 5) {
                 return true;
             }
+            if ("mastery".equals(a0) && isMasteryGrant(a1) && masteryPlayerSlot(args)) {
+                return true;
+            }
             return false;
         }
         if ("difficulty".equals(cmd) || "diff".equals(cmd)) {
@@ -249,6 +255,17 @@ public final class LmCommandSuggestions {
                 }
                 String p = args[1];
                 return p == null ? "" : p;
+            }
+            if (n > 0 && "mastery".equals(lower(args[0]))) {
+                if (n >= 4 && isNumericToken(args[2])) {
+                    String p = args[3];
+                    return p == null ? "" : p;
+                }
+                if (n >= 3) {
+                    String p = args[2];
+                    return p == null ? "" : p;
+                }
+                return "";
             }
             if (n >= 5) {
                 String p = args[4];
@@ -424,6 +441,70 @@ public final class LmCommandSuggestions {
 
     public static RequiredArgumentBuilder<CommandSourceStack, String> playerWord(String name) {
         return word(name, PLAYERS);
+    }
+
+    /**
+     * Player name that is not a number, so {@code <amount> [player]} and
+     * {@code <player> <amount>} can share one command without an ambiguous parse.
+     */
+    public static RequiredArgumentBuilder<CommandSourceStack, String> playerWordUnlessNumber(String name) {
+        return Commands.m_82129_(name, PlayerNotNumber.INSTANCE).suggests(PLAYERS);
+    }
+
+    /** True when the token is a finite decimal, so it is an amount and not a name. */
+    public static boolean isNumericToken(String token) {
+        if (token == null) {
+            return false;
+        }
+        String trimmed = token.trim();
+        if (trimmed.isEmpty()) {
+            return false;
+        }
+        try {
+            return Double.isFinite(Double.parseDouble(trimmed));
+        } catch (NumberFormatException ex) {
+            return false;
+        }
+    }
+
+    /**
+     * Word argument that fails on numeric tokens. A name like {@code 100} still
+     * works in the amount-first form.
+     */
+    public static final class PlayerNotNumber implements ArgumentType<String> {
+        public static final PlayerNotNumber INSTANCE = new PlayerNotNumber();
+
+        private PlayerNotNumber() {}
+
+        @Override
+        public String parse(StringReader reader) throws CommandSyntaxException {
+            int cursor = reader.getCursor();
+            String word = StringArgumentType.word().parse(reader);
+            if (isNumericToken(word)) {
+                reader.setCursor(cursor);
+                throw CommandSyntaxException.BUILT_IN_EXCEPTIONS
+                        .dispatcherUnknownArgument()
+                        .createWithContext(reader);
+            }
+            return word;
+        }
+    }
+
+    private static boolean isMasteryGrant(String sub) {
+        return "grant-first-superform".equals(sub) || "grant-first-legendary".equals(sub);
+    }
+
+    /**
+     * Player slot for {@code /lm mastery grant-first-*}.
+     * Amount-first: the token after a number. Name-first: the token after the grant name
+     * when that token is not a number.
+     */
+    private static boolean masteryPlayerSlot(String[] args) {
+        int n = args.length;
+        if (n == 3) {
+            return !isNumericToken(args[2]);
+        }
+        return n == 4 && isNumericToken(args[2]);
     }
 
     public static RequiredArgumentBuilder<CommandSourceStack, String> playerString(String name) {

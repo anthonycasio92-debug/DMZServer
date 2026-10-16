@@ -2463,6 +2463,42 @@ def main() -> int:
     check("fusion reset class is copied into the forge jar",
           "FusionCooldownReset" in read(ROOT / "tools/dmz-adaptive-difficulty/build.sh"))
 
+    print("\n=== First superform mastery grant (4.6.204) ===")
+    mastery_choice = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/progression/form/FirstSuperformChoice.java")
+    mastery_grant = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/progression/form/FirstSuperformMastery.java")
+    mastery_help = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/command/LmCommandHelp.java")
+    check("staff /lm mastery grant-first-superform",
+          'staffLiteral("mastery")' in mech
+          and '"grant-first-superform"' in mech
+          and '"grant-first-legendary"' in mech
+          and "FirstSuperformChoice.Kind.SUPER" in mech
+          and "FirstSuperformChoice.Kind.LEGENDARY" in mech
+          and "FirstSuperformMastery.grant" in mech
+          and "/lm mastery grant-first-superform <amount>" in mastery_help
+          and "/lm mastery grant-first-superform <amount> <player>" in mastery_help
+          and "/lm mastery grant-first-superform <player> <amount>" in mastery_help
+          and "/lm mastery grant-first-legendary <amount>" in mastery_help
+          and "/lm mastery grant-first-legendary <amount> <player>" in mastery_help
+          and "/lm mastery grant-first-legendary <player> <amount>" in mastery_help
+          and "grantNamed" in mech
+          and "playerWordUnlessNumber" in mech
+          and "playerWordUnlessNumber" in read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/command/LmCommandSuggestions.java")
+          and '"grant-first-superform"' in read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/command/LmCommandSuggestions.java")
+          and "handleLmMastery" in read(ROOT / "tools/dmz-adaptive-difficulty-gui/src/main/java/com/dbzlegacy/adaptivedifficulty/bukkit/AdaptiveDifficultyGuiPlugin.java")
+          and "grantFirstFormMastery" in read(ROOT / "tools/dmz-adaptive-difficulty-gui/src/main/java/com/dbzlegacy/adaptivedifficulty/bukkit/ForgeBridge.java")
+          and "getRaceName" in mastery_grant
+          and "getAllFormsForRace" in mastery_grant
+          and "getFirstAvailableForm" in mastery_grant
+          and "getFirstAvailableStackForm" in mastery_grant
+          and "getSkillNameForType" in mastery_grant
+          and "setMastery" in mastery_grant
+          and "unlockLevel != 0" in mastery_choice
+          and "Kind.LEGENDARY" in mastery_choice
+          and "Kind.SUPER" in mastery_choice
+          and "legendaryform" in mastery_choice
+          and "superform" in mastery_choice
+          and "Oozaru" in mastery_choice)
+
     print("\n=== Fusion unfuse deletes FusionBonus (read-gate stays) ===")
     fusion_mixins = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/resources/legacymechanics.mixins.json")
     fusion_clear_path = ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/mixin/FusionUnfuseBonusClearMixin.java"
