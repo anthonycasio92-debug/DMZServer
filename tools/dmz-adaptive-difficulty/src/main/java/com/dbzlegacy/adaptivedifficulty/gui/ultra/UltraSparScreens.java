@@ -616,7 +616,7 @@ public final class UltraSparScreens {
     private static void openDojoWarPending(ServerPlayer player) {
         UltraScreenSpec spec = sub("dojo_war_pending")
                 .line(UltraStyle.LABEL + "Pending war requests")
-                .line(UltraStyle.DIM + "Accept or deny even if the other master is offline.");
+                .line(UltraStyle.LABEL + "Accept or deny even if the other master is offline.");
         List<String> cards = SparGuiApi.pendingDojoWarCards(player);
         if (cards == null || cards.isEmpty()) {
             spec.line(UltraStyle.dim(
@@ -708,7 +708,7 @@ public final class UltraSparScreens {
             ServerPlayer player, String heading, String action, String page, String back) {
         UltraScreenSpec spec = sub(page)
                 .line(UltraStyle.LABEL + heading)
-                .line(UltraStyle.DIM + "Choose an online player.")
+                .line(UltraStyle.LABEL + "Choose an online player.")
                 .buttonsAfterLines();
         List<String> names = RivalGuiApi.onlinePlayerNames(player);
         int placed = 0;
@@ -740,7 +740,7 @@ public final class UltraSparScreens {
     private static void openReleasePick(ServerPlayer player) {
         UltraScreenSpec spec = sub("pick_release")
                 .line(UltraStyle.LABEL + "Release apprentice")
-                .line(UltraStyle.DIM + "Choose an apprentice.")
+                .line(UltraStyle.LABEL + "Choose an apprentice.")
                 .buttonsAfterLines();
         List<String> cards = SparGuiApi.apprenticeCards(player);
         int placed = 0;
@@ -778,7 +778,7 @@ public final class UltraSparScreens {
     private static void openDojoChallengePick(ServerPlayer player) {
         UltraScreenSpec spec = sub("pick_dojo_challenge")
                 .line(UltraStyle.LABEL + "Challenge another dojo")
-                .line(UltraStyle.DIM + "Pick a rival dojo. The master does not need to be online.")
+                .line(UltraStyle.LABEL + "Pick a rival dojo. The master does not need to be online.")
                 .buttonsAfterLines();
         List<String> cards = SparGuiApi.rivalDojoCards(player);
         int placed = 0;
