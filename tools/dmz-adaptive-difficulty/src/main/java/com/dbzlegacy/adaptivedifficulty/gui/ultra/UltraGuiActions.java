@@ -833,7 +833,8 @@ public final class UltraGuiActions {
                 case "tier", "buy_tier", "unlock_tier" -> "tiers";
                 case "majin", "buy_majin", "mutant", "buy_mutant",
                         "unmajin", "unbuy_majin", "remove_majin",
-                        "unmutant", "unbuy_mutant", "remove_mutant" -> "effects";
+                        "unmutant", "unbuy_mutant", "remove_mutant",
+                        "godki", "buy_godki", "godki_enhancement" -> "effects";
                 default -> homePage(screen);
             };
             case "progression" -> switch (parts.action == null ? "" : parts.action) {

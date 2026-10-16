@@ -275,6 +275,13 @@ public final class DifficultyConfig {
     public boolean enableSkillUnlockService = true;
     public boolean enablePrestigeSystem = true;
     /**
+     * God Ki Enhancement (prestige store): mastery needed on the enhancement
+     * form before the true God Ki form may transform. Custom God forms only
+     * need the enhancement present. Each store investment grants 1000
+     * mastery, so 1000 = first investment unlocks the true form.
+     */
+    public int godKiTrueFormMasteryThreshold = 1000;
+    /**
      * Use dmzrevamp Statistics prestige UI + native scaling/rebirth. LM still owns
      * playable max stat total via mixins ({@code enableOverhaulPrestigeIntegration}).
      * Overhaul {@code levelCap} is the personal 100k + 10k×breakthroughs cap

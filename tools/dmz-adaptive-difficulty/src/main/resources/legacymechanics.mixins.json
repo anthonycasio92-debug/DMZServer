@@ -31,7 +31,9 @@
     "FusionBonusReadGateMixin",
     "StrikeTechniqueReadGateMixin",
     "FusionUnfuseBonusClearMixin",
-    "KaiPathLmConsumerBootstrapMixin"
+    "KaiPathLmConsumerBootstrapMixin",
+    "FormModeHandlerGodKiGateMixin",
+    "StackFormModeHandlerGodKiGateMixin"
   ],
   "injectors": {
     "defaultRequire": 1

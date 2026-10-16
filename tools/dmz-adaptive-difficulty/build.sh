@@ -257,6 +257,14 @@ merge_onto_base_jar() {
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigeUniverseRoleWarn\$"*.class \
       "$merge/com/dbzlegacy/adaptivedifficulty/progression/shop/" 2>/dev/null || true
   fi
+  # God Ki Enhancement prestige store — buy flow, login top-up, form gates.
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/progression/shop/GodKiEnhancementShop.class" ]]; then
+    mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/progression/shop"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/shop/GodKiEnhancementShop.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/progression/shop/GodKiEnhancementShop.class"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/shop/GodKiEnhancementShop\$"*.class \
+      "$merge/com/dbzlegacy/adaptivedifficulty/progression/shop/" 2>/dev/null || true
+  fi
   if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigePointsSystem.class" ]]; then
     mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/progression/shop"
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigePointsSystem.class" \
@@ -446,6 +454,8 @@ merge_onto_base_jar() {
         FusionBonusReadGateMixin \
         StrikeTechniqueReadGateMixin \
         FusionUnfuseBonusClearMixin \
+        FormModeHandlerGodKiGateMixin \
+        StackFormModeHandlerGodKiGateMixin \
         LegacyMechanicsMixinPlugin; do
       if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/mixin/${mixin_cls}.class" ]]; then
         cp "$OUT/com/dbzlegacy/adaptivedifficulty/mixin/${mixin_cls}.class" \

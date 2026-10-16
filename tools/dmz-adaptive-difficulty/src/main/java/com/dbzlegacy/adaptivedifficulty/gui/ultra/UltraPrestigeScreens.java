@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.gui.ultra;
 
 import com.dbzlegacy.adaptivedifficulty.gui.ProgressionGuiApi;
+import com.dbzlegacy.adaptivedifficulty.progression.shop.GodKiEnhancementShop;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeUniverseRoleWarn;
 import java.util.Locale;
@@ -374,6 +375,31 @@ public final class UltraPrestigeScreens {
                             "do:mutant",
                             UltraStyle.dim("Need Majin off"),
                             UltraStyle.STYLE_DIM)
+                    .rowGap();
+        }
+        int godkiInvested = parseInt(ph.get("godki_invested"), 0);
+        boolean godkiMaxed = "true".equalsIgnoreCase(ph.get("godki_maxed"));
+        String godkiCost = ph.getOrDefault("godki_cost", "1");
+        String godkiPerPoint = ph.getOrDefault("godki_per_point", "1,000");
+        String godkiMastery = ph.getOrDefault("godki_mastery", "0");
+        spec.line(UltraStyle.LABEL + "God Ki Enhancement - " + godkiCost
+                        + " favor per point (+" + godkiPerPoint + " mastery).")
+                .labelValue(
+                        "Invested",
+                        godkiInvested + "/" + GodKiEnhancementShop.MAX_INVESTMENTS)
+                .labelValue("God Ki mastery", godkiMastery)
+                .buttonsAfterLines();
+        if (godkiMaxed) {
+            spec.button(
+                            "do:godki",
+                            UltraStyle.dim("Fully invested"),
+                            UltraStyle.STYLE_DIM)
+                    .rowGap();
+        } else {
+            spec.button(
+                            "do:godki",
+                            UltraStyle.confirm("Invest God Ki (+" + godkiPerPoint + ")"),
+                            UltraStyle.STYLE_CONFIRM)
                     .rowGap();
         }
         spec.footerBack("page:shop", "Shop");

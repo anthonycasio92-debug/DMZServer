@@ -2,6 +2,14 @@
 
 What changed from **4.5.147** through **4.6.76**.
 
+## Prestige store sells God Ki Enhancement
+
+Prestige → Shop → Effects has a new option: God Ki Enhancement. Each point of favor invested grants 1,000 God Ki mastery, up to five investments (5,000). The button shows what you have invested and your current mastery, costs one favor per point, and asks for the usual second click before it takes the favor.
+
+On login the character's God Ki mastery is topped up to whatever your investments grant. It only goes up — a higher mastery earned in play is never lowered. While invested, the God Ki Enhancement stays on the character even though it cannot be obtained through normal play.
+
+God forms now need God Ki. Custom God forms require the enhancement to be present at all; the true God Ki form additionally requires the mastery threshold, which `godKiTrueFormMasteryThreshold` sets (1000 by default, so the first investment unlocks it). Trying to transform without it shows a short notice instead of transforming.
+
 ## Menus use their own color, and the config search filters as you type
 
 Each system keeps the same layout. The page title and the active tab use that system's color: Character gold, Rival red, Sparring blue, Progression green, Prestige light purple, Difficulty yellow, Saga aqua, Staff Admin dark red, Config editor gray. Rival opens on Actions, with tabs Actions, Records, and Requests. Sparring opens on Dojo, with tabs Dojo, Rankings, and Wars. Those tabs are the pages, not a second list of the same buttons. Prestige no longer has a Modules list. Config modules stay on Staff Admin → Config editor and `/lm admin config`. Progression lists each module once, opens that module, and Back returns to Progression. The config search filters the current tab by field name while you type, and shows how many fields match.

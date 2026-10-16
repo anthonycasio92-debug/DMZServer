@@ -2932,6 +2932,89 @@ def main() -> int:
         and "bodyPartsSync" in kit_readme,
     )
 
+    godki_shop = read(
+        ROOT
+        / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty"
+        / "progression/shop/GodKiEnhancementShop.java"
+    )
+    godki_prestige = read(
+        ROOT
+        / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty"
+        / "progression/shop/PrestigePointsSystem.java"
+    )
+    godki_api = read(
+        ROOT
+        / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty"
+        / "gui/ProgressionGuiApi.java"
+    )
+    godki_screen = read(
+        ROOT
+        / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty"
+        / "gui/ultra/UltraPrestigeScreens.java"
+    )
+    godki_actions = read(
+        ROOT
+        / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty"
+        / "gui/ultra/UltraGuiActions.java"
+    )
+    godki_cfg = read(
+        ROOT
+        / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty"
+        / "config/DifficultyConfig.java"
+    )
+    godki_mixins = read(
+        ROOT
+        / "tools/dmz-adaptive-difficulty/src/main/resources/legacymechanics.mixins.json"
+    )
+    godki_gate = read(
+        ROOT
+        / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty"
+        / "mixin/FormModeHandlerGodKiGateMixin.java"
+    )
+    godki_gate_stack = read(
+        ROOT
+        / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty"
+        / "mixin/StackFormModeHandlerGodKiGateMixin.java"
+    )
+    check(
+        "God Ki shop: 1000 mastery per point, max 5 investments, confirm + telemetry",
+        "MASTERY_PER_POINT = 1000" in godki_shop
+        and "MAX_INVESTMENTS = 5" in godki_shop
+        and "INVESTMENT_COST = 1" in godki_shop
+        and "GuiClickConfirm.confirmed" in godki_shop
+        and '"prestige_points", "buy_godki_enhancement"' in godki_shop,
+    )
+    check(
+        "God Ki shop: login top-up raises mastery to invested x 1000, never lowers",
+        "GodKiEnhancementShop.reapply(player)" in godki_prestige
+        and "current >= expected" in godki_shop
+        and "raiseMastery" in godki_shop
+        and "DmzSkillUtil.ensureRegistered(skills, ENHANCEMENT_GROUP, 1)" in godki_shop,
+    )
+    check(
+        "God Ki shop: store listing + do-routing + reopen to Effects",
+        '"do:godki"' in godki_screen
+        and "God Ki Enhancement" in godki_screen
+        and '"godki".equals(act)' in godki_api
+        and "godki_invested" in godki_api
+        and '"godki", "buy_godki", "godki_enhancement" -> "effects"' in godki_actions,
+    )
+    check(
+        "God Ki gate: custom God forms need the flag, true form also needs mastery",
+        "GOD_FORMS_GROUP" in godki_shop
+        and "trueFormThreshold" in godki_shop
+        and "godKiTrueFormMasteryThreshold = 1000" in godki_cfg,
+    )
+    check(
+        "God Ki gate mixins registered, cancel transform at attemptTransform HEAD",
+        '"FormModeHandlerGodKiGateMixin"' in godki_mixins
+        and '"StackFormModeHandlerGodKiGateMixin"' in godki_mixins
+        and "attemptTransform" in godki_gate
+        and "ci.cancel()" in godki_gate
+        and "attemptTransform" in godki_gate_stack
+        and "ci.cancel()" in godki_gate_stack,
+    )
+
     print("\n=== Summary ===")
     for w in warns:
         print(f"WARN: {w}")

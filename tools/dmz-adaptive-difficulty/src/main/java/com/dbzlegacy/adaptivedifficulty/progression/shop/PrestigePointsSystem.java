@@ -1164,6 +1164,11 @@ public final class PrestigePointsSystem {
             return;
         }
         reapplySkillBonuses(player);
+        // God Ki Enhancement: top godkienhancement mastery up to invested x 1000 (never lower).
+        try {
+            GodKiEnhancementShop.reapply(player);
+        } catch (Throwable ignored) {
+        }
         // Breakthroughs are read live from NBT (effectiveMaxLevel); force a sync so
         // clients / soft-locks see the personal cap immediately after respawn.
         try {

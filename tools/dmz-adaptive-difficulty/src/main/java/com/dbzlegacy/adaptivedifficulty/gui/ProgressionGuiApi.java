@@ -7,6 +7,7 @@ import com.dbzlegacy.adaptivedifficulty.progression.ProgressionConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionData;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionModuleCatalog;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionSystem;
+import com.dbzlegacy.adaptivedifficulty.progression.shop.GodKiEnhancementShop;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeAdmin;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeSystem;
@@ -925,6 +926,13 @@ public final class ProgressionGuiApi {
         out.put("majin_can_buy", PrestigePointsSystem.canBuyMajin(player) ? "true" : "false");
         out.put("mutant_can_buy", PrestigePointsSystem.canBuyMutant(player) ? "true" : "false");
         out.put("form_cost", String.valueOf(PrestigePointsSystem.FORM_COST));
+        out.put("godki_invested", String.valueOf(GodKiEnhancementShop.invested(player)));
+        out.put("godki_maxed", GodKiEnhancementShop.canBuy(player) ? "false" : "true");
+        out.put("godki_cost", String.valueOf(GodKiEnhancementShop.INVESTMENT_COST));
+        out.put("godki_per_point",
+                DmzRewards.formatWhole(GodKiEnhancementShop.MASTERY_PER_POINT));
+        out.put("godki_mastery",
+                DmzRewards.formatWhole((long) GodKiEnhancementShop.mastery(player)));
         for (int t = 1; t <= 7; t++) {
             out.put("tier_" + t + "_cost", String.valueOf(PrestigePointsSystem.tierPointCost(t)));
             boolean purchased = PrestigePointsSystem.hasPurchasedTier(player, t);
@@ -1095,6 +1103,9 @@ public final class ProgressionGuiApi {
         }
         if ("unmutant".equals(act) || "unbuy_mutant".equals(act) || "remove_mutant".equals(act)) {
             return PrestigePointsSystem.unbuyMutant(player);
+        }
+        if ("godki".equals(act) || "godki_enhancement".equals(act) || "buy_godki".equals(act)) {
+            return GodKiEnhancementShop.buy(player);
         }
         if ("breakthrough".equals(act) || "cap".equals(act) || "buy_cap".equals(act)) {
             return "§7Level cap breakthroughs are no longer bought here - your cap follows progression automatically.";
