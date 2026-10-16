@@ -1,0 +1,182 @@
+package com.dbzlegacy.adaptivedifficulty.gui.ultra;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
+/**
+ * Maps a worn form onto explicit {@code playerModel.parts.bodyParts} entries.
+ *
+ * <p>The table is the DMZUltra FormParts catalog ({@code race/group/form} → piece ids),
+ * shipped as data so a dedicated server can name the pieces without the client mod.
+ * Missing or unreadable data omits form pieces. The Saiyan race tail is separate:
+ * {@code saiyan_tail} when the character still has one and the form did not already
+ * name a tail.
+ */
+public final class BodyPartCatalog {
+    /** Wire {@code source} for pieces that live in DMZUltra's form-parts model. */
+    public static final String SOURCE_DMZULTRA = "dmzultra";
+    /** Race tail. The client maps this id onto the DMZUltra {@code tail_fur} mesh. */
+    public static final String SAIYAN_TAIL = "saiyan_tail";
+
+    public static final String SLOT_TAIL = "tail";
+    public static final String SLOT_WINGS = "wings";
+    public static final String SLOT_HORNS = "horns";
+    public static final String SLOT_EARS = "ears";
+    public static final String SLOT_EXTRA_ARMS = "extra_arms";
+    /** Piece that is not one of the standard anchors. Clients still attach it by id. */
+    public static final String SLOT_BODY = "body";
+
+    private static final String RESOURCE = "dmzultra-form-parts.json";
+
+    private static volatile Map<String, List<String>> forms = Map.of();
+    private static volatile boolean loaded;
+
+    private BodyPartCatalog() {}
+
+    public record Part(String id, String source, String slot) {}
+
+    /**
+     * Form pieces for the active form and the stack form, plus the race tail when it is
+     * still on the character. Never throws. An empty list means "send no bodyParts".
+     */
+    public static List<Part> resolve(
+            String race,
+            String group,
+            String form,
+            String stackGroup,
+            String stackForm,
+            boolean saiyanTail) {
+        LinkedHashMap<String, Part> out = new LinkedHashMap<>();
+        try {
+            addForm(out, race, group, form);
+            addForm(out, race, stackGroup, stackForm);
+            boolean namedTail = false;
+            for (Part part : out.values()) {
+                if (SLOT_TAIL.equals(part.slot())) {
+                    namedTail = true;
+                    break;
+                }
+            }
+            if (saiyanTail && !namedTail) {
+                out.put(SAIYAN_TAIL, new Part(SAIYAN_TAIL, SOURCE_DMZULTRA, SLOT_TAIL));
+            }
+        } catch (Throwable ignored) {
+            return List.of();
+        }
+        return List.copyOf(out.values());
+    }
+
+    /** Standard slot for a piece id. Unknown shapes use {@link #SLOT_BODY}. */
+    public static String slot(String id) {
+        String s = id == null ? "" : id.trim().toLowerCase(Locale.ROOT);
+        if (s.equals(SAIYAN_TAIL) || s.startsWith("tail_")) {
+            return SLOT_TAIL;
+        }
+        if (s.startsWith("wing")) {
+            return SLOT_WINGS;
+        }
+        if (s.startsWith("horn") || s.equals("antlers")) {
+            return SLOT_HORNS;
+        }
+        if (s.contains("ear")) {
+            return SLOT_EARS;
+        }
+        if (s.equals("arm_blade") || s.equals("arm_fins") || s.startsWith("extra_arm")) {
+            return SLOT_EXTRA_ARMS;
+        }
+        return SLOT_BODY;
+    }
+
+    /** How many form keys the catalog loaded. Zero when the resource is missing. */
+    public static int formCount() {
+        ensureLoaded();
+        return forms.size();
+    }
+
+    private static void addForm(Map<String, Part> out, String race, String group, String form) {
+        String key = formKey(race, group, form);
+        if (key == null) {
+            return;
+        }
+        ensureLoaded();
+        List<String> pieces = forms.get(key);
+        if (pieces == null) {
+            return;
+        }
+        for (String piece : pieces) {
+            if (piece == null || piece.isBlank()) {
+                continue;
+            }
+            String id = piece.trim().toLowerCase(Locale.ROOT);
+            out.putIfAbsent(id, new Part(id, SOURCE_DMZULTRA, slot(id)));
+        }
+    }
+
+    static String formKey(String race, String group, String form) {
+        String r = norm(race);
+        String g = norm(group);
+        String f = norm(form);
+        if (r.isEmpty() || g.isEmpty() || f.isEmpty()) {
+            return null;
+        }
+        return r + "/" + g + "/" + f;
+    }
+
+    private static String norm(String value) {
+        return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private static void ensureLoaded() {
+        if (loaded) {
+            return;
+        }
+        synchronized (BodyPartCatalog.class) {
+            if (loaded) {
+                return;
+            }
+            forms = read();
+            loaded = true;
+        }
+    }
+
+    private static Map<String, List<String>> read() {
+        try (InputStream in = BodyPartCatalog.class.getClassLoader().getResourceAsStream(RESOURCE)) {
+            if (in == null) {
+                return Map.of();
+            }
+            try (InputStreamReader reader = new InputStreamReader(in, StandardCharsets.UTF_8)) {
+                JsonObject root = JsonParser.parseReader(reader).getAsJsonObject();
+                if (!root.has("forms") || !root.get("forms").isJsonObject()) {
+                    return Map.of();
+                }
+                LinkedHashMap<String, List<String>> map = new LinkedHashMap<>();
+                for (Map.Entry<String, JsonElement> entry : root.getAsJsonObject("forms").entrySet()) {
+                    if (entry.getKey() == null || !entry.getValue().isJsonArray()) {
+                        continue;
+                    }
+                    JsonArray arr = entry.getValue().getAsJsonArray();
+                    List<String> pieces = new ArrayList<>();
+                    for (JsonElement el : arr) {
+                        if (el != null && el.isJsonPrimitive()) {
+                            pieces.add(el.getAsString());
+                        }
+                    }
+                    map.put(entry.getKey().trim().toLowerCase(Locale.ROOT), List.copyOf(pieces));
+                }
+                return Map.copyOf(map);
+            }
+        } catch (Throwable ignored) {
+            return Map.of();
+        }
+    }
+}

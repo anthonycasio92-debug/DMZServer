@@ -12,10 +12,10 @@ so dual footer scrolls with the body.
 Add `"fixedFooter"` (and `"portraitFrame"` if still missing) to GuiFeatures:
 
 ```json
-["style","activeTab","titleAlign","playerModel","textInput","headerBottom","accent","palette","sound","buttonSkin","frame","pagedBook","portraitFrame","fixedFooter","combined.forms.v1","icon"]
+["style","activeTab","titleAlign","playerModel","textInput","headerBottom","accent","palette","sound","buttonSkin","frame","pagedBook","portraitFrame","fixedFooter","combined.forms.v1","bodyParts","icon"]
 ```
 
-`icon` is the reference kit's extra id (button/tab `namespace:path`). Stock KaiPath 1.3.17 stops at `combined.forms.v1`.
+`bodyParts` attaches `playerModel.parts.bodyParts`. `icon` is the reference kit's extra button/tab id. Stock KaiPath 1.3.17 stops at `combined.forms.v1`.
 
 ## Live `LmDynamicScreen.m_7856_` changes
 

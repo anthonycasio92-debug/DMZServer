@@ -40,7 +40,9 @@ import net.minecraft.server.level.ServerPlayer;
  * <p>Clients that never send {@link GuiFeaturesPacket} are treated as the KaiPath <b>1.3.1
  * baseline</b>: dynamic layout/buttons only. KaiPath <b>1.3.17</b> advertises the fifteen
  * chrome ids. KaiPath <b>1.3.22</b> (recommended) also advertises {@link #FEATURE_ICON}.
- * {@link #PENDING_NEXT} is empty. LM {@code footer:true} emission matches 1.3.17.
+ * {@link #FEATURE_BODY_PARTS} stays in {@link #PENDING_NEXT} until a client advertises it.
+ * A client that lacks {@code bodyParts} still draws the base entity and ignores the array.
+ * LM {@code footer:true} emission matches 1.3.17.
  */
 public final class UltraClientFeatures {
     public static final String FEATURE_STYLE = "style";
@@ -86,6 +88,11 @@ public final class UltraClientFeatures {
     public static final String FEATURE_COMBINED_FORMS = "combined.forms.v1";
     /** Normalized id for optional button/tab {@code icon} (advertised on KaiPath 1.3.22). */
     public static final String FEATURE_ICON = "icon";
+    /**
+     * Normalized id for {@code playerModel.parts.bodyParts}. Not on KaiPath 1.3.17–1.3.20.
+     * Clients that omit it still draw the entity.
+     */
+    public static final String FEATURE_BODY_PARTS = "bodyparts";
 
     /** Wire / doc spelling for {@link #FEATURE_PALETTE}. */
     public static final String FEATURE_PALETTE_DOC = "palette";
@@ -103,6 +110,8 @@ public final class UltraClientFeatures {
     public static final String FEATURE_COMBINED_FORMS_DOC = "combined.forms.v1";
     /** Wire / doc spelling for {@link #FEATURE_ICON}. */
     public static final String FEATURE_ICON_DOC = "icon";
+    /** Wire / doc spelling for {@link #FEATURE_BODY_PARTS}. */
+    public static final String FEATURE_BODY_PARTS_DOC = "bodyParts";
 
     /** Optional features the LM bridge expects a fully conforming 1.3.22 client to advertise. */
     public static final Set<String> EXPECTED_OPTIONAL =
@@ -148,10 +157,11 @@ public final class UltraClientFeatures {
                     FEATURE_ICON);
 
     /**
-     * Optional ids the next KaiPath release might add. Empty: {@code icon} shipped on 1.3.22.
+     * Optional ids the next KaiPath release might add. {@code icon} shipped on 1.3.22.
+     * {@code bodyParts} is the explicit preview-piece list and is still pending.
      * Guitest reports these as {@code pendingNext=} (info), not a shipped-client warning.
      */
-    public static final Set<String> PENDING_NEXT = Set.of();
+    public static final Set<String> PENDING_NEXT = Set.of(FEATURE_BODY_PARTS);
 
     private static final Map<UUID, State> BY_PLAYER = new ConcurrentHashMap<>();
 
@@ -290,7 +300,7 @@ public final class UltraClientFeatures {
         return missing;
     }
 
-    /** Optional ids not yet advertised by the recommended KaiPath jar. Currently none. */
+    /** Optional ids not yet advertised by the recommended KaiPath jar. Currently {@code bodyParts}. */
     public static List<String> missingPending(State state) {
         List<String> missing = new ArrayList<>();
         for (String feature : PENDING_NEXT) {
@@ -347,6 +357,9 @@ public final class UltraClientFeatures {
         }
         if (FEATURE_ICON.equals(key)) {
             return FEATURE_ICON_DOC;
+        }
+        if (FEATURE_BODY_PARTS.equals(key)) {
+            return FEATURE_BODY_PARTS_DOC;
         }
         return feature == null ? "" : feature;
     }
@@ -408,6 +421,10 @@ public final class UltraClientFeatures {
                                 + "(playerModel.parts.form / combined.forms.v1 ignored)");
             } else if (FEATURE_ICON.equals(key)) {
                 lines.add("button and tab icon ids ignored (icon field not drawn)");
+            } else if (FEATURE_BODY_PARTS.equals(key)) {
+                lines.add(
+                        "custom body parts not attached on the preview "
+                                + "(playerModel.parts.bodyParts ignored; base entity still draws)");
             }
         }
         return lines;
@@ -416,6 +433,7 @@ public final class UltraClientFeatures {
     /**
      * Log when 1.3.22-shipped features are missing (real gap). {@link #PENDING_NEXT} gaps
      * log at info. {@code icon} is shipped, so a client that omits it warns with the rest.
+     * {@code bodyParts} stays info until a client advertises it.
      */
     public static void warnMissingOptionalFeatures(ServerPlayer player, String context) {
         if (player == null) {

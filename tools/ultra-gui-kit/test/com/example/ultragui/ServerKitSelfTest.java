@@ -122,6 +122,9 @@ public final class ServerKitSelfTest {
         if (sketchText.contains("buttonSkin") || sketchText.contains("portraitFrame")) {
             fail("HelloWorld still teaches buttonSkin or portraitFrame");
         }
+        if (!sketchText.contains("bodyParts")) {
+            fail("HelloWorld must show playerModel.parts.bodyParts");
+        }
         JsonObject root = JsonParser.parseString(Files.readString(fixture)).getAsJsonObject();
         JsonArray buttons = root.getAsJsonObject("open").getAsJsonArray("buttonsJson");
         for (JsonElement el : buttons) {
@@ -138,14 +141,27 @@ public final class ServerKitSelfTest {
         if (player.has("portraitFrame")) {
             fail("fixture playerModel still has portraitFrame");
         }
+        if (!player.has("parts")
+                || !player.getAsJsonObject("parts").has("bodyParts")
+                || !player.getAsJsonObject("parts").get("bodyParts").isJsonArray()
+                || player.getAsJsonObject("parts").getAsJsonArray("bodyParts").isEmpty()) {
+            fail("fixture playerModel.parts.bodyParts must list pieces");
+        }
         boolean forms = false;
+        boolean bodyParts = false;
         for (JsonElement el : root.getAsJsonArray("advertiseFeatures")) {
             if ("combined.forms.v1".equals(el.getAsString())) {
                 forms = true;
             }
+            if ("bodyParts".equals(el.getAsString())) {
+                bodyParts = true;
+            }
         }
         if (!forms) {
             fail("fixture advertiseFeatures missing combined.forms.v1");
+        }
+        if (!bodyParts) {
+            fail("fixture advertiseFeatures missing bodyParts");
         }
     }
 
