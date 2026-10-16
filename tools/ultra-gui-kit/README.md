@@ -56,6 +56,7 @@ headerBottom / accent / palette / sound / buttonSkin / frame / paged_book / port
 6. Optional button/tab `icon` — item id (`minecraft:emerald`) or texture path (`modid:path/to/texture.png`). Unknown ids are ignored. KaiPath 1.3.22 advertises `icon`.
 7. `combined.forms.v1` is generic: one preview draws the entity plus `playerModel.parts.form` string ids. LM's `headBones` / system accent letters are examples — other mods replace them.
 8. **ASCII `fitLabel`** — `UltraWidgetReflect.fitLabel` must use `...` (not mojibaked `…`). See [`FITLABEL_ASCII.md`](kaipath-client/com/dmzlegacy/kaipath/ultra/internal/FITLABEL_ASCII.md)
+9. **`bodyParts`** — `playerModel.parts.bodyParts` is `{ "id", "source", "slot" }`. Standard slots: `tail`, `wings`, `horns`, `ears`, `extra_arms`. When DMZUltra is installed, `BodyPartPreview` loads its FormParts catalog and `FormPartsPreviewMixin` attaches known pieces to the preview entity. Unknown ids and a missing source mod are skipped; the base entity still draws. Advertise `bodyParts`. Register [`kaipath-bodyparts.mixins.json`](kaipath-bodyparts.mixins.json) (optional — it does not apply when FormParts is absent). LM example: `{ "id": "saiyan_tail", "source": "dmzultra", "slot": "tail" }` maps to the `tail_fur` mesh.
 
 ### Pitfalls (must-read before release)
 
@@ -74,10 +75,10 @@ UltraGuiConsumerRegistry.advertiseFeatures(
     "[\"style\",\"activeTab\",\"titleAlign\",\"playerModel\",\"textInput\","
         + "\"headerBottom\",\"accent\",\"palette\",\"sound\",\"buttonSkin\","
         + "\"frame\",\"pagedBook\",\"portraitFrame\",\"fixedFooter\",\"combined.forms.v1\","
-        + "\"icon\"]");
+        + "\"bodyParts\",\"icon\"]");
 ```
 
-`"icon"` shipped on official KaiPath 1.3.22 (item id or texture path). 1.3.17 stops at `combined.forms.v1`.
+`"icon"` shipped on official KaiPath 1.3.22 (item id or texture path). 1.3.17 stops at `combined.forms.v1`. `"bodyParts"` is kit-only until official KaiPath advertises it. A client that does not advertise `bodyParts` still draws the entity.
 
 ```java
 // Client boot (wired via LmUltraConsumer.bootstrap):

@@ -79,7 +79,15 @@
         "width": 86,
         "height": 120,
         "scale": 1.0,
-        "rotate": true
+        "rotate": true,
+        "parts": {
+          "schema": 1,
+          "subject": "local",
+          "bodyParts": [
+            { "id": "shop_tail", "source": "myshop", "slot": "tail" },
+            { "id": "shop_wings", "source": "myshop", "slot": "wings" }
+          ]
+        }
       }
     },
     "inputsJson": [
@@ -114,6 +122,7 @@
     "portraitFrame",
     "fixedFooter",
     "combined.forms.v1",
-    "icon"
+    "icon",
+    "bodyParts"
   ]
 }

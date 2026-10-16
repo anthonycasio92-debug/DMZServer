@@ -1,0 +1,13 @@
+{
+  "required": false,
+  "minVersion": "0.8",
+  "package": "com.dmzlegacy.kaipath.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "plugin": "com.dmzlegacy.kaipath.mixin.BodyPartMixinPlugin",
+  "client": [
+    "FormPartsPreviewMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}

@@ -1,0 +1,41 @@
+package com.dmzlegacy.kaipath.mixin;
+
+import com.dmzlegacy.kaipath.ultra.consumers.legacymechanics.BodyPartPreview;
+import java.util.Set;
+import net.minecraft.client.player.AbstractClientPlayer;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+
+/**
+ * While a bridge preview is drawing, union {@code bodyParts} meshes into DMZUltra's
+ * FormParts look. The mixin is not applied when that class is missing
+ * ({@link BodyPartMixinPlugin}).
+ */
+@Mixin(targets = "com.dmzultra.client.forms.FormParts", remap = false)
+public abstract class FormPartsPreviewMixin {
+    private FormPartsPreviewMixin() {}
+
+    @Inject(
+            method =
+                    "of(Lnet/minecraft/client/player/AbstractClientPlayer;)Lcom/dmzultra/client/forms/FormParts$Look;",
+            at = @At("RETURN"),
+            cancellable = true,
+            require = 0,
+            remap = false)
+    private static void ultra$bodyParts(AbstractClientPlayer player, CallbackInfoReturnable<Object> cir) {
+        try {
+            Set<String> extra = BodyPartPreview.meshesFor(player);
+            if (extra.isEmpty()) {
+                return;
+            }
+            Object merged = BodyPartPreview.mergeLook(cir.getReturnValue(), extra);
+            if (merged != null) {
+                cir.setReturnValue(merged);
+            }
+        } catch (Throwable ignored) {
+            // base entity still draws
+        }
+    }
+}

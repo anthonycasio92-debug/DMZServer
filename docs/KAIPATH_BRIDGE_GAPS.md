@@ -107,7 +107,7 @@ LM Ultra copy prefers ASCII. Pre-fit labels with ASCII `...`. Stock KaiPath `fit
 
 ### 7. Pending vs shipped diagnostics
 
-Missing `SHIPPED_ON_RECOMMENDED` → warn (wrong/old jar). Missing `PENDING_NEXT` → info (`pendingNext=`). On KaiPath **1.3.22**, `missingShipped=none` and `pendingNext=none`. `icon` is in the shipped set. `PENDING_NEXT` is empty.
+Missing `SHIPPED_ON_RECOMMENDED` → warn (wrong/old jar). Missing `PENDING_NEXT` → info (`pendingNext=`). On KaiPath **1.3.22**, `missingShipped=none` and `pendingNext` lists `bodyParts`. `icon` is in the shipped set. `bodyParts` stays pending until official KaiPath advertises it.
 
 ### 8. Older clients without textInput
 
@@ -115,7 +115,7 @@ Pre-1.3.9 ignores field 11. LM Weights / Config show an explicit danger line whe
 
 ### 9. Player model custom parts
 
-`playerModel.parts` is generic. `headBones` and the DMZUltra FormParts notes in the protocol are an **LM example — replace with your own**. `combined.forms.v1` means one preview can also draw `parts.form` string ids. Clients that lack the feature still draw the entity and ignore `parts.form`. Unknown `extras.kind` values must be ignored.
+`playerModel.parts` is generic. `headBones`, form ids, and the `saiyan_tail` note in the protocol are an **LM example — replace with your own**. `combined.forms.v1` means one preview can also draw `parts.form` string ids. `bodyParts` is the explicit piece list (`id`, `source`, `slot`). Clients that lack either feature still draw the entity and ignore the field they do not know. Unknown piece ids and unknown `extras.kind` values must be ignored. `bodyParts` is `pendingNext` until a client advertises it (same treatment as `icon`).
 
 ### 10. Slider / toggle deferred
 
