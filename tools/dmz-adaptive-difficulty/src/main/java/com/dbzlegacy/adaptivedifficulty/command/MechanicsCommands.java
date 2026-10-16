@@ -7,6 +7,8 @@ import com.dbzlegacy.adaptivedifficulty.gui.MechanicsMenu;
 import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
+import com.dbzlegacy.adaptivedifficulty.progression.form.FirstSuperformMastery;
+import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import java.util.Locale;
@@ -76,6 +78,7 @@ public final class MechanicsCommands {
                                             return open(ctx.getSource(), "logs");
                                         }))))
                 .then(fusionResetLiteral())
+                .then(masteryLiteral())
                 .then(CommandAccess.staffLiteral("admin")
                         .executes(ctx -> adminHelp(ctx.getSource()))
                         .then(Commands.m_82127_("help").executes(ctx -> adminHelp(ctx.getSource())))
@@ -147,6 +150,54 @@ public final class MechanicsCommands {
                                         ctx.getSource(),
                                         StringArgumentType.getString(ctx, "player"),
                                         StringArgumentType.getString(ctx, "kind")))));
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> masteryLiteral() {
+        return CommandAccess.staffLiteral("mastery")
+                .then(Commands.m_82127_("grant-first-superform")
+                        .executes(ctx -> {
+                            LmCommandFeedback.tell(ctx.getSource(), LmCommandMessages.tryCommand(
+                                    "/lm mastery grant-first-superform <amount> [player]"));
+                            return 0;
+                        })
+                        .then(Commands.m_82129_("amount", DoubleArgumentType.doubleArg(0.01))
+                                .executes(ctx -> grantFirstSuperform(
+                                        ctx.getSource(),
+                                        DoubleArgumentType.getDouble(ctx, "amount"),
+                                        null))
+                                .then(LmCommandSuggestions.playerWord("player")
+                                        .executes(ctx -> grantFirstSuperform(
+                                                ctx.getSource(),
+                                                DoubleArgumentType.getDouble(ctx, "amount"),
+                                                StringArgumentType.getString(ctx, "player"))))));
+    }
+
+    private static int grantFirstSuperform(CommandSourceStack source, double amount, String playerName) {
+        if (StaffAccess.denyUnlessStaff(source) == 0) {
+            return 0;
+        }
+        ServerPlayer target;
+        if (playerName == null || playerName.isBlank()) {
+            target = source.m_230896_();
+            if (target == null) {
+                LmCommandFeedback.tell(source, LmCommandMessages.tryCommand(
+                        "/lm mastery grant-first-superform <amount> <player>"));
+                return 0;
+            }
+        } else {
+            target = onlinePlayer(source.m_81377_(), playerName);
+            if (target == null) {
+                LmCommandFeedback.tell(source, LmCommandMessages.playerOffline(playerName));
+                return 0;
+            }
+        }
+        FirstSuperformMastery.Outcome outcome = FirstSuperformMastery.grant(target, amount);
+        LmCommandFeedback.tell(source, outcome.message);
+        if (outcome.ok && source.m_230896_() != target) {
+            target.m_213846_(Component.m_237113_(
+                    UltraStyle.noticeLine("Mastery was granted on your first super form.")));
+        }
+        return outcome.ok ? 1 : 0;
     }
 
     private static LiteralArgumentBuilder<CommandSourceStack> fusionResetLiteral() {
