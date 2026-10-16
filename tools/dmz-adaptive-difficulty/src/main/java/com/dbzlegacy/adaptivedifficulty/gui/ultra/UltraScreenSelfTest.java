@@ -639,21 +639,29 @@ public final class UltraScreenSelfTest {
                 || progInk.get(0).buttonsJson().contains("\"icon\":\"minecraft:")) {
             broken.add("progression: tab buttons must not carry a vanilla item icon");
         }
-        List<GuiOpenPacket> footerInk =
-                UltraScreenSpec.captureSends(() -> UltraScreenSpec.of("rival")
-                        .title("Rivals")
-                        .page("home")
-                        .footerBackHome("Rival Home")
-                        .send(null));
-        if (footerInk.isEmpty() || footerInk.get(0).buttonsJson() == null) {
-            broken.add("footer probe produced no packet");
-        } else {
-            String footerButtons = footerInk.get(0).buttonsJson();
-            if (!footerButtonStyle(footerButtons, "Main menu").equals("normal")) {
-                broken.add("Main menu footer button must use style normal");
+        String[] footerScreens = {
+            "hub", "difficulty", "rival", "spar", "prestige", "character",
+            "skillcheck", "skills", "admin", "config", "progression"
+        };
+        for (String id : footerScreens) {
+            List<GuiOpenPacket> footerInk =
+                    UltraScreenSpec.captureSends(() -> UltraScreenSpec.of(id)
+                            .title("Footer")
+                            .page("home")
+                            .footerBackHome("Home")
+                            .send(null));
+            if (footerInk.isEmpty() || footerInk.get(0).buttonsJson() == null) {
+                broken.add(id + " footer probe produced no packet");
+                continue;
             }
-            if (!footerButtonStyle(footerButtons, "Back to Rival Home").equals("dim")) {
-                broken.add("Back footer button must stay dim");
+            String footerButtons = footerInk.get(0).buttonsJson();
+            if (!"normal".equals(footerButtonStyle(footerButtons, "Main menu"))
+                    || !"normal".equals(footerButtonStyle(footerButtons, "Back to Home"))) {
+                broken.add(id + " footer buttons must use style normal");
+            }
+            int mainX = footerButtonX(footerButtons, "Main menu");
+            if (mainX != UltraStyle.COL_R) {
+                broken.add(id + " hub footer must keep the standard right column, x=" + mainX);
             }
         }
         if (!"End Dimension Strength".equals(ConfigEditor.staffLabel("enableEndDimensionStrength"))) {
@@ -937,26 +945,34 @@ public final class UltraScreenSelfTest {
     }
 
     /**
-     * Config editor stays a locked 400x220 design box and asks the client to scale it.
-     * A stack of rows must not grow that box toward the compact menu cap.
+     * Config editor requests a panel larger than the GUI (so KaiPath 1.3.20 clamps the
+     * chrome to the window) and lays controls out in a 426x240 design box. A stack of
+     * rows must not grow the request toward the compact menu cap.
      */
     private static void checkConfigFullscreen(List<String> broken) {
-        UltraScreenSpec grown = UltraScreenSpec.of("config").panel(400, 220).lockPanel().fillScreen().setRow(50);
+        UltraScreenSpec grown =
+                UltraScreenSpec.of("config").panel(1920, 1080).lockPanel().fillScreen(426, 240).setRow(50);
         for (int i = 0; i < 30; i++) {
             grown.button("do:refresh", "Row " + i, "dim").rowGap();
         }
         GuiOpenPacket grownPkt = grown.toPacket();
-        if (grownPkt.panelWidth() != 400 || grownPkt.panelHeight() != 220) {
+        if (grownPkt.panelWidth() != 1920 || grownPkt.panelHeight() != 1080) {
             broken.add(
-                    "lockPanel grew the config design box to "
+                    "lockPanel grew the config panel request to "
                             + grownPkt.panelWidth()
                             + "x"
                             + grownPkt.panelHeight());
         }
+        JsonObject grownLay = JsonParser.parseString(grownPkt.layoutJson()).getAsJsonObject();
+        if (!grownLay.has("designWidth")
+                || grownLay.get("designWidth").getAsInt() != 426
+                || grownLay.get("designHeight").getAsInt() != 240) {
+            broken.add("lockPanel changed the fillScreen design box");
+        }
         GuiOpenPacket cfg = UltraConfigScreens.layoutProbe();
-        if (cfg.panelWidth() != 400 || cfg.panelHeight() != 220) {
+        if (cfg.panelWidth() != 1920 || cfg.panelHeight() != 1080) {
             broken.add(
-                    "config editor must lock a 400x220 design box, got "
+                    "config editor must request 1920x1080 so the client clamps to the window, got "
                             + cfg.panelWidth()
                             + "x"
                             + cfg.panelHeight());
@@ -967,10 +983,18 @@ public final class UltraScreenSelfTest {
         }
         if (!lay.has("designWidth")
                 || !lay.has("designHeight")
-                || lay.get("designWidth").getAsInt() != 400
-                || lay.get("designHeight").getAsInt() != 220) {
-            broken.add("config fillScreen design size must match the panel");
+                || lay.get("designWidth").getAsInt() != 426
+                || lay.get("designHeight").getAsInt() != 240) {
+            broken.add("config fillScreen design size must be 426x240");
         }
+        if (!lay.has("margin") || lay.get("margin").getAsInt() != 0) {
+            broken.add("config editor must set margin 0 so the clamp fills the GUI");
+        }
+        if (!lay.has("center") || lay.get("center").getAsBoolean()) {
+            broken.add("config editor must set center false");
+        }
+        int boxW = lay.get("designWidth").getAsInt();
+        int boxH = lay.get("designHeight").getAsInt();
         String buttons = cfg.buttonsJson() == null ? "" : cfg.buttonsJson();
         String inputs = cfg.inputsJson() == null ? "" : cfg.inputsJson();
         if (!buttons.contains("Difficulty") || !inputs.contains("input:search")) {
@@ -979,6 +1003,14 @@ public final class UltraScreenSelfTest {
         if (!buttons.contains("Mob Spawning") || !buttons.contains("Review")) {
             broken.add("config probe missing the breadcrumb or review button");
         }
+        if (!"normal".equals(footerButtonStyle(buttons, "Main menu"))) {
+            broken.add("config Main menu footer must use style normal");
+        }
+        int mainX = footerButtonX(buttons, "Main menu");
+        if (mainX + UltraStyle.BTN_W != boxW) {
+            broken.add("config Main menu must sit on the design-box right edge, x=" + mainX);
+        }
+        boolean rail = false;
         JsonArray widgets = JsonParser.parseString(buttons).getAsJsonArray();
         for (JsonElement el : widgets) {
             if (el == null || !el.isJsonObject()) {
@@ -989,9 +1021,15 @@ public final class UltraScreenSelfTest {
             int y = b.get("y").getAsInt();
             int w = b.get("w").getAsInt();
             int h = b.get("h").getAsInt();
-            if (x < 0 || y < 0 || x + w > cfg.panelWidth() || y + h > cfg.panelHeight()) {
+            if (w == 148) {
+                rail = true;
+            }
+            if (x < 0 || y < 0 || x + w > boxW || y + h > boxH) {
                 broken.add("config control outside the design box: " + b.get("label"));
             }
+        }
+        if (!rail) {
+            broken.add("config category rail must be 148px wide");
         }
         JsonArray fields = JsonParser.parseString(inputs).getAsJsonArray();
         for (JsonElement el : fields) {
@@ -1003,7 +1041,7 @@ public final class UltraScreenSelfTest {
             int y = in.get("y").getAsInt();
             int w = in.get("w").getAsInt();
             int h = in.get("h").getAsInt();
-            if (x < 0 || y < 0 || x + w > cfg.panelWidth() || y + h > cfg.panelHeight()) {
+            if (x < 0 || y < 0 || x + w > boxW || y + h > boxH) {
                 broken.add("config text field outside the design box: " + in.get("id"));
             }
         }
@@ -1108,8 +1146,24 @@ public final class UltraScreenSelfTest {
     }
 
     private static String footerButtonStyle(String buttonsJson, String labelContains) {
-        if (buttonsJson == null || buttonsJson.isBlank() || labelContains == null) {
+        JsonObject button = footerButton(buttonsJson, labelContains);
+        if (button == null) {
             return "";
+        }
+        return button.has("style") ? button.get("style").getAsString() : "";
+    }
+
+    private static int footerButtonX(String buttonsJson, String labelContains) {
+        JsonObject button = footerButton(buttonsJson, labelContains);
+        if (button == null || !button.has("x")) {
+            return -1;
+        }
+        return button.get("x").getAsInt();
+    }
+
+    private static JsonObject footerButton(String buttonsJson, String labelContains) {
+        if (buttonsJson == null || buttonsJson.isBlank() || labelContains == null) {
+            return null;
         }
         JsonArray arr = JsonParser.parseString(buttonsJson).getAsJsonArray();
         for (JsonElement el : arr) {
@@ -1119,10 +1173,10 @@ public final class UltraScreenSelfTest {
             JsonObject o = el.getAsJsonObject();
             String label = o.has("label") ? o.get("label").getAsString() : "";
             if (UltraStyle.plain(label).contains(labelContains)) {
-                return o.has("style") ? o.get("style").getAsString() : "";
+                return o;
             }
         }
-        return "";
+        return null;
     }
 
     private static void checkBodyCap(

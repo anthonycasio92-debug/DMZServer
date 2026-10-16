@@ -60,6 +60,12 @@ public final class UltraScreenSpec {
     private boolean lockPanel;
     /** When true, layoutJson asks the client to scale this design box to the screen. */
     private boolean fillScreen;
+    /**
+     * Coordinate space for {@link #fillScreen(int, int)}. Zero means the packet panel size,
+     * which is also what a client that ignores {@code fillScreen} draws (then clamps).
+     */
+    private int designWidth;
+    private int designHeight;
     private PlayerModel playerModel;
     /** Lowest button top Y seen so far; used to size the body scroll region. */
     private int firstButtonY = -1;
@@ -186,11 +192,24 @@ public final class UltraScreenSpec {
     }
 
     /**
-     * Scale this design box to the screen. The packet still sends {@link #panel(int, int)} so a
-     * client that ignores {@code fillScreen} keeps a panel that fits a small GUI.
+     * Scale the packet panel to the screen. Design size matches {@link #panel(int, int)}.
+     * A client that ignores {@code fillScreen} draws that panel and clamps it to the GUI.
      */
     public UltraScreenSpec fillScreen() {
         this.fillScreen = true;
+        return this;
+    }
+
+    /**
+     * Scale {@code designWidth} x {@code designHeight} onto the window. The packet panel stays
+     * the size passed to {@link #panel(int, int)}. KaiPath 1.3.20 ignores {@code fillScreen} and
+     * only clamps that panel down, so a request larger than the GUI fills the window while
+     * controls stay inside the design box (the smallest auto GUI).
+     */
+    public UltraScreenSpec fillScreen(int designWidth, int designHeight) {
+        this.fillScreen = true;
+        this.designWidth = Math.max(1, designWidth);
+        this.designHeight = Math.max(1, designHeight);
         return this;
     }
 
@@ -561,15 +580,29 @@ public final class UltraScreenSpec {
 
     private UltraScreenSpec placeFooter(
             String leftActionId, String leftLabel, String rightActionId, String rightLabel) {
-        // Footer Y is resolved in toPacket against final panel height; placeholder 0.
+        // Footer Y is resolved in toPacket; placeholder 0. Both faces stay normal.
+        // Dim chrome reads as a disabled control.
         if (leftActionId != null && !leftActionId.isBlank()) {
-            addFooterButton(leftActionId, leftLabel, UltraStyle.COL_L, UltraStyle.STYLE_DIM);
+            addFooterButton(leftActionId, leftLabel, UltraStyle.COL_L, UltraStyle.STYLE_NORMAL);
         }
         if (rightActionId != null && !rightActionId.isBlank()) {
-            // Main menu stays a normal button. Dim chrome reads as disabled.
-            addFooterButton(rightActionId, rightLabel, UltraStyle.COL_R, UltraStyle.STYLE_NORMAL);
+            addFooterButton(rightActionId, rightLabel, footerRightX(), UltraStyle.STYLE_NORMAL);
         }
         return this;
+    }
+
+    /**
+     * Hub menus keep the standard right column. A fullscreen design box right-aligns Main menu
+     * inside that box so the button stays on a small GUI.
+     */
+    private int footerRightX() {
+        if (fillScreen && designWidth > 0) {
+            int edge = designWidth - panelMargin - UltraStyle.BTN_W;
+            if (edge >= UltraStyle.COL_L + UltraStyle.BTN_W + 8) {
+                return edge;
+            }
+        }
+        return UltraStyle.COL_R;
     }
 
     private void addFooterButton(String actionId, String label, int x, String style) {
@@ -746,7 +779,7 @@ public final class UltraScreenSpec {
         int height;
         int buttonShift = 0;
         if (lockPanel) {
-            // Staff config editor: the design box is the screen. Do not grow or pack it.
+            // Staff config editor: keep the clamp request. Do not grow it toward PANEL_MAX_H.
             height = panelHeight;
         } else if (naturalBodyH <= 0) {
             // Compact tile menus (hub): pack to content; lower floor than PANEL_MIN_H so
@@ -813,7 +846,12 @@ public final class UltraScreenSpec {
             appendButtonJson(btnArr, b, buttonShift, height);
         }
         // Pinned footer last — client honors footer:true at panel bottom.
-        int footerY = Math.max(UltraStyle.CONTENT_ROW, height - UltraStyle.PANEL_MARGIN - UltraStyle.BTN_H);
+        // Fullscreen design coordinates stay inside the design box. The live client
+        // replaces this Y; a client that also ignores footer:true still draws it on-box.
+        int footerBoxH = fillScreen && designHeight > 0 ? designHeight : height;
+        int footerInset = fillScreen && designHeight > 0 ? panelMargin : UltraStyle.PANEL_MARGIN;
+        int footerY = Math.max(
+                UltraStyle.CONTENT_ROW, footerBoxH - footerInset - UltraStyle.BTN_H);
         for (Button b : footerButtons) {
             if (b == null) {
                 continue;
@@ -875,10 +913,13 @@ public final class UltraScreenSpec {
         layout.addProperty("center", centerPanel);
         layout.addProperty("margin", panelMargin);
         if (fillScreen) {
-            // Opt-in. Clients that ignore these keys keep panelWidth x panelHeight.
+            // Opt-in. Clients that ignore these keys keep panelWidth x panelHeight
+            // and clamp that rectangle to the GUI.
+            int dw = designWidth > 0 ? designWidth : panelWidth;
+            int dh = designHeight > 0 ? designHeight : height;
             layout.addProperty("fillScreen", true);
-            layout.addProperty("designWidth", panelWidth);
-            layout.addProperty("designHeight", height);
+            layout.addProperty("designWidth", dw);
+            layout.addProperty("designHeight", dh);
         }
         // Always present - KaiPath must center titles when value is "center" (not left-default).
         layout.addProperty("titleAlign", UltraStyle.TITLE_ALIGN);
@@ -1188,11 +1229,9 @@ public final class UltraScreenSpec {
         o.addProperty("style", b.style);
         // Zero color keys (no accent/palette/tint) — KaiPath default chrome.
         o.addProperty("x", b.x);
+        // Footer Y is chosen by toPacket (design box when fillScreen sets one, otherwise
+        // the packed panel). Do not replace it with the clamp-request height.
         int y = b.footer ? b.y : b.y + buttonShift;
-        // Footer pins to panel bottom even if packing shifted body rows.
-        if (b.footer) {
-            y = Math.max(UltraStyle.CONTENT_ROW, panelH - UltraStyle.PANEL_MARGIN - UltraStyle.BTN_H);
-        }
         o.addProperty("y", y);
         o.addProperty("w", b.w);
         o.addProperty("h", b.h);
