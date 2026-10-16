@@ -2483,6 +2483,11 @@ def main() -> int:
           and "grantNamed" in mech
           and "playerWordUnlessNumber" in mech
           and "playerWordUnlessNumber" in read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/command/LmCommandSuggestions.java")
+          and "StringArgumentType.word()" in read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/command/LmCommandSuggestions.java")
+          and "implements ArgumentType" not in read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/command/LmCommandSuggestions.java")
+          and "PlayerNotNumber" not in read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/command/LmCommandSuggestions.java")
+          and "CommandTreeArgumentGuard.audit" in mech
+          and "CommandTreeArgumentGuard" in build_sh
           and '"grant-first-superform"' in read(ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/command/LmCommandSuggestions.java")
           and "handleLmMastery" in read(ROOT / "tools/dmz-adaptive-difficulty-gui/src/main/java/com/dbzlegacy/adaptivedifficulty/bukkit/AdaptiveDifficultyGuiPlugin.java")
           and "grantFirstFormMastery" in read(ROOT / "tools/dmz-adaptive-difficulty-gui/src/main/java/com/dbzlegacy/adaptivedifficulty/bukkit/ForgeBridge.java")
@@ -2498,6 +2503,15 @@ def main() -> int:
           and "legendaryform" in mastery_choice
           and "superform" in mastery_choice
           and "Oozaru" in mastery_choice)
+    command_java = list((ROOT / "tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/command").glob("*.java"))
+    custom_arg_types = [
+        str(p.relative_to(ROOT))
+        for p in command_java
+        if "implements ArgumentType" in read(p)
+    ]
+    check("command package has no custom ArgumentType (server-only client sync)",
+          not custom_arg_types,
+          ", ".join(custom_arg_types))
 
     print("\n=== Fusion unfuse deletes FusionBonus (read-gate stays) ===")
     fusion_mixins = read(ROOT / "tools/dmz-adaptive-difficulty/src/main/resources/legacymechanics.mixins.json")
