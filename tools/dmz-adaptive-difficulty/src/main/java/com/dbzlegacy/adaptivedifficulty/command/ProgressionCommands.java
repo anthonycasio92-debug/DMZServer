@@ -297,20 +297,6 @@ public final class ProgressionCommands {
         return 1;
     }
 
-    static int prestigeAdminSync(CommandSourceStack source, String playerName) {
-        if (StaffAccess.denyUnlessStaff(source) == 0) {
-            return 0;
-        }
-        ServerPlayer target = resolveAdminTarget(source, playerName);
-        if (target == null) {
-            reply(source, playerOrNull(source), LmCommandMessages.playerOffline(playerName));
-            return 0;
-        }
-        reply(source, playerOrNull(source),
-                com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeAdmin.sync(target));
-        return 1;
-    }
-
     static int prestigeAdminAdjust(
             CommandSourceStack source, String field, String playerName, String mode, int amount
     ) {
@@ -331,6 +317,8 @@ public final class ProgressionCommands {
                     .adjustPoints(target, mode, amount);
             case "breakthroughs" -> com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeAdmin
                     .adjustBreakthroughs(target, mode, amount);
+            case "godki" -> com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeAdmin
+                    .adjustGodKi(target, mode, amount);
             default -> "§cUnknown field: " + field;
         };
         reply(source, playerOrNull(source), msg);

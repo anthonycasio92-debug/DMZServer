@@ -56,8 +56,8 @@ public final class SparCommands {
                                         .executes(ctx -> dojoTop(
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "category")))))
-                        .then(Commands.m_82127_("accept").executes(ctx -> dojoAccept(ctx.getSource())))
-                        .then(Commands.m_82127_("decline").executes(ctx -> dojoDecline(ctx.getSource())))
+                        .then(CommandAccess.staffLiteral("accept").executes(ctx -> dojoAccept(ctx.getSource())))
+                        .then(CommandAccess.staffLiteral("decline").executes(ctx -> dojoDecline(ctx.getSource())))
                         .then(Commands.m_82127_("hof").executes(ctx -> dojoHof(ctx.getSource())))
                         .then(Commands.m_82127_("members").executes(ctx -> dojoMembers(ctx.getSource())))
                         .then(Commands.m_82127_("name")
@@ -70,7 +70,7 @@ public final class SparCommands {
                                         .executes(ctx -> dojoBanner(
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "material")))))
-                        .then(Commands.m_82127_("challenge")
+                        .then(CommandAccess.staffLiteral("challenge")
                                 .then(LmCommandSuggestions.playerWord("player")
                                         .executes(ctx -> dojoChallenge(
                                                 ctx.getSource(),
@@ -90,9 +90,9 @@ public final class SparCommands {
                                                 StringArgumentType.getString(ctx, "rest"))))))
                 .then(Commands.m_82127_("mentor")
                         .executes(ctx -> mentorStatus(ctx.getSource()))
-                        .then(Commands.m_82127_("accept").executes(ctx -> mentorAccept(ctx.getSource())))
-                        .then(Commands.m_82127_("decline").executes(ctx -> mentorDecline(ctx.getSource())))
-                        .then(Commands.m_82127_("leave").executes(ctx -> mentorRemove(ctx.getSource())))
+                        .then(CommandAccess.staffLiteral("accept").executes(ctx -> mentorAccept(ctx.getSource())))
+                        .then(CommandAccess.staffLiteral("decline").executes(ctx -> mentorDecline(ctx.getSource())))
+                        .then(CommandAccess.staffLiteral("leave").executes(ctx -> mentorRemove(ctx.getSource())))
                         .then(LmCommandSuggestions.playerWord("player")
                                 .executes(ctx -> mentorInvite(
                                         ctx.getSource(),
@@ -111,14 +111,14 @@ public final class SparCommands {
                                         StringArgumentType.getString(ctx, "player")))))
                 .then(Commands.m_82127_("weight")
                         .executes(ctx -> weightUsage(ctx.getSource()))
-                        .then(Commands.m_82127_("quote")
+                        .then(CommandAccess.staffLiteral("quote")
                                 .then(LmCommandSuggestions.word("type", LmCommandSuggestions.WEIGHT_TYPES)
                                         .then(Commands.m_82129_("value", IntegerArgumentType.integer(1, UltraWeightShopScreens.MAX_WEIGHT_VALUE))
                                                 .executes(ctx -> weightQuote(
                                                         ctx.getSource(),
                                                         StringArgumentType.getString(ctx, "type"),
                                                         IntegerArgumentType.getInteger(ctx, "value"))))))
-                        .then(Commands.m_82127_("buy")
+                        .then(CommandAccess.staffLiteral("buy")
                                 .then(LmCommandSuggestions.word("type", LmCommandSuggestions.WEIGHT_TYPES)
                                         .then(Commands.m_82129_("value", IntegerArgumentType.integer(1, UltraWeightShopScreens.MAX_WEIGHT_VALUE))
                                                 .executes(ctx -> weightBuy(

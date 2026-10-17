@@ -1,6 +1,22 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.214**.
+What changed from **4.5.147** through **4.6.215**.
+
+## The paid character and rival/spar actions move to staff-only commands
+
+Race change, class change, and reskin purchases now happen in the Character Services menu — their typed command forms (`/character race`, `/character class`, `/character reskin`, and the matching `do` actions) are staff-only, and tab-complete no longer offers them to players. In the rival and sparring trees the interaction verbs are gated to staff as well: `/rival declare|accept|decline|remove|challenge|spectate`, `/spar dojo accept|decline|challenge`, `/spar mentor accept|decline|leave`, and `/spar weight quote|buy`. Nothing in any menu changed — the GUI buttons, chat buttons, and chest clicks players already use keep working exactly as before, and every gated handler already checked staff at execution, so this closes the typed path only. `/padmin` now hides itself from non-staff entirely.
+
+Staff fix other players with three new commands: `/character admin set-race <player> <race> [keep%]` (keep% defaults to 100), `/character admin set-class <player> <class>`, and `/character admin reskin <player>` (opens their appearance editor). These are free fixes — no Ancient Coin charge, no permission node, no race lock or cooldown — while the feature switches and safety checks still apply. Players who type the old commands are pointed to the Character Services menu, and the help text moved: player help lists the menus, staff help (`/lm admin`, `/rival admin`, `/spar admin`, `/character admin`) lists the actions.
+
+## /padmin gets godki, and sync is gone
+
+`/padmin godki <player> set|add|remove <0-5>` sets another player's God Ki Enhancement investments directly: raising tops their mastery up to match, lowering drops the enhancement mastery records first so the new count lands correctly, and 0 removes the enhancement entirely — skill, forms, and history — like a reset. No favor changes hands, and the prestige admin menu has the matching God Ki action.
+
+`/padmin sync` is removed everywhere — the command, the menu button, and its bridge handler. Reapplying prestige state does not need a manual trigger in the current build.
+
+## Ending a fusion sweeps every stored bonus, minus the racial ones
+
+Unfusing no longer looks for bonus names containing "fusion" and "zenkai". The tail of `endFusion` now enumerates every stored bonus name from the serialized map and deletes all of them except keys starting with `Zenkai_`, `Assimilation_`, or `Absorption_` — for you and for your partner — then syncs both. That catches `FusionBonus`, every fusion-zenkai spelling the old heuristic could miss, and anything a future stat id would have hidden from the fixed stat list. Deletion matches names exactly, so a racial key that merely mentions fusion elsewhere in its name survives. Other systems that write non-racial bonuses (weapon bonus scaling, piercing, DMZ passives) re-apply on their own tick pulses and login events, so the sweep clears what the fusion produced and play restores what still applies.
 
 ## The nemesis toggle moves to Character Services, and OFF keeps your menu summon
 

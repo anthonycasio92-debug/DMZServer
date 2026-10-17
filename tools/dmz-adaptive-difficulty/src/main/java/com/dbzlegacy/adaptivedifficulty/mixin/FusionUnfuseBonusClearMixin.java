@@ -7,10 +7,10 @@ import com.dragonminez.common.network.S2C.StatsSyncS2C;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.BonusStats;
 import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import org.spongepowered.asm.mixin.Mixin;
@@ -39,12 +39,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * {@code clearBonus} matches with {@code String.contains} and can delete a
  * racial key. This mixin does not call those methods.
  *
- * <p>Removal uses {@code removeAllBonuses} and {@code removeBonusSplit}, which
- * match the bonus name with {@code String.equals}. Racial keys
- * {@code Zenkai_}, {@code Assimilation_}, and {@code Absorption_} are never
- * passed to those methods. A name that contains both "fusion" and "zenkai"
- * and is not one of those racial prefixes is a fusion-scoped zenkai and is
- * removed by its exact name.
+ * <p>Removal is an allowlist sweep, not a name heuristic: every stored bonus
+ * name is enumerated from the serialized map ({@code BonusStats.save()}) and
+ * removed with {@code removeAllBonuses}, except keys starting with
+ * {@code Zenkai_}, {@code Assimilation_}, or {@code Absorption_}. That covers
+ * {@code FusionBonus}, fusion-zenkai name variants the old contains("fusion")
+ * heuristic could miss, and rows on any stat id DMZ adds later; removal matches
+ * with {@code String.equals}, so a racial key that merely mentions fusion in the
+ * rest of its name stays. The same sweep runs for the partner, and a
+ * {@code StatsSyncS2C} follows each player. Other writers of non-racial keys
+ * (weapon bonus scaling, piercing, DMZ passives) re-apply on their own pulses
+ * and login events — the sweep only drops what a fusion produced.
  *
  * <p>The class is named as a string so mixin config does not load
  * {@code FusionLogic} while the config is applied. {@link FusionBonusReadGateMixin}
@@ -52,9 +57,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  */
 @Mixin(targets = "com.dragonminez.server.util.FusionLogic", remap = false)
 public abstract class FusionUnfuseBonusClearMixin {
-    private static final String FUSION_BONUS = "FusionBonus";
-    /** RES is included so {@code removeBonusSplit} also clears the DEF+STM split. */
-    private static final String[] SPLIT_STATS = {"STR", "SKP", "RES", "DEF", "STM", "VIT", "PWR", "ENE"};
     private static final String ZENKAI_PREFIX = "Zenkai_";
     private static final String ASSIMILATION_PREFIX = "Assimilation_";
     private static final String ABSORPTION_PREFIX = "Absorption_";
@@ -101,10 +103,10 @@ public abstract class FusionUnfuseBonusClearMixin {
 
     private static void clearAndSync(ServerPlayer player, StatsData data) {
         if (player == null) {
-            deleteFusionKeys(data);
+            deleteNonRacialKeys(data);
             return;
         }
-        deleteFusionKeys(data);
+        deleteNonRacialKeys(data);
         try {
             NetworkHandler.sendToTrackingEntityAndSelf(new StatsSyncS2C(player), player);
         } catch (Throwable ignored) {
@@ -112,10 +114,14 @@ public abstract class FusionUnfuseBonusClearMixin {
     }
 
     /**
-     * Drop {@code FusionBonus} and fusion-zenkai names. Racial
-     * {@code Zenkai_} / {@code Assimilation_} / {@code Absorption_} keys stay.
+     * Allowlist sweep: delete every stored bonus key except the racial
+     * {@code Zenkai_} / {@code Assimilation_} / {@code Absorption_} prefixes.
+     * Names are snapshotted from the serialized map so every stat id DMZ
+     * stores is covered, then removed by exact name through
+     * {@code removeAllBonuses}, which walks all stat lists including the
+     * DEF+STM split copies.
      */
-    private static void deleteFusionKeys(StatsData data) {
+    private static void deleteNonRacialKeys(StatsData data) {
         if (data == null) {
             return;
         }
@@ -129,62 +135,40 @@ public abstract class FusionUnfuseBonusClearMixin {
             return;
         }
         Set<String> names = new LinkedHashSet<>();
-        names.add(FUSION_BONUS);
-        FusionBonusOwner.runRaw(() -> collectFusionZenkaiNames(bonuses, names));
+        FusionBonusOwner.runRaw(() -> collectNonRacialNames(bonuses, names));
         for (String name : names) {
-            if (!deletableFusionKey(name)) {
-                continue;
-            }
             try {
                 bonuses.removeAllBonuses(name);
             } catch (Throwable ignored) {
             }
-            for (String stat : SPLIT_STATS) {
-                try {
-                    bonuses.removeBonusSplit(stat, name);
-                } catch (Throwable ignored) {
-                }
-            }
         }
     }
 
-    /** Read-gate is off inside {@link FusionBonusOwner#runRaw} so the stored key is visible. */
-    private static void collectFusionZenkaiNames(BonusStats bonuses, Set<String> names) {
-        for (String stat : SPLIT_STATS) {
-            List<BonusStats.StatBonus> list;
-            try {
-                list = bonuses.getBonuses(stat);
-            } catch (Throwable ignored) {
-                continue;
+    /** Read-gate is off inside {@link FusionBonusOwner#runRaw} so every stored key is visible. */
+    private static void collectNonRacialNames(BonusStats bonuses, Set<String> names) {
+        try {
+            CompoundTag root = bonuses.save();
+            if (root == null) {
+                return;
             }
-            if (list == null) {
-                continue;
-            }
-            for (int i = 0; i < list.size(); i++) {
-                BonusStats.StatBonus bonus = list.get(i);
-                if (bonus == null || bonus.name == null) {
+            for (String statKey : root.m_128431_()) {
+                ListTag rows = root.m_128437_(statKey, 10);
+                if (rows == null) {
                     continue;
                 }
-                if (deletableFusionKey(bonus.name) && !FUSION_BONUS.equals(bonus.name)) {
-                    names.add(bonus.name);
+                for (int i = 0; i < rows.size(); i++) {
+                    CompoundTag row = rows.m_128728_(i);
+                    if (row == null) {
+                        continue;
+                    }
+                    String name = row.m_128461_("Name");
+                    if (name != null && !name.isEmpty() && !racialKey(name)) {
+                        names.add(name);
+                    }
                 }
             }
+        } catch (Throwable ignored) {
         }
-    }
-
-    /**
-     * Exact fusion keys only. A racial prefix is preserved even when the rest
-     * of the name also mentions fusion.
-     */
-    private static boolean deletableFusionKey(String name) {
-        if (name == null || name.isEmpty() || racialKey(name)) {
-            return false;
-        }
-        if (FUSION_BONUS.equals(name)) {
-            return true;
-        }
-        String lower = name.toLowerCase(Locale.ROOT);
-        return lower.contains("fusion") && lower.contains("zenkai");
     }
 
     private static boolean racialKey(String name) {

@@ -56,7 +56,7 @@ public final class RivalCommands {
                 .then(Commands.m_82127_("hof").executes(ctx -> gui(ctx.getSource(), "hof")))
                 .then(Commands.m_82127_("journal").executes(ctx -> gui(ctx.getSource(), "journal")))
                 .then(Commands.m_82127_("title").executes(ctx -> gui(ctx.getSource(), "title")))
-                .then(Commands.m_82127_("spectate")
+                .then(CommandAccess.staffLiteral("spectate")
                         .executes(ctx -> spectate(ctx.getSource(), null))
                         .then(Commands.m_82127_("stop").executes(ctx -> spectateStop(ctx.getSource())))
                         .then(LmCommandSuggestions.playerWord("player")
@@ -77,22 +77,22 @@ public final class RivalCommands {
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "action"),
                                                 StringArgumentType.getString(ctx, "rest"))))))
-                .then(Commands.m_82127_("declare")
+                .then(CommandAccess.staffLiteral("declare")
                         .then(LmCommandSuggestions.playerWord("player")
                                 .executes(ctx -> declare(
                                         ctx.getSource(),
                                         StringArgumentType.getString(ctx, "player")))))
-                .then(Commands.m_82127_("accept")
+                .then(CommandAccess.staffLiteral("accept")
                         .then(LmCommandSuggestions.playerWord("player")
                                 .executes(ctx -> accept(
                                         ctx.getSource(),
                                         StringArgumentType.getString(ctx, "player")))))
-                .then(Commands.m_82127_("decline")
+                .then(CommandAccess.staffLiteral("decline")
                         .then(LmCommandSuggestions.playerWord("player")
                                 .executes(ctx -> decline(
                                         ctx.getSource(),
                                         StringArgumentType.getString(ctx, "player")))))
-                .then(Commands.m_82127_("remove")
+                .then(CommandAccess.staffLiteral("remove")
                         .then(LmCommandSuggestions.playerWord("player")
                                 .executes(ctx -> remove(
                                         ctx.getSource(),
@@ -101,7 +101,7 @@ public final class RivalCommands {
                         .executes(ctx -> tpmsg(ctx.getSource(), null))
                         .then(Commands.m_82127_("on").executes(ctx -> tpmsg(ctx.getSource(), true)))
                         .then(Commands.m_82127_("off").executes(ctx -> tpmsg(ctx.getSource(), false))))
-                .then(Commands.m_82127_("challenge")
+                .then(CommandAccess.staffLiteral("challenge")
                         .then(Commands.m_82127_("send")
                                 .then(LmCommandSuggestions.playerWord("player")
                                         .executes(ctx -> challengeSend(

@@ -79,6 +79,27 @@ public final class GodKiWipeHelper {
         }
     }
 
+    /**
+     * Drop only the {@code godkienhancement:*} mastery records — the staff
+     * {@code /padmin godki} reduce path, which keeps the skill and active form
+     * intact ({@link #wipe} removes skill, forms, and history too).
+     */
+    public static void dropEnhancementMastery(Player player) {
+        if (player == null) {
+            return;
+        }
+        try {
+            boolean changed = clearMastery(player);
+            if (changed && player instanceof ServerPlayer serverPlayer) {
+                NetworkHandler.sendToTrackingEntityAndSelf(
+                        new StatsSyncS2C(serverPlayer), serverPlayer);
+            }
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] godki mastery drop failed for {}", AdaptiveDifficultyMod.MOD_ID, t);
+        }
+    }
+
     /** Wipe only when character creation is about to replace the current race. */
     public static void wipeIfRaceChanges(StatsData stats, String nextRace) {
         if (stats == null || nextRace == null || nextRace.isBlank()) {

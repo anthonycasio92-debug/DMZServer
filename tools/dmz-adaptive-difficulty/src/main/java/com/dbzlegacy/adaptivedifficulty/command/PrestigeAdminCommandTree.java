@@ -1,5 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.command;
 
+import com.dbzlegacy.adaptivedifficulty.progression.shop.GodKiEnhancementShop;
+import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -13,18 +15,16 @@ public final class PrestigeAdminCommandTree {
     public static LiteralArgumentBuilder<CommandSourceStack> attach(
             LiteralArgumentBuilder<CommandSourceStack> root
     ) {
+        // Defense-in-depth: hide the whole tree from non-staff. Every handler also
+        // checks denyUnlessStaff at execution; the requires() keeps tab-complete honest.
         return root
+                .requires(StaffAccess::isStaffSource)
                 .executes(ctx -> ProgressionCommands.prestigeAdminHelp(ctx.getSource()))
                 .then(Commands.m_82127_("help").executes(ctx -> ProgressionCommands.prestigeAdminHelp(ctx.getSource())))
                 .then(Commands.m_82127_("info")
                         .executes(ctx -> ProgressionCommands.prestigeAdminInfo(ctx.getSource(), null))
                         .then(LmCommandSuggestions.playerWord("player")
                                 .executes(ctx -> ProgressionCommands.prestigeAdminInfo(
-                                        ctx.getSource(),
-                                        StringArgumentType.getString(ctx, "player")))))
-                .then(Commands.m_82127_("sync")
-                        .then(LmCommandSuggestions.playerWord("player")
-                                .executes(ctx -> ProgressionCommands.prestigeAdminSync(
                                         ctx.getSource(),
                                         StringArgumentType.getString(ctx, "player")))))
                 .then(Commands.m_82127_("skills")
@@ -55,14 +55,23 @@ public final class PrestigeAdminCommandTree {
                 .then(adjustField("held"))
                 .then(adjustField("completed"))
                 .then(adjustField("points"))
-                .then(adjustField("breakthroughs"));
+                .then(adjustField("breakthroughs"))
+                .then(adjustFieldAmount(
+                        "godki",
+                        IntegerArgumentType.integer(0, GodKiEnhancementShop.MAX_INVESTMENTS)));
     }
 
     private static LiteralArgumentBuilder<CommandSourceStack> adjustField(String field) {
+        return adjustFieldAmount(field, IntegerArgumentType.integer());
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> adjustFieldAmount(
+            String field, IntegerArgumentType amountType
+    ) {
         return Commands.m_82127_(field)
                 .then(LmCommandSuggestions.playerWord("player")
                         .then(LmCommandSuggestions.word("mode", LmCommandSuggestions.PRESTIGE_ADJUST_MODES)
-                                .then(Commands.m_82129_("amount", IntegerArgumentType.integer())
+                                .then(Commands.m_82129_("amount", amountType)
                                         .executes(ctx -> ProgressionCommands.prestigeAdminAdjust(
                                                 ctx.getSource(), field,
                                                 StringArgumentType.getString(ctx, "player"),

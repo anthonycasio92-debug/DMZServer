@@ -916,8 +916,14 @@ def main() -> int:
           and "addPermission" in char_bootstrap)
     char_sys = read(SRC / "com/dbzlegacy/adaptivedifficulty/character/CharacterServicesSystem.java")
     cnpc_char = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcLmCharacterGui.java")
+    # staffGrant overload: the precheck must run inside executeReskin before any charge.
+    reskin_exec = char_sys.split(
+        "public static String executeReskin(ServerPlayer player, boolean staffGrant)", 1)
+    reskin_body = reskin_exec[1] if len(reskin_exec) == 2 else ""
     check("reskin precheck before charge/cooldown",
-          "reskinPrecheck" in char_sys and "executeReskin" in char_sys.split("reskinPrecheck")[1][:1200])
+          "reskinPrecheck" in char_sys
+          and "reskinPrecheck(player, staffGrant)" in reskin_body
+          and 0 <= reskin_body.find("reskinPrecheck") < reskin_body.find("reskinAmountDue"))
     check("CNPC reskin confirm step like class",
           "paintReskinConfirm" in cnpc_char and "reskin_confirm" in cnpc_char)
     snapshot = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcPlayerSnapshot.java")
@@ -2537,7 +2543,10 @@ def main() -> int:
           and '@At("TAIL")' in fusion_clear
           and "getFusionPartnerUUID" in fusion_clear
           and "removeAllBonuses" in fusion_clear
-          and "removeBonusSplit" in fusion_clear
+          # 4.6.215 allowlist sweep: names enumerated from BonusStats.save() rows,
+          # deleted by exact name (no per-stat removeBonusSplit loop any more).
+          and "bonuses.save()" in fusion_clear
+          and 'm_128461_("Name")' in fusion_clear
           and "FusionBonusOwner.runRaw" in fusion_clear
           and "StatsSyncS2C" in fusion_clear
           and "ZENKAI_PREFIX = \"Zenkai_\"" in fusion_clear

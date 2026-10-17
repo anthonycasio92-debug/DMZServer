@@ -206,6 +206,32 @@ public final class GodKiEnhancementShop {
     }
 
     /**
+     * Staff {@code /padmin godki} — store an investment count directly (no favor
+     * charged) and align the enhancement to it: a raise tops mastery up through
+     * {@link #reapply}, a reduce drops the mastery records first so the top-up
+     * lands at the new count, and zero fully strips skill, forms, and history
+     * through {@link com.dbzlegacy.adaptivedifficulty.noea.GodKiWipeHelper#wipe}.
+     */
+    static void adminSetInvested(ServerPlayer player, int count) {
+        if (player == null) {
+            return;
+        }
+        int clamped = Math.max(0, Math.min(MAX_INVESTMENTS, count));
+        int before = invested(player);
+        ProgressionData.storedPut(player, KEY_INVESTED, clamped);
+        if (clamped == 0) {
+            if (before > 0 || hasEnhancement(player)) {
+                com.dbzlegacy.adaptivedifficulty.noea.GodKiWipeHelper.wipe(player, "admin_godki");
+            }
+            return;
+        }
+        if (clamped < before) {
+            com.dbzlegacy.adaptivedifficulty.noea.GodKiWipeHelper.dropEnhancementMastery(player);
+        }
+        reapply(player);
+    }
+
+    /**
      * Login / reapply top-up: set the enhancement skill and raise mastery to
      * {@code invested x 1000}. Never lowers a higher record. No-op while the
      * character is not attached — the login reapply window retries.

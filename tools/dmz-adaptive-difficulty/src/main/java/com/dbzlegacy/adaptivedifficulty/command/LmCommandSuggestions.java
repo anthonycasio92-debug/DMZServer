@@ -2,6 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.command;
 
 import com.dbzlegacy.adaptivedifficulty.character.CharacterServicesConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem;
+import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
@@ -449,12 +450,29 @@ public final class LmCommandSuggestions {
             "turtle_shell", "workout_weights", "piccolo_cape"
     );
 
-    public static final SuggestionProvider<CommandSourceStack> CHARACTER_ACTIONS = literals(
+    /**
+     * Suggested {@code /character do} actions. Race/class/reskin confirm rows are
+     * staff-gated in {@link CharacterCommands#STAFF_ONLY_ACTIONS} — hidden here so
+     * tab-complete never offers a player an action they cannot run.
+     */
+    private static final List<String> CHARACTER_ACTION_WORDS = List.of(
             "race_confirm", "class_confirm", "reskin_confirm",
             "bone_unlock", "bone_equip", "bone_toggle", "bone_unequip",
             "bone_preview", "bone_restore", "bone_race_default",
             "bodypart_unlock", "bodypart_toggle", "bodypart_clear"
     );
+
+    public static final SuggestionProvider<CommandSourceStack> CHARACTER_ACTIONS =
+            (ctx, builder) -> {
+                boolean staff = StaffAccess.isStaffSource(ctx.getSource());
+                List<String> visible = new ArrayList<>();
+                for (String action : CHARACTER_ACTION_WORDS) {
+                    if (staff || !CharacterCommands.STAFF_ONLY_ACTIONS.contains(action)) {
+                        visible.add(action);
+                    }
+                }
+                return SharedSuggestionProvider.m_82970_(visible, builder);
+            };
 
     /** Accepted race-change keep percents, live from character-services config. */
     public static final SuggestionProvider<CommandSourceStack> CHARACTER_KEEP_PCT =

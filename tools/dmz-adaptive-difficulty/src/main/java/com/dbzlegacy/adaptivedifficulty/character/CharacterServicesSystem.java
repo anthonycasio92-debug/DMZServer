@@ -334,11 +334,22 @@ public final class CharacterServicesSystem {
     }
 
     public static String executeRaceChange(ServerPlayer player, String targetRace, int preservationPercent) {
+        return executeRaceChange(player, targetRace, preservationPercent, false);
+    }
+
+    /**
+     * @param staffGrant staff fix: skip the player's race permission, race-lock,
+     *                   cooldown, and Ancient Coin charge, and start no cooldown.
+     *                   Feature switches and safety checks still apply.
+     */
+    public static String executeRaceChange(
+            ServerPlayer player, String targetRace, int preservationPercent, boolean staffGrant
+    ) {
         String block = blockReason(player);
         if (!block.isEmpty()) {
             return block;
         }
-        if (!CharacterServicesAccess.canRaceChange(player)) {
+        if (!staffGrant && !CharacterServicesAccess.canRaceChange(player)) {
             return "§cYou do not have permission to change race. Ask staff if you need access.";
         }
         CharacterServicesConfig cfg = CharacterServicesConfig.get();
@@ -356,20 +367,20 @@ public final class CharacterServicesSystem {
         if (raceId.equalsIgnoreCase(currentRace)) {
             return "§cYou are already that race. Pick a different one.";
         }
-        if (!CharacterServicesAccess.bypassRaceLock(player)) {
+        if (!staffGrant && !CharacterServicesAccess.bypassRaceLock(player)) {
             String lock = RaceLock.selectBlockReason(player, raceId);
             if (lock != null && !lock.isBlank()) {
                 return lock;
             }
         }
-        if (!CharacterServicesAccess.bypassCooldown(player)) {
+        if (!staffGrant && !CharacterServicesAccess.bypassCooldown(player)) {
             long left = cooldownRemaining(player, "race");
             if (left > 0L) {
                 return "§cRace change is on cooldown. Try again in §f" + formatDuration(left) + "§c.";
             }
         }
         releaseTransformation(player);
-        long cost = raceAmountDue(player, preservationPercent);
+        long cost = staffGrant ? 0L : raceAmountDue(player, preservationPercent);
         AncientCoinEconomy.migrateWalletToItems(player);
         if (cost > 0L && !AncientCoinEconomy.canAfford(player, cost)) {
             return insufficientFunds(player, cost);
@@ -480,8 +491,10 @@ public final class CharacterServicesSystem {
                     }
                 }
             }
-            CharacterServicesStore.get().record(player.m_20148_().toString()).lastRaceChangeAt =
-                    System.currentTimeMillis();
+            if (!staffGrant) {
+                CharacterServicesStore.get().record(player.m_20148_().toString()).lastRaceChangeAt =
+                        System.currentTimeMillis();
+            }
             CharacterServicesStore.get().markDirty();
             audit(player, "Race Change", currentRace, raceId, preservationPercent, cost, true);
             String paid = cost > 0L ? " §7Paid §f" + formatCost(cost) + "§7." : "";
@@ -537,11 +550,20 @@ public final class CharacterServicesSystem {
     }
 
     public static String executeClassChange(ServerPlayer player, String targetClass) {
+        return executeClassChange(player, targetClass, false);
+    }
+
+    /**
+     * @param staffGrant staff fix: skip the player's class permission, cooldown, and
+     *                   Ancient Coin charge, and start no cooldown. Feature switches
+     *                   and safety checks still apply.
+     */
+    public static String executeClassChange(ServerPlayer player, String targetClass, boolean staffGrant) {
         String block = blockReason(player);
         if (!block.isEmpty()) {
             return block;
         }
-        if (!CharacterServicesAccess.canClassChange(player)) {
+        if (!staffGrant && !CharacterServicesAccess.canClassChange(player)) {
             return "§cYou do not have permission to change class. Ask staff if you need access.";
         }
         CharacterServicesConfig.ClassChange cc = CharacterServicesConfig.get().classChange;
@@ -557,14 +579,14 @@ public final class CharacterServicesSystem {
         if (classId.equalsIgnoreCase(current)) {
             return "§cYou are already that class. Pick a different one.";
         }
-        if (!CharacterServicesAccess.bypassCooldown(player)) {
+        if (!staffGrant && !CharacterServicesAccess.bypassCooldown(player)) {
             long left = cooldownRemaining(player, "class");
             if (left > 0L) {
                 return "§cClass change is on cooldown. Try again in §f" + formatDuration(left) + "§c.";
             }
         }
         releaseTransformation(player);
-        long cost = classAmountDue(player);
+        long cost = staffGrant ? 0L : classAmountDue(player);
         AncientCoinEconomy.migrateWalletToItems(player);
         if (cost > 0L && !AncientCoinEconomy.canAfford(player, cost)) {
             return insufficientFunds(player, cost);
@@ -603,8 +625,10 @@ public final class CharacterServicesSystem {
             }
             DmzCharacterClassChangeHooks.onPaidClassChange(
                     player, data, classId, resourceSnapshot, preservePrimaries);
-            CharacterServicesStore.get().record(player.m_20148_().toString()).lastClassChangeAt =
-                    System.currentTimeMillis();
+            if (!staffGrant) {
+                CharacterServicesStore.get().record(player.m_20148_().toString()).lastClassChangeAt =
+                        System.currentTimeMillis();
+            }
             CharacterServicesStore.get().markDirty();
             audit(player, "Class Change", current, classId, 100, cost, true);
             String paid = cost > 0L ? " §7Paid §f" + formatCost(cost) + "§7." : "";
@@ -625,24 +649,32 @@ public final class CharacterServicesSystem {
      * Empty string means OK to proceed.
      */
     public static String reskinPrecheck(ServerPlayer player) {
+        return reskinPrecheck(player, false);
+    }
+
+    /**
+     * @param staffGrant staff fix: skip the player's reskin permission, cooldown, and
+     *                   Ancient Coin charge. Feature switch and safety checks still apply.
+     */
+    public static String reskinPrecheck(ServerPlayer player, boolean staffGrant) {
         String block = blockReason(player, true);
         if (!block.isEmpty()) {
             return block;
         }
-        if (!CharacterServicesAccess.canReskin(player)) {
+        if (!staffGrant && !CharacterServicesAccess.canReskin(player)) {
             return "§cYou do not have permission to reskin. Ask staff if you need access.";
         }
         CharacterServicesConfig.Reskin rs = CharacterServicesConfig.get().reskin;
         if (!rs.enabled) {
             return "§cReskin is turned off on this server.";
         }
-        if (!CharacterServicesAccess.bypassCooldown(player)) {
+        if (!staffGrant && !CharacterServicesAccess.bypassCooldown(player)) {
             long left = cooldownRemaining(player, "reskin");
             if (left > 0L) {
                 return "§cReskin is on cooldown. Try again in §f" + formatDuration(left) + "§c.";
             }
         }
-        long cost = reskinAmountDue(player);
+        long cost = staffGrant ? 0L : reskinAmountDue(player);
         AncientCoinEconomy.migrateWalletToItems(player);
         if (cost > 0L && !AncientCoinEconomy.canAfford(player, cost)) {
             return insufficientFunds(player, cost);
@@ -654,11 +686,19 @@ public final class CharacterServicesSystem {
      * Charges Ancient Coins (level-scaled), then opens DMZ recustomize UI only — no full mod menu.
      */
     public static String executeReskin(ServerPlayer player) {
-        String pre = reskinPrecheck(player);
+        return executeReskin(player, false);
+    }
+
+    /**
+     * @param staffGrant staff fix: open the editor without charging or starting a
+     *                   reskin cooldown (permission and cooldown are pre-skipped too).
+     */
+    public static String executeReskin(ServerPlayer player, boolean staffGrant) {
+        String pre = reskinPrecheck(player, staffGrant);
         if (pre != null && !pre.isBlank()) {
             return pre;
         }
-        long cost = reskinAmountDue(player);
+        long cost = staffGrant ? 0L : reskinAmountDue(player);
         AncientCoinEconomy.migrateWalletToItems(player);
         if (cost > 0L && !chargeAc(player, cost)) {
             return insufficientFunds(player, cost);
@@ -673,7 +713,9 @@ public final class CharacterServicesSystem {
             Runnable openEditor = () -> {
                 try {
                     NetworkHandler.sendToPlayer(new OpenRecustomizeS2C(), player);
-                    CharacterServicesStore.get().record(uuid).lastReskinAt = System.currentTimeMillis();
+                    if (!staffGrant) {
+                        CharacterServicesStore.get().record(uuid).lastReskinAt = System.currentTimeMillis();
+                    }
                     CharacterServicesStore.get().markDirty();
                 } catch (Throwable openErr) {
                     ReskinSessionGuard.clear(player);

@@ -1,14 +1,19 @@
 package com.dbzlegacy.adaptivedifficulty.command;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
+import com.dbzlegacy.adaptivedifficulty.character.CharacterServicesSystem;
 import com.dbzlegacy.adaptivedifficulty.gui.CharacterServicesGuiApi;
 import com.dbzlegacy.adaptivedifficulty.gui.CharacterServicesMenu;
+import com.dbzlegacy.adaptivedifficulty.gui.RivalGuiApi;
+import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import java.util.Set;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
@@ -17,10 +22,19 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 /**
  * {@code /character} — paid race / class / reskin services with cosmetic unlocks.
  * Player-facing with parity for the Character Services screen; the {@code do} backend
- * mirrors {@code /difficulty do} for chat buttons and typed actions.
+ * mirrors {@code /difficulty do} for chat buttons and typed actions. Race, class, and
+ * reskin purchases are menu-only for players — their command forms are staff-gated —
+ * and staff fix other players through {@code /character admin ...}.
  */
 public final class CharacterCommands {
     private CharacterCommands() {}
+
+    /**
+     * The command forms of the paid race/class/reskin flow. The Character Services
+     * screen keeps every one of these as a GUI action; only this command tree gates them.
+     */
+    public static final Set<String> STAFF_ONLY_ACTIONS = Set.of(
+            "race", "race_confirm", "class", "class_confirm", "reskin", "reskin_confirm");
 
     public static void register() {
         MinecraftForge.EVENT_BUS.register(new CharacterCommands());
@@ -37,22 +51,6 @@ public final class CharacterCommands {
                 .requires(CommandAccess::isPlayerSlashUser)
                 .executes(ctx -> open(ctx.getSource(), "main"))
                 .then(Commands.m_82127_("help").executes(ctx -> characterHelp(ctx.getSource())))
-                .then(Commands.m_82127_("race")
-                        .then(Commands.m_82129_("race", StringArgumentType.word())
-                                .then(Commands.m_82129_("keep%", IntegerArgumentType.integer(0, 100))
-                                        .suggests(LmCommandSuggestions.CHARACTER_KEEP_PCT)
-                                        .executes(ctx -> raceConfirm(
-                                                ctx.getSource(),
-                                                StringArgumentType.getString(ctx, "race"),
-                                                IntegerArgumentType.getInteger(ctx, "keep%"))))))
-                .then(Commands.m_82127_("class")
-                        .then(Commands.m_82129_("class", StringArgumentType.word())
-                                .executes(ctx -> characterDo(
-                                        ctx.getSource(),
-                                        "class_confirm",
-                                        StringArgumentType.getString(ctx, "class")))))
-                .then(Commands.m_82127_("reskin")
-                        .executes(ctx -> characterDo(ctx.getSource(), "reskin_confirm", "")))
                 .then(Commands.m_82127_("do")
                         .then(LmCommandSuggestions.word("action", LmCommandSuggestions.CHARACTER_ACTIONS)
                                 .executes(ctx -> characterDoRest(
@@ -63,11 +61,51 @@ public final class CharacterCommands {
                                         .executes(ctx -> characterDoRest(
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "action"),
-                                                StringArgumentType.getString(ctx, "arg"))))));
+                                                StringArgumentType.getString(ctx, "arg"))))))
+                .then(CommandAccess.staffLiteral("admin")
+                        .executes(ctx -> characterAdminHelp(ctx.getSource()))
+                        .then(Commands.m_82127_("help")
+                                .executes(ctx -> characterAdminHelp(ctx.getSource())))
+                        .then(Commands.m_82127_("set-race")
+                                .then(LmCommandSuggestions.playerWord("player")
+                                        .then(Commands.m_82129_("race", StringArgumentType.word())
+                                                .executes(ctx -> adminSetRace(
+                                                        ctx.getSource(),
+                                                        StringArgumentType.getString(ctx, "player"),
+                                                        StringArgumentType.getString(ctx, "race"),
+                                                        100))
+                                                .then(Commands.m_82129_(
+                                                                "keep%", IntegerArgumentType.integer(0, 100))
+                                                        .suggests(LmCommandSuggestions.CHARACTER_KEEP_PCT)
+                                                        .executes(ctx -> adminSetRace(
+                                                                ctx.getSource(),
+                                                                StringArgumentType.getString(ctx, "player"),
+                                                                StringArgumentType.getString(ctx, "race"),
+                                                                IntegerArgumentType.getInteger(ctx, "keep%")))))))
+                        .then(Commands.m_82127_("set-class")
+                                .then(LmCommandSuggestions.playerWord("player")
+                                        .then(Commands.m_82129_("class", StringArgumentType.word())
+                                                .executes(ctx -> adminSetClass(
+                                                        ctx.getSource(),
+                                                        StringArgumentType.getString(ctx, "player"),
+                                                        StringArgumentType.getString(ctx, "class"))))))
+                        .then(Commands.m_82127_("reskin")
+                                .then(LmCommandSuggestions.playerWord("player")
+                                        .executes(ctx -> adminReskin(
+                                                ctx.getSource(),
+                                                StringArgumentType.getString(ctx, "player"))))));
     }
 
     private static int characterHelp(CommandSourceStack source) {
         LmCommandFeedback.tellLines(source, LmCommandHelp.characterPlayer());
+        return 1;
+    }
+
+    private static int characterAdminHelp(CommandSourceStack source) {
+        if (StaffAccess.denyUnlessStaff(source) == 0) {
+            return 0;
+        }
+        LmCommandFeedback.tellLines(source, LmCommandHelp.characterStaff());
         return 1;
     }
 
@@ -80,8 +118,62 @@ public final class CharacterCommands {
         return 1;
     }
 
-    private static int raceConfirm(CommandSourceStack source, String race, int keepPct) {
-        return characterDo(source, "race_confirm", race + ":" + keepPct);
+    /** {@code /character admin set-race <player> <race> [keep%]} — free staff fix. */
+    private static int adminSetRace(
+            CommandSourceStack source, String playerName, String race, int keepPct
+    ) {
+        if (StaffAccess.denyUnlessStaff(source) == 0) {
+            return 0;
+        }
+        ServerPlayer target = resolveTarget(source, playerName);
+        if (target == null) {
+            return 0;
+        }
+        String msg = CharacterServicesSystem.executeRaceChange(target, race, keepPct, true);
+        return replyForTarget(source, target, msg);
+    }
+
+    /** {@code /character admin set-class <player> <class>} — free staff fix. */
+    private static int adminSetClass(CommandSourceStack source, String playerName, String classId) {
+        if (StaffAccess.denyUnlessStaff(source) == 0) {
+            return 0;
+        }
+        ServerPlayer target = resolveTarget(source, playerName);
+        if (target == null) {
+            return 0;
+        }
+        String msg = CharacterServicesSystem.executeClassChange(target, classId, true);
+        return replyForTarget(source, target, msg);
+    }
+
+    /** {@code /character admin reskin <player>} — open their appearance editor, free. */
+    private static int adminReskin(CommandSourceStack source, String playerName) {
+        if (StaffAccess.denyUnlessStaff(source) == 0) {
+            return 0;
+        }
+        ServerPlayer target = resolveTarget(source, playerName);
+        if (target == null) {
+            return 0;
+        }
+        String msg = CharacterServicesSystem.executeReskin(target, true);
+        return replyForTarget(source, target, msg);
+    }
+
+    private static int replyForTarget(CommandSourceStack source, ServerPlayer target, String msg) {
+        if (msg == null || msg.isBlank()) {
+            return 0;
+        }
+        LmCommandFeedback.tell(source, msg + " §8(" + target.m_6302_() + ")");
+        return msg.startsWith("§c") ? 0 : 1;
+    }
+
+    private static ServerPlayer resolveTarget(CommandSourceStack source, String playerName) {
+        MinecraftServer server = source.m_81377_();
+        ServerPlayer target = server == null ? null : RivalGuiApi.resolveOnline(server, playerName);
+        if (target == null) {
+            LmCommandFeedback.tell(source, LmCommandMessages.playerOffline(playerName));
+        }
+        return target;
     }
 
     /** {@code /character do <action> [arg…]} — chat-button parity backend (no screen reopen). */
@@ -93,6 +185,12 @@ public final class CharacterCommands {
         ServerPlayer player = playerOrNull(source);
         if (player == null) {
             source.m_288197_(() -> Component.m_237113_(LmCommandMessages.NEED_IN_GAME), false);
+            return 0;
+        }
+        if (action != null && STAFF_ONLY_ACTIONS.contains(action) && !StaffAccess.isStaff(player)) {
+            LmCommandFeedback.tell(source,
+                    "§cRace, class, and reskin changes are made in Character Services (§f/character§c)."
+                            + " §7The command form is staff-only.");
             return 0;
         }
         String msg = CharacterServicesGuiApi.handleDo(player, action, arg, "main");

@@ -178,24 +178,26 @@ public final class PrestigeAdmin {
         };
     }
 
-    public static String sync(ServerPlayer target) {
+    /**
+     * Staff {@code /padmin godki} — set/add/remove the God Ki Enhancement
+     * investment count (0–5) for another player. Menu-inline feedback mirrors
+     * {@link #adjustHeld}: value, mastery after the change, then the name.
+     */
+    public static String adjustGodKi(ServerPlayer target, String mode, int amount) {
         if (target == null) {
             return "§cPlayer not online.";
         }
-        try {
-            PrestigePointsSystem.reapplySkillBonuses(target);
-            PrestigePointsSystem.reapplyTierUnlocks(target);
-            com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache.save(target);
-        } catch (Throwable ignored) {
+        int before = GodKiEnhancementShop.invested(target);
+        Integer next = applyMode(before, mode, amount, 0, GodKiEnhancementShop.MAX_INVESTMENTS);
+        if (next == null) {
+            return "§cUsage: godki <player> <set|add|remove> <0-5>";
         }
-        try {
-            com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampPrestigeBridge
-                    .syncFromLegacy(target);
-        } catch (Throwable ignored) {
-        }
-        log(target, "admin_sync", "sync", 0, 0);
-        return "§aSynced held prestige → Overhaul count and prestige shop floors for §f"
-                + target.m_6302_();
+        GodKiEnhancementShop.adminSetInvested(target, next);
+        log(target, "admin_godki", mode, before, next);
+        return "§aGod Ki investments §f" + before + " §7→ §f" + GodKiEnhancementShop.invested(target)
+                + " §8| mastery §f"
+                + DmzRewards.formatWhole((long) GodKiEnhancementShop.mastery(target))
+                + " §8(" + target.m_6302_() + ")";
     }
 
     private static Integer applyMode(int current, String mode, int amount, int min, int max) {

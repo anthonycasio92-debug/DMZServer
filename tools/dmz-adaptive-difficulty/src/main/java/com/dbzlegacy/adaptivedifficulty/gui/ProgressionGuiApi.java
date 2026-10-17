@@ -1156,14 +1156,9 @@ public final class ProgressionGuiApi {
             }
             return PrestigeAdmin.info(player);
         }
-        if ("admin_sync".equals(act) || "sync".equals(act)) {
-            if (!StaffAccess.isStaff(player)) {
-                return "§cStaff only.";
-            }
-            return PrestigeAdmin.sync(player);
-        }
         if ("admin_held".equals(act) || "admin_completed".equals(act)
-                || "admin_points".equals(act) || "admin_breakthroughs".equals(act)) {
+                || "admin_points".equals(act) || "admin_breakthroughs".equals(act)
+                || "admin_godki".equals(act)) {
             if (!StaffAccess.isStaff(player)) {
                 return "§cStaff only.";
             }
@@ -1196,6 +1191,7 @@ public final class ProgressionGuiApi {
                 case "admin_completed" -> PrestigeAdmin.adjustCompleted(player, mode, amount);
                 case "admin_points" -> PrestigeAdmin.adjustPoints(player, mode, amount);
                 case "admin_breakthroughs" -> PrestigeAdmin.adjustBreakthroughs(player, mode, amount);
+                case "admin_godki" -> PrestigeAdmin.adjustGodKi(player, mode, amount);
                 default -> "§cSomething went wrong. Try again, or ask staff if it keeps happening.";
             };
         }
@@ -1263,16 +1259,6 @@ public final class ProgressionGuiApi {
             }
             return PrestigeAdmin.info(target);
         }
-        if ("sync".equals(sub)) {
-            if (parts.length < 2) {
-                return "§cUsage: /padmin sync <player>";
-            }
-            ServerPlayer target = resolveOnline(actor, parts[1]);
-            if (target == null) {
-                return "§cPlayer not online: §f" + parts[1];
-            }
-            return PrestigeAdmin.sync(target);
-        }
         if ("tier".equals(sub) || "tiers".equals(sub) || "difficulty".equals(sub)) {
             if (parts.length < 4) {
                 return "§cUsage: /padmin tier <player> <set|add|remove> <0-7>"
@@ -1334,7 +1320,7 @@ public final class ProgressionGuiApi {
             return PrestigeAdmin.adjustSkill(target, skillId, mode, amount);
         }
         if ("held".equals(sub) || "completed".equals(sub) || "points".equals(sub)
-                || "breakthroughs".equals(sub)
+                || "breakthroughs".equals(sub) || "godki".equals(sub)
                 || "cap".equals(sub) || "breakthrough".equals(sub)) {
             String field = switch (sub) {
                 case "cap", "breakthrough" -> "breakthroughs";
@@ -1349,6 +1335,7 @@ public final class ProgressionGuiApi {
                 case "completed" -> PrestigeAdmin.adjustCompleted(adj.target, adj.mode, adj.amount);
                 case "points" -> PrestigeAdmin.adjustPoints(adj.target, adj.mode, adj.amount);
                 case "breakthroughs" -> PrestigeAdmin.adjustBreakthroughs(adj.target, adj.mode, adj.amount);
+                case "godki" -> PrestigeAdmin.adjustGodKi(adj.target, adj.mode, adj.amount);
                 default -> "§cSomething went wrong. Try again, or ask staff if it keeps happening.";
             };
         }
