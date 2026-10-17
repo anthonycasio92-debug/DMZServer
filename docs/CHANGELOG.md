@@ -1,6 +1,14 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.215**.
+What changed from **4.5.147** through **4.6.216**.
+
+## Other players can finally see your body parts — in color
+
+The world sync that pushes equipped body parts to viewers had two defects. It was addressed `subject:"local"` and sent only to the owning player's client, so no other client ever received your pieces — and the parts a viewer did render came back gray, because the fallback color read for a **remote** player resolves against the observer's own character data, where `0x808080` matches no fallback.
+
+Snapshots now carry `subject:"uuid:<owner>"`, and every equip/login send broadcasts to the owner plus every tracker of that player, so each receiving client binds the parts to the right entity. When a player starts seeing another — login into range, respawn, dimension change, walking back after you changed gear while apart — the target's current snapshot is sent to that new tracker alone, and the login handshake backfills every other online player's parts to the new viewer (those track-start events fired before the viewer's feature advertisement reached the server, so they were gated off at the time).
+
+Snapshots also carry explicit `parts.colors` — `skin`, `second`, `hair` from the character and active-form override chain, and `own`, `trim`, `horn`, `light` from the shipped form-design table — so clients prefer the JSON colors over the gray reflective read. Key names are fixed for JLDK in `docs/KAIPATH_GUI_PROTOCOL.md`. A degraded oversized payload now keeps its uuid subject instead of resetting to `local`, which on a broadcast would clear each observer's own parts.
 
 ## The paid character and rival/spar actions move to staff-only commands
 

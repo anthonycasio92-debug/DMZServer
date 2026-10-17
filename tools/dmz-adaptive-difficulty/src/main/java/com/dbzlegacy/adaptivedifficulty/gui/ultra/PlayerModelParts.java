@@ -5,11 +5,19 @@ import com.dbzlegacy.adaptivedifficulty.character.CosmeticBodyPartService;
 import com.dbzlegacy.adaptivedifficulty.character.CosmeticHeadBoneService;
 import com.dbzlegacy.adaptivedifficulty.character.HeadPartPieces;
 import com.dbzlegacy.adaptivedifficulty.gui.AdminInspectSessions;
+import com.dragonminez.common.config.FormConfig;
 import com.dragonminez.common.stats.character.Character;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -50,12 +58,14 @@ public final class PlayerModelParts {
 
     /**
      * Authoritative snapshot for the world-sync message ({@code GuiModelSyncPacket}) —
-     * always non-null, always {@code subject local} (the receiving player; no inspect
-     * redirect), and always carries {@code bodyParts} so an empty array clears stale
-     * client pieces (server-authoritative replace, never merge).
+     * always non-null, always {@code subject uuid:<owner-uuid>} (so every receiving client
+     * binds the parts to the owner, not to itself), no inspect redirect, and always carries
+     * {@code bodyParts} so an empty array clears stale client pieces (server-authoritative
+     * replace, never merge). The message is broadcast to trackers, so the subject must name
+     * the owner: a {@code local} subject would render the owner's parts on each observer.
      */
     public static JsonObject syncSnapshot(ServerPlayer player) {
-        JsonObject parts = player == null ? null : build(player, false);
+        JsonObject parts = player == null ? null : build(player, true);
         if (parts == null) {
             parts = new JsonObject();
             parts.addProperty("schema", SCHEMA);
@@ -92,12 +102,119 @@ public final class PlayerModelParts {
             parts.add("bodyParts", body);
             any = true;
         }
+        // Explicit model colors - the gray-parts fix. Kept out of `any`: colors alone never
+        // force a parts object for a bare base player.
+        JsonObject colors = colors(target);
+        if (colors != null) {
+            parts.add("colors", colors);
+        }
         // Open extension slot - always present so clients can iterate without null checks.
         parts.add("extras", new JsonArray());
         if (!any && !other) {
             return null;
         }
         return parts;
+    }
+
+    /**
+     * Explicit model colors under {@code parts.colors} so a client prefers them over its
+     * reflective DMZUltra {@code FormParts$Look} read - for a <i>remote</i> player that read
+     * resolves another player's capability data and comes back gray (0x808080 matches none
+     * of the fallbacks). Mirrors {@code FormParts.of} byte-for-byte: {@code skin}/{@code second}/
+     * {@code hair} are per-player (active-form color override beats the character value, and
+     * the same fallbacks apply), while {@code own}/{@code trim}/{@code horn}/{@code light} are
+     * form-constant design colors from the shipped DMZUltra catalog. Null when the character
+     * is unknown - the client then keeps its own fallback path.
+     *
+     * <p>Key names are the DMZUltra accessor names so the client maps them 1:1 - see
+     * {@code docs/KAIPATH_GUI_PROTOCOL.md} (coordinate with JLDK before renaming).
+     */
+    private static JsonObject colors(ServerPlayer player) {
+        Character ch = null;
+        try {
+            ch = DmzProgression.character(player);
+        } catch (Throwable ignored) {
+        }
+        if (ch == null) {
+            return null;
+        }
+        String race = safe(DmzProgression.race(player));
+        String group = "";
+        String form = "";
+        String stackGroup = "";
+        String stackForm = "";
+        try {
+            group = safe(ch.getActiveFormGroup());
+            form = safe(ch.getActiveForm());
+        } catch (Throwable ignored) {
+        }
+        try {
+            stackGroup = safe(ch.getActiveStackFormGroup());
+            stackForm = safe(ch.getActiveStackForm());
+        } catch (Throwable ignored) {
+        }
+
+        FormConfig.FormData fd = null;
+        try {
+            fd = ch.getActiveFormData();
+        } catch (Throwable ignored) {
+        }
+
+        int skin = 0xFFFFFF;
+        int second = 0xFFFFFF;
+        int hair = 0x202024;
+        try {
+            skin =
+                    rgb(
+                            fd != null && set(fd.getBodyColor1())
+                                    ? fd.getRgbBodyColor1()
+                                    : ch.getRgbBodyColor(),
+                            0xFFFFFF);
+            second =
+                    rgb(
+                            fd != null && set(fd.getBodyColor2())
+                                    ? fd.getRgbBodyColor2()
+                                    : ch.getRgbBodyColor2(),
+                            skin);
+            hair =
+                    rgb(
+                            fd != null && set(fd.getHairColor())
+                                    ? fd.getRgbHairColor()
+                                    : ch.getRgbHairColor(),
+                            0x202024);
+        } catch (Throwable ignored) {
+        }
+
+        JsonObject o = new JsonObject();
+        o.addProperty("skin", skin);
+        o.addProperty("second", second);
+        o.addProperty("hair", hair);
+        BodyPartCatalog.Design design =
+                BodyPartCatalog.design(race, group, form, stackGroup, stackForm);
+        if (design != null) {
+            o.addProperty("own", design.own());
+            o.addProperty("trim", design.trim());
+            o.addProperty("horn", design.horn());
+            o.addProperty("light", design.light());
+        }
+        return o;
+    }
+
+    /** DMZUltra {@code FormParts.set}: a color override applies when the string is non-empty. */
+    private static boolean set(String value) {
+        return value != null && !value.isEmpty();
+    }
+
+    /** DMZUltra {@code FormParts.rgb}: clamp each channel to [0,1], scale, pack RGB. */
+    private static int rgb(float[] rgb, int fallback) {
+        if (rgb == null || rgb.length < 3) {
+            return fallback;
+        }
+        return channel(rgb[0]) << 16 | channel(rgb[1]) << 8 | channel(rgb[2]);
+    }
+
+    private static int channel(float value) {
+        return Math.round(Math.max(0f, Math.min(1f, value)) * 255f);
     }
 
     /**

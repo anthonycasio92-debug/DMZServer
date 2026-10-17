@@ -30,7 +30,9 @@ public abstract class FormPartsPreviewMixin {
             if (extra.isEmpty()) {
                 return;
             }
-            Object merged = BodyPartPreview.mergeLook(cir.getReturnValue(), extra);
+            // Server-sent colors beat the reflective look read — a remote player's
+            // reflective read comes back gray (0x808080, matching no fallback).
+            Object merged = BodyPartPreview.mergeLook(cir.getReturnValue(), extra, BodyPartPreview.colorsFor(player));
             if (merged != null) {
                 cir.setReturnValue(merged);
             }

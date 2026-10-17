@@ -227,17 +227,19 @@ LM ≥ **4.6.209** sends it; the client side is **pending on JLDK** (advertise `
 | Wire id | `<modid>:gui` message **3** (`UltraGuiProtocol.MSG_MODEL_SYNC`) |
 | Direction | server → client |
 | Feature gate | **Only sent to clients that advertised `bodyPartsSync`** via message 2. Clients that never registered message 3 (KaiPath ≤ 1.3.29) must not advertise it — an unregistered message id aborts the connection. `LmGuiNetwork.supportsModelSync` / `sendModelSync` enforce this server-side. |
-| Trigger: login | Once per session, ~40 ticks after the client's first `bodyPartsSync` advertisement (deferred so DMZ character data — race tail, forms — has loaded). Covers the initial state. |
+| Trigger: login | Once per session, ~40 ticks after the client's first `bodyPartsSync` advertisement (deferred so DMZ character data — race tail, forms — has loaded). Covers the initial state **plus a backfill**: every other online player's snapshot is sent to the new viewer, because their track-start events fired before the advertisement reached the server and were gated off. |
 | Trigger: equip/unequip | Every Body Parts Shop change (`unlock`/`toggle`/`clear`) and every head-bone equip change — sent right after the server persists the change. |
+| Trigger: track start | When a player starts seeing another (`PlayerEvent.StartTracking`): login into range, respawn, dimension change, walking back into range. `reason: track`, sent **to that tracker only** — re-broadcasting would spam every other viewer. |
 | Trigger: logout | Client drops its cached state for the player on disconnect (state is per-session; the next login re-syncs). |
-| Server-authoritative | The client **replaces** (never merges) its cached parts with each received snapshot. An empty `bodyParts` array clears all extra pieces. No client-side guessing. |
+| Delivery | Equip/login sends **broadcast** to the owner and every tracker (`TRACKING_ENTITY_AND_SELF`), because each snapshot carries `subject uuid:<owner-uuid>` — every receiver binds it to the owner's entity. Only the track-start trigger and the login backfill are single-viewer sends. |
+| Server-authoritative | The client **replaces** (never merges) its cached parts for the named `subject` with each received snapshot. An empty `bodyParts` array clears all extra pieces. No client-side guessing. A uuid subject that resolves to the receiver itself feeds its local state. |
 
 Wire format (append-compatible — unknown trailing fields ignored):
 
 | # | Field | Type | Notes |
 |---|--------|------|--------|
-| 1 | `partsJson` | string | The playerModel **parts object** — byte-identical schema to `layoutJson.playerModel.parts` (see [playerModel parts schema](#4-layout-json)). Always valid JSON, ≤ 8192 chars (oversized payloads drop `headBones`, then `form`, then degrade to an empty-parts object — never a mid-JSON cut). |
-| 2 | `reason` | string | Trigger token: `login` / `equip` / `unequip` / `clear`. **Diagnostics only** — rendering must not depend on it. |
+| 1 | `partsJson` | string | The playerModel **parts object** — byte-identical schema to `layoutJson.playerModel.parts` (see [playerModel parts schema](#4-layout-json)). Always valid JSON, ≤ 8192 chars (oversized payloads drop `headBones`, then `form`, then degrade to a minimal empty-parts object — never a mid-JSON cut; the degraded object **keeps the original `subject`**, or an observer would clear its own parts on a broadcast). |
+| 2 | `reason` | string | Trigger token: `login` / `equip` / `unequip` / `clear` / `track`. **Diagnostics only** — rendering must not depend on it. |
 
 `partsJson` field reference (same as the menu preview's `parts` — menu and world rendering
 read identical data):
@@ -245,31 +247,37 @@ read identical data):
 | Field | Type | Meaning |
 |-------|------|---------|
 | `schema` | int | Parts schema version (`1`) |
-| `subject` | string | `local` — the sync always describes the **receiving player** (no inspect redirect on this message) |
+| `subject` | string | **`uuid:<owner-uuid>`** on this message — the sync is broadcast to the owner and every tracker, so each receiver binds the snapshot to the owner's entity (a `local` subject would draw the owner's parts on every observer). A receiver whose own UUID matches the subject treats it as its own state. The menu preview (`layoutJson.playerModel.parts`) still uses `local` / bare UUID as documented below. |
 | `headBones` | object? | `{token, pieces[]}` DMZUltra head-bone state; absent when none |
 | `form` | object? | `{race, group, form, stackGroup, stackForm}` worn-form identity; absent in base |
 | `bodyParts` | array | Explicit pieces `{id, source, slot}` — **always present** (empty array = no extras). Slot ids: `tail`, `wings`, `horns`, `ears`, `extra_arms`, `body`. LM guarantees the **single-tail rule**: the array never carries two `tail`-slot entries — a form tail beats a shop tail, and the natural `saiyan_tail` is only sent when no other tail slot is occupied. |
+| `colors` | object? | Explicit model colors — see [playerModel.parts.colors](#playermodelpartscolors). Prefer these over a reflective `FormParts$Look` read, which comes back gray for a **remote** player. |
 | `extras` | array | Open extension slot — always present, iterate without null checks |
 
 Sample payload (Saiyan with the natural tail, no shop pieces, base form):
 
 ```json
-{"schema":1,"subject":"local","bodyParts":[{"id":"saiyan_tail","source":"dmzultra","slot":"tail"}],"extras":[]}
+{"schema":1,"subject":"uuid:0f8b4c1e-9a2d-4e6f-8c3a-1b2d3e4f5a6b","bodyParts":[{"id":"saiyan_tail","source":"dmzultra","slot":"tail"}],"colors":{"skin":16777215,"second":16777215,"hair":2105380,"own":4870248,"trim":15320170,"horn":15722191,"light":16777215},"extras":[]}
 ```
 
 After `/bodyparts clear` the server sends the authoritative empty state:
 
 ```json
-{"schema":1,"subject":"local","bodyParts":[],"extras":[]}
+{"schema":1,"subject":"uuid:0f8b4c1e-9a2d-4e6f-8c3a-1b2d3e4f5a6b","bodyParts":[],"extras":[]}
 ```
 
 Client contract (JLDK):
 
 1. Advertise `bodyPartsSync` in `GuiFeaturesPacket` **only** if message 3 is registered.
 2. On receive: parse `partsJson` with the existing parts pipeline (`BodyPartWire` /
-   `BodyPartPreview`) and **replace** the local player's cached world-render parts.
+   `BodyPartPreview`) and **replace** the cached world-render parts **for the player named
+   by `subject`** — `uuid:<id>` keys the cache by that player; when the id is the receiver's
+   own UUID, feed the local state too (the server broadcasts one payload to owner + trackers).
 3. Apply to the world model via the same merge used by `FormPartsPreviewMixin`
-   (`FormParts.of` + cached meshes) — the menu preview path is unchanged.
+   (`FormParts.of` + cached meshes) — the menu preview path is unchanged. When `colors` is
+   present, **prefer its values over the reflective `FormParts$Look` read**: for a remote
+   player that read resolves against the observer's own capability data and comes back gray
+   (`0x808080` matches none of the fallbacks).
 4. Drop the cache on disconnect / dimension change reset if you key by session.
 
 ---
@@ -532,7 +540,7 @@ ids. A client that does not advertise the feature still draws the entity and ign
 | Field | Type | Required | Notes |
 |-------|------|----------|-------|
 | `schema` | number | yes | **`1`** for this document. Bump only on breaking shape changes. |
-| `subject` | string | no | Same token as top-level `playerModel.subject`. Use it when the cosmetics snapshot and the render target travel together. Top-level `subject` wins when both are set. **`local`** is the viewing player. A UUID or **`uuid:<uuid>`** is another player. |
+| `subject` | string | no | Same token as top-level `playerModel.subject`. Use it when the cosmetics snapshot and the render target travel together. Top-level `subject` wins when both are set. **`local`** is the viewing player. A UUID or **`uuid:<uuid>`** is another player. Message 3 (world sync) always ships `uuid:<owner-uuid>`. |
 | `headBones` | object | no | Equipped DMZ `activeHeadBone` cosmetics. Omit when empty. |
 | `headBones.token` | string | yes* | Authoritative DMZ token (`+`-joined). Same string DMZ stores on the character. |
 | `headBones.pieces` | string[] | yes* | Atomic bone ids split from the token (stable shop order when known). Prefer this list when iterating geo bones. |
@@ -543,7 +551,36 @@ ids. A client that does not advertise the feature still draws the entity and ign
 | `form.stackGroup` | string | no | Stack form group (empty when none). |
 | `form.stackForm` | string | no | Stack form name (empty when none). |
 | `bodyParts` | array | no | Explicit pieces to attach. Omit when empty. Each entry is `{ "id", "source", "slot" }`. See below. |
+| `colors` | object | no | Explicit model colors. Omit only when unknown. See [playerModel.parts.colors](#playermodelpartscolors). |
 | `extras` | array | no | Open extension list. Each entry is `{ "kind": string, "id": string, … }`. Unknown `kind` values **must** be ignored. LM currently sends `[]`. |
+
+##### `playerModel.parts.colors`
+
+Per-category model colors as **packed RGB ints** (`0xRRGGBB`, decimal on the wire). LM
+emits this on message 3 (world sync) so every observer renders the owner with the same
+colors the owner sees. **Coordinate key names with JLDK — do not rename without a
+protocol bump:** the keys mirror the DMZUltra accessor names (`FormParts$Look` /
+`FormParts$Design`), so a client maps them 1:1.
+
+| Key | Source | Fallback when absent |
+|-----|--------|----------------------|
+| `skin` | Active-form `bodyColor1` override, else the character's body color | white `16777215` |
+| `second` | Active-form `bodyColor2` override, else the character's second body color | computed `skin` |
+| `hair` | Active-form `hairColor` override, else the character's hair color | `2105380` (`0x202024`) |
+| `own` | Form-constant design color (DMZUltra design table key `a`) | reflective read |
+| `trim` | Form-constant design color (key `b`) | reflective read |
+| `horn` | Form-constant design color (key `c`) | reflective read |
+| `light` | Form-constant design color (key `g`) | reflective read |
+
+`skin`/`second`/`hair` mirror DMZUltra `FormParts.of` byte-for-byte (same override chain
+and fallbacks). `own`/`trim`/`horn`/`light` are form-constant — identical for every player
+wearing the form — and are shipped in LM's `dmzultra-form-parts.json` `designs` map, keyed
+`race/group/form`. `own`/`trim`/`horn`/`light` are omitted when the form has no catalog
+entry (the client then keeps its own reflective path for exactly those keys).
+
+Client rule: for each key **present** in `colors`, use it; for keys absent, fall back to
+the reflective `FormParts$Look` / `FormParts$Design` read as before. `colors` never
+replaces the parts pipeline — it only overrides the color inputs.
 
 ##### `playerModel.parts.bodyParts`
 
@@ -597,8 +634,12 @@ only if `token` is empty (do not send `headBones` in that case).
 4. If `parts.bodyParts` is present **and** the client advertises `bodyParts`, attach each
    entry whose `source` catalog contains that `id`. Skip unknown ids and missing source
    mods. Do not replace the base entity when the array is empty or fully unknown.
-5. Iterate `parts.extras`; skip unknown `kind`s.
-6. If `parts` is missing entirely, draw the local player with whatever the client already
+5. If `parts.colors` is present, use each key it carries (`skin`, `second`, `hair`, `own`,
+   `trim`, `horn`, `light`) in place of the reflective `FormParts$Look` / `Design` value —
+   this is the gray-parts fix; a remote player's reflective read comes back `0x808080`.
+   Keys the object omits keep the reflective fallback.
+6. Iterate `parts.extras`; skip unknown `kind`s.
+7. If `parts` is missing entirely, draw the local player with whatever the client already
    knows from entity sync (no server cosmetics hint).
 
 **`extras` entry shape (forward-compatible):**

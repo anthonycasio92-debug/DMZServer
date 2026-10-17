@@ -29,6 +29,14 @@ public final class BodyPartCatalog {
     /** Race tail. The client maps this id onto the DMZUltra {@code tail_fur} mesh. */
     public static final String SAIYAN_TAIL = "saiyan_tail";
 
+    /**
+     * Per-form {@code FormParts.Design} colors ({@code own}/{@code trim}/{@code horn}/
+     * {@code light}) from the resource's {@code designs} map. Form-constant — identical for
+     * every player wearing the form. The client prefers explicit colors over its reflective
+     * {@code FormParts$Look} read, which can come back gray for a remote player.
+     */
+    public record Design(int own, int trim, int horn, int light) {}
+
     public static final String SLOT_TAIL = "tail";
     public static final String SLOT_WINGS = "wings";
     public static final String SLOT_HORNS = "horns";
@@ -40,6 +48,7 @@ public final class BodyPartCatalog {
     private static final String RESOURCE = "dmzultra-form-parts.json";
 
     private static volatile Map<String, List<String>> forms = Map.of();
+    private static volatile Map<String, Design> designs = Map.of();
     private static volatile List<String> shopPieces = List.of();
     private static volatile boolean loaded;
 
@@ -171,6 +180,7 @@ public final class BodyPartCatalog {
                 JsonObject root = JsonParser.parseReader(reader).getAsJsonObject();
                 List<String> pieces = readShopPieces(root);
                 shopPieces = List.copyOf(pieces);
+                designs = readDesigns(root);
                 if (!root.has("forms") || !root.get("forms").isJsonObject()) {
                     return Map.of();
                 }
@@ -229,5 +239,75 @@ public final class BodyPartCatalog {
         ArrayList<String> sorted = new ArrayList<>(out);
         java.util.Collections.sort(sorted);
         return sorted;
+    }
+
+    /**
+     * Top-level {@code designs} map: form key → per-form Design colors. Missing entries or a
+     * missing map yield an empty map (the client then falls back to its own DMZUltra table).
+     */
+    private static Map<String, Design> readDesigns(JsonObject root) {
+        if (root == null || !root.has("designs") || !root.get("designs").isJsonObject()) {
+            return Map.of();
+        }
+        try {
+            LinkedHashMap<String, Design> map = new LinkedHashMap<>();
+            for (Map.Entry<String, JsonElement> entry : root.getAsJsonObject("designs").entrySet()) {
+                if (entry.getKey() == null || entry.getValue() == null || !entry.getValue().isJsonObject()) {
+                    continue;
+                }
+                JsonObject o = entry.getValue().getAsJsonObject();
+                Design d =
+                        new Design(
+                                intColor(o, "own"),
+                                intColor(o, "trim"),
+                                intColor(o, "horn"),
+                                intColor(o, "light"));
+                map.put(entry.getKey().trim().toLowerCase(Locale.ROOT), d);
+            }
+            return Map.copyOf(map);
+        } catch (Throwable ignored) {
+            return Map.of();
+        }
+    }
+
+    private static int intColor(JsonObject o, String key) {
+        try {
+            if (o.has(key) && o.get(key).isJsonPrimitive()) {
+                return o.get(key).getAsInt();
+            }
+        } catch (Throwable ignored) {
+        }
+        return 0xFFFFFF;
+    }
+
+    /**
+     * Per-form {@link Design} colors for {@code race/group/form} (same normalization as
+     * {@link #resolve}), else the stack form, else {@code null} when unknown. Form-constant —
+     * identical for every player wearing the form.
+     */
+    public static Design design(
+            String race,
+            String group,
+            String form,
+            String stackGroup,
+            String stackForm) {
+        try {
+            ensureLoaded();
+            String key = formKey(race, group, form);
+            Design d = key == null ? null : designs.get(key);
+            if (d != null) {
+                return d;
+            }
+            key = formKey(race, stackGroup, stackForm);
+            return key == null ? null : designs.get(key);
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    /** How many form color entries the catalog loaded. Zero when the resource is missing. */
+    public static int designCount() {
+        ensureLoaded();
+        return designs.size();
     }
 }

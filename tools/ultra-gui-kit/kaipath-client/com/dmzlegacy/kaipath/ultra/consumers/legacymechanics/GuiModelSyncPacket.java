@@ -34,6 +34,9 @@ public final class GuiModelSyncPacket {
 
     public static final String REASON_CLEAR = "clear";
 
+    /** Sent to a tracker that just started seeing the subject (PlayerEvent.StartTracking). */
+    public static final String REASON_TRACK = "track";
+
     private final String partsJson;
     private final String reason;
 

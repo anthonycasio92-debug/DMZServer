@@ -463,6 +463,27 @@ public final class DifficultyEvents {
     }
 
     /**
+     * Model sync track-start: when {@code tracker} begins seeing {@code target}, send
+     * {@code target}'s body-parts snapshot to {@code tracker} alone. Covers login into
+     * range, respawn, dimension change, and walking back into range after an equip change
+     * that broadcast while they were apart. The packet itself is feature-gated inside
+     * {@link com.dbzlegacy.adaptivedifficulty.net.gui.LmGuiNetwork#sendModelSyncTo} —
+     * clients that never registered message 3 must not receive it.
+     */
+    @SubscribeEvent
+    public void onStartTracking(PlayerEvent.StartTracking event) {
+        if (!(event.getEntity() instanceof ServerPlayer tracker)
+                || !(event.getTarget() instanceof ServerPlayer target)) {
+            return;
+        }
+        try {
+            com.dbzlegacy.adaptivedifficulty.net.gui.LmGuiNetwork.onStartTracking(
+                    tracker, target);
+        } catch (Throwable ignored) {
+        }
+    }
+
+    /**
      * Copy LegacyMechanics persistent bags/keys from the dying (or dimension-travel)
      * player onto the clone. Safe to call even when Forge already merged some keys —
      * we overwrite with the old player's authoritative values.

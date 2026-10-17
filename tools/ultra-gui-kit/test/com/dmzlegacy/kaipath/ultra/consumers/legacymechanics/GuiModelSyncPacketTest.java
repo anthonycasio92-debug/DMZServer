@@ -18,8 +18,45 @@ public final class GuiModelSyncPacketTest {
         roundTrip();
         caps();
         stateFromPartsRules();
+        colorsContract();
         applySyncEndToEnd();
         System.out.println("GuiModelSyncPacketTest OK (message 3 + world sync)");
+    }
+
+    /**
+     * The broadcast contract: payloads carry {@code colors} (client prefers them over the
+     * gray reflective read) and a {@code uuid} subject — including the receiver's own uuid,
+     * since the server sends owner + trackers the same snapshot.
+     */
+    private static void colorsContract() {
+        BodyPartPreview.clearSync();
+        Minecraft mc = Minecraft.m_91087_();
+        LocalPlayer local = new LocalPlayer();
+        mc.f_91074_ = local;
+
+        String json =
+                "{\"schema\":1,\"subject\":\"uuid:" + local.m_20148_() + "\","
+                        + "\"bodyParts\":["
+                        + "{\"id\":\"saiyan_tail\",\"source\":\"dmzultra\",\"slot\":\"tail\"}],"
+                        + "\"colors\":{\"skin\":16777215,\"second\":16777215,\"hair\":2105380,"
+                        + "\"own\":13186347,\"trim\":15320170,\"horn\":15722191,\"light\":8380671},"
+                        + "\"extras\":[]}";
+        BodyPartPreview.WorldState parsed =
+                BodyPartPreview.stateFromParts(json, BodyPartPreview::piecesFor);
+        assertTrue(parsed.colors() != null, "stateFromParts must keep the colors object");
+        if (parsed.colors() != null) {
+            assertEq("colors.hair", "2105380", parsed.colors().get("hair").getAsString());
+            assertEq("colors.own", "13186347", parsed.colors().get("own").getAsString());
+        }
+
+        // uuid subject addressed to the receiver itself must feed the LOCAL state —
+        // the server broadcasts to owner + trackers with one uuid-subject payload.
+        BodyPartPreview.applySync(json, GuiModelSyncPacket.REASON_LOGIN);
+        assertTrue(BodyPartPreview.meshesFor(local).contains("tail_fur"),
+                "uuid-self sync must feed meshesFor for the local player");
+        assertTrue(BodyPartPreview.colorsFor(local) != null,
+                "uuid-self sync must expose colors for the local player");
+        BodyPartPreview.clearSync();
     }
 
     private static void roundTrip() {

@@ -50,16 +50,17 @@ public final class BodyPartPreview {
 
     private BodyPartPreview() {}
 
-    private record Active(UUID playerId, Set<String> meshes) {}
+    private record Active(UUID playerId, Set<String> meshes, JsonObject colors) {}
 
     /**
      * Cached world parts for one subject: the raw {@code partsJson} (for future
-     * head-bone/form rendering) plus the resolved meshes. {@code noTail} is
-     * {@code meshes} minus the aliased Saiyan tail — served when the entity's race
-     * layer already draws one.
+     * head-bone/form rendering), the resolved meshes, and the server-sent {@code colors}
+     * (per-category model colors; {@code null} when the payload has none). {@code noTail} is
+     * {@code meshes} minus the aliased Saiyan tail — served when the entity's race layer
+     * already draws one.
      */
-    record WorldState(String partsJson, Set<String> meshes, Set<String> noTail, boolean aliasTailOnly) {
-        static final WorldState EMPTY = new WorldState("", Set.of(), Set.of(), false);
+    record WorldState(String partsJson, Set<String> meshes, Set<String> noTail, boolean aliasTailOnly, JsonObject colors) {
+        static final WorldState EMPTY = new WorldState("", Set.of(), Set.of(), false, null);
     }
 
     /** Mesh collection result shared by the menu preview and the world sync. */
@@ -69,7 +70,10 @@ public final class BodyPartPreview {
      * Message 3 (world sync): replace the cached parts for the payload's subject.
      * Server-authoritative — never merges; an empty {@code bodyParts} array clears all
      * extra pieces. {@code subject:"local"} (or anything unrecognized) is the receiving
-     * player; {@code uuid:<id>} addresses another player.
+     * player; {@code uuid:<id>} addresses another player — <b>including the receiver
+     * itself</b>, since the server broadcasts to the owner and every tracker with a uuid
+     * subject. A uuid that resolves to the local player therefore feeds the local state
+     * too, or the owner's own parts would vanish from their world render.
      */
     public static void applySync(String partsJson, String reason) {
         try {
@@ -77,7 +81,15 @@ public final class BodyPartPreview {
             String subject = subjectOf(partsJson);
             if (subject.startsWith("uuid:")) {
                 try {
-                    WORLD.put(UUID.fromString(subject.substring("uuid:".length())), state);
+                    UUID id = UUID.fromString(subject.substring("uuid:".length()));
+                    WORLD.put(id, state);
+                    UUID local = localId != null ? localId : resolveLocalId();
+                    if (local != null) {
+                        localId = local;
+                        if (local.equals(id)) {
+                            localState = state;
+                        }
+                    }
                 } catch (Throwable ignored) {
                     // unusable subject id — keep the previous state
                 }
@@ -87,6 +99,39 @@ public final class BodyPartPreview {
             localId = resolveLocalId();
         } catch (Throwable ignored) {
             // a bad payload must not crash the network handler
+        }
+    }
+
+    /**
+     * Server-sent {@code colors} for this entity ({@code null} when absent): menu preview
+     * subject first, then the world cache (local state for the receiver's own uuid). The
+     * consumer prefers these over its reflective {@code FormParts$Look} read — a remote
+     * player's reflective read comes back gray.
+     */
+    public static JsonObject colorsFor(Object player) {
+        try {
+            Active active = ACTIVE.get();
+            UUID id = entityUuid(player);
+            if (active != null && active.colors() != null) {
+                UUID want = active.playerId();
+                if (want == null || id == null || want.equals(id)) {
+                    return active.colors();
+                }
+            }
+            if (id == null) {
+                return null;
+            }
+            UUID local = localId;
+            if (local == null) {
+                local = resolveLocalId();
+                if (local != null) {
+                    localId = local;
+                }
+            }
+            WorldState state = local != null && local.equals(id) ? localState : WORLD.get(id);
+            return state == null ? null : state.colors();
+        } catch (Throwable ignored) {
+            return null;
         }
     }
 
@@ -116,8 +161,11 @@ public final class BodyPartPreview {
         }
         try {
             JsonObject parts = JsonParser.parseString(partsJson).getAsJsonObject();
+            JsonObject colors = parts.has("colors") && parts.get("colors").isJsonObject()
+                    ? parts.getAsJsonObject("colors")
+                    : null;
             if (!parts.has("bodyParts") || !parts.get("bodyParts").isJsonArray()) {
-                return new WorldState(partsJson, Set.of(), Set.of(), false);
+                return new WorldState(partsJson, Set.of(), Set.of(), false, colors);
             }
             List<BodyPartWire.Entry> entries = BodyPartWire.parse(parts.getAsJsonArray("bodyParts"));
             List<BodyPartWire.Entry> singleTail = new ArrayList<>(entries.size());
@@ -136,7 +184,8 @@ public final class BodyPartPreview {
                     partsJson,
                     Set.copyOf(resolved.meshes()),
                     resolved.noTail(),
-                    resolved.aliasTailOnly());
+                    resolved.aliasTailOnly(),
+                    colors);
         } catch (Throwable ignored) {
             return WorldState.EMPTY;
         }
@@ -152,6 +201,18 @@ public final class BodyPartPreview {
             // fall through
         }
         return "local";
+    }
+
+    /** {@code parts.colors} object, or {@code null} when absent / not an object. */
+    private static JsonObject colorsOf(JsonObject parts) {
+        try {
+            if (parts != null && parts.has("colors") && parts.get("colors").isJsonObject()) {
+                return parts.getAsJsonObject("colors");
+            }
+        } catch (Throwable ignored) {
+            // fall through
+        }
+        return null;
     }
 
     /** The local player's UUID, cached once per session (null while not connected). */
@@ -216,7 +277,7 @@ public final class BodyPartPreview {
             if (meshes.isEmpty()) {
                 return;
             }
-            ACTIVE.set(new Active(entityUuid(entity), meshes));
+            ACTIVE.set(new Active(entityUuid(entity), meshes, colorsOf(parts)));
         } catch (Throwable ignored) {
             end();
         }
@@ -267,10 +328,25 @@ public final class BodyPartPreview {
 
     /**
      * Copy {@code look} (or build one) so its design includes {@code extra} piece ids.
-     * Returns the original look when DMZUltra's types are missing.
+     * When the payload carried {@code colors}, each present key <b>overrides</b> the
+     * reflective value — a remote player's reflective {@code FormParts$Look} read comes
+     * back gray (0x808080 matches none of the fallbacks), and the server's values are the
+     * authoritative mirror of {@code FormParts.of}. Returns the original look when
+     * DMZUltra's types are missing, or when there is neither a piece nor a color to apply.
+     *
+     * @param colors {@code parts.colors} ({@code skin}/{@code second}/{@code hair}/
+     *     {@code own}/{@code trim}/{@code horn}/{@code light}); {@code null} = keep the
+     *     reflective read
      */
     public static Object mergeLook(Object look, Set<String> extra) {
-        if (extra == null || extra.isEmpty()) {
+        return mergeLook(look, extra, null);
+    }
+
+    /** See {@link #mergeLook(Object, Set, JsonObject)}. */
+    public static Object mergeLook(Object look, Set<String> extra, JsonObject colors) {
+        boolean hasPieces = extra != null && !extra.isEmpty();
+        boolean hasColors = colors != null && colors.size() > 0;
+        if (!hasPieces && !hasColors) {
             return look;
         }
         try {
@@ -308,7 +384,17 @@ public final class BodyPartPreview {
                 second = integer(look, "second", second);
                 hair = integer(look, "hair", hair);
             }
-            pieces.addAll(extra);
+            // Server-sent colors win over the reflective read (the gray-parts fix).
+            own = color(colors, "own", own);
+            trim = color(colors, "trim", trim);
+            horn = color(colors, "horn", horn);
+            light = color(colors, "light", light);
+            skin = color(colors, "skin", skin);
+            second = color(colors, "second", second);
+            hair = color(colors, "hair", hair);
+            if (hasPieces) {
+                pieces.addAll(extra);
+            }
             Object design =
                     designC.getConstructor(
                                     Set.class, int.class, int.class, int.class, int.class, float.class, float.class)
@@ -318,6 +404,18 @@ public final class BodyPartPreview {
         } catch (Throwable ignored) {
             return look;
         }
+    }
+
+    /** Present numeric color from {@code colors}, else {@code fallback}. */
+    private static int color(JsonObject colors, String key, int fallback) {
+        try {
+            if (colors != null && colors.has(key) && colors.get(key).isJsonPrimitive()) {
+                return colors.get(key).getAsInt();
+            }
+        } catch (Throwable ignored) {
+            // fall through
+        }
+        return fallback;
     }
 
     static Set<String> piecesFor(String source) {

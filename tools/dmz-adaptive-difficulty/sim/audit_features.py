@@ -2912,6 +2912,53 @@ def main() -> int:
         "GuiModelSync round-trip + oversized-sanitize self-test at startup",
         "roundTripModelSync" in net_bp and "GuiModelSyncPacket" in net_bp,
     )
+    evt_bp = read(
+        SRC / "com/dbzlegacy/adaptivedifficulty/event/DifficultyEvents.java"
+    )
+    catalog_bp = read(
+        SRC / "com/dbzlegacy/adaptivedifficulty/gui/ultra/BodyPartCatalog.java"
+    )
+    check(
+        "Model sync broadcasts uuid-subject snapshots (owner + every tracker)",
+        "build(player, true)" in parts_bp
+        and '"uuid:" + target.m_20148_()' in parts_bp
+        and "TRACKING_ENTITY_AND_SELF" in net_bp,
+    )
+    check(
+        "StartTracking sends the target's parts to the new tracker only",
+        "PlayerEvent.StartTracking" in evt_bp
+        and "onStartTracking" in evt_bp
+        and "sendModelSyncTo" in net_bp
+        and "REASON_TRACK" in net_bp,
+    )
+    check(
+        "Login advertisement backfills other players' parts to the new viewer",
+        "onClientAdvertisement" in net_bp and "sendModelSyncTo" in net_bp,
+    )
+    check(
+        "parts.colors emitted with JLDK key names (gray-parts fix)",
+        '"colors"' in parts_bp
+        and '"skin"' in parts_bp
+        and '"second"' in parts_bp
+        and '"hair"' in parts_bp
+        and '"own"' in parts_bp
+        and '"trim"' in parts_bp
+        and '"horn"' in parts_bp
+        and '"light"' in parts_bp
+        and "design(" in catalog_bp
+        and '"designs"' in catalog_bp,
+    )
+    check(
+        "Degraded sync payload keeps the uuid subject (never resets to local)",
+        "fallback(String subject)" in sync_pkt_bp
+        and "subjectOf(" in sync_pkt_bp,
+    )
+    check(
+        "Startup self-test asserts uuid subject + colors survive round-trip",
+        '"subject\\":\\"uuid:' in net_bp
+        and '"colors\\":{' in net_bp
+        and "lost uuid subject" in net_bp,
+    )
     kit_root = ROOT / "tools" / "ultra-gui-kit"
     kit_registry = read(
         kit_root / "kaipath-client/com/dmzlegacy/kaipath/ultra/consumers/UltraGuiConsumerRegistry.java"
@@ -2944,6 +2991,17 @@ def main() -> int:
         "PARTS_JSON_MAX = 8192" in kit_server
         and "bodyPartsSync" in kit_server
         and "bodyPartsSync" in kit_readme,
+    )
+    kit_mixin = read(
+        kit_root / "kaipath-client/com/dmzlegacy/kaipath/mixin/FormPartsPreviewMixin.java"
+    )
+    check(
+        "Kit prefers server colors over the gray reflective look + uuid-self sync",
+        "colorsFor" in kit_preview
+        and "mergeLook(cir.getReturnValue(), extra," in kit_mixin
+        and "colorsOf" in kit_preview
+        and "REASON_TRACK" in kit_packet
+        and "broadcast contract" in kit_readme.lower(),
     )
 
     godki_shop = read(

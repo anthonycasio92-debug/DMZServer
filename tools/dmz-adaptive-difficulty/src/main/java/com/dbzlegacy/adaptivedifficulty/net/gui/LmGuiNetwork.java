@@ -463,14 +463,19 @@ public final class LmGuiNetwork {
     }
 
     /**
-     * Assert {@link GuiModelSyncPacket} partsJson + reason survive encode→decode, and that
-     * the sanitizer keeps valid JSON (never a mid-string cut).
+     * Assert {@link GuiModelSyncPacket} partsJson + reason survive encode→decode, that the
+     * sanitizer keeps valid JSON (never a mid-string cut), and — since the sync broadcast
+     * with a uuid subject — that a degraded payload preserves {@code subject} instead of
+     * resetting it to {@code local} (which would clear each observer's own parts).
      *
      * @return null on success, failure message otherwise
      */
     private static String roundTripModelSync() {
-        String parts = "{\"schema\":1,\"subject\":\"local\",\"bodyParts\":["
+        String parts = "{\"schema\":1,\"subject\":\"uuid:00000000-0000-0000-0000-0000000000ff\","
+                + "\"bodyParts\":["
                 + "{\"id\":\"saiyan_tail\",\"source\":\"dmzultra\",\"slot\":\"tail\"}],"
+                + "\"colors\":{\"skin\":16777215,\"second\":16777215,\"hair\":2105380,"
+                + "\"own\":13186347,\"trim\":15320170,\"horn\":15722191,\"light\":8380671},"
                 + "\"extras\":[]}";
         GuiModelSyncPacket sync = new GuiModelSyncPacket(parts, GuiModelSyncPacket.REASON_EQUIP);
         net.minecraft.network.FriendlyByteBuf buf =
@@ -493,6 +498,14 @@ public final class LmGuiNetwork {
             if (!parsed.has("bodyParts") || !parsed.get("bodyParts").isJsonArray()) {
                 return "GuiModelSyncPacket partsJson lost bodyParts array after decode";
             }
+            if (!parsed.has("colors") || !parsed.get("colors").isJsonObject()) {
+                return "GuiModelSyncPacket partsJson lost colors object after decode";
+            }
+            if (!"uuid:00000000-0000-0000-0000-0000000000ff".equals(
+                    parsed.get("subject").getAsString())) {
+                return "GuiModelSyncPacket partsJson lost uuid subject after decode → "
+                        + parsed.get("subject");
+            }
         } catch (Throwable t) {
             return "GuiModelSyncPacket partsJson is not valid JSON after round-trip: " + t;
         }
@@ -501,10 +514,22 @@ public final class LmGuiNetwork {
         while (filler.length() < GuiModelSyncPacket.PARTS_JSON_MAX + 100) {
             filler.append('x');
         }
-        String oversized = "{\"schema\":1,\"subject\":\"local\",\"pad\":\"" + filler + "\"}";
+        String oversized =
+                "{\"schema\":1,\"subject\":\"uuid:00000000-0000-0000-0000-0000000000aa\","
+                        + "\"pad\":\"" + filler + "\"}";
         GuiModelSyncPacket degraded = new GuiModelSyncPacket(oversized, "login");
         try {
-            com.google.gson.JsonParser.parseString(degraded.partsJson()).getAsJsonObject();
+            com.google.gson.JsonObject degradedObj =
+                    com.google.gson.JsonParser.parseString(degraded.partsJson())
+                            .getAsJsonObject();
+            // The sync is broadcast: a fallback that resets subject to "local" would make
+            // every observer clear its OWN parts when the owner's payload degraded.
+            if (!degradedObj.has("subject")
+                    || !"uuid:00000000-0000-0000-0000-0000000000aa".equals(
+                            degradedObj.get("subject").getAsString())) {
+                return "GuiModelSyncPacket degraded payload lost uuid subject → "
+                        + degradedObj;
+            }
         } catch (Throwable t) {
             return "GuiModelSyncPacket oversized payload not valid JSON after sanitize: " + t;
         }
@@ -658,22 +683,25 @@ public final class LmGuiNetwork {
      * replaces (never merges) its cached state with this snapshot. No-op unless the client
      * advertised {@code bodyPartsSync}. Send on login (initial) and after every
      * equip/unequip change.
+     *
+     * <p><b>Broadcast</b> to the player and everyone tracking them: snapshots carry
+     * {@code subject uuid:<owner>} so each observer binds them to the owner's entity.
+     * Per-observer sends still use {@link #sendModelSyncTo} (the track-start trigger).
      */
     public static void sendModelSync(ServerPlayer player, String reason) {
         if (player == null || !supportsModelSync(player)) {
             return;
         }
         try {
-            JsonObject parts = com.dbzlegacy.adaptivedifficulty.gui.ultra.PlayerModelParts
-                    .syncSnapshot(player);
-            GuiModelSyncPacket packet = new GuiModelSyncPacket(parts.toString(), reason);
+            GuiModelSyncPacket packet = modelSyncPacket(player, reason);
             AdaptiveDifficultyMod.LOGGER.info(
-                    "[{}] GuiModelSyncPacket → player={} reason={} partsJson={}",
+                    "[{}] GuiModelSyncPacket → broadcast to trackers of {} reason={} partsJson={}",
                     AdaptiveDifficultyMod.MOD_ID,
                     safeName(player),
                     reason,
                     packet.partsJson());
-            CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
+            CHANNEL.send(
+                    PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player), packet);
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.warn(
                     "[{}] GuiModelSyncPacket send failed player={} reason={}: {}",
@@ -685,9 +713,64 @@ public final class LmGuiNetwork {
     }
 
     /**
+     * Targeted sync: {@code subject}'s parts sent to one {@code viewer} only (PLAYER
+     * distributor). Used when {@code viewer} starts tracking {@code subject} — re-broadcasting
+     * there would spam every other tracker. Gate is on the <b>viewer</b> (the recipient must
+     * have advertised {@code bodyPartsSync}); the subject's own advertisement is irrelevant.
+     */
+    public static void sendModelSyncTo(ServerPlayer subject, ServerPlayer viewer, String reason) {
+        if (subject == null || viewer == null || !supportsModelSync(viewer)) {
+            return;
+        }
+        if (subject.equals(viewer)) {
+            return;
+        }
+        try {
+            GuiModelSyncPacket packet = modelSyncPacket(subject, reason);
+            AdaptiveDifficultyMod.LOGGER.info(
+                    "[{}] GuiModelSyncPacket → subject={} viewer={} reason={}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    safeName(subject),
+                    safeName(viewer),
+                    reason);
+            CHANNEL.send(PacketDistributor.PLAYER.with(() -> viewer), packet);
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] GuiModelSyncPacket targeted send failed subject={} viewer={} reason={}: {}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    safeName(subject),
+                    safeName(viewer),
+                    reason,
+                    t.toString());
+        }
+    }
+
+    private static GuiModelSyncPacket modelSyncPacket(ServerPlayer subject, String reason) {
+        JsonObject parts = com.dbzlegacy.adaptivedifficulty.gui.ultra.PlayerModelParts
+                .syncSnapshot(subject);
+        return new GuiModelSyncPacket(parts.toString(), reason);
+    }
+
+    /**
+     * Track-start trigger: {@code tracker} just began seeing {@code target} (login into
+     * range, respawn, dimension change, walking back into range after an equip change
+     * that broadcast while they were away). Send {@code target}'s current snapshot to
+     * {@code tracker} only. Fires on the server thread.
+     */
+    public static void onStartTracking(ServerPlayer tracker, ServerPlayer target) {
+        if (tracker == null || target == null || tracker.equals(target)) {
+            return;
+        }
+        sendModelSyncTo(target, tracker, GuiModelSyncPacket.REASON_TRACK);
+    }
+
+    /**
      * Login trigger: when the client's first feature advertisement includes
      * {@code bodyPartsSync}, send the initial world sync once per session. Deferred a few
-     * ticks so DMZ character data (race tail / forms) has loaded before the snapshot.
+     * ticks so DMZ character data (race tail / forms) has loaded before the snapshot. The
+     * same task backfills every other online player's parts to the new viewer: their
+     * track-start events fired before this advertisement reached the server, so those
+     * targeted sends were gated off.
      */
     public static void onClientAdvertisement(ServerPlayer player) {
         if (player == null || !supportsModelSync(player)) {
@@ -703,8 +786,16 @@ public final class LmGuiNetwork {
         }
         java.util.UUID id = player.m_20148_();
         server.m_6937_(new net.minecraft.server.TickTask(server.m_129921_() + 40, () -> {
-            ServerPlayer p = server.m_6846_().m_11259_(id);
-            sendModelSync(p, GuiModelSyncPacket.REASON_LOGIN);
+            ServerPlayer viewer = server.m_6846_().m_11259_(id);
+            if (viewer == null) {
+                return;
+            }
+            sendModelSync(viewer, GuiModelSyncPacket.REASON_LOGIN);
+            for (ServerPlayer other : server.m_6846_().m_11314_()) {
+                if (other != null && !other.equals(viewer)) {
+                    sendModelSyncTo(other, viewer, GuiModelSyncPacket.REASON_LOGIN);
+                }
+            }
         }));
     }
 

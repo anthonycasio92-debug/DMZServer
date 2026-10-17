@@ -1,7 +1,7 @@
 {
   "source": "dmzultra",
   "catalog": "assets/dmzultra/form_parts/forms.json",
-  "note": "Form key is race/group/form, the same key DMZUltra FormParts.of builds. Piece ids are FormParts catalog ids.",
+  "note": "Form key is race/group/form, the same key DMZUltra FormParts.of builds. Piece ids are FormParts catalog ids. 'designs' carries the per-form FormParts Design colors (own/trim/horn/light from the upstream a/b/c/g keys) so a dedicated server can send explicit colors in GuiModelSyncPacket without the client mod.",
   "pieces": [
     "ankle_fins",
     "ankle_flame",
@@ -559,5 +559,517 @@
       "mandala",
       "shoulder_crystal"
     ]
+  },
+  "designs": {
+    "human/fistforms/limitbreaker": {
+      "own": 13186347,
+      "trim": 15320170,
+      "horn": 15722191,
+      "light": 8380671
+    },
+    "human/fistforms/beyondhuman": {
+      "own": 11806780,
+      "trim": 15320170,
+      "horn": 15722191,
+      "light": 16772480
+    },
+    "human/fistforms/transcendent": {
+      "own": 3101368,
+      "trim": 14015722,
+      "horn": 15722191,
+      "light": 8442879
+    },
+    "human/fistforms/godfist": {
+      "own": 2761772,
+      "trim": 15320170,
+      "horn": 15722191,
+      "light": 16734781
+    },
+    "human/fistforms/divinemartialist": {
+      "own": 15855334,
+      "trim": 15320170,
+      "horn": 15722191,
+      "light": 16767083
+    },
+    "human/sageforms/spiritbombsage": {
+      "own": 14543608,
+      "trim": 14015722,
+      "horn": 15722191,
+      "light": 8446207
+    },
+    "human/sageforms/craneascendant": {
+      "own": 16052714,
+      "trim": 15320170,
+      "horn": 1907490,
+      "light": 16742981
+    },
+    "namekian/elderforms/awakenednamekian": {
+      "own": 1865069,
+      "trim": 15320170,
+      "horn": 15722191,
+      "light": 3997677
+    },
+    "namekian/elderforms/ascendednamekian": {
+      "own": 3765567,
+      "trim": 15320170,
+      "horn": 15722191,
+      "light": 8191882
+    },
+    "namekian/elderforms/primalnamekian": {
+      "own": 7688733,
+      "trim": 15320170,
+      "horn": 14273968,
+      "light": 16757310
+    },
+    "namekian/elderforms/dragonnamekian": {
+      "own": 1996095,
+      "trim": 15320170,
+      "horn": 14273968,
+      "light": 4259722
+    },
+    "namekian/elderforms/divinenamekian": {
+      "own": 4607592,
+      "trim": 15320170,
+      "horn": 16774088,
+      "light": 12189594
+    },
+    "namekian/dragonforms/guruawakening": {
+      "own": 4927375,
+      "trim": 15320170,
+      "horn": 15722191,
+      "light": 13147135
+    },
+    "namekian/dragonforms/porungaascendant": {
+      "own": 7692578,
+      "trim": 15320170,
+      "horn": 15916962,
+      "light": 16765514
+    },
+    "frostdemon/glacierforms/truefrost": {
+      "own": 3893877,
+      "trim": 15320170,
+      "horn": 12578815,
+      "light": 8447999
+    },
+    "frostdemon/glacierforms/absolutefrost": {
+      "own": 4662133,
+      "trim": 15320170,
+      "horn": 12161791,
+      "light": 10112511
+    },
+    "frostdemon/glacierforms/emperorfrost": {
+      "own": 3893877,
+      "trim": 15320170,
+      "horn": 14546687,
+      "light": 8447999
+    },
+    "frostdemon/glacierforms/divinefrost": {
+      "own": 7692578,
+      "trim": 15320170,
+      "horn": 16769946,
+      "light": 16765788
+    },
+    "frostdemon/glacierforms/eternalfrost": {
+      "own": 4662133,
+      "trim": 15320170,
+      "horn": 8146144,
+      "light": 11898111
+    },
+    "frostdemon/emperorforms/frozensovereign": {
+      "own": 3228799,
+      "trim": 14015722,
+      "horn": 14546687,
+      "light": 8447999
+    },
+    "frostdemon/emperorforms/hellfireemperor": {
+      "own": 12071439,
+      "trim": 15320170,
+      "horn": 2760478,
+      "light": 16747066
+    },
+    "bioandroid/coreforms/bioperfected": {
+      "own": 4486459,
+      "trim": 5857390,
+      "horn": 15722191,
+      "light": 9699200
+    },
+    "bioandroid/coreforms/superperfectbio": {
+      "own": 7289717,
+      "trim": 5857390,
+      "horn": 2300966,
+      "light": 15892735
+    },
+    "bioandroid/coreforms/bioascension": {
+      "own": 7694897,
+      "trim": 5857390,
+      "horn": 3820090,
+      "light": 16770667
+    },
+    "bioandroid/coreforms/evolutionarycore": {
+      "own": 2845813,
+      "trim": 5857390,
+      "horn": 2300966,
+      "light": 6220799
+    },
+    "bioandroid/coreforms/absolutebio": {
+      "own": 4607592,
+      "trim": 5857390,
+      "horn": 3877440,
+      "light": 16769686
+    },
+    "bioandroid/geneticforms/imperfectgenesis": {
+      "own": 4486459,
+      "trim": 15320170,
+      "horn": 2300966,
+      "light": 9699200
+    },
+    "bioandroid/geneticforms/absoluteperfection": {
+      "own": 4607592,
+      "trim": 5857390,
+      "horn": 15266032,
+      "light": 16769686
+    },
+    "bioandroid/genomealien/alienstrain1": {
+      "own": 4667509,
+      "trim": 15320170,
+      "horn": 15722191,
+      "light": 10124031
+    },
+    "bioandroid/genomealien/alienstrain2": {
+      "own": 4667509,
+      "trim": 15320170,
+      "horn": 15722191,
+      "light": 10124031
+    },
+    "bioandroid/genomealien/alienstrain3": {
+      "own": 4667509,
+      "trim": 15320170,
+      "horn": 15722191,
+      "light": 10124031
+    },
+    "bioandroid/genomedemon/demonstrain1": {
+      "own": 6759029,
+      "trim": 15320170,
+      "horn": 15722191,
+      "light": 14699263
+    },
+    "bioandroid/genomedemon/demonstrain2": {
+      "own": 6759029,
+      "trim": 15320170,
+      "horn": 15722191,
+      "light": 14699263
+    },
+    "bioandroid/genomedemon/demonstrain3": {
+      "own": 8003420,
+      "trim": 15320170,
+      "horn": 2300966,
+      "light": 14699263
+    },
+    "bioandroid/genomefrostdemon/frostdemonstrain1": {
+      "own": 3892085,
+      "trim": 15320170,
+      "horn": 13168383,
+      "light": 8444159
+    },
+    "bioandroid/genomefrostdemon/frostdemonstrain2": {
+      "own": 3892085,
+      "trim": 15320170,
+      "horn": 13168383,
+      "light": 8444159
+    },
+    "bioandroid/genomefrostdemon/frostdemonstrain3": {
+      "own": 3892085,
+      "trim": 15320170,
+      "horn": 13168383,
+      "light": 8444159
+    },
+    "bioandroid/genomehuman/humanstrain1": {
+      "own": 13186347,
+      "trim": 15320170,
+      "horn": 15722191,
+      "light": 16768896
+    },
+    "bioandroid/genomehuman/humanstrain2": {
+      "own": 13186347,
+      "trim": 15320170,
+      "horn": 15722191,
+      "light": 16768896
+    },
+    "bioandroid/genomehuman/humanstrain3": {
+      "own": 15855334,
+      "trim": 15320170,
+      "horn": 15722191,
+      "light": 16768896
+    },
+    "bioandroid/genomemajin/majinstrain1": {
+      "own": 7682910,
+      "trim": 15320170,
+      "horn": 15722191,
+      "light": 16744652
+    },
+    "bioandroid/genomemajin/majinstrain2": {
+      "own": 8007578,
+      "trim": 15320170,
+      "horn": 15722191,
+      "light": 16744652
+    },
+    "bioandroid/genomemajin/majinstrain3": {
+      "own": 8007578,
+      "trim": 15320170,
+      "horn": 2300966,
+      "light": 16744652
+    },
+    "bioandroid/genomenamekian/namekianstrain1": {
+      "own": 3765545,
+      "trim": 15320170,
+      "horn": 15722191,
+      "light": 8191834
+    },
+    "bioandroid/genomenamekian/namekianstrain2": {
+      "own": 3765545,
+      "trim": 15320170,
+      "horn": 14273968,
+      "light": 8191834
+    },
+    "bioandroid/genomenamekian/namekianstrain3": {
+      "own": 3765545,
+      "trim": 15320170,
+      "horn": 14273968,
+      "light": 8191834
+    },
+    "bioandroid/genomesaiyan/saiyanstrain1": {
+      "own": 7693090,
+      "trim": 15320170,
+      "horn": 5978658,
+      "light": 16767050
+    },
+    "bioandroid/genomesaiyan/saiyanstrain2": {
+      "own": 7693090,
+      "trim": 15320170,
+      "horn": 5978658,
+      "light": 16767050
+    },
+    "bioandroid/genomesaiyan/saiyanstrain3": {
+      "own": 7693090,
+      "trim": 15320170,
+      "horn": 5978658,
+      "light": 16767050
+    },
+    "bioandroid/genomesphinxian/sphinxianstrain1": {
+      "own": 7688448,
+      "trim": 15320170,
+      "horn": 15722191,
+      "light": 16759846
+    },
+    "bioandroid/genomesphinxian/sphinxianstrain2": {
+      "own": 2052003,
+      "trim": 15320170,
+      "horn": 15722191,
+      "light": 16759846
+    },
+    "bioandroid/genomesphinxian/sphinxianstrain3": {
+      "own": 15855334,
+      "trim": 15320170,
+      "horn": 15320170,
+      "light": 16759846
+    },
+    "bioandroid/genometaimujin/taimujinstrain1": {
+      "own": 4607592,
+      "trim": 15320170,
+      "horn": 15722191,
+      "light": 16769686
+    },
+    "bioandroid/genometaimujin/taimujinstrain2": {
+      "own": 4607592,
+      "trim": 13805654,
+      "horn": 15722191,
+      "light": 16769686
+    },
+    "bioandroid/genometaimujin/taimujinstrain3": {
+      "own": 4607592,
+      "trim": 13805654,
+      "horn": 15722191,
+      "light": 16769686
+    },
+    "majin/miraforms/majinawakening": {
+      "own": 7680864,
+      "trim": 15320170,
+      "horn": 15722191,
+      "light": 16740304
+    },
+    "majin/miraforms/puremajin": {
+      "own": 8007578,
+      "trim": 15320170,
+      "horn": 15722191,
+      "light": 16740304
+    },
+    "majin/miraforms/chaosmajin": {
+      "own": 8003118,
+      "trim": 15320170,
+      "horn": 2300966,
+      "light": 16726843
+    },
+    "majin/miraforms/demonicmajin": {
+      "own": 3807304,
+      "trim": 15320170,
+      "horn": 2300966,
+      "light": 11758591
+    },
+    "majin/miraforms/divinemajin": {
+      "own": 7695163,
+      "trim": 15320170,
+      "horn": 15722191,
+      "light": 16767083
+    },
+    "majin/chaosforms/rampagemajin": {
+      "own": 7674651,
+      "trim": 15320170,
+      "horn": 2300966,
+      "light": 16726843
+    },
+    "majin/chaosforms/absorbedascendant": {
+      "own": 3807304,
+      "trim": 15320170,
+      "horn": 2300966,
+      "light": 11758591
+    },
+    "demon/abyssforms/demonawakening": {
+      "own": 3889781,
+      "trim": 15320170,
+      "horn": 15722191,
+      "light": 8439039
+    },
+    "demon/abyssforms/highdemon": {
+      "own": 3889781,
+      "trim": 15320170,
+      "horn": 15722191,
+      "light": 8438783
+    },
+    "demon/abyssforms/demongod": {
+      "own": 4083624,
+      "trim": 15320170,
+      "horn": 14472944,
+      "light": 8426239
+    },
+    "demon/abyssforms/abyssaldemon": {
+      "own": 7999520,
+      "trim": 15320170,
+      "horn": 1972772,
+      "light": 16721473
+    },
+    "demon/abyssforms/demonsovereign": {
+      "own": 9314125,
+      "trim": 12162620,
+      "horn": 2757144,
+      "light": 16728458
+    },
+    "demon/infernalforms/demonrealmlord": {
+      "own": 3809118,
+      "trim": 15320170,
+      "horn": 15722191,
+      "light": 12606463
+    },
+    "demon/infernalforms/infernalflame": {
+      "own": 12859918,
+      "trim": 15320170,
+      "horn": 2300442,
+      "light": 16753226
+    },
+    "sphinxian/crownforms/sphinxawakening": {
+      "own": 5254773,
+      "trim": 15320170,
+      "horn": 15722191,
+      "light": 11494911
+    },
+    "sphinxian/crownforms/royalsphinxian": {
+      "own": 2052003,
+      "trim": 15320170,
+      "horn": 15722191,
+      "light": 12878079
+    },
+    "sphinxian/crownforms/celestialsphinxian": {
+      "own": 15593463,
+      "trim": 15320170,
+      "horn": 6063840,
+      "light": 8440831
+    },
+    "sphinxian/crownforms/sphinxianascendant": {
+      "own": 16052714,
+      "trim": 15320170,
+      "horn": 15320170,
+      "light": 16769686
+    },
+    "sphinxian/crownforms/eternalsphinxian": {
+      "own": 1774896,
+      "trim": 15320170,
+      "horn": 15320170,
+      "light": 16765514
+    },
+    "sphinxian/predatorforms/eclipseprowler": {
+      "own": 4668277,
+      "trim": 15320170,
+      "horn": 1446428,
+      "light": 10191103
+    },
+    "sphinxian/predatorforms/solarlion": {
+      "own": 14917675,
+      "trim": 15320170,
+      "horn": 15722191,
+      "light": 16765514
+    },
+    "taimujin/eonforms/temporalawakening": {
+      "own": 4665717,
+      "trim": 15320170,
+      "horn": 15722191,
+      "light": 10185727
+    },
+    "taimujin/eonforms/timewalker": {
+      "own": 5321845,
+      "trim": 13805654,
+      "horn": 15722191,
+      "light": 11563263
+    },
+    "taimujin/eonforms/temporalascendant": {
+      "own": 3369589,
+      "trim": 13805654,
+      "horn": 15722191,
+      "light": 7333887
+    },
+    "taimujin/eonforms/chronowarrior": {
+      "own": 2908533,
+      "trim": 14015722,
+      "horn": 15722191,
+      "light": 6280191
+    },
+    "taimujin/eonforms/eternaltaimujin": {
+      "own": 7692578,
+      "trim": 15320170,
+      "horn": 15722191,
+      "light": 16765514
+    },
+    "taimujin/chronoforms/pureprogress": {
+      "own": 4607592,
+      "trim": 14015722,
+      "horn": 15722191,
+      "light": 16769686
+    },
+    "taimujin/chronoforms/chronozenith": {
+      "own": 7694139,
+      "trim": 15320170,
+      "horn": 15722191,
+      "light": 16768896
+    },
+    "alien/cosmosforms/eventhorizon": {
+      "own": 3679093,
+      "trim": 2761792,
+      "horn": 6966232,
+      "light": 8015359
+    },
+    "alien/cosmosforms/starforged": {
+      "own": 7695419,
+      "trim": 15320170,
+      "horn": 16771494,
+      "light": 16771712
+    }
   }
 }
