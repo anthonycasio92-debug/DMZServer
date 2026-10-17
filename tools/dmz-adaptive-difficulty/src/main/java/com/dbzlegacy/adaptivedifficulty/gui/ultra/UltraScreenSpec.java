@@ -66,6 +66,13 @@ public final class UltraScreenSpec {
      */
     private int designWidth;
     private int designHeight;
+    /**
+     * Wire-geometry multiplier for screens authored in a small design box (config editor:
+     * 426x240). Scales control x/y/w/h/pad and layoutJson body metrics on the way out so
+     * clients that ignore {@code fillScreen} still get a full-panel layout. Footer buttons
+     * ({@code footer:true}) are client-pinned and stay unscaled.
+     */
+    private double contentScale = 1.0;
     private PlayerModel playerModel;
     /** Lowest button top Y seen so far; used to size the body scroll region. */
     private int firstButtonY = -1;
@@ -210,6 +217,19 @@ public final class UltraScreenSpec {
         this.fillScreen = true;
         this.designWidth = Math.max(1, designWidth);
         this.designHeight = Math.max(1, designHeight);
+        return this;
+    }
+
+    /**
+     * Emit wire geometry multiplied by {@code scale} (author in a small design box,
+     * ship full-panel coordinates). KaiPath 1.3.29 ignores {@code fillScreen} entirely,
+     * so a design-box layout strands on the left third of a clamped fullscreen panel.
+     * Scales button/input x/y/w/h/pad and the layoutJson body metrics; footer buttons
+     * ({@code footer:true}, client-pinned to the panel edge), the panel request, and the
+     * design-box fields stay as authored.
+     */
+    public UltraScreenSpec contentScale(double scale) {
+        this.contentScale = scale > 0.0 ? scale : 1.0;
         return this;
     }
 
@@ -884,10 +904,11 @@ public final class UltraScreenSpec {
             JsonObject o = new JsonObject();
             o.addProperty("id", in.id);
             o.addProperty("type", in.type);
-            o.addProperty("x", in.x);
-            o.addProperty("y", in.y + buttonShift);
-            o.addProperty("w", in.w);
-            o.addProperty("h", in.h);
+            o.addProperty("x", contentScale != 1.0 ? sc(in.x) : in.x);
+            int y = in.y + buttonShift;
+            o.addProperty("y", contentScale != 1.0 ? sc(y) : y);
+            o.addProperty("w", contentScale != 1.0 ? sc(in.w) : in.w);
+            o.addProperty("h", contentScale != 1.0 ? sc(in.h) : in.h);
             if ("paged_book".equalsIgnoreCase(in.type)) {
                 o.add("pages", in.pages == null ? new JsonArray() : in.pages);
                 o.addProperty("page", Math.max(0, in.page));
@@ -928,7 +949,9 @@ public final class UltraScreenSpec {
         // Client chrome (title + yellow divider) must end at/above this Y; tab row sits at/after it.
         layout.addProperty(
                 "headerBottom",
-                underTitleTabs ? UltraStyle.HEADER_BOTTOM_TABS : UltraStyle.HEADER_BOTTOM);
+                contentScale != 1.0
+                        ? sc(underTitleTabs ? UltraStyle.HEADER_BOTTOM_TABS : UltraStyle.HEADER_BOTTOM)
+                        : (underTitleTabs ? UltraStyle.HEADER_BOTTOM_TABS : UltraStyle.HEADER_BOTTOM));
         String accentCode = UltraStyle.systemAccentCode(screenId);
         if (accentCode != null && !accentCode.isBlank()) {
             // Single-letter color for title chrome + activeTab highlight (plain ASCII titles).
@@ -942,18 +965,18 @@ public final class UltraScreenSpec {
         // Non-empty valid RL enables framed panel chrome (KaiPath 1.3.13+).
         layout.addProperty("frame", UltraStyle.PANEL_FRAME);
         // Shared body / button metrics - every screen benefits.
-        layout.addProperty("lineHeight", UltraStyle.LINE_H);
-        layout.addProperty(
-                "lineGap", lineGapOverride != null ? lineGapOverride : UltraStyle.LINE_GAP);
-        layout.addProperty("bodyTop", bodyTop);
-        layout.addProperty(
-                "bodyPad", bodyPadOverride != null ? bodyPadOverride : UltraStyle.BODY_PAD);
-        layout.addProperty("bodyMaxHeight", bodyMaxH);
+        layout.addProperty("lineHeight", contentScale != 1.0 ? sc(UltraStyle.LINE_H) : UltraStyle.LINE_H);
+        int lineGapMetric = lineGapOverride != null ? lineGapOverride : UltraStyle.LINE_GAP;
+        layout.addProperty("lineGap", contentScale != 1.0 ? sc(lineGapMetric) : lineGapMetric);
+        layout.addProperty("bodyTop", contentScale != 1.0 ? sc(bodyTop) : bodyTop);
+        int bodyPadMetric = bodyPadOverride != null ? bodyPadOverride : UltraStyle.BODY_PAD;
+        layout.addProperty("bodyPad", contentScale != 1.0 ? sc(bodyPadMetric) : bodyPadMetric);
+        layout.addProperty("bodyMaxHeight", contentScale != 1.0 ? sc(bodyMaxH) : bodyMaxH);
         layout.addProperty("scrollBody", scrollBody);
-        layout.addProperty("buttonPad", UltraStyle.BTN_PAD);
-        layout.addProperty("buttonGap", UltraStyle.BTN_GAP);
-        layout.addProperty("buttonMinWidth", UltraStyle.BTN_MIN_W);
-        layout.addProperty("buttonHeight", UltraStyle.BTN_H);
+        layout.addProperty("buttonPad", contentScale != 1.0 ? sc(UltraStyle.BTN_PAD) : UltraStyle.BTN_PAD);
+        layout.addProperty("buttonGap", contentScale != 1.0 ? sc(UltraStyle.BTN_GAP) : UltraStyle.BTN_GAP);
+        layout.addProperty("buttonMinWidth", contentScale != 1.0 ? sc(UltraStyle.BTN_MIN_W) : UltraStyle.BTN_MIN_W);
+        layout.addProperty("buttonHeight", contentScale != 1.0 ? sc(UltraStyle.BTN_H) : UltraStyle.BTN_H);
         // Logical system metadata (survives hub wire shim in layoutJson).
         layout.addProperty(UltraScreenIds.META_SYSTEM, screenId);
         layout.addProperty("screen", screenId);
@@ -1219,6 +1242,11 @@ public final class UltraScreenSpec {
         }
     }
 
+    /** Content-scale step for {@link #contentScale(double)} wire geometry. */
+    private int sc(int px) {
+        return (int) Math.round(px * contentScale);
+    }
+
     private void appendButtonJson(JsonArray btnArr, Button b, int buttonShift, int panelH) {
         if (btnArr == null || b == null) {
             return;
@@ -1228,14 +1256,15 @@ public final class UltraScreenSpec {
         o.addProperty("label", b.label);
         o.addProperty("style", b.style);
         // Zero color keys (no accent/palette/tint) — KaiPath default chrome.
-        o.addProperty("x", b.x);
+        boolean wireScale = contentScale != 1.0 && !b.footer;
+        o.addProperty("x", wireScale ? sc(b.x) : b.x);
         // Footer Y is chosen by toPacket (design box when fillScreen sets one, otherwise
         // the packed panel). Do not replace it with the clamp-request height.
         int y = b.footer ? b.y : b.y + buttonShift;
-        o.addProperty("y", y);
-        o.addProperty("w", b.w);
-        o.addProperty("h", b.h);
-        o.addProperty("pad", b.pad);
+        o.addProperty("y", wireScale ? sc(y) : y);
+        o.addProperty("w", wireScale ? sc(b.w) : b.w);
+        o.addProperty("h", wireScale ? sc(b.h) : b.h);
+        o.addProperty("pad", wireScale ? sc(b.pad) : b.pad);
         putIcon(o, b.icon);
         if (b.footer) {
             o.addProperty("footer", true);

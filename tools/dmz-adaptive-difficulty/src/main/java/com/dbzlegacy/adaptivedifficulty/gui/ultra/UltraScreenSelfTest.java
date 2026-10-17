@@ -945,9 +945,11 @@ public final class UltraScreenSelfTest {
     }
 
     /**
-     * Config editor requests a panel larger than the GUI (so KaiPath 1.3.20 clamps the
-     * chrome to the window) and lays controls out in a 1920x1080 design box. A stack of
-     * rows must not grow the request toward the compact menu cap.
+     * Config editor requests a panel larger than the GUI (so KaiPath clamps the chrome
+     * to the window) and ships its controls through contentScale 4.5 — authored in the
+     * 426x240 design box, emitted natively at 1920x1080 because KaiPath 1.3.29 ignores
+     * {@code fillScreen}. A stack of rows must not grow the request toward the compact
+     * menu cap, and the client-pinned footer stays unscaled (1770 + 150).
      */
     private static void checkConfigFullscreen(List<String> broken) {
         UltraScreenSpec grown =
@@ -1021,7 +1023,8 @@ public final class UltraScreenSelfTest {
             int y = b.get("y").getAsInt();
             int w = b.get("w").getAsInt();
             int h = b.get("h").getAsInt();
-            if (w == 148) {
+            // Rail is authored at SIDE_W 148 and emitted through contentScale 4.5.
+            if (w == 666) {
                 rail = true;
             }
             if (x < 0 || y < 0 || x + w > boxW || y + h > boxH) {
@@ -1029,7 +1032,7 @@ public final class UltraScreenSelfTest {
             }
         }
         if (!rail) {
-            broken.add("config category rail must be 148px wide");
+            broken.add("config category rail must ship at 666px (148 design x 4.5)");
         }
         JsonArray fields = JsonParser.parseString(inputs).getAsJsonArray();
         for (JsonElement el : fields) {

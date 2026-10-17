@@ -14,10 +14,13 @@ import java.util.UUID;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Staff config editor. The panel request is larger than the GUI so KaiPath 1.3.20, which
- * ignores {@code fillScreen}, clamps the chrome to the window. Controls are laid out in
- * {@link #CONFIG_DESIGN_W}x{@link #CONFIG_DESIGN_H}, the smallest auto GUI (about 426x240),
- * with a wide category rail. Clients that honor {@code fillScreen} scale that box up.
+ * Staff config editor. The panel request is larger than the GUI so KaiPath clamps the
+ * chrome to the window; KaiPath 1.3.29 ignores {@code fillScreen} entirely, so the
+ * controls are laid out in {@link #CONFIG_DESIGN_W}x{@link #CONFIG_DESIGN_H} (the
+ * smallest auto GUI, about 426x240) and then emitted through
+ * {@link UltraScreenSpec#contentScale(double)} at {@link #CONFIG_CONTENT_SCALE} —
+ * natively authored at 1920x1080. Clients that honor {@code fillScreen} scale the
+ * declared 1920x1080 design box by ~1x, so both paths land on the same geometry.
  *
  * <p>Sections such as {@code Difficulty > Mob Spawning} open and collapse from the index.
  * Each field shows a plain label, a one-line description, and the current value next to
@@ -26,12 +29,19 @@ import net.minecraft.server.level.ServerPlayer;
  */
 public final class UltraConfigScreens {
     /**
-     * Coordinate space that fits the smallest auto GUI (1440p / 4K, about 426x240).
-     * 1080p auto scale is about 480x270; the live client clamps the panel request to
-     * that window and draws these coordinates unscaled.
+     * Coordinate space the controls are authored in (fits the smallest auto GUI,
+     * 1440p / 4K, about 426x240). Wire geometry is this box times
+     * {@link #CONFIG_CONTENT_SCALE}; the panel request stays 1920x1080 so the client
+     * clamp still fills the window.
      */
     private static final int CONFIG_DESIGN_W = 426;
     private static final int CONFIG_DESIGN_H = 240;
+    /**
+     * 240 * 4.5 = 1080 (panel height); 426 * 4.5 = 1917 (inside the 1920 panel).
+     * KaiPath 1.3.29 draws design-box coordinates unscaled inside the clamped panel,
+     * so the wire layout is pre-multiplied by this factor.
+     */
+    private static final double CONFIG_CONTENT_SCALE = 4.5;
     /**
      * Larger than an auto GUI (and under the 2000px packet cap). KaiPath 1.3.20 clamps
      * this down to {@code screen - margin * 2}. Margin 0 makes the clamp equal the window.
@@ -1356,6 +1366,7 @@ public final class UltraConfigScreens {
                 .margin(0)
                 .lockPanel()
                 .fillScreen(CONFIG_PANEL_W, CONFIG_PANEL_H)
+                .contentScale(CONFIG_CONTENT_SCALE)
                 .lineGap(2)
                 .bodyPad(4);
     }

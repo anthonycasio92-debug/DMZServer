@@ -3,6 +3,7 @@ package com.dbzlegacy.adaptivedifficulty.gui;
 import com.dbzlegacy.adaptivedifficulty.calc.LmOverhaulScaledCombat;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle;
+import com.dbzlegacy.adaptivedifficulty.rival.NemesisSpawnMode;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalChallengeManager;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalConstants;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalInstinct;
@@ -869,6 +870,9 @@ public final class RivalGuiApi {
             }
             boolean on = RivalInstinct.toggle(player);
             return "§eRival Instinct " + (on ? "ON" : "OFF");
+        }
+        if ("nemesis_spawn_toggle".equals(act)) {
+            return NemesisSpawnMode.cycle(player);
         }
         if ("challenge".equals(act)) {
             String sub = a.toLowerCase(Locale.ROOT);

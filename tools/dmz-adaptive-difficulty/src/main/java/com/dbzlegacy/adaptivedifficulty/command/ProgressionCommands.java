@@ -6,6 +6,7 @@ import com.dbzlegacy.adaptivedifficulty.gui.PrestigeMenu;
 import com.dbzlegacy.adaptivedifficulty.gui.ProgressionGuiApi;
 import com.dbzlegacy.adaptivedifficulty.gui.ProgressionMenu;
 import com.dbzlegacy.adaptivedifficulty.gui.SkillsMenu;
+import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionSystem;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.SkillCheckService;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
@@ -14,6 +15,9 @@ import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
@@ -43,6 +47,8 @@ public final class ProgressionCommands {
                 .then(Commands.m_82127_("help").executes(ctx -> prestigeHelp(ctx.getSource())))
                 .then(Commands.m_82127_("balance")
                         .executes(ctx -> prestigeDo(ctx.getSource(), "balance", "")))
+                .then(Commands.m_82127_("effects")
+                        .executes(ctx -> prestigeEffects(ctx.getSource())))
                 .then(Commands.m_82127_("turnin")
                         .then(LmCommandSuggestions.word("amount", LmCommandSuggestions.PRESTIGE_TURNIN_AMOUNTS)
                                 .executes(ctx -> prestigeDo(
@@ -205,6 +211,38 @@ public final class ProgressionCommands {
 
     private static int prestigeHelp(CommandSourceStack source) {
         LmCommandFeedback.tellLines(source, LmCommandHelp.prestigePlayer());
+        return 1;
+    }
+
+    /**
+     * View-only shop effects (favor, majin/mutant, God Ki) — read from the same
+     * placeholders the Prestige → Effects screens use. No purchase path here.
+     */
+    private static int prestigeEffects(CommandSourceStack source) {
+        ServerPlayer p = playerOrNull(source);
+        if (p == null) {
+            source.m_288197_(() -> Component.m_237113_(LmCommandMessages.NEED_IN_GAME), false);
+            return 0;
+        }
+        Map<String, String> ph = ProgressionGuiApi.prestigePlaceholders(p);
+        List<String> lines = new ArrayList<>();
+        lines.add(UltraStyle.LABEL + "Your Prestige shop effects");
+        boolean majin = "true".equalsIgnoreCase(ph.get("majin"));
+        boolean mutant = "true".equalsIgnoreCase(ph.get("mutant"));
+        lines.add(UltraStyle.labelValue("Majin absorption", majin ? "owned" : "not owned"));
+        lines.add(UltraStyle.labelValue("Mutant upgrade", mutant ? "owned" : "not owned"));
+        int godki = 0;
+        try {
+            godki = Integer.parseInt(ph.getOrDefault("godki_invested", "0").trim());
+        } catch (NumberFormatException ignored) {
+        }
+        lines.add(UltraStyle.labelValue(
+                "God Ki Enhancement",
+                godki + " invested, mastery " + ph.getOrDefault("godki_mastery", "?")));
+        lines.add(UltraStyle.labelValue("Favor", ph.getOrDefault("points", "?")));
+        for (String line : lines) {
+            LmCommandFeedback.tell(source, line);
+        }
         return 1;
     }
 

@@ -106,7 +106,22 @@ if [[ -z "${MELEE:-}" || ! -f "$MELEE" ]]; then
   exit 1
 fi
 echo "Using melee jar for compile: $MELEE"
-CP="$CP:$NOEA:$MELEE"
+# dmzultra jar - the nemesis gate mixin targets com.dmzultra.journal.Rival by name.
+DMZULTRA="${DMZULTRA_JAR:-}"
+if [[ -z "$DMZULTRA" ]]; then
+  for candidate in /tmp/dmzultra-*.jar "$ROOT"/mods/dmzultra-*.jar; do
+    if [[ -f "$candidate" ]]; then
+      DMZULTRA="$candidate"
+      break
+    fi
+  done
+fi
+if [[ ! -f "$DMZULTRA" ]]; then
+  echo "Missing dmzultra jar for the nemesis gate mixin compile (set DMZULTRA_JAR)." >&2
+  exit 1
+fi
+echo "Using dmzultra jar for compile: $DMZULTRA"
+CP="$CP:$NOEA:$MELEE:$DMZULTRA"
 
 echo "Cleaning compile output before packaging"
 rm -rf "$OUT"
@@ -223,6 +238,11 @@ merge_onto_base_jar() {
       "$merge/com/dbzlegacy/adaptivedifficulty/rival/RivalStore.class"
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/rival/RivalStore\$"*.class \
       "$merge/com/dbzlegacy/adaptivedifficulty/rival/" 2>/dev/null || true
+  fi
+  if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/rival/NemesisSpawnMode.class" ]]; then
+    mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/rival"
+    cp "$OUT/com/dbzlegacy/adaptivedifficulty/rival/NemesisSpawnMode.class" \
+      "$merge/com/dbzlegacy/adaptivedifficulty/rival/NemesisSpawnMode.class"
   fi
   if [[ -f "$OUT/com/dbzlegacy/adaptivedifficulty/gui/SparGuiApi.class" ]]; then
     cp "$OUT/com/dbzlegacy/adaptivedifficulty/gui/SparGuiApi.class" \
@@ -466,6 +486,11 @@ merge_onto_base_jar() {
       mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/mixin/noea"
       cp -a "$OUT/com/dbzlegacy/adaptivedifficulty/mixin/noea/." \
         "$merge/com/dbzlegacy/adaptivedifficulty/mixin/noea/"
+    fi
+    if [[ -d "$OUT/com/dbzlegacy/adaptivedifficulty/mixin/dmzultra" ]]; then
+      mkdir -p "$merge/com/dbzlegacy/adaptivedifficulty/mixin/dmzultra"
+      cp -a "$OUT/com/dbzlegacy/adaptivedifficulty/mixin/dmzultra/." \
+        "$merge/com/dbzlegacy/adaptivedifficulty/mixin/dmzultra/"
     fi
     # Ordinary classes cannot live in the mixin package. The server classloader
     # does not resolve them, so the Majin wipe never runs.

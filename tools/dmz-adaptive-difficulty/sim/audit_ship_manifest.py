@@ -237,6 +237,10 @@ def main() -> int:
           "androidRemoveGuiHint" in prog_cmds
           and "return androidRemoveSelf(source);" in prog_cmds
           and "/progression android remove" in cmd_help)
+    check("prestige effects view command",
+          'm_82127_("effects")' in prog_cmds
+          and "prestigeEffects" in prog_cmds
+          and "/prestige effects" in cmd_help)
 
     print("\n--- § fabled removed ---")
     bridge_dir = SRC / "progression/bridge"
@@ -374,6 +378,19 @@ def main() -> int:
     check("rival declare vs challenge labels", "Declare invite" in cnpc_rival and "Challenge request" in cnpc_rival)
     check("rival CNPC TP toggle label", 'toggleOn("TP")' in cnpc_rival and "Teleport msgs" not in cnpc_rival)
     check("rival chest TP toggle label", '"&aTP ON"' in rival_chest and "TP Msg ON" not in rival_chest)
+    nemesis_mode = read(SRC / "rival/NemesisSpawnMode.java")
+    ultra_rival = read(SRC / "gui/ultra/UltraRivalScreens.java")
+    nemesis_mix = read(SRC / "mixin/dmzultra/DmzultraNemesisSpawnGateMixin.java")
+    mixins_json = read(MOD / "src/main/resources/legacymechanics.mixins.json")
+    check("rival nemesis toggle three states",
+          "AUTO" in nemesis_mode and "MANUAL" in nemesis_mode and "OFF" in nemesis_mode)
+    check("rival nemesis toggle menu action", '"nemesis_spawn_toggle"' in rival_api)
+    check("rival settings nemesis toggle button", '"do:nemesis_spawn_toggle"' in ultra_rival)
+    check("rival nemesis mixin registered",
+          "DmzultraNemesisSpawnGateMixin" in nemesis_mix
+          and '"dmzultra.DmzultraNemesisSpawnGateMixin"' in mixins_json)
+    check("rival nemesis mixin gates meet and spawn",
+          'method = "meet"' in nemesis_mix and 'method = "spawn"' in nemesis_mix)
     spar_chest = read(BUKKIT / "SparChestGui.java")
     cnpc_spar = read(SRC / "gui/cnpc/CnpcLmSparGui.java")
     check("spar chest TP toggle label", '"&aTP ON"' in spar_chest and "TP Msg ON" not in spar_chest)

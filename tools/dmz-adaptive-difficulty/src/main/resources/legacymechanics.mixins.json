@@ -28,6 +28,7 @@
     "noea.NoeaTravelSafetyCorpseFixMixin",
     "noea.HakaiDestroyerGateMixin",
     "noea.DestroyerStoryAssignMixin",
+    "dmzultra.DmzultraNemesisSpawnGateMixin",
     "FusionBonusReadGateMixin",
     "StrikeTechniqueReadGateMixin",
     "FusionUnfuseBonusClearMixin",

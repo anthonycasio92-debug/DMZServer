@@ -190,15 +190,18 @@ public final class CharacterServicesSystem {
         if (base <= 0L) {
             return 0L;
         }
+        long base100 = Math.max(1L, CharacterServicesConfig.get().raceCostCopper(100));
         boolean useLevel = CharacterServicesConfig.get().raceChange.levelCostMultiplier;
         if (!useLevel) {
-            return AncientCoinEconomy.normalizeCost(base);
+            // A steep configured ladder would otherwise flatten every high keep-% to the
+            // 128x Netherite coin cap. Compress against the configured 100% price so the
+            // charge scales with the selected percentage exactly as configured.
+            return AncientCoinEconomy.normalizeCost(compressRaceScaledUnderCap(base, base100));
         }
         long scaled = scaledCost(player, base, true);
         // Shared tier level mult can be thousands× at high DMZ. normalizeCost then hard-caps
         // at 128× Netherite, so every keep-% collapses to the same charge. Compress against
         // the scaled 100% price so the preservation ladder stays distinct under the cap.
-        long base100 = Math.max(1L, CharacterServicesConfig.get().raceCostCopper(100));
         long scaled100 = scaledCost(player, base100, true);
         scaled = compressRaceScaledUnderCap(scaled, scaled100);
         return AncientCoinEconomy.normalizeCost(scaled);

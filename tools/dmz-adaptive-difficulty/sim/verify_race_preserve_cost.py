@@ -148,8 +148,34 @@ def main() -> int:
     for p in steps:
         print(f"  {p}% -> {endgame[p]} (endgame) / {mid[p]} (mid)")
 
+    # levelCostMultiplier=false: a steep configured ladder must also stay distinct.
+    # Without the compressRaceScaledUnderCap call on this branch, every high keep-%
+    # flattens to the coin cap — the same collapse the level path had before 4.6.207.
+    def race_cost_flat_config(base: int, base100: int) -> int:
+        return normalize_cost(compress_race_scaled_under_cap(base, base100))
+
+    steep = {p: p * 1_000_000 for p in steps}  # 10% -> 10M … 100% -> 100M
+    steep100 = 100_000_000
+    collapsed = {p: normalize_cost(steep[p]) for p in steps}
+    # 10M is still payable; every step from 20% up flattens to the 12.8M cap.
+    if len(set(collapsed.values())) >= len(collapsed) or collapsed[20] != CAP:
+        print(f"FAIL: expected a steep no-level ladder to flatten at the cap, got {collapsed}")
+        return 1
+    print("\n=== STEEP CONFIG LADDER, levelCostMultiplier=false ===")
+    flat_fixed = {p: race_cost_flat_config(steep[p], steep100) for p in steps}
+    for p in steps:
+        print(f"  {p}% -> {flat_fixed[p]}")
+    fixed_order = [flat_fixed[p] for p in steps]
+    if not all(a < b for a, b in zip(fixed_order, fixed_order[1:])):
+        print(f"FAIL: no-level ladder must strictly increase with the keep-%: {flat_fixed}")
+        return 1
+    if flat_fixed[100] != CAP:
+        print(f"FAIL: no-level 100% should sit at cap {CAP}, got {flat_fixed[100]}")
+        return 1
+
     print("\nPASS: 25/50/75/100% charge differently under high level mult")
     print("PASS: live config ladder distinct for every step (endgame + mid mult)")
+    print("PASS: steep no-level ladder stays proportional under the coin cap")
     return 0
 
 

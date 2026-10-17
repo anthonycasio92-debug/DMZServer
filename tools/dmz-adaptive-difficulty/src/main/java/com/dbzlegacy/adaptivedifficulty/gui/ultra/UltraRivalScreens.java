@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.gui.ultra;
 
 import com.dbzlegacy.adaptivedifficulty.gui.RivalGuiApi;
+import com.dbzlegacy.adaptivedifficulty.rival.NemesisSpawnMode;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import java.util.ArrayList;
 import java.util.List;
@@ -551,10 +552,12 @@ public final class UltraRivalScreens {
         Map<String, String> ph = RivalGuiApi.placeholders(player);
         boolean tpOn = "true".equalsIgnoreCase(ph.getOrDefault("tpMsg", ph.getOrDefault("tp_msg", "false")));
         boolean instinctOn = "true".equalsIgnoreCase(ph.getOrDefault("instinct", "false"));
+        int nemesis = NemesisSpawnMode.mode(player);
         UltraScreenSpec spec = sub("settings")
-                .line(UltraStyle.LABEL + "Rival chat and instinct toggles.")
+                .line(UltraStyle.LABEL + "Rival chat, instinct, and nemesis toggles.")
                 .labelValue("TP chat", tpOn ? "ON" : "OFF")
                 .labelValue("Instinct", instinctOn ? "ON" : "OFF")
+                .labelValue("Nemesis spawn", NemesisSpawnMode.stateName(nemesis))
                 .buttonsAfterLines();
         spec.buttonLeft(
                         "do:tpmsg:toggle",
@@ -566,6 +569,20 @@ public final class UltraRivalScreens {
                                 ? UltraStyle.confirm("Instinct - ON")
                                 : UltraStyle.dim("Instinct - OFF"),
                         instinctOn ? UltraStyle.STYLE_CONFIRM : UltraStyle.STYLE_DIM)
+                .rowGap();
+        // Three-state nemesis spawn policy: ON (gold/active) -> manual -> OFF (dim).
+        spec.button(
+                        "do:nemesis_spawn_toggle",
+                        nemesis == NemesisSpawnMode.AUTO
+                                ? UltraStyle.confirm("Nemesis - ON")
+                                : nemesis == NemesisSpawnMode.MANUAL
+                                        ? UltraStyle.LABEL + "Nemesis - manual"
+                                        : UltraStyle.dim("Nemesis - OFF"),
+                        nemesis == NemesisSpawnMode.AUTO
+                                ? UltraStyle.STYLE_CONFIRM
+                                : nemesis == NemesisSpawnMode.MANUAL
+                                        ? UltraStyle.STYLE_NORMAL
+                                        : UltraStyle.STYLE_DIM)
                 .rowGap();
         spec.footerBackHome("Rival Home");
         spec.send(player);

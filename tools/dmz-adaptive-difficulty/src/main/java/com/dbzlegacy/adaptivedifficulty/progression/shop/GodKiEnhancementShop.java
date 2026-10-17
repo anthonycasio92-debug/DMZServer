@@ -3,6 +3,7 @@ package com.dbzlegacy.adaptivedifficulty.progression.shop;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.gui.GuiClickConfirm;
+import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraStyle;
 import com.dbzlegacy.adaptivedifficulty.progression.DmzSkillUtil;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionData;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
@@ -163,21 +164,23 @@ public final class GodKiEnhancementShop {
     /** Buy the next investment — double-click confirm, menu-inline feedback. */
     public static String buy(ServerPlayer player) {
         if (player == null) {
-            return "§cPlayers only.";
+            return UltraStyle.dangerLine("Players only.");
         }
         int have = invested(player);
         if (have >= MAX_INVESTMENTS) {
-            return "§eGod Ki Enhancement is fully invested (§f" + have + "/"
-                    + MAX_INVESTMENTS + "§e).";
+            return UltraStyle.noticeLine(
+                    "God Ki Enhancement is fully invested (" + have + "/" + MAX_INVESTMENTS + ").");
         }
         int points = PrestigePointsSystem.getPoints(player);
         if (points < INVESTMENT_COST) {
-            return "§cNeed §e" + INVESTMENT_COST + " §cfavor (have §e" + points + "§c).";
+            return UltraStyle.dangerLine(
+                    "Need " + INVESTMENT_COST + " favor (have " + points + ").");
         }
         if (!GuiClickConfirm.confirmed(player.m_20148_(), "godki-enh:" + have)) {
-            return "§eInvest §6" + INVESTMENT_COST + " §efavor in God Ki Enhancement §7(+"
-                    + DmzRewards.formatWhole(MASTERY_PER_POINT) + " mastery, §f" + (have + 1)
-                    + "/" + MAX_INVESTMENTS + "§e)§e? Click again within 10 seconds.";
+            return UltraStyle.noticeLine(
+                    "Invest " + INVESTMENT_COST + " favor in God Ki Enhancement (+"
+                            + DmzRewards.formatWhole(MASTERY_PER_POINT) + " mastery, " + (have + 1)
+                            + "/" + MAX_INVESTMENTS + ")? Click again within 10 seconds.");
         }
         int next = have + 1;
         ProgressionData.storedPut(player, KEY_INVESTED, next);
@@ -189,12 +192,17 @@ public final class GodKiEnhancementShop {
                 "mastery", (long) now,
                 "points", PrestigePointsSystem.getPoints(player)
         ));
-        return "§aGod Ki Enhancement invested §f" + next + "/" + MAX_INVESTMENTS
-                + " §7(§e-" + INVESTMENT_COST + " §7favor)"
-                + "\n§7God Ki mastery: §f" + DmzRewards.formatWhole((long) now)
-                + " §8(+" + DmzRewards.formatWhole(MASTERY_PER_POINT) + " per point)"
-                + (next == 1 ? "\n§aGod forms are usable now." : "")
-                + "\n§7Favor left: §e" + PrestigePointsSystem.getPoints(player);
+        return UltraStyle.color(
+                        "a",
+                        "God Ki Enhancement invested " + next + "/" + MAX_INVESTMENTS
+                                + " (-" + INVESTMENT_COST + " favor)")
+                + "\n"
+                + UltraStyle.dim(
+                        "God Ki mastery: " + DmzRewards.formatWhole((long) now)
+                                + " (+" + DmzRewards.formatWhole(MASTERY_PER_POINT) + " per point)")
+                + (next == 1 ? "\n" + UltraStyle.color("a", "God forms are usable now.") : "")
+                + "\n"
+                + UltraStyle.dim("Favor left: " + PrestigePointsSystem.getPoints(player));
     }
 
     /**

@@ -350,6 +350,7 @@ public final class LmCommandHelp {
                         LmStaffHelp.cmd("/prestige buy skill <skill>", "buy a passive skill level"),
                         LmStaffHelp.cmd("/prestige buy tier <1-7>", "buy a difficulty tier unlock")),
                 new LmStaffHelp.Section("Effects",
+                        LmStaffHelp.cmd("/prestige effects", "view your current shop effects"),
                         LmStaffHelp.cmd("/prestige buy majin", "buy Majin absorption"),
                         LmStaffHelp.cmd("/prestige buy mutant", "buy mutant upgrade"),
                         LmStaffHelp.cmd("/prestige buy godki", "buy God Ki enhancement"),

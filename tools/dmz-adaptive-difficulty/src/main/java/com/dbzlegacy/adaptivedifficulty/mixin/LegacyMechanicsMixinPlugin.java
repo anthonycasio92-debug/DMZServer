@@ -53,6 +53,9 @@ public final class LegacyMechanicsMixinPlugin implements IMixinConfigPlugin {
         if (mixinClassName != null && mixinClassName.endsWith("DestroyerStoryAssignMixin")) {
             return destroyerRoleServicePresent();
         }
+        if (mixinClassName != null && mixinClassName.endsWith("DmzultraNemesisSpawnGateMixin")) {
+            return dedicatedServer() && dmzultraRivalPresent();
+        }
         return dedicatedServer();
     }
 
@@ -119,6 +122,23 @@ public final class LegacyMechanicsMixinPlugin implements IMixinConfigPlugin {
         try {
             Class.forName(
                     "com.butterjaffa.noeabosses.sense.SenseNetwork",
+                    false,
+                    LegacyMechanicsMixinPlugin.class.getClassLoader());
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    /**
+     * dmzultra rival journal — the nemesis gate mixin targets
+     * {@code com.dmzultra.journal.Rival}. Absent on a server that does not run dmzultra.
+     * Looked up without initializing so the mixin config does not load the target early.
+     */
+    private static boolean dmzultraRivalPresent() {
+        try {
+            Class.forName(
+                    "com.dmzultra.journal.Rival",
                     false,
                     LegacyMechanicsMixinPlugin.class.getClassLoader());
             return true;

@@ -1,6 +1,22 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.212**.
+What changed from **4.5.147** through **4.6.213**.
+
+## Rival nemesis spawns can be turned down or off
+
+Rival → Settings has a third toggle: Nemesis spawn. ON is today's behavior (gold when active). Click once for MANUAL — only the nemesis fights you start from the journal can bring one, and the wandering tick visits never do. Click again for OFF — no nemesis ever spawns for you and existing visit triggers are suppressed. The choice is saved per character, the page always shows which state you are in, and nothing spams chat. On a server without dmzultra nothing changes.
+
+## Race keep-% charges follow the configured ladder
+
+Race change prices scale with the keep-% you pick, priced from the configured ladder and compressed proportionally under the Ancient Coin cap. This release closes the last gap: a server that turns off `levelCostMultiplier` and configures a steep ladder would still have flattened every high keep-% back to the coin cap; the compression now covers both paths, and a build-time check proves every keep-% charges a distinct amount. (Players who saw every keep-% charge the same capped amount were on the old process — one server restart loads the fix.)
+
+## The config editor fills the panel
+
+KaiPath 1.3.29 ignores the `fillScreen` request, which stranded the config editor on a 426×240 canvas on the left of the screen. The editor now ships its layout natively at 1920×1080 — coordinates, widths, heights, and text metrics are emitted at 4.5× while the panel request stays as before — so fullscreen clients get the same full-panel layout that honoring clients always produced.
+
+## /prestige effects shows what you own
+
+`/prestige effects` lists your current Prestige shop effects in chat: Majin absorption, mutant upgrade, God Ki Enhancement investments and mastery, and your favor balance. View only — buying stays on `/prestige buy ...`.
 
 ## The /lm command tree is cleaned up, and every menu purchase has a command
 

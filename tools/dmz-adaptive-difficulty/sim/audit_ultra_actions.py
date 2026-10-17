@@ -67,6 +67,7 @@ KNOWN_DO: dict[str, set[str]] = {
     "rival": {
         "tpmsg",
         "instinct",
+        "nemesis_spawn_toggle",
         "accept_replace",
         "cancel_mutual_replace",
         "admin",
