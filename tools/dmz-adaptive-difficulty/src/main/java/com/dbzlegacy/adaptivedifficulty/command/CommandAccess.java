@@ -10,8 +10,9 @@ import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Player-facing slash commands: {@code /lm}, {@code /diff}, {@code /difficulty},
- * {@code /rival}, {@code /spar}, {@code /skillcheck} (donators), and
- * {@code /progression android remove} (self only). Everything else is staff.
+ * {@code /rival}, {@code /spar}, {@code /progression}, {@code /prestige} (shop),
+ * {@code /character} (services), {@code /skillcheck} (donators), {@code /terminal}
+ * (donators), and {@code /progression android remove} (self only). Everything else is staff.
  */
 public final class CommandAccess {
     private CommandAccess() {}
@@ -68,12 +69,17 @@ public final class CommandAccess {
         return node == null || node.isBlank() ? "legacymechanics.skillcheck" : node;
     }
 
+    /**
+     * Bukkit labels that stay staff-only at the bridge because their Forge trees are
+     * staff-rooted. {@code prestige} and {@code character} are player-facing now (their
+     * Forge trees gate per-branch), so players reach them through the bridge.
+     */
     public static boolean isStaffOnlyBukkitCommand(String label) {
         if (label == null || label.isBlank()) {
             return false;
         }
         return switch (label.toLowerCase()) {
-            case "prestige", "skills", "character", "enddragon", "androidify", "padmin" -> true;
+            case "skills", "enddragon", "androidify", "padmin" -> true;
             default -> false;
         };
     }

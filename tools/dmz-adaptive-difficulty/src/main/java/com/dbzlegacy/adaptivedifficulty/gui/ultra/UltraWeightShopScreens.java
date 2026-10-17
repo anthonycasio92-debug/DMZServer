@@ -252,34 +252,88 @@ public final class UltraWeightShopScreens {
         if (parsed == null) {
             return UltraStyle.dangerLine("Confirm the weight type and value first.");
         }
-        WeightOffer offer = parsed.offer;
-        int value = parsed.value;
+        return purchase(player, parsed.offer, parsed.value, true);
+    }
+
+    /**
+     * {@code /spar weight buy <type> <value>} — same purchase path as the GUI confirm
+     * button; the outcome is returned as chat feedback instead of being stashed for the
+     * next screen.
+     */
+    public static String buyFromCommand(ServerPlayer player, String typeId, int value) {
+        WeightOffer offer = WeightOffer.fromId(typeId);
+        String bad = validateCommandOffer(offer, value);
+        if (bad != null) {
+            return bad;
+        }
+        return purchase(player, offer, value, false);
+    }
+
+    /** {@code /spar weight quote <type> <value>} — price check without opening a screen. */
+    public static String quoteFromCommand(ServerPlayer player, String typeId, int value) {
+        WeightOffer offer = WeightOffer.fromId(typeId);
+        String bad = validateCommandOffer(offer, value);
+        if (bad != null) {
+            return bad;
+        }
+        boolean free = PaidFeatureAccess.bypassAncientCoinCost(player);
+        String costText = free ? "Free (staff)" : AncientCoinEconomy.formatExactCost(value);
+        return UltraStyle.noticeLine(
+                offer.label
+                        + " - weight "
+                        + value
+                        + " - "
+                        + costText
+                        + ". Buy: /spar weight buy "
+                        + offer.id
+                        + " "
+                        + value);
+    }
+
+    private static String validateCommandOffer(WeightOffer offer, int value) {
+        if (offer == null) {
+            return UltraStyle.dangerLine(
+                    "Unknown weight type - try turtle_shell, workout_weights, or piccolo_cape.");
+        }
+        if (value < 1 || value > MAX_WEIGHT_VALUE) {
+            return UltraStyle.dangerLine("Type a whole number from 1 to " + MAX_WEIGHT_VALUE + ".");
+        }
+        return null;
+    }
+
+    private static String purchase(
+            ServerPlayer player, WeightOffer offer, int value, boolean openGui) {
         AncientCoinEconomy.migrateWalletToItems(player);
         long cost = value;
         boolean free = PaidFeatureAccess.bypassAncientCoinCost(player);
         long charge = free ? 0L : cost;
         if (charge > 0L && !AncientCoinEconomy.canAfford(player, charge)) {
-            // Stash before open so the confirm page shows the missing-funds line.
-            UltraGuiFeedback.deliver(
-                    player, UltraStyle.dangerLine(AncientCoinEconomy.missingText(player, charge)));
-            openConfirm(player, offer.id, value);
-            return "";
+            String missing = UltraStyle.dangerLine(AncientCoinEconomy.missingText(player, charge));
+            if (openGui) {
+                // Stash before open so the confirm page shows the missing-funds line.
+                UltraGuiFeedback.deliver(player, missing);
+                openConfirm(player, offer.id, value);
+                return "";
+            }
+            return missing;
         }
         ItemStack stack = ItemIds.stack(offer.itemId, 1);
         if (stack == null || stack.m_41619_()) {
             return UltraStyle.dangerLine("That weight item is not available on this server.");
         }
         if (charge > 0L && !AncientCoinEconomy.charge(player, charge)) {
-            UltraGuiFeedback.deliver(
-                    player, UltraStyle.dangerLine(AncientCoinEconomy.missingText(player, charge)));
-            openConfirm(player, offer.id, value);
-            return "";
+            String missing = UltraStyle.dangerLine(AncientCoinEconomy.missingText(player, charge));
+            if (openGui) {
+                UltraGuiFeedback.deliver(player, missing);
+                openConfirm(player, offer.id, value);
+                return "";
+            }
+            return missing;
         }
         applyWeightValue(stack, value);
         String destination = giveWeightItem(player, stack);
         String costText = free ? "Free (staff)" : AncientCoinEconomy.formatExactCost(cost);
-        UltraGuiFeedback.deliver(
-                player,
+        String notice =
                 UltraStyle.noticeLine(
                         "Bought "
                                 + offer.label
@@ -289,9 +343,13 @@ public final class UltraWeightShopScreens {
                                 + costText
                                 + " - "
                                 + destination
-                                + "."));
-        openShop(player);
-        return "";
+                                + ".");
+        if (openGui) {
+            UltraGuiFeedback.deliver(player, notice);
+            openShop(player);
+            return "";
+        }
+        return notice;
     }
 
     /**

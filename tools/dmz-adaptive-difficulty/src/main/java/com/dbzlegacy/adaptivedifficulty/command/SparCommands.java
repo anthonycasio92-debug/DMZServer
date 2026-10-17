@@ -6,8 +6,10 @@ import com.dbzlegacy.adaptivedifficulty.rival.RivalSystem;
 import com.dbzlegacy.adaptivedifficulty.sparring.SparStore;
 import com.dbzlegacy.adaptivedifficulty.sparring.SparringSystem;
 import com.dbzlegacy.adaptivedifficulty.gui.SparGuiApi;
+import com.dbzlegacy.adaptivedifficulty.gui.ultra.UltraWeightShopScreens;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.commands.CommandSourceStack;
@@ -90,10 +92,7 @@ public final class SparCommands {
                         .executes(ctx -> mentorStatus(ctx.getSource()))
                         .then(Commands.m_82127_("accept").executes(ctx -> mentorAccept(ctx.getSource())))
                         .then(Commands.m_82127_("decline").executes(ctx -> mentorDecline(ctx.getSource())))
-                        .then(Commands.m_82127_("deny").executes(ctx -> mentorDecline(ctx.getSource())))
                         .then(Commands.m_82127_("leave").executes(ctx -> mentorRemove(ctx.getSource())))
-                        .then(Commands.m_82127_("remove").executes(ctx -> mentorRemove(ctx.getSource())))
-                        .then(Commands.m_82127_("clear").executes(ctx -> mentorRemove(ctx.getSource())))
                         .then(LmCommandSuggestions.playerWord("player")
                                 .executes(ctx -> mentorInvite(
                                         ctx.getSource(),
@@ -106,22 +105,26 @@ public final class SparCommands {
                                         .executes(ctx -> apprenticeRemove(
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "player")))))
-                        .then(Commands.m_82127_("release")
-                                .executes(ctx -> apprenticeRemove(ctx.getSource(), null))
-                                .then(LmCommandSuggestions.playerWord("player")
-                                        .executes(ctx -> apprenticeRemove(
-                                                ctx.getSource(),
-                                                StringArgumentType.getString(ctx, "player")))))
-                        .then(Commands.m_82127_("clear")
-                                .executes(ctx -> apprenticeRemove(ctx.getSource(), null))
-                                .then(LmCommandSuggestions.playerWord("player")
-                                        .executes(ctx -> apprenticeRemove(
-                                                ctx.getSource(),
-                                                StringArgumentType.getString(ctx, "player")))))
                         .then(LmCommandSuggestions.playerWord("player")
                                 .executes(ctx -> apprenticeInvite(
                                         ctx.getSource(),
                                         StringArgumentType.getString(ctx, "player")))))
+                .then(Commands.m_82127_("weight")
+                        .executes(ctx -> weightUsage(ctx.getSource()))
+                        .then(Commands.m_82127_("quote")
+                                .then(LmCommandSuggestions.word("type", LmCommandSuggestions.WEIGHT_TYPES)
+                                        .then(Commands.m_82129_("value", IntegerArgumentType.integer(1, UltraWeightShopScreens.MAX_WEIGHT_VALUE))
+                                                .executes(ctx -> weightQuote(
+                                                        ctx.getSource(),
+                                                        StringArgumentType.getString(ctx, "type"),
+                                                        IntegerArgumentType.getInteger(ctx, "value"))))))
+                        .then(Commands.m_82127_("buy")
+                                .then(LmCommandSuggestions.word("type", LmCommandSuggestions.WEIGHT_TYPES)
+                                        .then(Commands.m_82129_("value", IntegerArgumentType.integer(1, UltraWeightShopScreens.MAX_WEIGHT_VALUE))
+                                                .executes(ctx -> weightBuy(
+                                                        ctx.getSource(),
+                                                        StringArgumentType.getString(ctx, "type"),
+                                                        IntegerArgumentType.getInteger(ctx, "value")))))))
                 .then(CommandAccess.staffLiteral("admin")
                         .executes(ctx -> sparAdminHelp(ctx.getSource()))
                         .then(Commands.m_82127_("help").executes(ctx -> sparAdminHelp(ctx.getSource())))
@@ -139,9 +142,37 @@ public final class SparCommands {
         AdaptiveDifficultyMod.LOGGER.info("[{}] registered /spar", AdaptiveDifficultyMod.MOD_ID);
     }
 
-    /** Op level 2 or configured admin permission (Mohist Bukkit node). */
-    private static boolean staff(CommandSourceStack src) {
-        return StaffAccess.isStaffSource(src);
+    private static int weightUsage(CommandSourceStack source) {
+        ServerPlayer player = playerOrNull(source);
+        if (player == null || !enabled(player)) {
+            return 0;
+        }
+        DmzRewards.msg(player, "§7Training weights — §f1 ancient copper §7per weight value.");
+        DmzRewards.msg(player, "§7Price check: §f/spar weight quote <type> <value>");
+        DmzRewards.msg(player, "§7Buy: §f/spar weight buy <type> <value>");
+        DmzRewards.msg(player, "§8Types: turtle_shell, workout_weights, piccolo_cape");
+        return 0;
+    }
+
+    private static int weightQuote(CommandSourceStack source, String type, int value) {
+        ServerPlayer player = playerOrNull(source);
+        if (player == null || !enabled(player)) {
+            return 0;
+        }
+        DmzRewards.msg(player, UltraWeightShopScreens.quoteFromCommand(player, type, value));
+        return 1;
+    }
+
+    private static int weightBuy(CommandSourceStack source, String type, int value) {
+        ServerPlayer player = playerOrNull(source);
+        if (player == null || !enabled(player)) {
+            return 0;
+        }
+        String msg = UltraWeightShopScreens.buyFromCommand(player, type, value);
+        if (msg != null && !msg.isBlank()) {
+            DmzRewards.msg(player, msg);
+        }
+        return 1;
     }
 
     private static int gui(CommandSourceStack source, String page) {

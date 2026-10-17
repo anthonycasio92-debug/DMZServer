@@ -34,9 +34,6 @@ public final class PrestigeAdminCommandTree {
                                         StringArgumentType.getString(ctx, "player")))))
                 .then(Commands.m_82127_("skill")
                         .then(LmCommandSuggestions.playerWord("player")
-                                .executes(ctx -> ProgressionCommands.prestigeAdminListSkills(
-                                        ctx.getSource(),
-                                        StringArgumentType.getString(ctx, "player")))
                                 .then(Commands.m_82129_("skillId", StringArgumentType.word())
                                         .then(LmCommandSuggestions.word("mode", LmCommandSuggestions.PRESTIGE_ADJUST_MODES)
                                                 .then(Commands.m_82129_("levels", IntegerArgumentType.integer())

@@ -1,5 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.command;
 
+import com.dbzlegacy.adaptivedifficulty.character.CharacterServicesConfig;
+import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
@@ -386,10 +388,6 @@ public final class LmCommandSuggestions {
             "on", "off", "status", "flush", "toggle"
     );
 
-    public static final SuggestionProvider<CommandSourceStack> TOGGLE_MODES = literals(
-            "on", "off", "toggle", "status", "enable", "disable"
-    );
-
     public static final SuggestionProvider<CommandSourceStack> VANILLA_DIFFICULTY = literals(
             "peaceful", "easy", "normal", "hard"
     );
@@ -420,6 +418,53 @@ public final class LmCommandSuggestions {
             "enableSystemTelemetry", "prestigeMultiplier", "levelMultiplier", "rewardScaling",
             "guibackend"
     );
+
+    public static final SuggestionProvider<CommandSourceStack> PRESTIGE_TURNIN_AMOUNTS = literals(
+            "1", "2", "3", "6", "9"
+    );
+
+    public static final SuggestionProvider<CommandSourceStack> PRESTIGE_TIERS = literals(
+            "1", "2", "3", "4", "5", "6", "7"
+    );
+
+    public static final SuggestionProvider<CommandSourceStack> PRESTIGE_EFFECTS_BUY = literals(
+            "majin", "mutant", "godki"
+    );
+
+    public static final SuggestionProvider<CommandSourceStack> PRESTIGE_EFFECTS_REMOVE = literals(
+            "majin", "mutant"
+    );
+
+    /** Prestige shop skill ids — live from the offer catalog so new skills appear automatically. */
+    public static final SuggestionProvider<CommandSourceStack> PRESTIGE_SKILLS =
+            (ctx, builder) -> {
+                List<String> ids = new ArrayList<>();
+                for (PrestigePointsSystem.SkillOffer offer : PrestigePointsSystem.skillOffers()) {
+                    ids.add(offer.id());
+                }
+                return SharedSuggestionProvider.m_82970_(ids, builder);
+            };
+
+    public static final SuggestionProvider<CommandSourceStack> WEIGHT_TYPES = literals(
+            "turtle_shell", "workout_weights", "piccolo_cape"
+    );
+
+    public static final SuggestionProvider<CommandSourceStack> CHARACTER_ACTIONS = literals(
+            "race_confirm", "class_confirm", "reskin_confirm",
+            "bone_unlock", "bone_equip", "bone_toggle", "bone_unequip",
+            "bone_preview", "bone_restore", "bone_race_default",
+            "bodypart_unlock", "bodypart_toggle", "bodypart_clear"
+    );
+
+    /** Accepted race-change keep percents, live from character-services config. */
+    public static final SuggestionProvider<CommandSourceStack> CHARACTER_KEEP_PCT =
+            (ctx, builder) -> {
+                List<String> steps = new ArrayList<>();
+                for (int step : CharacterServicesConfig.preservationSteps()) {
+                    steps.add(String.valueOf(step));
+                }
+                return SharedSuggestionProvider.m_82970_(steps, builder);
+            };
 
     public static SuggestionProvider<CommandSourceStack> literals(String... values) {
         List<String> list = Arrays.asList(values);

@@ -34,12 +34,43 @@ public final class ProgressionCommands {
     public void onRegister(RegisterCommandsEvent event) {
         event.getDispatcher().register(build("progression"));
 
-        // Prestige GUI backend — staff only; players use /lm → Prestige. Admin: /padmin.
+        // Prestige — player shop with parity for Prestige → Shop → Exchange/skills/tiers
+        // Effects (majin/mutant/godki) in the Ultra GUI, plus the staff menu backend.
+        // Admin wallet edits stay on /padmin.
         event.getDispatcher().register(Commands.m_82127_("prestige")
-                .requires(StaffAccess::isStaffSource)
-                .executes(ctx -> prestigeGui(ctx.getSource(), "main"))
-                .then(Commands.m_82127_("help").executes(ctx -> prestigeMenuHelp(ctx.getSource())))
-                .then(Commands.m_82127_("do")
+                .requires(CommandAccess::isPlayerSlashUser)
+                .executes(ctx -> prestigeRoot(ctx.getSource()))
+                .then(Commands.m_82127_("help").executes(ctx -> prestigeHelp(ctx.getSource())))
+                .then(Commands.m_82127_("balance")
+                        .executes(ctx -> prestigeDo(ctx.getSource(), "balance", "")))
+                .then(Commands.m_82127_("turnin")
+                        .then(LmCommandSuggestions.word("amount", LmCommandSuggestions.PRESTIGE_TURNIN_AMOUNTS)
+                                .executes(ctx -> prestigeDo(
+                                        ctx.getSource(),
+                                        "turnin",
+                                        StringArgumentType.getString(ctx, "amount")))))
+                .then(Commands.m_82127_("buy")
+                        .then(Commands.m_82127_("skill")
+                                .then(LmCommandSuggestions.word("skill", LmCommandSuggestions.PRESTIGE_SKILLS)
+                                        .executes(ctx -> prestigeDo(
+                                                ctx.getSource(),
+                                                "skill",
+                                                StringArgumentType.getString(ctx, "skill")))))
+                        .then(Commands.m_82127_("tier")
+                                .then(LmCommandSuggestions.word("tier", LmCommandSuggestions.PRESTIGE_TIERS)
+                                        .executes(ctx -> prestigeDo(
+                                                ctx.getSource(),
+                                                "tier",
+                                                StringArgumentType.getString(ctx, "tier")))))
+                        .then(Commands.m_82127_("majin").executes(ctx -> prestigeDo(ctx.getSource(), "majin", "")))
+                        .then(Commands.m_82127_("mutant").executes(ctx -> prestigeDo(ctx.getSource(), "mutant", "")))
+                        .then(Commands.m_82127_("godki").executes(ctx -> prestigeDo(ctx.getSource(), "godki", ""))))
+                .then(Commands.m_82127_("remove")
+                        .then(Commands.m_82127_("majin").executes(ctx -> prestigeDo(ctx.getSource(), "unmajin", "")))
+                        .then(Commands.m_82127_("mutant").executes(ctx -> prestigeDo(ctx.getSource(), "unmutant", ""))))
+                .then(CommandAccess.staffLiteral("menu")
+                        .executes(ctx -> prestigeGui(ctx.getSource(), "main")))
+                .then(CommandAccess.staffLiteral("do")
                         .then(Commands.m_82127_("confirm")
                                 .executes(ctx -> prestigeConfirm(ctx.getSource(), "main"))
                                 .then(Commands.m_82129_("page", StringArgumentType.word())
@@ -161,12 +192,33 @@ public final class ProgressionCommands {
         return 1;
     }
 
-    private static int prestigeMenuHelp(CommandSourceStack source) {
-        if (StaffAccess.denyUnlessStaff(source) == 0) {
+    private static int prestigeRoot(CommandSourceStack source) {
+        ServerPlayer p = playerOrNull(source);
+        if (p == null) {
             return 0;
         }
-        LmCommandFeedback.tellLines(source, LmCommandHelp.prestigeMenuStaff());
+        if (StaffAccess.isStaff(p)) {
+            return prestigeGui(source, "main");
+        }
+        return prestigeHelp(source);
+    }
+
+    private static int prestigeHelp(CommandSourceStack source) {
+        LmCommandFeedback.tellLines(source, LmCommandHelp.prestigePlayer());
         return 1;
+    }
+
+    private static int prestigeDo(CommandSourceStack source, String action, String arg) {
+        ServerPlayer p = playerOrNull(source);
+        if (p == null) {
+            source.m_288197_(() -> Component.m_237113_(LmCommandMessages.NEED_IN_GAME), false);
+            return 0;
+        }
+        String msg = ProgressionGuiApi.handlePrestigeDo(p, action, arg, "");
+        if (msg != null && !msg.isBlank()) {
+            reply(source, p, msg);
+        }
+        return msg != null && msg.startsWith("§c") ? 0 : 1;
     }
 
     private static int skillsHelp(CommandSourceStack source) {
@@ -188,16 +240,6 @@ public final class ProgressionCommands {
         }
         LmCommandFeedback.tellLines(source, LmCommandHelp.androidifyStaff());
         return 1;
-    }
-
-    static int prestigeAdminViaApi(CommandSourceStack source, String rawArgs) {
-        if (StaffAccess.denyUnlessStaff(source) == 0) {
-            return 0;
-        }
-        ServerPlayer actor = playerOrNull(source);
-        String msg = ProgressionGuiApi.handlePrestigeAdmin(actor, rawArgs);
-        reply(source, actor, msg);
-        return msg != null && msg.startsWith("§c") ? 0 : 1;
     }
 
     static int prestigeAdminInfo(CommandSourceStack source, String playerName) {
@@ -427,7 +469,6 @@ public final class ProgressionCommands {
                         .requires(ProgressionCommands::staff)
                         .executes(ctx -> boostStatus(ctx.getSource()))
                         .then(Commands.m_82127_("status").executes(ctx -> boostStatus(ctx.getSource())))
-                        .then(Commands.m_82127_("help").executes(ctx -> boostStatus(ctx.getSource())))
                         .then(Commands.m_82127_("start")
                                 .requires(ProgressionCommands::staff)
                                 .then(Commands.m_82129_("encoded", IntegerArgumentType.integer(1))
@@ -599,6 +640,9 @@ public final class ProgressionCommands {
     }
 
     private static int androidSelf(CommandSourceStack source) {
+        if (StaffAccess.denyUnlessStaff(source) == 0) {
+            return 0;
+        }
         ServerPlayer player = playerOrNull(source);
         if (player == null) {
             source.m_288197_(() -> Component.m_237113_(LmCommandMessages.NEED_IN_GAME), false);
@@ -609,6 +653,9 @@ public final class ProgressionCommands {
     }
 
     private static int androidPlayer(CommandSourceStack source, String name) {
+        if (StaffAccess.denyUnlessStaff(source) == 0) {
+            return 0;
+        }
         ServerPlayer target = resolve(source, name);
         if (target == null) {
             source.m_288197_(() -> Component.m_237113_(LmCommandMessages.playerNotFound(name)), false);

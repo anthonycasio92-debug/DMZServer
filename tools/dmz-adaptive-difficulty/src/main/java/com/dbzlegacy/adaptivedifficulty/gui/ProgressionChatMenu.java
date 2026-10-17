@@ -45,26 +45,26 @@ public final class ProgressionChatMenu {
         send(player, Component.m_237113_("§7Spar to raise Potential Unlock."));
         send(player, Component.m_237113_(""));
         send(player, Component.m_237113_("§7")
-                .m_7220_(btn("§e[Skills]", "/prog do page skills", "Passive skill unlocks"))
+                .m_7220_(btn("§e[Skills]", "/progression do page skills", "Passive skill unlocks"))
                 .m_7220_(Component.m_237113_(" "))
-                .m_7220_(btn("§6[TP]", "/prog do page tp", "TP gains"))
+                .m_7220_(btn("§6[TP]", "/progression do page tp", "TP gains"))
                 .m_7220_(Component.m_237113_(" "))
-                .m_7220_(btn("§b[Race]", "/prog do page race", "Race & form"))
+                .m_7220_(btn("§b[Race]", "/progression do page race", "Race & form"))
                 .m_7220_(Component.m_237113_(" "))
-                .m_7220_(btn("§c[Combat]", "/prog do page combat", "Combat ports")));
+                .m_7220_(btn("§c[Combat]", "/progression do page combat", "Combat ports")));
         send(player, Component.m_237113_("§7")
-                .m_7220_(btn("§5[End]", "/prog do page end", "End dimension"))
+                .m_7220_(btn("§5[End]", "/progression do page end", "End dimension"))
                 .m_7220_(Component.m_237113_(" "))
-                .m_7220_(btn("§a[Shop]", "/prog do page shop", "Prestige & skills"))
+                .m_7220_(btn("§a[Shop]", "/progression do page shop", "Prestige & skills"))
                 .m_7220_(Component.m_237113_(" "))
-                .m_7220_(btn("§7[Utility]", "/prog do page utility", "Utility"))
+                .m_7220_(btn("§7[Utility]", "/progression do page utility", "Utility"))
                 .m_7220_(Component.m_237113_(" "))
-                .m_7220_(btn("§f[Help]", "/prog do page help", "Commands")));
+                .m_7220_(btn("§f[Help]", "/progression do page help", "Commands")));
         if (StaffAccess.isStaff(player)) {
             send(player, Component.m_237113_("§7")
-                    .m_7220_(btn("§6[Ancient Coins]", "/prog do page economy", "Staff free coin costs (all LM paid features)"))
+                    .m_7220_(btn("§6[Ancient Coins]", "/progression do page economy", "Staff free coin costs (all LM paid features)"))
                     .m_7220_(Component.m_237113_("  "))
-                    .m_7220_(btn("§e[All flags]", "/prog do page flags", "Toggle every progression module")));
+                    .m_7220_(btn("§e[All flags]", "/progression do page flags", "Toggle every progression module")));
         }
     }
 
@@ -94,7 +94,7 @@ public final class ProgressionChatMenu {
                     .m_7220_(btn("§f[Open Skills]", "/skills", "Skills GUI")));
         }
         appendFlagToggles(player, page);
-        send(player, btn("§7« Back", "/prog do page main", "Go up one level"));
+        send(player, btn("§7« Back", "/progression do page main", "Go up one level"));
     }
 
     private static void flagsBoard(ServerPlayer player) {
@@ -105,7 +105,7 @@ public final class ProgressionChatMenu {
         }
         send(player, Component.m_237113_(""));
         appendFlagToggles(player, "flags");
-        send(player, btn("§7« Back", "/prog do page main", "Go up one level"));
+        send(player, btn("§7« Back", "/progression do page main", "Go up one level"));
     }
 
     private static void appendFlagToggles(ServerPlayer player, String page) {
@@ -132,7 +132,7 @@ public final class ProgressionChatMenu {
             boolean on = "true".equalsIgnoreCase(ph.getOrDefault("flag_" + key, "false"));
             String title = ProgressionModuleCatalog.displayTitle(key);
             String label = (on ? "§c[OFF " : "§a[ON ") + title + "§7]";
-            String cmd = "/prog do flag " + key + " " + page;
+            String cmd = "/progression do flag " + key + " " + page;
             if (col > 0 && col % 2 == 0) {
                 send(player, row);
                 row = Component.m_237113_("§7");
@@ -147,7 +147,7 @@ public final class ProgressionChatMenu {
             send(player, row);
         }
         if (!"flags".equals(page) && keys.length > 0) {
-            send(player, btn("§8[Module sources]", "/prog do module_doc " + page, "Config + Java paths for this section"));
+            send(player, btn("§8[Module sources]", "/progression do module_doc " + page, "Config + Java paths for this section"));
         }
     }
 
@@ -165,9 +165,9 @@ public final class ProgressionChatMenu {
                 on
                         ? UltraStyle.YELLOW + "[Staff free costs ON]"
                         : UltraStyle.dim("[Staff free costs OFF]"),
-                "/prog do toggle_staff_free_coins " + (on ? "off" : "on") + " economy",
+                "/progression do toggle_staff_free_coins " + (on ? "off" : "on") + " economy",
                 "Applies to all LM Ancient Coin charges"));
-        send(player, btn("§7« Back", "/prog do page main", "Go up one level"));
+        send(player, btn("§7« Back", "/progression do page main", "Go up one level"));
     }
 
     private static MutableComponent btn(String label, String command, String hover) {

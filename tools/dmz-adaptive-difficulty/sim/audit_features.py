@@ -939,9 +939,12 @@ def main() -> int:
     check("PrestigeSystem.open no staff gate",
           "Staff only" not in prestige_sys.split("public static void open")[1].split("public static void confirmOrPrompt")[0]
           if "public static void open" in prestige_sys else False)
-    check("Forge /prestige slash staff-only",
-          '.requires(StaffAccess::isStaffSource)' in prog_cmds.split('m_82127_("prestige")')[1].split('m_82127_("skills")')[0]
-          if 'm_82127_("prestige")' in prog_cmds else False)
+    prestige_reg = (prog_cmds.split('m_82127_("prestige")')[1].split('m_82127_("skills")')[0]
+                    if 'm_82127_("prestige")' in prog_cmds and 'm_82127_("skills")' in prog_cmds else "")
+    check("Forge /prestige player shop, staff backend gated",
+          ".requires(CommandAccess::isPlayerSlashUser)" in prestige_reg
+          and 'CommandAccess.staffLiteral("do")' in prestige_reg
+          and 'CommandAccess.staffLiteral("menu")' in prestige_reg)
     check("Prestige chat uses Forge /prestige do confirm",
           "/prestige do confirm" in prestige_sys and "/lmdo prestige confirm" not in prestige_sys)
     check("Hub Prestige for everyone",
@@ -2600,9 +2603,11 @@ def main() -> int:
     test_hub = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/cnpc/CnpcStyledTestHub.java")
     # Staff testgui stays server-side. Ultra may open via KaiPath packets when
     # guiBackend=ultra; CNPC hub remains the no-KaiPath / cnpc-backend path.
+    # Staff testgui/guitest commands retired in the 4.6.212 tree cleanup; the server-side
+    # test GUI class stays shipped. The 4.6.58 guard still holds: no native test gui flag,
+    # no client bootstrap, no client classes.
     check("staff test gui stays server-side",
-          "CnpcStaffTestGui.open" in native_cmd
-          and "useNativeTestGui" not in native_cmd
+          "useNativeTestGui" not in native_cmd
           and "useNativeTestGui" not in native_cfg
           and "LmClientBootstrap" not in native_mod
           and "LmGuiNetwork.register" in native_mod

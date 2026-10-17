@@ -108,11 +108,11 @@ public final class MohistCommandBridge {
             registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
                     "progression", List.of(), null);
             registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
-                    "prestige", List.of(), staffPerm);
+                    "prestige", List.of(), null);
             registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
                     "skills", List.of(), staffPerm);
             registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
-                    "character", List.of(), staffPerm);
+                    "character", List.of(), null);
             registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
                     "enddragon", List.of(), staffPerm);
             registerOne(server, commandMap, pluginCommandClass, ctor, hostPlugin, executor, tabCompleterProxy,
@@ -243,15 +243,6 @@ public final class MohistCommandBridge {
     private static String bukkitSuggestionToken(String line, Suggestion s) {
         String text = s.getText();
         return text == null || text.isEmpty() ? null : text;
-    }
-
-    /** Lowercase prefix of the token Bukkit is completing (last arg). */
-    private static String partialLastArg(String[] args) {
-        if (args == null || args.length == 0) {
-            return "";
-        }
-        String last = args[args.length - 1];
-        return last == null ? "" : last;
     }
 
     private static CommandSourceStack commandSource(MinecraftServer server, Object sender) {

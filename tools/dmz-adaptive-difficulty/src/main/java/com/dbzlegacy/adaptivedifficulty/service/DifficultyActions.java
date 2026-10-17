@@ -257,11 +257,6 @@ public final class DifficultyActions {
             openGui(player, titlePage);
             return Result.ok("Title unequipped.");
         }
-        if ("up".equals(act) || "upgrade".equals(act) || "set_max".equals(act)
-                || "down".equals(act) || "set".equals(act)) {
-            openGui(player, page == null || page.isBlank() ? "tiers" : page);
-            return Result.fail("Difficulty points were removed — use Unlock Tiers instead.");
-        }
         if (ACT_CHARACTER_RESET.equals(act) || "char_reset".equals(act) || "characterreset".equals(act)) {
             return characterReset(player, page);
         }

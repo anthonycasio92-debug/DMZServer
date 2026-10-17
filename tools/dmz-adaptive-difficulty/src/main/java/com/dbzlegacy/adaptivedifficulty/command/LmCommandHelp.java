@@ -8,7 +8,7 @@ public final class LmCommandHelp {
         return LmStaffHelp.build(
                 "Legacy Mechanics",
                 "/lm",
-                "§7Your hub for CNPC menus—no chest GUIs. Type §f/lm help §7anytime.",
+                "§7Your hub for every Legacy Mechanics menu. Type §f/lm help §7anytime.",
                 new LmStaffHelp.Section("Menus",
                         LmStaffHelp.cmd("/lm", "open the main hub"),
                         LmStaffHelp.cmd("/lm open difficulty", "adaptive difficulty"),
@@ -16,8 +16,14 @@ public final class LmCommandHelp {
                         LmStaffHelp.cmd("/lm open spar", "sparring and dojo"),
                         LmStaffHelp.cmd("/lm open prestige", "prestige shop"),
                         LmStaffHelp.cmd("/lm open character", "race, class, reskin, and saga reset"),
-                        LmStaffHelp.cmd("/lm saga", "replay a loaded saga for Ancient Coins"),
+                        LmStaffHelp.cmd("/lm saga", "open saga resets"),
                         LmStaffHelp.cmd("/lm open skillcheck", "donator skill check (if permitted)")),
+                new LmStaffHelp.Section("Quick actions",
+                        LmStaffHelp.cmd("/character race <race> <keep%>", "change race, keeping % of stats"),
+                        LmStaffHelp.cmd("/character class <class>", "change class"),
+                        LmStaffHelp.cmd("/prestige balance", "favor, held shards, completed runs"),
+                        LmStaffHelp.cmd("/prestige buy majin|mutant|godki", "buy a shop effect"),
+                        LmStaffHelp.cmd("/spar weight buy <type> <value>", "buy training weights")),
                 new LmStaffHelp.Section("Staff",
                         LmStaffHelp.cmd("/lm admin help", "staff tools and player resets"),
                         LmStaffHelp.note("Shortcut: none — use /lm")));
@@ -27,7 +33,7 @@ public final class LmCommandHelp {
         return LmStaffHelp.build(
                 "Legacy Mechanics staff",
                 "/lm admin",
-                "§7Staff tools and player fixes. Type §f/lm admin help §7anytime—menus stay CNPC-only.",
+                "§7Staff tools and player fixes. Type §f/lm admin help §7anytime.",
                 new LmStaffHelp.Section("Config and data",
                         LmStaffHelp.cmd("/lm admin reload", "reload Legacy Mechanics config"),
                         LmStaffHelp.cmd("/lm admin config", "edit config files in a menu"),
@@ -63,11 +69,8 @@ public final class LmCommandHelp {
                         LmStaffHelp.cmd("/lm admin syslog on", "turn unified event log on"),
                         LmStaffHelp.cmd("/lm admin syslog off", "turn unified event log off"),
                         LmStaffHelp.cmd("/lm admin syslog flush", "flush logs to disk"),
-                        LmStaffHelp.cmd("/lm admin open <system>", "open a CNPC menu as yourself"),
                         LmStaffHelp.cmd("/lm admin inspect <player>", "view menus as that player"),
-                        LmStaffHelp.cmd("/lm admin inspect clear", "stop inspect mode"),
-                        LmStaffHelp.cmd("/lm admin testgui", "staff CNPC test hub"),
-                        LmStaffHelp.cmd("/lm admin guitest [player]", "Ultra packet ping (one-button menu)")),
+                        LmStaffHelp.cmd("/lm admin inspect clear", "stop inspect mode")),
                 new LmStaffHelp.Section("Related staff trees",
                         LmStaffHelp.cmd("/difficulty admin help", "adaptive difficulty staff commands"),
                         LmStaffHelp.cmd("/padmin help", "prestige shop staff commands"),
@@ -80,7 +83,7 @@ public final class LmCommandHelp {
                 "/difficulty",
                 "§7Open your difficulty menu here or from §f/lm§7. Staff: §f/difficulty admin help§7 · shortcut §f/diff",
                 new LmStaffHelp.Section("Menus",
-                        LmStaffHelp.cmd("/difficulty", "open your difficulty menu (CNPC)"),
+                        LmStaffHelp.cmd("/difficulty", "open your difficulty menu"),
                         LmStaffHelp.cmd("/difficulty reset", "clear active tier (free)")),
                 new LmStaffHelp.Section("World difficulty (ops)",
                         LmStaffHelp.cmd("/difficulty peaceful", "set vanilla world difficulty"),
@@ -95,7 +98,7 @@ public final class LmCommandHelp {
                 "/difficulty admin",
                 "§7Player hub: §f/lm §7· Shortcut: §f/diff",
                 new LmStaffHelp.Section("Players",
-                        LmStaffHelp.cmd("/difficulty", "open your difficulty menu (CNPC)"),
+                        LmStaffHelp.cmd("/difficulty", "open your difficulty menu"),
                         LmStaffHelp.cmd("/difficulty reset", "clear active tier (free)"),
                         LmStaffHelp.cmd("/difficulty peaceful", "set vanilla world difficulty (ops)"),
                         LmStaffHelp.cmd("/difficulty easy", "set vanilla world difficulty (ops)"),
@@ -142,7 +145,7 @@ public final class LmCommandHelp {
         return LmStaffHelp.build(
                 "Rival system",
                 "/rival",
-                "§7Most rival actions live in the CNPC menu. Type §f/rival help §7when you need the full list.",
+                "§7Most rival actions live in the rival menu. Type §f/rival help §7when you need the full list.",
                 new LmStaffHelp.Section("Menus",
                         LmStaffHelp.cmd("/rival", "open rival menu"),
                         LmStaffHelp.cmd("/rival season", "season progress menu"),
@@ -188,17 +191,14 @@ public final class LmCommandHelp {
                 new LmStaffHelp.Section("Data",
                         LmStaffHelp.cmd("/rival admin save", "write rivalry data to disk"),
                         LmStaffHelp.cmd("/rival admin refresh", "reload stores from disk"),
-                        LmStaffHelp.cmd("/rival admin status", "enabled flag and file paths")),
-                new LmStaffHelp.Section("Menus",
-                        LmStaffHelp.cmd("/rival admin open", "open rival CNPC menu"),
-                        LmStaffHelp.cmd("/rival admin open <page>", "open a specific rival page")));
+                        LmStaffHelp.cmd("/rival admin status", "enabled flag and file paths")));
     }
 
     public static String sparPlayer() {
         return LmStaffHelp.build(
                 "Sparring",
                 "/spar",
-                "§7Training, mentors, and dojo wars—mostly in the CNPC menu. Type §f/spar help §7for commands.",
+                "§7Training, mentors, and dojo wars — most live in the sparring menu. Type §f/spar help §7for commands.",
                 new LmStaffHelp.Section("Menus",
                         LmStaffHelp.cmd("/spar", "open sparring menu")),
                 new LmStaffHelp.Section("Session",
@@ -226,6 +226,10 @@ public final class LmCommandHelp {
                         LmStaffHelp.cmd("/spar dojo members", "list dojo members"),
                         LmStaffHelp.cmd("/spar dojo hof", "dojo hall of fame"),
                         LmStaffHelp.cmd("/spar dojo top", "dojo leaderboard")),
+                new LmStaffHelp.Section("Weights shop",
+                        LmStaffHelp.cmd("/spar weight quote <type> <value>", "check a training weight price"),
+                        LmStaffHelp.cmd("/spar weight buy <type> <value>", "buy training weights"),
+                        LmStaffHelp.note("Types: turtle_shell, workout_weights, piccolo_cape")),
                 new LmStaffHelp.Section("Staff",
                         LmStaffHelp.cmd("/spar admin help", "save, status, mentor cooldown reset")));
     }
@@ -262,7 +266,7 @@ public final class LmCommandHelp {
                 "/progression",
                 "§7Staff progression tools—boosts, flags, and android conversion.",
                 new LmStaffHelp.Section("Menus",
-                        LmStaffHelp.cmd("/progression", "open progression staff menu (CNPC)")),
+                        LmStaffHelp.cmd("/progression", "open progression staff menu")),
                 new LmStaffHelp.Section("Natural boost",
                         LmStaffHelp.cmd("/progression boost status", "show active boost"),
                         LmStaffHelp.cmd("/progression boost end", "end active boost"),
@@ -299,14 +303,19 @@ public final class LmCommandHelp {
                         LmStaffHelp.cmd("/lm open skillcheck", "open from Legacy Mechanics hub")));
     }
 
-    public static String characterStaff() {
+    public static String characterPlayer() {
         return LmStaffHelp.build(
                 "Character services",
                 "/character",
-                "§7Staff opens CNPC character services. Players normally use §f/lm open character§7.",
+                "§7Race, class, and reskin services — same purchases as the character menu. Use §f/character help §7anytime.",
                 new LmStaffHelp.Section("Menus",
                         LmStaffHelp.cmd("/character", "open character services menu"),
-                        LmStaffHelp.cmd("/lm open character", "same menu from the hub")));
+                        LmStaffHelp.cmd("/lm open character", "same menu from the hub")),
+                new LmStaffHelp.Section("Services",
+                        LmStaffHelp.cmd("/character race <race> <keep%>", "change race, keeping % of stats"),
+                        LmStaffHelp.cmd("/character class <class>", "change class"),
+                        LmStaffHelp.cmd("/character reskin", "reskin (free, race-locked)"),
+                        LmStaffHelp.note("Browse races and classes in the menu — costs and cooldowns shown there")));
     }
 
     public static String androidifyStaff() {
@@ -329,17 +338,25 @@ public final class LmCommandHelp {
                         LmStaffHelp.cmd("/skills do page <page>", "scripted page open")));
     }
 
-    public static String prestigeMenuStaff() {
+    public static String prestigePlayer() {
         return LmStaffHelp.build(
-                "Prestige menu",
+                "Prestige shop",
                 "/prestige",
-                "§7Staff GUI backend for prestige shop scripting. Use §f/prestige help §7anytime.",
-                new LmStaffHelp.Section("Menus",
-                        LmStaffHelp.cmd("/prestige", "open prestige menu"),
-                        LmStaffHelp.cmd("/prestige do confirm", "confirm prestige action"),
-                        LmStaffHelp.cmd("/prestige do page <page>", "open menu page")),
-                new LmStaffHelp.Section("Prestige adjustments",
-                        LmStaffHelp.cmd("/padmin help", "staff prestige wallet and shop edits")));
+                "§7Everything the Prestige → Shop screens sell — exchange, skills, tiers, and effects. Use §f/prestige help §7anytime.",
+                new LmStaffHelp.Section("Exchange",
+                        LmStaffHelp.cmd("/prestige balance", "favor, held shards, completed runs"),
+                        LmStaffHelp.cmd("/prestige turnin <1|2|3|6|9>", "bank a prestige run")),
+                new LmStaffHelp.Section("Skills and tiers",
+                        LmStaffHelp.cmd("/prestige buy skill <skill>", "buy a passive skill level"),
+                        LmStaffHelp.cmd("/prestige buy tier <1-7>", "buy a difficulty tier unlock")),
+                new LmStaffHelp.Section("Effects",
+                        LmStaffHelp.cmd("/prestige buy majin", "buy Majin absorption"),
+                        LmStaffHelp.cmd("/prestige buy mutant", "buy mutant upgrade"),
+                        LmStaffHelp.cmd("/prestige buy godki", "buy God Ki enhancement"),
+                        LmStaffHelp.cmd("/prestige remove majin", "remove Majin absorption"),
+                        LmStaffHelp.cmd("/prestige remove mutant", "remove mutant upgrade")),
+                new LmStaffHelp.Section("Staff",
+                        LmStaffHelp.note("Staff menu: /prestige menu · wallet edits: /padmin help")));
     }
 
     public static String prestigeAdmin() {

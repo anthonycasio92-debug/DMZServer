@@ -18,10 +18,7 @@ REQUIRED_LM_ADMIN = [
     "character",
     "cooldown",
     "syslog",
-    "open",
     "inspect",
-    "testgui",
-    "guitest",
 ]
 
 FORBIDDEN_LITERALS = [

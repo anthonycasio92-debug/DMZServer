@@ -1,6 +1,18 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.76**.
+What changed from **4.5.147** through **4.6.212**.
+
+## The /lm command tree is cleaned up, and every menu purchase has a command
+
+Commands that did nothing are gone. The staff test menus (`/lm admin testgui`, `/lm admin guitest`) and the telemetry hit-log probe (`/difficulty admin telemetry test`) were debugging leftovers; the difficulty "points" commands that only answered "points were removed" are gone too. `/lm admin open` and `/rival admin open` duplicated the normal menu commands, so they are gone as well. `/lm admin inspect` on its own now tells you what to type instead of quietly clearing your inspect mode.
+
+New commands cover what you could previously only do in menus:
+
+- `/prestige` is now the prestige shop command for everyone: `balance`, `turnin <1|2|3|6|9>`, `buy skill <skill>`, `buy tier <1-7>`, `buy majin|mutant|godki`, and `remove majin|mutant`. Staff keep the menu backend under `/prestige menu` and `/prestige do`, and wallet edits stay on `/padmin`.
+- `/character` opens your character services menu, and the purchases work from chat too: `/character race <race> <keep%>`, `/character class <class>`, `/character reskin`. Cosmetic head bones and body parts ride along under `/character do <action>`.
+- `/spar weight quote <type> <value>` and `/spar weight buy <type> <value>` price-check and buy training weights without opening the shop screen.
+
+Alias clutter is trimmed to one name per action (`/spar mentor decline`, `/spar mentor leave`, `/spar apprentice remove`), the progression chat menu's buttons now point at `/progression` (they said `/prog`, which did not exist on Forge), and help text everywhere drops the old CNPC wording and matches the real tree. Staff-only branches stay behind the same staff checks, and the command-tree guard that prevents the 4.6.205 login crash now audits every LegacyMechanics tree at the end of registration instead of only the first four.
 
 ## Prestige store sells God Ki Enhancement
 

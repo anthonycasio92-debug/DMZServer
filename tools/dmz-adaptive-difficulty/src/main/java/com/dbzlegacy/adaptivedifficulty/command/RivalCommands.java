@@ -3,8 +3,6 @@ package com.dbzlegacy.adaptivedifficulty.command;
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalChallengeManager;
-import com.dbzlegacy.adaptivedifficulty.rival.RivalInstinct;
-import com.dbzlegacy.adaptivedifficulty.rival.RivalPlayerRecord;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalSpectator;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalProgression;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalStore;
@@ -123,13 +121,7 @@ public final class RivalCommands {
                         .then(Commands.m_82127_("help").executes(ctx -> adminHelp(ctx.getSource())))
                         .then(Commands.m_82127_("save").executes(ctx -> save(ctx.getSource())))
                         .then(Commands.m_82127_("refresh").executes(ctx -> refresh(ctx.getSource())))
-                        .then(Commands.m_82127_("status").executes(ctx -> adminStatus(ctx.getSource())))
-                        .then(Commands.m_82127_("open")
-                                .executes(ctx -> gui(ctx.getSource(), "main"))
-                                .then(Commands.m_82129_("page", StringArgumentType.word())
-                                        .executes(ctx -> gui(
-                                                ctx.getSource(),
-                                                StringArgumentType.getString(ctx, "page"))))))
+                        .then(Commands.m_82127_("status").executes(ctx -> adminStatus(ctx.getSource()))))
                 .then(LmCommandSuggestions.playerWord("player")
                         .executes(ctx -> silent(
                                 ctx.getSource(),
@@ -137,11 +129,6 @@ public final class RivalCommands {
 
         event.getDispatcher().register(root);
         AdaptiveDifficultyMod.LOGGER.info("[{}] registered /rival", AdaptiveDifficultyMod.MOD_ID);
-    }
-
-    /** Op level 2 or configured admin permission (Mohist Bukkit node). */
-    private static boolean staff(CommandSourceStack src) {
-        return StaffAccess.isStaffSource(src);
     }
 
     private static int gui(CommandSourceStack source, String page) {
@@ -186,27 +173,6 @@ public final class RivalCommands {
             DmzRewards.msg(player, msg);
         }
         com.dbzlegacy.adaptivedifficulty.gui.RivalMenu.open(player, reopen);
-        return 1;
-    }
-
-    private static int tpmsgToggle(CommandSourceStack source) {
-        ServerPlayer player = playerOrNull(source);
-        if (player == null || !enabled(player)) {
-            return 0;
-        }
-        RivalPlayerRecord me = RivalStore.get().ensurePlayer(player);
-        boolean next = me == null || !me.tpMessages;
-        DmzRewards.msg(player, RivalSystem.setTpMsg(player, next));
-        return 1;
-    }
-
-    private static int instinctToggle(CommandSourceStack source) {
-        ServerPlayer player = playerOrNull(source);
-        if (player == null || !enabled(player)) {
-            return 0;
-        }
-        boolean on = RivalInstinct.toggle(player);
-        DmzRewards.msg(player, "§aRival Instinct §f" + (on ? "ON" : "OFF"));
         return 1;
     }
 

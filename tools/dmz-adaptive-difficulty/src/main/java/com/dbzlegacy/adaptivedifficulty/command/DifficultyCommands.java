@@ -147,7 +147,7 @@ public final class DifficultyCommands {
     private static LiteralArgumentBuilder<CommandSourceStack> vanillaDifficultyLiteral(String level) {
         return Commands.m_82127_(level)
                 .requires(DifficultyCommands::isStaff)
-                .executes(ctx -> setVanillaDifficulty(ctx.getSource(), level));
+                .executes(ctx -> setVanillaDifficultyOrDeny(ctx.getSource(), level));
     }
 
     private static LiteralArgumentBuilder<CommandSourceStack> whitelistRoot(String name) {
@@ -192,9 +192,7 @@ public final class DifficultyCommands {
                 .then(Commands.m_82127_("status")
                         .executes(ctx -> telemetryStatus(ctx.getSource())))
                 .then(Commands.m_82127_("flush")
-                        .executes(ctx -> telemetryFlush(ctx.getSource())))
-                .then(Commands.m_82127_("test")
-                        .executes(ctx -> telemetryTest(ctx.getSource())));
+                        .executes(ctx -> telemetryFlush(ctx.getSource())));
     }
 
     private static LiteralArgumentBuilder<CommandSourceStack> staffFreeRoot(String name) {
@@ -252,7 +250,7 @@ public final class DifficultyCommands {
         String returnPage = page;
         if (returnPage == null || returnPage.isBlank()) {
             returnPage = switch (act) {
-                case "down", "reset", "zero", "clear", "set", "lower_tier",
+                case "reset", "zero", "clear", "lower_tier",
                      "buy", "activate", "purchase_tier" -> "tiers";
                 case "equip_title", "clear_title", "equip", "unequip_title" -> "titles";
                 default -> "main";
@@ -506,28 +504,6 @@ public final class DifficultyCommands {
         return 1;
     }
 
-    private static int telemetryTest(CommandSourceStack source) {
-        if (denyAdmin(source) == 0) {
-            return 0;
-        }
-        ServerPlayer player = source.m_230896_();
-        String name = player != null ? player.m_6302_() : "console";
-        // Ensure logging is on so the probe is meaningful.
-        if (!com.dbzlegacy.adaptivedifficulty.telemetry.BalanceTelemetry.isEnabled()) {
-            com.dbzlegacy.adaptivedifficulty.telemetry.BalanceTelemetry.setEnabled(true);
-        }
-        String path = com.dbzlegacy.adaptivedifficulty.telemetry.BalanceTelemetry.writeTestProbe(name);
-        if (path == null || path.isBlank()) {
-            source.m_81352_(Component.m_237113_("§cHit log probe failed — check server log."));
-            return 0;
-        }
-        source.m_288197_(() -> Component.m_237113_(
-                "§aHit log probe written.\n§7File: §f" + path
-                        + "\n§7Remember: live hits only log for §fwhitelisted§7 players."
-        ), true);
-        return 1;
-    }
-
     private static int setStaffFreeAncientCoins(CommandSourceStack source, boolean on) {
         if (denyAdmin(source) == 0) {
             return 0;
@@ -556,7 +532,6 @@ public final class DifficultyCommands {
                         + "\n§7When ON, ops/staff skip coin charges on LM paid features."
                         + "\n§8/lm → Progression → Ancient Coins (GUI toggle)"
                         + "\n§8/difficulty admin stafffree on|off|toggle"
-                        + "\n§8Config key: staffFreeAncientCoinCosts"
         ), false);
         return 1;
     }
@@ -764,6 +739,7 @@ public final class DifficultyCommands {
                 || "clear".equalsIgnoreCase(playerName)
                 || "self".equalsIgnoreCase(playerName)
                 || "me".equalsIgnoreCase(playerName)) {
+            com.dbzlegacy.adaptivedifficulty.gui.ForgeInspectGui.clear(admin);
             DifficultyMenu.open(admin, "main");
             source.m_288197_(() -> Component.m_237113_("§7Inspect closed — showing your own GUI."), false);
             return 1;

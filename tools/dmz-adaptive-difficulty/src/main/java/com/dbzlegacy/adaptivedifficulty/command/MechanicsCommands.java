@@ -20,6 +20,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
+import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 /** {@code /lm} — Legacy Mechanics hub (player menus + staff admin). */
@@ -34,8 +35,16 @@ public final class MechanicsCommands {
     public void onRegister(RegisterCommandsEvent event) {
         event.getDispatcher().register(build());
         AdaptiveDifficultyMod.LOGGER.info("[{}] registered /lm", AdaptiveDifficultyMod.MOD_ID);
-        // Staff receive the full tree in ClientboundCommandsPacket. Catch a missing
-        // ArgumentTypeInfos entry at boot instead of kicking staff on login.
+    }
+
+    /**
+     * Staff receive the full tree in ClientboundCommandsPacket. Catch a missing
+     * ArgumentTypeInfos entry at boot instead of kicking staff on login (the 4.6.205
+     * regression). Runs at LOW priority so every LM tree registered during this event
+     * (/character, /progression, /prestige, /terminal, …) is inside the audited dispatcher.
+     */
+    @SubscribeEvent(priority = EventPriority.LOW)
+    public void onRegisterAudit(RegisterCommandsEvent event) {
         CommandTreeArgumentGuard.audit(event.getDispatcher());
     }
 
@@ -57,19 +66,12 @@ public final class MechanicsCommands {
                                         ctx.getSource(),
                                         StringArgumentType.getString(ctx, "page")))))
                 .then(Commands.m_82127_("do")
-                        .then(Commands.m_82127_("page")
-                                .then(Commands.m_82129_("page", StringArgumentType.word())
-                                        .executes(ctx -> open(
-                                                ctx.getSource(),
-                                                StringArgumentType.getString(ctx, "page")))))
-                        .then(Commands.m_82127_("open")
-                                .then(LmCommandSuggestions.word("system", LmCommandSuggestions.LM_OPEN_SYSTEMS)
-                                        .executes(ctx -> openSystem(
-                                                ctx.getSource(),
-                                                StringArgumentType.getString(ctx, "system")))))
                         .then(CommandAccess.staffLiteral("syslog")
                                 .then(LmCommandSuggestions.word("mode", LmCommandSuggestions.SYSLOG_MODES)
                                         .executes(ctx -> {
+                                            if (StaffAccess.denyUnlessStaff(ctx.getSource()) == 0) {
+                                                return 0;
+                                            }
                                             ServerPlayer p = playerOrNull(ctx.getSource());
                                             if (p == null) {
                                                 return 0;
@@ -97,21 +99,7 @@ public final class MechanicsCommands {
                                         .executes(ctx -> adminSyslog(
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "mode")))))
-                        .then(Commands.m_82127_("open")
-                                .executes(ctx -> adminOpen(ctx.getSource(), "hub"))
-                                .then(LmCommandSuggestions.word("system", LmCommandSuggestions.LM_OPEN_SYSTEMS)
-                                        .executes(ctx -> adminOpen(
-                                                ctx.getSource(),
-                                                StringArgumentType.getString(ctx, "system")))))
-                        .then(adminInspectRoot())
-                        .then(Commands.m_82127_("testgui")
-                                .executes(ctx -> adminTestGui(ctx.getSource())))
-                        .then(Commands.m_82127_("guitest")
-                                .executes(ctx -> adminGuiTest(ctx.getSource(), null))
-                                .then(LmCommandSuggestions.playerWord("player")
-                                        .executes(ctx -> adminGuiTest(
-                                                ctx.getSource(),
-                                                StringArgumentType.getString(ctx, "player"))))));
+                        .then(adminInspectRoot()));
     }
 
     private static LiteralArgumentBuilder<CommandSourceStack> migrateCnpcLiteral() {
@@ -301,7 +289,13 @@ public final class MechanicsCommands {
 
     private static LiteralArgumentBuilder<CommandSourceStack> adminInspectRoot() {
         return Commands.m_82127_("inspect")
-                .executes(ctx -> adminInspect(ctx.getSource(), null, "hub"))
+                .executes(ctx -> {
+                    LmCommandFeedback.tell(ctx.getSource(),
+                            LmCommandMessages.tryCommand("/lm admin inspect <player>"));
+                    LmCommandFeedback.tell(ctx.getSource(),
+                            LmCommandMessages.tryCommand("/lm admin inspect clear"));
+                    return 0;
+                })
                 .then(Commands.m_82127_("clear")
                         .executes(ctx -> adminInspect(ctx.getSource(), "clear", "hub")))
                 .then(LmCommandSuggestions.playerWord("player")
@@ -332,13 +326,6 @@ public final class MechanicsCommands {
             return 0;
         }
         return openSystemMenu(player, system) ? 1 : 0;
-    }
-
-    private static int adminOpen(CommandSourceStack source, String system) {
-        if (StaffAccess.denyUnlessStaff(source) == 0) {
-            return 0;
-        }
-        return openSystem(source, system);
     }
 
     /** Opens the standard LM inventory/chat menu for a system (shared with staff CNPC test GUI). */
@@ -420,61 +407,6 @@ public final class MechanicsCommands {
                 yield false;
             }
         };
-    }
-
-    private static int adminTestGui(CommandSourceStack source) {
-        if (StaffAccess.denyUnlessStaff(source) == 0) {
-            return 0;
-        }
-        ServerPlayer player = playerOrNull(source);
-        if (player == null) {
-            source.m_81352_(Component.m_237113_(LmCommandMessages.NEED_IN_GAME
-                    + " " + UltraStyle.DARK_GRAY + "Then: " + UltraStyle.WHITE + "/lm admin testgui"));
-            return 0;
-        }
-        return com.dbzlegacy.adaptivedifficulty.gui.CnpcStaffTestGui.open(player) ? 1 : 0;
-    }
-
-    /**
-     * Diagnostic: send a one-button Ultra {@code GuiOpenPacket} to isolate client delivery vs
-     * click handling. Prefer {@code /lm admin guitest <player>} from console.
-     */
-    private static int adminGuiTest(CommandSourceStack source, String playerName) {
-        if (StaffAccess.denyUnlessStaff(source) == 0) {
-            return 0;
-        }
-        ServerPlayer target;
-        if (playerName == null || playerName.isBlank()) {
-            target = source.m_230896_();
-            if (target == null) {
-                source.m_81352_(Component.m_237113_(LmCommandMessages.NEED_IN_GAME
-                        + " " + UltraStyle.DARK_GRAY + "Or: " + UltraStyle.WHITE
-                        + "/lm admin guitest <player>"));
-                return 0;
-            }
-        } else {
-            target = onlinePlayer(source.m_81377_(), playerName);
-            if (target == null) {
-                LmCommandFeedback.tell(source, LmCommandMessages.playerOffline(playerName));
-                return 0;
-            }
-        }
-        String features =
-                com.dbzlegacy.adaptivedifficulty.net.gui.UltraClientFeatures.summarizeForStaff(target);
-        com.dbzlegacy.adaptivedifficulty.net.gui.LmGuiNetwork.sendGuiTest(target);
-        LmCommandFeedback.tell(
-                source,
-                UltraStyle.CONFIRM
-                        + "Ultra guitest → "
-                        + UltraStyle.WHITE
-                        + target.m_7755_().getString()
-                        + UltraStyle.CONFIRM
-                        + " — "
-                        + UltraStyle.WHITE
-                        + features
-                        + UltraStyle.CONFIRM
-                        + ". Click Ping server; watch log for GuiActionPacket ←");
-        return 1;
     }
 
     private static int playerHelp(CommandSourceStack source) {
