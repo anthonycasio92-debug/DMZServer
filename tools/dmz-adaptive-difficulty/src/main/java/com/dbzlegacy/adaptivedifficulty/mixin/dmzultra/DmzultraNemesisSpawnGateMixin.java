@@ -9,6 +9,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
@@ -20,20 +21,39 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * and the mixin plugin gates application on the class being present.
  *
  * <p>Bytecode call graph (dmzultra-0.2.9 {@code com.dmzultra.journal.Rival}):
- * every nemesis spawn flows through {@code meet(...)} — {@code onTick} calls it
- * with trigger {@code "tired"} / {@code "found"} (the auto-visits) and the
- * manual journal {@code challenge} calls it with {@code "appear"} — or through
- * {@code champion(...)}, which calls {@code spawn} directly. Returning
- * {@code false} from {@code meet} and {@code null} from {@code spawn} are both
- * safe: the mod treats them exactly like its own "no spawn" rolls and shows its
- * stock fallback text.
+ * the manual journal challenge ({@code JournalActionC2SPacket} menu) calls
+ * {@code meet(...)} with trigger {@code "appear"}; the automatic {@code onTick}
+ * visits call it with {@code "tired"} / {@code "found"}; both materialize through
+ * {@code spawn(...)} (one call site each). Writ proving actions reach {@code spawn}
+ * through {@code champion(...)} directly. {@code spawn} carries no trigger, so the
+ * two entries record their origin in a flow marker that {@code spawn} reads:
+ *
+ * <ul>
+ *   <li>{@code "appear"} (nemesis menu) — passes in every mode, including OFF.</li>
+ *   <li>{@code champion} (writ proving) — honors {@link NemesisSpawnMode#allowManual}.</li>
+ *   <li>automatic / unattributed — honors {@link NemesisSpawnMode#allowTickSpawn}.</li>
+ * </ul>
+ *
+ * <p>Returning {@code false} from {@code meet} and {@code null} from {@code spawn}
+ * are both safe: the mod treats them exactly like its own "no spawn" rolls and
+ * shows its stock fallback text.
  */
 @Mixin(targets = "com.dmzultra.journal.Rival", remap = false)
 public abstract class DmzultraNemesisSpawnGateMixin {
 
+    /** Flow origin recorded by the entry points — {@code spawn} itself has no trigger. */
+    @Unique
+    private static final ThreadLocal<Integer> lm$flow = new ThreadLocal<>();
+
+    @Unique private static final int lm$FLOW_AUTO = 0;
+    @Unique private static final int lm$FLOW_APPEAR = 1;
+    @Unique private static final int lm$FLOW_CHAMPION = 2;
+
     /**
-     * OFF suppresses every trigger (auto and manual). MANUAL keeps only the
-     * player-started challenge flow ({@code "appear"}); tick visits never spawn.
+     * The deliberate nemesis-menu challenge ({@code "appear"}) passes through in
+     * every mode — OFF must still let a player summon their own nemesis. Automatic
+     * visits ({@code "tired"} / {@code "found"}) spawn only on AUTO (MANUAL and
+     * OFF both suppress them).
      */
     @Inject(method = "meet", at = @At("HEAD"), cancellable = true, require = 0, remap = false)
     private static void lm$gateNemesisMeet(
@@ -46,19 +66,35 @@ public abstract class DmzultraNemesisSpawnGateMixin {
             if (player == null || cir == null) {
                 return;
             }
-            if (!NemesisSpawnMode.allowManual(player)) {
-                cir.setReturnValue(false);
+            boolean deliberate = "appear".equalsIgnoreCase(trigger);
+            lm$flow.set(deliberate ? lm$FLOW_APPEAR : lm$FLOW_AUTO);
+            if (deliberate) {
                 return;
             }
-            if (!NemesisSpawnMode.allowTickSpawn(player)
-                    && !"appear".equalsIgnoreCase(trigger)) {
+            if (!NemesisSpawnMode.allowTickSpawn(player)) {
                 cir.setReturnValue(false);
             }
         } catch (Throwable ignored) {
         }
     }
 
-    /** Final gate: with the toggle OFF no path may materialize the mob. */
+    /** Writ proving summons are player-started — record the origin for {@code spawn}. */
+    @Inject(method = "champion", at = @At("HEAD"), require = 0, remap = false)
+    private static void lm$markNemesisChampion(
+            ServerPlayer player, int faction, CallbackInfoReturnable<Component> cir) {
+        try {
+            lm$flow.set(lm$FLOW_CHAMPION);
+        } catch (Throwable ignored) {
+        }
+    }
+
+    /**
+     * Final gate — reason-aware: the nemesis-menu challenge passes in every mode;
+     * writ champion summons honor {@link NemesisSpawnMode#allowManual} (blocked only
+     * on OFF); automatic or unattributed origins honor
+     * {@link NemesisSpawnMode#allowTickSpawn} (AUTO only), which also covers the
+     * degraded case where the {@code meet} marker never ran.
+     */
     @Inject(method = "spawn", at = @At("HEAD"), cancellable = true, require = 0, remap = false)
     private static void lm$gateNemesisSpawn(
             ServerPlayer player,
@@ -68,7 +104,19 @@ public abstract class DmzultraNemesisSpawnGateMixin {
             FoeScale.Spec spec,
             CallbackInfoReturnable<Mob> cir) {
         try {
-            if (player != null && cir != null && !NemesisSpawnMode.allowManual(player)) {
+            if (player == null || cir == null) {
+                return;
+            }
+            Integer origin = lm$flow.get();
+            lm$flow.remove();
+            if (origin != null && origin == lm$FLOW_APPEAR) {
+                return;
+            }
+            boolean allowed =
+                    origin != null && origin == lm$FLOW_CHAMPION
+                            ? NemesisSpawnMode.allowManual(player)
+                            : NemesisSpawnMode.allowTickSpawn(player);
+            if (!allowed) {
                 cir.setReturnValue(null);
             }
         } catch (Throwable ignored) {

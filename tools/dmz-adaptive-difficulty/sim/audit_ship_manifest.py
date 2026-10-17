@@ -380,12 +380,24 @@ def main() -> int:
     check("rival chest TP toggle label", '"&aTP ON"' in rival_chest and "TP Msg ON" not in rival_chest)
     nemesis_mode = read(SRC / "rival/NemesisSpawnMode.java")
     ultra_rival = read(SRC / "gui/ultra/UltraRivalScreens.java")
+    char_api = read(SRC / "gui/CharacterServicesGuiApi.java")
+    ultra_char = read(SRC / "gui/ultra/UltraCharacterScreens.java")
     nemesis_mix = read(SRC / "mixin/dmzultra/DmzultraNemesisSpawnGateMixin.java")
     mixins_json = read(MOD / "src/main/resources/legacymechanics.mixins.json")
     check("rival nemesis toggle three states",
           "AUTO" in nemesis_mode and "MANUAL" in nemesis_mode and "OFF" in nemesis_mode)
-    check("rival nemesis toggle menu action", '"nemesis_spawn_toggle"' in rival_api)
-    check("rival settings nemesis toggle button", '"do:nemesis_spawn_toggle"' in ultra_rival)
+    check("character nemesis toggle menu action", '"nemesis_spawn_toggle"' in char_api)
+    check("character home nemesis toggle button", '"do:nemesis_spawn_toggle"' in ultra_char)
+    check("nemesis toggle absent from rival screens",
+          '"nemesis_spawn_toggle"' not in rival_api
+          and '"do:nemesis_spawn_toggle"' not in ultra_rival)
+    check("nemesis OFF keeps manual menu spawn",
+          '"appear".equalsIgnoreCase(trigger)' in nemesis_mix
+          and 'method = "champion"' in nemesis_mix
+          and "lm$FLOW_APPEAR" in nemesis_mix)
+    check("nemesis mode descriptions match behavior",
+          "you can still summon yours from the nemesis menu" in nemesis_mode
+          and "description(" in nemesis_mode)
     check("rival nemesis mixin registered",
           "DmzultraNemesisSpawnGateMixin" in nemesis_mix
           and '"dmzultra.DmzultraNemesisSpawnGateMixin"' in mixins_json)

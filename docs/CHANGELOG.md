@@ -1,6 +1,16 @@
 # LegacyMechanics changelog
 
-What changed from **4.5.147** through **4.6.213**.
+What changed from **4.5.147** through **4.6.214**.
+
+## The nemesis toggle moves to Character Services, and OFF keeps your menu summon
+
+The Nemesis spawn toggle moved from Rival → Settings to Character Services → Home — it is a personal spawn preference, not a rival interaction. Same three modes, same per-character memory; the Rival menu no longer shows it.
+
+The OFF gate had a real bug: it blocked everything, including the deliberate spawn from the nemesis menu, because the OFF check ran before the manual-spawn exception. The gate is now reason-aware — the journal challenge passes in all three modes, writ proving summons pass everywhere except OFF, and automatic tick visits only spawn on ON. OFF reads: "No automatic nemesis spawns — you can still summon yours from the nemesis menu."
+
+## The config editor scaling experiment is reverted
+
+The 4.5× coordinate scaling added in 4.6.213 is gone, along with the `contentScale` wire field. It rested on two assumptions that do not hold: KaiPath 1.3.29 does not read `contentScale` from the JSON (zero references in its bytecode), and its default panel is 350×300, not the 426×240 the factor was computed from. Widget coordinates ship unscaled exactly as before 4.6.213 — `panel(1920, 1080)`, `center(false)`, `margin(0)`, and `lockPanel()` unchanged — and the self-test again expects the 148px category rail. A proper fullscreen fix needs KaiPath-side `fillScreen` support from JLDK; LM cannot pre-scale its way there.
 
 ## Rival nemesis spawns can be turned down or off
 

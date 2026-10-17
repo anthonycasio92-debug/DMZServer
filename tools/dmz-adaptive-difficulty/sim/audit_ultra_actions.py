@@ -50,6 +50,7 @@ KNOWN_DO: dict[str, set[str]] = {
         "android_remove",
         "android",
         "android_staff",
+        "nemesis_spawn_toggle",
     },
     "prestige": {
         "confirm",
@@ -67,7 +68,6 @@ KNOWN_DO: dict[str, set[str]] = {
     "rival": {
         "tpmsg",
         "instinct",
-        "nemesis_spawn_toggle",
         "accept_replace",
         "cancel_mutual_replace",
         "admin",
